@@ -19,7 +19,7 @@ package dferrors
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/internal/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +30,7 @@ var (
 	ErrEmptyValue      = errors.New("empty value")
 	ErrConvertFailed   = errors.New("convert failed")
 	ErrEndOfStream     = errors.New("end of stream")
-	ErrNoCandidateNode = errors.New("candidate server node not found")
+	ErrNoCandidateNode = errors.New("no candidate server node")
 )
 
 func IsEndOfStream(err error) bool {

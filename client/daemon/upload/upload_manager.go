@@ -33,6 +33,8 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
+var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
+
 type Manager interface {
 	Serve(lis net.Listener) error
 	Stop() error
@@ -91,16 +93,16 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
 	)
 
-	log := logger.With("peer", peer, "task", task, "component", "uploadManager")
-	log.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
+	sLogger := logger.With("peer", peer, "task", task, "component", "uploadManager")
+	sLogger.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
 	rg, err := clientutil.ParseRange(r.Header.Get(headers.Range), math.MaxInt64)
 	if err != nil {
-		log.Error("parse range with error: %s", err)
+		sLogger.Errorf("parse range with error: %s", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if len(rg) != 1 {
-		log.Error("multi range parsed, not support")
+		sLogger.Error("multi range parsed, not support")
 		http.Error(w, "invalid range", http.StatusBadRequest)
 		return
 	}
@@ -119,14 +121,14 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	if err != nil {
-		log.Errorf("get task data failed: %s", err)
+		sLogger.Errorf("get task data failed: %s", err)
 		http.Error(w, fmt.Sprintf("get piece data error: %s", err), http.StatusInternalServerError)
 		return
 	}
 	defer closer.Close()
 	if um.Limiter != nil {
 		if err = um.Limiter.WaitN(r.Context(), int(rg[0].Length)); err != nil {
-			log.Errorf("get limit failed: %s", err)
+			sLogger.Errorf("get limit failed: %s", err)
 			http.Error(w, fmt.Sprintf("get limit error: %s", err), http.StatusInternalServerError)
 			return
 		}
@@ -135,10 +137,10 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	// if w is a socket, golang will use sendfile or splice syscall for zero copy feature
 	// when start to transfer data, we could not call http.Error with header
 	if n, err := io.Copy(w, reader); err != nil {
-		log.Errorf("transfer data failed: %s", err)
+		sLogger.Errorf("transfer data failed: %s", err)
 		return
 	} else if n != rg[0].Length {
-		log.Errorf("transferred data length not match request, request: %d, transferred: %d",
+		sLogger.Errorf("transferred data length not match request, request: %d, transferred: %d",
 			rg[0].Length, n)
 		return
 	}

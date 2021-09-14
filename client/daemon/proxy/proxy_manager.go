@@ -33,11 +33,12 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type Manager interface {
-	Serve(lis net.Listener) error
+	Serve(net.Listener) error
+	ServeSNI(net.Listener) error
 	Stop() error
 	IsEnabled() bool
 }
@@ -51,6 +52,11 @@ type proxyManager struct {
 var _ Manager = (*proxyManager)(nil)
 
 func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
+	// proxy is option, when nil, just disable it
+	if opts == nil {
+		logger.Infof("proxy config is empty, disabled")
+		return &proxyManager{}, nil
+	}
 	registry := opts.RegistryMirror
 	proxies := opts.Proxies
 	hijackHTTPS := opts.HijackHTTPS
@@ -93,7 +99,9 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 			if err != nil {
 				return nil, errors.Wrap(err, "cert from file")
 			}
-
+			if cert.Leaf != nil && cert.Leaf.IsCA {
+				logger.Debugf("hijack https request with CA <%s>", cert.Leaf.Subject.CommonName)
+			}
 			options = append(options, WithCert(cert))
 		}
 	}
@@ -110,10 +118,14 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 	}, nil
 }
 
-func (pm *proxyManager) Serve(lis net.Listener) error {
+func (pm *proxyManager) Serve(listener net.Listener) error {
 	_ = WithDirectHandler(newDirectHandler())(pm.Proxy)
 	pm.Server.Handler = pm.Proxy
-	return pm.Server.Serve(lis)
+	return pm.Server.Serve(listener)
+}
+
+func (pm *proxyManager) ServeSNI(listener net.Listener) error {
+	return pm.Proxy.ServeSNI(listener)
 }
 
 func (pm *proxyManager) Stop() error {
@@ -133,7 +145,7 @@ func newDirectHandler() *http.ServeMux {
 
 // getEnv returns the environments of dfdaemon.
 func getEnv(w http.ResponseWriter, r *http.Request) {
-	logger.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access: %s", r.URL.String())
 	if err := json.NewEncoder(w).Encode(ensureStringKey(viper.AllSettings())); err != nil {
 		logger.Errorf("failed to encode env json: %v", err)
 	}
@@ -163,7 +175,7 @@ func ensureStringKey(obj interface{}) interface{} {
 
 // getArgs returns all the arguments of command-line except the program name.
 func getArgs(w http.ResponseWriter, r *http.Request) {
-	logger.Debugf("access:%s", r.URL.String())
+	logger.Debugf("access: %s", r.URL.String())
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain;charset=utf-8")

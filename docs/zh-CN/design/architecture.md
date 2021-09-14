@@ -40,6 +40,12 @@
 
 ![alt][download-process]
 
+### 子模块架构
+
+#### CDN模块
+
+![cdn][cdn]
+
 ### 子系统功能
 
 **Manager**
@@ -94,3 +100,4 @@
 [arch]: ../images/arch.png
 [association]: ../images/association.png
 [download-process]: ../images/download-process.png
+[cdn]: ../images/cdn.png

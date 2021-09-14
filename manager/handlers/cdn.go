@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package handlers
 
 import (
@@ -14,9 +30,9 @@ import (
 // @Produce json
 // @Param CDN body types.CreateCDNRequest true "CDN"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns [post]
 func (h *Handlers) CreateCDN(ctx *gin.Context) {
 	var json types.CreateCDNRequest
@@ -25,7 +41,7 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 		return
 	}
 
-	cdn, err := h.service.CreateCDN(json)
+	cdn, err := h.Service.CreateCDN(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -41,9 +57,9 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [delete]
 func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -52,8 +68,7 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroyCDN(params.ID)
-	if err != nil {
+	if err := h.Service.DestroyCDN(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -69,9 +84,9 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param CDN body types.UpdateCDNRequest true "CDN"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [patch]
 func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -86,7 +101,7 @@ func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 		return
 	}
 
-	cdn, err := h.service.UpdateCDN(params.ID, json)
+	cdn, err := h.Service.UpdateCDN(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -102,9 +117,9 @@ func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns/{id} [get]
 func (h *Handlers) GetCDN(ctx *gin.Context) {
 	var params types.CDNParams
@@ -113,7 +128,7 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 		return
 	}
 
-	cdn, err := h.service.GetCDN(params.ID)
+	cdn, err := h.Service.GetCDN(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -130,9 +145,9 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.CDN
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdns [get]
 func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	var query types.GetCDNsQuery
@@ -142,13 +157,13 @@ func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.service.GetCDNs(query)
+	cdns, err := h.Service.GetCDNs(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.CDNTotalCount(query)
+	totalCount, err := h.Service.CDNTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return

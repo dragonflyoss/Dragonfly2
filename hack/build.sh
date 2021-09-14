@@ -10,8 +10,19 @@ SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
 
 PKG=d7y.io/dragonfly/v2
-BUILD_IMAGE=golang:1.15.8
-DATE=$(date "+%Y%m%d-%H:%M:%S")
+BUILD_IMAGE=golang:1.16.6-alpine
+
+VERSION=$(git rev-parse --short HEAD)
+BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+
+GOPROXY=${GOPROXY:-}
+GOTAGS=${GOTAGS:-}
+GOGCFLAGS=${GOGCFLAGS:-}
+GOLDFLAGS="-X d7y.io/dragonfly/v2/version.GitCommit=${VERSION}"
+GOLDFLAGS="${GOLDFLAGS} -X d7y.io/dragonfly/v2/version.BuildTime=${BUILD_TIME}"
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gotags=${GOTAGS:-none}\""
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.GoVersion=$(go version | grep -o 'go[^ ].*')\""
+GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gogcflags=${GOGCFLAGS:-none}\""
 
 curDir=$(cd "$(dirname "$0")" && pwd)
 cd "${curDir}" || return
@@ -31,7 +42,7 @@ create-dirs() {
 build-local() {
     test -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1" && rm -f "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     cd "${BUILD_SOURCE_HOME}/cmd/$2" || return
-    go build -o "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
+    go build -tags="${GOTAGS}" -ldflags="${GOLDFLAGS}" -gcflags="${GOGCFLAGS}" -o="${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     chmod a+x "${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
@@ -67,6 +78,8 @@ build-docker() {
         -e CGO_ENABLED=0 \
         -e GO111MODULE=on \
         -e GOPROXY="${GOPROXY}" \
+        -e GOTAGS="${GOTAGS}" \
+        -e GOGCFLAGS="${GOGCFLAGS}" \
         -w /go/src/${PKG} \
         ${BUILD_IMAGE} \
         go build -o "/go/bin/$1" ./cmd/"$2"
@@ -94,7 +107,7 @@ main() {
     if [[ "1" == "${USE_DOCKER}" ]]; then
         echo "Begin to build with docker."
         case "${1-}" in
-        dfdaemon)
+        cdn)
             build-cdn-docker
             ;;
         dfget)

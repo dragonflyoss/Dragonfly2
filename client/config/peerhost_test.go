@@ -218,7 +218,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 	proxyExp, _ := NewRegexp("blobs/sha256.*")
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
-	peerHostOption := &PeerHostOption{
+	peerHostOption := &DaemonOption{
 		AliveTime: clientutil.Duration{
 			Duration: 0,
 		},
@@ -248,6 +248,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			AdvertiseIP:    "0.0.0.0",
 		},
 		Download: DownloadOption{
+			PieceDownloadTimeout: 30 * time.Second,
 			TotalRateLimit: clientutil.RateLimit{
 				Limit: 209715200,
 			},
@@ -355,7 +356,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 		},
 	}
 
-	peerHostOptionYAML := &PeerHostOption{}
+	peerHostOptionYAML := &DaemonOption{}
 	if err := peerHostOptionYAML.Load("./testdata/config/daemon.yaml"); err != nil {
 		t.Fatal(err)
 	}

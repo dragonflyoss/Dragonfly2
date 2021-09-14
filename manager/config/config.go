@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package config
 
 import (
@@ -15,8 +31,10 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
-	REST *RestConfig      `yaml:"rest" mapstructure:"rest"`
+	Name       string           `yaml:"name" mapstructure:"name"`
+	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
+	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
 }
 
 type DatabaseConfig struct {
@@ -30,13 +48,16 @@ type MysqlConfig struct {
 	Host     string `yaml:"host" mapstructure:"host"`
 	Port     int    `yaml:"port" mapstructure:"port"`
 	DBName   string `yaml:"dbname" mapstructure:"dbname"`
+	Migrate  bool   `yaml:"migrate" mapstructure:"migrate"`
 }
 
 type RedisConfig struct {
-	Host     string `yaml:"host" mapstructure:"host"`
-	Port     int    `yaml:"port" mapstructure:"port"`
-	Password string `yaml:"password" mapstructure:"password"`
-	DB       int    `yaml:"db" mapstructure:"db"`
+	Host      string `yaml:"host" mapstructure:"host"`
+	Port      int    `yaml:"port" mapstructure:"port"`
+	Password  string `yaml:"password" mapstructure:"password"`
+	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
+	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
+	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type CacheConfig struct {
@@ -73,6 +94,8 @@ type TCPListenPortRange struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
+			Name:       "d7y/manager",
+			PublicPath: "manager/console/dist",
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: 65003,
@@ -81,6 +104,16 @@ func New() *Config {
 			},
 			REST: &RestConfig{
 				Addr: ":8080",
+			},
+		},
+		Database: &DatabaseConfig{
+			Redis: &RedisConfig{
+				CacheDB:   0,
+				BrokerDB:  1,
+				BackendDB: 2,
+			},
+			Mysql: &MysqlConfig{
+				Migrate: true,
 			},
 		},
 		Cache: &CacheConfig{
@@ -96,6 +129,10 @@ func New() *Config {
 }
 
 func (cfg *Config) Validate() error {
+	if cfg.Server.Name == "" {
+		return errors.New("empty server name config is not specified")
+	}
+
 	if cfg.Cache == nil {
 		return errors.New("empty cache config is not specified")
 	}
@@ -119,11 +156,14 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Database != nil {
-		if cfg.Database.Redis == nil {
+		if cfg.Database.Redis.Host == "" {
 			return errors.New("empty cache redis config is not specified")
 		}
 
 		if cfg.Database.Mysql == nil {
+			if cfg.Database.Mysql.Host == "" {
+				return errors.New("empty cache mysql host is not specified")
+			}
 			return errors.New("empty cache mysql config is not specified")
 		}
 	}

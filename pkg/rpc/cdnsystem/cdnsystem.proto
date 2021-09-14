@@ -1,0 +1,54 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package cdnsystem;
+
+import "pkg/rpc/base/base.proto";
+
+option go_package = "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem";
+
+message SeedRequest{
+  string task_id = 1;
+  string url = 2;
+  base.UrlMeta url_meta = 3;
+}
+
+// keep piece meta and data separately
+// check piece md5, md5s sign and total content length
+message PieceSeed{
+  // peer id for cdn node, need suffix with _CDN
+  string peer_id = 2;
+  // cdn node host uuid
+  string host_uuid = 3;
+  base.PieceInfo piece_info = 4;
+
+  // whether or not all seeds are downloaded
+  bool done = 5;
+  // content total length for the url
+  int64 content_length = 6;
+  // total piece count
+  int32 total_piece_count = 7;
+}
+
+// CDN System RPC Service
+service Seeder{
+  // generate seeds and return to scheduler
+  rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed);
+  // get piece tasks from cdn
+  rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket);
+}

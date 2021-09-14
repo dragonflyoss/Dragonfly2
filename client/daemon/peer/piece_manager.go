@@ -22,18 +22,17 @@ import (
 	"math"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/source"
 	"golang.org/x/time/rate"
 
-	cdnconfig "d7y.io/dragonfly/v2/cdnsystem/config"
-
+	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
@@ -54,10 +53,10 @@ type pieceManager struct {
 
 var _ PieceManager = (*pieceManager)(nil)
 
-func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (PieceManager, error) {
+func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,
-		computePieceSize: computePieceSize,
+		computePieceSize: cdnutil.ComputePieceSize,
 		calculateDigest:  true,
 	}
 	for _, opt := range opts {
@@ -66,15 +65,9 @@ func NewPieceManager(s storage.TaskStorageDriver, opts ...func(*pieceManager)) (
 
 	// set default value
 	if pm.pieceDownloader == nil {
-		pm.pieceDownloader, _ = NewPieceDownloader()
+		pm.pieceDownloader, _ = NewPieceDownloader(pieceDownloadTimeout)
 	}
 	return pm, nil
-}
-
-func WithPieceDownloader(d PieceDownloader) func(*pieceManager) {
-	return func(pm *pieceManager) {
-		pm.pieceDownloader = d
-	}
 }
 
 func WithCalculateDigest(enable bool) func(*pieceManager) {
@@ -95,6 +88,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	var (
 		start = time.Now().UnixNano()
 		end   int64
+		err   error
 	)
 	defer func() {
 		_, rspan := tracer.Start(ctx, config.SpanPushPieceResult)
@@ -102,14 +96,14 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 		if success {
 			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
-			pm.pushFailResult(pt, request.DstPid, request.piece, start, end)
+			pm.pushFailResult(pt, request.DstPid, request.piece, start, end, err)
 		}
 		rspan.End()
 	}()
 
 	// 1. download piece from other peers
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
+		if err = pm.Limiter.WaitN(ctx, int(request.piece.RangeSize)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return
 		}
@@ -119,7 +113,12 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	span.SetAttributes(config.AttributeTargetPeerID.String(request.DstPid))
 	span.SetAttributes(config.AttributeTargetPeerAddr.String(request.DstAddr))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
-	r, c, err := pm.pieceDownloader.DownloadPiece(ctx, request)
+
+	var (
+		r io.Reader
+		c io.Closer
+	)
+	r, c, err = pm.pieceDownloader.DownloadPiece(ctx, request)
 	if err != nil {
 		span.RecordError(err)
 		span.End()
@@ -130,7 +129,8 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	defer c.Close()
 
 	// 2. save to storage
-	n, err := pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
+	var n int64
+	n, err = pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
@@ -161,38 +161,45 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 
 func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
 	err := peerTask.ReportPieceResult(
-		piece,
-		&scheduler.PieceResult{
-			TaskId:        peerTask.GetTaskID(),
-			SrcPid:        peerTask.GetPeerID(),
-			DstPid:        dstPid,
-			PieceNum:      piece.PieceNum,
-			BeginTime:     uint64(start),
-			EndTime:       uint64(end),
-			Success:       true,
-			Code:          dfcodes.Success,
-			HostLoad:      nil, // TODO(jim): update host load
-			FinishedCount: 0,   // update by peer task
+		&pieceTaskResult{
+			piece: piece,
+			pieceResult: &scheduler.PieceResult{
+				TaskId:        peerTask.GetTaskID(),
+				SrcPid:        peerTask.GetPeerID(),
+				DstPid:        dstPid,
+				PieceInfo:     piece,
+				BeginTime:     uint64(start),
+				EndTime:       uint64(end),
+				Success:       true,
+				Code:          dfcodes.Success,
+				HostLoad:      nil,                // TODO(jim): update host load
+				FinishedCount: piece.PieceNum + 1, // update by peer task
+				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
+			},
+			err: nil,
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
-	err := peerTask.ReportPieceResult(
-		piece,
-		&scheduler.PieceResult{
-			TaskId:        peerTask.GetTaskID(),
-			SrcPid:        peerTask.GetPeerID(),
-			DstPid:        dstPid,
-			PieceNum:      piece.PieceNum,
-			BeginTime:     uint64(start),
-			EndTime:       uint64(end),
-			Success:       false,
-			Code:          dfcodes.ClientPieceDownloadFail,
-			HostLoad:      nil,
-			FinishedCount: 0, // update by peer task
+func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error) {
+	err = peerTask.ReportPieceResult(
+		&pieceTaskResult{
+			piece: piece,
+			pieceResult: &scheduler.PieceResult{
+				TaskId:        peerTask.GetTaskID(),
+				SrcPid:        peerTask.GetPeerID(),
+				DstPid:        dstPid,
+				PieceInfo:     piece,
+				BeginTime:     uint64(start),
+				EndTime:       uint64(end),
+				Success:       false,
+				Code:          dfcodes.ClientPieceDownloadFail,
+				HostLoad:      nil,
+				FinishedCount: 0, // update by peer task
+			},
+			err: err,
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
@@ -209,6 +216,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		success bool
 		start   = time.Now().UnixNano()
 		end     int64
+		err     error
 	)
 
 	var (
@@ -237,12 +245,12 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 					PieceMd5:    "",
 					PieceOffset: pieceOffset,
 					PieceStyle:  0,
-				}, start, end)
+				}, start, end, err)
 		}
 	}()
 
 	if pm.Limiter != nil {
-		if err := pm.Limiter.WaitN(pt.Context(), int(size)); err != nil {
+		if err = pm.Limiter.WaitN(pt.Context(), int(size)); err != nil {
 			pt.Log().Errorf("require rate limit access error: %s", err)
 			return 0, err
 		}
@@ -250,7 +258,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	if pm.calculateDigest {
 		reader = digestutils.NewDigestReader(reader)
 	}
-	n, err := pm.storageManager.WritePiece(
+	var n int64
+	n, err = pm.storageManager.WritePiece(
 		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
@@ -357,10 +366,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 						},
 						ContentLength: contentLength,
 					})
+				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
 		}
-		// unreachable code
+		//unreachable code
 		//return nil
 	}
 
@@ -384,24 +394,8 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			return storage.ErrShortRead
 		}
 	}
+	pt.SetTotalPieces(maxPieceNum)
+	pt.SetContentLength(contentLength)
 	log.Infof("download from source ok")
 	return nil
-}
-
-// TODO copy from cdnsystem/daemon/mgr/task/manager_util.go
-// computePieceSize computes the piece size with specified fileLength.
-//
-// If the fileLength<=0, which means failed to get fileLength
-// and then use the DefaultPieceSize.
-func computePieceSize(length int64) int32 {
-	if length <= 0 || length <= 200*1024*1024 {
-		return cdnconfig.DefaultPieceSize
-	}
-
-	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + cdnconfig.DefaultPieceSize
-	if mpSize > cdnconfig.DefaultPieceSizeLimit {
-		return cdnconfig.DefaultPieceSizeLimit
-	}
-	return int32(mpSize)
 }

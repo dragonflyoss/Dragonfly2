@@ -27,6 +27,8 @@ keepStorage: true
 scheduler:
   # schedule timeout
   scheduleTimeout: 30s
+  # when true, only scheduler says back source, daemon can back source
+  disableAutoBackSource: false
   # below example is a stand address
   netAddrs:
     - type: tcp
@@ -59,6 +61,8 @@ download:
   totalRateLimit: 200Mi
   # per peer task download limit per second
   perPeerRateLimit: 100Mi
+  # download piece timeout
+  pieceDownloadTimeout: 30s
   # download grpc option
   downloadGRPC:
     # security option
@@ -162,6 +166,8 @@ proxy:
   #     start: 65020
   #     end: 65029
   registryMirror:
+    # when enable, using header "X-Dragonfly-Registry" for remote instead of url
+    dynamic: true
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors

@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package handlers
 
 import (
@@ -14,9 +30,9 @@ import (
 // @Produce json
 // @Param SchedulerCluster body types.CreateSchedulerClusterRequest true "SchedulerCluster"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters [post]
 func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 	var json types.CreateSchedulerClusterRequest
@@ -26,7 +42,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.CreateSchedulerClusterWithSecurityGroupDomain(json)
+		scheduler, err := h.Service.CreateSchedulerClusterWithSecurityGroupDomain(json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -36,7 +52,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateSchedulerCluster(json)
+	schedulerCluster, err := h.Service.CreateSchedulerCluster(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -52,9 +68,9 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [delete]
 func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -63,8 +79,7 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroySchedulerCluster(params.ID)
-	if err != nil {
+	if err := h.Service.DestroySchedulerCluster(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -80,9 +95,9 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param SchedulerCluster body types.UpdateSchedulerClusterRequest true "SchedulerCluster"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [patch]
 func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -98,7 +113,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.UpdateSchedulerClusterWithSecurityGroupDomain(params.ID, json)
+		scheduler, err := h.Service.UpdateSchedulerClusterWithSecurityGroupDomain(params.ID, json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -108,7 +123,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateSchedulerCluster(params.ID, json)
+	schedulerCluster, err := h.Service.UpdateSchedulerCluster(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -124,9 +139,9 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id} [get]
 func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 	var params types.SchedulerClusterParams
@@ -135,7 +150,7 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.GetSchedulerCluster(params.ID)
+	schedulerCluster, err := h.Service.GetSchedulerCluster(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -152,9 +167,9 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.SchedulerCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters [get]
 func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 	var query types.GetSchedulerClustersQuery
@@ -164,13 +179,13 @@ func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, err := h.service.GetSchedulerClusters(query)
+	schedulerClusters, err := h.Service.GetSchedulerClusters(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SchedulerClusterTotalCount(query)
+	totalCount, err := h.Service.SchedulerClusterTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -188,9 +203,9 @@ func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param scheduler_id path string true "scheduler id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /scheduler-clusters/{id}/schedulers/{scheduler_id} [put]
 func (h *Handlers) AddSchedulerToSchedulerCluster(ctx *gin.Context) {
 	var params types.AddSchedulerToSchedulerClusterParams
@@ -199,7 +214,7 @@ func (h *Handlers) AddSchedulerToSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerToSchedulerCluster(params.ID, params.SchedulerID)
+	err := h.Service.AddSchedulerToSchedulerCluster(params.ID, params.SchedulerID)
 	if err != nil {
 		ctx.Error(err)
 		return

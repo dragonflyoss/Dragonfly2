@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package middlewares
 
 import (
@@ -9,6 +25,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -33,13 +50,24 @@ func Error() gin.HandlerFunc {
 				c.JSON(http.StatusBadRequest, ErrorResponse{
 					Message: http.StatusText(http.StatusBadRequest),
 				})
+				c.Abort()
 				return
 			default:
 				c.JSON(http.StatusInternalServerError, ErrorResponse{
 					Message: http.StatusText(http.StatusInternalServerError),
 				})
+				c.Abort()
 				return
 			}
+		}
+
+		// Bcrypt error handler
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{
+				Message: http.StatusText(http.StatusUnauthorized),
+			})
+			c.Abort()
+			return
 		}
 
 		// GORM error handler
@@ -47,6 +75,7 @@ func Error() gin.HandlerFunc {
 			c.JSON(http.StatusNotFound, ErrorResponse{
 				Message: http.StatusText(http.StatusNotFound),
 			})
+			c.Abort()
 			return
 		}
 
@@ -57,11 +86,13 @@ func Error() gin.HandlerFunc {
 				c.JSON(http.StatusConflict, ErrorResponse{
 					Message: http.StatusText(http.StatusConflict),
 				})
+				c.Abort()
 				return
 			default:
 				c.JSON(http.StatusInternalServerError, ErrorResponse{
 					Message: http.StatusText(http.StatusInternalServerError),
 				})
+				c.Abort()
 				return
 			}
 		}

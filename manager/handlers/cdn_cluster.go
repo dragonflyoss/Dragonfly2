@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package handlers
 
 import (
@@ -13,10 +29,10 @@ import (
 // @Accept json
 // @Produce json
 // @Param CDNCluster body types.CreateCDNClusterRequest true "DNCluster"
-// @Success 200 {object} model.DNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Success 200 {object} model.CDNCluster
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters [post]
 func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 	var json types.CreateCDNClusterRequest
@@ -26,7 +42,7 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.CreateCDNClusterWithSecurityGroupDomain(json)
+		cdn, err := h.Service.CreateCDNClusterWithSecurityGroupDomain(json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -36,7 +52,7 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.CreateCDNCluster(json)
+	cdnCluster, err := h.Service.CreateCDNCluster(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -52,9 +68,9 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [delete]
 func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -63,8 +79,7 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroyCDNCluster(params.ID)
-	if err != nil {
+	if err := h.Service.DestroyCDNCluster(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -80,9 +95,9 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param CDNCluster body types.UpdateCDNClusterRequest true "CDNCluster"
 // @Success 200 {object} model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [patch]
 func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -98,7 +113,7 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.UpdateCDNClusterWithSecurityGroupDomain(params.ID, json)
+		cdn, err := h.Service.UpdateCDNClusterWithSecurityGroupDomain(params.ID, json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -108,7 +123,7 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.UpdateCDNCluster(params.ID, json)
+	cdnCluster, err := h.Service.UpdateCDNCluster(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -124,9 +139,9 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id} [get]
 func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
@@ -135,7 +150,7 @@ func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.GetCDNCluster(params.ID)
+	cdnCluster, err := h.Service.GetCDNCluster(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -152,9 +167,9 @@ func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.CDNCluster
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters [get]
 func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 	var query types.GetCDNClustersQuery
@@ -164,13 +179,13 @@ func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.service.GetCDNClusters(query)
+	cdns, err := h.Service.GetCDNClusters(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.CDNClusterTotalCount(query)
+	totalCount, err := h.Service.CDNClusterTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -188,9 +203,9 @@ func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param cdn_id path string true "cdn id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id}/cdns/{cdn_id} [put]
 func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 	var params types.AddCDNToCDNClusterParams
@@ -199,8 +214,7 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddCDNToCDNCluster(params.ID, params.CDNID)
-	if err != nil {
+	if err := h.Service.AddCDNToCDNCluster(params.ID, params.CDNID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -216,9 +230,9 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param scheduler_cluster_id path string true "scheduler cluster id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
 func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
 	var params types.AddSchedulerClusterToCDNClusterParams
@@ -227,8 +241,7 @@ func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerClusterToCDNCluster(params.ID, params.SchedulerClusterID)
-	if err != nil {
+	if err := h.Service.AddSchedulerClusterToCDNCluster(params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}

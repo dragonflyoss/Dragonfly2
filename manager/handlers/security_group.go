@@ -1,3 +1,19 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package handlers
 
 import (
@@ -14,9 +30,9 @@ import (
 // @Produce json
 // @Param SecurityGroup body types.CreateSecurityGroupRequest true "SecurityGroup"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups [post]
 func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 	var json types.CreateSecurityGroupRequest
@@ -25,7 +41,7 @@ func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	securityGroup, err := h.service.CreateSecurityGroup(json)
+	securityGroup, err := h.Service.CreateSecurityGroup(json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -41,9 +57,9 @@ func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /securityGroups/{id} [delete]
 func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -52,8 +68,7 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DestroySecurityGroup(params.ID)
-	if err != nil {
+	if err := h.Service.DestroySecurityGroup(params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -69,9 +84,9 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param SecurityGroup body types.UpdateSecurityGroupRequest true "SecurityGroup"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id} [patch]
 func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -86,7 +101,7 @@ func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	securityGroup, err := h.service.UpdateSecurityGroup(params.ID, json)
+	securityGroup, err := h.Service.UpdateSecurityGroup(params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -102,9 +117,9 @@ func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Success 200 {object} model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id} [get]
 func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
@@ -113,7 +128,7 @@ func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	securityGroup, err := h.service.GetSecurityGroup(params.ID)
+	securityGroup, err := h.Service.GetSecurityGroup(params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -130,10 +145,10 @@ func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
 // @Success 200 {object} []model.SecurityGroup
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
-// @Router /security-groups[get]
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /security-groups [get]
 func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 	var query types.GetSecurityGroupsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
@@ -142,13 +157,13 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	securityGroups, err := h.service.GetSecurityGroups(query)
+	securityGroups, err := h.Service.GetSecurityGroups(query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SecurityGroupTotalCount(query)
+	totalCount, err := h.Service.SecurityGroupTotalCount(query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -164,11 +179,11 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param instance_id path string true "instance id"
+// @Param scheduler_cluster_id path string true "scheduler cluster id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
 func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 	var params types.AddSchedulerClusterToSecurityGroupParams
@@ -177,7 +192,7 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerClusterToSecurityGroup(params.ID, params.SchedulerClusterID)
+	err := h.Service.AddSchedulerClusterToSecurityGroup(params.ID, params.SchedulerClusterID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -192,11 +207,11 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param instance_id path string true "instance id"
+// @Param cdn_cluster_id path string true "cdn cluster id"
 // @Success 200
-// @Failure 400 {object} HTTPError
-// @Failure 404 {object} HTTPError
-// @Failure 500 {object} HTTPError
+// @Failure 400
+// @Failure 404
+// @Failure 500
 // @Router /security-groups/{id}/cdn-clusters/{cdn_cluster_id} [put]
 func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
 	var params types.AddCDNClusterToSecurityGroupParams
@@ -205,7 +220,7 @@ func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddCDNClusterToSecurityGroup(params.ID, params.CDNClusterID)
+	err := h.Service.AddCDNClusterToSecurityGroup(params.ID, params.CDNClusterID)
 	if err != nil {
 		ctx.Error(err)
 		return

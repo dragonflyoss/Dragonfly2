@@ -22,20 +22,23 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel/semconv"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"github.com/go-http-utils/headers"
-	"go.opentelemetry.io/otel/semconv"
-	"go.opentelemetry.io/otel/trace"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
+
+var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
-	taskID := idgen.TaskID(request.Url, request.Filter, request.UrlMeta, request.BizId)
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
 		return nil, false
@@ -96,12 +99,13 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	progressCh <- pg
 
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	span.SetAttributes(config.AttributePeerTaskCost.Int64(cost))
 	return progressCh, true
 }
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, bool) {
-	taskID := idgen.TaskID(request.Url, request.Filter, request.UrlMeta, request.BizId)
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
 		return nil, nil, false

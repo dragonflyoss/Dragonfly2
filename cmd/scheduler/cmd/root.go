@@ -19,14 +19,16 @@ package cmd
 import (
 	"os"
 
-	"d7y.io/dragonfly/v2/cmd/dependency"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/server"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
+
+	"d7y.io/dragonfly/v2/cmd/dependency"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/version"
 )
 
 var (
@@ -37,8 +39,8 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "the scheduler of dragonfly",
-	Long: `scheduler is a long-running process and is mainly responsible 
-for deciding which peers transmit blocks to each other.`,
+	Long: `Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
+generate and maintain a P2P network during the download process, and push suitable download nodes to the client`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
@@ -50,6 +52,11 @@ for deciding which peers transmit blocks to each other.`,
 
 		// Validate config
 		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
+		// Convert redis host config
+		if err := cfg.Convert(); err != nil {
 			return err
 		}
 
@@ -74,18 +81,21 @@ func init() {
 }
 
 func runScheduler() error {
+	logger.Infof("Version:\n%s", version.Version())
+
 	// scheduler config values
 	s, _ := yaml.Marshal(cfg)
+
 	logger.Infof("scheduler configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := server.New(cfg)
+	svr, err := scheduler.New(cfg)
 	if err != nil {
-		logger.Errorf("get scheduler server error: %s", err)
 		return err
 	}
 
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 	return svr.Serve()
 }

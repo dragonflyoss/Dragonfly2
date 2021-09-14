@@ -27,6 +27,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/go-http-utils/headers"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -34,14 +35,15 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	_ "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
 func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	assert := testifyassert.New(t)
 	testData, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
+	pieceDownloadTimeout := 30 * time.Second
 
 	tests := []struct {
 		handleFunc      func(w http.ResponseWriter, r *http.Request)
@@ -110,7 +112,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		addr, _ := url.Parse(server.URL)
 		factories := []func() (PieceDownloader, error){
 			func() (PieceDownloader, error) {
-				return NewPieceDownloader()
+				return NewPieceDownloader(pieceDownloadTimeout)
 			}, func() (PieceDownloader, error) {
 				return NewOptimizedPieceDownloader()
 			}}

@@ -17,18 +17,18 @@
 package peer
 
 import (
-	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type streamPeerTaskCallback struct {
-	ctx   context.Context
 	ptm   *peerTaskManager
+	pt    *streamPeerTask
 	req   *scheduler.PeerTaskRequest
 	start time.Time
 }
@@ -41,12 +41,11 @@ func (p *streamPeerTaskCallback) GetStartTime() time.Time {
 
 func (p *streamPeerTaskCallback) Init(pt Task) error {
 	// prepare storage
-	err := p.ptm.storageManager.RegisterTask(p.ctx,
+	err := p.ptm.storageManager.RegisterTask(p.pt.ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID:      pt.GetPeerID(),
-				TaskID:      pt.GetTaskID(),
-				Destination: "",
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
@@ -59,7 +58,7 @@ func (p *streamPeerTaskCallback) Init(pt Task) error {
 
 func (p *streamPeerTaskCallback) Update(pt Task) error {
 	// update storage
-	err := p.ptm.storageManager.UpdateTask(p.ctx,
+	err := p.ptm.storageManager.UpdateTask(p.pt.ctx,
 		&storage.UpdateTaskRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{
 				PeerID: pt.GetPeerID(),
@@ -78,7 +77,7 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 	var cost = time.Now().Sub(p.start).Milliseconds()
 	pt.Log().Infof("stream peer task done, cost: %dms", cost)
 	e := p.ptm.storageManager.Store(
-		context.Background(),
+		p.pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.GetPeerID(),
@@ -91,23 +90,27 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
-		TaskId:         pt.GetTaskID(),
-		PeerId:         pt.GetPeerID(),
-		SrcIp:          p.ptm.host.Ip,
-		SecurityDomain: p.ptm.host.SecurityDomain,
-		Idc:            p.ptm.host.Idc,
-		Url:            p.req.Url,
-		ContentLength:  pt.GetContentLength(),
-		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(cost),
-		Success:        true,
-		Code:           dfcodes.Success,
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
+		TaskId:          pt.GetTaskID(),
+		PeerId:          pt.GetPeerID(),
+		SrcIp:           p.ptm.host.Ip,
+		SecurityDomain:  p.ptm.host.SecurityDomain,
+		Idc:             p.ptm.host.Idc,
+		Url:             p.req.Url,
+		ContentLength:   pt.GetContentLength(),
+		Traffic:         pt.GetTraffic(),
+		TotalPieceCount: p.pt.totalPiece,
+		Cost:            uint32(cost),
+		Success:         true,
+		Code:            dfcodes.Success,
 	})
 	if err != nil {
-		pt.Log().Errorf("report successful peer result, error: %v", err)
+		peerResultSpan.RecordError(err)
+		pt.Log().Errorf("step 3: report successful peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report successful peer result ok")
+		pt.Log().Infof("step 3: report successful peer result ok")
 	}
 	return nil
 }
@@ -116,23 +119,27 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)
-	err := p.ptm.schedulerClient.ReportPeerResult(context.Background(), &scheduler.PeerResult{
-		TaskId:         pt.GetTaskID(),
-		PeerId:         pt.GetPeerID(),
-		SrcIp:          p.ptm.host.Ip,
-		SecurityDomain: p.ptm.host.SecurityDomain,
-		Idc:            p.ptm.host.Idc,
-		Url:            p.req.Url,
-		ContentLength:  pt.GetContentLength(),
-		Traffic:        pt.GetTraffic(),
-		Cost:           uint32(end.Sub(p.start).Milliseconds()),
-		Success:        false,
-		Code:           code,
+	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	defer peerResultSpan.End()
+	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
+		TaskId:          pt.GetTaskID(),
+		PeerId:          pt.GetPeerID(),
+		SrcIp:           p.ptm.host.Ip,
+		SecurityDomain:  p.ptm.host.SecurityDomain,
+		Idc:             p.ptm.host.Idc,
+		Url:             p.req.Url,
+		ContentLength:   pt.GetContentLength(),
+		Traffic:         pt.GetTraffic(),
+		TotalPieceCount: p.pt.totalPiece,
+		Cost:            uint32(end.Sub(p.start).Milliseconds()),
+		Success:         false,
+		Code:            code,
 	})
 	if err != nil {
-		pt.Log().Errorf("report fail peer result, error: %v", err)
+		peerResultSpan.RecordError(err)
+		pt.Log().Errorf("step 3: report fail peer result, error: %v", err)
 	} else {
-		pt.Log().Infof("report fail peer result ok")
+		pt.Log().Infof("step 3: report fail peer result ok")
 	}
 	return nil
 }

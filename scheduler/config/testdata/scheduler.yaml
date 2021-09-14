@@ -1,28 +1,29 @@
 dynconfig:
   type: local
   expireTime: 1000
-  path: foo
-  cachePath: bar
-  addr: 127.0.0.1:8002
   cdnDirPath: tmp
+
 scheduler:
   abtest: true
-  ascheduler: "a-scheduler"
-  bscheduler: "b-scheduler"
-server:
-  ip: "127.0.0.1"
-  port: 8002
-worker:
+  aevaluator: "a-evaluator"
+  bevaluator: "b-evaluator"
   workerNum: 8
   workerJobPoolSize: 10000
   senderNum: 10
   senderJobPoolSize: 10000
+
+server:
+  ip: "127.0.0.1"
+  host: "foo"
+  port: 8002
+
 cdn:
   servers:
     - name: "cdn"
       ip: "127.0.0.1"
       rpcPort: 8003
       downloadPort: 8001
+
 gc:
   taskDelay: 3600000
   peerTaskDelay: 3600000
@@ -32,6 +33,18 @@ manager:
   schedulerClusterID: 1
   keepAlive:
     interval: 1000000000
-    retryMaxAttempts: 100
-    retryInitBackOff: 100
-    retryMaxBackOff: 100
+
+host:
+  idc: foo
+  location: bar
+
+job:
+  globalWorkerNum: 1
+  schedulerWorkerNum: 1
+  localWorkerNum: 5
+  redis:
+    host: "127.0.0.1"
+    port: 6379
+    password: "password"
+    brokerDB: 1
+    backendDB: 2

@@ -22,7 +22,7 @@ import (
 )
 
 const BucketMaxLength = 10000
-const InnerBucketMaxLength = 20
+const InnerBucketMaxLength = 100
 
 type Item interface {
 	GetSortKeys() (key1 int, key2 int)
@@ -80,7 +80,6 @@ func (l *SortedList) Update(data Item) (err error) {
 
 	l.deleteItem(oldKey1, oldKey2, data)
 	l.addItem(key1, key2, data)
-
 	return
 }
 
@@ -132,7 +131,9 @@ func (l *SortedList) RangeLimit(limit int, fn func(Item) bool) {
 	}
 	l.l.RLock()
 	defer l.l.RUnlock()
-
+	if len(l.buckets) == 0 {
+		return
+	}
 	count := 0
 	for i := l.left; i <= l.right; i++ {
 		buc := l.buckets[i]
@@ -160,7 +161,9 @@ func (l *SortedList) RangeReverseLimit(limit int, fn func(Item) bool) {
 	}
 	l.l.RLock()
 	defer l.l.RUnlock()
-
+	if len(l.buckets) == 0 {
+		return
+	}
 	count := 0
 	for i := l.right; i >= l.left; i-- {
 		for j := len(l.buckets[i].buckets) - 1; j >= 0; j-- {

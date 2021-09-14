@@ -23,6 +23,8 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"sync"
 	"testing"
@@ -33,6 +35,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
+	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -40,21 +43,27 @@ import (
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/rpc"
-	"d7y.io/dragonfly/v2/internal/rpc/base"
-	daemonserver "d7y.io/dragonfly/v2/internal/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/internal/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
 
 var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
 
-func setupPeerTaskManagerComponents(
-	ctrl *gomock.Controller,
-	taskID string,
-	contentLength int64,
-	pieceSize, pieceParallelCount int32) (
+type componentsOption struct {
+	taskID             string
+	contentLength      int64
+	pieceSize          int32
+	pieceParallelCount int32
+	peerPacketDelay    []time.Duration
+}
+
+func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. setup a mock daemon server for uploading pieces info
@@ -62,13 +71,13 @@ func setupPeerTaskManagerComponents(
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := int32(0); i < request.Limit; i++ {
-			start := pieceSize * (request.StartNum + i)
-			if int64(start)+1 > contentLength {
+			start := opt.pieceSize * (request.StartNum + i)
+			if int64(start)+1 > opt.contentLength {
 				break
 			}
-			size := pieceSize
-			if int64(start+pieceSize) > contentLength {
-				size = int32(contentLength) - start
+			size := opt.pieceSize
+			if int64(start+opt.pieceSize) > opt.contentLength {
+				size = int32(opt.contentLength) - start
 			}
 			tasks = append(tasks,
 				&base.PieceInfo{
@@ -84,8 +93,8 @@ func setupPeerTaskManagerComponents(
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
 			PieceInfos:    tasks,
-			ContentLength: contentLength,
-			TotalPiece:    int32(math.Ceil(float64(contentLength) / float64(pieceSize))),
+			ContentLength: opt.contentLength,
+			TotalPiece:    int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize))),
 		}, nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
@@ -101,32 +110,33 @@ func setupPeerTaskManagerComponents(
 		func(pr *scheduler.PieceResult) error {
 			return nil
 		})
-	var ppsent bool
+	var delayCount int
 	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
 		func() (*scheduler.PeerPacket, error) {
-			if !ppsent {
-				ppsent = true
-				return &scheduler.PeerPacket{
-					Code:          dfcodes.Success,
-					TaskId:        taskID,
-					SrcPid:        "127.0.0.1",
-					ParallelCount: pieceParallelCount,
-					MainPeer: &scheduler.PeerPacket_DestPeer{
-						Ip:      "127.0.0.1",
-						RpcPort: port,
-						PeerId:  "peer-x",
-					},
-					StealPeers: nil,
-				}, nil
+			if len(opt.peerPacketDelay) > delayCount {
+				if delay := opt.peerPacketDelay[delayCount]; delay > 0 {
+					time.Sleep(delay)
+				}
+				delayCount++
 			}
-			time.Sleep(time.Hour)
-			return nil, nil
+			return &scheduler.PeerPacket{
+				Code:          dfcodes.Success,
+				TaskId:        opt.taskID,
+				SrcPid:        "127.0.0.1",
+				ParallelCount: opt.pieceParallelCount,
+				MainPeer: &scheduler.PeerPacket_DestPeer{
+					Ip:      "127.0.0.1",
+					RpcPort: port,
+					PeerId:  "peer-x",
+				},
+				StealPeers: nil,
+			}, nil
 		})
 	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			return &scheduler.RegisterResult{
-				TaskId:      taskID,
+				TaskId:      opt.taskID,
 				SizeScope:   base.SizeScope_NORMAL,
 				DirectPiece: nil,
 			}, nil
@@ -172,7 +182,14 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	)
 	defer os.Remove(output)
 
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -203,9 +220,10 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	}
 	progress, _, err := ptm.StartFilePeerTask(context.Background(), &FilePeerTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
-			Url:      "http://localhost/test/data",
-			Filter:   "",
-			BizId:    "d7y-test",
+			Url: "http://localhost/test/data",
+			UrlMeta: &base.UrlMeta{
+				Tag: "d7y-test",
+			},
 			PeerId:   peerID,
 			PeerHost: &scheduler.PeerHost{},
 		},
@@ -247,7 +265,14 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		peerID = "peer-0"
 		taskID = "task-0"
 	)
-	sched, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	sched, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -277,9 +302,81 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	}
 
 	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
-		Url:      "http://localhost/test/data",
-		Filter:   "",
-		BizId:    "d7y-test",
+		Url: "http://localhost/test/data",
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
+		PeerId:   peerID,
+		PeerHost: &scheduler.PeerHost{},
+	})
+	assert.Nil(err, "start stream peer task")
+
+	outputBytes, err := ioutil.ReadAll(r)
+	assert.Nil(err, "load read data")
+	assert.Equal(testBytes, outputBytes, "output and desired output must match")
+}
+
+func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
+	assert := testifyassert.New(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	testBytes, err := ioutil.ReadFile(test.File)
+	assert.Nil(err, "load test file")
+
+	var (
+		pieceParallelCount = int32(4)
+		pieceSize          = 1024
+
+		mockContentLength = len(testBytes)
+		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
+
+		peerID = "peer-0"
+		taskID = "task-0"
+	)
+
+	source.Register("http", httpprotocol.NewHTTPSourceClient())
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n, err := w.Write(testBytes)
+		assert.Nil(err)
+		assert.Equal(mockContentLength, n)
+	}))
+	defer ts.Close()
+
+	sched, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+			peerPacketDelay:    []time.Duration{time.Second},
+		})
+	defer storageManager.CleanUp()
+
+	ptm := &peerTaskManager{
+		host: &scheduler.PeerHost{
+			Ip: "127.0.0.1",
+		},
+		runningPeerTasks: sync.Map{},
+		pieceManager: &pieceManager{
+			storageManager:   storageManager,
+			pieceDownloader:  NewMockPieceDownloader(ctrl),
+			computePieceSize: cdnutil.ComputePieceSize,
+		},
+		storageManager:  storageManager,
+		schedulerClient: sched,
+		schedulerOption: config.SchedulerOption{
+			ScheduleTimeout: clientutil.Duration{Duration: time.Nanosecond},
+		},
+	}
+
+	r, _, err := ptm.StartStreamPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+		Url: ts.URL,
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	})

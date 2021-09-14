@@ -27,8 +27,9 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/internal/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/gofrs/flock"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -88,6 +89,8 @@ func init() {
 }
 
 func runDaemon() error {
+	logger.Infof("Version:\n%s", version.Version())
+
 	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: dfpath.DaemonSockPath}
 	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
 	if err != nil {
@@ -104,10 +107,19 @@ func runDaemon() error {
 	//    Otherwise, wait 50 ms and execute again from 1
 	// 4. Checking timeout about 5s
 	lock := flock.New(dfpath.DaemonLockPath)
-	times := 0
-	limit := 100 // 100 * 50ms = 5s
-	interval := 50 * time.Millisecond
+	timeout := time.After(5 * time.Second)
+	first := time.After(1 * time.Millisecond)
+	tick := time.NewTicker(50 * time.Millisecond)
+	defer tick.Stop()
+
 	for {
+		select {
+		case <-timeout:
+			return errors.New("the daemon is unhealthy")
+		case <-first:
+		case <-tick.C:
+		}
+
 		if ok, err := lock.TryLock(); err != nil {
 			return err
 		} else if !ok {
@@ -117,23 +129,16 @@ func runDaemon() error {
 		} else {
 			break
 		}
-
-		times++
-		if times > limit {
-			return errors.New("the daemon is unhealthy")
-		}
-
-		time.Sleep(interval)
 	}
 	defer lock.Unlock()
 
-	logger.Infof("daemon is launched by pid:%d", viper.GetInt("launcher"))
+	logger.Infof("daemon is launched by pid: %d", viper.GetInt("launcher"))
 
 	// daemon config values
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("client daemon configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := server.New(cfg)

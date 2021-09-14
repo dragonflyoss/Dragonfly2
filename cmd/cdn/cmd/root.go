@@ -19,11 +19,12 @@ package cmd
 import (
 	"os"
 
-	"d7y.io/dragonfly/v2/cdnsystem/config"
-	"d7y.io/dragonfly/v2/cdnsystem/server"
+	"d7y.io/dragonfly/v2/cdn"
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -69,16 +70,20 @@ func init() {
 }
 
 func runCdnSystem() error {
+	logger.Infof("Version:\n%s", version.Version())
 	// cdn system config values
 	s, _ := yaml.Marshal(cfg)
+
 	logger.Infof("cdn system configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := server.New(cfg)
+	svr, err := cdn.New(cfg)
 	if err != nil {
 		return err
 	}
+
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 	return svr.Serve()
 }

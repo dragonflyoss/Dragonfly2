@@ -20,7 +20,9 @@ package config
 
 import (
 	"net"
+	"time"
 
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -35,14 +37,19 @@ var (
 	peerHostDataDir  = peerHostWorkHome
 )
 
-var peerHostConfig = PeerHostOption{
+var peerHostConfig = DaemonOption{
 	DataDir:     peerHostDataDir,
 	WorkHome:    peerHostWorkHome,
 	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
 	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
-		NetAddrs:        nil,
+		NetAddrs: []dfnet.NetAddr{
+			{
+				Type: dfnet.TCP,
+				Addr: "127.0.0.1:8002",
+			},
+		},
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
@@ -54,6 +61,7 @@ var peerHostConfig = PeerHostOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		PieceDownloadTimeout: 30 * time.Second,
 		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(DefaultTotalDownloadLimit),
 		},

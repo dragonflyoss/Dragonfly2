@@ -28,12 +28,6 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/peer"
-	"d7y.io/dragonfly/v2/client/daemon/transport"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/go-http-utils/headers"
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
@@ -41,6 +35,13 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
+
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/transport"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 var (
@@ -48,6 +49,10 @@ var (
 
 	// represents proxy default biz value
 	bizTag = "d7y/proxy"
+
+	schemaHTTPS = "https"
+
+	portHTTPS = 443
 )
 
 // Proxy is an http proxy handler. It proxies requests with dragonfly
@@ -210,6 +215,8 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
+	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
 	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
 	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
@@ -336,7 +343,6 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		if proxy.certCache == nil { // Initialize proxy.certCache on first access. (Lazy init)
 			proxy.certCache = lru.New(100) // Default max entries size = 100
 		}
-		logger.Debugf("hijack https request with CA <%s>", proxy.cert.Leaf.Subject.CommonName)
 		leafCertSpec := LeafCertSpec{
 			proxy.cert.Leaf.PublicKey,
 			proxy.cert.PrivateKey,
@@ -344,14 +350,14 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		host, _, _ := net.SplitHostPort(r.Host)
 		sConfig.GetCertificate = func(hello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			cConfig.ServerName = host
-			logger.Debugf("Generate temporal leaf TLS cert for ServerName <%s>, host <%s>", hello.ServerName, host)
 			// It's assumed that `hello.ServerName` is always same as `host`, in practice.
 			cacheKey := host
 			cached, hit := proxy.certCache.Get(cacheKey)
 			if hit && time.Now().Before(cached.(*tls.Certificate).Leaf.NotAfter) { // If cache hit and the cert is not expired
-				logger.Debugf("TLS Cache hit, cacheKey = <%s>", cacheKey)
+				logger.Debugf("TLS cert cache hit, cacheKey = <%s>", cacheKey)
 				return cached.(*tls.Certificate), nil
 			}
+			logger.Debugf("Generate temporal leaf TLS cert for ServerName <%s>, host <%s>", hello.ServerName, host)
 			cert, err := genLeafCert(proxy.cert, &leafCertSpec, host)
 			if err == nil {
 				// Put cert in cache only if there is no error. So all certs in cache are always valid.
@@ -382,7 +388,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	rp := &httputil.ReverseProxy{
 		Director: func(r *http.Request) {
 			r.URL.Host = r.Host
-			r.URL.Scheme = "https"
+			r.URL.Scheme = schemaHTTPS
 		},
 		Transport: proxy.newTransport(cConfig),
 	}
@@ -410,7 +416,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 }
 
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
-	reverseProxy := httputil.NewSingleHostReverseProxy(proxy.registry.Remote.URL)
+	reverseProxy := newReverseProxy(proxy.registry)
 	t, err := transport.New(
 		transport.WithPeerHost(proxy.peerHost),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
@@ -424,6 +430,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	reverseProxy.Transport = t
+	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
+		rw.WriteHeader(http.StatusInternalServerError)
+		// write error string to response body
+		rw.Write([]byte(err.Error()))
+	}
 	reverseProxy.ServeHTTP(w, r)
 }
 
@@ -489,7 +500,7 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 	for _, rule := range proxy.rules {
 		if rule.Match(req.URL.String()) {
 			if rule.UseHTTPS {
-				req.URL.Scheme = "https"
+				req.URL.Scheme = schemaHTTPS
 			}
 			if rule.Redirect != "" {
 				req.URL.Host = rule.Redirect

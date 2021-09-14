@@ -19,18 +19,21 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/url"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
-var _ ResourceClient = (*ClientManagerImpl)(nil)
-var _ ClientManager = (*ClientManagerImpl)(nil)
+var _ ResourceClient = (*clientManager)(nil)
+var _ ClientManager = (*clientManager)(nil)
 
 // ResourceClient supply apis that interact with the source.
 type ResourceClient interface {
@@ -38,7 +41,7 @@ type ResourceClient interface {
 	// GetContentLength get length of resource content
 	// return -l if request fail
 	// return task.IllegalSourceFileLen if response status is not StatusOK and StatusPartialContent
-	GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error)
+	GetContentLength(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
 	IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error)
@@ -46,13 +49,13 @@ type ResourceClient interface {
 	// IsExpired checks if a resource received or stored is the same.
 	IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error)
 
-	// Download download from source
-	Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error)
+	// Download downloads from source
+	Download(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, error)
 
 	// DownloadWithResponseHeader download from source with responseHeader
-	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error)
+	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, ResponseHeader, error)
 
-	// GetLastModified get lastModified timestamp milliseconds of resource
+	// GetLastModifiedMillis gets last modified timestamp milliseconds of resource
 	GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error)
 }
 
@@ -62,17 +65,15 @@ type ClientManager interface {
 	UnRegister(schema string)
 }
 
-type ClientManagerImpl struct {
+type clientManager struct {
 	sync.RWMutex
 	clients map[string]ResourceClient
 }
 
-var _defaultMgr = &ClientManagerImpl{
-	clients: make(map[string]ResourceClient),
-}
+var _defaultManager = NewManager()
 
-func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+func (m *clientManager) GetContentLength(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (int64, error) {
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return -1, err
 	}
@@ -81,11 +82,11 @@ func (clientMgr *ClientManagerImpl) GetContentLength(ctx context.Context, url st
 		ctx, cancel = context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
 	}
-	return sourceClient.GetContentLength(ctx, url, header)
+	return sourceClient.GetContentLength(ctx, url, header, rang)
 }
 
-func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+func (m *clientManager) IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
@@ -97,8 +98,8 @@ func (clientMgr *ClientManagerImpl) IsSupportRange(ctx context.Context, url stri
 	return sourceClient.IsSupportRange(ctx, url, header)
 }
 
-func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+func (m *clientManager) IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error) {
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return false, err
 	}
@@ -110,25 +111,25 @@ func (clientMgr *ClientManagerImpl) IsExpired(ctx context.Context, url string, h
 	return sourceClient.IsExpired(ctx, url, header, expireInfo)
 }
 
-func (clientMgr *ClientManagerImpl) Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+func (m *clientManager) Download(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return nil, err
 	}
-	return sourceClient.Download(ctx, url, header)
+	return sourceClient.Download(ctx, url, header, rang)
 }
 
-func (clientMgr *ClientManagerImpl) DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader,
+func (m *clientManager) DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, ResponseHeader,
 	error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return nil, nil, err
 	}
-	return sourceClient.DownloadWithResponseHeader(ctx, url, header)
+	return sourceClient.DownloadWithResponseHeader(ctx, url, header, rang)
 }
 
-func (clientMgr *ClientManagerImpl) GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
-	sourceClient, err := clientMgr.getSourceClient(url)
+func (m *clientManager) GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
+	sourceClient, err := m.getSourceClient(url)
 	if err != nil {
 		return -1, err
 	}
@@ -141,78 +142,103 @@ func (clientMgr *ClientManagerImpl) GetLastModifiedMillis(ctx context.Context, u
 }
 
 func NewManager() ClientManager {
-	return &ClientManagerImpl{
+	return &clientManager{
 		clients: make(map[string]ResourceClient),
 	}
 }
 
-func (clientMgr *ClientManagerImpl) Register(schema string, resourceClient ResourceClient) {
-	if client, ok := clientMgr.clients[strings.ToLower(schema)]; ok {
+func (m *clientManager) Register(schema string, resourceClient ResourceClient) {
+	if client, ok := m.clients[strings.ToLower(schema)]; ok {
 		logger.Infof("replace client %#v with %#v for schema %s", client, resourceClient, schema)
 	}
-	clientMgr.clients[strings.ToLower(schema)] = resourceClient
+	m.clients[strings.ToLower(schema)] = resourceClient
 }
 
 func Register(schema string, resourceClient ResourceClient) {
-	_defaultMgr.Register(schema, resourceClient)
+	_defaultManager.Register(schema, resourceClient)
 }
 
-func (clientMgr *ClientManagerImpl) UnRegister(schema string) {
-	if client, ok := clientMgr.clients[strings.ToLower(schema)]; ok {
+func (m *clientManager) UnRegister(schema string) {
+	if client, ok := m.clients[strings.ToLower(schema)]; ok {
 		logger.Infof("remove client %#v for schema %s", client, schema)
 	}
-	delete(clientMgr.clients, strings.ToLower(schema))
+	delete(m.clients, strings.ToLower(schema))
 }
 
 func UnRegister(schema string) {
-	_defaultMgr.UnRegister(schema)
+	_defaultManager.UnRegister(schema)
 }
 
 func GetContentLength(ctx context.Context, url string, header RequestHeader) (int64, error) {
-	return _defaultMgr.GetContentLength(ctx, url, header)
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return -1, err
+		}
+	}
+	return _defaultManager.GetContentLength(ctx, url, header, httpRange)
 }
 
 func IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error) {
-	return _defaultMgr.IsSupportRange(ctx, url, header)
+	return _defaultManager.IsSupportRange(ctx, url, header)
 }
 
 func IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error) {
-	return _defaultMgr.IsExpired(ctx, url, header, expireInfo)
+	return _defaultManager.IsExpired(ctx, url, header, expireInfo)
 }
 
 func Download(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, error) {
-	return _defaultMgr.Download(ctx, url, header)
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return _defaultManager.Download(ctx, url, header, httpRange)
 }
 
 func DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader) (io.ReadCloser, ResponseHeader, error) {
-	return _defaultMgr.DownloadWithResponseHeader(ctx, url, header)
+
+	var httpRange *rangers.Range
+	if header.Get(headers.Range) != "" {
+		var err error
+		httpRange, err = rangers.ParseHTTPRange(header.Get(headers.Range))
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	return _defaultManager.DownloadWithResponseHeader(ctx, url, header, httpRange)
 }
 
 func GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error) {
-	return _defaultMgr.GetLastModifiedMillis(ctx, url, header)
+	return _defaultManager.GetLastModifiedMillis(ctx, url, header)
 }
 
 // getSourceClient get a source client from source manager with specified schema.
-func (clientMgr *ClientManagerImpl) getSourceClient(rawURL string) (ResourceClient, error) {
-	logger.Debugf("current clients:%v", clientMgr.clients)
+func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
+	logger.Debugf("current clients: %#v", m.clients)
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
 	}
-	clientMgr.RLock()
-	client, ok := clientMgr.clients[strings.ToLower(parsedURL.Scheme)]
-	clientMgr.RUnlock()
+	m.RLock()
+	client, ok := m.clients[strings.ToLower(parsedURL.Scheme)]
+	m.RUnlock()
 	if !ok || client == nil {
-		return nil, fmt.Errorf("can not find client for supporting url %s, clients:%v", rawURL, clientMgr.clients)
+		return nil, errors.Errorf("can not find client for supporting url %s, clients:%v", rawURL, m.clients)
 	}
 	return client, nil
 }
 
-func (clientMgr *ClientManagerImpl) loadSourcePlugin(schema string) (ResourceClient, error) {
-	clientMgr.Lock()
-	defer clientMgr.Unlock()
+func (m *clientManager) loadSourcePlugin(schema string) (ResourceClient, error) {
+	m.Lock()
+	defer m.Unlock()
 	// double check
-	client, ok := clientMgr.clients[schema]
+	client, ok := m.clients[schema]
 	if ok {
 		return client, nil
 	}
@@ -221,6 +247,6 @@ func (clientMgr *ClientManagerImpl) loadSourcePlugin(schema string) (ResourceCli
 	if err != nil {
 		return nil, err
 	}
-	clientMgr.clients[schema] = client
+	m.clients[schema] = client
 	return client, nil
 }

@@ -24,9 +24,27 @@ import (
 	"hash"
 	"io"
 	"os"
+	"strings"
+
+	"github.com/opencontainers/go-digest"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
+)
+
+const (
+	Sha256Hash digest.Algorithm = "sha256"
+	Md5Hash    digest.Algorithm = "md5"
+)
+
+var (
+	// Algorithms is used to check if an algorithm is supported.
+	// If algo is not supported, Algorithms[algo] will return empty string.
+	// Please don't use digest.Algorithm() to convert a string to digest.Algorithm.
+	Algorithms = map[string]digest.Algorithm{
+		Sha256Hash.String(): Sha256Hash,
+		Md5Hash.String():    Md5Hash,
+	}
 )
 
 func Sha256(values ...string) string {
@@ -59,19 +77,28 @@ func Md5Bytes(bytes []byte) string {
 	return ToHashString(h)
 }
 
-func Md5File(name string) string {
-	if !fileutils.IsRegular(name) {
+// HashFile computes hash value corresponding to hashType,
+// hashType is from digestutils.Md5Hash and digestutils.Sha256Hash.
+func HashFile(file string, hashType digest.Algorithm) string {
+	if !fileutils.IsRegular(file) {
 		return ""
 	}
 
-	f, err := os.Open(name)
+	f, err := os.Open(file)
 	if err != nil {
 		return ""
 	}
 
 	defer f.Close()
 
-	h := md5.New()
+	var h hash.Hash
+	if hashType == Md5Hash {
+		h = md5.New()
+	} else if hashType == Sha256Hash {
+		h = sha256.New()
+	} else {
+		return ""
+	}
 
 	r := bufio.NewReaderSize(f, int(4*unit.MB))
 
@@ -85,4 +112,21 @@ func Md5File(name string) string {
 
 func ToHashString(h hash.Hash) string {
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func Parse(digest string) []string {
+	digest = strings.Trim(digest, " ")
+	return strings.Split(digest, ":")
+}
+
+func CreateHash(hashType string) hash.Hash {
+	algo := Algorithms[hashType]
+	switch algo {
+	case Sha256Hash:
+		return sha256.New()
+	case Md5Hash:
+		return md5.New()
+	default:
+		return nil
+	}
 }

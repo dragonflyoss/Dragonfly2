@@ -29,10 +29,13 @@ const (
 	AttributeMainPeer          = attribute.Key("d7y.peer.task.main_peer")
 	AttributePeerPacketCode    = attribute.Key("d7y.peer.packet.code")
 	AttributePeerTaskSizeScope = attribute.Key("d7y.peer.size.scope")
+	AttributePeerTaskSize      = attribute.Key("d7y.peer.size")
 	AttributePeerTaskSuccess   = attribute.Key("d7y.peer.task.success")
 	AttributePeerTaskCode      = attribute.Key("d7y.peer.task.code")
 	AttributePeerTaskMessage   = attribute.Key("d7y.peer.task.message")
+	AttributePeerTaskCost      = attribute.Key("d7y.peer.task.cost")
 	AttributePiece             = attribute.Key("d7y.peer.piece")
+	AttributePieceSize         = attribute.Key("d7y.peer.piece.size")
 	AttributePieceWorker       = attribute.Key("d7y.peer.piece.worker")
 	AttributePieceSuccess      = attribute.Key("d7y.peer.piece.success")
 	AttributeGetPieceStartNum  = attribute.Key("d7y.peer.piece.start")
@@ -41,17 +44,20 @@ const (
 	AttributeGetPieceRetry     = attribute.Key("d7y.peer.piece.retry")
 	AttributeWritePieceSuccess = attribute.Key("d7y.peer.piece.write.success")
 
-	SpanFilePeerTask    = "file-peer-task"
-	SpanStreamPeerTask  = "stream-peer-task"
-	SpanReusePeerTask   = "reuse-peer-task"
-	SpanRegisterTask    = "register"
-	SpanFirstSchedule   = "schedule-#1"
-	SpanGetPieceTasks   = "get-piece-tasks"
-	SpanDownloadPiece   = "download-piece-#%d"
-	SpanProxy           = "proxy"
-	SpanWritePiece      = "write-piece"
-	SpanWriteBackPiece  = "write-back-piece"
-	SpanWaitPieceLimit  = "wait-limit"
-	SpanPushPieceResult = "push-result"
-	SpanPeerGC          = "peer-gc"
+	SpanFilePeerTask      = "file-peer-task"
+	SpanStreamPeerTask    = "stream-peer-task"
+	SpanReusePeerTask     = "reuse-peer-task"
+	SpanRegisterTask      = "register"
+	SpanReportPeerResult  = "report-peer-result"
+	SpanReportPieceResult = "report-piece-result"
+	SpanBackSource        = "client-back-source"
+	SpanFirstSchedule     = "schedule-#1"
+	SpanGetPieceTasks     = "get-piece-tasks"
+	SpanDownloadPiece     = "download-piece-#%d"
+	SpanProxy             = "proxy"
+	SpanWritePiece        = "write-piece"
+	SpanWriteBackPiece    = "write-back-piece"
+	SpanWaitPieceLimit    = "wait-limit"
+	SpanPushPieceResult   = "push-result"
+	SpanPeerGC            = "peer-gc"
 )

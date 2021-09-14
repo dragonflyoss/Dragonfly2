@@ -17,7 +17,6 @@
 package config
 
 import (
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -27,22 +26,38 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/internal/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
-	SchedulerDynconfigPath      = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler.json")
-	SchedulerDynconfigCachePath = filepath.Join(dfpath.WorkHome, "dynconfig/scheduler")
+	DefaultDynconfigCachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
 )
 
 var (
 	watchInterval = 1 * time.Second
 )
 
+type DynconfigData struct {
+	CDNs []*CDN `yaml:"cdns" mapstructure:"cdns"`
+}
+
+type CDN struct {
+	HostName      string `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	IP            string `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port          int32  `yaml:"port" mapstructure:"port" json:"port"`
+	DownloadPort  int32  `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
+	SecurityGroup string `yaml:"securityGroup" mapstructure:"securityGroup" json:"security_group"`
+	Location      string `yaml:"location" mapstructure:"location" json:"location"`
+	IDC           string `yaml:"idc" mapstructure:"idc" json:"idc"`
+	NetTopology   string `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
+	LoadLimit     int32  `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit"`
+}
+
 type DynconfigInterface interface {
 	// Get the dynamic config from manager.
-	Get() (*manager.Scheduler, error)
+	Get() (*DynconfigData, error)
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -62,7 +77,7 @@ type DynconfigInterface interface {
 
 type Observer interface {
 	// OnNotify allows an event to be "published" to interface implementations.
-	OnNotify(*manager.Scheduler)
+	OnNotify(*DynconfigData)
 }
 
 type dynconfig struct {
@@ -70,6 +85,7 @@ type dynconfig struct {
 	observers  map[Observer]struct{}
 	done       chan bool
 	cdnDirPath string
+	sourceType dc.SourceType
 }
 
 // TODO(Gaius) Rely on manager to delete cdnDirPath
@@ -78,6 +94,7 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 		observers:  map[Observer]struct{}{},
 		done:       make(chan bool),
 		cdnDirPath: cdnDirPath,
+		sourceType: sourceType,
 	}
 
 	client, err := dc.New(sourceType, options...)
@@ -88,30 +105,43 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 	return d, nil
 }
 
-func (d *dynconfig) Get() (*manager.Scheduler, error) {
-	var config manager.Scheduler
+func (d *dynconfig) Get() (*DynconfigData, error) {
+	var config DynconfigData
 	if d.cdnDirPath != "" {
-		cdn, err := d.getCDNFromDirPath()
+		cdns, err := d.getCDNFromDirPath()
 		if err != nil {
 			return nil, err
 		}
-		config.Cdns = cdn
-	} else {
+		config.CDNs = cdns
+		return &config, nil
+	}
+
+	if d.sourceType == dc.ManagerSourceType {
 		if err := d.Unmarshal(&config); err != nil {
 			return nil, err
 		}
+		return &config, nil
 	}
 
+	if err := d.Unmarshal(&struct {
+		Dynconfig *DynConfig `yaml:"dynconfig" mapstructure:"dynconfig"`
+	}{
+		Dynconfig: &DynConfig{
+			Data: &config,
+		},
+	}); err != nil {
+		return nil, err
+	}
 	return &config, nil
 }
 
-func (d *dynconfig) getCDNFromDirPath() ([]*manager.CDN, error) {
+func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 	files, err := ioutil.ReadDir(d.cdnDirPath)
 	if err != nil {
 		return nil, err
 	}
 
-	var data []*manager.CDN
+	var data []*CDN
 	for _, file := range files {
 		// skip directory
 		if file.IsDir() {
@@ -135,7 +165,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*manager.CDN, error) {
 			return nil, err
 		}
 
-		var s *manager.CDN
+		var s *CDN
 		if err := json.Unmarshal(b, &s); err != nil {
 			return nil, err
 		}
@@ -144,10 +174,6 @@ func (d *dynconfig) getCDNFromDirPath() ([]*manager.CDN, error) {
 	}
 
 	return data, nil
-}
-
-type managerClient struct {
-	manager.ManagerClient
 }
 
 func (d *dynconfig) Register(l Observer) {
@@ -198,18 +224,27 @@ func (d *dynconfig) Stop() {
 	close(d.done)
 }
 
-func NewManagerClient(client manager.ManagerClient) dc.ManagerClient {
-	return &managerClient{client}
+type managerClient struct {
+	managerclient.Client
+	SchedulerClusterID uint
+}
+
+func NewManagerClient(client managerclient.Client, schedulerClusterID uint) dc.ManagerClient {
+	return &managerClient{
+		Client:             client,
+		SchedulerClusterID: schedulerClusterID,
+	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	scConfig, err := mc.GetScheduler(context.Background(), &manager.GetSchedulerRequest{
-		HostName:   iputils.HostName,
-		SourceType: manager.SourceType_SCHEDULER_SOURCE,
+	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
+		HostName:           iputils.HostName,
+		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+		SchedulerClusterId: uint64(mc.SchedulerClusterID),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return scConfig, nil
+	return scheduler, nil
 }

@@ -25,15 +25,18 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/source"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/internal/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/source"
+	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
@@ -55,7 +58,14 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -71,12 +81,12 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -88,7 +98,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -97,9 +107,10 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		},
 	}
 	req := &scheduler.PeerTaskRequest{
-		Url:      url,
-		Filter:   "",
-		BizId:    "d7y-test",
+		Url: url,
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -119,12 +130,12 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -153,7 +164,14 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, taskID, int64(mockContentLength), int32(pieceSize), pieceParallelCount)
+	schedulerClient, storageManager := setupPeerTaskManagerComponents(
+		ctrl,
+		componentsOption{
+			taskID:             taskID,
+			contentLength:      int64(mockContentLength),
+			pieceSize:          int32(pieceSize),
+			pieceParallelCount: pieceParallelCount,
+		})
 	defer storageManager.CleanUp()
 
 	downloader := NewMockPieceDownloader(ctrl)
@@ -169,12 +187,12 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
 	source.Register("http", sourceClient)
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
+		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -186,7 +204,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: computePieceSize,
+			computePieceSize: cdnutil.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -195,9 +213,10 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		},
 	}
 	req := &scheduler.PeerTaskRequest{
-		Url:      url,
-		Filter:   "",
-		BizId:    "d7y-test",
+		Url: url,
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
 		PeerId:   peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
@@ -217,12 +236,12 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		0)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
-		ctx:   ctx,
 		ptm:   ptm,
+		pt:    pt,
 		req:   req,
 		start: time.Now(),
 	})
-	pt.(*streamPeerTask).backSource = true
+	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

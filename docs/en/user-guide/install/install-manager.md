@@ -111,7 +111,7 @@ Or you can build your own manager executable file.
 3. Compile the source code.
 
     ```sh
-    make build-manaager && make install-manager
+    make build-manager && make install-manager
     ```
 
 ### Start manager
@@ -122,8 +122,8 @@ manager --options
 
 ## After this Task
 
-- After manager is installed, run the following commands to verify if **manager** is started, and if Port `8004` and `8003` is available.
+- After manager is installed, run the following commands to verify if **manager** is started, and if Port `8080` is available.
 
     ```sh
-    telnet 127.0.0.1 8004
+    telnet 127.0.0.1 8080
     ```

@@ -94,9 +94,9 @@ func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	}
 }
 
-func WithPeerID(peerID string) *SugaredLoggerOnWith {
+func WithTaskAndPeerID(taskID string, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"peerID", peerID},
+		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
 	}
 }
 
@@ -105,11 +105,15 @@ func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 }
 
 func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
-	CoreLogger.Info(append(args, log.withArgs...)...)
+	CoreLogger.Infow(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
 	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Warn(args ...interface{}) {
+	CoreLogger.Warnw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
@@ -117,11 +121,15 @@ func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
 }
 
 func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
-	CoreLogger.Error(append(args, log.withArgs...)...)
+	CoreLogger.Errorw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
+}
+
+func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func Infof(template string, args ...interface{}) {

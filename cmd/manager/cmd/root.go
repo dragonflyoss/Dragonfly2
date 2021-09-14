@@ -22,8 +22,9 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/server"
+	"d7y.io/dragonfly/v2/version"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -68,11 +69,13 @@ func Execute() {
 func init() {
 	// Initialize default manager config
 	cfg = config.New()
+
 	// Initialize cobra
 	dependency.InitCobra(rootCmd, true, cfg)
 }
 
 func runManager() error {
+	logger.Infof("Version:\n%s", version.Version())
 	// manager config values
 	s, err := yaml.Marshal(cfg)
 
@@ -82,12 +85,14 @@ func runManager() error {
 
 	logger.Infof("manager configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry.Jaeger)
+	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := server.New(cfg)
+	svr, err := manager.New(cfg)
 	if err != nil {
 		return err
 	}
+
+	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
 	return svr.Serve()
 }

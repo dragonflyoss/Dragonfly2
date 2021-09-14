@@ -1,15 +1,62 @@
+/*
+ *     Copyright 2020 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package service
 
 import (
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/casbin/casbin/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+
 	"gorm.io/gorm"
 )
 
 type REST interface {
+	GetUser(uint) (*model.User, error)
+	SignIn(types.SignInRequest) (*model.User, error)
+	SignUp(types.SignUpRequest) (*model.User, error)
+	OauthSignin(string) (string, error)
+	OauthSigninCallback(string, string) (*model.User, error)
+	ResetPassword(uint, types.ResetPasswordRequest) error
+	GetRolesForUser(uint) ([]string, error)
+	AddRoleForUser(types.AddRoleForUserParams) (bool, error)
+	DeleteRoleForUser(types.DeleteRoleForUserParams) (bool, error)
+
+	CreateRole(json types.CreateRoleRequest) error
+	DestroyRole(string) (bool, error)
+	GetRole(string) [][]string
+	GetRoles() []string
+	AddPermissionForRole(string, types.AddPermissionForRoleRequest) (bool, error)
+	DeletePermissionForRole(string, types.DeletePermissionForRoleRequest) (bool, error)
+
+	GetPermissions(*gin.Engine) []rbac.Permission
+
+	CreateOauth(types.CreateOauthRequest) (*model.Oauth, error)
+	DestroyOauth(uint) error
+	UpdateOauth(uint, types.UpdateOauthRequest) (*model.Oauth, error)
+	GetOauth(uint) (*model.Oauth, error)
+	GetOauths(types.GetOauthsQuery) (*[]model.Oauth, error)
+	OauthTotalCount(types.GetOauthsQuery) (int64, error)
+
 	CreateCDNCluster(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(uint) error
@@ -53,39 +100,26 @@ type REST interface {
 	SecurityGroupTotalCount(types.GetSecurityGroupsQuery) (int64, error)
 	AddSchedulerClusterToSecurityGroup(uint, uint) error
 	AddCDNClusterToSecurityGroup(uint, uint) error
+
+	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
+	GetPreheat(string) (*types.Preheat, error)
 }
 
 type rest struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *cache.Cache
-}
-
-// Option is a functional option for rest
-type Option func(s *rest)
-
-// WithDatabase set the database client
-func WithDatabase(database *database.Database) Option {
-	return func(s *rest) {
-		s.db = database.DB
-		s.rdb = database.RDB
-	}
-}
-
-// WithCache set the cache client
-func WithCache(cache *cache.Cache) Option {
-	return func(s *rest) {
-		s.cache = cache
-	}
+	db       *gorm.DB
+	rdb      *redis.Client
+	cache    *cache.Cache
+	job      job.Job
+	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instence
-func NewREST(options ...Option) REST {
-	s := &rest{}
-
-	for _, opt := range options {
-		opt(s)
+func NewREST(database *database.Database, cache *cache.Cache, job job.Job, enforcer *casbin.Enforcer) REST {
+	return &rest{
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		job:      job,
+		enforcer: enforcer,
 	}
-
-	return s
 }

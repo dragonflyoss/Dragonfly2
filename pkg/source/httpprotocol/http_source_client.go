@@ -22,36 +22,61 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdnsystem/daemon/task"
+	"d7y.io/dragonfly/v2/cdn/types"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+
+	"github.com/go-http-utils/headers"
+
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
-	"github.com/go-http-utils/headers"
 )
 
 const (
 	HTTPClient  = "http"
 	HTTPSClient = "https"
+
+	ProxyEnv = "D7Y_SOURCE_PROXY"
 )
 
 var _defaultHTTPClient *http.Client
 var _ source.ResourceClient = (*httpSourceClient)(nil)
 
 func init() {
+	// TODO support customize source client
+	var (
+		proxy *url.URL
+		err   error
+	)
+	if proxyEnv := os.Getenv(ProxyEnv); len(proxyEnv) > 0 {
+		proxy, err = url.Parse(proxyEnv)
+		if err != nil {
+			fmt.Printf("Back source proxy parse error: %s\n", err)
+		}
+	}
+
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig.InsecureSkipVerify = true
 	transport.DialContext = (&net.Dialer{
 		Timeout:   3 * time.Second,
 		KeepAlive: 30 * time.Second,
 	}).DialContext
+
+	if proxy != nil {
+		transport.Proxy = http.ProxyURL(proxy)
+	}
+
 	_defaultHTTPClient = &http.Client{
 		Transport: transport,
 	}
-	httpSourceClient := NewHTTPSourceClient()
-	source.Register(HTTPClient, httpSourceClient)
-	source.Register(HTTPSClient, httpSourceClient)
+	sc := NewHTTPSourceClient()
+	source.Register(HTTPClient, sc)
+	source.Register(HTTPSClient, sc)
 }
 
 // httpSourceClient is an implementation of the interface of source.ResourceClient.
@@ -78,16 +103,17 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 	}
 }
 
-func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
+func (client *httpSourceClient) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return -1, err
 	}
 	resp.Body.Close()
-	// todo Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
+	// TODO Here if other status codes should be added to ErrURLNotReachable, if not, it will be downloaded frequently for 404 or 403
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		// todo Whether this situation should be distinguished from the err situation, similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
-		return task.IllegalSourceFileLen, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
+		// TODO Whether this situation should be distinguished from the err situation,
+		//similar to proposing another error type to indicate that this  error can interact with the URL, but the status code does not meet expectations
+		return types.IllegalSourceFileLen, fmt.Errorf("get http resource length failed, unexpected code: %d", resp.StatusCode)
 	}
 	return resp.ContentLength, nil
 }
@@ -104,7 +130,7 @@ func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, 
 	return resp.StatusCode == http.StatusPartialContent, nil
 }
 
-// todo Consider the situation where there is no last-modified such as baidu
+// TODO Consider the situation where there is no last-modified such as baidu
 func (client *httpSourceClient) IsExpired(ctx context.Context, url string, header source.RequestHeader, expireInfo map[string]string) (bool, error) {
 	lastModified := timeutils.UnixMillis(expireInfo[source.LastModified])
 
@@ -132,7 +158,7 @@ func (client *httpSourceClient) IsExpired(ctx context.Context, url string, heade
 	return resp.StatusCode != http.StatusNotModified, nil
 }
 
-func (client *httpSourceClient) Download(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, error) {
+func (client *httpSourceClient) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {
 		return nil, err
@@ -144,7 +170,7 @@ func (client *httpSourceClient) Download(ctx context.Context, url string, header
 	return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 }
 
-func (client *httpSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader) (io.ReadCloser, source.ResponseHeader,
+func (client *httpSourceClient) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader,
 	error) {
 	resp, err := client.doRequest(ctx, http.MethodGet, url, header)
 	if err != nil {

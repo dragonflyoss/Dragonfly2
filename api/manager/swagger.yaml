@@ -1,0 +1,1928 @@
+basePath: /api/v1
+definitions:
+  model.Assertion:
+    properties:
+      key:
+        type: string
+      policy:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+      policyMap:
+        additionalProperties:
+          type: integer
+        type: object
+      rm:
+        $ref: '#/definitions/rbac.RoleManager'
+      tokens:
+        items:
+          type: string
+        type: array
+      value:
+        type: string
+    type: object
+  model.AssertionMap:
+    additionalProperties:
+      $ref: '#/definitions/model.Assertion'
+    type: object
+  model.CDN:
+    properties:
+      cdnclusterID:
+        type: integer
+      download_port:
+        type: integer
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      port:
+        type: integer
+      status:
+        type: string
+    type: object
+  model.CDNCluster:
+    properties:
+      bio:
+        type: string
+      config:
+        $ref: '#/definitions/model.JSONMap'
+      is_default:
+        type: boolean
+      name:
+        type: string
+      securityGroupID:
+        type: integer
+    type: object
+  model.JSONMap:
+    additionalProperties: true
+    type: object
+  model.Oauth:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
+    type: object
+  model.Scheduler:
+    properties:
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_config:
+        $ref: '#/definitions/model.JSONMap'
+      port:
+        type: integer
+      schedulerClusterID:
+        type: integer
+      status:
+        type: string
+      vips:
+        type: string
+    type: object
+  model.SchedulerCluster:
+    properties:
+      bio:
+        type: string
+      client_config:
+        $ref: '#/definitions/model.JSONMap'
+      config:
+        $ref: '#/definitions/model.JSONMap'
+      is_default:
+        type: boolean
+      name:
+        type: string
+      scopes:
+        $ref: '#/definitions/model.JSONMap'
+      securityGroupID:
+        type: integer
+    type: object
+  model.SecurityGroup:
+    properties:
+      bio:
+        type: string
+      domain:
+        type: string
+      name:
+        type: string
+      proxy_domain:
+        type: string
+    type: object
+  model.User:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      email:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      private_token:
+        type: string
+      state:
+        type: string
+    type: object
+  rbac.Permission:
+    properties:
+      action:
+        type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
+    type: object
+  rbac.RoleManager:
+    type: object
+  types.AddPermissionForRoleRequest:
+    properties:
+      action:
+        type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
+    type: object
+  types.CreateCDNClusterRequest:
+    properties:
+      bio:
+        type: string
+      config:
+        additionalProperties: true
+        type: object
+      name:
+        type: string
+      security_group_domain:
+        type: string
+    required:
+    - config
+    - name
+    type: object
+  types.CreateCDNRequest:
+    properties:
+      cdn_cluster_id:
+        type: integer
+      download_port:
+        type: integer
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      port:
+        type: integer
+    required:
+    - cdn_cluster_id
+    - download_port
+    - host_name
+    - idc
+    - ip
+    - port
+    type: object
+  types.CreateOauthRequest:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
+    required:
+    - client_id
+    - client_secret
+    - name
+    type: object
+  types.CreatePreheatRequest:
+    properties:
+      filter:
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      scheduler_cluster_id:
+        type: integer
+      type:
+        type: string
+      url:
+        type: string
+    required:
+    - type
+    - url
+    type: object
+  types.CreateRoleRequest:
+    properties:
+      permissions:
+        items:
+          $ref: '#/definitions/rbac.Permission'
+        type: array
+      role:
+        type: string
+    required:
+    - permissions
+    - role
+    type: object
+  types.CreateSchedulerClusterRequest:
+    properties:
+      bio:
+        type: string
+      cdn_cluster_id:
+        type: integer
+      client_config:
+        additionalProperties: true
+        type: object
+      config:
+        additionalProperties: true
+        type: object
+      is_default:
+        type: boolean
+      name:
+        type: string
+      scopes:
+        additionalProperties: true
+        type: object
+      security_group_domain:
+        type: string
+    required:
+    - client_config
+    - config
+    - name
+    type: object
+  types.CreateSchedulerRequest:
+    properties:
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_config:
+        additionalProperties: true
+        type: object
+      port:
+        type: integer
+      scheduler_cluster_id:
+        type: integer
+      vips:
+        type: string
+    required:
+    - host_name
+    - idc
+    - ip
+    - port
+    - scheduler_cluster_id
+    type: object
+  types.CreateSecurityGroupRequest:
+    properties:
+      bio:
+        type: string
+      domain:
+        type: string
+      name:
+        type: string
+      proxy_domain:
+        type: string
+    required:
+    - domain
+    - name
+    type: object
+  types.DeletePermissionForRoleRequest:
+    properties:
+      action:
+        type: string
+      object:
+        type: string
+    required:
+    - action
+    - object
+    type: object
+  types.Preheat:
+    properties:
+      create_at:
+        type: string
+      id:
+        type: string
+      status:
+        type: string
+    type: object
+  types.ResetPasswordRequest:
+    properties:
+      new_password:
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  types.SignUpRequest:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      email:
+        type: string
+      location:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  types.UpdateCDNClusterRequest:
+    properties:
+      bio:
+        type: string
+      config:
+        additionalProperties: true
+        type: object
+      name:
+        type: string
+      security_group_domain:
+        type: string
+    type: object
+  types.UpdateCDNRequest:
+    properties:
+      cdn_cluster_id:
+        type: integer
+      download_port:
+        type: integer
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      port:
+        type: integer
+    type: object
+  types.UpdateOauthRequest:
+    properties:
+      bio:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      name:
+        type: string
+      redirect_url:
+        type: string
+    type: object
+  types.UpdateSchedulerClusterRequest:
+    properties:
+      bio:
+        type: string
+      cdn_cluster_id:
+        type: integer
+      client_config:
+        additionalProperties: true
+        type: object
+      config:
+        additionalProperties: true
+        type: object
+      is_default:
+        type: boolean
+      name:
+        type: string
+      scopes:
+        additionalProperties: true
+        type: object
+      security_group_domain:
+        type: string
+    type: object
+  types.UpdateSchedulerRequest:
+    properties:
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_config:
+        additionalProperties: true
+        type: object
+      port:
+        type: integer
+      scheduler_cluster_id:
+        type: integer
+      scheduler_id:
+        type: integer
+      vips:
+        type: string
+    type: object
+  types.UpdateSecurityGroupRequest:
+    properties:
+      bio:
+        type: string
+      domain:
+        type: string
+      name:
+        type: string
+      proxy_domain:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    url: https://d7y.io
+  description: Dragonfly Manager Server
+  license:
+    name: Apache 2.0
+  title: Dragonfly Manager
+  version: 1.0.0
+paths:
+  /cdn-clusters:
+    get:
+      consumes:
+      - application/json
+      description: Get CDNClusters
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.CDNCluster'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get CDNClusters
+      tags:
+      - CDNCluster
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: DNCluster
+        in: body
+        name: CDNCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateCDNClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDNCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create CDNCluster
+      tags:
+      - CDNCluster
+  /cdn-clusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy CDNCluster
+      tags:
+      - CDNCluster
+    get:
+      consumes:
+      - application/json
+      description: Get CDNCluster by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDNCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get CDNCluster
+      tags:
+      - CDNCluster
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CDNCluster
+        in: body
+        name: CDNCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateCDNClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDNCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update CDNCluster
+      tags:
+      - CDNCluster
+  /cdn-clusters/{id}/cdns/{cdn_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add CDN to CDNCluster
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: cdn id
+        in: path
+        name: cdn_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Instance to CDNCluster
+      tags:
+      - CDNCluster
+  /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add SchedulerCluster to CDNCluster
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler cluster id
+        in: path
+        name: scheduler_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add SchedulerCluster to CDNCluster
+      tags:
+      - CDNCluster
+  /cdns:
+    get:
+      consumes:
+      - application/json
+      description: Get CDNs
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.CDN'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get CDNs
+      tags:
+      - CDN
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: CDN
+        in: body
+        name: CDN
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateCDNRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDN'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create CDN
+      tags:
+      - CDN
+  /cdns/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy CDN
+      tags:
+      - CDN
+    get:
+      consumes:
+      - application/json
+      description: Get CDN by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDN'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get CDN
+      tags:
+      - CDN
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: CDN
+        in: body
+        name: CDN
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateCDNRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.CDN'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update CDN
+      tags:
+      - CDN
+  /healthy:
+    get:
+      consumes:
+      - application/json
+      description: Get app health
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Health
+      tags:
+      - Health
+  /oauth:
+    get:
+      consumes:
+      - application/json
+      description: Get Oauths
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Oauth'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Oauths
+      tags:
+      - Oauth
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Oauth
+        in: body
+        name: Oauth
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateOauthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Oauth
+      tags:
+      - Oauth
+  /oauth/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Oauth
+      tags:
+      - Oauth
+    get:
+      consumes:
+      - application/json
+      description: Get Oauth by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Oauth
+      tags:
+      - Oauth
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Oauth
+        in: body
+        name: Oauth
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateOauthRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Oauth'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Oauth
+      tags:
+      - Oauth
+  /permissions:
+    get:
+      description: Get Permissions
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rbac.Permission'
+            type: array
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Permissions
+      tags:
+      - Permission
+  /preheats:
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Preheat
+        in: body
+        name: CDN
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreatePreheatRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Preheat'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Preheat
+      tags:
+      - Preheat
+  /preheats/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get Preheat by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Preheat'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Preheat
+      tags:
+      - Preheat
+  /roles:
+    get:
+      consumes:
+      - application/json
+      description: Get roles
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Roles
+      tags:
+      - Role
+    post:
+      consumes:
+      - application/json
+      description: Create Role by json config
+      parameters:
+      - description: Role
+        in: body
+        name: Role
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Role
+      tags:
+      - Role
+  /roles/:role:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy role by json config
+      parameters:
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Role
+      tags:
+      - Role
+    get:
+      consumes:
+      - application/json
+      description: Get Role
+      parameters:
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Role
+      tags:
+      - Role
+  /roles/:role/permissions:
+    delete:
+      consumes:
+      - application/json
+      description: Remove Role Permission by json config
+      parameters:
+      - description: Permission
+        in: body
+        name: Permission
+        required: true
+        schema:
+          $ref: '#/definitions/types.DeletePermissionForRoleRequest'
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Role
+      tags:
+      - Role
+    post:
+      consumes:
+      - application/json
+      description: Add Permission by json config
+      parameters:
+      - description: Permission
+        in: body
+        name: Permission
+        required: true
+        schema:
+          $ref: '#/definitions/types.AddPermissionForRoleRequest'
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Permission For Role
+      tags:
+      - Role
+  /scheduler-clusters:
+    get:
+      consumes:
+      - application/json
+      description: Get SchedulerClusters
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SchedulerCluster'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SchedulerClusters
+      tags:
+      - SchedulerCluster
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: SchedulerCluster
+        in: body
+        name: SchedulerCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSchedulerClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SchedulerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create SchedulerCluster
+      tags:
+      - SchedulerCluster
+  /scheduler-clusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SchedulerCluster
+      tags:
+      - SchedulerCluster
+    get:
+      consumes:
+      - application/json
+      description: Get SchedulerCluster by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SchedulerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SchedulerCluster
+      tags:
+      - SchedulerCluster
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SchedulerCluster
+        in: body
+        name: SchedulerCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSchedulerClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SchedulerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update SchedulerCluster
+      tags:
+      - SchedulerCluster
+  /scheduler-clusters/{id}/schedulers/{scheduler_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add Scheduler to schedulerCluster
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler id
+        in: path
+        name: scheduler_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Scheduler to schedulerCluster
+      tags:
+      - SchedulerCluster
+  /schedulers:
+    get:
+      consumes:
+      - application/json
+      description: Get Schedulers
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Scheduler'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Schedulers
+      tags:
+      - Scheduler
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Scheduler
+        in: body
+        name: Scheduler
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSchedulerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Scheduler'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Scheduler
+      tags:
+      - Scheduler
+  /schedulers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Scheduler
+      tags:
+      - Scheduler
+    get:
+      consumes:
+      - application/json
+      description: Get Scheduler by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Scheduler'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Scheduler
+      tags:
+      - Scheduler
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Scheduler
+        in: body
+        name: Scheduler
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSchedulerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Scheduler'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Scheduler
+      tags:
+      - Scheduler
+  /security-groups:
+    get:
+      consumes:
+      - application/json
+      description: Get SecurityGroups
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SecurityGroup'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SecurityGroups
+      tags:
+      - SecurityGroup
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: SecurityGroup
+        in: body
+        name: SecurityGroup
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSecurityGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityGroup'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create SecurityGroup
+      tags:
+      - SecurityGroup
+  /security-groups/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get SecurityGroup by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityGroup'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SecurityGroup
+      tags:
+      - SecurityGroup
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SecurityGroup
+        in: body
+        name: SecurityGroup
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSecurityGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityGroup'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update SecurityGroup
+      tags:
+      - SecurityGroup
+  /security-groups/{id}/cdn-clusters/{cdn_cluster_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add CDN to SecurityGroup
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: cdn cluster id
+        in: path
+        name: cdn_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add CDN to SecurityGroup
+      tags:
+      - SecurityGroup
+  /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add Scheduler to SecurityGroup
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler cluster id
+        in: path
+        name: scheduler_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Scheduler to SecurityGroup
+      tags:
+      - SecurityGroup
+  /securityGroups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SecurityGroup
+      tags:
+      - SecurityGroup
+  /user/signin/{name}:
+    get:
+      consumes:
+      - application/json
+      description: oauth signin by json config
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Oauth Signin
+      tags:
+      - User
+  /user/signin/{name}/callback:
+    get:
+      description: oauth signin callback by json config
+      parameters:
+      - description: name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: code
+        in: query
+        name: code
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Oauth Signin Callback
+      tags:
+      - Oauth
+  /user/signup:
+    post:
+      consumes:
+      - application/json
+      description: signup by json config
+      parameters:
+      - description: User
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/types.SignUpRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: SignUp user
+      tags:
+      - User
+  /users/:id/reset_password:
+    post:
+      consumes:
+      - application/json
+      description: reset password by json config
+      parameters:
+      - description: User
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/types.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Reset Password For User
+      tags:
+      - User
+  /users/:id/roles:
+    get:
+      description: get roles by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Get User Roles
+      tags:
+      - User
+  /users/:id/roles/:role:
+    delete:
+      consumes:
+      - application/json
+      description: delete role by uri config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Delete Role For User
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: add role to user by uri config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: role
+        in: path
+        name: role
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Role For User
+      tags:
+      - Users
+swagger: "2.0"
