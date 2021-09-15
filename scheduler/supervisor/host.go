@@ -34,8 +34,8 @@ type Host struct {
 	RPCPort int32
 	// DownloadPort piece downloading port for peer
 	DownloadPort int32
-	// CDN if host type is cdn
-	CDN bool
+	// IsCDN if host type is cdn
+	IsCDN bool
 	// SecurityDomain security isolation domain for network
 	SecurityDomain string
 	// Location location path: area|country|province|city|...
@@ -76,7 +76,7 @@ func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool,
 		HostName:        hostname,
 		RPCPort:         rpcPort,
 		DownloadPort:    downloadPort,
-		CDN:             isCDN,
+		IsCDN:           isCDN,
 		SecurityDomain:  securityDomain,
 		Location:        location,
 		IDC:             idc,

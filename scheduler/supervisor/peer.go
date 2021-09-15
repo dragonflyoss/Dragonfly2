@@ -117,13 +117,13 @@ func (peer *Peer) Touch() {
 	peer.Task.Touch()
 }
 
-func (peer *Peer) associateChild(child *Peer) {
+func (peer *Peer) insertChild(child *Peer) {
 	peer.children.Store(child.ID, child)
 	peer.Host.IncUploadLoad()
 	peer.Task.UpdatePeer(peer)
 }
 
-func (peer *Peer) disassociateChild(child *Peer) {
+func (peer *Peer) deleteChild(child *Peer) {
 	peer.children.Delete(child.ID)
 	peer.Host.DecUploadLoad()
 	peer.Task.UpdatePeer(peer)
@@ -132,11 +132,12 @@ func (peer *Peer) disassociateChild(child *Peer) {
 func (peer *Peer) ReplaceParent(parent *Peer) {
 	oldParent := peer.parent
 	if oldParent != nil {
-		oldParent.disassociateChild(peer)
+		oldParent.deleteChild(peer)
 	}
+
 	peer.parent = parent
 	if parent != nil {
-		parent.associateChild(peer)
+		parent.insertChild(peer)
 	}
 }
 
@@ -146,42 +147,44 @@ func (peer *Peer) GetCostHistory() []int {
 	return peer.costHistory
 }
 
-func (peer *Peer) GetCost() int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	if len(peer.costHistory) < 1 {
-		return int(time.Second / time.Millisecond)
+func (peer *Peer) GetPieceAverageCost() (int, bool) {
+	costs := peer.GetCostHistory()
+	if len(costs) < 1 {
+		return 0, false
 	}
+
 	totalCost := 0
-	for _, cost := range peer.costHistory {
+	for _, cost := range costs {
 		totalCost += cost
 	}
-	return totalCost / len(peer.costHistory)
+
+	return totalCost / len(costs), true
 }
 
 func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 	peer.lock.Lock()
+	defer peer.lock.Unlock()
+
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
 		peer.costHistory = append(peer.costHistory, cost)
 		if len(peer.costHistory) > 20 {
 			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
 		}
-		peer.lock.Unlock()
 		peer.Task.UpdatePeer(peer)
 		return
 	}
-	peer.lock.Unlock()
 }
 
-func (peer *Peer) GetDepth() int {
+func (peer *Peer) GetTreeDepth() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
+
 	var deep int
 	node := peer
 	for node != nil {
 		deep++
-		if node.parent == nil || node.Host.CDN {
+		if node.parent == nil || node.Host.IsCDN {
 			break
 		}
 		node = node.parent
@@ -189,19 +192,20 @@ func (peer *Peer) GetDepth() int {
 	return deep
 }
 
-func (peer *Peer) GetTreeRoot() *Peer {
+func (peer *Peer) GetRoot() *Peer {
 	node := peer
 	for node != nil {
-		if node.parent == nil || node.Host.CDN {
+		if node.parent == nil || node.Host.IsCDN {
 			break
 		}
 		node = node.parent
 	}
+
 	return node
 }
 
-// IsDescendantOf if peer is offspring of ancestor
-func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
+// IsDescendant if peer is offspring of ancestor
+func (peer *Peer) IsDescendant(ancestor *Peer) bool {
 	return isDescendant(ancestor, peer)
 }
 
@@ -223,13 +227,14 @@ func isDescendant(ancestor, offspring *Peer) bool {
 }
 
 // IsAncestorOf if offspring is offspring of peer
-func (peer *Peer) IsAncestorOf(offspring *Peer) bool {
+func (peer *Peer) IsAncestor(offspring *Peer) bool {
 	return isDescendant(peer, offspring)
 }
 
 func (peer *Peer) GetSortKeys() (key1, key2 int) {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
+
 	key1 = int(peer.finishedNum.Load())
 	key2 = peer.getFreeLoad()
 	return
@@ -274,7 +279,7 @@ func (peer *Peer) GetFinishedNum() int32 {
 	return peer.finishedNum.Load()
 }
 
-func (peer *Peer) MarkLeave() {
+func (peer *Peer) Leave() {
 	peer.leave.Store(true)
 }
 
@@ -283,26 +288,38 @@ func (peer *Peer) IsLeave() bool {
 }
 
 func (peer *Peer) IsRunning() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusRunning
 }
 
 func (peer *Peer) IsWaiting() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusWaiting
 }
 
 func (peer *Peer) IsSuccess() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusSuccess
 }
 
 func (peer *Peer) IsDone() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusSuccess || peer.status == PeerStatusFail
 }
 
 func (peer *Peer) IsBad() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusFail || peer.status == PeerStatusZombie
 }
 
 func (peer *Peer) IsFail() bool {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
 	return peer.status == PeerStatusFail
 }
 
@@ -409,17 +426,15 @@ func (c *Channel) CloseWithError(err error) {
 	c.Close()
 }
 
-func (c *Channel) Err() error {
-	err := c.err
-	return err
+func (c *Channel) Error() error {
+	return c.err
 }
 
 func (c *Channel) Done() <-chan struct{} {
 	if c.done == nil {
 		c.done = make(chan struct{})
 	}
-	d := c.done
-	return d
+	return c.done
 }
 
 func (c *Channel) IsClosed() bool {

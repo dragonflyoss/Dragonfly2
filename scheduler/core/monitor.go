@@ -32,11 +32,11 @@ import (
 
 type monitor struct {
 	downloadMonitorQueue workqueue.DelayingInterface
-	peerManager          supervisor.PeerMgr
+	peerManager          supervisor.PeerManager
 	log                  *zap.SugaredLogger
 }
 
-func newMonitor(openMonitor bool, peerManager supervisor.PeerMgr) *monitor {
+func newMonitor(openMonitor bool, peerManager supervisor.PeerManager) *monitor {
 	if !openMonitor {
 		return nil
 	}
@@ -63,7 +63,7 @@ func (m *monitor) start(done <-chan struct{}) {
 
 func (m *monitor) printDebugInfo() string {
 	var peers, roots []*supervisor.Peer
-	m.peerManager.ListPeers().Range(func(key interface{}, value interface{}) (ok bool) {
+	m.peerManager.GetPeers().Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
 		peer := value.(*supervisor.Peer)
 		if peer == nil {
@@ -102,7 +102,7 @@ func (m *monitor) printDebugInfo() string {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetWholeTreeNode(), node.GetStatus()))
+		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetTreeLen(), node.GetStatus()))
 		if len(path) >= 1 {
 			msgs = append(msgs, node.ID+" || "+strings.Join(nPath, "-"))
 		}

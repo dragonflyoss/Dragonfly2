@@ -318,7 +318,7 @@ type peerLeaveEvent struct {
 var _ event = peerLeaveEvent{}
 
 func (e peerLeaveEvent) apply(s *state) {
-	e.peer.MarkLeave()
+	e.peer.Leave()
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
 		child := value.(*supervisor.Peer)

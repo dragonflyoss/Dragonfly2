@@ -79,7 +79,7 @@ func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 
 	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
 
-	if avgCost*40 < lastCost && !peer.Host.CDN {
+	if avgCost*40 < lastCost && !peer.Host.IsCDN {
 		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.ID, avgCost, lastCost)
 		return true
 	}
@@ -115,13 +115,13 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 // getProfits 0.0~unlimited larger and better
 func getProfits(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	diff := supervisor.GetDiffPieceNum(dst, src)
-	depth := dst.GetDepth()
+	depth := dst.GetTreeDepth()
 
-	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
+	return float64(int(diff+1)*src.GetTreeLen()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func getHostLoad(host *supervisor.PeerHost) float64 {
+func getHostLoad(host *supervisor.Host) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 

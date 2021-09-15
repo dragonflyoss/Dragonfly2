@@ -172,7 +172,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 			peer.Log().Debugf("******candidate child peer %s is not selected because it and peer are the same******", candidateNode.ID)
 			return false
 		}
-		if candidateNode.IsAncestorOf(peer) {
+		if candidateNode.IsAncestor(peer) {
 			peer.Log().Debugf("******candidate child peer %s is not selected because peer's ancestor is candidate peer******", candidateNode.ID)
 			return false
 		}
@@ -181,7 +181,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 				"******", candidateNode.ID)
 			return false
 		}
-		if candidateNode.Host != nil && candidateNode.Host.CDN {
+		if candidateNode.Host != nil && candidateNode.Host.IsCDN {
 			peer.Log().Debugf("******candidate child peer %s is not selected because it is a cdn host******", candidateNode.ID)
 			return false
 		}
@@ -238,7 +238,7 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, bla
 				candidateNode.ID)
 			return false
 		}
-		if candidateNode.IsDescendantOf(peer) {
+		if candidateNode.IsDescendant(peer) {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it's ancestor is peer++++++",
 				candidateNode.ID)
 			return false

@@ -30,9 +30,9 @@ type PeerManager interface {
 
 	Delete(string)
 
-	ListPeersByTask(string) []*Peer
+	GetPeersByTask(string) []*Peer
 
-	ListPeers() *sync.Map
+	GetPeers() *sync.Map
 }
 
 type peerManager struct {
@@ -40,7 +40,7 @@ type peerManager struct {
 	cleanupExpiredPeerTicker *time.Ticker
 	peerTTL                  time.Duration
 	peerTTI                  time.Duration
-	peerMap                  sync.Map
+	peers                    *sync.Map
 	lock                     sync.RWMutex
 }
 
@@ -55,9 +55,37 @@ func NewPeerManager(cfg *config.GCConfig, hostManager HostManager) PeerManager {
 	return m
 }
 
-func (m *peerManager) ListPeersByTask(taskID string) []*Peer {
+func (m *peerManager) Add(peer *Peer) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	peer.Host.AddPeer(peer)
+	peer.Task.AddPeer(peer)
+	m.peers.Store(peer.ID, peer)
+}
+
+func (m *peerManager) Get(id string) (*Peer, bool) {
+	peer, ok := m.peers.Load(id)
+	if !ok {
+		return nil, false
+	}
+
+	return peer.(*Peer), true
+}
+
+func (m *peerManager) Delete(id string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if peer, ok := m.Get(id); ok {
+		peer.Host.DeletePeer(id)
+		peer.Task.DeletePeer(peer)
+		peer.ReplaceParent(nil)
+		m.peers.Delete(id)
+	}
+}
+
+func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peerMap.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(key, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.TaskID == taskID {
 			peers = append(peers, peer)
@@ -67,55 +95,27 @@ func (m *peerManager) ListPeersByTask(taskID string) []*Peer {
 	return peers
 }
 
-func (m *peerManager) ListPeers() *sync.Map {
-	return &m.peerMap
-}
-
-func (m *peerManager) Add(peer *Peer) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	peer.Host.AddPeer(peer)
-	peer.Task.AddPeer(peer)
-	m.peerMap.Store(peer.ID, peer)
-}
-
-func (m *peerManager) Get(id string) (*Peer, bool) {
-	data, ok := m.peerMap.Load(id)
-	if !ok {
-		return nil, false
-	}
-	peer := data.(*Peer)
-	return peer, true
-}
-
-func (m *peerManager) Delete(id string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	peer, ok := m.Get(id)
-	if ok {
-		peer.Host.DeletePeer(id)
-		peer.Task.DeletePeer(peer)
-		peer.ReplaceParent(nil)
-		m.peerMap.Delete(id)
-	}
-	return
+func (m *peerManager) GetPeers() *sync.Map {
+	return m.peers
 }
 
 func (m *peerManager) cleanupPeers() {
 	for range m.cleanupExpiredPeerTicker.C {
-		m.peerMap.Range(func(key, value interface{}) bool {
+		m.peers.Range(func(key, value interface{}) bool {
 			id := key.(string)
 			peer := value.(*Peer)
-			elapse := time.Since(peer.GetLastAccessTime())
-			if elapse > m.peerTTI && !peer.IsDone() && !peer.Host.CDN {
+			elapsed := time.Since(peer.GetLastAccessTime())
+
+			if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
 				if !peer.IsConnected() {
-					peer.MarkLeave()
+					peer.Leave()
 				}
 				peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
 				peer.SetStatus(PeerStatusZombie)
 			}
-			if peer.IsLeave() || peer.IsFail() || elapse > m.peerTTL {
-				if elapse > m.peerTTL {
+
+			if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
+				if elapsed > m.peerTTL {
 					peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
 				}
 				m.Delete(id)
@@ -127,6 +127,7 @@ func (m *peerManager) cleanupPeers() {
 					peer.Task.SetStatus(TaskStatusWaiting)
 				}
 			}
+
 			return true
 		})
 	}
