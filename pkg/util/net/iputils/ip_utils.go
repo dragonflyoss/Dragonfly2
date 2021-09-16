@@ -84,6 +84,19 @@ func externalIPv4() (string, error) {
 
 // ipAddrs returns all the valid IPs available.
 func ipAddrs() ([]net.IP, error) {
+	// use prefer ip possible
+	var prefer []net.IP
+	host, err := os.Hostname()
+	if err == nil {
+		addrs, _ := net.LookupIP(host)
+		for _, addr := range addrs {
+			if addr == nil || addr.IsLoopback() || addr.IsLinkLocalUnicast() {
+				continue
+			}
+			prefer = append(prefer, addr)
+		}
+	}
+
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -114,7 +127,17 @@ func ipAddrs() ([]net.IP, error) {
 			if ip == nil || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
 				continue
 			}
-			ipAddrs = append(ipAddrs, ip)
+			var isPrefer bool
+			for _, a := range prefer {
+				if a.Equal(ip) {
+					isPrefer = true
+				}
+			}
+			if isPrefer {
+				ipAddrs = append([]net.IP{ip}, ipAddrs...)
+			} else {
+				ipAddrs = append(ipAddrs, ip)
+			}
 		}
 	}
 
