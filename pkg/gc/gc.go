@@ -17,7 +17,6 @@
 package gc
 
 import (
-	"context"
 	"errors"
 	"sync"
 	"time"
@@ -28,7 +27,7 @@ import (
 // GC is the interface used for release resource
 type GC interface {
 	// Add adds GC task
-	Add(string, Task)
+	Add(Task) error
 
 	// Run GC task
 	Run(string) error
@@ -45,29 +44,13 @@ type GC interface {
 
 // GC provides task release function
 type gc struct {
-	tasks    *sync.Map
-	interval time.Duration
-	timeout  time.Duration
-	logger   Logger
-	done     chan bool
+	tasks  *sync.Map
+	logger Logger
+	done   chan bool
 }
 
 // Option is a functional option for configuring the GC
 type Option func(g *gc)
-
-// WithInterval set the interval for GC collection
-func WithInterval(interval time.Duration) Option {
-	return func(g *gc) {
-		g.interval = interval
-	}
-}
-
-// WithTimeout set the timeout for GC collection
-func WithTimeout(timeout time.Duration) Option {
-	return func(g *gc) {
-		g.timeout = timeout
-	}
-}
 
 // WithLogger set the logger for GC
 func WithLogger(logger Logger) Option {
@@ -77,105 +60,93 @@ func WithLogger(logger Logger) Option {
 }
 
 // New returns a new GC instence
-func New(options ...Option) (GC, error) {
+func New(options ...Option) GC {
 	g := &gc{
 		tasks:  &sync.Map{},
-		done:   make(chan bool),
 		logger: logrus.New(),
+		done:   make(chan bool),
 	}
 
 	for _, opt := range options {
 		opt(g)
 	}
 
-	if err := g.validate(); err != nil {
-		return nil, err
+	return g
+}
+
+func (g gc) Add(t Task) error {
+	if err := t.validate(); err != nil {
+		return err
 	}
 
-	return g, nil
+	g.tasks.Store(t.ID, t)
+	return nil
 }
 
-func (g gc) Add(k string, t Task) {
-	g.tasks.Store(k, t)
-}
-
-func (g gc) Run(k string) error {
-	v, ok := g.tasks.Load(k)
+func (g gc) Run(id string) error {
+	v, ok := g.tasks.Load(id)
 	if !ok {
 		return errors.New("can not find the task")
 	}
 
-	go g.run(context.Background(), k, v.(Task))
+	go g.run(v.(Task))
 	return nil
 }
 
 func (g gc) RunAll() {
-	g.runAll(context.Background())
+	g.runAll()
 }
 
 func (g gc) Serve() {
-	go func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		tick := time.NewTicker(g.interval)
-		for {
-			select {
-			case <-tick.C:
-				g.runAll(ctx)
-			case <-g.done:
-				g.logger.Infof("GC stop")
-				return
+	g.tasks.Range(func(k interface{}, v interface{}) bool {
+		go func() {
+			task := v.(Task)
+			tick := time.NewTicker(task.Interval)
+			for {
+				select {
+				case <-tick.C:
+					g.run(task)
+				case <-g.done:
+					g.logger.Infof("%s GC stop", k)
+					return
+				}
 			}
-		}
-	}()
+		}()
+		return true
+	})
 }
 
 func (g gc) Stop() {
 	close(g.done)
 }
 
-func (g gc) validate() error {
-	if g.interval <= 0 {
-		return errors.New("interval value is greater than 0")
-	}
-
-	if g.timeout <= 0 {
-		return errors.New("timeout value is greater than 0")
-	}
-
-	if g.timeout >= g.interval {
-		return errors.New("timeout value needs to be less than the interval value")
-	}
-
-	return nil
-}
-
-func (g gc) runAll(ctx context.Context) {
+func (g gc) runAll() {
 	g.tasks.Range(func(k, v interface{}) bool {
-		go g.run(ctx, k.(string), v.(Task))
+		go g.run(v.(Task))
 		return true
 	})
 }
 
-func (g gc) run(ctx context.Context, k string, t Task) {
+func (g gc) run(t Task) {
 	done := make(chan struct{})
 
 	go func() {
-		g.logger.Infof("%s GC %s", k, "start")
-		defer close(done)
+		g.logger.Infof("%s GC start", t.ID)
+		defer func() {
+			g.logger.Infof("%s GC finish", t.ID)
+			close(done)
+		}()
+
 		if err := t.RunGC(); err != nil {
-			g.logger.Errorf("%s GC error: %v", k, err)
+			g.logger.Errorf("%s GC error: %v", t.ID, err)
 			return
 		}
 	}()
 
 	select {
-	case <-time.After(g.timeout):
-		g.logger.Infof("%s GC %s", k, "timeout")
+	case <-time.After(t.Timeout):
+		g.logger.Infof("%s GC timeout", t.ID)
 	case <-done:
-		g.logger.Infof("%s GC %s", k, "done")
-	case <-ctx.Done():
-		g.logger.Infof("%s GC %s", k, "stop")
+		g.logger.Infof("%s GC done", t.ID)
 	}
 }
