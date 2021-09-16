@@ -160,17 +160,10 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 
 func (conn *Connection) NewClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
-	ctx, cancel := context.WithTimeout(context.Background(), conn.dialTimeout)
+	ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
 	defer cancel()
 	opts = append(conn.dialOpts, opts...)
 	return grpc.DialContext(ctx, target, opts...)
-}
-
-// TryMigrate migrate key to another hash node other than exclusiveNodes
-// preNode node before the migration
-func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []string) (preNode string, err error) {
-	// TODO(zzy987)
-	return
 }
 
 func (conn *Connection) Close() error {
