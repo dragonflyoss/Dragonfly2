@@ -34,7 +34,7 @@ func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
 }
 
 func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
-	if peer.Host.CDN {
+	if peer.Host.IsCDN {
 		return false
 	}
 

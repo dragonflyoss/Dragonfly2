@@ -96,7 +96,7 @@ func (m *peerManager) GetPeers() *sync.Map {
 	return m.peers
 }
 
-func (m *peerManager) runGC() error {
+func (m *peerManager) runGC() {
 	for range m.gcTicker.C {
 		m.peers.Range(func(key, value interface{}) bool {
 			id := key.(string)
