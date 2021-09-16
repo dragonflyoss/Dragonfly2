@@ -36,22 +36,23 @@ type PeerManager interface {
 }
 
 type peerManager struct {
-	hostManager              HostManager
-	cleanupExpiredPeerTicker *time.Ticker
-	peerTTL                  time.Duration
-	peerTTI                  time.Duration
-	peers                    *sync.Map
-	lock                     sync.RWMutex
+	hostManager HostManager
+	gcTicker    *time.Ticker
+	peerTTL     time.Duration
+	peerTTI     time.Duration
+	peers       *sync.Map
+	lock        sync.RWMutex
 }
 
 func NewPeerManager(cfg *config.GCConfig, hostManager HostManager) PeerManager {
 	m := &peerManager{
-		hostManager:              hostManager,
-		cleanupExpiredPeerTicker: time.NewTicker(cfg.PeerGCInterval),
-		peerTTL:                  cfg.PeerTTL,
-		peerTTI:                  cfg.PeerTTI,
+		hostManager: hostManager,
+		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
+		peerTTL:     cfg.PeerTTL,
+		peerTTI:     cfg.PeerTTI,
 	}
-	go m.cleanupPeers()
+
+	go m.runGC()
 	return m
 }
 
@@ -65,11 +66,7 @@ func (m *peerManager) Add(peer *Peer) {
 
 func (m *peerManager) Get(id string) (*Peer, bool) {
 	peer, ok := m.peers.Load(id)
-	if !ok {
-		return nil, false
-	}
-
-	return peer.(*Peer), true
+	return peer.(*Peer), ok
 }
 
 func (m *peerManager) Delete(id string) {
@@ -87,7 +84,7 @@ func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
 	m.peers.Range(func(key, value interface{}) bool {
 		peer := value.(*Peer)
-		if peer.Task.TaskID == taskID {
+		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
 		}
 		return true
@@ -99,12 +96,12 @@ func (m *peerManager) GetPeers() *sync.Map {
 	return m.peers
 }
 
-func (m *peerManager) cleanupPeers() {
-	for range m.cleanupExpiredPeerTicker.C {
+func (m *peerManager) runGC() error {
+	for range m.gcTicker.C {
 		m.peers.Range(func(key, value interface{}) bool {
 			id := key.(string)
 			peer := value.(*Peer)
-			elapsed := time.Since(peer.GetLastAccessTime())
+			elapsed := time.Since(peer.GetLastAccessAt())
 
 			if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
 				if !peer.IsConnected() {
@@ -122,7 +119,7 @@ func (m *peerManager) cleanupPeers() {
 				if peer.Host.GetPeersLen() == 0 {
 					m.hostManager.Delete(peer.Host.UUID)
 				}
-				if peer.Task.ListPeers().Size() == 0 {
+				if peer.Task.GetPeers().Size() == 0 {
 					peer.Task.Log().Info("peers is empty, task status become waiting")
 					peer.Task.SetStatus(TaskStatusWaiting)
 				}

@@ -64,28 +64,29 @@ type Peer struct {
 	// Host specifies
 	Host *Host
 	conn *Channel
-	// createTime
-	CreateTime time.Time
+	// peer create time
+	CreateAt time.Time
+	// peer last access time
+	lastAccessAt time.Time
 	// finishedNum specifies downloaded finished piece number
-	finishedNum    atomic.Int32
-	lastAccessTime time.Time
-	parent         *Peer
-	children       sync.Map
-	status         PeerStatus
-	costHistory    []int
-	leave          atomic.Bool
-	logger         *logger.SugaredLoggerOnWith
+	finishedNum atomic.Int32
+	parent      *Peer
+	children    sync.Map
+	status      PeerStatus
+	costHistory []int
+	leave       atomic.Bool
+	logger      *logger.SugaredLoggerOnWith
 }
 
 func NewPeer(id string, task *Task, host *Host) *Peer {
 	return &Peer{
-		ID:             id,
-		Task:           task,
-		Host:           host,
-		CreateTime:     time.Now(),
-		lastAccessTime: time.Now(),
-		status:         PeerStatusWaiting,
-		logger:         logger.WithTaskAndPeerID(task.TaskID, id),
+		ID:           id,
+		Task:         task,
+		Host:         host,
+		CreateAt:     time.Now(),
+		lastAccessAt: time.Now(),
+		status:       PeerStatusWaiting,
+		logger:       logger.WithTaskAndPeerID(task.ID, id),
 	}
 }
 
@@ -101,16 +102,16 @@ func (peer *Peer) GetTreeLen() int {
 	return count
 }
 
-func (peer *Peer) GetLastAccessTime() time.Time {
+func (peer *Peer) GetLastAccessAt() time.Time {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return peer.lastAccessTime
+	return peer.lastAccessAt
 }
 
 func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	peer.lastAccessTime = time.Now()
+	peer.lastAccessAt = time.Now()
 	if peer.status == PeerStatusZombie && !peer.leave.Load() {
 		peer.status = PeerStatusRunning
 	}
@@ -119,13 +120,13 @@ func (peer *Peer) Touch() {
 
 func (peer *Peer) insertChild(child *Peer) {
 	peer.children.Store(child.ID, child)
-	peer.Host.IncUploadLoad()
+	peer.Host.CurrentUploadLoad.Inc()
 	peer.Task.UpdatePeer(peer)
 }
 
 func (peer *Peer) deleteChild(child *Peer) {
 	peer.children.Delete(child.ID)
-	peer.Host.DecUploadLoad()
+	peer.Host.CurrentUploadLoad.Dec()
 	peer.Task.UpdatePeer(peer)
 }
 

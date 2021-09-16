@@ -38,11 +38,7 @@ func NewHostManager() HostManager {
 
 func (m *hostManager) Get(key string) (*Host, bool) {
 	host, ok := m.Load(key)
-	if !ok {
-		return nil, false
-	}
-
-	return host.(*Host), true
+	return host.(*Host), ok
 }
 
 func (m *hostManager) Add(host *Host) {

@@ -164,12 +164,12 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			if rsPeer.times > maxRescheduleTimes {
 				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
 					peer.ID)) == nil {
-					peer.Task.IncreaseBackSourcePeer(peer.ID)
+					peer.Task.AddBackSourcePeer(peer.ID)
 				}
 				continue
 			}
-			if peer.Task.IsBackSourcePeer(peer.ID) {
-				logger.WithTaskAndPeerID(peer.Task.TaskID, peer.ID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
+			if peer.Task.ContainsBackSourcePeer(peer.ID) {
+				logger.WithTaskAndPeerID(peer.Task.ID, peer.ID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
 				continue
 			}
 			if peer.IsDone() || peer.IsLeave() {
@@ -198,7 +198,7 @@ func (s *SchedulerService) Stop() {
 	})
 }
 
-func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) (taskID string) {
+func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) string {
 	if s.config.ABTest {
 		return idgen.TwinsTaskID(url, meta, peerID)
 	}
@@ -213,8 +213,8 @@ func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervis
 	return parent, nil
 }
 
-func (s *SchedulerService) GetPeerTask(peerTaskID string) (peerTask *supervisor.Peer, ok bool) {
-	return s.peerManager.Get(peerTaskID)
+func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
+	return s.peerManager.Get(id)
 }
 
 func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
@@ -239,28 +239,28 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
-	synclock.Lock(task.TaskID, true)
+	synclock.Lock(task.ID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
-		if task.GetLastTriggerTime().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
-			synclock.UnLock(task.TaskID, true)
+		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
+		if task.GetLastTriggerAt().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
+			synclock.UnLock(task.ID, true)
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			return task
 		}
 	} else {
-		task.Log().Infof("add new task %s", task.TaskID)
+		task.Log().Infof("add new task %s", task.ID)
 	}
 
-	synclock.UnLock(task.TaskID, true)
+	synclock.UnLock(task.ID, true)
 	// do trigger
-	task.UpdateLastTriggerTime(time.Now())
+	task.UpdateLastTriggerAt(time.Now())
 
-	synclock.Lock(task.TaskID, false)
-	defer synclock.UnLock(task.TaskID, false)
+	synclock.Lock(task.ID, false)
+	defer synclock.UnLock(task.ID, false)
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerTime().String()))
+	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 		return task
@@ -269,7 +269,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	if s.cdnManager == nil {
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-		task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
+		task.SetClientBackSource(s.config.BackSourceCount)
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
@@ -278,7 +278,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-			task.SetClientBackSourceStatusAndLimit(s.config.BackSourceCount)
+			task.SetClientBackSource(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("send taskSeed fail event failed, eventLoop is shutdown")
 			}

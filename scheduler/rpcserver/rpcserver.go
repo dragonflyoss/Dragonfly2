@@ -74,7 +74,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
 	if task.IsFail() {
 		err = dferrors.New(dfcodes.SchedTaskStatusError, "task status is fail")
-		logger.Errorf("task %s status is fail", task.TaskID)
+		logger.Errorf("task %s status is fail", task.ID)
 		span.RecordError(err)
 		return
 	}
@@ -96,7 +96,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 			resp.TaskId = taskID
 			return
 		}
-		firstPiece := task.GetPiece(0)
+		firstPiece, _ := task.GetPiece(0)
 		singlePiece := &scheduler.SinglePiece{
 			DstPid:  parent.ID,
 			DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
@@ -134,7 +134,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		return err
 	}
 	logger.Debugf("peer %s start report piece result", pieceResult.SrcPid)
-	peer, ok := s.service.GetPeerTask(pieceResult.SrcPid)
+	peer, ok := s.service.GetPeer(pieceResult.SrcPid)
 	if !ok {
 		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 		span.RecordError(err)
@@ -148,8 +148,8 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	conn := peer.BindNewConn(stream)
 	logger.Infof("peer %s is connected", peer.ID)
 	defer func() {
-		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Err())
-		span.RecordError(conn.Err())
+		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Error())
+		span.RecordError(conn.Error())
 	}()
 	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
 		logger.Errorf("peer %s handle piece result %v fail: %v", peer.ID, pieceResult, err)
@@ -157,7 +157,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	for {
 		select {
 		case <-conn.Done():
-			return conn.Err()
+			return conn.Error()
 		case piece := <-conn.Receiver():
 			if piece == nil {
 				logger.Infof("peer %s channel has been closed", peer.ID)
@@ -178,7 +178,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	span.SetAttributes(config.AttributeReportPeerID.String(result.PeerId))
 	span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(result.Success))
 	span.SetAttributes(config.AttributePeerDownloadResult.String(result.String()))
-	peer, ok := s.service.GetPeerTask(result.PeerId)
+	peer, ok := s.service.GetPeer(result.PeerId)
 	if !ok {
 		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
 		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", result.PeerId)
@@ -195,7 +195,7 @@ func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerT
 	defer span.End()
 	span.SetAttributes(config.AttributeLeavePeerID.String(target.PeerId))
 	span.SetAttributes(config.AttributeLeaveTaskID.String(target.TaskId))
-	peer, ok := s.service.GetPeerTask(target.PeerId)
+	peer, ok := s.service.GetPeer(target.PeerId)
 	if !ok {
 		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
 		return

@@ -26,6 +26,10 @@ import (
 	"go.uber.org/atomic"
 )
 
+const (
+	TinyFileSize = 128
+)
+
 type TaskStatus uint8
 
 func (status TaskStatus) String() string {
@@ -57,35 +61,34 @@ const (
 )
 
 type Task struct {
-	lock                 sync.RWMutex
-	TaskID               string
-	URL                  string
-	URLMeta              *base.UrlMeta
-	DirectPiece          []byte
-	CreateTime           time.Time
-	lastAccessTime       time.Time
-	lastTriggerTime      time.Time
-	pieceList            map[int32]*base.PieceInfo
-	PieceTotal           int32
-	ContentLength        int64
-	status               TaskStatus
-	peers                *sortedlist.SortedList
-	backSourceLimit      atomic.Int32
-	needClientBackSource atomic.Bool
-	backSourcePeers      []string
-	logger               *logger.SugaredLoggerOnWith
+	lock             sync.RWMutex
+	ID               string
+	URL              string
+	URLMeta          *base.UrlMeta
+	DirectPiece      []byte
+	CreateAt         time.Time
+	lastAccessAt     time.Time
+	lastTriggerAt    time.Time
+	pieces           *sync.Map
+	PieceTotal       int32
+	ContentLength    int64
+	status           TaskStatus
+	peers            *sortedlist.SortedList
+	backSourceWeight atomic.Int32
+	backSourcePeers  []string
+	logger           *logger.SugaredLoggerOnWith
 }
 
-func NewTask(taskID, url string, meta *base.UrlMeta) *Task {
+func NewTask(id, url string, meta *base.UrlMeta) *Task {
 	return &Task{
-		TaskID:     taskID,
-		URL:        url,
-		URLMeta:    meta,
-		CreateTime: time.Now(),
-		pieceList:  make(map[int32]*base.PieceInfo),
-		peers:      sortedlist.NewSortedList(),
-		status:     TaskStatusWaiting,
-		logger:     logger.WithTaskID(taskID),
+		ID:       id,
+		URL:      url,
+		URLMeta:  meta,
+		CreateAt: time.Now(),
+		pieces:   &sync.Map{},
+		peers:    sortedlist.NewSortedList(),
+		status:   TaskStatusWaiting,
+		logger:   logger.WithTaskID(id),
 	}
 }
 
@@ -101,7 +104,7 @@ func (task *Task) DeletePeer(peer *Peer) {
 	task.peers.Delete(peer)
 }
 
-func (task *Task) ListPeers() *sortedlist.SortedList {
+func (task *Task) GetPeers() *sortedlist.SortedList {
 	return task.peers
 }
 
@@ -117,54 +120,38 @@ func (task *Task) GetStatus() TaskStatus {
 	return task.status
 }
 
-func (task *Task) SetClientBackSourceStatusAndLimit(backSourceLimit int32) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-	task.backSourcePeers = make([]string, 0, backSourceLimit)
-	task.needClientBackSource.Store(true)
-	task.backSourceLimit.Store(backSourceLimit)
+func (task *Task) GetPiece(n int32) (*base.PieceInfo, bool) {
+	piece, ok := task.pieces.Load(n)
+	return piece.(*base.PieceInfo), ok
 }
 
-func (task *Task) NeedClientBackSource() bool {
-	return task.needClientBackSource.Load()
+func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
+	piece, ok := task.pieces.LoadOrStore(p.PieceNum, p)
+	return piece.(*base.PieceInfo), ok
 }
 
-func (task *Task) GetPiece(pieceNum int32) *base.PieceInfo {
+func (task *Task) GetLastTriggerAt() time.Time {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	return task.pieceList[pieceNum]
+	return task.lastTriggerAt
 }
 
-func (task *Task) AddPiece(p *base.PieceInfo) {
-	task.lock.RLock()
-	if _, ok := task.pieceList[p.PieceNum]; ok {
-		task.lock.RUnlock()
-		return
-	}
-	task.lock.RUnlock()
+func (task *Task) UpdateLastTriggerAt(t time.Time) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.pieceList[p.PieceNum] = p
-}
-
-func (task *Task) GetLastTriggerTime() time.Time {
-	return task.lastTriggerTime
-}
-
-func (task *Task) UpdateLastTriggerTime(lastTriggerTime time.Time) {
-	task.lastTriggerTime = lastTriggerTime
+	task.lastTriggerAt = t
 }
 
 func (task *Task) Touch() {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.lastAccessTime = time.Now()
+	task.lastAccessAt = time.Now()
 }
 
-func (task *Task) GetLastAccessTime() time.Time {
+func (task *Task) GetLastAccessAt() time.Time {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	return task.lastAccessTime
+	return task.lastAccessAt
 }
 
 func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64) {
@@ -177,26 +164,10 @@ func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64)
 	}
 }
 
-func (task *Task) Lock() {
-	task.lock.Lock()
-}
-
-func (task *Task) UnLock() {
-	task.lock.Unlock()
-}
-
-func (task *Task) RLock() {
-	task.lock.RLock()
-}
-
-func (task *Task) RUnlock() {
-	task.lock.RUnlock()
-}
-
-const TinyFileSize = 128
-
 // IsSuccess determines that whether cdn status is success.
 func (task *Task) IsSuccess() bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.status == TaskStatusSuccess
 }
 
@@ -209,54 +180,69 @@ func (task *Task) IsSuccess() bool {
 // CanSchedule determines whether task can be scheduled
 // only task status is seeding or success can be scheduled
 func (task *Task) CanSchedule() bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
 // IsWaiting determines whether task is waiting
 func (task *Task) IsWaiting() bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.status == TaskStatusWaiting
 }
 
 // IsHealth determines whether task is health
 func (task *Task) IsHealth() bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.status == TaskStatusRunning || task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
 }
 
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
 	return task.status == TaskStatusFail
 }
 
-func (task *Task) IncreaseBackSourcePeer(peerID string) {
+func (task *Task) SetClientBackSource(backSourceLimit int32) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	for i := range task.backSourcePeers {
-		if task.backSourcePeers[i] == peerID {
-			return
+	task.backSourcePeers = make([]string, 0, backSourceLimit)
+	task.backSourceWeight.Store(backSourceLimit)
+}
+
+func (task *Task) NeedClientBackSource() bool {
+	return task.backSourceWeight.Load() > 0
+}
+
+func (task *Task) ContainsBackSourcePeer(peerID string) bool {
+	task.lock.RLock()
+	defer task.lock.RUnlock()
+	for _, backSourcePeer := range task.backSourcePeers {
+		if backSourcePeer == peerID {
+			return true
 		}
 	}
-	task.backSourcePeers = append(task.backSourcePeers, peerID)
-	if task.backSourceLimit.Dec() <= 0 {
-		task.needClientBackSource.Store(false)
+	return false
+}
+
+func (task *Task) AddBackSourcePeer(peerID string) {
+	if ok := task.ContainsBackSourcePeer(peerID); ok {
+		return
 	}
+
+	task.lock.Lock()
+	defer task.lock.Unlock()
+	task.backSourcePeers = append(task.backSourcePeers, peerID)
+	task.backSourceWeight.Dec()
 }
 
 func (task *Task) GetBackSourcePeers() []string {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	backSourcePeers := task.backSourcePeers
-	return backSourcePeers
-}
-
-func (task *Task) IsBackSourcePeer(peerID string) bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	for i := range task.backSourcePeers {
-		if task.backSourcePeers[i] == peerID {
-			return true
-		}
-	}
-	return false
+	return task.backSourcePeers
 }
 
 func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
@@ -271,8 +257,9 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 	if pickFn == nil {
 		return
 	}
+
 	if !reverse {
-		task.ListPeers().Range(func(data sortedlist.Item) bool {
+		task.GetPeers().Range(func(data sortedlist.Item) bool {
 			if len(pickedPeers) >= limit {
 				return false
 			}
@@ -284,7 +271,8 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 		})
 		return
 	}
-	task.ListPeers().RangeReverse(func(data sortedlist.Item) bool {
+
+	task.GetPeers().RangeReverse(func(data sortedlist.Item) bool {
 		if len(pickedPeers) >= limit {
 			return false
 		}
@@ -294,12 +282,10 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 		}
 		return true
 	})
+
 	return
 }
 
 func (task *Task) Log() *logger.SugaredLoggerOnWith {
-	if task.logger == nil {
-		task.logger = logger.WithTaskID(task.TaskID)
-	}
 	return task.logger
 }

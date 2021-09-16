@@ -46,8 +46,8 @@ type Host struct {
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
 	TotalUploadLoad int32
-	// currentUploadLoad is current upload load number
-	currentUploadLoad atomic.Int32
+	// CurrentUploadLoad is current upload load number
+	CurrentUploadLoad atomic.Int32
 	// peers info map
 	peers *sync.Map
 	// logger instance
@@ -97,11 +97,7 @@ func (h *Host) DeletePeer(id string) {
 
 func (h *Host) GetPeer(id string) (*Peer, bool) {
 	peer, ok := h.peers.Load(id)
-	if !ok {
-		return nil, false
-	}
-
-	return peer.(*Peer), true
+	return peer.(*Peer), ok
 }
 
 func (h *Host) GetPeersLen() int {
@@ -119,19 +115,11 @@ func (h *Host) GetUploadLoadPercent() float64 {
 		return 1.0
 	}
 
-	return float64(h.currentUploadLoad.Load()) / float64(h.TotalUploadLoad)
+	return float64(h.CurrentUploadLoad.Load()) / float64(h.TotalUploadLoad)
 }
 
 func (h *Host) GetFreeUploadLoad() int32 {
-	return h.TotalUploadLoad - h.currentUploadLoad.Load()
-}
-
-func (h *Host) IncUploadLoad() int32 {
-	return h.currentUploadLoad.Inc()
-}
-
-func (h *Host) DecUploadLoad() int32 {
-	return h.currentUploadLoad.Dec()
+	return h.TotalUploadLoad - h.CurrentUploadLoad.Load()
 }
 
 func (h *Host) Log() *logger.SugaredLoggerOnWith {

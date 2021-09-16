@@ -53,7 +53,7 @@ var tracer = otel.Tracer("scheduler-cdn")
 
 type CDNManager interface {
 	// StartSeedTask start seed cdn task
-	StartSeedTask(ctx context.Context, task *Task) (*Peer, error)
+	StartSeedTask(context.Context, *Task) (*Peer, error)
 }
 
 type cdnManager struct {
@@ -71,14 +71,14 @@ func NewCDNManager(client CDNDynmaicClient, peerManager PeerManager, hostManager
 }
 
 func (cm *cdnManager) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
-	logger.Infof("start seed task %s", task.TaskID)
-	defer logger.Infof("finish seed task %s, task status is %s", task.TaskID, task.GetStatus())
+	logger.Infof("start seed task %s", task.ID)
+	defer logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
 
 	var seedSpan trace.Span
 	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()
 	seedRequest := &cdnsystem.SeedRequest{
-		TaskId:  task.TaskID,
+		TaskId:  task.ID,
 		Url:     task.URL,
 		UrlMeta: task.URLMeta,
 	}
@@ -170,7 +170,7 @@ func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *clie
 				return cdnPeer, nil
 			}
 			cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
-			task.AddPiece(piece.PieceInfo)
+			task.GetOrAddPiece(piece.PieceInfo)
 		}
 	}
 }
@@ -202,7 +202,7 @@ func (cm *cdnManager) DownloadTinyFileContent(ctx context.Context, task *Task, c
 	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
 	// taskIndex is the first three characters of taskID
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		cdnHost.IP, cdnHost.DownloadPort, task.TaskID[:3], task.TaskID)
+		cdnHost.IP, cdnHost.DownloadPort, task.ID[:3], task.ID)
 
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
