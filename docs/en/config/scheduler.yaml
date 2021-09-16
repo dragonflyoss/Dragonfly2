@@ -72,7 +72,7 @@ dynConfig:
   # cdnDirPath
   cdnDirPath:
   # data
-  data: ""
+  data: {}
 
 # manager configuration
 manager:
