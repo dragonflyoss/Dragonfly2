@@ -1,5 +1,5 @@
 #!/bin/bash
 
-systemctl daemon-reload
+chmod a+s /usr/bin/dfget
 
-systemctl enable dfget-daemon.service
+which systemctl && (systemctl daemon-reload; systemctl enable dfget-daemon.service)

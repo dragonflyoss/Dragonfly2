@@ -4,15 +4,9 @@ aliveTime: 0s
 # daemon gc task running interval
 gcInterval: 1m0s
 
-# daemon data directory
-dataDir: /home/t4/dragonfly/
-
-# daemon work directory, daemon will change current working directory to this
-workHome: /home/t4/dragonfly/
-
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
-keepStorage: false
+keepStorage: true
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
@@ -22,7 +16,11 @@ scheduler:
   # below example is a stand address
   netAddrs:
   - type: tcp
-    addr: 127.0.0.1:8002
+    addr: scheduler-0.dragonfly-system.svc:8002
+  - type: tcp
+    addr: scheduler-1.dragonfly-system.svc:8002
+  - type: tcp
+    addr: scheduler-2.dragonfly-system.svc:8002
   # schedule timeout
   scheduleTimeout: 10s
 
@@ -74,42 +72,30 @@ download:
     tcpListen:
       # listen address
       listen: 0.0.0.0
-      # listen port, daemon will try to listen
-      # when this port is not available, daemon will try next port
-      port: 65000
-      # if want to limit upper port, please use blow format
-#     port:
-#       start: 65000
-#       end: 65009
-
-# proxy config file location or detail config
-# proxy: ""
+      port:
+        start: 65010
+        end: 65019
 
 # upload service option
 upload:
   # upload limit per second
-  rateLimit: 1024Mi
+  rateLimit: 200Mi
   security:
     insecure: true
     cacert: ""
     cert: ""
     key: ""
   tcpListen:
-    # listen address
     listen: 0.0.0.0
-    # listen port, daemon will try to listen
-    # when this port is not available, daemon will try next port
-    port: 65002
-    # if want to limit upper port, please use blow format
-#   port:
-#     start: 65020
-#     end: 65029
+    port:
+      start: 65020
+      end: 65029
 
 # peer task storage option
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  taskExpireTime: 1m0s
+  taskExpireTime: 10m0s
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -117,10 +103,13 @@ storage:
   #                            fast than simple strategy, but:
   #                            the output file will be the peer data for uploading to other peers
   #                            when user delete or change this file, this peer data will be corrupted
-  strategy: io.d7y.storage.v2.simple
+  strategy: io.d7y.storage.v2.advance
+  multiplex: true
 
 # proxy service option
 proxy:
+  maxConcurrency: 12
+  defaultFilter: Expires&Signature
   security:
     insecure: true
     cacert: ""
@@ -132,41 +121,6 @@ proxy:
     # listen port, daemon will try to listen
     # when this port is not available, daemon will try next port
     port: 65001
-    # if want to limit upper port, please use blow format
-  #   port:
-  #     start: 65020
-  #     end: 65029
-  registryMirror:
-    # url for the registry mirror
-    url: https://index.docker.io
-    # whether to ignore https certificate errors
-    insecure: true
-    # optional certificates if the remote server uses self-signed certificates
-    certs: [ ]
-    # whether to request the remote registry directly
-    direct: false
-
   proxies:
-  - regx: shells/.*\.sh
-  # proxy all http image layer download requests with dfget
-  - regx: blobs/sha256.*
-  # change http requests to some-registry to https and proxy them with dfget
-  - regx: some-registry/
-    useHTTPS: true
-  # proxy requests directly, without dfget
-  - regx: no-proxy-reg
-    direct: true
-  # proxy requests with redirect
-  - regx: some-registry
-    redirect: another-registry
-
-  hijackHTTPS:
-    # key pair used to hijack https requests
-    cert: ""
-    key: ""
-    hosts:
-    - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
-      # whether to ignore https certificate errors
-      insecure: true
-      # optional certificates if the host uses self-signed certificates
-      certs: [ ]
+  # proxy all sha256 layer requests with dfget
+  - regx: (blobs|manifests|config)/sha256.*

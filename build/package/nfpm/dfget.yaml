@@ -7,6 +7,7 @@ priority: extra
 description: dfget is the client of Dragonfly used to download and upload files
 license: "Apache 2.0"
 homepage: https://d7y.io
+maintainer: Dragonfly Maintainers
 
 provides:
   - dfget
