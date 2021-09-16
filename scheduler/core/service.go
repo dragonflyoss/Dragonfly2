@@ -62,13 +62,13 @@ func WithDisableCDN(disableCDN bool) Option {
 }
 
 type SchedulerService struct {
-	// cdn mgr
+	// cdn manager
 	cdnManager supervisor.CDNManager
-	// task mgr
+	// task manager
 	taskManager supervisor.TaskManager
-	// host mgr
+	// host manager
 	hostManager supervisor.HostManager
-	// Peer mgr
+	// Peer manager
 	peerManager supervisor.PeerManager
 
 	sched     scheduler.Scheduler
