@@ -20,7 +20,12 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
+)
+
+const (
+	TaskGCName = "task"
 )
 
 type TaskManager interface {
@@ -41,7 +46,7 @@ type taskManager struct {
 	tasks       *sync.Map
 }
 
-func NewTaskManager(cfg *config.GCConfig, peerManager PeerManager) TaskManager {
+func NewTaskManager(cfg *config.GCConfig, gc gc.GC, peerManager PeerManager) TaskManager {
 	m := &taskManager{
 		peerManager: peerManager,
 		gcTicker:    time.NewTicker(cfg.TaskGCInterval),
@@ -49,6 +54,7 @@ func NewTaskManager(cfg *config.GCConfig, peerManager PeerManager) TaskManager {
 		taskTTI:     cfg.TaskTTI,
 		tasks:       &sync.Map{},
 	}
+
 	go m.runGC()
 	return m
 }

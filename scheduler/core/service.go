@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -81,15 +82,15 @@ type SchedulerService struct {
 	wg        sync.WaitGroup
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, options ...Option) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
 	ops := &Options{}
 	for _, op := range options {
 		op(ops)
 	}
 
 	hostManager := supervisor.NewHostManager()
-	peerManager := supervisor.NewPeerManager(cfg.GC, hostManager)
-	taskManager := supervisor.NewTaskManager(cfg.GC, peerManager)
+	peerManager := supervisor.NewPeerManager(cfg.GC, gc, hostManager)
+	taskManager := supervisor.NewTaskManager(cfg.GC, gc, peerManager)
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})

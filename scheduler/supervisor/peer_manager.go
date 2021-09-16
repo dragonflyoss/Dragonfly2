@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -44,7 +45,7 @@ type peerManager struct {
 	lock        sync.RWMutex
 }
 
-func NewPeerManager(cfg *config.GCConfig, hostManager HostManager) PeerManager {
+func NewPeerManager(cfg *config.GCConfig, gc gc.GC, hostManager HostManager) PeerManager {
 	m := &peerManager{
 		hostManager: hostManager,
 		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
