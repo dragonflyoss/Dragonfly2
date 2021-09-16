@@ -136,13 +136,6 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 }
 
 func (drs *DownResultStream) replaceClient(cause error) error {
-	preNode, err := drs.dc.TryMigrate(drs.hashKey, cause, drs.failedServers)
-	if err != nil {
-		logger.WithTaskID(drs.hashKey).Infof("replaceClient: tryMigrate daemon node failed: %v", err)
-		return cause
-	}
-	drs.failedServers = append(drs.failedServers, preNode)
-
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client dfdaemon.DaemonClient

@@ -20,6 +20,8 @@ import (
 	"context"
 	"log"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
+
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
 )
@@ -92,7 +94,8 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		}
 	}
 	if ret.SubConn == nil {
-		return ret, balancer.ErrNoSubConnAvailable
+		//return ret, balancer.ErrNoSubConnAvailable
+		return ret, dferrors.ErrNoCandidateNode
 	}
 	return ret, nil
 }
