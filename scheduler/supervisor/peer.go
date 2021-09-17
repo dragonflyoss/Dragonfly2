@@ -60,6 +60,7 @@ func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManag
 		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
 		peerTTL:     cfg.PeerTTL,
 		peerTTI:     cfg.PeerTTI,
+		peers:       &sync.Map{},
 	}
 
 	gcManager.Add(gc.Task{
@@ -194,7 +195,7 @@ type Peer struct {
 	// finishedNum specifies downloaded finished piece number
 	finishedNum atomic.Int32
 	parent      *Peer
-	children    sync.Map
+	children    *sync.Map
 	status      PeerStatus
 	costHistory []int
 	leave       atomic.Bool
@@ -208,6 +209,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Host:         host,
 		CreateAt:     time.Now(),
 		lastAccessAt: time.Now(),
+		children:     &sync.Map{},
 		status:       PeerStatusWaiting,
 		logger:       logger.WithTaskAndPeerID(task.ID, id),
 	}
@@ -384,7 +386,7 @@ func (peer *Peer) GetParent() *Peer {
 func (peer *Peer) GetChildren() *sync.Map {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return &peer.children
+	return peer.children
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
