@@ -132,12 +132,9 @@ func (g gc) run(t Task) {
 
 	go func() {
 		g.logger.Infof("%s GC start", t.ID)
-		defer func() {
-			g.logger.Infof("%s GC finish", t.ID)
-			close(done)
-		}()
+		defer close(done)
 
-		if err := t.RunGC(); err != nil {
+		if err := t.Runner.RunGC(); err != nil {
 			g.logger.Errorf("%s GC error: %v", t.ID, err)
 			return
 		}

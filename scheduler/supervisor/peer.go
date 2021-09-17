@@ -54,7 +54,7 @@ type peerManager struct {
 	lock        sync.RWMutex
 }
 
-func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) PeerManager {
+func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) (PeerManager, error) {
 	m := &peerManager{
 		hostManager: hostManager,
 		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
@@ -63,14 +63,17 @@ func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManag
 		peers:       &sync.Map{},
 	}
 
-	gcManager.Add(gc.Task{
+	// Add GC task
+	if err := gcManager.Add(gc.Task{
 		ID:       PeerGCID,
 		Interval: cfg.PeerGCInterval,
 		Timeout:  cfg.PeerGCInterval,
-		RunGC:    m.runGC,
-	})
+		Runner:   m,
+	}); err != nil {
+		return nil, err
+	}
 
-	return m
+	return m, nil
 }
 
 func (m *peerManager) Add(peer *Peer) {
@@ -119,7 +122,7 @@ func (m *peerManager) GetPeers() *sync.Map {
 	return m.peers
 }
 
-func (m *peerManager) runGC() error {
+func (m *peerManager) RunGC() error {
 	m.peers.Range(func(key, value interface{}) bool {
 		id := key.(string)
 		peer := value.(*Peer)

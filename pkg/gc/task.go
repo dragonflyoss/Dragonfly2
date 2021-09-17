@@ -21,12 +21,16 @@ import (
 	"time"
 )
 
+type Runner interface {
+	RunGC() error
+}
+
 // Task is an struct used to run GC instance
 type Task struct {
 	ID       string
 	Interval time.Duration
 	Timeout  time.Duration
-	RunGC    func() error
+	Runner   Runner
 }
 
 // Validate task params
@@ -43,12 +47,8 @@ func (t *Task) validate() error {
 		return errors.New("Timeout value is greater than 0")
 	}
 
-	if t.Timeout >= t.Interval {
+	if t.Timeout > t.Interval {
 		return errors.New("Timeout value needs to be less than the Interval value")
-	}
-
-	if t.RunGC == nil {
-		return errors.New("empty RunGC is not specified")
 	}
 
 	return nil

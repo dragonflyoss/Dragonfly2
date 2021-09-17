@@ -89,8 +89,17 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	}
 
 	hostManager := supervisor.NewHostManager()
-	peerManager := supervisor.NewPeerManager(cfg.GC, gc, hostManager)
-	taskManager := supervisor.NewTaskManager(cfg.GC, gc, peerManager)
+
+	peerManager, err := supervisor.NewPeerManager(cfg.GC, gc, hostManager)
+	if err != nil {
+		return nil, err
+	}
+
+	taskManager, err := supervisor.NewTaskManager(cfg.GC, gc, peerManager)
+	if err != nil {
+		return nil, err
+	}
+
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 	})

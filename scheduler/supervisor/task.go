@@ -51,7 +51,7 @@ type taskManager struct {
 	tasks       *sync.Map
 }
 
-func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) TaskManager {
+func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) (TaskManager, error) {
 	m := &taskManager{
 		peerManager: peerManager,
 		gcTicker:    time.NewTicker(cfg.TaskGCInterval),
@@ -60,15 +60,16 @@ func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManag
 		tasks:       &sync.Map{},
 	}
 
-	gcManager.Add(gc.Task{
+	if err := gcManager.Add(gc.Task{
 		ID:       TaskGCID,
 		Interval: cfg.PeerGCInterval,
 		Timeout:  cfg.PeerGCInterval,
-		RunGC:    m.runGC,
-	})
+		Runner:   m,
+	}); err != nil {
+		return nil, err
+	}
 
-	go m.runGC()
-	return m
+	return m, nil
 }
 
 func (m *taskManager) Delete(id string) {
@@ -93,7 +94,7 @@ func (m *taskManager) GetOrAdd(t *Task) (*Task, bool) {
 	return task.(*Task), ok
 }
 
-func (m *taskManager) runGC() error {
+func (m *taskManager) RunGC() error {
 	m.tasks.Range(func(key, value interface{}) bool {
 		taskID := key.(string)
 		task := value.(*Task)
