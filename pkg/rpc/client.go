@@ -29,8 +29,7 @@ import (
 )
 
 const (
-	defaultConnExpireTime = 2 * time.Minute
-	defaultDialTimeout    = 10 * time.Second
+	defaultDialTimeout = 10 * time.Second
 )
 
 type Closer interface {
@@ -51,11 +50,10 @@ type Connection struct {
 func newDefaultConnection(ctx context.Context) *Connection {
 	childCtx, cancel := context.WithCancel(ctx)
 	return &Connection{
-		ctx:            childCtx,
-		cancel:         cancel,
-		dialOpts:       defaultClientOpts,
-		connExpireTime: defaultConnExpireTime,
-		dialTimeout:    defaultDialTimeout,
+		ctx:         childCtx,
+		cancel:      cancel,
+		dialOpts:    defaultClientOpts,
+		dialTimeout: defaultDialTimeout,
 	}
 }
 
@@ -91,12 +89,6 @@ func newFuncConnOption(f func(option *Connection)) *funcConnOption {
 	return &funcConnOption{
 		f: f,
 	}
-}
-
-func WithConnExpireTime(duration time.Duration) ConnOption {
-	return newFuncConnOption(func(conn *Connection) {
-		conn.connExpireTime = duration
-	})
 }
 
 func WithDialOption(opts []grpc.DialOption) ConnOption {

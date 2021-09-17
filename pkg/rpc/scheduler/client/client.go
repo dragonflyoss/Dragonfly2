@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -40,7 +39,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	}
 	sc := &schedulerClient{
 		rpc.NewConnection(context.Background(), rpc.SchedulerScheme, addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(30 * time.Minute),
 			rpc.WithDialOption(opts),
 		}),
 	}

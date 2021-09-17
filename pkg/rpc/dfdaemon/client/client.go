@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -42,7 +41,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 	}
 	dc := &daemonClient{
 		rpc.NewConnection(context.Background(), rpc.DaemonScheme, addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
 	}
@@ -56,7 +54,6 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Da
 	once.Do(func() {
 		elasticDaemonClient = &daemonClient{
 			rpc.NewConnection(context.Background(), rpc.DaemonElasticScheme, make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(30 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}
