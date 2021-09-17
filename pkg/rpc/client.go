@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	defaultDialTimeout = 10 * time.Second
+	defaultDialTimeout = 1 * time.Minute
 )
 
 type Closer interface {
