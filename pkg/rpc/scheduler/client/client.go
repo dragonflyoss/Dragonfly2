@@ -89,7 +89,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 		if err != nil {
 			return nil, err
 		}
-		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, rpc.PickReq{Key: key, Attempt: 1}), ptr, opts...)
+		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: key, Attempt: 1}), ptr, opts...)
 	}
 	res, err := rpc.ExecuteWithRetry(reg, 0.2, 2.0, 3, nil)
 	if err != nil {
@@ -123,7 +123,7 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 		if err != nil {
 			return nil, err
 		}
-		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, rpc.PickReq{Key: hashKey, Attempt: 2}), ptr, opts...)
+		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: hashKey, Attempt: 2}), ptr, opts...)
 	}, 0.2, 2.0, 3, cause)
 	if err != nil {
 		logger.WithTaskAndPeerID(hashKey, ptr.PeerId).Errorf("retryRegisterPeerTask: register peer task to scheduler %s failed: %v", schedulerNode, err)
@@ -165,7 +165,7 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 		if err != nil {
 			return nil, err
 		}
-		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, rpc.PickReq{Key: pr.TaskId, Attempt: 1}), pr, opts...)
+		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 1}), pr, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
 		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("ReportPeerResult: report peer result to scheduler %s failed: %v", schedulerNode, err)
@@ -191,7 +191,7 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 			code = dfcodes.ServerUnavailable
 			return nil, err
 		}
-		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, rpc.PickReq{Key: pr.TaskId, Attempt: 2}), pr, opts...)
+		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 2}), pr, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
 		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("retryReportPeerResult: report peer result to scheduler %s failed: %v", schedulerNode, err)
@@ -222,7 +222,7 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		if err != nil {
 			return nil, err
 		}
-		return client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
+		return client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
 	}
 	_, err = rpc.ExecuteWithRetry(leaveFun, 0.2, 2.0, 3, nil)
 	if err == nil {

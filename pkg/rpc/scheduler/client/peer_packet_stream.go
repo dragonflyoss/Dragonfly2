@@ -122,7 +122,7 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 		}
 		//timeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		//defer cancel()
-		reqCtx := context.WithValue(pps.ctx, rpc.PickKey{}, rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1})
+		reqCtx := context.WithValue(pps.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1})
 		_, err = client.RegisterPeerTask(reqCtx, pps.ptr)
 		if err != nil {
 			return nil, err
@@ -154,7 +154,7 @@ func (pps *peerPacketStream) initStream() error {
 		if err != nil {
 			return nil, err
 		}
-		return client.ReportPieceResult(context.WithValue(pps.ctx, rpc.PickKey{}, rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1}), pps.opts...)
+		return client.ReportPieceResult(context.WithValue(pps.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1}), pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, nil)
 	if err != nil {
 		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
@@ -180,7 +180,7 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		return client.ReportPieceResult(context.WithValue(pps.ctx, rpc.PickKey{}, rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1}), pps.opts...)
+		return client.ReportPieceResult(context.WithValue(pps.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1}), pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 	if err != nil {
 		logger.WithTaskID(pps.hashKey).Infof("replaceStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
@@ -201,7 +201,7 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		reqCtx := context.WithValue(pps.ctx, rpc.PickKey{}, rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1})
+		reqCtx := context.WithValue(pps.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1})
 		_, err = client.RegisterPeerTask(reqCtx, pps.ptr)
 		if err != nil {
 			return nil, err

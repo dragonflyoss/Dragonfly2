@@ -70,7 +70,7 @@ func (pss *PieceSeedStream) initStream() error {
 		if err != nil {
 			return nil, err
 		}
-		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
+		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 	if err != nil {
 		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
@@ -113,7 +113,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
+		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 	if err != nil {
 		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
@@ -134,7 +134,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 		if err != nil {
 			return nil, err
 		}
-		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
+		return client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, cause)
 	if err != nil {
 		logger.WithTaskID(pss.hashKey).Infof("replaceClient: invoke cdn node %s ObtainSeeds failed: %v", target, err)
