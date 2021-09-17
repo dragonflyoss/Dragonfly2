@@ -41,6 +41,10 @@ func NewHostManager() HostManager {
 
 func (m *hostManager) Get(key string) (*Host, bool) {
 	host, ok := m.Load(key)
+	if !ok {
+		return nil, false
+	}
+
 	return host.(*Host), ok
 }
 
@@ -126,6 +130,10 @@ func (h *Host) DeletePeer(id string) {
 
 func (h *Host) GetPeer(id string) (*Peer, bool) {
 	peer, ok := h.peers.Load(id)
+	if !ok {
+		return nil, false
+	}
+
 	return peer.(*Peer), ok
 }
 

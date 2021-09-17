@@ -81,6 +81,10 @@ func (m *taskManager) Add(task *Task) {
 
 func (m *taskManager) Get(id string) (*Task, bool) {
 	task, ok := m.tasks.Load(id)
+	if !ok {
+		return nil, false
+	}
+
 	return task.(*Task), ok
 }
 
@@ -211,6 +215,10 @@ func (task *Task) GetStatus() TaskStatus {
 
 func (task *Task) GetPiece(n int32) (*base.PieceInfo, bool) {
 	piece, ok := task.pieces.Load(n)
+	if !ok {
+		return nil, false
+	}
+
 	return piece.(*base.PieceInfo), ok
 }
 

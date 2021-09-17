@@ -82,6 +82,10 @@ func (m *peerManager) Add(peer *Peer) {
 
 func (m *peerManager) Get(id string) (*Peer, bool) {
 	peer, ok := m.peers.Load(id)
+	if !ok {
+		return nil, false
+	}
+
 	return peer.(*Peer), ok
 }
 
