@@ -17,6 +17,8 @@
 package rpc
 
 import (
+	"log"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"google.golang.org/grpc/resolver"
 )
@@ -85,6 +87,7 @@ func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 	if r.cc == nil {
 		return nil
 	}
+	log.Printf("resolver update addresses: %v", addresses)
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
 }
 

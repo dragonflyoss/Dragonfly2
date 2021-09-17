@@ -217,7 +217,6 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 	}
 	info := v.(*subConnInfo)
 	oldS := info.state
-	log.Printf("state of one subConn changed from %s to %s\n", oldS.String(), s.String())
 	if oldS == connectivity.TransientFailure && s == connectivity.Connecting {
 		return
 	}

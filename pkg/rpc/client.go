@@ -174,8 +174,21 @@ func (conn *Connection) Close() error {
 func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	conn.rwMutex.Lock()
 	defer conn.rwMutex.Unlock()
-	conn.serverNodes = addrs
-	if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-		resolver.UpdateAddrs(addrs)
+	updateFlag := false
+	if len(addrs) != len(conn.serverNodes) {
+		updateFlag = true
+	} else {
+		for i := 0; i < len(addrs); i++ {
+			if addrs[i] != conn.serverNodes[i] {
+				updateFlag = true
+				break
+			}
+		}
+	}
+	if updateFlag {
+		conn.serverNodes = addrs
+		if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
+			resolver.UpdateAddrs(addrs)
+		}
 	}
 }
