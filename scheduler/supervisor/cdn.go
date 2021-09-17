@@ -116,19 +116,21 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 	span := trace.SpanFromContext(ctx)
 	var initialized bool
 	var cdnPeer *Peer
-
 	for {
 		piece, err := stream.Recv()
-		if err == io.EOF {
-			if task.GetStatus() == TaskStatusSuccess {
-				span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
-				return cdnPeer, nil
-			}
-			return cdnPeer, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
-		}
 		if err != nil {
+			if err == io.EOF {
+				logger.Infof("task %s connection closed", task.ID)
+				if task.GetStatus() == TaskStatusSuccess {
+					span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
+					return cdnPeer, nil
+				}
+				return cdnPeer, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
+			}
+
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
+			logger.Errorf("task %s add piece err %v", task.ID, err)
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
@@ -141,20 +143,25 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 			}
 			return cdnPeer, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
+
 		if piece != nil {
+			logger.Infof("task %s add piece %v", task.ID, piece)
 			if !initialized {
 				cdnPeer, err = c.initCDNPeer(ctx, task, piece)
+				if err != nil || cdnPeer == nil {
+					return nil, err
+				}
+
+				logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
 				if !task.CanSchedule() {
 					task.SetStatus(TaskStatusSeeding)
 				}
 				initialized = true
 			}
 			span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
-			if err != nil || cdnPeer == nil {
-				return cdnPeer, err
-			}
 			cdnPeer.Touch()
 			if piece.Done {
+				logger.Infof("task %s receive pieces finish", task.ID)
 				task.PieceTotal = piece.TotalPieceCount
 				task.ContentLength = piece.ContentLength
 				task.SetStatus(TaskStatusSuccess)
@@ -169,6 +176,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 				span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength))
 				return cdnPeer, nil
 			}
+
 			cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
 			task.GetOrAddPiece(piece.PieceInfo)
 		}
@@ -229,8 +237,8 @@ type CDNDynmaicClient interface {
 
 type cdnDynmaicClient struct {
 	cdnclient.CdnClient
+	data  *config.DynconfigData
 	hosts map[string]*Host
-	cdns  []*config.CDN
 	lock  sync.RWMutex
 }
 
@@ -247,8 +255,8 @@ func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOp
 
 	dc := &cdnDynmaicClient{
 		CdnClient: client,
+		data:      config,
 		hosts:     cdnsToHosts(config.CDNs),
-		cdns:      config.CDNs,
 	}
 
 	dynConfig.Register(dc)
@@ -258,29 +266,32 @@ func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOp
 func (dc *cdnDynmaicClient) GetHost(id string) (*Host, bool) {
 	dc.lock.RLock()
 	defer dc.lock.RUnlock()
+	host, ok := dc.hosts[id]
+	if !ok {
+		return nil, false
+	}
 
-	cdnHost, ok := dc.hosts[id]
-	return cdnHost, ok
+	return host, true
 }
 
-func (dc *cdnDynmaicClient) OnNotify(c *config.DynconfigData) {
-	dc.lock.Lock()
-	defer dc.lock.Unlock()
-
-	if reflect.DeepEqual(dc.cdns, c.CDNs) {
+func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
+	if reflect.DeepEqual(dc.data, data) {
 		return
 	}
-	dc.hosts = cdnsToHosts(c.CDNs)
-	dc.UpdateState(cdnsToNetAddrs(c.CDNs))
+
+	dc.lock.Lock()
+	defer dc.lock.Unlock()
+	dc.data = data
+	dc.hosts = cdnsToHosts(data.CDNs)
+	dc.UpdateState(cdnsToNetAddrs(data.CDNs))
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
 func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
-	hosts := make(map[string]*Host, len(cdns))
+	hosts := map[string]*Host{}
 	for _, cdn := range cdns {
 		id := idgen.CDN(cdn.HostName, cdn.Port)
-		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location,
-			cdn.IDC, cdn.NetTopology, cdn.LoadLimit)
+		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, cdn.NetTopology, cdn.LoadLimit)
 	}
 
 	return hosts

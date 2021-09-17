@@ -53,12 +53,12 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 		return true
 	}
 
-	costHistory := peer.GetCostHistory()
-	if len(costHistory) < 4 {
+	costs := peer.GetCosts()
+	if len(costs) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
+	avgCost, lastCost := getAvgAndLastCost(costs, 4)
 	// TODO adjust policy
 	if (avgCost * 20) < lastCost {
 		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.ID)
@@ -72,13 +72,12 @@ func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 		logger.Debugf("peer %s is bad because it's status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
-	costHistory := peer.GetCostHistory()
-	if len(costHistory) < 4 {
+	costs := peer.GetCosts()
+	if len(costs) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
-
+	avgCost, lastCost := getAvgAndLastCost(costs, 4)
 	if avgCost*40 < lastCost && !peer.Host.IsCDN {
 		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.ID, avgCost, lastCost)
 		return true

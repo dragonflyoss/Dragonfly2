@@ -76,6 +76,7 @@ func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManag
 func (m *peerManager) Add(peer *Peer) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+
 	peer.Host.AddPeer(peer)
 	peer.Task.AddPeer(peer)
 	m.peers.Store(peer.ID, peer)
@@ -93,6 +94,7 @@ func (m *peerManager) Get(id string) (*Peer, bool) {
 func (m *peerManager) Delete(id string) {
 	m.lock.Lock()
 	defer m.lock.Unlock()
+
 	if peer, ok := m.Get(id); ok {
 		peer.Host.DeletePeer(id)
 		peer.Task.DeletePeer(peer)
@@ -197,7 +199,7 @@ type Peer struct {
 	parent      *Peer
 	children    *sync.Map
 	status      PeerStatus
-	costHistory []int
+	costs       []int
 	leave       atomic.Bool
 	logger      *logger.SugaredLoggerOnWith
 }
@@ -230,12 +232,14 @@ func (peer *Peer) GetTreeLen() int {
 func (peer *Peer) GetLastAccessAt() time.Time {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
+
 	return peer.lastAccessAt
 }
 
 func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
+
 	peer.lastAccessAt = time.Now()
 	if peer.status == PeerStatusZombie && !peer.leave.Load() {
 		peer.status = PeerStatusRunning
@@ -267,14 +271,14 @@ func (peer *Peer) ReplaceParent(parent *Peer) {
 	}
 }
 
-func (peer *Peer) GetCostHistory() []int {
+func (peer *Peer) GetCosts() []int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return peer.costHistory
+	return peer.costs
 }
 
 func (peer *Peer) GetPieceAverageCost() (int, bool) {
-	costs := peer.GetCostHistory()
+	costs := peer.GetCosts()
 	if len(costs) < 1 {
 		return 0, false
 	}
@@ -288,15 +292,16 @@ func (peer *Peer) GetPieceAverageCost() (int, bool) {
 }
 
 func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-
 	if finishedCount > peer.finishedNum.Load() {
 		peer.finishedNum.Store(finishedCount)
-		peer.costHistory = append(peer.costHistory, cost)
-		if len(peer.costHistory) > 20 {
-			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
+
+		peer.lock.Lock()
+		peer.costs = append(peer.costs, cost)
+		if len(peer.costs) > 20 {
+			peer.costs = peer.costs[len(peer.costs)-20:]
 		}
+		peer.lock.Unlock()
+
 		peer.Task.UpdatePeer(peer)
 		return
 	}

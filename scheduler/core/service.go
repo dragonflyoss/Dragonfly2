@@ -240,13 +240,13 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
-	synclock.Lock(task.ID, true)
+	synclock.Lock(task.ID, false)
+	defer synclock.UnLock(task.ID, false)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
 		if task.GetLastTriggerAt().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
-			synclock.UnLock(task.ID, true)
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			return task
 		}
@@ -254,12 +254,8 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		task.Log().Infof("add new task %s", task.ID)
 	}
 
-	synclock.UnLock(task.ID, true)
 	// do trigger
 	task.UpdateLastTriggerAt(time.Now())
-
-	synclock.Lock(task.ID, false)
-	defer synclock.UnLock(task.ID, false)
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
 	if task.IsHealth() {
@@ -287,7 +283,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			if ok = s.worker.send(peerDownloadSuccessEvent{cdnPeer, nil}); !ok {
 				logger.Error("send taskSeed success event failed, eventLoop is shutdown")
 			}
-			logger.Debugf("===== successfully obtain seeds from cdn, task: %+v ====", task)
+			logger.Infof("successfully obtain seeds from cdn, task: %+v", task)
 		}
 	}()
 	return task
