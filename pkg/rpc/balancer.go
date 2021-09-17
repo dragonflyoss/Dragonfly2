@@ -17,11 +17,9 @@
 package rpc
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc/balancer/base"
@@ -29,7 +27,6 @@ import (
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const (
@@ -55,13 +52,12 @@ type d7yBalancerBuilder struct{}
 // Build creates a d7yBalancer, and starts its scManager.
 func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
-		cc:             cc,
-		addrInfos:      make(map[string]resolver.Address),
-		subConns:       make(map[string]balancer.SubConn),
-		scInfos:        sync.Map{},
-		pickResultChan: make(chan PickResult),
-		pickResults:    workqueue.New(),
-		scCounts:       make(map[balancer.SubConn]*int32),
+		cc:                cc,
+		addrInfos:         make(map[string]resolver.Address),
+		subConns:          make(map[string]balancer.SubConn),
+		scInfos:           sync.Map{},
+		pickResultChan:    make(chan PickResult),
+		subConnAccessTime: sync.Map{},
 	}
 	go b.scManager()
 	return b
@@ -103,12 +99,8 @@ type d7yBalancer struct {
 
 	// pickResultChan is the channel for the picker to report PickResult to the balancer.
 	pickResultChan chan PickResult
-	// pickResults is the Queue storing PickResult with a undone context, updating asynchronously.
-	pickResults workqueue.Interface
-	// scCounts records the amount of PickResults with the SubConn in pickResults.
-	scCounts map[balancer.SubConn]*int32
-	// scCountsLock is the lock for the scCounts map.
-	scCountsLock sync.Mutex
+	//subConnAccessTime maps subConn to its latest access time.
+	subConnAccessTime sync.Map
 }
 
 // UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
@@ -300,62 +292,27 @@ func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 
 // scManager launches two goroutines to receive PickResult and query whether the context of the stored PickResult is done.
 func (b *d7yBalancer) scManager() {
-	// The first goroutine listens to the pickResultChan, put pickResults into a queue.
-	// Because the second go routine will reset a SubConn if there is no PickResult with the SubConn in the queue,
-	// and we want to hold a SubConn for a while to reuse it, I use a "shadow context" with timeout to achieve both.
-	b.pickResults.Add(struct{}{})
+	// The first goroutine listens to the pickResultChan, put pickResults into subConnAccessTime map.
 	go func() {
 		for {
 			pr := <-b.pickResultChan
-			b.pickResults.Add(pr)
-			// Use a shadow context to ensure one of the necessary conditions of calling resetSubConn is that at least a defined time duration has passed since each previous request.
-			// This trick can reduce a goroutine traversing the entire map and compare time.Now() and the recorded expired time.
-			shadowCtx, _ := context.WithTimeout(context.Background(), connectionLifetime)
-			b.pickResults.Add(PickResult{Ctx: shadowCtx, SC: pr.SC})
-			b.scCountsLock.Lock()
-			cnt, ok := b.scCounts[pr.SC]
-			if !ok {
-				cnt = new(int32)
-				*cnt = 0
-				b.scCounts[pr.SC] = cnt
-			}
-			// I want to use sync.map to replace the map scCounts, so I use atomic. But I find it (the replacement) is not easy...
-			atomic.AddInt32(cnt, 2)
-			b.scCountsLock.Unlock()
+			b.subConnAccessTime.Store(pr.SC, pr.PickTime)
 		}
 	}()
 
-	// The second goroutine checks the pickResults in the queue. if the context of a PickResult is done, it will drop the pickResults.
-	// It will reset a SubConn when there is no pickResults with the SubConn after dropped one.
+	// The second goroutine check the subConnAccessTime map, resets the SubConn alive for more than connectionLifetime.
 	go func() {
-		for {
-			v, shutdown := b.pickResults.Get()
-			if shutdown {
-				time.Sleep(connectionLifetime)
-				continue
-			}
-			pr, ok := v.(PickResult)
-			if !ok {
-				time.Sleep(connectionLifetime / 5)
-			}
-			b.pickResults.Done(v)
-			select {
-			case <-pr.Ctx.Done():
-				b.scCountsLock.Lock()
-				cnt, ok := b.scCounts[pr.SC]
-				if !ok {
-					b.scCountsLock.Unlock()
-					break
+		ticker := time.NewTicker(2 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			b.subConnAccessTime.Range(func(key, value interface{}) bool {
+				subConn := key.(balancer.SubConn)
+				accessTime := value.(time.Time)
+				if accessTime.Add(connectionLifetime).Before(time.Now()) {
+					b.resetSubConn(subConn)
 				}
-				atomic.AddInt32(cnt, -1)
-				if *cnt == 0 {
-					delete(b.scCounts, pr.SC)
-					b.resetSubConn(pr.SC)
-				}
-				b.scCountsLock.Unlock()
-			default:
-				b.pickResults.Add(pr)
-			}
+				return true
+			})
 		}
 	}()
 }

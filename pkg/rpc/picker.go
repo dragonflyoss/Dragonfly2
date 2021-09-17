@@ -17,8 +17,8 @@
 package rpc
 
 import (
-	"context"
 	"log"
+	"time"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 
@@ -41,8 +41,8 @@ var (
 )
 
 type PickResult struct {
-	Ctx context.Context
-	SC  balancer.SubConn
+	SC       balancer.SubConn
+	PickTime time.Time
 }
 
 func newD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
@@ -90,7 +90,7 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	if targetAddr, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
 		ret.SubConn = p.subConns[targetAddr[pickReq.Attempt-1]]
 		if p.needReport {
-			p.reportChan <- PickResult{Ctx: info.Ctx, SC: ret.SubConn}
+			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
 		}
 	}
 	if ret.SubConn == nil {
