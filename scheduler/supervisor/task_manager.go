@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	TaskGCName = "task"
+	TaskGCID = "task"
 )
 
 type TaskManager interface {
@@ -46,7 +46,7 @@ type taskManager struct {
 	tasks       *sync.Map
 }
 
-func NewTaskManager(cfg *config.GCConfig, gc gc.GC, peerManager PeerManager) TaskManager {
+func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) TaskManager {
 	m := &taskManager{
 		peerManager: peerManager,
 		gcTicker:    time.NewTicker(cfg.TaskGCInterval),
@@ -54,6 +54,13 @@ func NewTaskManager(cfg *config.GCConfig, gc gc.GC, peerManager PeerManager) Tas
 		taskTTI:     cfg.TaskTTI,
 		tasks:       &sync.Map{},
 	}
+
+	gcManager.Add(gc.Task{
+		ID:       TaskGCID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		RunGC:    m.runGC,
+	})
 
 	go m.runGC()
 	return m
@@ -77,33 +84,32 @@ func (m *taskManager) GetOrAdd(t *Task) (*Task, bool) {
 	return task.(*Task), ok
 }
 
-func (m *taskManager) runGC() {
-	for range m.gcTicker.C {
-		m.tasks.Range(func(key, value interface{}) bool {
-			taskID := key.(string)
-			task := value.(*Task)
-			elapsed := time.Since(task.GetLastAccessAt())
-			if elapsed > m.taskTTI && task.IsSuccess() {
-				task.Log().Info("elapsed larger than taskTTI, task status become zombie")
-				task.SetStatus(TaskStatusZombie)
-			}
+func (m *taskManager) runGC() error {
+	m.tasks.Range(func(key, value interface{}) bool {
+		taskID := key.(string)
+		task := value.(*Task)
+		elapsed := time.Since(task.GetLastAccessAt())
+		if elapsed > m.taskTTI && task.IsSuccess() {
+			task.Log().Info("elapsed larger than taskTTI, task status become zombie")
+			task.SetStatus(TaskStatusZombie)
+		}
 
-			if task.GetPeers().Size() == 0 {
-				task.Log().Info("peers is empty, task status become waiting")
-				task.SetStatus(TaskStatusWaiting)
-			}
+		if task.GetPeers().Size() == 0 {
+			task.Log().Info("peers is empty, task status become waiting")
+			task.SetStatus(TaskStatusWaiting)
+		}
 
-			if elapsed > m.taskTTL {
-				// TODO lock
-				peers := m.peerManager.GetPeersByTask(taskID)
-				for _, peer := range peers {
-					task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
-					m.peerManager.Delete(peer.ID)
-				}
-				task.Log().Info("delete task because elapsed larger than task TTL")
-				m.Delete(taskID)
+		if elapsed > m.taskTTL {
+			// TODO lock
+			peers := m.peerManager.GetPeersByTask(taskID)
+			for _, peer := range peers {
+				task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
+				m.peerManager.Delete(peer.ID)
 			}
-			return true
-		})
-	}
+			task.Log().Info("delete task because elapsed larger than task TTL")
+			m.Delete(taskID)
+		}
+		return true
+	})
+	return nil
 }

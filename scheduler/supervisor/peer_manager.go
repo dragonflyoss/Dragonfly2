@@ -20,8 +20,12 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/gc"
+	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
+)
+
+const (
+	PeerGCID = "peer"
 )
 
 type PeerManager interface {
@@ -45,7 +49,7 @@ type peerManager struct {
 	lock        sync.RWMutex
 }
 
-func NewPeerManager(cfg *config.GCConfig, gc gc.GC, hostManager HostManager) PeerManager {
+func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) PeerManager {
 	m := &peerManager{
 		hostManager: hostManager,
 		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
@@ -53,7 +57,13 @@ func NewPeerManager(cfg *config.GCConfig, gc gc.GC, hostManager HostManager) Pee
 		peerTTI:     cfg.PeerTTI,
 	}
 
-	go m.runGC()
+	gcManager.Add(gc.Task{
+		ID:       PeerGCID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		RunGC:    m.runGC,
+	})
+
 	return m
 }
 
@@ -97,36 +107,36 @@ func (m *peerManager) GetPeers() *sync.Map {
 	return m.peers
 }
 
-func (m *peerManager) runGC() {
-	for range m.gcTicker.C {
-		m.peers.Range(func(key, value interface{}) bool {
-			id := key.(string)
-			peer := value.(*Peer)
-			elapsed := time.Since(peer.GetLastAccessAt())
+func (m *peerManager) runGC() error {
+	m.peers.Range(func(key, value interface{}) bool {
+		id := key.(string)
+		peer := value.(*Peer)
+		elapsed := time.Since(peer.GetLastAccessAt())
 
-			if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
-				if !peer.IsConnected() {
-					peer.Leave()
-				}
-				peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
-				peer.SetStatus(PeerStatusZombie)
+		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
+			if !peer.IsConnected() {
+				peer.Leave()
 			}
+			peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
+			peer.SetStatus(PeerStatusZombie)
+		}
 
-			if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
-				if elapsed > m.peerTTL {
-					peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
-				}
-				m.Delete(id)
-				if peer.Host.GetPeersLen() == 0 {
-					m.hostManager.Delete(peer.Host.UUID)
-				}
-				if peer.Task.GetPeers().Size() == 0 {
-					peer.Task.Log().Info("peers is empty, task status become waiting")
-					peer.Task.SetStatus(TaskStatusWaiting)
-				}
+		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
+			if elapsed > m.peerTTL {
+				peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
 			}
+			m.Delete(id)
+			if peer.Host.GetPeersLen() == 0 {
+				m.hostManager.Delete(peer.Host.UUID)
+			}
+			if peer.Task.GetPeers().Size() == 0 {
+				peer.Task.Log().Info("peers is empty, task status become waiting")
+				peer.Task.SetStatus(TaskStatusWaiting)
+			}
+		}
 
-			return true
-		})
-	}
+		return true
+	})
+
+	return nil
 }
