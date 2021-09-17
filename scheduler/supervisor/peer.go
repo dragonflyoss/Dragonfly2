@@ -22,10 +22,129 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
+
+const (
+	PeerGCID = "peer"
+)
+
+type PeerManager interface {
+	Add(*Peer)
+
+	Get(string) (*Peer, bool)
+
+	Delete(string)
+
+	GetPeersByTask(string) []*Peer
+
+	GetPeers() *sync.Map
+}
+
+type peerManager struct {
+	hostManager HostManager
+	gcTicker    *time.Ticker
+	peerTTL     time.Duration
+	peerTTI     time.Duration
+	peers       *sync.Map
+	lock        sync.RWMutex
+}
+
+func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) PeerManager {
+	m := &peerManager{
+		hostManager: hostManager,
+		gcTicker:    time.NewTicker(cfg.PeerGCInterval),
+		peerTTL:     cfg.PeerTTL,
+		peerTTI:     cfg.PeerTTI,
+	}
+
+	gcManager.Add(gc.Task{
+		ID:       PeerGCID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		RunGC:    m.runGC,
+	})
+
+	return m
+}
+
+func (m *peerManager) Add(peer *Peer) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	peer.Host.AddPeer(peer)
+	peer.Task.AddPeer(peer)
+	m.peers.Store(peer.ID, peer)
+}
+
+func (m *peerManager) Get(id string) (*Peer, bool) {
+	peer, ok := m.peers.Load(id)
+	return peer.(*Peer), ok
+}
+
+func (m *peerManager) Delete(id string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	if peer, ok := m.Get(id); ok {
+		peer.Host.DeletePeer(id)
+		peer.Task.DeletePeer(peer)
+		peer.ReplaceParent(nil)
+		m.peers.Delete(id)
+	}
+}
+
+func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
+	var peers []*Peer
+	m.peers.Range(func(key, value interface{}) bool {
+		peer := value.(*Peer)
+		if peer.Task.ID == taskID {
+			peers = append(peers, peer)
+		}
+		return true
+	})
+	return peers
+}
+
+func (m *peerManager) GetPeers() *sync.Map {
+	return m.peers
+}
+
+func (m *peerManager) runGC() error {
+	m.peers.Range(func(key, value interface{}) bool {
+		id := key.(string)
+		peer := value.(*Peer)
+		elapsed := time.Since(peer.GetLastAccessAt())
+
+		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
+			if !peer.IsConnected() {
+				peer.Leave()
+			}
+			peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
+			peer.SetStatus(PeerStatusZombie)
+		}
+
+		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
+			if elapsed > m.peerTTL {
+				peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
+			}
+			m.Delete(id)
+			if peer.Host.GetPeersLen() == 0 {
+				m.hostManager.Delete(peer.Host.UUID)
+			}
+			if peer.Task.GetPeers().Size() == 0 {
+				peer.Task.Log().Info("peers is empty, task status become waiting")
+				peer.Task.SetStatus(TaskStatusWaiting)
+			}
+		}
+
+		return true
+	})
+
+	return nil
+}
 
 type PeerStatus uint8
 

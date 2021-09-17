@@ -64,7 +64,7 @@ func WithDisableCDN(disableCDN bool) Option {
 
 type SchedulerService struct {
 	// cdn manager
-	cdnManager supervisor.CDNManager
+	cdn supervisor.CDN
 	// task manager
 	taskManager supervisor.TaskManager
 	// host manager
@@ -121,11 +121,11 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 			return nil, errors.Wrap(err, "new refreshable cdn client")
 		}
 
-		cdnManager := supervisor.NewCDNManager(client, peerManager, hostManager)
+		cdn := supervisor.NewCDN(client, peerManager, hostManager)
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
-		s.cdnManager = cdnManager
+		s.cdn = cdn
 	}
 	return s, nil
 }
@@ -143,7 +143,7 @@ func (s *SchedulerService) Serve() {
 
 func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
 	defer s.wg.Done()
-	s.worker.start(newState(s.sched, s.peerManager, s.cdnManager, wsdq))
+	s.worker.start(newState(s.sched, s.peerManager, s.cdn, wsdq))
 }
 
 func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterface) {
@@ -267,7 +267,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		return task
 	}
 	task.SetStatus(supervisor.TaskStatusRunning)
-	if s.cdnManager == nil {
+	if s.cdn == nil {
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 		task.SetClientBackSource(s.config.BackSourceCount)
@@ -275,7 +275,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 	go func() {
-		if cdnPeer, err := s.cdnManager.StartSeedTask(ctx, task); err != nil {
+		if cdnPeer, err := s.cdn.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))

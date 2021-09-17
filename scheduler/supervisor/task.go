@@ -21,14 +21,103 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"go.uber.org/atomic"
 )
 
 const (
+	TaskGCID     = "task"
 	TinyFileSize = 128
 )
+
+type TaskManager interface {
+	Add(*Task)
+
+	Get(string) (*Task, bool)
+
+	Delete(string)
+
+	GetOrAdd(*Task) (*Task, bool)
+}
+
+type taskManager struct {
+	peerManager PeerManager
+	gcTicker    *time.Ticker
+	taskTTL     time.Duration
+	taskTTI     time.Duration
+	tasks       *sync.Map
+}
+
+func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) TaskManager {
+	m := &taskManager{
+		peerManager: peerManager,
+		gcTicker:    time.NewTicker(cfg.TaskGCInterval),
+		taskTTL:     cfg.TaskTTL,
+		taskTTI:     cfg.TaskTTI,
+		tasks:       &sync.Map{},
+	}
+
+	gcManager.Add(gc.Task{
+		ID:       TaskGCID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		RunGC:    m.runGC,
+	})
+
+	go m.runGC()
+	return m
+}
+
+func (m *taskManager) Delete(id string) {
+	m.tasks.Delete(id)
+}
+
+func (m *taskManager) Add(task *Task) {
+	m.tasks.Store(task.ID, task)
+}
+
+func (m *taskManager) Get(id string) (*Task, bool) {
+	task, ok := m.tasks.Load(id)
+	return task.(*Task), ok
+}
+
+func (m *taskManager) GetOrAdd(t *Task) (*Task, bool) {
+	task, ok := m.tasks.LoadOrStore(t.ID, t)
+	return task.(*Task), ok
+}
+
+func (m *taskManager) runGC() error {
+	m.tasks.Range(func(key, value interface{}) bool {
+		taskID := key.(string)
+		task := value.(*Task)
+		elapsed := time.Since(task.GetLastAccessAt())
+		if elapsed > m.taskTTI && task.IsSuccess() {
+			task.Log().Info("elapsed larger than taskTTI, task status become zombie")
+			task.SetStatus(TaskStatusZombie)
+		}
+
+		if task.GetPeers().Size() == 0 {
+			task.Log().Info("peers is empty, task status become waiting")
+			task.SetStatus(TaskStatusWaiting)
+		}
+
+		if elapsed > m.taskTTL {
+			// TODO lock
+			peers := m.peerManager.GetPeersByTask(taskID)
+			for _, peer := range peers {
+				task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
+				m.peerManager.Delete(peer.ID)
+			}
+			task.Log().Info("delete task because elapsed larger than task TTL")
+			m.Delete(taskID)
+		}
+		return true
+	})
+	return nil
+}
 
 type TaskStatus uint8
 

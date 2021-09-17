@@ -47,15 +47,15 @@ type rsPeer struct {
 type state struct {
 	sched                       scheduler.Scheduler
 	peerManager                 supervisor.PeerManager
-	cdnManager                  supervisor.CDNManager
+	cdn                         supervisor.CDN
 	waitScheduleParentPeerQueue workqueue.DelayingInterface
 }
 
-func newState(sched scheduler.Scheduler, peerManager supervisor.PeerManager, cdnManager supervisor.CDNManager, wsdq workqueue.DelayingInterface) *state {
+func newState(sched scheduler.Scheduler, peerManager supervisor.PeerManager, cdn supervisor.CDN, wsdq workqueue.DelayingInterface) *state {
 	return &state{
 		sched:                       sched,
 		peerManager:                 peerManager,
-		cdnManager:                  cdnManager,
+		cdn:                         cdn,
 		waitScheduleParentPeerQueue: wsdq,
 	}
 }
@@ -224,7 +224,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskDownloadFail:
 		s.peerManager.Delete(e.pr.DstPid)
 		go func() {
-			if _, err := s.cdnManager.StartSeedTask(e.ctx, e.peer.Task); err != nil {
+			if _, err := s.cdn.StartSeedTask(e.ctx, e.peer.Task); err != nil {
 				e.peer.Log().Errorf("peerDownloadPieceFailEvent: seed task failed: %v", err)
 			}
 		}()

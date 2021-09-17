@@ -51,26 +51,26 @@ var (
 
 var tracer = otel.Tracer("scheduler-cdn")
 
-type CDNManager interface {
+type CDN interface {
 	// StartSeedTask start seed cdn task
 	StartSeedTask(context.Context, *Task) (*Peer, error)
 }
 
-type cdnManager struct {
+type cdn struct {
 	client      CDNDynmaicClient
 	peerManager PeerManager
 	hostManager HostManager
 }
 
-func NewCDNManager(client CDNDynmaicClient, peerManager PeerManager, hostManager HostManager) CDNManager {
-	return &cdnManager{
+func NewCDN(client CDNDynmaicClient, peerManager PeerManager, hostManager HostManager) CDN {
+	return &cdn{
 		client:      client,
 		peerManager: peerManager,
 		hostManager: hostManager,
 	}
 }
 
-func (cm *cdnManager) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
+func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 	logger.Infof("start seed task %s", task.ID)
 	defer logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
 
@@ -84,14 +84,14 @@ func (cm *cdnManager) StartSeedTask(ctx context.Context, task *Task) (*Peer, err
 	}
 	seedSpan.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
 
-	if cm.client == nil {
+	if c.client == nil {
 		err := ErrCDNClientUninitialized
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 		return nil, err
 	}
 
-	stream, err := cm.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
+	stream, err := c.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
 	if err != nil {
 		seedSpan.RecordError(err)
 		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
@@ -109,10 +109,10 @@ func (cm *cdnManager) StartSeedTask(ctx context.Context, task *Task) (*Peer, err
 		return nil, errors.Wrapf(ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
 	}
 
-	return cm.receivePiece(ctx, task, stream)
+	return c.receivePiece(ctx, task, stream)
 }
 
-func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *client.PieceSeedStream) (*Peer, error) {
+func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.PieceSeedStream) (*Peer, error) {
 	span := trace.SpanFromContext(ctx)
 	var initialized bool
 	var cdnPeer *Peer
@@ -143,7 +143,7 @@ func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *clie
 		}
 		if piece != nil {
 			if !initialized {
-				cdnPeer, err = cm.initCDNPeer(ctx, task, piece)
+				cdnPeer, err = c.initCDNPeer(ctx, task, piece)
 				if !task.CanSchedule() {
 					task.SetStatus(TaskStatusSeeding)
 				}
@@ -160,9 +160,9 @@ func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *clie
 				task.SetStatus(TaskStatusSuccess)
 				cdnPeer.SetStatus(PeerStatusSuccess)
 				if task.ContentLength <= TinyFileSize {
-					content, er := cm.DownloadTinyFileContent(ctx, task, cdnPeer.Host)
-					if er == nil && len(content) == int(task.ContentLength) {
-						task.DirectPiece = content
+					data, err := downloadTinyFile(ctx, task, cdnPeer.Host)
+					if err == nil && len(data) == int(task.ContentLength) {
+						task.DirectPiece = data
 					}
 				}
 				span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
@@ -175,30 +175,30 @@ func (cm *cdnManager) receivePiece(ctx context.Context, task *Task, stream *clie
 	}
 }
 
-func (cm *cdnManager) initCDNPeer(ctx context.Context, task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
+func (c *cdn) initCDNPeer(ctx context.Context, task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventCreateCDNPeer)
 
 	var host *Host
 	var ok bool
-	peer, ok := cm.peerManager.Get(ps.PeerId)
+	peer, ok := c.peerManager.Get(ps.PeerId)
 	if !ok {
-		if host, ok = cm.hostManager.Get(ps.HostUuid); !ok {
-			if host, ok = cm.client.GetHost(ps.HostUuid); !ok {
+		if host, ok = c.hostManager.Get(ps.HostUuid); !ok {
+			if host, ok = c.client.GetHost(ps.HostUuid); !ok {
 				logger.Errorf("cannot find cdn host %s", ps.HostUuid)
 				return nil, errors.Wrapf(ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
 			}
-			cm.hostManager.Add(host)
+			c.hostManager.Add(host)
 		}
 		peer = NewPeer(ps.PeerId, task, host)
 	}
 
 	peer.SetStatus(PeerStatusRunning)
-	cm.peerManager.Add(peer)
+	c.peerManager.Add(peer)
 	return peer, nil
 }
 
-func (cm *cdnManager) DownloadTinyFileContent(ctx context.Context, task *Task, cdnHost *Host) ([]byte, error) {
+func downloadTinyFile(ctx context.Context, task *Task, cdnHost *Host) ([]byte, error) {
 	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
 	// taskIndex is the first three characters of taskID
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",

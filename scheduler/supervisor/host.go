@@ -23,6 +23,35 @@ import (
 	"go.uber.org/atomic"
 )
 
+type HostManager interface {
+	Add(*Host)
+
+	Delete(string)
+
+	Get(string) (*Host, bool)
+}
+
+type hostManager struct {
+	*sync.Map
+}
+
+func NewHostManager() HostManager {
+	return &hostManager{&sync.Map{}}
+}
+
+func (m *hostManager) Get(key string) (*Host, bool) {
+	host, ok := m.Load(key)
+	return host.(*Host), ok
+}
+
+func (m *hostManager) Add(host *Host) {
+	m.Store(host.UUID, host)
+}
+
+func (m *hostManager) Delete(key string) {
+	m.Map.Delete(key)
+}
+
 type Host struct {
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
