@@ -26,8 +26,7 @@ import (
 	"google.golang.org/grpc/balancer"
 )
 
-// PickKey is a context.Context Value key. Its associated value should
-// be a *PickReq struct.
+// PickKey is a context.Context Value key. Its associated value should be a *PickReq.
 type PickKey struct{}
 
 // PickReq is a context.Context Value.
@@ -45,7 +44,7 @@ type PickResult struct {
 	PickTime time.Time
 }
 
-func newD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
+func newD7yPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult) *d7yPicker {
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
@@ -53,19 +52,6 @@ func newD7yPicker(subConns map[string]balancer.SubConn) *d7yPicker {
 	return &d7yPicker{
 		subConns:   subConns,
 		hashRing:   hashring.New(addrs),
-		needReport: false,
-	}
-}
-
-func newD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult) *d7yPicker {
-	addrs := make([]string, 0)
-	for addr := range subConns {
-		addrs = append(addrs, addr)
-	}
-	return &d7yPicker{
-		subConns:   subConns,
-		hashRing:   hashring.New(addrs),
-		needReport: true,
 		reportChan: reportChan,
 	}
 }
@@ -73,7 +59,6 @@ func newD7yReportingPicker(subConns map[string]balancer.SubConn, reportChan chan
 type d7yPicker struct {
 	subConns   map[string]balancer.SubConn // address string -> balancer.SubConn
 	hashRing   *hashring.HashRing
-	needReport bool
 	reportChan chan<- PickResult
 }
 
@@ -89,9 +74,7 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	log.Printf("pick for %s, for %d time(s)\n", pickReq.Key, pickReq.Attempt)
 	if targetAddr, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
 		ret.SubConn = p.subConns[targetAddr[pickReq.Attempt-1]]
-		if p.needReport {
-			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
-		}
+		p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
 	}
 	if ret.SubConn == nil {
 		//return ret, balancer.ErrNoSubConnAvailable

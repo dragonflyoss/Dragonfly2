@@ -56,7 +56,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 		addrInfos:         make(map[string]resolver.Address),
 		subConns:          make(map[string]balancer.SubConn),
 		scInfos:           sync.Map{},
-		pickResultChan:    make(chan PickResult),
+		pickResultChan:    make(chan PickResult, 1),
 		subConnAccessTime: sync.Map{},
 	}
 	go b.scManager()
@@ -79,7 +79,7 @@ type d7yBalancer struct {
 	// cc points to the balancer.ClientConn who creates the d7yBalancer.
 	cc balancer.ClientConn
 
-	// state indicates the state of the whole ClientConn from the perspective of the balancer.
+	// state indicates the state of the whole ClientConn from the perspective of the balancer, it will be changed during regeneratePicker.
 	state connectivity.State
 
 	// addrInfos maps the address string to resolver.Address.
@@ -124,11 +124,7 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 				addr:  addr,
 			})
 			// newSC.Connect()
-			// newSC.Connect() -> acBalancerWrapper.Connect() -> addrConn.connect() -> addrConn.updateConnectivityState()
-			// -> ClientConn.handleSubConnStateChange() -> ccBalancerWrapper.handleSubConnStateChange()
-			// -> ccBalancerWrapper.updateCh.Put() -> ccBalancerWrapper.watcher() -> balancer.UpdateSubConnState(),
-			// and UpdateSubConnState calls ClientConn.UpdateState() at last.
-			// And when a connection is ready, it will enter balancer.UpdateSubConnState(), too,
+			// newSC.Connect() will lead to a function call for balancer.UpdateSubConnState(),
 			// and the picker will be generated at the first time in the design of the baseBalancer.
 
 			// PickerWrapper will block if the picker is nil, or the picker.Pick returns a bad SubConn,
@@ -197,7 +193,7 @@ func (b *d7yBalancer) regeneratePicker() {
 		b.picker = base.NewErrPicker(b.mergeErrors())
 	} else {
 		b.state = connectivity.Ready
-		b.picker = newD7yReportingPicker(availableSCs, b.pickResultChan)
+		b.picker = newD7yPicker(availableSCs, b.pickResultChan)
 	}
 }
 
@@ -310,6 +306,7 @@ func (b *d7yBalancer) scManager() {
 				accessTime := value.(time.Time)
 				if accessTime.Add(connectionLifetime).Before(time.Now()) {
 					b.resetSubConn(subConn)
+					b.subConnAccessTime.Delete(subConn)
 				}
 				return true
 			})
