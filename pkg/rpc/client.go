@@ -29,15 +29,8 @@ import (
 )
 
 const (
-	// defaultGcConnTimeout specifies the timeout for clientConn gc.
-	// If the actual execution time exceeds this threshold, a warning will be thrown.
-	defaultGcConnTimeout = 1.0 * time.Second
-
-	defaultGcConnInterval = 60 * time.Second
-
 	defaultConnExpireTime = 2 * time.Minute
-
-	defaultDialTimeout = 10 * time.Second
+	defaultDialTimeout    = 10 * time.Second
 )
 
 type Closer interface {
@@ -50,8 +43,6 @@ type Connection struct {
 	rwMutex        sync.RWMutex
 	dialOpts       []grpc.DialOption
 	connExpireTime time.Duration
-	gcConnTimeout  time.Duration
-	gcConnInterval time.Duration
 	dialTimeout    time.Duration
 	scheme         string
 	serverNodes    []dfnet.NetAddr
@@ -64,8 +55,6 @@ func newDefaultConnection(ctx context.Context) *Connection {
 		cancel:         cancel,
 		dialOpts:       defaultClientOpts,
 		connExpireTime: defaultConnExpireTime,
-		gcConnTimeout:  defaultGcConnTimeout,
-		gcConnInterval: defaultGcConnInterval,
 		dialTimeout:    defaultDialTimeout,
 	}
 }
@@ -113,18 +102,6 @@ func WithConnExpireTime(duration time.Duration) ConnOption {
 func WithDialOption(opts []grpc.DialOption) ConnOption {
 	return newFuncConnOption(func(conn *Connection) {
 		conn.dialOpts = append(defaultClientOpts, opts...)
-	})
-}
-
-func WithGcConnTimeout(gcConnTimeout time.Duration) ConnOption {
-	return newFuncConnOption(func(conn *Connection) {
-		conn.gcConnTimeout = gcConnTimeout
-	})
-}
-
-func WithGcConnInterval(gcConnInterval time.Duration) ConnOption {
-	return newFuncConnOption(func(conn *Connection) {
-		conn.gcConnInterval = gcConnInterval
 	})
 }
 

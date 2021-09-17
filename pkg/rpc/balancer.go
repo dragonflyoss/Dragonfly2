@@ -22,9 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/balancer/base"
-
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
 )
