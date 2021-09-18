@@ -197,15 +197,6 @@ func (ef *Factory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 }
 
 func (ef *Factory) Register(name string, evaluator Evaluator) {
-	//ef.cacheClearFunc.Do(func() {
-	//	tick := time.NewTicker(time.Hour)
-	//	for {
-	//		select {
-	//		case <-tick.C:
-	//			ef.clearCache()
-	//		}
-	//	}
-	//})
 	ef.add(name, evaluator)
 	ef.clearCache()
 }

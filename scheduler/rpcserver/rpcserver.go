@@ -36,11 +36,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer trace.Tracer
-
-func init() {
-	tracer = otel.Tracer("scheduler-server")
-}
+var tracer = otel.Tracer("scheduler-server")
 
 type SchedulerServer struct {
 	service *core.SchedulerService
