@@ -487,7 +487,7 @@ func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
 	return conn.Send(packet)
 }
 
-func (peer *Peer) CloseChannel(err error) error {
+func (peer *Peer) CloseChannelWithError(err error) error {
 	conn, ok := peer.GetConn()
 	if !ok {
 		return errors.New("client peer is not connected")
