@@ -329,7 +329,7 @@ func (peer *Peer) GetChildren() *sync.Map {
 }
 
 func (peer *Peer) SetParent(parent *Peer) {
-	peer.status.Store(parent)
+	peer.parent.Store(parent)
 }
 
 func (peer *Peer) GetParent() (*Peer, bool) {
