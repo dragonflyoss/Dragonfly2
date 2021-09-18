@@ -70,12 +70,14 @@ func (m *monitor) printDebugInfo() string {
 			m.log.Error("encounter a nil peer")
 			return
 		}
-		if peer.GetParent() == nil {
+
+		if _, ok := peer.GetParent(); !ok {
 			roots = append(roots, peer)
 		}
 		peers = append(peers, peer)
 		return
 	})
+
 	sort.Slice(peers, func(i, j int) bool {
 		return peers[i].GetStatus() > peers[j].GetStatus()
 	})
@@ -84,11 +86,12 @@ func (m *monitor) printDebugInfo() string {
 	table.SetHeader([]string{"PeerID", "TaskID", "URL", "Parent", "Status", "start time", "Finished Piece Num", "Finished", "Free Load"})
 
 	for _, peer := range peers {
-		parentNode := ""
-		if peer.GetParent() != nil {
-			parentNode = peer.GetParent().ID
+		parentID := ""
+		if parent, ok := peer.GetParent(); ok {
+			parentID = parent.ID
 		}
-		table.Append([]string{peer.ID, peer.Task.ID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentNode, peer.GetStatus().String(),
+
+		table.Append([]string{peer.ID, peer.Task.ID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentID, peer.GetStatus().String(),
 			peer.CreateAt.Load().String(), strconv.Itoa(int(peer.GetFinishedNum())),
 			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(int(peer.Host.GetFreeUploadLoad()))})
 	}

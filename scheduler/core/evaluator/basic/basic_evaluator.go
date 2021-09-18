@@ -38,17 +38,21 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 		return false
 	}
 
-	if peer.GetParent() == nil && !peer.IsDone() {
-		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.ID, peer.GetStatus())
-		return true
-	}
-	// TODO Check whether the parent node is in the blacklist
-	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
-		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.ID)
-		return true
+	parent, ok := peer.GetParent()
+	if !ok {
+		if !peer.IsDone() {
+			logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.ID, peer.GetStatus())
+			return true
+		}
+
+		// TODO Check whether the parent node is in the blacklist
+		if eval.IsBadNode(parent) {
+			logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.ID)
+			return true
+		}
 	}
 
-	if peer.GetParent() != nil && peer.GetParent().IsLeave() {
+	if parent.IsLeave() {
 		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.ID)
 		return true
 	}
@@ -64,6 +68,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.ID)
 		return true
 	}
+
 	return false
 }
 
