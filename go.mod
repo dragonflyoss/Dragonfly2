@@ -65,7 +65,7 @@ require (
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.20.0
 	go.opentelemetry.io/otel/sdk v0.20.0
 	go.opentelemetry.io/otel/trace v0.20.0
-	go.uber.org/atomic v1.6.0
+	go.uber.org/atomic v1.9.0
 	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
 	golang.org/x/oauth2 v0.0.0-20210201163806-010130855d6c

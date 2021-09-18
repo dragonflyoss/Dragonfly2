@@ -89,7 +89,7 @@ func (m *monitor) printDebugInfo() string {
 			parentNode = peer.GetParent().ID
 		}
 		table.Append([]string{peer.ID, peer.Task.ID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentNode, peer.GetStatus().String(),
-			peer.CreateAt.String(), strconv.Itoa(int(peer.GetFinishedNum())),
+			peer.CreateAt.Load().String(), strconv.Itoa(int(peer.GetFinishedNum())),
 			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(int(peer.Host.GetFreeUploadLoad()))})
 	}
 	table.Render()

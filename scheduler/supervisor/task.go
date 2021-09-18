@@ -45,7 +45,6 @@ type TaskManager interface {
 
 type taskManager struct {
 	peerManager PeerManager
-	gcTicker    *time.Ticker
 	taskTTL     time.Duration
 	taskTTI     time.Duration
 	tasks       *sync.Map
@@ -54,7 +53,6 @@ type taskManager struct {
 func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) (TaskManager, error) {
 	m := &taskManager{
 		peerManager: peerManager,
-		gcTicker:    time.NewTicker(cfg.TaskGCInterval),
 		taskTTL:     cfg.TaskTTL,
 		taskTTI:     cfg.TaskTTI,
 		tasks:       &sync.Map{},

@@ -145,7 +145,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		span.RecordError(err)
 		return err
 	}
-	conn := peer.BindNewConn(stream)
+	conn, _ := peer.BindNewConn(stream)
 	logger.Infof("peer %s is connected", peer.ID)
 	defer func() {
 		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Error())
