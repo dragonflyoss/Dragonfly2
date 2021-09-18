@@ -272,6 +272,7 @@ func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOp
 func (dc *cdnDynmaicClient) GetHost(id string) (*Host, bool) {
 	dc.lock.RLock()
 	defer dc.lock.RUnlock()
+
 	host, ok := dc.hosts[id]
 	if !ok {
 		return nil, false
@@ -287,6 +288,7 @@ func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
 
 	dc.lock.Lock()
 	defer dc.lock.Unlock()
+
 	dc.data = data
 	dc.hosts = cdnsToHosts(data.CDNs)
 	dc.UpdateState(cdnsToNetAddrs(data.CDNs))

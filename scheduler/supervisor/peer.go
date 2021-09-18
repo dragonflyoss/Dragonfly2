@@ -355,6 +355,7 @@ func (peer *Peer) Touch() {
 func (peer *Peer) GetPieceCosts() []int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
+
 	return peer.pieceCosts
 }
 
@@ -447,6 +448,7 @@ func (peer *Peer) IsFail() bool {
 func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
+
 	if peer.GetStatus() == PeerStatusWaiting {
 		peer.SetStatus(PeerStatusRunning)
 	}

@@ -275,7 +275,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	if s.cdn == nil {
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-		task.SetBackToSourceWeight(s.config.BackSourceCount)
+		task.BackToSourceWeight.Store(s.config.BackSourceCount)
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
@@ -284,7 +284,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-			task.SetBackToSourceWeight(s.config.BackSourceCount)
+			task.BackToSourceWeight.Store(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("send taskSeed fail event failed, eventLoop is shutdown")
 			}
