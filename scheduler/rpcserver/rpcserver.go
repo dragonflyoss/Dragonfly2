@@ -217,10 +217,10 @@ func validateParams(req *scheduler.PeerTaskRequest) error {
 
 func getTaskSizeScope(task *supervisor.Task) base.SizeScope {
 	if task.IsSuccess() {
-		if task.ContentLength <= supervisor.TinyFileSize {
+		if task.ContentLength.Load() <= supervisor.TinyFileSize {
 			return base.SizeScope_TINY
 		}
-		if task.PieceTotal == 1 {
+		if task.PieceTotal.Load() == 1 {
 			return base.SizeScope_SMALL
 		}
 	}

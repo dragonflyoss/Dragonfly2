@@ -96,7 +96,7 @@ func (m *taskManager) RunGC() error {
 	m.tasks.Range(func(key, value interface{}) bool {
 		taskID := key.(string)
 		task := value.(*Task)
-		elapsed := time.Since(task.GetLastAccessAt())
+		elapsed := time.Since(task.lastAccessAt.Load())
 		if elapsed > m.taskTTI && task.IsSuccess() {
 			task.Log().Info("elapsed larger than taskTTI, task status become zombie")
 			task.SetStatus(TaskStatusZombie)
@@ -153,18 +153,19 @@ const (
 )
 
 type Task struct {
-	lock             sync.RWMutex
-	ID               string
-	URL              string
-	URLMeta          *base.UrlMeta
-	DirectPiece      []byte
-	CreateAt         time.Time
-	lastAccessAt     time.Time
-	lastTriggerAt    time.Time
-	pieces           *sync.Map
-	PieceTotal       int32
-	ContentLength    int64
-	status           TaskStatus
+	lock          sync.RWMutex
+	ID            string
+	URL           string
+	URLMeta       *base.UrlMeta
+	DirectPiece   []byte
+	CreateAt      *atomic.Time
+	LastTriggerAt *atomic.Time
+	lastAccessAt  *atomic.Time
+	pieces        *sync.Map
+	PieceTotal    atomic.Int32
+	ContentLength atomic.Int64
+	// status is task status and type is TaskStatus
+	status           atomic.Value
 	peers            *sortedlist.SortedList
 	backSourceWeight atomic.Int32
 	backSourcePeers  []string
@@ -172,16 +173,20 @@ type Task struct {
 }
 
 func NewTask(id, url string, meta *base.UrlMeta) *Task {
-	return &Task{
-		ID:       id,
-		URL:      url,
-		URLMeta:  meta,
-		CreateAt: time.Now(),
-		pieces:   &sync.Map{},
-		peers:    sortedlist.NewSortedList(),
-		status:   TaskStatusWaiting,
-		logger:   logger.WithTaskID(id),
+	task := &Task{
+		ID:            id,
+		URL:           url,
+		URLMeta:       meta,
+		CreateAt:      atomic.NewTime(time.Now()),
+		LastTriggerAt: atomic.NewTime(time.Now()),
+		lastAccessAt:  atomic.NewTime(time.Now()),
+		pieces:        &sync.Map{},
+		peers:         sortedlist.NewSortedList(),
+		logger:        logger.WithTaskID(id),
 	}
+
+	task.status.Store(TaskStatusWaiting)
+	return task
 }
 
 func (task *Task) AddPeer(peer *Peer) {
@@ -201,15 +206,11 @@ func (task *Task) GetPeers() *sortedlist.SortedList {
 }
 
 func (task *Task) SetStatus(status TaskStatus) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-	task.status = status
+	task.status.Store(status)
 }
 
 func (task *Task) GetStatus() TaskStatus {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status
+	return task.status.Load().(TaskStatus)
 }
 
 func (task *Task) GetPiece(n int32) (*base.PieceInfo, bool) {
@@ -226,80 +227,45 @@ func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
 	return piece.(*base.PieceInfo), ok
 }
 
-func (task *Task) GetLastTriggerAt() time.Time {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.lastTriggerAt
-}
-
-func (task *Task) UpdateLastTriggerAt(t time.Time) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-	task.lastTriggerAt = t
-}
-
 func (task *Task) Touch() {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-	task.lastAccessAt = time.Now()
-}
-
-func (task *Task) GetLastAccessAt() time.Time {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.lastAccessAt
+	task.lastAccessAt.Store(time.Now())
 }
 
 func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	if task.status != TaskStatusSuccess {
-		task.status = TaskStatusSuccess
-		task.PieceTotal = pieceTotal
-		task.ContentLength = contentLength
+
+	if task.GetStatus() != TaskStatusSuccess {
+		task.SetStatus(TaskStatusSuccess)
+		task.PieceTotal.Store(pieceTotal)
+		task.ContentLength.Store(contentLength)
 	}
 }
 
 // IsSuccess determines that whether cdn status is success.
 func (task *Task) IsSuccess() bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status == TaskStatusSuccess
+	return task.GetStatus() == TaskStatusSuccess
 }
-
-// IsFrozen determines that whether cdn status is frozen
-//func (task *Task) IsFrozen() bool {
-//	return task.status == TaskStatusWaiting || task.status == TaskStatusZombie || task.status == TaskStatusFailed ||
-//		task.status == TaskStatusSourceError || task.status == TaskStatusCDNRegisterFail
-//}
 
 // CanSchedule determines whether task can be scheduled
 // only task status is seeding or success can be scheduled
 func (task *Task) CanSchedule() bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
+	return task.GetStatus() == TaskStatusSeeding || task.GetStatus() == TaskStatusSuccess
 }
 
 // IsWaiting determines whether task is waiting
 func (task *Task) IsWaiting() bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status == TaskStatusWaiting
+	return task.GetStatus() == TaskStatusWaiting
 }
 
 // IsHealth determines whether task is health
 func (task *Task) IsHealth() bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status == TaskStatusRunning || task.status == TaskStatusSeeding || task.status == TaskStatusSuccess
+	return task.GetStatus() == TaskStatusRunning || task.GetStatus() == TaskStatusSeeding || task.GetStatus() == TaskStatusSuccess
 }
 
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
-	task.lock.RLock()
-	defer task.lock.RUnlock()
-	return task.status == TaskStatusFail
+	return task.GetStatus() == TaskStatusFail
 }
 
 func (task *Task) SetClientBackSource(backSourceLimit int32) {

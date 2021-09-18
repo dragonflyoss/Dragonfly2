@@ -254,8 +254,8 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-		span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
-		if task.GetLastTriggerAt().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
+		span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
+		if task.LastTriggerAt.Load().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			return task
 		}
@@ -264,9 +264,9 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	}
 
 	// do trigger
-	task.UpdateLastTriggerAt(time.Now())
+	task.LastTriggerAt.Store(time.Now())
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-	span.SetAttributes(config.AttributeLastTriggerTime.String(task.GetLastTriggerAt().String()))
+	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 		return task

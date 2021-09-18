@@ -162,18 +162,18 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 			cdnPeer.Touch()
 			if piece.Done {
 				logger.Infof("task %s receive pieces finish", task.ID)
-				task.PieceTotal = piece.TotalPieceCount
-				task.ContentLength = piece.ContentLength
+				task.PieceTotal.Store(piece.TotalPieceCount)
+				task.ContentLength.Store(piece.ContentLength)
 				task.SetStatus(TaskStatusSuccess)
 				cdnPeer.SetStatus(PeerStatusSuccess)
-				if task.ContentLength <= TinyFileSize {
+				if task.ContentLength.Load() <= TinyFileSize {
 					data, err := downloadTinyFile(ctx, task, cdnPeer.Host)
-					if err == nil && len(data) == int(task.ContentLength) {
+					if err == nil && len(data) == int(task.ContentLength.Load()) {
 						task.DirectPiece = data
 					}
 				}
 				span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
-				span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength))
+				span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength.Load()))
 				return cdnPeer, nil
 			}
 
