@@ -51,5 +51,9 @@ func (t *Task) validate() error {
 		return errors.New("Timeout value needs to be less than the Interval value")
 	}
 
+	if t.Runner == nil {
+		return errors.New("empty Runner is not specified")
+	}
+
 	return nil
 }
