@@ -24,14 +24,16 @@ import (
 )
 
 type HostManager interface {
+	// Add host
 	Add(*Host)
-
-	Delete(string)
-
+	// Get host
 	Get(string) (*Host, bool)
+	// Delete host
+	Delete(string)
 }
 
 type hostManager struct {
+	// host map
 	*sync.Map
 }
 
@@ -83,7 +85,7 @@ type Host struct {
 	CurrentUploadLoad atomic.Int32
 	// peers info map
 	peers *sync.Map
-	// logger instance
+	// host logger
 	logger *logger.SugaredLoggerOnWith
 }
 

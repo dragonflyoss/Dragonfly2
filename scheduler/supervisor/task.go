@@ -34,20 +34,25 @@ const (
 )
 
 type TaskManager interface {
+	// Add task
 	Add(*Task)
-
+	// Get task
 	Get(string) (*Task, bool)
-
+	// Delete task
 	Delete(string)
-
+	// Get or add task
 	GetOrAdd(*Task) (*Task, bool)
 }
 
 type taskManager struct {
+	// peerManager is peer manager
 	peerManager PeerManager
-	taskTTL     time.Duration
-	taskTTI     time.Duration
-	tasks       *sync.Map
+	// taskTTL is task TTL
+	taskTTL time.Duration
+	// taskTTI is task TTI
+	taskTTI time.Duration
+	// tasks is task map
+	tasks *sync.Map
 }
 
 func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) (TaskManager, error) {
@@ -153,23 +158,38 @@ const (
 )
 
 type Task struct {
-	lock          sync.RWMutex
-	ID            string
-	URL           string
-	URLMeta       *base.UrlMeta
-	DirectPiece   []byte
-	CreateAt      *atomic.Time
-	LastTriggerAt *atomic.Time
-	lastAccessAt  *atomic.Time
-	pieces        *sync.Map
-	PieceTotal    atomic.Int32
+	// ID is task id
+	ID string
+	// URL is task download url
+	URL string
+	// URLMeta is task download url meta
+	URLMeta *base.UrlMeta
+	// DirectPiece is tiny piece data
+	DirectPiece []byte
+	// ContentLength is task total content length
 	ContentLength atomic.Int64
+	// CreateAt is peer create time
+	CreateAt *atomic.Time
+	// LastTriggerAt is peer last trigger time
+	LastTriggerAt *atomic.Time
+	// lastAccessAt is peer last access time
+	lastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
-	status           atomic.Value
-	peers            *sortedlist.SortedList
+	status atomic.Value
+	// peers is peer list
+	peers *sortedlist.SortedList
+	// backSourceWeight is back source peer weight
 	backSourceWeight atomic.Int32
-	backSourcePeers  []string
-	logger           *logger.SugaredLoggerOnWith
+	// backSourcePeers is back source peers list
+	backSourcePeers []string
+	// pieces is piece map
+	pieces *sync.Map
+	// TotalPieceCount is total piece count
+	TotalPieceCount atomic.Int32
+	// task logger
+	logger *logger.SugaredLoggerOnWith
+	// task lock
+	lock sync.RWMutex
 }
 
 func NewTask(id, url string, meta *base.UrlMeta) *Task {
@@ -189,57 +209,12 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 	return task
 }
 
-func (task *Task) AddPeer(peer *Peer) {
-	task.peers.UpdateOrAdd(peer)
-}
-
-func (task *Task) UpdatePeer(peer *Peer) {
-	task.peers.Update(peer)
-}
-
-func (task *Task) DeletePeer(peer *Peer) {
-	task.peers.Delete(peer)
-}
-
-func (task *Task) GetPeers() *sortedlist.SortedList {
-	return task.peers
-}
-
 func (task *Task) SetStatus(status TaskStatus) {
 	task.status.Store(status)
 }
 
 func (task *Task) GetStatus() TaskStatus {
 	return task.status.Load().(TaskStatus)
-}
-
-func (task *Task) GetPiece(n int32) (*base.PieceInfo, bool) {
-	piece, ok := task.pieces.Load(n)
-	if !ok {
-		return nil, false
-	}
-
-	return piece.(*base.PieceInfo), ok
-}
-
-func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
-	piece, ok := task.pieces.LoadOrStore(p.PieceNum, p)
-	return piece.(*base.PieceInfo), ok
-}
-
-func (task *Task) Touch() {
-	task.lastAccessAt.Store(time.Now())
-}
-
-func (task *Task) UpdateTaskSuccessResult(pieceTotal int32, contentLength int64) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-
-	if task.GetStatus() != TaskStatusSuccess {
-		task.SetStatus(TaskStatusSuccess)
-		task.PieceTotal.Store(pieceTotal)
-		task.ContentLength.Store(contentLength)
-	}
 }
 
 // IsSuccess determines that whether cdn status is success.
@@ -266,6 +241,51 @@ func (task *Task) IsHealth() bool {
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
 	return task.GetStatus() == TaskStatusFail
+}
+
+func (task *Task) Touch() {
+	task.lastAccessAt.Store(time.Now())
+}
+
+func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
+	task.lock.Lock()
+	defer task.lock.Unlock()
+
+	if task.GetStatus() != TaskStatusSuccess {
+		task.SetStatus(TaskStatusSuccess)
+		task.TotalPieceCount.Store(pieceCount)
+		task.ContentLength.Store(contentLength)
+	}
+}
+
+func (task *Task) AddPeer(peer *Peer) {
+	task.peers.UpdateOrAdd(peer)
+}
+
+func (task *Task) UpdatePeer(peer *Peer) {
+	task.peers.Update(peer)
+}
+
+func (task *Task) DeletePeer(peer *Peer) {
+	task.peers.Delete(peer)
+}
+
+func (task *Task) GetPeers() *sortedlist.SortedList {
+	return task.peers
+}
+
+func (task *Task) GetPiece(n int32) (*base.PieceInfo, bool) {
+	piece, ok := task.pieces.Load(n)
+	if !ok {
+		return nil, false
+	}
+
+	return piece.(*base.PieceInfo), ok
+}
+
+func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
+	piece, ok := task.pieces.LoadOrStore(p.PieceNum, p)
+	return piece.(*base.PieceInfo), ok
 }
 
 func (task *Task) SetClientBackSource(backSourceLimit int32) {

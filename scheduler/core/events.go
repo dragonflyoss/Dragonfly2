@@ -262,7 +262,7 @@ var _ event = peerDownloadSuccessEvent{}
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusSuccess)
 	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
-		e.peer.Task.UpdateTaskSuccessResult(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
+		e.peer.Task.UpdateSuccess(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
 	}
 	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer, sets.NewString())

@@ -34,23 +34,29 @@ const (
 )
 
 type PeerManager interface {
+	// Add peer
 	Add(*Peer)
-
+	// Get peer
 	Get(string) (*Peer, bool)
-
+	// Delete peer
 	Delete(string)
-
+	// Get peer by task id
 	GetPeersByTask(string) []*Peer
-
+	// Get peers
 	GetPeers() *sync.Map
 }
 
 type peerManager struct {
+	// hostManager is host manager
 	hostManager HostManager
-	peerTTL     time.Duration
-	peerTTI     time.Duration
-	peers       *sync.Map
-	lock        sync.RWMutex
+	// peerTTL is peer TTL
+	peerTTL time.Duration
+	// peerTTI is peer TTI
+	peerTTI time.Duration
+	// peers is peer map
+	peers *sync.Map
+	// peerManager lock
+	lock sync.RWMutex
 }
 
 func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) (PeerManager, error) {
@@ -183,17 +189,17 @@ const (
 )
 
 type Peer struct {
-	// ID specifies ID of peer
+	// ID is ID of peer
 	ID string
-	// Task specifies
+	// Task is peer task
 	Task *Task
-	// Host specifies
+	// Host is peer host
 	Host *Host
-	// TotalPieceCount specifies downloaded finished piece count
+	// TotalPieceCount is downloaded finished piece count
 	TotalPieceCount atomic.Int32
-	// peer create time
+	// CreateAt is peer create time
 	CreateAt *atomic.Time
-	// peer last access time
+	// lastAccessAt is peer last access time
 	lastAccessAt *atomic.Time
 	// parent is peer parent and type is *Peer
 	parent atomic.Value
@@ -207,7 +213,7 @@ type Peer struct {
 	conn atomic.Value
 	// leave is whether the peer leaves
 	leave atomic.Bool
-	// logger is peer log instance
+	// peer logger
 	logger *logger.SugaredLoggerOnWith
 	// peer lock
 	lock sync.RWMutex

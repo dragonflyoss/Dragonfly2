@@ -220,7 +220,7 @@ func getTaskSizeScope(task *supervisor.Task) base.SizeScope {
 		if task.ContentLength.Load() <= supervisor.TinyFileSize {
 			return base.SizeScope_TINY
 		}
-		if task.PieceTotal.Load() == 1 {
+		if task.TotalPieceCount.Load() == 1 {
 			return base.SizeScope_SMALL
 		}
 	}

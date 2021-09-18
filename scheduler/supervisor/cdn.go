@@ -57,8 +57,11 @@ type CDN interface {
 }
 
 type cdn struct {
-	client      CDNDynmaicClient
+	// client is cdn dynamic client
+	client CDNDynmaicClient
+	// peerManager is peer manager
 	peerManager PeerManager
+	// hostManager is host manager
 	hostManager HostManager
 }
 
@@ -162,7 +165,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 			cdnPeer.Touch()
 			if piece.Done {
 				logger.Infof("task %s receive pieces finish", task.ID)
-				task.PieceTotal.Store(piece.TotalPieceCount)
+				task.TotalPieceCount.Store(piece.TotalPieceCount)
 				task.ContentLength.Store(piece.ContentLength)
 				task.SetStatus(TaskStatusSuccess)
 				cdnPeer.SetStatus(PeerStatusSuccess)
@@ -230,8 +233,11 @@ func downloadTinyFile(ctx context.Context, task *Task, cdnHost *Host) ([]byte, e
 }
 
 type CDNDynmaicClient interface {
+	// cdnclient is cdn grpc client
 	cdnclient.CdnClient
+	// Observer is dynconfig observer
 	config.Observer
+	// Get cdn host
 	GetHost(hostID string) (*Host, bool)
 }
 
