@@ -99,10 +99,12 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := dc.getDaemonClient()
+		clientConn, err := grpc.Dial(target.GetEndpoint())
 		if err != nil {
 			return nil, err
 		}
+		defer clientConn.Close()
+		client := dfdaemon.NewDaemonClient(clientConn)
 		return client.GetPieceTasks(ctx, ptr, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
@@ -114,10 +116,12 @@ func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr,
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
 	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := dc.getDaemonClient()
+		clientConn, err := grpc.Dial(target.GetEndpoint())
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)
 		}
+		defer clientConn.Close()
+		client := dfdaemon.NewDaemonClient(clientConn)
 		return client.CheckHealth(ctx, new(empty.Empty), opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
