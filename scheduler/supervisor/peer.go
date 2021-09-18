@@ -334,7 +334,7 @@ func (peer *Peer) SetParent(parent *Peer) {
 
 func (peer *Peer) GetParent() (*Peer, bool) {
 	parent := peer.parent.Load()
-	if parent != nil {
+	if parent == nil {
 		return nil, false
 	}
 
@@ -462,7 +462,7 @@ func (peer *Peer) SetConn(conn *Channel) {
 
 func (peer *Peer) GetConn() (*Channel, bool) {
 	conn := peer.conn.Load()
-	if conn != nil {
+	if conn == nil {
 		return nil, false
 	}
 
@@ -483,6 +483,7 @@ func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
 	if !ok {
 		return errors.New("client peer is not connected")
 	}
+
 	return conn.Send(packet)
 }
 
@@ -492,7 +493,8 @@ func (peer *Peer) CloseChannel(err error) error {
 		return errors.New("client peer is not connected")
 	}
 
-	conn.CloseWithError(err)
+	conn.err = err
+	conn.Close()
 	return nil
 }
 
@@ -554,11 +556,6 @@ func (c *Channel) Close() {
 		close(c.done)
 		c.wg.Wait()
 	}()
-}
-
-func (c *Channel) CloseWithError(err error) {
-	c.err = err
-	c.Close()
 }
 
 func (c *Channel) Error() error {
