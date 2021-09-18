@@ -178,7 +178,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 			return false
 		}
 
-		if candidateNode.GetFinishedNum() >= peer.GetFinishedNum() {
+		if candidateNode.TotalPieceCount.Load() >= peer.TotalPieceCount.Load() {
 			peer.Log().Debugf("******candidate child peer %s is not selected because it finished number of download is equal to or greater than peer's"+
 				"******", candidateNode.ID)
 			return false
@@ -259,7 +259,7 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, bla
 				candidateNode.ID)
 			return false
 		}
-		if candidateNode.GetFinishedNum() <= peer.GetFinishedNum() {
+		if candidateNode.TotalPieceCount.Load() <= peer.TotalPieceCount.Load() {
 			peer.Log().Debugf("++++++candidate parent peer %s is not selected because it finished number of download is equal to or smaller than peer's"+
 				"++++++", candidateNode.ID)
 			return false

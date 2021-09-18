@@ -183,29 +183,34 @@ const (
 )
 
 type Peer struct {
-	lock sync.RWMutex
 	// ID specifies ID of peer
 	ID string
 	// Task specifies
 	Task *Task
 	// Host specifies
 	Host *Host
-	// conn is channel instance and type is *Channel
-	conn atomic.Value
+	// TotalPieceCount specifies downloaded finished piece count
+	TotalPieceCount atomic.Int32
 	// peer create time
 	CreateAt *atomic.Time
 	// peer last access time
 	lastAccessAt *atomic.Time
-	// finishedNum specifies downloaded finished piece number
-	finishedNum atomic.Int32
 	// parent is peer parent and type is *Peer
-	parent   atomic.Value
+	parent atomic.Value
+	// children is peer children map
 	children *sync.Map
 	// status is peer status and type is PeerStatus
 	status atomic.Value
-	costs  []int
-	leave  atomic.Bool
+	// pieceCosts is piece historical download time
+	pieceCosts []int
+	// conn is channel instance and type is *Channel
+	conn atomic.Value
+	// leave is whether the peer leaves
+	leave atomic.Bool
+	// logger is peer log instance
 	logger *logger.SugaredLoggerOnWith
+	// peer lock
+	lock sync.RWMutex
 }
 
 func NewPeer(id string, task *Task, host *Host) *Peer {
@@ -341,14 +346,14 @@ func (peer *Peer) Touch() {
 	peer.Task.Touch()
 }
 
-func (peer *Peer) GetCosts() []int {
+func (peer *Peer) GetPieceCosts() []int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	return peer.costs
+	return peer.pieceCosts
 }
 
 func (peer *Peer) GetPieceAverageCost() (int, bool) {
-	costs := peer.GetCosts()
+	costs := peer.GetPieceCosts()
 	if len(costs) < 1 {
 		return 0, false
 	}
@@ -362,13 +367,13 @@ func (peer *Peer) GetPieceAverageCost() (int, bool) {
 }
 
 func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
-	if finishedCount > peer.finishedNum.Load() {
-		peer.finishedNum.Store(finishedCount)
+	if finishedCount > peer.TotalPieceCount.Load() {
+		peer.TotalPieceCount.Store(finishedCount)
 
 		peer.lock.Lock()
-		peer.costs = append(peer.costs, cost)
-		if len(peer.costs) > 20 {
-			peer.costs = peer.costs[len(peer.costs)-20:]
+		peer.pieceCosts = append(peer.pieceCosts, cost)
+		if len(peer.pieceCosts) > 20 {
+			peer.pieceCosts = peer.pieceCosts[len(peer.pieceCosts)-20:]
 		}
 		peer.lock.Unlock()
 
@@ -381,7 +386,7 @@ func (peer *Peer) GetSortKeys() (key1, key2 int) {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	key1 = int(peer.finishedNum.Load())
+	key1 = int(peer.TotalPieceCount.Load())
 	key2 = peer.getFreeLoad()
 	return
 }
@@ -393,20 +398,12 @@ func (peer *Peer) getFreeLoad() int {
 	return int(peer.Host.GetFreeUploadLoad())
 }
 
-func GetDiffPieceNum(dst *Peer, src *Peer) int32 {
-	return dst.finishedNum.Load() - src.finishedNum.Load()
-}
-
 func (peer *Peer) SetStatus(status PeerStatus) {
 	peer.status.Store(status)
 }
 
 func (peer *Peer) GetStatus() PeerStatus {
 	return peer.status.Load().(PeerStatus)
-}
-
-func (peer *Peer) GetFinishedNum() int32 {
-	return peer.finishedNum.Load()
 }
 
 func (peer *Peer) Leave() {
@@ -441,6 +438,16 @@ func (peer *Peer) IsFail() bool {
 	return peer.GetStatus() == PeerStatusFail
 }
 
+func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+	if peer.GetStatus() == PeerStatusWaiting {
+		peer.SetStatus(PeerStatusRunning)
+	}
+	peer.SetConn(newChannel(stream))
+	return peer.GetConn()
+}
+
 func (peer *Peer) SetConn(conn *Channel) {
 	peer.conn.Store(conn)
 }
@@ -452,16 +459,6 @@ func (peer *Peer) GetConn() (*Channel, bool) {
 	}
 
 	return conn.(*Channel), true
-}
-
-func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	if peer.GetStatus() == PeerStatusWaiting {
-		peer.SetStatus(PeerStatusRunning)
-	}
-	peer.SetConn(newChannel(stream))
-	return peer.GetConn()
 }
 
 func (peer *Peer) IsConnected() bool {

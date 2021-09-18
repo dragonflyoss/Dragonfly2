@@ -57,7 +57,7 @@ func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
 		return true
 	}
 
-	costs := peer.GetCosts()
+	costs := peer.GetPieceCosts()
 	if len(costs) < 4 {
 		return false
 	}
@@ -77,7 +77,8 @@ func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 		logger.Debugf("peer %s is bad because it's status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
-	costs := peer.GetCosts()
+
+	costs := peer.GetPieceCosts()
 	if len(costs) < 4 {
 		return false
 	}
@@ -118,7 +119,7 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 
 // getProfits 0.0~unlimited larger and better
 func getProfits(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	diff := supervisor.GetDiffPieceNum(dst, src)
+	diff := dst.TotalPieceCount.Load() - src.TotalPieceCount.Load()
 	depth := dst.GetTreeDepth()
 
 	return float64(int(diff+1)*src.GetTreeLen()) / float64(depth*depth)
