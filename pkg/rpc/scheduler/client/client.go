@@ -66,7 +66,7 @@ type schedulerClient struct {
 
 func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, string, error) {
 	// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
-	clientConn, err := sc.Connection.NewClient(fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"))
+	clientConn, err := sc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"))
 	if err != nil {
 		return nil, "", err
 	}

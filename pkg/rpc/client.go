@@ -58,9 +58,6 @@ func newDefaultConnection(ctx context.Context) *Connection {
 }
 
 var defaultClientOpts = []grpc.DialOption{
-	grpc.WithDefaultServiceConfig(fmt.Sprintf(`{
-		"loadBalancingPolicy": "%s"
-	}`, d7yBalancerPolicy)),
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
@@ -127,11 +124,23 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 	return nil
 }
 
-func (conn *Connection) NewClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (conn *Connection) NewConsistentHashClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
 	ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
 	defer cancel()
-	opts = append(conn.dialOpts, opts...)
+
+	opts = append(append(conn.dialOpts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{
+		"loadBalancingPolicy": "%s"
+	}`, d7yBalancerPolicy))), opts...)
+	return grpc.DialContext(ctx, target, opts...)
+}
+
+func (conn *Connection) NewDirectClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	// should not retry
+	ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
+	defer cancel()
+
+	opts = append(append(conn.dialOpts, grpc.WithDisableServiceConfig()), opts...)
 	return grpc.DialContext(ctx, target, opts...)
 }
 

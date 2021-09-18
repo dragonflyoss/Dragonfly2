@@ -79,11 +79,19 @@ var _ CdnClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, string, error) {
 	// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
-	clientConn, err := cc.Connection.NewClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
+	clientConn, err := cc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
 	if err != nil {
 		return nil, "", err
 	}
 	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
+}
+
+func (cc *cdnClient) getCdnClientByTarget(target string) (cdnsystem.SeederClient, error) {
+	clientConn, err := cc.Connection.NewDirectClient(target)
+	if err != nil {
+		return nil, err
+	}
+	return cdnsystem.NewSeederClient(clientConn), nil
 }
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
@@ -92,12 +100,10 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		clientConn, err := grpc.Dial(addr.GetEndpoint())
+		client, err := cc.getCdnClientByTarget(addr.GetEndpoint())
 		if err != nil {
 			return nil, err
 		}
-		defer clientConn.Close()
-		client := cdnsystem.NewSeederClient(clientConn)
 		return client.GetPieceTasks(ctx, req, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
