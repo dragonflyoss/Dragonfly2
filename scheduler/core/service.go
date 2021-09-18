@@ -72,14 +72,12 @@ type SchedulerService struct {
 	// Peer manager
 	peerManager supervisor.PeerManager
 
-	sched     scheduler.Scheduler
-	worker    worker
-	config    *config.SchedulerConfig
-	monitor   *monitor
-	startOnce sync.Once
-	stopOnce  sync.Once
-	done      chan struct{}
-	wg        sync.WaitGroup
+	sched   scheduler.Scheduler
+	worker  worker
+	config  *config.SchedulerConfig
+	monitor *monitor
+	done    chan struct{}
+	wg      sync.WaitGroup
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
@@ -109,7 +107,6 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 
 	work := newEventLoopGroup(cfg.WorkerNum)
 	downloadMonitor := newMonitor(cfg.OpenMonitor, peerManager)
-	done := make(chan struct{})
 	s := &SchedulerService{
 		taskManager: taskManager,
 		hostManager: hostManager,
@@ -118,7 +115,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		monitor:     downloadMonitor,
 		sched:       sched,
 		config:      cfg,
-		done:        done,
+		done:        make(chan struct{}),
 	}
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
@@ -140,14 +137,12 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 }
 
 func (s *SchedulerService) Serve() {
-	s.startOnce.Do(func() {
-		s.wg.Add(3)
-		wsdq := workqueue.NewNamedDelayingQueue("wait reSchedule parent")
-		go s.runWorkerLoop(wsdq)
-		go s.runReScheduleParentLoop(wsdq)
-		go s.runMonitor()
-		logger.Debugf("start scheduler service successfully")
-	})
+	s.wg.Add(2)
+	wsdq := workqueue.NewNamedDelayingQueue("wait reSchedule parent")
+	go s.runWorkerLoop(wsdq)
+	go s.runReScheduleParentLoop(wsdq)
+	go s.runMonitor()
+	logger.Debugf("start scheduler service successfully")
 }
 
 func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
@@ -156,7 +151,6 @@ func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
 }
 
 func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterface) {
-	defer s.wg.Done()
 	for {
 		select {
 		case <-s.done:
@@ -198,14 +192,13 @@ func (s *SchedulerService) runMonitor() {
 		s.monitor.start(s.done)
 	}
 }
+
 func (s *SchedulerService) Stop() {
-	s.stopOnce.Do(func() {
-		close(s.done)
-		if s.worker != nil {
-			s.worker.stop()
-		}
-		s.wg.Wait()
-	})
+	close(s.done)
+	if s.worker != nil {
+		s.worker.stop()
+	}
+	s.wg.Wait()
 }
 
 func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) string {
