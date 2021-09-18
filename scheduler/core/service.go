@@ -174,11 +174,11 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			if rsPeer.times > maxRescheduleTimes {
 				if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
 					peer.ID)) == nil {
-					peer.Task.AddBackSourcePeer(peer.ID)
+					peer.Task.AddBackToSourcePeer(peer.ID)
 				}
 				continue
 			}
-			if peer.Task.ContainsBackSourcePeer(peer.ID) {
+			if peer.Task.ContainsBackToSourcePeer(peer.ID) {
 				logger.WithTaskAndPeerID(peer.Task.ID, peer.ID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
 				continue
 			}
@@ -275,7 +275,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	if s.cdn == nil {
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-		task.SetClientBackSource(s.config.BackSourceCount)
+		task.SetBackToSourceWeight(s.config.BackSourceCount)
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
@@ -284,7 +284,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-			task.SetClientBackSource(s.config.BackSourceCount)
+			task.SetBackToSourceWeight(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("send taskSeed fail event failed, eventLoop is shutdown")
 			}

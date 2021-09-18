@@ -178,10 +178,10 @@ type Task struct {
 	status atomic.Value
 	// peers is peer list
 	peers *sortedlist.SortedList
-	// backSourceWeight is back source peer weight
-	backSourceWeight atomic.Int32
-	// backSourcePeers is back source peers list
-	backSourcePeers []string
+	// backToSourceWeight is back-to-source peer weight
+	backToSourceWeight atomic.Int32
+	// backToSourcePeers is back-to-source peers list
+	backToSourcePeers []string
 	// pieces is piece map
 	pieces *sync.Map
 	// TotalPieceCount is total piece count
@@ -288,43 +288,43 @@ func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
 	return piece.(*base.PieceInfo), ok
 }
 
-func (task *Task) SetClientBackSource(backSourceLimit int32) {
+func (task *Task) SetBackToSourceWeight(backSourceLimit int32) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.backSourcePeers = make([]string, 0, backSourceLimit)
-	task.backSourceWeight.Store(backSourceLimit)
+	task.backToSourcePeers = make([]string, 0, backSourceLimit)
+	task.backToSourceWeight.Store(backSourceLimit)
 }
 
-func (task *Task) NeedClientBackSource() bool {
-	return task.backSourceWeight.Load() > 0
+func (task *Task) CanBackToSource() bool {
+	return task.backToSourceWeight.Load() > 0
 }
 
-func (task *Task) ContainsBackSourcePeer(peerID string) bool {
+func (task *Task) ContainsBackToSourcePeer(peerID string) bool {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	for _, backSourcePeer := range task.backSourcePeers {
-		if backSourcePeer == peerID {
+	for _, backToSourcePeer := range task.backToSourcePeers {
+		if backToSourcePeer == peerID {
 			return true
 		}
 	}
 	return false
 }
 
-func (task *Task) AddBackSourcePeer(peerID string) {
-	if ok := task.ContainsBackSourcePeer(peerID); ok {
+func (task *Task) AddBackToSourcePeer(peerID string) {
+	if ok := task.ContainsBackToSourcePeer(peerID); ok {
 		return
 	}
 
 	task.lock.Lock()
 	defer task.lock.Unlock()
-	task.backSourcePeers = append(task.backSourcePeers, peerID)
-	task.backSourceWeight.Dec()
+	task.backToSourcePeers = append(task.backToSourcePeers, peerID)
+	task.backToSourceWeight.Dec()
 }
 
-func (task *Task) GetBackSourcePeers() []string {
+func (task *Task) GetBackToSourcePeers() []string {
 	task.lock.RLock()
 	defer task.lock.RUnlock()
-	return task.backSourcePeers
+	return task.backToSourcePeers
 }
 
 func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {

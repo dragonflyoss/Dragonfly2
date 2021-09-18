@@ -86,9 +86,9 @@ func (e reScheduleParentEvent) apply(s *state) {
 
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer, blankParents)
 	if !hasParent {
-		if peer.Task.NeedClientBackSource() && !peer.Task.ContainsBackSourcePeer(peer.ID) {
+		if peer.Task.CanBackToSource() && !peer.Task.ContainsBackToSourcePeer(peer.ID) {
 			if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.ID)) == nil {
-				peer.Task.AddBackSourcePeer(peer.ID)
+				peer.Task.AddBackToSourcePeer(peer.ID)
 			}
 			return
 		}
@@ -123,7 +123,7 @@ func (e startReportPieceResultEvent) apply(s *state) {
 		}
 		return
 	}
-	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) {
+	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 		e.peer.Log().Info("startReportPieceResultEvent: no need schedule parent because peer is back source peer")
 		return
 	}
@@ -131,10 +131,10 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer, sets.NewString())
 	// No parent node is currently available
 	if !hasParent {
-		if e.peer.Task.NeedClientBackSource() && !e.peer.Task.ContainsBackSourcePeer(e.peer.ID) {
+		if e.peer.Task.CanBackToSource() && !e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 			if e.peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", e.peer.ID)) == nil {
-				e.peer.Task.AddBackSourcePeer(e.peer.ID)
+				e.peer.Task.AddBackToSourcePeer(e.peer.ID)
 			}
 			logger.WithTaskAndPeerID(e.peer.Task.ID,
 				e.peer.ID).Info("startReportPieceResultEvent: peer need back source because no parent node is available for scheduling")
@@ -163,7 +163,7 @@ var _ event = peerDownloadPieceSuccessEvent{}
 
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
-	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) {
+	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 		e.peer.Task.GetOrAddPiece(e.pr.PieceInfo)
 		if !e.peer.Task.CanSchedule() {
 			e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: update task status seeding")
@@ -214,7 +214,7 @@ type peerDownloadPieceFailEvent struct {
 var _ event = peerDownloadPieceFailEvent{}
 
 func (e peerDownloadPieceFailEvent) apply(s *state) {
-	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) {
+	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 		return
 	}
 	switch e.pr.Code {
@@ -261,7 +261,7 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusSuccess)
-	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
+	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
 		e.peer.Task.UpdateSuccess(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
 	}
 	removePeerFromCurrentTree(e.peer, s)
@@ -286,7 +286,7 @@ var _ event = peerDownloadFailEvent{}
 
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusFail)
-	if e.peer.Task.ContainsBackSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
+	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
 		e.peer.Task.SetStatus(supervisor.TaskStatusFail)
 		handleCDNSeedTaskFail(e.peer.Task)
 		return
@@ -369,13 +369,13 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 }
 
 func handleCDNSeedTaskFail(task *supervisor.Task) {
-	if task.NeedClientBackSource() {
+	if task.CanBackToSource() {
 		task.GetPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
-			if task.NeedClientBackSource() {
-				if !task.ContainsBackSourcePeer(peer.ID) {
+			if task.CanBackToSource() {
+				if !task.ContainsBackToSourcePeer(peer.ID) {
 					if peer.CloseChannel(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)) == nil {
-						task.AddBackSourcePeer(peer.ID)
+						task.AddBackToSourcePeer(peer.ID)
 					}
 				}
 				return true
