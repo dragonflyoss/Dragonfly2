@@ -96,7 +96,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		if err != nil {
 			return nil, err
 		}
-		return client.GetPieceTasks(ctx, req, opts...)
+		return client.GetPieceTasks(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: req.TaskId, Attempt: 1}), req, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
 		logger.WithTaskID(req.TaskId).Infof("GetPieceTasks: invoke cdn node %s GetPieceTasks failed: %v", addr.GetEndpoint(), err)
