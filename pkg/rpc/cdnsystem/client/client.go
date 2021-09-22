@@ -77,13 +77,13 @@ type cdnClient struct {
 
 var _ CdnClient = (*cdnClient)(nil)
 
-func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, string, error) {
+func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, error) {
 	// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
 	clientConn, err := cc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
+	return cdnsystem.NewSeederClient(clientConn), nil
 }
 
 func (cc *cdnClient) getCdnClientByTarget(target string) (cdnsystem.SeederClient, error) {

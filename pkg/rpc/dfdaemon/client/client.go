@@ -80,13 +80,13 @@ type daemonClient struct {
 	*rpc.Connection
 }
 
-func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, string, error) {
+func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, error) {
 	// "dfdaemon.Daemon" is the dfdaemon._Daemon_serviceDesc.ServiceName
 	clientConn, err := dc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.DaemonScheme, "dfdaemon.Daemon"))
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
-	return dfdaemon.NewDaemonClient(clientConn), clientConn.Target(), nil
+	return dfdaemon.NewDaemonClient(clientConn), nil
 }
 
 func (dc *daemonClient) getDaemonClientByTarget(target string) (dfdaemon.DaemonClient, error) {

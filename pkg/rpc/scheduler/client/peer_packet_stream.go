@@ -116,7 +116,7 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 		return nil, cause
 	}
 	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, _, err := pps.sc.getSchedulerClient()
+		client, err := pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -146,11 +146,10 @@ func (pps *peerPacketStream) retryRecv(cause error) (*scheduler.PeerPacket, erro
 }
 
 func (pps *peerPacketStream) initStream() error {
-	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient()
+		client, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +159,7 @@ func (pps *peerPacketStream) initStream() error {
 		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
 			return errors.Wrapf(err, "get grpc server instance failed")
 		}
-		logger.WithTaskID(pps.hashKey).Infof("initStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
+		logger.WithTaskID(pps.hashKey).Infof("initStream: invoke scheduler ReportPieceResult failed: %v", err)
 		return pps.replaceClient(err)
 	}
 	pps.stream = stream.(scheduler.Scheduler_ReportPieceResultClient)
@@ -172,18 +171,17 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 	if pps.retryMeta.StreamTimes >= pps.retryMeta.MaxAttempts {
 		return cause
 	}
-	var target string
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient()
+		client, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
 		return client.ReportPieceResult(context.WithValue(pps.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pps.hashKey, Attempt: pps.retryMeta.StreamTimes + 1}), pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 	if err != nil {
-		logger.WithTaskID(pps.hashKey).Infof("replaceStream: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
+		logger.WithTaskID(pps.hashKey).Infof("replaceStream: invoke scheduler ReportPieceResult failed: %v", err)
 		pps.retryMeta.StreamTimes++
 		return pps.replaceStream(cause)
 	}
@@ -193,11 +191,10 @@ func (pps *peerPacketStream) replaceStream(cause error) error {
 }
 
 func (pps *peerPacketStream) replaceClient(cause error) error {
-	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error
-		client, target, err = pps.sc.getSchedulerClient()
+		client, err = pps.sc.getSchedulerClient()
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +206,7 @@ func (pps *peerPacketStream) replaceClient(cause error) error {
 		return client.ReportPieceResult(reqCtx, pps.opts...)
 	}, pps.retryMeta.InitBackoff, pps.retryMeta.MaxBackOff, pps.retryMeta.MaxAttempts, cause)
 	if err != nil {
-		logger.WithTaskID(pps.hashKey).Infof("replaceClient: invoke scheduler node %s ReportPieceResult failed: %v", target, err)
+		logger.WithTaskID(pps.hashKey).Infof("replaceClient: invoke scheduler ReportPieceResult failed: %v", err)
 		pps.retryMeta.StreamTimes++
 		return pps.replaceClient(cause)
 	}
