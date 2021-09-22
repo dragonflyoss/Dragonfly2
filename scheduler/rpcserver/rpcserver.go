@@ -144,7 +144,12 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		return err
 	}
 
-	conn, _ := peer.BindNewConn(stream)
+	conn, ok := peer.BindNewConn(stream)
+	if !ok {
+		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer can not bind conn")
+		span.RecordError(err)
+		return err
+	}
 	logger.Infof("peer %s is connected", peer.ID)
 
 	defer func() {
