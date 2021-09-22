@@ -130,19 +130,23 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 		return err
 	}
 	logger.Debugf("peer %s start report piece result", pieceResult.SrcPid)
+
 	peer, ok := s.service.GetPeer(pieceResult.SrcPid)
 	if !ok {
 		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 		span.RecordError(err)
 		return err
 	}
+
 	if peer.Task.IsFail() {
 		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
 		span.RecordError(err)
 		return err
 	}
+
 	conn, _ := peer.BindNewConn(stream)
 	logger.Infof("peer %s is connected", peer.ID)
+
 	defer func() {
 		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Error())
 		span.RecordError(conn.Error())
