@@ -234,11 +234,11 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 	return peer
 }
 
-func (peer *Peer) GetTreeLen() int {
+func (peer *Peer) GetTreeNodeCount() int {
 	count := 1
 	peer.children.Range(func(key, value interface{}) bool {
 		node := value.(*Peer)
-		count += node.GetTreeLen()
+		count += node.GetTreeNodeCount()
 		return true
 	})
 

@@ -122,7 +122,7 @@ func getProfits(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	diff := dst.TotalPieceCount.Load() - src.TotalPieceCount.Load()
 	depth := dst.GetTreeDepth()
 
-	return float64(int(diff+1)*src.GetTreeLen()) / float64(depth*depth)
+	return float64(int(diff+1)*src.GetTreeNodeCount()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better

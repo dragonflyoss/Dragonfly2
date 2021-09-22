@@ -105,7 +105,7 @@ func (m *monitor) printDebugInfo() string {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetTreeLen(), node.GetStatus()))
+		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetTreeNodeCount(), node.GetStatus()))
 		if len(path) >= 1 {
 			msgs = append(msgs, node.ID+" || "+strings.Join(nPath, "-"))
 		}
