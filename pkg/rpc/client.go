@@ -113,7 +113,7 @@ func NewConnection(ctx context.Context, scheme string, addrs []dfnet.NetAddr, co
 	if resolver, ok := Scheme2Resolver[scheme]; ok {
 		resolver.UpdateAddrs(addrs)
 	}
-	// If there is not a resolver for the scheme, it is the grpc's default situation, so it does not need to return error.
+	// TODO(zzy987) add an error?
 	return conn
 }
 
