@@ -150,7 +150,7 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 		return nil, nil, err
 	}
 
-	// If num equal -1 range have fixed value.
+	// If req.Num is equal to -1, range has a fixed value.
 	if req.Num != -1 {
 		t.RLock()
 		if piece, ok := t.persistentMetadata.Pieces[req.Num]; ok {
