@@ -22,11 +22,11 @@ import (
 	"net"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -61,6 +61,7 @@ var peerHostConfig = DaemonOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
 		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(DefaultTotalDownloadLimit),
