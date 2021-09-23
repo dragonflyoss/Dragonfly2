@@ -149,6 +149,8 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// If num equal -1 range have fixed value.
 	if req.Num != -1 {
 		t.RLock()
 		if piece, ok := t.persistentMetadata.Pieces[req.Num]; ok {
@@ -161,6 +163,7 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 			return nil, nil, ErrPieceNotFound
 		}
 	}
+
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		file.Close()
 		t.Errorf("file seek filed: %v", err)
