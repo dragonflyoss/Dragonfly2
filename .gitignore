@@ -18,7 +18,6 @@ vendor/
 .cache
 *.DS_Store
 target/
-log
 scheduler/test/misc
 .chglog
 
