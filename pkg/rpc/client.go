@@ -45,6 +45,9 @@ type Connection struct {
 	dialTimeout    time.Duration
 	scheme         string
 	serverNodes    []dfnet.NetAddr
+
+	once                 sync.Once
+	consistentHashClient *grpc.ClientConn
 }
 
 func newDefaultConnection(ctx context.Context) *Connection {
@@ -126,13 +129,17 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 
 func (conn *Connection) NewConsistentHashClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
-	ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
-	defer cancel()
-
-	opts = append(append(conn.dialOpts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{
+	var err error
+	conn.once.Do(func() {
+		ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
+		defer cancel()
+		opts = append(append(conn.dialOpts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{
 		"loadBalancingPolicy": "%s"
 	}`, d7yBalancerPolicy))), opts...)
-	return grpc.DialContext(ctx, target, opts...)
+		conn.consistentHashClient, err = grpc.DialContext(ctx, target, opts...)
+	})
+
+	return conn.consistentHashClient, err
 }
 
 func (conn *Connection) NewDirectClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
