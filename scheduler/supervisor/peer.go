@@ -452,15 +452,15 @@ func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer
 	if peer.GetStatus() == PeerStatusWaiting {
 		peer.SetStatus(PeerStatusRunning)
 	}
-	peer.SetConn(newChannel(stream))
-	return peer.GetConn()
+	peer.setConn(newChannel(stream))
+	return peer.getConn()
 }
 
-func (peer *Peer) SetConn(conn *Channel) {
+func (peer *Peer) setConn(conn *Channel) {
 	peer.conn.Store(conn)
 }
 
-func (peer *Peer) GetConn() (*Channel, bool) {
+func (peer *Peer) getConn() (*Channel, bool) {
 	conn := peer.conn.Load()
 	if conn == nil {
 		return nil, false
@@ -470,7 +470,7 @@ func (peer *Peer) GetConn() (*Channel, bool) {
 }
 
 func (peer *Peer) IsConnected() bool {
-	conn, ok := peer.GetConn()
+	conn, ok := peer.getConn()
 	if !ok {
 		return false
 	}
@@ -479,7 +479,7 @@ func (peer *Peer) IsConnected() bool {
 }
 
 func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
-	conn, ok := peer.GetConn()
+	conn, ok := peer.getConn()
 	if !ok {
 		return errors.New("client peer is not connected")
 	}
@@ -488,7 +488,7 @@ func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
 }
 
 func (peer *Peer) CloseChannelWithError(err error) error {
-	conn, ok := peer.GetConn()
+	conn, ok := peer.getConn()
 	if !ok {
 		return errors.New("client peer is not connected")
 	}
