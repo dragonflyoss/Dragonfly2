@@ -258,11 +258,11 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	}
 	synclock.UnLock(task.ID, true)
 
-	synclock.Lock(task.ID, false)
-	defer synclock.Lock(task.ID, false)
-
 	// do trigger
 	task.LastTriggerAt.Store(time.Now())
+
+	synclock.Lock(task.ID, false)
+	defer synclock.Lock(task.ID, false)
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if task.IsHealth() {
