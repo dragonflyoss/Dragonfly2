@@ -157,11 +157,13 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 		} else {
 			t.RUnlock()
 			file.Close()
+			logger.Errorf("invalid piece num: %d", req.Num)
 			return nil, nil, ErrPieceNotFound
 		}
 	}
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		file.Close()
+		logger.Errorf("file seek filed: %v", err)
 		return nil, nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser
@@ -176,6 +178,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaDat
 	}
 	if _, err = file.Seek(0, io.SeekStart); err != nil {
 		file.Close()
+		logger.Errorf("file seek filed: %v", err)
 		return nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser
