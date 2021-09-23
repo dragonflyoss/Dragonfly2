@@ -61,7 +61,7 @@ server:
   host:
   # ListenPort is the ip and port scheduler server listens on.
   # default: 8002
-  port:
+  port: 8002
 
 # dynamic data configuration
 dynConfig:
@@ -72,7 +72,7 @@ dynConfig:
   # cdnDirPath
   cdnDirPath:
   # data
-  data: ""
+  data: {}
 
 # manager configuration
 manager:
