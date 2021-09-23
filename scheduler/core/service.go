@@ -243,18 +243,23 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
 	synclock.Lock(task.ID, true)
-	defer synclock.UnLock(task.ID, true)
+
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 		span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 		if task.LastTriggerAt.Load().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
+			synclock.UnLock(task.ID, true)
 			return task
 		}
 	} else {
 		task.Log().Infof("add new task %s", task.ID)
 	}
+	synclock.UnLock(task.ID, true)
+
+	synclock.Lock(task.ID, false)
+	defer synclock.Lock(task.ID, false)
 
 	// do trigger
 	task.LastTriggerAt.Store(time.Now())
@@ -272,6 +277,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		return task
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
+
 	go func() {
 		if cdnPeer, err := s.cdn.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
@@ -288,6 +294,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			logger.Infof("successfully obtain seeds from cdn, task: %+v", task)
 		}
 	}()
+
 	return task
 }
 
