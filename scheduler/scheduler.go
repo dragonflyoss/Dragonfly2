@@ -22,6 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -42,6 +43,7 @@ type Server struct {
 	managerClient    managerclient.Client
 	dynConfig        config.DynconfigInterface
 	job              job.Job
+	gc               gc.GC
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -84,12 +86,15 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	s.dynConfig = dynConfig
 
+	// Initialize GC
+	s.gc = gc.New(gc.WithLogger(logger.GcLogger))
+
 	// Initialize scheduler service
 	var openTel bool
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
+	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +126,10 @@ func (s *Server) Serve() error {
 		}
 		logger.Info("dynconfig start successfully")
 	}()
+
+	// Serve GC
+	s.gc.Serve()
+	logger.Info("gc start successfully")
 
 	// Serve schedulerService
 	go func() {
@@ -177,6 +186,9 @@ func (s *Server) Stop() {
 		s.managerClient.Close()
 		logger.Info("manager client closed")
 	}
+
+	s.gc.Stop()
+	logger.Info("gc closed")
 
 	s.schedulerService.Stop()
 	logger.Info("scheduler service closed")

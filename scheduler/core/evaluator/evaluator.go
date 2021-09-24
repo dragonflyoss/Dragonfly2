@@ -53,15 +53,15 @@ type Factory struct {
 var _ Evaluator = (*Factory)(nil)
 
 func (ef *Factory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	return ef.get(dst.Task.TaskID).Evaluate(dst, src)
+	return ef.get(dst.Task.ID).Evaluate(dst, src)
 }
 
 func (ef *Factory) NeedAdjustParent(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.TaskID).NeedAdjustParent(peer)
+	return ef.get(peer.Task.ID).NeedAdjustParent(peer)
 }
 
 func (ef *Factory) IsBadNode(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.TaskID).IsBadNode(peer)
+	return ef.get(peer.Task.ID).IsBadNode(peer)
 }
 
 func NewEvaluatorFactory(cfg *config.SchedulerConfig) *Factory {
@@ -197,15 +197,6 @@ func (ef *Factory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 }
 
 func (ef *Factory) Register(name string, evaluator Evaluator) {
-	//ef.cacheClearFunc.Do(func() {
-	//	tick := time.NewTicker(time.Hour)
-	//	for {
-	//		select {
-	//		case <-tick.C:
-	//			ef.clearCache()
-	//		}
-	//	}
-	//})
 	ef.add(name, evaluator)
 	ef.clearCache()
 }

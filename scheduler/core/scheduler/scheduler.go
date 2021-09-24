@@ -33,8 +33,8 @@ type Scheduler interface {
 }
 
 type BuildOptions struct {
-	TaskManager supervisor.TaskMgr
-	PeerManager supervisor.PeerMgr
+	TaskManager supervisor.TaskManager
+	PeerManager supervisor.PeerManager
 }
 
 var (

@@ -32,11 +32,11 @@ import (
 
 type monitor struct {
 	downloadMonitorQueue workqueue.DelayingInterface
-	peerManager          supervisor.PeerMgr
+	peerManager          supervisor.PeerManager
 	log                  *zap.SugaredLogger
 }
 
-func newMonitor(openMonitor bool, peerManager supervisor.PeerMgr) *monitor {
+func newMonitor(openMonitor bool, peerManager supervisor.PeerManager) *monitor {
 	if !openMonitor {
 		return nil
 	}
@@ -63,19 +63,21 @@ func (m *monitor) start(done <-chan struct{}) {
 
 func (m *monitor) printDebugInfo() string {
 	var peers, roots []*supervisor.Peer
-	m.peerManager.ListPeers().Range(func(key interface{}, value interface{}) (ok bool) {
+	m.peerManager.GetPeers().Range(func(key interface{}, value interface{}) (ok bool) {
 		ok = true
 		peer := value.(*supervisor.Peer)
 		if peer == nil {
 			m.log.Error("encounter a nil peer")
 			return
 		}
-		if peer.GetParent() == nil {
+
+		if _, ok := peer.GetParent(); !ok {
 			roots = append(roots, peer)
 		}
 		peers = append(peers, peer)
 		return
 	})
+
 	sort.Slice(peers, func(i, j int) bool {
 		return peers[i].GetStatus() > peers[j].GetStatus()
 	})
@@ -84,13 +86,14 @@ func (m *monitor) printDebugInfo() string {
 	table.SetHeader([]string{"PeerID", "TaskID", "URL", "Parent", "Status", "start time", "Finished Piece Num", "Finished", "Free Load"})
 
 	for _, peer := range peers {
-		parentNode := ""
-		if peer.GetParent() != nil {
-			parentNode = peer.GetParent().PeerID
+		parentID := ""
+		if parent, ok := peer.GetParent(); ok {
+			parentID = parent.ID
 		}
-		table.Append([]string{peer.PeerID, peer.Task.TaskID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentNode, peer.GetStatus().String(),
-			peer.CreateTime.String(), strconv.Itoa(int(peer.GetFinishedNum())),
-			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(peer.Host.GetFreeUploadLoad())})
+
+		table.Append([]string{peer.ID, peer.Task.ID, peer.Task.URL[len(peer.Task.URL)-15 : len(peer.Task.URL)], parentID, peer.GetStatus().String(),
+			peer.CreateAt.Load().String(), strconv.Itoa(int(peer.TotalPieceCount.Load())),
+			strconv.FormatBool(peer.IsSuccess()), strconv.Itoa(int(peer.Host.GetFreeUploadLoad()))})
 	}
 	table.Render()
 
@@ -102,9 +105,9 @@ func (m *monitor) printDebugInfo() string {
 		if node == nil {
 			return
 		}
-		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.PeerID, node.GetWholeTreeNode(), node.GetStatus()))
+		nPath := append(path, fmt.Sprintf("%s(%d)(%s)", node.ID, node.GetTreeNodeCount(), node.GetStatus()))
 		if len(path) >= 1 {
-			msgs = append(msgs, node.PeerID+" || "+strings.Join(nPath, "-"))
+			msgs = append(msgs, node.ID+" || "+strings.Join(nPath, "-"))
 		}
 		node.GetChildren().Range(func(key, value interface{}) bool {
 			child := (value).(*supervisor.Peer)

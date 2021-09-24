@@ -16,8 +16,44 @@
 
 package gc
 
-// Task is an interface used to run GC instance
-type Task interface {
-	// The actual function to run GC task
+import (
+	"errors"
+	"time"
+)
+
+type Runner interface {
 	RunGC() error
+}
+
+// Task is an struct used to run GC instance
+type Task struct {
+	ID       string
+	Interval time.Duration
+	Timeout  time.Duration
+	Runner   Runner
+}
+
+// Validate task params
+func (t *Task) validate() error {
+	if t.ID == "" {
+		return errors.New("empty ID is not specified")
+	}
+
+	if t.Interval <= 0 {
+		return errors.New("Interval value is greater than 0")
+	}
+
+	if t.Timeout <= 0 {
+		return errors.New("Timeout value is greater than 0")
+	}
+
+	if t.Timeout > t.Interval {
+		return errors.New("Timeout value needs to be less than the Interval value")
+	}
+
+	if t.Runner == nil {
+		return errors.New("empty Runner is not specified")
+	}
+
+	return nil
 }

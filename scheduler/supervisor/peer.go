@@ -22,10 +22,143 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 )
+
+const (
+	PeerGCID = "peer"
+)
+
+type PeerManager interface {
+	// Add peer
+	Add(*Peer)
+	// Get peer
+	Get(string) (*Peer, bool)
+	// Delete peer
+	Delete(string)
+	// Get peer by task id
+	GetPeersByTask(string) []*Peer
+	// Get peers
+	GetPeers() *sync.Map
+}
+
+type peerManager struct {
+	// hostManager is host manager
+	hostManager HostManager
+	// peerTTL is peer TTL
+	peerTTL time.Duration
+	// peerTTI is peer TTI
+	peerTTI time.Duration
+	// peers is peer map
+	peers *sync.Map
+	// peerManager lock
+	lock sync.RWMutex
+}
+
+func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) (PeerManager, error) {
+	m := &peerManager{
+		hostManager: hostManager,
+		peerTTL:     cfg.PeerTTL,
+		peerTTI:     cfg.PeerTTI,
+		peers:       &sync.Map{},
+	}
+
+	// Add GC task
+	if err := gcManager.Add(gc.Task{
+		ID:       PeerGCID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		Runner:   m,
+	}); err != nil {
+		return nil, err
+	}
+
+	return m, nil
+}
+
+func (m *peerManager) Add(peer *Peer) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	peer.Host.AddPeer(peer)
+	peer.Task.AddPeer(peer)
+	m.peers.Store(peer.ID, peer)
+}
+
+func (m *peerManager) Get(id string) (*Peer, bool) {
+	peer, ok := m.peers.Load(id)
+	if !ok {
+		return nil, false
+	}
+
+	return peer.(*Peer), ok
+}
+
+func (m *peerManager) Delete(id string) {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+
+	if peer, ok := m.Get(id); ok {
+		peer.Host.DeletePeer(id)
+		peer.Task.DeletePeer(peer)
+		peer.ReplaceParent(nil)
+		m.peers.Delete(id)
+	}
+}
+
+func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
+	var peers []*Peer
+	m.peers.Range(func(key, value interface{}) bool {
+		peer := value.(*Peer)
+		if peer.Task.ID == taskID {
+			peers = append(peers, peer)
+		}
+		return true
+	})
+	return peers
+}
+
+func (m *peerManager) GetPeers() *sync.Map {
+	return m.peers
+}
+
+func (m *peerManager) RunGC() error {
+	m.peers.Range(func(key, value interface{}) bool {
+		id := key.(string)
+		peer := value.(*Peer)
+		elapsed := time.Since(peer.lastAccessAt.Load())
+
+		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
+			if !peer.IsConnected() {
+				peer.Leave()
+			}
+			peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
+			peer.SetStatus(PeerStatusZombie)
+		}
+
+		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
+			if elapsed > m.peerTTL {
+				peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
+			}
+			m.Delete(id)
+			if peer.Host.GetPeersLen() == 0 {
+				m.hostManager.Delete(peer.Host.UUID)
+			}
+			if peer.Task.GetPeers().Size() == 0 {
+				peer.Task.Log().Info("peers is empty, task status become waiting")
+				peer.Task.SetStatus(TaskStatusWaiting)
+			}
+		}
+
+		return true
+	})
+
+	return nil
+}
 
 type PeerStatus uint8
 
@@ -56,151 +189,91 @@ const (
 )
 
 type Peer struct {
-	lock sync.RWMutex
-	// PeerID specifies ID of peer
-	PeerID string
-	// Task specifies
+	// ID is ID of peer
+	ID string
+	// Task is peer task
 	Task *Task
-	// Host specifies
-	Host *PeerHost
-	conn *Channel
-	// createTime
-	CreateTime time.Time
-	// finishedNum specifies downloaded finished piece number
-	finishedNum    atomic.Int32
-	lastAccessTime time.Time
-	parent         *Peer
-	children       sync.Map
-	status         PeerStatus
-	costHistory    []int
-	leave          atomic.Bool
-	logger         *logger.SugaredLoggerOnWith
+	// Host is peer host
+	Host *Host
+	// TotalPieceCount is downloaded finished piece count
+	TotalPieceCount atomic.Int32
+	// CreateAt is peer create time
+	CreateAt *atomic.Time
+	// lastAccessAt is peer last access time
+	lastAccessAt *atomic.Time
+	// parent is peer parent and type is *Peer
+	parent atomic.Value
+	// children is peer children map
+	children *sync.Map
+	// status is peer status and type is PeerStatus
+	status atomic.Value
+	// pieceCosts is piece historical download time
+	pieceCosts []int
+	// conn is channel instance and type is *Channel
+	conn atomic.Value
+	// leave is whether the peer leaves
+	leave atomic.Bool
+	// peer logger
+	logger *logger.SugaredLoggerOnWith
+	// peer lock
+	lock sync.RWMutex
 }
 
-func NewPeer(peerID string, task *Task, host *PeerHost) *Peer {
-	return &Peer{
-		PeerID:         peerID,
-		Task:           task,
-		Host:           host,
-		CreateTime:     time.Now(),
-		lastAccessTime: time.Now(),
-		status:         PeerStatusWaiting,
-		logger:         logger.WithTaskAndPeerID(task.TaskID, peerID),
+func NewPeer(id string, task *Task, host *Host) *Peer {
+	peer := &Peer{
+		ID:           id,
+		Task:         task,
+		Host:         host,
+		CreateAt:     atomic.NewTime(time.Now()),
+		lastAccessAt: atomic.NewTime(time.Now()),
+		children:     &sync.Map{},
+		logger:       logger.WithTaskAndPeerID(task.ID, id),
 	}
+
+	peer.status.Store(PeerStatusWaiting)
+	return peer
 }
 
-// TODO: remove
-func (peer *Peer) GetWholeTreeNode() int {
+func (peer *Peer) GetTreeNodeCount() int {
 	count := 1
 	peer.children.Range(func(key, value interface{}) bool {
-		peerNode := value.(*Peer)
-		count += peerNode.GetWholeTreeNode()
+		node := value.(*Peer)
+		count += node.GetTreeNodeCount()
 		return true
 	})
+
 	return count
 }
 
-func (peer *Peer) GetLastAccessTime() time.Time {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.lastAccessTime
-}
-
-func (peer *Peer) Touch() {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.lastAccessTime = time.Now()
-	if peer.status == PeerStatusZombie && !peer.leave.Load() {
-		peer.status = PeerStatusRunning
-	}
-	peer.Task.Touch()
-}
-
-func (peer *Peer) associateChild(child *Peer) {
-	peer.children.Store(child.PeerID, child)
-	peer.Host.IncUploadLoad()
-	peer.Task.UpdatePeer(peer)
-}
-
-func (peer *Peer) disassociateChild(child *Peer) {
-	peer.children.Delete(child.PeerID)
-	peer.Host.DecUploadLoad()
-	peer.Task.UpdatePeer(peer)
-}
-
-func (peer *Peer) ReplaceParent(parent *Peer) {
-	oldParent := peer.parent
-	if oldParent != nil {
-		oldParent.disassociateChild(peer)
-	}
-	peer.parent = parent
-	if parent != nil {
-		parent.associateChild(peer)
-	}
-}
-
-func (peer *Peer) GetCostHistory() []int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.costHistory
-}
-
-func (peer *Peer) GetCost() int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	if len(peer.costHistory) < 1 {
-		return int(time.Second / time.Millisecond)
-	}
-	totalCost := 0
-	for _, cost := range peer.costHistory {
-		totalCost += cost
-	}
-	return totalCost / len(peer.costHistory)
-}
-
-func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
-	peer.lock.Lock()
-	if finishedCount > peer.finishedNum.Load() {
-		peer.finishedNum.Store(finishedCount)
-		peer.costHistory = append(peer.costHistory, cost)
-		if len(peer.costHistory) > 20 {
-			peer.costHistory = peer.costHistory[len(peer.costHistory)-20:]
-		}
-		peer.lock.Unlock()
-		peer.Task.UpdatePeer(peer)
-		return
-	}
-	peer.lock.Unlock()
-}
-
-func (peer *Peer) GetDepth() int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
+func (peer *Peer) GetTreeDepth() int {
 	var deep int
 	node := peer
 	for node != nil {
 		deep++
-		if node.parent == nil || node.Host.CDN {
+		parent, ok := node.GetParent()
+		if !ok || node.Host.IsCDN {
 			break
 		}
-		node = node.parent
+		node = parent
 	}
 	return deep
 }
 
-func (peer *Peer) GetTreeRoot() *Peer {
+func (peer *Peer) GetRoot() *Peer {
 	node := peer
 	for node != nil {
-		if node.parent == nil || node.Host.CDN {
+		parent, ok := node.GetParent()
+		if !ok || node.Host.IsCDN {
 			break
 		}
-		node = node.parent
+		node = parent
 	}
+
 	return node
 }
 
-// IsDescendantOf if peer is offspring of ancestor
-func (peer *Peer) IsDescendantOf(ancestor *Peer) bool {
+// IsDescendant if peer is offspring of ancestor
+func (peer *Peer) IsDescendant(ancestor *Peer) bool {
 	return isDescendant(ancestor, peer)
 }
 
@@ -211,25 +284,116 @@ func isDescendant(ancestor, offspring *Peer) bool {
 	// TODO avoid circulation
 	node := offspring
 	for node != nil {
-		if node.parent == nil {
+		parent, ok := node.GetParent()
+		if !ok {
 			return false
-		} else if node.PeerID == ancestor.PeerID {
+		} else if node.ID == ancestor.ID {
 			return true
 		}
-		node = node.parent
+		node = parent
 	}
 	return false
 }
 
 // IsAncestorOf if offspring is offspring of peer
-func (peer *Peer) IsAncestorOf(offspring *Peer) bool {
+func (peer *Peer) IsAncestor(offspring *Peer) bool {
 	return isDescendant(peer, offspring)
+}
+
+func (peer *Peer) insertChild(child *Peer) {
+	peer.children.Store(child.ID, child)
+	peer.Host.CurrentUploadLoad.Inc()
+	peer.Task.UpdatePeer(peer)
+}
+
+func (peer *Peer) deleteChild(child *Peer) {
+	peer.children.Delete(child.ID)
+	peer.Host.CurrentUploadLoad.Dec()
+	peer.Task.UpdatePeer(peer)
+}
+
+func (peer *Peer) ReplaceParent(parent *Peer) {
+	oldParent, ok := peer.GetParent()
+	if ok {
+		oldParent.deleteChild(peer)
+	}
+
+	peer.SetParent(parent)
+	if parent != nil {
+		parent.insertChild(peer)
+	}
+}
+
+func (peer *Peer) GetChildren() *sync.Map {
+	return peer.children
+}
+
+func (peer *Peer) SetParent(parent *Peer) {
+	peer.parent.Store(parent)
+}
+
+func (peer *Peer) GetParent() (*Peer, bool) {
+	parent := peer.parent.Load()
+	if parent == nil {
+		return nil, false
+	}
+
+	return parent.(*Peer), true
+}
+
+func (peer *Peer) Touch() {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
+
+	peer.lastAccessAt.Store(time.Now())
+	if peer.GetStatus() == PeerStatusZombie && !peer.leave.Load() {
+		peer.SetStatus(PeerStatusRunning)
+	}
+	peer.Task.Touch()
+}
+
+func (peer *Peer) GetPieceCosts() []int {
+	peer.lock.RLock()
+	defer peer.lock.RUnlock()
+
+	return peer.pieceCosts
+}
+
+func (peer *Peer) GetPieceAverageCost() (int, bool) {
+	costs := peer.GetPieceCosts()
+	if len(costs) < 1 {
+		return 0, false
+	}
+
+	totalCost := 0
+	for _, cost := range costs {
+		totalCost += cost
+	}
+
+	return totalCost / len(costs), true
+}
+
+func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
+	if finishedCount > peer.TotalPieceCount.Load() {
+		peer.TotalPieceCount.Store(finishedCount)
+
+		peer.lock.Lock()
+		peer.pieceCosts = append(peer.pieceCosts, cost)
+		if len(peer.pieceCosts) > 20 {
+			peer.pieceCosts = peer.pieceCosts[len(peer.pieceCosts)-20:]
+		}
+		peer.lock.Unlock()
+
+		peer.Task.UpdatePeer(peer)
+		return
+	}
 }
 
 func (peer *Peer) GetSortKeys() (key1, key2 int) {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
-	key1 = int(peer.finishedNum.Load())
+
+	key1 = int(peer.TotalPieceCount.Load())
 	key2 = peer.getFreeLoad()
 	return
 }
@@ -238,42 +402,18 @@ func (peer *Peer) getFreeLoad() int {
 	if peer.Host == nil {
 		return 0
 	}
-	return peer.Host.GetFreeUploadLoad()
-}
-
-func GetDiffPieceNum(dst *Peer, src *Peer) int32 {
-	return dst.finishedNum.Load() - src.finishedNum.Load()
-}
-
-func (peer *Peer) GetParent() *Peer {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.parent
-}
-
-func (peer *Peer) GetChildren() *sync.Map {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return &peer.children
+	return int(peer.Host.GetFreeUploadLoad())
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	peer.status = status
+	peer.status.Store(status)
 }
 
 func (peer *Peer) GetStatus() PeerStatus {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	return peer.status
+	return peer.status.Load().(PeerStatus)
 }
 
-func (peer *Peer) GetFinishedNum() int32 {
-	return peer.finishedNum.Load()
-}
-
-func (peer *Peer) MarkLeave() {
+func (peer *Peer) Leave() {
 	peer.leave.Store(true)
 }
 
@@ -282,71 +422,83 @@ func (peer *Peer) IsLeave() bool {
 }
 
 func (peer *Peer) IsRunning() bool {
-	return peer.status == PeerStatusRunning
+	return peer.GetStatus() == PeerStatusRunning
 }
 
 func (peer *Peer) IsWaiting() bool {
-	return peer.status == PeerStatusWaiting
+	return peer.GetStatus() == PeerStatusWaiting
 }
 
 func (peer *Peer) IsSuccess() bool {
-	return peer.status == PeerStatusSuccess
+	return peer.GetStatus() == PeerStatusSuccess
 }
 
 func (peer *Peer) IsDone() bool {
-	return peer.status == PeerStatusSuccess || peer.status == PeerStatusFail
+	return peer.GetStatus() == PeerStatusSuccess || peer.GetStatus() == PeerStatusFail
 }
 
 func (peer *Peer) IsBad() bool {
-	return peer.status == PeerStatusFail || peer.status == PeerStatusZombie
+	return peer.GetStatus() == PeerStatusFail || peer.GetStatus() == PeerStatusZombie
 }
 
 func (peer *Peer) IsFail() bool {
-	return peer.status == PeerStatusFail
+	return peer.GetStatus() == PeerStatusFail
 }
 
-func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
+func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
-	if peer.status == PeerStatusWaiting {
-		peer.status = PeerStatusRunning
+
+	if peer.GetStatus() == PeerStatusWaiting {
+		peer.SetStatus(PeerStatusRunning)
 	}
-	peer.conn = newChannel(stream)
-	return peer.conn
+	peer.setConn(newChannel(stream))
+	return peer.getConn()
+}
+
+func (peer *Peer) setConn(conn *Channel) {
+	peer.conn.Store(conn)
+}
+
+func (peer *Peer) getConn() (*Channel, bool) {
+	conn := peer.conn.Load()
+	if conn == nil {
+		return nil, false
+	}
+
+	return conn.(*Channel), true
 }
 
 func (peer *Peer) IsConnected() bool {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-	if peer.conn == nil {
+	conn, ok := peer.getConn()
+	if !ok {
 		return false
 	}
-	return !peer.conn.IsClosed()
+
+	return !conn.IsClosed()
 }
 
 func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	if peer.conn != nil {
-		return peer.conn.Send(packet)
+	conn, ok := peer.getConn()
+	if !ok {
+		return errors.New("client peer is not connected")
 	}
-	return errors.New("client peer is not connected")
+
+	return conn.Send(packet)
 }
 
-func (peer *Peer) CloseChannel(err error) error {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-	if peer.conn != nil {
-		peer.conn.CloseWithError(err)
-		return nil
+func (peer *Peer) CloseChannelWithError(err error) error {
+	conn, ok := peer.getConn()
+	if !ok {
+		return errors.New("client peer is not connected")
 	}
-	return errors.New("client peer is not connected")
+
+	conn.err = err
+	conn.Close()
+	return nil
 }
 
 func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
-	if peer.logger == nil {
-		peer.logger = logger.WithTaskID(peer.PeerID)
-	}
 	return peer.logger
 }
 
@@ -406,22 +558,15 @@ func (c *Channel) Close() {
 	}()
 }
 
-func (c *Channel) CloseWithError(err error) {
-	c.err = err
-	c.Close()
-}
-
-func (c *Channel) Err() error {
-	err := c.err
-	return err
+func (c *Channel) Error() error {
+	return c.err
 }
 
 func (c *Channel) Done() <-chan struct{} {
 	if c.done == nil {
 		c.done = make(chan struct{})
 	}
-	d := c.done
-	return d
+	return c.done
 }
 
 func (c *Channel) IsClosed() bool {
