@@ -23,8 +23,42 @@ import (
 	"go.uber.org/atomic"
 )
 
-type PeerHost struct {
-	lock sync.RWMutex
+type HostManager interface {
+	// Add host
+	Add(*Host)
+	// Get host
+	Get(string) (*Host, bool)
+	// Delete host
+	Delete(string)
+}
+
+type hostManager struct {
+	// host map
+	*sync.Map
+}
+
+func NewHostManager() HostManager {
+	return &hostManager{&sync.Map{}}
+}
+
+func (m *hostManager) Get(key string) (*Host, bool) {
+	host, ok := m.Load(key)
+	if !ok {
+		return nil, false
+	}
+
+	return host.(*Host), ok
+}
+
+func (m *hostManager) Add(host *Host) {
+	m.Store(host.UUID, host)
+}
+
+func (m *hostManager) Delete(key string) {
+	m.Map.Delete(key)
+}
+
+type Host struct {
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
 	// IP peer host ip
@@ -35,8 +69,8 @@ type PeerHost struct {
 	RPCPort int32
 	// DownloadPort piece downloading port for peer
 	DownloadPort int32
-	// CDN if host type is cdn
-	CDN bool
+	// IsCDN if host type is cdn
+	IsCDN bool
 	// SecurityDomain security isolation domain for network
 	SecurityDomain string
 	// Location location path: area|country|province|city|...
@@ -46,92 +80,87 @@ type PeerHost struct {
 	// NetTopology network device path: switch|router|...
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
-	TotalUploadLoad   int32
-	currentUploadLoad atomic.Int32
-	peerMap           map[string]*Peer
-	logger            *logger.SugaredLoggerOnWith
+	TotalUploadLoad int32
+	// CurrentUploadLoad is current upload load number
+	CurrentUploadLoad atomic.Int32
+	// peers info map
+	peers *sync.Map
+	// host logger
+	logger *logger.SugaredLoggerOnWith
 }
 
-func NewClientPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *PeerHost {
-	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, totalUploadLoad)
+func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int32) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, totalUploadLoad)
 }
 
-func NewCDNPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *PeerHost {
-	return newPeerHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, totalUploadLoad)
+func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int32) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, totalUploadLoad)
 }
 
-func newPeerHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *PeerHost {
-	return &PeerHost{
+func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc, netTopology string,
+	totalUploadLoad int32) *Host {
+	if totalUploadLoad == 0 {
+		totalUploadLoad = 100
+	}
+
+	return &Host{
 		UUID:            uuid,
 		IP:              ip,
 		HostName:        hostname,
 		RPCPort:         rpcPort,
 		DownloadPort:    downloadPort,
-		CDN:             isCDN,
+		IsCDN:           isCDN,
 		SecurityDomain:  securityDomain,
 		Location:        location,
 		IDC:             idc,
 		NetTopology:     netTopology,
 		TotalUploadLoad: totalUploadLoad,
-		peerMap:         make(map[string]*Peer),
+		peers:           &sync.Map{},
 		logger:          logger.With("hostUUID", uuid),
 	}
 }
 
-func (h *PeerHost) AddPeer(peer *Peer) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	h.peerMap[peer.PeerID] = peer
+func (h *Host) AddPeer(peer *Peer) {
+	h.peers.Store(peer.ID, peer)
 }
 
-func (h *PeerHost) DeletePeer(peerID string) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	delete(h.peerMap, peerID)
+func (h *Host) DeletePeer(id string) {
+	h.peers.Delete(id)
 }
 
-func (h *PeerHost) GetPeerTaskNum() int {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	return len(h.peerMap)
+func (h *Host) GetPeer(id string) (*Peer, bool) {
+	peer, ok := h.peers.Load(id)
+	if !ok {
+		return nil, false
+	}
+
+	return peer.(*Peer), ok
 }
 
-func (h *PeerHost) GetPeer(peerID string) (*Peer, bool) {
-	h.lock.RLock()
-	defer h.lock.RUnlock()
-	peer, ok := h.peerMap[peerID]
-	return peer, ok
+func (h *Host) GetPeersLen() int {
+	length := 0
+	h.peers.Range(func(_, _ interface{}) bool {
+		length++
+		return true
+	})
+
+	return length
 }
 
-func (h *PeerHost) GetCurrentUpload() int32 {
-	return h.currentUploadLoad.Load()
-}
-
-func (h *PeerHost) GetUploadLoadPercent() float64 {
+func (h *Host) GetUploadLoadPercent() float64 {
 	if h.TotalUploadLoad <= 0 {
 		return 1.0
 	}
-	return float64(h.currentUploadLoad.Load()) / float64(h.TotalUploadLoad)
+
+	return float64(h.CurrentUploadLoad.Load()) / float64(h.TotalUploadLoad)
 }
 
-func (h *PeerHost) GetFreeUploadLoad() int {
-	return int(h.TotalUploadLoad - h.currentUploadLoad.Load())
+func (h *Host) GetFreeUploadLoad() int32 {
+	return h.TotalUploadLoad - h.CurrentUploadLoad.Load()
 }
 
-func (h *PeerHost) IncUploadLoad() int32 {
-	return h.currentUploadLoad.Inc()
-}
-
-func (h *PeerHost) DecUploadLoad() int32 {
-	return h.currentUploadLoad.Dec()
-}
-
-func (h *PeerHost) Log() *logger.SugaredLoggerOnWith {
-	if h.logger == nil {
-		h.logger = logger.WithTaskID(h.UUID)
-	}
+func (h *Host) Log() *logger.SugaredLoggerOnWith {
 	return h.logger
 }

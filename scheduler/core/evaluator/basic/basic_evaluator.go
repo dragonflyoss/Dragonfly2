@@ -34,53 +34,56 @@ func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
 }
 
 func (eval *baseEvaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
-	if peer.Host.CDN {
+	if peer.Host.IsCDN {
 		return false
 	}
 
-	if peer.GetParent() == nil && !peer.IsDone() {
-		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.PeerID, peer.GetStatus())
+	parent, ok := peer.GetParent()
+	if !ok && !peer.IsDone() {
+		logger.Debugf("peer %s need adjust parent because it has not parent and status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
+
 	// TODO Check whether the parent node is in the blacklist
-	if peer.GetParent() != nil && eval.IsBadNode(peer.GetParent()) {
-		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.PeerID)
+	if ok && eval.IsBadNode(parent) {
+		logger.Debugf("peer %s need adjust parent because it current parent is bad", peer.ID)
 		return true
 	}
 
-	if peer.GetParent() != nil && peer.GetParent().IsLeave() {
-		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.PeerID)
+	if ok && parent.IsLeave() {
+		logger.Debugf("peer %s need adjust parent because it current parent is status is leave", peer.ID)
 		return true
 	}
 
-	costHistory := peer.GetCostHistory()
-	if len(costHistory) < 4 {
+	costs := peer.GetPieceCosts()
+	if len(costs) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
+	avgCost, lastCost := getAvgAndLastCost(costs, 4)
 	// TODO adjust policy
 	if (avgCost * 20) < lastCost {
-		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.PeerID)
+		logger.Debugf("peer %s need adjust parent because it latest download cost is too time consuming", peer.ID)
 		return true
 	}
+
 	return false
 }
 
 func (eval *baseEvaluator) IsBadNode(peer *supervisor.Peer) bool {
 	if peer.IsBad() {
-		logger.Debugf("peer %s is bad because it's status is %s", peer.PeerID, peer.GetStatus())
+		logger.Debugf("peer %s is bad because it's status is %s", peer.ID, peer.GetStatus())
 		return true
 	}
-	costHistory := peer.GetCostHistory()
-	if len(costHistory) < 4 {
+
+	costs := peer.GetPieceCosts()
+	if len(costs) < 4 {
 		return false
 	}
 
-	avgCost, lastCost := getAvgAndLastCost(costHistory, 4)
-
-	if avgCost*40 < lastCost && !peer.Host.CDN {
-		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.PeerID, avgCost, lastCost)
+	avgCost, lastCost := getAvgAndLastCost(costs, 4)
+	if avgCost*40 < lastCost && !peer.Host.IsCDN {
+		logger.Debugf("peer %s is bad because recent pieces have taken too long to download avg[%d] last[%d]", peer.ID, avgCost, lastCost)
 		return true
 	}
 
@@ -114,14 +117,14 @@ func getAvgAndLastCost(list []int, splitPos int) (avgCost, lastCost int) {
 
 // getProfits 0.0~unlimited larger and better
 func getProfits(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	diff := supervisor.GetDiffPieceNum(dst, src)
-	depth := dst.GetDepth()
+	diff := dst.TotalPieceCount.Load() - src.TotalPieceCount.Load()
+	depth := dst.GetTreeDepth()
 
-	return float64(int(diff+1)*src.GetWholeTreeNode()) / float64(depth*depth)
+	return float64(int(diff+1)*src.GetTreeNodeCount()) / float64(depth*depth)
 }
 
 // getHostLoad 0.0~1.0 larger and better
-func getHostLoad(host *supervisor.PeerHost) float64 {
+func getHostLoad(host *supervisor.Host) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 

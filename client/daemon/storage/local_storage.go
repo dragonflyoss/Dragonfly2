@@ -149,6 +149,8 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	if err != nil {
 		return nil, nil, err
 	}
+
+	// If req.Num is equal to -1, range has a fixed value.
 	if req.Num != -1 {
 		t.RLock()
 		if piece, ok := t.persistentMetadata.Pieces[req.Num]; ok {
@@ -156,10 +158,15 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 			req.Range = piece.Range
 		} else {
 			t.RUnlock()
+			file.Close()
+			t.Errorf("invalid piece num: %d", req.Num)
 			return nil, nil, ErrPieceNotFound
 		}
 	}
+
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
+		file.Close()
+		t.Errorf("file seek filed: %v", err)
 		return nil, nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser
@@ -173,6 +180,8 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaDat
 		return nil, err
 	}
 	if _, err = file.Seek(0, io.SeekStart); err != nil {
+		file.Close()
+		t.Errorf("file seek filed: %v", err)
 		return nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser

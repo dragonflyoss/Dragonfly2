@@ -1,3 +1,3 @@
 #!/bin/bash
 
-systemctl daemon-reload
+which systemctl && systemctl daemon-reload

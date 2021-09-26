@@ -14,12 +14,24 @@
  * limitations under the License.
  */
 
-package supervisor
+package middlewares
 
-type HostMgr interface {
-	Add(host *PeerHost)
+import (
+	"d7y.io/dragonfly/v2/manager/config"
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+)
 
-	Delete(uuid string)
+const (
+	TracerName = "dragonfly-manager-rest"
+)
 
-	Get(uuid string) (*PeerHost, bool)
+func Tracer() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tracer := otel.Tracer(TracerName)
+		_, span := tracer.Start(c.Request.Context(), c.HandlerName())
+		span.SetAttributes(config.AttributeID.Float64(c.GetFloat64("id")))
+		defer span.End()
+		c.Next()
+	}
 }

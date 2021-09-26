@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package supervisor
+package config
 
-type TaskMgr interface {
-	Add(task *Task)
+import "go.opentelemetry.io/otel/attribute"
 
-	Get(taskID string) (task *Task, ok bool)
-
-	Delete(taskID string)
-
-	GetOrAdd(task *Task) (actual *Task, loaded bool)
-}
+const (
+	AttributeID = attribute.Key("d7y.manager.id")
+)

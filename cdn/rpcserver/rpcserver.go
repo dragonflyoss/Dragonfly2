@@ -157,7 +157,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:   peerID,
-			HostUuid: idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
+			HostUuid: idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
@@ -177,7 +177,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	}
 	psc <- &cdnsystem.PieceSeed{
 		PeerId:          peerID,
-		HostUuid:        idgen.CDNUUID(iputils.HostName, int32(css.cfg.ListenPort)),
+		HostUuid:        idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
 		Done:            true,
 		ContentLength:   task.SourceFileLength,
 		TotalPieceCount: task.PieceTotal,
