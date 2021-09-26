@@ -35,6 +35,9 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+	github.com/grpc-ecosystem/grpc-opentracing v0.0.0-20180507213350-8e809c8a8645
 	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/klauspost/compress v1.13.1 // indirect
@@ -46,6 +49,7 @@ require (
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0
 	github.com/opencontainers/go-digest v1.0.0
+	github.com/opentracing/opentracing-go v1.2.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2

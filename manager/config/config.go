@@ -35,6 +35,7 @@ type ServerConfig struct {
 	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
 	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
+	Metric     *RestConfig      `yaml:"metric" mapstructure:"metric"`
 }
 
 type DatabaseConfig struct {
@@ -105,6 +106,9 @@ func New() *Config {
 			REST: &RestConfig{
 				Addr: ":8080",
 			},
+			Metric: &RestConfig{
+				Addr: ":8000",
+			},
 		},
 		Database: &DatabaseConfig{
 			Redis: &RedisConfig{
@@ -174,11 +178,15 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server != nil {
 		if cfg.Server.GRPC == nil {
-			return errors.New("empty grpc config is not specified")
+			return errors.New("empty grpc server config is not specified")
 		}
 
 		if cfg.Server.REST == nil {
-			return errors.New("empty rest config is not specified")
+			return errors.New("empty rest server config is not specified")
+		}
+
+		if cfg.Server.Metric == nil {
+			return errors.New("empty metric server config is not specified")
 		}
 	}
 

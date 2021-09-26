@@ -59,7 +59,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	r := gin.New()
 	h := handlers.New(service)
 
-	// Prometheus
+	// Prometheus metrics
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
 	p.Use(r)
 

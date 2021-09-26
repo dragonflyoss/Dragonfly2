@@ -17,23 +17,34 @@
 package server
 
 import (
-	"context"
-	"time"
-
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/backoff"
 )
 
-func New(opt ...grpc.ServerOption) (*grpc.Server) {
-	return grpc.NewServer(append([]grpc.ServerOption{
+func New(managerServer manager.ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
+	defaultOptions := []grpc.ServerOption{
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-        grpc_recovery.StreamServerInterceptor(),
-        grpc_ctxtags.StreamServerInterceptor(),
-        grpc_opentracing.StreamServerInterceptor(),
-        grpc_prometheus.StreamServerInterceptor,
-        grpc_zap.StreamServerInterceptor(zapLogger),
-        grpc_auth.StreamServerInterceptor(myAuthFunction),
-    ),
-	}, opts...)...)
+			grpc_validator.StreamServerInterceptor(),
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_prometheus.StreamServerInterceptor,
+			grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_validator.UnaryServerInterceptor(),
+			grpc_recovery.UnaryServerInterceptor(),
+			grpc_prometheus.UnaryServerInterceptor,
+			grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+		)),
+	}
+
+	grpcServer := grpc.NewServer(append(defaultOptions, opts...)...)
+	manager.RegisterManagerServer(grpcServer, managerServer)
+
+	return grpcServer
 }
