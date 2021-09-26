@@ -20,14 +20,15 @@ import (
 	"context"
 	"fmt"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"moul.io/zapgorm2"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/model"
 )
 
 type Database struct {
