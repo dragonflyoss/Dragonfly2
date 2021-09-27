@@ -48,3 +48,8 @@ job:
     password: "password"
     brokerDB: 1
     backendDB: 2
+
+metric:
+  addr: ":8000"
+
+disableCDN: true

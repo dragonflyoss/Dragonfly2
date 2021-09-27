@@ -49,7 +49,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			Host: "foo",
 			Port: 8002,
 		},
-
 		Manager: &ManagerConfig{
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
@@ -73,6 +72,10 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				BackendDB: 2,
 			},
 		},
+		Metric: &RestConfig{
+			Addr: ":8000",
+		},
+		DisableCDN: true,
 	}
 
 	schedulerConfigYAML := &Config{}
