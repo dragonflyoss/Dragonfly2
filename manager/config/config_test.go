@@ -42,7 +42,7 @@ func TestManagerConfig_Load(t *testing.T) {
 				Addr: ":8080",
 			},
 			Metric: &RestConfig{
-				Addr: "8000",
+				Addr: ":8000",
 			},
 		},
 		Database: &DatabaseConfig{
