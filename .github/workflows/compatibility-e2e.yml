@@ -24,7 +24,7 @@ jobs:
     steps:
       - name: Skip Check
         id: skip_check
-        uses: fkirc/skip-duplicate-actions@v3.0.0
+        uses: fkirc/skip-duplicate-actions@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           paths_ignore: '["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]'
