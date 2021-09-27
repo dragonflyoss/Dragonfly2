@@ -35,6 +35,8 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
 	github.com/jarcoal/httpmock v1.0.8
 	github.com/klauspost/compress v1.13.1 // indirect
@@ -50,7 +52,7 @@ require (
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1 // indirect
+	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/schollz/progressbar/v3 v3.8.2
 	github.com/serialx/hashring v0.0.0-20200727003509-22c0c7ab6b1b
@@ -88,4 +90,5 @@ require (
 	gorm.io/plugin/soft_delete v1.0.2
 	k8s.io/apimachinery v0.20.6
 	k8s.io/client-go v11.0.0+incompatible
+	moul.io/zapgorm2 v1.1.0
 )

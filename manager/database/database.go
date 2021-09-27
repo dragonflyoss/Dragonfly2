@@ -20,12 +20,15 @@ import (
 	"context"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
+	"moul.io/zapgorm2"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/model"
 )
 
 type Database struct {
@@ -51,6 +54,8 @@ func New(cfg *config.Config) (*Database, error) {
 }
 
 func NewRedis(cfg *config.RedisConfig) (*redis.Client, error) {
+	redis.SetLogger(&redisLogger{})
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
 		Password: cfg.Password,
@@ -65,6 +70,8 @@ func NewRedis(cfg *config.RedisConfig) (*redis.Client, error) {
 }
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
+	logger := zapgorm2.New(logger.CoreLogger.Desugar())
+
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=true", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
 	dialector := mysql.Open(dsn)
 	db, err := gorm.Open(dialector, &gorm.Config{
@@ -72,6 +79,7 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 			SingularTable: true,
 		},
 		DisableForeignKeyConstraintWhenMigrating: true,
+		Logger:                                   logger,
 	})
 	if err != nil {
 		return nil, err

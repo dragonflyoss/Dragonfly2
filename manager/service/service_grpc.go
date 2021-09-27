@@ -53,10 +53,6 @@ func NewGRPC(database *database.Database, cache *cache.Cache, searcher searcher.
 }
 
 func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var pbCDN manager.CDN
 	cacheKey := cache.MakeCDNCacheKey(req.HostName, uint(req.CdnClusterId))
 
@@ -119,10 +115,6 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 }
 
 func (s *GRPC) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	cdn := model.CDN{
 		HostName:     req.HostName,
 		IDC:          req.Idc,
@@ -150,10 +142,6 @@ func (s *GRPC) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 }
 
 func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, model.CDN{
 		HostName:     req.HostName,
@@ -196,10 +184,6 @@ func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 }
 
 func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var pbScheduler manager.Scheduler
 	cacheKey := cache.MakeSchedulerCacheKey(req.HostName, uint(req.SchedulerClusterId))
 
@@ -294,10 +278,6 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 }
 
 func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var netConfig model.JSONMap
 	if len(req.NetConfig) > 0 {
 		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
@@ -335,10 +315,6 @@ func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateScheduler
 }
 
 func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	scheduler := model.Scheduler{}
 	if err := s.db.First(&scheduler, model.Scheduler{
 		HostName:           req.HostName,
@@ -391,10 +367,6 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 }
 
 func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
-	if err := req.Validate(); err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	var pbListSchedulersResponse manager.ListSchedulersResponse
 	cacheKey := cache.MakeSchedulersCacheKey(req.HostName)
 
@@ -467,10 +439,6 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 		logger.Errorf("keepalive failed for the first time: %v", err)
 		return status.Error(codes.Unknown, err.Error())
 	}
-	if err := req.Validate(); err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	hostName := req.HostName
 	sourceType := req.SourceType
 	clusterID := uint(req.ClusterId)
