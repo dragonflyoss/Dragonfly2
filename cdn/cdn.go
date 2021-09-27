@@ -198,8 +198,8 @@ func (s *Server) Stop() {
 	if err := s.metricServer.Shutdown(context.Background()); err != nil {
 		logger.Errorf("metric server failed to stop: %+v", err)
 	}
-
 	logger.Info("metric server closed under request")
+
 	// Stop GRPC server
 	stopped := make(chan struct{})
 	go func() {
