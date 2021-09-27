@@ -49,6 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/resolver/dns"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -101,6 +102,10 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	if opt.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	}
+	if opt.Scheduler.SearchOption != nil {
+		opts = append(opts, grpc.WithResolvers(dns.NewBuilder(opt.Scheduler.SearchOption)))
+	}
+
 	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")

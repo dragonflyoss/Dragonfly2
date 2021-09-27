@@ -34,6 +34,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/resolver/dns"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 
@@ -124,6 +125,10 @@ type SchedulerOption struct {
 
 	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
+
+	// SearchOption is extended for finding more schedulers when schedulers with default
+	// search domains in /etc/resolv.conf can not be found.
+	SearchOption *dns.SearchOption `mapstructure:"searchOption" yaml:"searchOption"`
 }
 
 type HostOption struct {
