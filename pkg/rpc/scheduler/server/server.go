@@ -31,15 +31,15 @@ import (
 	"google.golang.org/grpc"
 )
 
-// SchedulerServer scheduler.SchedulerServer
+// SchedulerServer refer to scheduler.SchedulerServer
 type SchedulerServer interface {
-	// RegisterPeerTask register a peer to scheduler
+	// RegisterPeerTask registers a peer into one task.
 	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
-	// ReportPieceResult report piece result to scheduler
+	// ReportPieceResult reports piece results and receives peer packets.
 	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult report peer download result to scheduler
+	// ReportPeerResult reports downloading result for the peer task.
 	ReportPeerResult(context.Context, *scheduler.PeerResult) error
-	// LeaveTask leave peer from scheduler
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
 	LeaveTask(context.Context, *scheduler.PeerTarget) error
 }
 

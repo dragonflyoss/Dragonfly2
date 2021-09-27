@@ -19,8 +19,8 @@ package rpc
 import (
 	"fmt"
 	"net"
-
-	"google.golang.org/grpc"
+	"os"
+	"syscall"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -60,18 +60,14 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 	return nil, -1, fmt.Errorf("no available port to listen, port: %d - %d", startPort, endPort)
 }
 
-type Server interface {
-	Serve(net.Listener) error
-	Stop()
-	GracefulStop()
-}
+func isErrAddrInuse(err error) bool {
+	if ope, ok := err.(*net.OpError); ok {
+		if sse, ok := ope.Err.(*os.SyscallError); ok {
+			if errno, ok := sse.Err.(syscall.Errno); ok {
+				return errno == syscall.EADDRINUSE
+			}
+		}
+	}
 
-// NewServer returns a Server with impl
-// Example:
-//    s := NewServer(impl, ...)
-//    s.Serve(listener)
-func NewServer(impl interface{}, opts ...grpc.ServerOption) Server {
-	server := grpc.NewServer(append(serverOpts, opts...)...)
-	register(server, impl)
-	return server
+	return false
 }

@@ -53,8 +53,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
 
-var _ daemonserver.DaemonServer = mock_daemon.NewMockDaemonServer(nil)
-
 type componentsOption struct {
 	taskID             string
 	contentLength      int64
@@ -101,7 +99,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go rpc.NewServer(daemon).Serve(ln)
+	go daemonserver.New(daemon).Serve(ln)
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
