@@ -35,6 +35,7 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
+	Metric       *RestConfig      `yaml:"metric" mapstructure:"metric"`
 	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
@@ -108,6 +109,9 @@ func New() *Config {
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
+		},
+		Metric: &RestConfig{
+			Addr: ":8000",
 		},
 		DisableCDN: false,
 	}
@@ -208,6 +212,10 @@ type GCConfig struct {
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
 	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
+}
+
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
 type HostConfig struct {

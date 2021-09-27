@@ -7,8 +7,6 @@ server:
       end: 65003
   rest:
     addr: :8080
-  metric:
-    addr: :8000
 
 database:
   mysql:
@@ -31,3 +29,6 @@ cache:
   local:
     size: 10000
     ttl: 1000
+
+metric:
+  addr: :8000

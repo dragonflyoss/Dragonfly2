@@ -18,6 +18,8 @@ package scheduler
 
 import (
 	"context"
+	"net/http"
+	"time"
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -26,24 +28,44 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/job"
+	"d7y.io/dragonfly/v2/scheduler/metric"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
+const (
+	gracefulStopTimeout = 10 * time.Second
+)
+
 type Server struct {
-	config           *config.Config
-	schedulerServer  server.SchedulerServer
-	schedulerService *core.SchedulerService
-	managerClient    managerclient.Client
-	dynConfig        config.DynconfigInterface
-	job              job.Job
-	gc               gc.GC
+	// Server configuration
+	config *config.Config
+
+	// GRPC server
+	grpcServer *grpc.Server
+
+	// Metric server
+	metricServer *http.Server
+
+	// Scheduler service
+	service *core.SchedulerService
+
+	// Manager client
+	managerClient managerclient.Client
+
+	// Dynamic config
+	dynConfig config.DynconfigInterface
+
+	// Async job
+	job job.Job
+
+	// GC server
+	gc gc.GC
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -94,22 +116,29 @@ func New(cfg *config.Config) (*Server, error) {
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
-	schedulerService, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
+	service, err := core.NewSchedulerService(cfg.Scheduler, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
 	if err != nil {
 		return nil, err
 	}
-	s.schedulerService = schedulerService
+	s.service = service
 
 	// Initialize grpc service
-	schedulerServer, err := rpcserver.NewSchedulerServer(schedulerService)
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	grpcServer, err := rpcserver.New(s.service, opts...)
 	if err != nil {
 		return nil, err
 	}
-	s.schedulerServer = schedulerServer
+	s.grpcServer = grpcServer
+
+	// Initialize prometheus
+	s.metricServer = metric.New(cfg.Metric, grpcServer)
 
 	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
-		s.job, err = job.New(context.Background(), cfg.Job, iputils.HostName, s.schedulerService)
+		s.job, err = job.New(context.Background(), cfg.Job, iputils.HostName, s.service)
 		if err != nil {
 			return nil, err
 		}
@@ -131,9 +160,9 @@ func (s *Server) Serve() error {
 	s.gc.Serve()
 	logger.Info("gc start successfully")
 
-	// Serve schedulerService
+	// Serve service
 	go func() {
-		s.schedulerService.Serve()
+		s.service.Serve()
 		logger.Info("scheduler service start successfully")
 	}()
 
@@ -159,19 +188,28 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	// Serve GRPC
-	logger.Infof("start server at port %d", s.config.Server.Port)
-	var opts []grpc.ServerOption
-	if s.config.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	// Started metric server
+	go func() {
+		logger.Infof("started metric server at %s", s.metricServer.Addr)
+		if err := s.metricServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("metric server closed unexpect: %+v", err)
+		}
+	}()
+
+	// Generate GRPC listener
+	lis, _, err := rpc.ListenWithPortRange(s.config.Server.IP, s.config.Server.Port, s.config.Server.Port)
+	if err != nil {
+		logger.Fatalf("net listener failed to start: %+v", err)
 	}
-	if err := rpc.StartTCPServer(
-		s.config.Server.Port,
-		s.config.Server.Port,
-		s.schedulerServer,
-		opts...,
-	); err != nil {
-		logger.Errorf("grpc start failed %v", err)
+	defer lis.Close()
+
+	// Started GRPC server
+	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
+	if err := s.grpcServer.Serve(lis); err != nil {
+		logger.Errorf("stoped grpc server: %+v", err)
 		return err
 	}
 
@@ -179,20 +217,45 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
+	// Stop dynamic server
 	s.dynConfig.Stop()
 	logger.Info("dynconfig client closed")
 
+	// Stop manager client
 	if s.managerClient != nil {
-		s.managerClient.Close()
+		if err := s.managerClient.Close(); err != nil {
+			logger.Errorf("manager client failed to stop: %+v", err)
+		}
 		logger.Info("manager client closed")
 	}
 
+	// Stop GC
 	s.gc.Stop()
 	logger.Info("gc closed")
 
-	s.schedulerService.Stop()
+	// Stop scheduler service
+	s.service.Stop()
 	logger.Info("scheduler service closed")
 
-	rpc.StopServer()
-	logger.Info("grpc server closed under request")
+	// Stop metric server
+	if err := s.metricServer.Shutdown(context.Background()); err != nil {
+		logger.Errorf("metric server failed to stop: %+v", err)
+	}
+	logger.Info("metric server closed under request")
+
+	// Stop GRPC server
+	stopped := make(chan struct{})
+	go func() {
+		s.grpcServer.GracefulStop()
+		logger.Info("grpc server closed under request")
+		close(stopped)
+	}()
+
+	t := time.NewTimer(gracefulStopTimeout)
+	select {
+	case <-t.C:
+		s.grpcServer.Stop()
+	case <-stopped:
+		t.Stop()
+	}
 }

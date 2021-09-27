@@ -28,6 +28,7 @@ type Config struct {
 	Server       *ServerConfig   `yaml:"server" mapstructure:"server"`
 	Database     *DatabaseConfig `yaml:"database" mapstructure:"database"`
 	Cache        *CacheConfig    `yaml:"cache" mapstructure:"cache"`
+	Metric       *RestConfig     `yaml:"metric" mapstructure:"metric"`
 }
 
 type ServerConfig struct {
@@ -35,7 +36,6 @@ type ServerConfig struct {
 	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
 	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
-	Metric     *RestConfig      `yaml:"metric" mapstructure:"metric"`
 }
 
 type DatabaseConfig struct {
@@ -106,9 +106,6 @@ func New() *Config {
 			REST: &RestConfig{
 				Addr: ":8080",
 			},
-			Metric: &RestConfig{
-				Addr: ":8000",
-			},
 		},
 		Database: &DatabaseConfig{
 			Redis: &RedisConfig{
@@ -128,6 +125,9 @@ func New() *Config {
 				Size: 10000,
 				TTL:  30 * time.Second,
 			},
+		},
+		Metric: &RestConfig{
+			Addr: ":8000",
 		},
 	}
 }

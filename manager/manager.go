@@ -109,7 +109,7 @@ func New(cfg *config.Config) (*Server, error) {
 	grpcServer := grpc_manager_server.New(grpcService, opts...)
 
 	// Initialize prometheus
-	metricServer := metric.New(cfg.Server.Metric, grpcServer)
+	metricServer := metric.New(cfg.Metric, grpcServer)
 
 	return &Server{
 		config:       cfg,

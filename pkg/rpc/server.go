@@ -29,16 +29,19 @@ import (
 	"syscall"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
-	"google.golang.org/grpc/status"
-
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/status"
 )
 
 type RegisterFunc func(*grpc.Server, interface{})
@@ -75,8 +78,16 @@ var serverOpts = []grpc.ServerOption{
 		MaxConnectionIdle: 5 * time.Minute,
 	}),
 	grpc.MaxConcurrentStreams(100),
-	grpc.StreamInterceptor(streamServerInterceptor),
-	grpc.UnaryInterceptor(unaryServerInterceptor),
+	grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		streamServerInterceptor,
+		grpc_prometheus.StreamServerInterceptor,
+		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+	)),
+	grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		unaryServerInterceptor,
+		grpc_prometheus.UnaryServerInterceptor,
+		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+	)),
 }
 
 var sp = struct {

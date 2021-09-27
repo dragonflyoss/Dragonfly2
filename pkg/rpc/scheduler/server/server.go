@@ -25,24 +25,11 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
-
-func init() {
-	// set register with server implementation.
-	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
-		scheduler.RegisterSchedulerServer(s, &proxy{server: impl.(SchedulerServer)})
-	})
-}
-
-type proxy struct {
-	server SchedulerServer
-	scheduler.UnimplementedSchedulerServer
-}
 
 // SchedulerServer scheduler.SchedulerServer
 type SchedulerServer interface {
@@ -56,55 +43,65 @@ type SchedulerServer interface {
 	LeaveTask(context.Context, *scheduler.PeerTarget) error
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
-	rr, err = p.server.RegisterPeerTask(ctx, ptr)
+type proxy struct {
+	server SchedulerServer
+	scheduler.UnimplementedSchedulerServer
+}
 
-	var taskID = "unknown"
-	var suc bool
-	var code base.Code
+func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	scheduler.RegisterSchedulerServer(grpcServer, &proxy{server: schedulerServer})
+	return grpcServer
+}
 
-	if err == nil && rr != nil {
-		taskID = rr.TaskId
-		suc = true
+func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	taskID := "unknown"
+	isSuccess := false
+
+	resp, err := p.server.RegisterPeerTask(ctx, req)
+	if err != nil {
+		taskID = resp.TaskId
+		isSuccess = true
 	}
 
-	peerHost := ptr.PeerHost
+	peerHost := req.PeerHost
+	logger.StatPeerLogger.Info("Register Peer Task",
+		zap.Bool("Success", isSuccess),
+		zap.String("TaskID", taskID),
+		zap.String("URL", req.Url),
+		zap.String("PeerIP", peerHost.Ip),
+		zap.String("PeerHostName", peerHost.HostName),
+		zap.String("SecurityDomain", peerHost.SecurityDomain),
+		zap.String("IDC", peerHost.Idc),
+		zap.String("SchedulerIP", iputils.HostIP),
+		zap.String("SchedulerHostName", iputils.HostName),
+	)
 
-	logger.StatPeerLogger.Info("register peer task",
-		zap.Bool("success", suc),
-		zap.String("taskID", taskID),
-		zap.String("url", ptr.Url),
-		zap.String("peerIp", peerHost.Ip),
-		zap.String("securityDomain", peerHost.SecurityDomain),
-		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", iputils.HostIP),
-		zap.String("schedulerName", iputils.HostName),
-		zap.Int32("code", int32(code)))
-
-	return
+	return resp, err
 }
 
 func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	return p.server.ReportPieceResult(stream)
 }
 
-func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*empty.Empty, error) {
-	err := p.server.ReportPeerResult(ctx, pr)
+func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
+	err := p.server.ReportPeerResult(ctx, req)
 
-	logger.StatPeerLogger.Info("finish peer task",
-		zap.Bool("success", pr.Success),
-		zap.String("peerID", pr.PeerId),
-		zap.String("taskID", pr.TaskId),
-		zap.String("URL", pr.Url),
-		zap.String("IDC", pr.Idc),
-		zap.String("peerIP", pr.SrcIp),
-		zap.String("securityDomain", pr.SecurityDomain),
-		zap.String("schedulerIp", iputils.HostIP),
-		zap.String("schedulerName", iputils.HostName),
-		zap.String("contentLength", unit.Bytes(pr.ContentLength).String()),
-		zap.String("traffic", unit.Bytes(uint64(pr.Traffic)).String()),
-		zap.Duration("cost", time.Duration(int64(pr.Cost))),
-		zap.Int32("code", int32(pr.Code)))
+	logger.StatPeerLogger.Info("Finish Peer Task",
+		zap.Bool("Success", req.Success),
+		zap.String("TaskID", req.TaskId),
+		zap.String("PeerID", req.PeerId),
+		zap.String("URL", req.Url),
+		zap.String("PeerIP", req.SrcIp),
+		zap.String("SecurityDomain", req.SecurityDomain),
+		zap.String("IDC", req.Idc),
+		zap.String("SchedulerIP", iputils.HostIP),
+		zap.String("SchedulerHostName", iputils.HostName),
+		zap.String("ContentLength", unit.Bytes(req.ContentLength).String()),
+		zap.String("Traffic", unit.Bytes(uint64(req.Traffic)).String()),
+		zap.Duration("Cost", time.Duration(int64(req.Cost))),
+		zap.Int32("Code", int32(req.Code)))
+
 	return new(empty.Empty), err
 }
 
