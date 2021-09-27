@@ -20,9 +20,12 @@ package cdn
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"runtime"
+	"time"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/metric"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
@@ -32,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -41,9 +43,21 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	gracefulStopTimeout = 10 * time.Second
+)
+
 type Server struct {
-	config        *config.Config
-	seedServer    server.SeederServer
+	// Server configuration
+	config *config.Config
+
+	// GRPC server
+	grpcServer *grpc.Server
+
+	// Metric server
+	metricServer *http.Server
+
+	// Manager client
 	managerClient managerclient.Client
 }
 
@@ -86,11 +100,18 @@ func New(cfg *config.Config) (*Server, error) {
 	storageMgr.Initialize(taskMgr)
 
 	// Initialize storage manager
-	cdnSeedServer, err := rpcserver.NewCdnSeedServer(cfg, taskMgr)
+	var opts []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	grpcServer, err := rpcserver.New(cfg, taskMgr, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create seedServer")
 	}
-	s.seedServer = cdnSeedServer
+	s.grpcServer = grpcServer
+
+	// Initialize prometheus
+	s.metricServer = metric.New(cfg.Metric, grpcServer)
 
 	// Initialize manager client
 	if cfg.Manager.Addr != "" {
@@ -118,20 +139,24 @@ func New(cfg *config.Config) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Serve() (err error) {
-	defer func() {
-		if rec := recover(); rec != nil {
-			err = errors.New(fmt.Sprintf("%v", rec))
-		}
-	}()
-
+func (s *Server) Serve() error {
 	// Start GC
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	err = gc.StartGC(ctx)
-	if err != nil {
+	if err := gc.StartGC(ctx); err != nil {
 		return err
 	}
+
+	// Started metric server
+	go func() {
+		logger.Infof("started metric server at %s", s.metricServer.Addr)
+		if err := s.metricServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("metric server closed unexpect: %+v", err)
+		}
+	}()
 
 	// Serve Keepalive
 	if s.managerClient != nil {
@@ -145,24 +170,49 @@ func (s *Server) Serve() (err error) {
 		}()
 	}
 
-	// Serve GRPC
-	var opts []grpc.ServerOption
-	if s.config.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
-	}
-	err = rpc.StartTCPServer(s.config.ListenPort, s.config.ListenPort, s.seedServer, opts...)
+	// Generate GRPC listener
+	lis, _, err := rpc.ListenWithPortRange(iputils.HostIP, s.config.ListenPort, s.config.ListenPort)
 	if err != nil {
-		return errors.Wrap(err, "start tcp server")
+		logger.Fatalf("net listener failed to start: %+v", err)
 	}
+	defer lis.Close()
+
+	// Started GRPC server
+	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
+	if err := s.grpcServer.Serve(lis); err != nil {
+		logger.Errorf("stoped grpc server: %+v", err)
+		return err
+	}
+
 	return nil
 }
 
 func (s *Server) Stop() {
+	// Stop manager client
 	if s.managerClient != nil {
 		s.managerClient.Close()
 		logger.Info("manager client closed")
 	}
 
-	rpc.StopServer()
-	logger.Info("grpc server closed under request")
+	// Stop metric server
+	if err := s.metricServer.Shutdown(context.Background()); err != nil {
+		logger.Errorf("metric server failed to stop: %+v", err)
+	}
+
+	logger.Info("metric server closed under request")
+	// Stop GRPC server
+	stopped := make(chan struct{})
+	go func() {
+		s.grpcServer.GracefulStop()
+		logger.Info("grpc server closed under request")
+		close(stopped)
+	}()
+
+	t := time.NewTimer(gracefulStopTimeout)
+	select {
+	case <-t.C:
+		s.grpcServer.Stop()
+	case <-stopped:
+		t.Stop()
+	}
 }

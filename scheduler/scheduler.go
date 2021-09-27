@@ -176,6 +176,17 @@ func (s *Server) Serve() error {
 		}()
 	}
 
+	// Started metric server
+	go func() {
+		logger.Infof("started metric server at %s", s.metricServer.Addr)
+		if err := s.metricServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("metric server closed unexpect: %+v", err)
+		}
+	}()
+
 	// Serve Keepalive
 	if s.managerClient != nil {
 		go func() {
@@ -187,17 +198,6 @@ func (s *Server) Serve() error {
 			})
 		}()
 	}
-
-	// Started metric server
-	go func() {
-		logger.Infof("started metric server at %s", s.metricServer.Addr)
-		if err := s.metricServer.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed {
-				return
-			}
-			logger.Fatalf("metric server closed unexpect: %+v", err)
-		}
-	}()
 
 	// Generate GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.IP, s.config.Server.Port, s.config.Server.Port)

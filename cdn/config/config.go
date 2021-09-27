@@ -137,6 +137,9 @@ func NewDefaultBaseProperties() *BaseProperties {
 			},
 		},
 		Host: HostConfig{},
+		Metric: &RestConfig{
+			Addr: ":8000",
+		},
 	}
 }
 
@@ -189,6 +192,9 @@ type BaseProperties struct {
 
 	// Host configuration
 	Host HostConfig `yaml:"host" mapstructure:"host"`
+
+	// Metric configuration
+	Metric *RestConfig `yaml:"metric" mapstructure:"metric"`
 }
 
 type ManagerConfig struct {
@@ -213,4 +219,8 @@ type HostConfig struct {
 
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
+}
+
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }
