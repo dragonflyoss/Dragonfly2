@@ -20,7 +20,12 @@ import (
 	"context"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 )
@@ -59,6 +64,10 @@ func New(target string) (Client, error) {
 				MaxDelay:   backoffMaxDelay,
 			},
 		}),
+		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+			grpc_prometheus.StreamClientInterceptor,
+			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+		)),
 	)
 	if err != nil {
 		return nil, err
