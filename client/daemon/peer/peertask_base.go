@@ -505,18 +505,11 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 				time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 			return true
 		}
-		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
-		if pt.schedulerOption.DisableAutoBackSource {
-			pt.failedReason = reasonBackSourceDisabled
-			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
-			pt.span.RecordError(err)
-			pt.Errorf(err.Error())
-		} else {
-			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
-			pt.span.AddEvent("back source due to scheduler says need back source")
-			pt.needBackSource = true
-			pt.backSource()
-		}
+		// when scheduler says dfcodes.SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
+		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
+		pt.span.AddEvent("back source due to scheduler says need back source")
+		pt.needBackSource = true
+		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
@@ -555,18 +548,11 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 			// research from piece 0
 			return pt.getNextPieceNum(0), true
 		}
-		// when schedule timeout, receivePeerPacket will close pt.peerPacketReady
-		if pt.schedulerOption.DisableAutoBackSource {
-			pt.failedReason = reasonBackSourceDisabled
-			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
-			pt.span.RecordError(err)
-			pt.Errorf(err.Error())
-		} else {
-			pt.Warnf("start download from source due to dfcodes.SchedNeedBackSource")
-			pt.span.AddEvent("back source due to scheduler says need back source ")
-			pt.needBackSource = true
-			pt.backSource()
-		}
+		// when scheduler says dfcodes.SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
+		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
+		pt.span.AddEvent("back source due to scheduler says need back source ")
+		pt.needBackSource = true
+		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonReScheduleTimeout
