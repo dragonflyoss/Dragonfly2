@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/metric"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -53,6 +54,10 @@ func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
+	metric.DownloadCount.Inc()
+	metric.ConcurrentDownloadGauge.Inc()
+	defer metric.ConcurrentDownloadGauge.Dec()
+
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
@@ -81,6 +86,9 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 		err = nil
 	}
 
+	if err != nil {
+		metric.DownloadFailureCount.Inc()
+	}
 	return
 }
 

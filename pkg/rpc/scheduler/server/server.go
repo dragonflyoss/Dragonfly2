@@ -57,7 +57,6 @@ func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Serve
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	metric.RegisterPeerTaskCount.Inc()
-
 	taskID := "unknown"
 	isSuccess := false
 	resp, err := p.server.RegisterPeerTask(ctx, req)
@@ -66,6 +65,7 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskReq
 		isSuccess = true
 		metric.RegisterPeerTaskFailureCount.Inc()
 	}
+	metric.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 
 	peerHost := req.PeerHost
 	logger.StatPeerLogger.Info("Register Peer Task",
@@ -84,10 +84,21 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskReq
 }
 
 func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	metric.ConcurrentScheduleGauge.Inc()
+	defer metric.ConcurrentScheduleGauge.Dec()
+
 	return p.server.ReportPieceResult(stream)
 }
 
 func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
+	metric.DownloadCount.Inc()
+	if req.Success {
+		metric.P2PTraffic.Add(float64(req.Traffic))
+		metric.PeerTaskDownloadDuration.Observe(float64(req.Cost))
+	} else {
+		metric.DownloadFailureCount.Inc()
+	}
+
 	err := p.server.ReportPeerResult(ctx, req)
 
 	logger.StatPeerLogger.Info("Finish Peer Task",

@@ -33,7 +33,7 @@ var (
 	RegisterPeerTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricNamespace,
 		Subsystem: constants.SchedulerMetricName,
-		Name:      "schedule_total",
+		Name:      "register_peer_task_total",
 		Help:      "Counter of the number of the register peer task.",
 	})
 
@@ -44,6 +44,20 @@ var (
 		Help:      "Counter of the number of failed of the register peer task.",
 	})
 
+	DownloadCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.SchedulerMetricName,
+		Name:      "download_total",
+		Help:      "Counter of the number of the downloading.",
+	})
+
+	DownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.SchedulerMetricName,
+		Name:      "download_failure_total",
+		Help:      "Counter of the number of failed of the downloading.",
+	})
+
 	P2PTraffic = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricNamespace,
 		Subsystem: constants.SchedulerMetricName,
@@ -51,25 +65,19 @@ var (
 		Help:      "Counter of the number of p2p traffic.",
 	})
 
-	TinyPeerTaskCounter = promauto.NewCounter(prometheus.CounterOpts{
+	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricNamespace,
 		Subsystem: constants.SchedulerMetricName,
-		Name:      "tiny_peer_task_total",
-		Help:      "Counter of the number of tiny peer task.",
-	})
+		Name:      "peer_task_total",
+		Help:      "Counter of the number of peer task.",
+	}, []string{"type"})
 
-	SmallPeerTaskCounter = promauto.NewCounter(prometheus.CounterOpts{
+	PeerTaskDownloadDuration = promauto.NewHistogram(prometheus.HistogramOpts{
 		Namespace: constants.MetricNamespace,
 		Subsystem: constants.SchedulerMetricName,
-		Name:      "small_peer_task_total",
-		Help:      "Counter of the number of small peer task.",
-	})
-
-	NormalPeerTaskCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricNamespace,
-		Subsystem: constants.SchedulerMetricName,
-		Name:      "normal_peer_task_total",
-		Help:      "Counter of the number of normal peer task.",
+		Name:      "peer_task_download_duration_milliseconds",
+		Help:      "Histogram of the time each peer task downloading.",
+		Buckets:   []float64{100, 200, 500, 1000, 1500, 2 * 1000, 3 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000, 120 * 1000, 300 * 1000},
 	})
 
 	ConcurrentScheduleGauge = promauto.NewGauge(prometheus.GaugeOpts{
