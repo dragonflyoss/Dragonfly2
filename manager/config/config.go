@@ -181,10 +181,6 @@ func (cfg *Config) Validate() error {
 		if cfg.Server.REST == nil {
 			return errors.New("empty rest server config is not specified")
 		}
-
-		if cfg.Metric == nil {
-			return errors.New("empty metric server config is not specified")
-		}
 	}
 
 	return nil
