@@ -140,6 +140,8 @@ func StatSeedStart(taskID, url string) {
 }
 
 func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
+	metric.DownloadTraffic.Add(float64(traffic))
+
 	logger.StatSeedLogger.Info("Finish Seed",
 		zap.Bool("Success", success),
 		zap.String("TaskID", taskID),
