@@ -72,7 +72,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				BackendDB: 2,
 			},
 		},
-		Metric: &RestConfig{
+		Metrics: &RestConfig{
 			Addr: ":8000",
 		},
 		DisableCDN: true,

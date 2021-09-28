@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/job"
-	"d7y.io/dragonfly/v2/scheduler/metric"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -49,8 +49,8 @@ type Server struct {
 	// GRPC server
 	grpcServer *grpc.Server
 
-	// Metric server
-	metricServer *http.Server
+	// Metrics server
+	metricsServer *http.Server
 
 	// Scheduler service
 	service *core.SchedulerService
@@ -134,8 +134,8 @@ func New(cfg *config.Config) (*Server, error) {
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	if cfg.Metric != nil {
-		s.metricServer = metric.New(cfg.Metric, grpcServer)
+	if cfg.Metrics != nil {
+		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 
 	// Initialize job service
@@ -178,15 +178,15 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	// Started metric server
-	if s.metricServer != nil {
+	// Started metrics server
+	if s.metricsServer != nil {
 		go func() {
-			logger.Infof("started metric server at %s", s.metricServer.Addr)
-			if err := s.metricServer.ListenAndServe(); err != nil {
+			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
+			if err := s.metricsServer.ListenAndServe(); err != nil {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metric server closed unexpect: %+v", err)
+				logger.Fatalf("metrics server closed unexpect: %+v", err)
 			}
 		}()
 	}
@@ -241,12 +241,12 @@ func (s *Server) Stop() {
 	s.service.Stop()
 	logger.Info("scheduler service closed")
 
-	// Stop metric server
-	if s.metricServer != nil {
-		if err := s.metricServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metric server failed to stop: %+v", err)
+	// Stop metrics server
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metrics server failed to stop: %+v", err)
 		}
-		logger.Info("metric server closed under request")
+		logger.Info("metrics server closed under request")
 	}
 
 	// Stop GRPC server

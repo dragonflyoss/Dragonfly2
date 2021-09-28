@@ -68,7 +68,7 @@ func TestManagerConfig_Load(t *testing.T) {
 				TTL:  1000,
 			},
 		},
-		Metric: &RestConfig{
+		Metrics: &RestConfig{
 			Addr: ":8000",
 		},
 	}

@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
-	"d7y.io/dragonfly/v2/manager/metric"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/router"
 	"d7y.io/dragonfly/v2/manager/searcher"
@@ -51,8 +51,8 @@ type Server struct {
 	// REST server
 	restServer *http.Server
 
-	// Metric server
-	metricServer *http.Server
+	// Metrics server
+	metricsServer *http.Server
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -112,8 +112,8 @@ func New(cfg *config.Config) (*Server, error) {
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	if cfg.Metric != nil {
-		s.metricServer = metric.New(cfg.Metric, grpcServer)
+	if cfg.Metrics != nil {
+		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 
 	return s, nil
@@ -131,15 +131,15 @@ func (s *Server) Serve() error {
 		}
 	}()
 
-	// Started metric server
-	if s.metricServer != nil {
+	// Started metrics server
+	if s.metricsServer != nil {
 		go func() {
-			logger.Infof("started metric server at %s", s.metricServer.Addr)
-			if err := s.metricServer.ListenAndServe(); err != nil {
+			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
+			if err := s.metricsServer.ListenAndServe(); err != nil {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metric server closed unexpect: %+v", err)
+				logger.Fatalf("metrics server closed unexpect: %+v", err)
 			}
 		}()
 	}
@@ -168,12 +168,12 @@ func (s *Server) Stop() {
 	}
 	logger.Info("rest server closed under request")
 
-	// Stop metric server
-	if s.metricServer != nil {
-		if err := s.metricServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metric server failed to stop: %+v", err)
+	// Stop metrics server
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metrics server failed to stop: %+v", err)
 		}
-		logger.Info("metric server closed under request")
+		logger.Info("metrics server closed under request")
 	}
 
 	// Stop GRPC server

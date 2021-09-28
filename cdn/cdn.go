@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/metric"
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
@@ -54,8 +54,8 @@ type Server struct {
 	// GRPC server
 	grpcServer *grpc.Server
 
-	// Metric server
-	metricServer *http.Server
+	// Metrics server
+	metricsServer *http.Server
 
 	// Manager client
 	managerClient managerclient.Client
@@ -111,8 +111,8 @@ func New(cfg *config.Config) (*Server, error) {
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	if cfg.Metric != nil {
-		s.metricServer = metric.New(cfg.Metric, grpcServer)
+	if cfg.Metrics != nil {
+		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 
 	// Initialize manager client
@@ -149,15 +149,15 @@ func (s *Server) Serve() error {
 		return err
 	}
 
-	// Started metric server
-	if s.metricServer != nil {
+	// Started metrics server
+	if s.metricsServer != nil {
 		go func() {
-			logger.Infof("started metric server at %s", s.metricServer.Addr)
-			if err := s.metricServer.ListenAndServe(); err != nil {
+			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
+			if err := s.metricsServer.ListenAndServe(); err != nil {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metric server closed unexpect: %+v", err)
+				logger.Fatalf("metrics server closed unexpect: %+v", err)
 			}
 		}()
 	}
@@ -198,12 +198,12 @@ func (s *Server) Stop() {
 		logger.Info("manager client closed")
 	}
 
-	// Stop metric server
-	if s.metricServer != nil {
-		if err := s.metricServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metric server failed to stop: %+v", err)
+	// Stop metrics server
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metrics server failed to stop: %+v", err)
 		}
-		logger.Info("metric server closed under request")
+		logger.Info("metrics server closed under request")
 	}
 
 	// Stop GRPC server

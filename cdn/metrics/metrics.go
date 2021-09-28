@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package metric
+package metrics
 
 import (
 	"net/http"
@@ -31,29 +31,29 @@ import (
 // Variables declared for metrics.
 var (
 	DownloadCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricNamespace,
-		Subsystem: constants.CDNMetricName,
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
 		Name:      "download_total",
 		Help:      "Counter of the number of the downloading.",
 	})
 
 	DownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricNamespace,
-		Subsystem: constants.CDNMetricName,
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
 	})
 
 	DownloadTraffic = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: constants.MetricNamespace,
-		Subsystem: constants.CDNMetricName,
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
 		Name:      "download_traffic",
 		Help:      "Counter of the number of download traffic.",
 	})
 
 	ConcurrentDownloadGauge = promauto.NewGauge(prometheus.GaugeOpts{
-		Namespace: constants.MetricNamespace,
-		Subsystem: constants.CDNMetricName,
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
 		Name:      "concurrent_download_total",
 		Help:      "Gauger of the number of concurrent of the downloading.",
 	})

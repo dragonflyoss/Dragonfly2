@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/metric"
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -54,9 +54,9 @@ func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
-	metric.DownloadCount.Inc()
-	metric.ConcurrentDownloadGauge.Inc()
-	defer metric.ConcurrentDownloadGauge.Dec()
+	metrics.DownloadCount.Inc()
+	metrics.ConcurrentDownloadGauge.Inc()
+	defer metrics.ConcurrentDownloadGauge.Dec()
 
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
@@ -87,7 +87,7 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 	}
 
 	if err != nil {
-		metric.DownloadFailureCount.Inc()
+		metrics.DownloadFailureCount.Inc()
 	}
 	return
 }
@@ -140,7 +140,7 @@ func StatSeedStart(taskID, url string) {
 }
 
 func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
-	metric.DownloadTraffic.Add(float64(traffic))
+	metrics.DownloadTraffic.Add(float64(traffic))
 
 	logger.StatSeedLogger.Info("Finish Seed",
 		zap.Bool("Success", success),

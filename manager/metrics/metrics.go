@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package metric
+package metrics
 
 import (
 	"net/http"

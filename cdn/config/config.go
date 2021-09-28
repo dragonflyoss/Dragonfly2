@@ -190,8 +190,8 @@ type BaseProperties struct {
 	// Host configuration
 	Host HostConfig `yaml:"host" mapstructure:"host"`
 
-	// Metric configuration
-	Metric *RestConfig `yaml:"metric" mapstructure:"metric"`
+	// Metrics configuration
+	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ManagerConfig struct {

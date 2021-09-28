@@ -35,7 +35,7 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
-	Metric       *RestConfig      `yaml:"metric" mapstructure:"metric"`
+	Metrics      *RestConfig      `yaml:"metrics" mapstructure:"metrics"`
 	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 

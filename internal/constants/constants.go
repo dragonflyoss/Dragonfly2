@@ -24,9 +24,9 @@ const (
 )
 
 const (
-	MetricNamespace     = "dragonfly"
-	ManagerMetricName   = "manager"
-	SchedulerMetricName = "scheduler"
-	DfdaemonMetricName  = "dfdaemon"
-	CDNMetricName       = "cdn"
+	MetricsNamespace     = "dragonfly"
+	ManagerMetricsName   = "manager"
+	SchedulerMetricsName = "scheduler"
+	DfdaemonMetricsName  = "dfdaemon"
+	CDNMetricsName       = "cdn"
 )

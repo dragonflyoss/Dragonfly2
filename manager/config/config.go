@@ -28,7 +28,7 @@ type Config struct {
 	Server       *ServerConfig   `yaml:"server" mapstructure:"server"`
 	Database     *DatabaseConfig `yaml:"database" mapstructure:"database"`
 	Cache        *CacheConfig    `yaml:"cache" mapstructure:"cache"`
-	Metric       *RestConfig     `yaml:"metric" mapstructure:"metric"`
+	Metrics      *RestConfig     `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ServerConfig struct {
