@@ -76,6 +76,21 @@ func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), arg0, arg1)
 }
 
+// ListSchedulers mocks base method.
+func (m *MockClient) ListSchedulers(arg0 *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListSchedulers", arg0)
+	ret0, _ := ret[0].(*manager.ListSchedulersResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListSchedulers indicates an expected call of ListSchedulers.
+func (mr *MockClientMockRecorder) ListSchedulers(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0)
+}
+
 // UpdateCDN mocks base method.
 func (m *MockClient) UpdateCDN(arg0 *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	m.ctrl.T.Helper()
