@@ -49,7 +49,7 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 		if err == nil && listener != nil {
 			return listener, listener.Addr().(*net.TCPAddr).Port, nil
 		}
-		if isErrAddrInuse(err) {
+		if isErrAddr(err) {
 			logger.Warnf("listen port %s:%d is in used, sys error: %s", listen, port, err)
 			continue
 		} else if err != nil {
@@ -60,7 +60,7 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 	return nil, -1, fmt.Errorf("no available port to listen, port: %d - %d", startPort, endPort)
 }
 
-func isErrAddrInuse(err error) bool {
+func isErrAddr(err error) bool {
 	if ope, ok := err.(*net.OpError); ok {
 		if sse, ok := ope.Err.(*os.SyscallError); ok {
 			if errno, ok := sse.Err.(syscall.Errno); ok {
