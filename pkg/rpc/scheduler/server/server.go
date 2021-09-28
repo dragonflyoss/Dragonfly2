@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/scheduler/metric"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -55,13 +56,15 @@ func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Serve
 }
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	metric.RegisterPeerTaskCount.Inc()
+
 	taskID := "unknown"
 	isSuccess := false
-
 	resp, err := p.server.RegisterPeerTask(ctx, req)
 	if err != nil {
 		taskID = resp.TaskId
 		isSuccess = true
+		metric.RegisterPeerTaskFailureCount.Inc()
 	}
 
 	peerHost := req.PeerHost

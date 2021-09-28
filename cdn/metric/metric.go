@@ -20,9 +20,43 @@ import (
 	"net/http"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/internal/constants"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+)
+
+// Variables declared for metrics.
+var (
+	DownloadCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.CDNMetricName,
+		Name:      "download_total",
+		Help:      "Counter of the number of the downloading.",
+	})
+
+	DownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.CDNMetricName,
+		Name:      "download_failure_total",
+		Help:      "Counter of the number of failed of the downloading.",
+	})
+
+	DownloadTraffic = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.CDNMetricName,
+		Name:      "download_traffic",
+		Help:      "Counter of the number of download traffic.",
+	})
+
+	ConcurrentDownloadGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: constants.MetricNamespace,
+		Subsystem: constants.CDNMetricName,
+		Name:      "concurrent_download_total",
+		Help:      "Gauger of the number of concurrent of the downloading.",
+	})
 )
 
 func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {
