@@ -111,7 +111,9 @@ func New(cfg *config.Config) (*Server, error) {
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	s.metricServer = metric.New(cfg.Metric, grpcServer)
+	if cfg.Metric != nil {
+		s.metricServer = metric.New(cfg.Metric, grpcServer)
+	}
 
 	// Initialize manager client
 	if cfg.Manager.Addr != "" {
@@ -148,15 +150,17 @@ func (s *Server) Serve() error {
 	}
 
 	// Started metric server
-	go func() {
-		logger.Infof("started metric server at %s", s.metricServer.Addr)
-		if err := s.metricServer.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed {
-				return
+	if s.metricServer != nil {
+		go func() {
+			logger.Infof("started metric server at %s", s.metricServer.Addr)
+			if err := s.metricServer.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Fatalf("metric server closed unexpect: %+v", err)
 			}
-			logger.Fatalf("metric server closed unexpect: %+v", err)
-		}
-	}()
+		}()
+	}
 
 	// Serve Keepalive
 	if s.managerClient != nil {
@@ -195,10 +199,12 @@ func (s *Server) Stop() {
 	}
 
 	// Stop metric server
-	if err := s.metricServer.Shutdown(context.Background()); err != nil {
-		logger.Errorf("metric server failed to stop: %+v", err)
+	if s.metricServer != nil {
+		if err := s.metricServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metric server failed to stop: %+v", err)
+		}
+		logger.Info("metric server closed under request")
 	}
-	logger.Info("metric server closed under request")
 
 	// Stop GRPC server
 	stopped := make(chan struct{})

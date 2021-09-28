@@ -137,9 +137,6 @@ func NewDefaultBaseProperties() *BaseProperties {
 			},
 		},
 		Host: HostConfig{},
-		Metric: &RestConfig{
-			Addr: ":8000",
-		},
 	}
 }
 

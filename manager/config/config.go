@@ -126,9 +126,6 @@ func New() *Config {
 				TTL:  30 * time.Second,
 			},
 		},
-		Metric: &RestConfig{
-			Addr: ":8000",
-		},
 	}
 }
 

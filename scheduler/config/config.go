@@ -110,9 +110,6 @@ func New() *Config {
 				BackendDB: 2,
 			},
 		},
-		Metric: &RestConfig{
-			Addr: ":8000",
-		},
 		DisableCDN: false,
 	}
 }
