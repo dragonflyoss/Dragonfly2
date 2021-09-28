@@ -53,6 +53,9 @@ type Client interface {
 
 	// KeepAlive with manager
 	KeepAlive(time.Duration, *manager.KeepAliveRequest)
+
+	// Close client connect
+	Close() error
 }
 
 type client struct {
