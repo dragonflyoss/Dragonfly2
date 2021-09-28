@@ -30,5 +30,5 @@ cache:
     size: 10000
     ttl: 1000
 
-metric:
+metrics:
   addr: :8000
