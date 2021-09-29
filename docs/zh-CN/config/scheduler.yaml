@@ -55,25 +55,17 @@ scheduler:
 # server scheduler 服务实例配置信息
 server:
   # ip
-  ip:
+  # ip: 127.0.0.1
   # host
-  host:
+  # host: localhost
   # ListenPort is the ip and port scheduler server listens on.
   # default: 8002
   port:
 
 # 动态数据配置
 dynConfig:
-  # type 动态数据来源类型 manager 从远端manager读取 / local 从本地文件读取
-  # default: local
-  type: local
-  # expireTime 缓存的过期时间
-  # default 30s
-  expireTime: 30s
-  # cdnDirPath cdn 实例列表文件存放的目录
-  cdnDirPath:
-  # data 本地 CDN 动态配置
-  data: ""
+  # type 动态数据来源类型
+  type: manager
 
 # manager 配置
 manager:
@@ -106,7 +98,7 @@ job:
     # host redis 服务实例地址
     host: ""
     # port redis 服务实例端口
-    port:
+    port: 6379
     # password
     password: ""
     # brokerDB
@@ -132,7 +124,7 @@ pprofPort: -1
 
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）
-jaeger:
+jaeger: ""
 
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn

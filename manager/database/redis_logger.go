@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package supervisor
+package database
 
-type HostMgr interface {
-	Add(host *PeerHost)
+import (
+	"context"
+	"fmt"
 
-	Delete(uuid string)
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
 
-	Get(uuid string) (*PeerHost, bool)
+type redisLogger struct{}
+
+func (rl *redisLogger) Printf(ctx context.Context, format string, v ...interface{}) {
+	logger.CoreLogger.Desugar().Info(fmt.Sprintf(format, v...))
 }

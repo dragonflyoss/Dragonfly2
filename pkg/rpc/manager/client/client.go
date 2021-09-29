@@ -20,7 +20,12 @@ import (
 	"context"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 )
@@ -34,11 +39,23 @@ const (
 )
 
 type Client interface {
-	Close() error
+	// Get Scheduler and Scheduler cluster configuration
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
+
+	// Update scheduler configuration
 	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
+
+	// Update CDN configuration
 	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
+
+	// List acitve schedulers configuration
+	ListSchedulers(*manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
+
+	// KeepAlive with manager
 	KeepAlive(time.Duration, *manager.KeepAliveRequest)
+
+	// Close client connect
+	Close() error
 }
 
 type client struct {
@@ -59,6 +76,10 @@ func New(target string) (Client, error) {
 				MaxDelay:   backoffMaxDelay,
 			},
 		}),
+		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+			grpc_prometheus.StreamClientInterceptor,
+			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+		)),
 	)
 	if err != nil {
 		return nil, err
@@ -70,25 +91,32 @@ func New(target string) (Client, error) {
 	}, nil
 }
 
-func (c *client) GetScheduler(scheduler *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.GetScheduler(ctx, scheduler)
+	return c.ManagerClient.GetScheduler(ctx, req)
 }
 
-func (c *client) UpdateScheduler(scheduler *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateScheduler(ctx, scheduler)
+	return c.ManagerClient.UpdateScheduler(ctx, req)
 }
 
-func (c *client) UpdateCDN(cdn *manager.UpdateCDNRequest) (*manager.CDN, error) {
+func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
-	return c.ManagerClient.UpdateCDN(ctx, cdn)
+	return c.ManagerClient.UpdateCDN(ctx, req)
+}
+
+func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.ListSchedulers(ctx, req)
 }
 
 func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveRequest) {

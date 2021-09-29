@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package supervisor
+package metric
 
-type TaskMgr interface {
-	Add(task *Task)
+import (
+	"net/http"
 
-	Get(taskID string) (task *Task, ok bool)
+	"d7y.io/dragonfly/v2/manager/config"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"google.golang.org/grpc"
+)
 
-	Delete(taskID string)
+func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {
+	grpc_prometheus.Register(grpcServer)
 
-	GetOrAdd(task *Task) (actual *Task, loaded bool)
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	return &http.Server{
+		Addr:    cfg.Addr,
+		Handler: mux,
+	}
 }

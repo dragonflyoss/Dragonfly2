@@ -56,23 +56,17 @@ scheduler:
 # server scheduler instance configuration
 server:
   # ip
-  ip:
+  # ip: 127.0.0.1
   # host
-  host:
+  # host: localhost
   # ListenPort is the ip and port scheduler server listens on.
   # default: 8002
-  port:
+  port: 8002
 
 # dynamic data configuration
 dynConfig:
-  # type
-  type:
-  # expireTime
-  expireTime:
-  # cdnDirPath
-  cdnDirPath:
-  # data
-  data: ""
+  # dynamic data source type
+  type: manager
 
 # manager configuration
 manager:
@@ -105,7 +99,7 @@ job:
     # host
     host: ""
     # port
-    port:
+    port: 6379
     # password
     password: ""
     # brokerDB
