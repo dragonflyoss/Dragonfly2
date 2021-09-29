@@ -28,6 +28,7 @@ type Config struct {
 	Server       *ServerConfig   `yaml:"server" mapstructure:"server"`
 	Database     *DatabaseConfig `yaml:"database" mapstructure:"database"`
 	Cache        *CacheConfig    `yaml:"cache" mapstructure:"cache"`
+	Metrics      *RestConfig     `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ServerConfig struct {
@@ -35,7 +36,6 @@ type ServerConfig struct {
 	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
 	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
-	Metric     *RestConfig      `yaml:"metric" mapstructure:"metric"`
 }
 
 type DatabaseConfig struct {
@@ -105,9 +105,6 @@ func New() *Config {
 			},
 			REST: &RestConfig{
 				Addr: ":8080",
-			},
-			Metric: &RestConfig{
-				Addr: ":8000",
 			},
 		},
 		Database: &DatabaseConfig{
@@ -183,10 +180,6 @@ func (cfg *Config) Validate() error {
 
 		if cfg.Server.REST == nil {
 			return errors.New("empty rest server config is not specified")
-		}
-
-		if cfg.Server.Metric == nil {
-			return errors.New("empty metric server config is not specified")
 		}
 	}
 

@@ -189,6 +189,9 @@ type BaseProperties struct {
 
 	// Host configuration
 	Host HostConfig `yaml:"host" mapstructure:"host"`
+
+	// Metrics configuration
+	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ManagerConfig struct {
@@ -213,4 +216,8 @@ type HostConfig struct {
 
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
+}
+
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }

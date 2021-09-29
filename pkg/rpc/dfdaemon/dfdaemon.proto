@@ -56,10 +56,10 @@ message DownResult{
 
 // Daemon Client RPC Service
 service Daemon{
-  // trigger client to download file
+  // Trigger client to download file
   rpc Download(DownRequest) returns(stream DownResult);
-  // get piece tasks from other peers
+  // Get piece tasks from other peers
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket);
-  // check daemon health
+  // Check daemon health
   rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty);
 }

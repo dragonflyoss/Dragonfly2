@@ -19,7 +19,9 @@ package server
 import (
 	"context"
 	"sync"
+	"time"
 
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -32,16 +34,11 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func init() {
-	// set register with server implementation.
-	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
-		cdnsystem.RegisterSeederServer(s, &proxy{server: impl.(SeederServer)})
-	})
-}
-
-// SeederServer see cdnsystem.SeederServer
+// SeederServer  refer to cdnsystem.SeederServer
 type SeederServer interface {
+	// Generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
+	// Get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
 
@@ -50,7 +47,17 @@ type proxy struct {
 	cdnsystem.UnimplementedSeederServer
 }
 
+func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	cdnsystem.RegisterSeederServer(grpcServer, &proxy{server: seederServer})
+	return grpcServer
+}
+
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
+	metrics.DownloadCount.Inc()
+	metrics.ConcurrentDownloadGauge.Inc()
+	defer metrics.ConcurrentDownloadGauge.Dec()
+
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
@@ -79,6 +86,9 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 		err = nil
 	}
 
+	if err != nil {
+		metrics.DownloadFailureCount.Inc()
+	}
 	return
 }
 
@@ -122,23 +132,25 @@ func call(ctx context.Context, psc chan *cdnsystem.PieceSeed, p *proxy, sr *cdns
 }
 
 func StatSeedStart(taskID, url string) {
-	logger.StatSeedLogger.Info("trigger seed making",
-		zap.String("taskID", taskID),
-		zap.String("url", url),
-		zap.String("seederIp", iputils.HostIP),
-		zap.String("seederName", iputils.HostName))
+	logger.StatSeedLogger.Info("Start Seed",
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIp", iputils.HostIP),
+		zap.String("SeederHostName", iputils.HostName))
 }
 
-func StatSeedFinish(taskID, url string, success bool, err error, beginTime, endTime int, traffic, contentLength int64) {
-	logger.StatSeedLogger.Info("seed making finish",
-		zap.Bool("success", success),
-		zap.String("taskID", taskID),
-		zap.String("url", url),
-		zap.String("seederIp", iputils.HostIP),
-		zap.String("seederName", iputils.HostName),
-		zap.Int("beginTime", beginTime),
-		zap.Int("endTime", endTime),
-		zap.Int64("traffic", traffic),
-		zap.Int64("contentLength", contentLength),
+func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
+	metrics.DownloadTraffic.Add(float64(traffic))
+
+	logger.StatSeedLogger.Info("Finish Seed",
+		zap.Bool("Success", success),
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIp", iputils.HostIP),
+		zap.String("SeederHostName", iputils.HostName),
+		zap.Time("StartAt", startAt),
+		zap.Time("FinishAt", finishAt),
+		zap.Int64("Traffic", traffic),
+		zap.Int64("ContentLength", contentLength),
 		zap.Error(err))
 }

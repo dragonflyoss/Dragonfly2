@@ -32,6 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -39,38 +40,26 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 )
 
-var tracer trace.Tracer
+var tracer = otel.Tracer("cdn-server")
 
-func init() {
-	tracer = otel.Tracer("cdn-server")
-}
-
-type options struct {
-	tracer trace.Tracer
-}
-
-type Option func(*options)
-
-func WithTracer(tracer trace.Tracer) Option {
-	return func(o *options) {
-		o.tracer = tracer
-	}
-}
-
-// CdnSeedServer is used to implement cdnsystem.SeederServer.
-type CdnSeedServer struct {
+type server struct {
+	*grpc.Server
 	taskMgr supervisor.SeedTaskMgr
 	cfg     *config.Config
 }
 
-// NewCdnSeedServer returns a new Manager Object.
-func NewCdnSeedServer(cfg *config.Config, taskMgr supervisor.SeedTaskMgr) (*CdnSeedServer, error) {
-	return &CdnSeedServer{
+// New returns a new Manager Object.
+func New(cfg *config.Config, taskMgr supervisor.SeedTaskMgr, opts ...grpc.ServerOption) (*grpc.Server, error) {
+	svr := &server{
 		taskMgr: taskMgr,
 		cfg:     cfg,
-	}, nil
+	}
+
+	svr.Server = cdnserver.New(svr, opts...)
+	return svr.Server, nil
 }
 
 func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRequest, error) {
@@ -114,7 +103,7 @@ func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
 	return nil
 }
 
-func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
+func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanObtainSeeds, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
@@ -185,7 +174,7 @@ func (css *CdnSeedServer) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRe
 	return nil
 }
 
-func (css *CdnSeedServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
+func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanGetPieceTasks, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()

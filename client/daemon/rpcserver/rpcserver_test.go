@@ -34,11 +34,11 @@ import (
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -78,7 +78,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 		peerHost:        &scheduler.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
-	m.downloadServer = rpc.NewServer(m)
+	m.downloadServer = dfdaemonserver.New(m)
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)
@@ -161,7 +161,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		peerHost:       &scheduler.PeerHost{},
 		storageManager: mockStorageManger,
 	}
-	m.peerServer = rpc.NewServer(m)
+	m.peerServer = dfdaemonserver.New(m)
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)

@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
-	"d7y.io/dragonfly/v2/manager/metric"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/router"
 	"d7y.io/dragonfly/v2/manager/searcher"
@@ -51,11 +51,13 @@ type Server struct {
 	// REST server
 	restServer *http.Server
 
-	// Metric server
-	metricServer *http.Server
+	// Metrics server
+	metricsServer *http.Server
 }
 
 func New(cfg *config.Config) (*Server, error) {
+	s := &Server{config: cfg}
+
 	// Initialize database
 	db, err := database.New(cfg)
 	if err != nil {
@@ -89,7 +91,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	restServer := &http.Server{
+	s.restServer = &http.Server{
 		Addr:    cfg.Server.REST.Addr,
 		Handler: router,
 	}
@@ -107,16 +109,14 @@ func New(cfg *config.Config) (*Server, error) {
 		opts = append(opts, grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
 	grpcServer := grpc_manager_server.New(grpcService, opts...)
+	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	metricServer := metric.New(cfg.Server.Metric, grpcServer)
+	if cfg.Metrics != nil {
+		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
+	}
 
-	return &Server{
-		config:       cfg,
-		grpcServer:   grpcServer,
-		restServer:   restServer,
-		metricServer: metricServer,
-	}, nil
+	return s, nil
 }
 
 func (s *Server) Serve() error {
@@ -131,16 +131,18 @@ func (s *Server) Serve() error {
 		}
 	}()
 
-	// Started metric server
-	go func() {
-		logger.Infof("started metric server at %s", s.metricServer.Addr)
-		if err := s.metricServer.ListenAndServe(); err != nil {
-			if err == http.ErrServerClosed {
-				return
+	// Started metrics server
+	if s.metricsServer != nil {
+		go func() {
+			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
+			if err := s.metricsServer.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Fatalf("metrics server closed unexpect: %+v", err)
 			}
-			logger.Fatalf("metric server closed unexpect: %+v", err)
-		}
-	}()
+		}()
+	}
 
 	// Generate GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
@@ -166,11 +168,13 @@ func (s *Server) Stop() {
 	}
 	logger.Info("rest server closed under request")
 
-	// Stop metric server
-	if err := s.metricServer.Shutdown(context.Background()); err != nil {
-		logger.Errorf("metric server failed to stop: %+v", err)
+	// Stop metrics server
+	if s.metricsServer != nil {
+		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
+			logger.Errorf("metrics server failed to stop: %+v", err)
+		}
+		logger.Info("metrics server closed under request")
 	}
-	logger.Info("metric server closed under request")
 
 	// Stop GRPC server
 	stopped := make(chan struct{})

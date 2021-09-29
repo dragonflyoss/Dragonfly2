@@ -35,6 +35,7 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
+	Metrics      *RestConfig      `yaml:"metrics" mapstructure:"metrics"`
 	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
@@ -208,6 +209,10 @@ type GCConfig struct {
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
 	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
+}
+
+type RestConfig struct {
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
 type HostConfig struct {
