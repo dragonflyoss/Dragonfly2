@@ -17,6 +17,12 @@ When enable runtime configuration in dragonfly, you can skip [Configure Runtime]
 
 #### 1. Docker
 
+> Because the original `daemonset` in Kubernetes did not support `Surging Rolling Update` policy.
+> When kill current dfdaemon pod, the new pod image can not be pulled anymore.
+> Using Docker with dragonfly, when upgrade dfdaemon, should pull newly dfdaemon image manually, or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob).
+
+> We did not recommend to using dragonfly with docker in k8s due to many reasons: 1. no fallback image pulling policy. 2. deprecated in Kubernetes.
+
 Dragonfly helm supports config docker automatically.
 
 Config cases:

@@ -16,6 +16,12 @@
 
 #### 1. Docker
 
+> 因为当前 Kubernetes 里的 `daemonset` 并不支持 `Surging Rolling Update` 策略,
+> 一旦旧的 dfdaemon pod 被删除后，新的 dfdaemon 就再也拉取不了了。
+> 当使用 Docker 时，在升级 dfdaemon 的时候，请先手动拉取新的 dfdaemon 镜像，或者使用 [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob)
+
+> 不推荐在 docker 环境中使用蜻蜓：1. 拉镜像没有 fallback 机制，2. 在未来的 Kubernetes 中已经废弃。
+
 Dragonfly Helm 支持自动更改 docker 配置。
 
 **情况 1: 支持指定仓库**
