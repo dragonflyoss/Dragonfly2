@@ -97,7 +97,7 @@ job:
   # redis configuration
   redis:
     # host
-    host: "redis"
+    host: ""
     # port
     port: 6379
     # password
