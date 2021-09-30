@@ -17,17 +17,42 @@ When enable runtime configuration in dragonfly, you can skip [Configure Runtime]
 
 #### 1. Docker
 
+> **We did not recommend to using dragonfly with docker in Kubernetes** due to many reasons: 1. no fallback image pulling policy. 2. deprecated in Kubernetes.
 > Because the original `daemonset` in Kubernetes did not support `Surging Rolling Update` policy.
 > When kill current dfdaemon pod, the new pod image can not be pulled anymore.
-> Using Docker with dragonfly, when upgrade dfdaemon, should pull newly dfdaemon image manually, or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob).
 
-> We did not recommend to using dragonfly with docker in k8s due to many reasons: 1. no fallback image pulling policy. 2. deprecated in Kubernetes.
+> If you can not change runtime from docker to others, remind to choose a plan when upgrade dfdaemon:
+>     Option 1: pull newly dfdaemon image manually before upgrade dragonfly, or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) to pull image automate.
+>     Option 2: keep the image registry of dragonfly is different from common registries and add host in `containerRuntime.docker.skipHosts`.
 
 Dragonfly helm supports config docker automatically.
 
 Config cases:
 
-**Case 1: Implicit registries support**
+**Case 1: [Preferred] Arbitrary registries support with restart docker**
+
+Chart customize values.yaml:
+```yaml
+containerRuntime:
+  docker:
+    enable: true
+    # -- Restart docker daemon to redirect traffic to dfdaemon
+    # When containerRuntime.docker.restart=true, containerRuntime.docker.injectHosts and containerRuntime.registry.domains is ignored.
+    # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
+    restart: true
+    skipHosts:
+    - "127.0.0.1"
+    - "docker.io" # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
+```
+
+This config enables docker pulling images from arbitrary registries via Dragonfly.
+When deploying Dragonfly with above config, dfdaemon will restart docker daemon.
+
+Limitations:
+* Must enable live-restore feature in docker
+* Need restart docker daemon
+
+**Case 2: Implicit registries support without restart docker**
 
 Chart customize values.yaml:
 ```yaml
@@ -48,26 +73,6 @@ When deploying Dragonfly with above config, it's unnecessary to restart docker d
 
 Limitations:
 * Only support implicit registries
-
-**Case 2: Arbitrary registries support**
-
-Chart customize values.yaml:
-```yaml
-containerRuntime:
-  docker:
-    enable: true
-    # -- Restart docker daemon to redirect traffic to dfdaemon
-    # When containerRuntime.docker.restart=true, containerRuntime.docker.injectHosts and containerRuntime.registry.domains is ignored.
-    # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
-    restart: true
-```
-
-This config enables docker pulling images from arbitrary registries via Dragonfly.
-When deploying Dragonfly with above config, dfdaemon will restart docker daemon.
-
-Limitations:
-* Must enable live-restore feature in docker
-* Need restart docker daemon
 
 #### 2. Containerd
 

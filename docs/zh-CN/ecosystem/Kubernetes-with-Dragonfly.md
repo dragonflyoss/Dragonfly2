@@ -16,15 +16,38 @@
 
 #### 1. Docker
 
+> **不推荐在 docker 环境中使用蜻蜓**：1. 拉镜像没有 fallback 机制，2. 在未来的 Kubernetes 中已经废弃。
+> 
 > 因为当前 Kubernetes 里的 `daemonset` 并不支持 `Surging Rolling Update` 策略,
 > 一旦旧的 dfdaemon pod 被删除后，新的 dfdaemon 就再也拉取不了了。
-> 当使用 Docker 时，在升级 dfdaemon 的时候，请先手动拉取新的 dfdaemon 镜像，或者使用 [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob)
 
-> 不推荐在 docker 环境中使用蜻蜓：1. 拉镜像没有 fallback 机制，2. 在未来的 Kubernetes 中已经废弃。
+> 如果无法更换容器运行时的话，那在升级蜻蜓的时候，请从下面两种方案选择比较适合的：
+> 选项1：先手动拉取新的 dfdaemon 镜像，或者使用 [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) 去自动拉取，
+> 选项2：保持蜻蜓的镜像中心和通用的镜像中心不一样，同时将蜻蜓镜像中心相关的 host 加入 `containerRuntime.docker.skipHosts`。
 
 Dragonfly Helm 支持自动更改 docker 配置。
 
-**情况 1: 支持指定仓库**
+**情况 1:【推荐的】支持任意仓库**
+
+定制 values.yaml 文件:
+```yaml
+containerRuntime:
+  docker:
+    enable: true
+    # -- Restart docker daemon to redirect traffic to dfdaemon
+    # When containerRuntime.docker.restart=true, containerRuntime.docker.injectHosts and containerRuntime.registry.domains is ignored.
+    # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
+    restart: true
+```
+
+此配置允许 Dragonfly 拦截所有 docker 流量。
+使用上述配置部署 Dragonfly 时，dfdaemon 将重新启动 docker。
+
+限制:
+* 必须开启 docker 的 `live-restore` 功能
+* 需要重启 docker daemon
+
+**情况 2: 支持指定仓库**
 
 定制 values.yaml 文件:
 ```yaml
@@ -45,26 +68,6 @@ containerRuntime:
 
 限制:
 * 只支持指定域名。
-
-**情况 2: 支持任意仓库**
-
-定制 values.yaml 文件:
-```yaml
-containerRuntime:
-  docker:
-    enable: true
-    # -- Restart docker daemon to redirect traffic to dfdaemon
-    # When containerRuntime.docker.restart=true, containerRuntime.docker.injectHosts and containerRuntime.registry.domains is ignored.
-    # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
-    restart: true
-```
-
-此配置允许 Dragonfly 拦截所有 docker 流量。
-使用上述配置部署 Dragonfly 时，dfdaemon 将重新启动 docker。
-
-限制:
-* 必须开启 docker 的 `live-restore` 功能
-* 需要重启 docker daemon
 
 #### 2. Containerd
 
