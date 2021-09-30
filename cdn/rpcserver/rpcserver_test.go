@@ -48,7 +48,7 @@ func TestCdnSeedServer_GetPieceTasks(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			css := &CdnSeedServer{
+			css := &server{
 				taskMgr: tt.fields.taskMgr,
 				cfg:     tt.fields.cfg,
 			}
@@ -84,7 +84,7 @@ func TestCdnSeedServer_ObtainSeeds(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			css := &CdnSeedServer{
+			css := &server{
 				taskMgr: tt.fields.taskMgr,
 				cfg:     tt.fields.cfg,
 			}
@@ -103,14 +103,14 @@ func TestNewCdnSeedServer(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *CdnSeedServer
+		want    *server
 		wantErr bool
 	}{
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewCdnSeedServer(tt.args.cfg, tt.args.taskMgr)
+			got, err := New(tt.args.cfg, tt.args.taskMgr)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewCdnSeedServer() error = %v, wantErr %v", err, tt.wantErr)
 				return

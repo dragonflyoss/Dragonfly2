@@ -41,9 +41,6 @@ func TestManagerConfig_Load(t *testing.T) {
 			REST: &RestConfig{
 				Addr: ":8080",
 			},
-			Metric: &RestConfig{
-				Addr: ":8000",
-			},
 		},
 		Database: &DatabaseConfig{
 			Mysql: &MysqlConfig{
@@ -70,6 +67,9 @@ func TestManagerConfig_Load(t *testing.T) {
 				Size: 10000,
 				TTL:  1000,
 			},
+		},
+		Metrics: &RestConfig{
+			Addr: ":8000",
 		},
 	}
 
