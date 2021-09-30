@@ -166,7 +166,7 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		file.Close()
-		t.Errorf("file seek filed: %v", err)
+		t.Errorf("file seek failed: %v", err)
 		return nil, nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser
@@ -181,7 +181,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaDat
 	}
 	if _, err = file.Seek(0, io.SeekStart); err != nil {
 		file.Close()
-		t.Errorf("file seek filed: %v", err)
+		t.Errorf("file seek failed: %v", err)
 		return nil, err
 	}
 	// who call ReadPiece, who close the io.ReadCloser

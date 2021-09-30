@@ -26,13 +26,13 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
+	"d7y.io/dragonfly/v2/manager/metric"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
-	"d7y.io/dragonfly/v2/manager/proxy"
 	"d7y.io/dragonfly/v2/manager/router"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	grpc_manager_server "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
@@ -51,8 +51,8 @@ type Server struct {
 	// REST server
 	restServer *http.Server
 
-	// Proxy server
-	proxyServer proxy.Proxy
+	// Metric server
+	metricServer *http.Server
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -83,9 +83,6 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 
-	// Initialize Proxy server
-	proxyServer := proxy.New(cfg.Database.Redis)
-
 	// Initialize REST server
 	restService := service.NewREST(db, cache, job, enforcer)
 	router, err := router.Init(cfg, restService, enforcer)
@@ -109,27 +106,20 @@ func New(cfg *config.Config) (*Server, error) {
 	if cfg.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
+	grpcServer := grpc_manager_server.New(grpcService, opts...)
 
-	grpcServer := grpc.NewServer(opts...)
-	manager.RegisterManagerServer(grpcServer, grpcService)
+	// Initialize prometheus
+	metricServer := metric.New(cfg.Server.Metric, grpcServer)
 
 	return &Server{
-		config:      cfg,
-		grpcServer:  grpcServer,
-		restServer:  restServer,
-		proxyServer: proxyServer,
+		config:       cfg,
+		grpcServer:   grpcServer,
+		restServer:   restServer,
+		metricServer: metricServer,
 	}, nil
 }
 
 func (s *Server) Serve() error {
-	// Started Proxy server
-	go func() {
-		logger.Info("started proxy")
-		if err := s.proxyServer.Serve(); err != nil {
-			logger.Fatalf("proxy server closed unexpect: %+v", err)
-		}
-	}()
-
 	// Started REST server
 	go func() {
 		logger.Infof("started rest server at %s", s.restServer.Addr)
@@ -138,6 +128,17 @@ func (s *Server) Serve() error {
 				return
 			}
 			logger.Fatalf("rest server closed unexpect: %+v", err)
+		}
+	}()
+
+	// Started metric server
+	go func() {
+		logger.Infof("started metric server at %s", s.metricServer.Addr)
+		if err := s.metricServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("metric server closed unexpect: %+v", err)
 		}
 	}()
 
@@ -165,9 +166,11 @@ func (s *Server) Stop() {
 	}
 	logger.Info("rest server closed under request")
 
-	// Stop Proxy server
-	s.proxyServer.Stop()
-	logger.Info("proxy server closed under request")
+	// Stop metric server
+	if err := s.metricServer.Shutdown(context.Background()); err != nil {
+		logger.Errorf("metric server failed to stop: %+v", err)
+	}
+	logger.Info("metric server closed under request")
 
 	// Stop GRPC server
 	stopped := make(chan struct{})

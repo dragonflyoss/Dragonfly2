@@ -3,8 +3,10 @@ name: CodeQL Analysis
 on:
   push:
     branches: [ main, release-* ]
+    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
   pull_request:
     branches: [ main, release-* ]
+    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
   schedule:
     - cron: '0 4 * * *'
 

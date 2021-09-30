@@ -14,6 +14,8 @@ server:
   rest:
     # 标准的 rest 服务地址: ip:port, ip 不配置则默认为0.0.0.0 
     addr: :8080
+  # 前端控制台资源路径
+  # publicPath: /dist
 
 # 数据库配置, 当前只支持 mysql 以及 redis 
 database:
