@@ -2,11 +2,8 @@ name: Docker
 
 on:
   push:
-    branches: [ main, release-* ]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
-  pull_request:
-    branches: [ main, release-* ]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    tags:
+      - v*
 
 jobs:
   push_scheduler_to_registry:
@@ -59,7 +56,7 @@ jobs:
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
-            # dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
+            dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
             docker.pkg.github.com/${{ github.repository }}/scheduler:${{ steps.get_version.outputs.VERSION }}
           push: true
 
@@ -113,7 +110,7 @@ jobs:
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
-            # dragonflyoss/dfdaemon:${{ steps.get_version.outputs.VERSION }}
+            dragonflyoss/dfdaemon:${{ steps.get_version.outputs.VERSION }}
             docker.pkg.github.com/${{ github.repository }}/dfdaemon:${{ steps.get_version.outputs.VERSION }}
           push: true
 
@@ -167,7 +164,7 @@ jobs:
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
-            # dragonflyoss/cdn:${{ steps.get_version.outputs.VERSION }}
+            dragonflyoss/cdn:${{ steps.get_version.outputs.VERSION }}
             docker.pkg.github.com/${{ github.repository }}/cdn:${{ steps.get_version.outputs.VERSION }}
           push: true
 
@@ -221,6 +218,6 @@ jobs:
             GITVERSION=git-${{ steps.vars.outputs.git_revision }}
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
-            # dragonflyoss/manager:${{ steps.get_version.outputs.VERSION }}
+            dragonflyoss/manager:${{ steps.get_version.outputs.VERSION }}
             docker.pkg.github.com/${{ github.repository }}/manager:${{ steps.get_version.outputs.VERSION }}
           push: true
