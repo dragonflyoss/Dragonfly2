@@ -24,12 +24,9 @@ import (
 )
 
 const (
-	CDNScheme           = "cdn"
-	CDNElasticScheme    = "cdn-elastic"
-	SchedulerScheme     = "scheduler"
-	DaemonScheme        = "dfdaemon"
-	DaemonElasticScheme = "dfdaemon-elastic"
-	//ManagerScheme   = "manager"
+	CDNScheme       = "cdn"
+	SchedulerScheme = "scheduler"
+	DaemonScheme    = "dfdaemon"
 )
 
 var (
@@ -37,22 +34,16 @@ var (
 	_ resolver.Resolver = &d7yResolver{}
 
 	Scheme2Resolver = map[string]*d7yResolver{
-		CDNScheme:           {addrs: make([]dfnet.NetAddr, 0)},
-		CDNElasticScheme:    {addrs: make([]dfnet.NetAddr, 0)},
-		SchedulerScheme:     {addrs: make([]dfnet.NetAddr, 0)},
-		DaemonScheme:        {addrs: make([]dfnet.NetAddr, 0)},
-		DaemonElasticScheme: {addrs: make([]dfnet.NetAddr, 0)},
-		//ManagerScheme:   {addrs: make([]dfnet.NetAddr, 0)},
+		CDNScheme:       {addrs: make([]dfnet.NetAddr, 0)},
+		SchedulerScheme: {addrs: make([]dfnet.NetAddr, 0)},
+		DaemonScheme:    {addrs: make([]dfnet.NetAddr, 0)},
 	}
 )
 
 func init() {
 	resolver.Register(&d7yResolverBuilder{scheme: CDNScheme})
-	resolver.Register(&d7yResolverBuilder{scheme: CDNElasticScheme})
 	resolver.Register(&d7yResolverBuilder{scheme: SchedulerScheme})
 	resolver.Register(&d7yResolverBuilder{scheme: DaemonScheme})
-	resolver.Register(&d7yResolverBuilder{scheme: DaemonElasticScheme})
-	//resolver.Register(&d7yResolverBuilder{scheme: ManagerScheme})
 }
 
 type d7yResolverBuilder struct {

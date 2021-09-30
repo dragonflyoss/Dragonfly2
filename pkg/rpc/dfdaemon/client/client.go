@@ -35,7 +35,7 @@ import (
 
 var _ DaemonClient = (*daemonClient)(nil)
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of daemon is empty")
 	}
@@ -50,18 +50,14 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 var once sync.Once
 var elasticDaemonClient *daemonClient
 
-func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+func GetElasticClient(opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		elasticDaemonClient = &daemonClient{
-			rpc.NewConnection(context.Background(), rpc.DaemonElasticScheme, make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), "", nil, []rpc.ConnOption{
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
-	err := elasticDaemonClient.Connection.AddServerNodes(addrs)
-	if err != nil {
-		return nil, err
-	}
 	return elasticDaemonClient, nil
 }
 
@@ -82,7 +78,7 @@ type daemonClient struct {
 
 func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, error) {
 	// "dfdaemon.Daemon" is the dfdaemon._Daemon_serviceDesc.ServiceName
-	clientConn, err := dc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.DaemonScheme, "dfdaemon.Daemon"))
+	clientConn, err := dc.Connection.GetConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.DaemonScheme, "dfdaemon.Daemon"))
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +86,7 @@ func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, error) {
 }
 
 func (dc *daemonClient) getDaemonClientByTarget(target string) (dfdaemon.DaemonClient, error) {
-	clientConn, err := dc.Connection.NewDirectClient(target)
+	clientConn, err := dc.Connection.GetDirectClient(target)
 	if err != nil {
 		return nil, err
 	}

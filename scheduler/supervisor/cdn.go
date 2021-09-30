@@ -254,7 +254,7 @@ func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOp
 		return nil, err
 	}
 
-	client, err := cdnclient.GetClientByAddr(cdnsToNetAddrs(config.CDNs), opts...)
+	client, err := cdnclient.GetClientByAddrs(cdnsToNetAddrs(config.CDNs), opts...)
 	if err != nil {
 		return nil, err
 	}

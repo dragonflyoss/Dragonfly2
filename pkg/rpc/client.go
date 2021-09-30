@@ -127,7 +127,7 @@ func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
 	return nil
 }
 
-func (conn *Connection) NewConsistentHashClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (conn *Connection) GetConsistentHashClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
 	var err error
 	conn.once.Do(func() {
@@ -142,7 +142,7 @@ func (conn *Connection) NewConsistentHashClient(target string, opts ...grpc.Dial
 	return conn.consistentHashClient, err
 }
 
-func (conn *Connection) NewDirectClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func (conn *Connection) GetDirectClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	// should not retry
 	ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
 	defer cancel()

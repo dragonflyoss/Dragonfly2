@@ -33,7 +33,7 @@ import (
 
 func main() {
 	logcore.InitCdnSystem(true)
-	c, err := client.GetClientByAddr([]dfnet.NetAddr{
+	c, err := client.GetClientByAddrs([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: "127.0.0.1:8003",

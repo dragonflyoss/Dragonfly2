@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
@@ -45,18 +45,14 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient,
 var once sync.Once
 var elasticCdnClient *cdnClient
 
-func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
+func GetElasticClient(opts ...grpc.DialOption) (CdnClient, error) {
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
-			rpc.NewConnection(context.Background(), rpc.CDNElasticScheme, make([]dfnet.NetAddr, 0), []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), "", nil, []rpc.ConnOption{
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
-	err := elasticCdnClient.Connection.AddServerNodes(addrs)
-	if err != nil {
-		return nil, err
-	}
 	return elasticCdnClient, nil
 }
 
@@ -79,7 +75,7 @@ var _ CdnClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, error) {
 	// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
-	clientConn, err := cc.Connection.NewConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
+	clientConn, err := cc.Connection.GetConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +83,7 @@ func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, error) {
 }
 
 func (cc *cdnClient) getCdnClientByTarget(target string) (cdnsystem.SeederClient, error) {
-	clientConn, err := cc.Connection.NewDirectClient(target)
+	clientConn, err := cc.Connection.GetDirectClient(target)
 	if err != nil {
 		return nil, err
 	}

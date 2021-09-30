@@ -92,7 +92,7 @@ func runDaemon() error {
 	logger.Infof("Version:\n%s", version.Version())
 
 	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: dfpath.DaemonSockPath}
-	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
+	daemonClient, err := client.GetClientByAddrs([]dfnet.NetAddr{target})
 	if err != nil {
 		return err
 	}

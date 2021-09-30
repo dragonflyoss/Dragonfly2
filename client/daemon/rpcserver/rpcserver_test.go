@@ -91,7 +91,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	}()
 	time.Sleep(100 * time.Millisecond)
 
-	client, err := dfclient.GetClientByAddr([]dfnet.NetAddr{
+	client, err := dfclient.GetClientByAddrs([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),
@@ -174,7 +174,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}()
 	time.Sleep(100 * time.Millisecond)
 
-	client, err := dfclient.GetClientByAddr([]dfnet.NetAddr{
+	client, err := dfclient.GetClientByAddrs([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),
