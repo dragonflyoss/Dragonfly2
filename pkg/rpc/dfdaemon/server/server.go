@@ -31,11 +31,14 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-func init() {
-	// set register with server implementation.
-	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
-		dfdaemon.RegisterDaemonServer(s, &proxy{server: impl.(DaemonServer)})
-	})
+// DaemonServer refer to dfdaemon.DaemonServer
+type DaemonServer interface {
+	// Trigger client to download file
+	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
+	// Get piece tasks from other peers
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	// Check daemon health
+	CheckHealth(context.Context) error
 }
 
 type proxy struct {
@@ -43,11 +46,10 @@ type proxy struct {
 	dfdaemon.UnimplementedDaemonServer
 }
 
-// see dfdaemon.DaemonServer
-type DaemonServer interface {
-	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
-	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
-	CheckHealth(context.Context) error
+func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	dfdaemon.RegisterDaemonServer(grpcServer, &proxy{server: daemonServer})
+	return grpcServer
 }
 
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
@@ -87,7 +89,6 @@ func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (
 }
 
 func (p *proxy) CheckHealth(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
-	_ = req
 	return new(empty.Empty), p.server.CheckHealth(ctx)
 }
 
