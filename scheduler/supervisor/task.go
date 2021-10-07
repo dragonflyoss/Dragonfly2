@@ -178,6 +178,8 @@ type Task struct {
 	status atomic.Value
 	// peers is peer list
 	peers *sortedlist.SortedList
+	// peersStatus is peers status map
+	peersStatus map[PeerStatus]*sortedlist.SortedList
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -203,11 +205,43 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
 		peers:             sortedlist.NewSortedList(),
+		peersStatus:       make(map[PeerStatus]*sortedlist.SortedList),
 		logger:            logger.WithTaskID(id),
+	}
+
+	// Initial status map
+	for status := PeerStatus(0); status < PeerInvalid; status++ {
+		task.peersStatus[status] = sortedlist.NewSortedList()
 	}
 
 	task.status.Store(TaskStatusWaiting)
 	return task
+}
+
+func (task *Task) Transition(peer *Peer, status PeerStatus) {
+	oldStatus := peer.status.Load().(PeerStatus)
+	if oldStatus == status {
+		return
+	}
+	task.peersStatus[oldStatus].Delete(peer)
+	task.peersStatus[status].UpdateOrAdd(peer)
+}
+
+func (task *Task) GetPeersByStatus(statusList []PeerStatus) *sortedlist.SortedList {
+	peers := sortedlist.NewSortedList()
+
+	for _, status := range statusList {
+		subset, ok := task.peersStatus[status]
+		if !ok {
+			return peers
+		}
+		subset.Range(func(data sortedlist.Item) bool {
+			peer := data.(*Peer)
+			peers.Add(peer)
+			return true
+		})
+	}
+	return peers
 }
 
 func (task *Task) SetStatus(status TaskStatus) {
@@ -260,14 +294,20 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
+	status := peer.status.Load().(PeerStatus)
+	task.peersStatus[status].UpdateOrAdd(peer)
 	task.peers.UpdateOrAdd(peer)
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
+	status := peer.status.Load().(PeerStatus)
+	task.peersStatus[status].Update(peer)
 	task.peers.Update(peer)
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
+	status := peer.status.Load().(PeerStatus)
+	task.peersStatus[status].Delete(peer)
 	task.peers.Delete(peer)
 }
 
@@ -324,21 +364,28 @@ func (task *Task) GetBackToSourcePeers() []string {
 	return task.backToSourcePeers
 }
 
-func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, false, pickFn)
+func (task *Task) Pick(limit int, statusList []PeerStatus, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, statusList, false, pickFn)
 }
 
-func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, true, pickFn)
+func (task *Task) PickReverse(limit int, statusList []PeerStatus, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+	return task.pick(limit, statusList, true, pickFn)
 }
 
-func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
+func (task *Task) pick(limit int, statusList []PeerStatus, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
 	if pickFn == nil {
 		return
 	}
+	var searchList *sortedlist.SortedList
+	// ask for all status
+	if len(statusList) == int(PeerInvalid) {
+		searchList = task.GetPeers()
+	} else {
+		searchList = task.GetPeersByStatus(statusList)
+	}
 
 	if !reverse {
-		task.GetPeers().Range(func(data sortedlist.Item) bool {
+		searchList.Range(func(data sortedlist.Item) bool {
 			if len(pickedPeers) >= limit {
 				return false
 			}
@@ -351,7 +398,7 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 		return
 	}
 
-	task.GetPeers().RangeReverse(func(data sortedlist.Item) bool {
+	searchList.RangeReverse(func(data sortedlist.Item) bool {
 		if len(pickedPeers) >= limit {
 			return false
 		}

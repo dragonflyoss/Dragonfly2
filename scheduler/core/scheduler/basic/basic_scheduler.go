@@ -142,7 +142,8 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 	peer.Log().Debug("start schedule children flow")
 	defer peer.Log().Debugf("finish schedule parent flow, select num %d candidate children, "+
 		"current task tree node count %d, back source peers: %v", len(candidateChildren), peer.Task.GetPeers().Size(), peer.Task.GetBackToSourcePeers())
-	candidateChildren = peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
+	selectStatus := []supervisor.PeerStatus{supervisor.PeerStatusRunning, supervisor.PeerStatusSuccess}
+	candidateChildren = peer.Task.Pick(limit, selectStatus, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			peer.Log().Debugf("******candidate child peer is not selected because it is nil******")
 			return false
@@ -220,7 +221,8 @@ func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, bla
 			"it current status is %s++++++", peer.Task.GetStatus())
 		return nil
 	}
-	candidateParents = peer.Task.PickReverse(limit, func(candidateNode *supervisor.Peer) bool {
+	selectStatus := []supervisor.PeerStatus{supervisor.PeerStatusRunning}
+	candidateParents = peer.Task.PickReverse(limit, selectStatus, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			peer.Log().Debugf("++++++candidate parent peer is not selected because it is nil++++++")
 			return false

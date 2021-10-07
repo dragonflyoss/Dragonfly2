@@ -186,6 +186,8 @@ const (
 	PeerStatusZombie
 	PeerStatusFail
 	PeerStatusSuccess
+	// Invalid should be always at end as a flag
+	PeerInvalid
 )
 
 type Peer struct {
@@ -231,6 +233,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 	}
 
 	peer.status.Store(PeerStatusWaiting)
+	peer.Task.peersStatus[PeerStatusWaiting].Add(peer)
 	return peer
 }
 
@@ -406,6 +409,7 @@ func (peer *Peer) getFreeLoad() int {
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
+	peer.Task.Transition(peer, status)
 	peer.status.Store(status)
 }
 
