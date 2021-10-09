@@ -22,3 +22,4 @@
 - Container Runtimes
     - [cri-o mirror](../user-guide/registry-mirror/cri-o.md) - 使用 Dragonfly 作为 CRIO daemon 的 Registry Mirror
     - [cri-containerd mirror](../user-guide/registry-mirror/cri-containerd.md) - 使用 Dragonfly 作为 containerd daemon 的 Registry Mirror
+- [preheat](../user-guide/preheat/preheat.md) - 预热功能
