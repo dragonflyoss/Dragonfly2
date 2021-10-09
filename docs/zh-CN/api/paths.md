@@ -2,10 +2,10 @@
 <a name="paths"></a>
 ## 路径
 
-<a name="cdn-clusters-post"></a>
+<a name="api-v1-cdn-clusters-post"></a>
 ### Create CDNCluster
 ```
-POST /cdn-clusters
+POST /api/v1/cdn-clusters
 ```
 
 
@@ -45,10 +45,10 @@ create by json config
 * CDNCluster
 
 
-<a name="cdn-clusters-get"></a>
+<a name="api-v1-cdn-clusters-get"></a>
 ### Get CDNClusters
 ```
-GET /cdn-clusters
+GET /api/v1/cdn-clusters
 ```
 
 
@@ -89,10 +89,10 @@ Get CDNClusters
 * CDNCluster
 
 
-<a name="cdn-clusters-id-get"></a>
+<a name="api-v1-cdn-clusters-id-get"></a>
 ### Get CDNCluster
 ```
-GET /cdn-clusters/{id}
+GET /api/v1/cdn-clusters/{id}
 ```
 
 
@@ -132,10 +132,10 @@ Get CDNCluster by id
 * CDNCluster
 
 
-<a name="cdn-clusters-id-delete"></a>
+<a name="api-v1-cdn-clusters-id-delete"></a>
 ### Destroy CDNCluster
 ```
-DELETE /cdn-clusters/{id}
+DELETE /api/v1/cdn-clusters/{id}
 ```
 
 
@@ -175,10 +175,10 @@ Destroy by id
 * CDNCluster
 
 
-<a name="cdn-clusters-id-patch"></a>
+<a name="api-v1-cdn-clusters-id-patch"></a>
 ### Update CDNCluster
 ```
-PATCH /cdn-clusters/{id}
+PATCH /api/v1/cdn-clusters/{id}
 ```
 
 
@@ -219,10 +219,10 @@ Update by json config
 * CDNCluster
 
 
-<a name="cdn-clusters-id-cdns-cdn_id-put"></a>
+<a name="api-v1-cdn-clusters-id-cdns-cdn_id-put"></a>
 ### Add Instance to CDNCluster
 ```
-PUT /cdn-clusters/{id}/cdns/{cdn_id}
+PUT /api/v1/cdn-clusters/{id}/cdns/{cdn_id}
 ```
 
 
@@ -263,10 +263,10 @@ Add CDN to CDNCluster
 * CDNCluster
 
 
-<a name="cdn-clusters-id-scheduler-clusters-scheduler_cluster_id-put"></a>
+<a name="api-v1-cdn-clusters-id-scheduler-clusters-scheduler_cluster_id-put"></a>
 ### Add SchedulerCluster to CDNCluster
 ```
-PUT /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}
+PUT /api/v1/cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}
 ```
 
 
@@ -307,10 +307,10 @@ Add SchedulerCluster to CDNCluster
 * CDNCluster
 
 
-<a name="cdns-post"></a>
+<a name="api-v1-cdns-post"></a>
 ### Create CDN
 ```
-POST /cdns
+POST /api/v1/cdns
 ```
 
 
@@ -350,10 +350,10 @@ create by json config
 * CDN
 
 
-<a name="cdns-get"></a>
+<a name="api-v1-cdns-get"></a>
 ### Get CDNs
 ```
-GET /cdns
+GET /api/v1/cdns
 ```
 
 
@@ -394,10 +394,10 @@ Get CDNs
 * CDN
 
 
-<a name="cdns-id-get"></a>
+<a name="api-v1-cdns-id-get"></a>
 ### Get CDN
 ```
-GET /cdns/{id}
+GET /api/v1/cdns/{id}
 ```
 
 
@@ -437,10 +437,10 @@ Get CDN by id
 * CDN
 
 
-<a name="cdns-id-delete"></a>
+<a name="api-v1-cdns-id-delete"></a>
 ### Destroy CDN
 ```
-DELETE /cdns/{id}
+DELETE /api/v1/cdns/{id}
 ```
 
 
@@ -480,10 +480,10 @@ Destroy by id
 * CDN
 
 
-<a name="cdns-id-patch"></a>
+<a name="api-v1-cdns-id-patch"></a>
 ### Update CDN
 ```
-PATCH /cdns/{id}
+PATCH /api/v1/cdns/{id}
 ```
 
 
@@ -524,10 +524,10 @@ Update by json config
 * CDN
 
 
-<a name="healthy-get"></a>
+<a name="api-v1-healthy-get"></a>
 ### Get Health
 ```
-GET /healthy
+GET /api/v1/healthy
 ```
 
 
@@ -560,10 +560,10 @@ Get app health
 * Health
 
 
-<a name="oauth-post"></a>
+<a name="api-v1-oauth-post"></a>
 ### Create Oauth
 ```
-POST /oauth
+POST /api/v1/oauth
 ```
 
 
@@ -603,10 +603,10 @@ create by json config
 * Oauth
 
 
-<a name="oauth-get"></a>
+<a name="api-v1-oauth-get"></a>
 ### Get Oauths
 ```
-GET /oauth
+GET /api/v1/oauth
 ```
 
 
@@ -647,10 +647,10 @@ Get Oauths
 * Oauth
 
 
-<a name="oauth-id-get"></a>
+<a name="api-v1-oauth-id-get"></a>
 ### Get Oauth
 ```
-GET /oauth/{id}
+GET /api/v1/oauth/{id}
 ```
 
 
@@ -690,10 +690,10 @@ Get Oauth by id
 * Oauth
 
 
-<a name="oauth-id-delete"></a>
+<a name="api-v1-oauth-id-delete"></a>
 ### Destroy Oauth
 ```
-DELETE /oauth/{id}
+DELETE /api/v1/oauth/{id}
 ```
 
 
@@ -733,10 +733,10 @@ Destroy by id
 * Oauth
 
 
-<a name="oauth-id-patch"></a>
+<a name="api-v1-oauth-id-patch"></a>
 ### Update Oauth
 ```
-PATCH /oauth/{id}
+PATCH /api/v1/oauth/{id}
 ```
 
 
@@ -777,10 +777,10 @@ Update by json config
 * Oauth
 
 
-<a name="permissions-get"></a>
+<a name="api-v1-permissions-get"></a>
 ### Get Permissions
 ```
-GET /permissions
+GET /api/v1/permissions
 ```
 
 
@@ -807,10 +807,10 @@ Get Permissions
 * Permission
 
 
-<a name="preheats-post"></a>
+<a name="api-v1-preheats-post"></a>
 ### Create Preheat
 ```
-POST /preheats
+POST /api/v1/preheats
 ```
 
 
@@ -850,10 +850,10 @@ create by json config
 * Preheat
 
 
-<a name="preheats-id-get"></a>
+<a name="api-v1-preheats-id-get"></a>
 ### Get Preheat
 ```
-GET /preheats/{id}
+GET /api/v1/preheats/{id}
 ```
 
 
@@ -893,10 +893,10 @@ Get Preheat by id
 * Preheat
 
 
-<a name="roles-post"></a>
+<a name="api-v1-roles-post"></a>
 ### Create Role
 ```
-POST /roles
+POST /api/v1/roles
 ```
 
 
@@ -935,10 +935,10 @@ Create Role by json config
 * Role
 
 
-<a name="roles-get"></a>
+<a name="api-v1-roles-get"></a>
 ### Get Roles
 ```
-GET /roles
+GET /api/v1/roles
 ```
 
 
@@ -970,10 +970,10 @@ Get roles
 * Role
 
 
-<a name="roles-role-get"></a>
+<a name="api-v1-roles-role-get"></a>
 ### Get Role
 ```
-GET /roles/:role
+GET /api/v1/roles/:role
 ```
 
 
@@ -1012,10 +1012,10 @@ Get Role
 * Role
 
 
-<a name="roles-role-delete"></a>
+<a name="api-v1-roles-role-delete"></a>
 ### Destroy Role
 ```
-DELETE /roles/:role
+DELETE /api/v1/roles/:role
 ```
 
 
@@ -1054,10 +1054,10 @@ Destroy role by json config
 * Role
 
 
-<a name="roles-role-permissions-post"></a>
+<a name="api-v1-roles-role-permissions-post"></a>
 ### Add Permission For Role
 ```
-POST /roles/:role/permissions
+POST /api/v1/roles/:role/permissions
 ```
 
 
@@ -1097,10 +1097,10 @@ Add Permission by json config
 * Role
 
 
-<a name="roles-role-permissions-delete"></a>
+<a name="api-v1-roles-role-permissions-delete"></a>
 ### Update Role
 ```
-DELETE /roles/:role/permissions
+DELETE /api/v1/roles/:role/permissions
 ```
 
 
@@ -1140,10 +1140,10 @@ Remove Role Permission by json config
 * Role
 
 
-<a name="scheduler-clusters-post"></a>
+<a name="api-v1-scheduler-clusters-post"></a>
 ### Create SchedulerCluster
 ```
-POST /scheduler-clusters
+POST /api/v1/scheduler-clusters
 ```
 
 
@@ -1183,10 +1183,10 @@ create by json config
 * SchedulerCluster
 
 
-<a name="scheduler-clusters-get"></a>
+<a name="api-v1-scheduler-clusters-get"></a>
 ### Get SchedulerClusters
 ```
-GET /scheduler-clusters
+GET /api/v1/scheduler-clusters
 ```
 
 
@@ -1227,10 +1227,10 @@ Get SchedulerClusters
 * SchedulerCluster
 
 
-<a name="scheduler-clusters-id-get"></a>
+<a name="api-v1-scheduler-clusters-id-get"></a>
 ### Get SchedulerCluster
 ```
-GET /scheduler-clusters/{id}
+GET /api/v1/scheduler-clusters/{id}
 ```
 
 
@@ -1270,10 +1270,10 @@ Get SchedulerCluster by id
 * SchedulerCluster
 
 
-<a name="scheduler-clusters-id-delete"></a>
+<a name="api-v1-scheduler-clusters-id-delete"></a>
 ### Destroy SchedulerCluster
 ```
-DELETE /scheduler-clusters/{id}
+DELETE /api/v1/scheduler-clusters/{id}
 ```
 
 
@@ -1313,10 +1313,10 @@ Destroy by id
 * SchedulerCluster
 
 
-<a name="scheduler-clusters-id-patch"></a>
+<a name="api-v1-scheduler-clusters-id-patch"></a>
 ### Update SchedulerCluster
 ```
-PATCH /scheduler-clusters/{id}
+PATCH /api/v1/scheduler-clusters/{id}
 ```
 
 
@@ -1357,10 +1357,10 @@ Update by json config
 * SchedulerCluster
 
 
-<a name="scheduler-clusters-id-schedulers-scheduler_id-put"></a>
+<a name="api-v1-scheduler-clusters-id-schedulers-scheduler_id-put"></a>
 ### Add Scheduler to schedulerCluster
 ```
-PUT /scheduler-clusters/{id}/schedulers/{scheduler_id}
+PUT /api/v1/scheduler-clusters/{id}/schedulers/{scheduler_id}
 ```
 
 
@@ -1401,10 +1401,10 @@ Add Scheduler to schedulerCluster
 * SchedulerCluster
 
 
-<a name="schedulers-post"></a>
+<a name="api-v1-schedulers-post"></a>
 ### Create Scheduler
 ```
-POST /schedulers
+POST /api/v1/schedulers
 ```
 
 
@@ -1444,10 +1444,10 @@ create by json config
 * Scheduler
 
 
-<a name="schedulers-get"></a>
+<a name="api-v1-schedulers-get"></a>
 ### Get Schedulers
 ```
-GET /schedulers
+GET /api/v1/schedulers
 ```
 
 
@@ -1488,10 +1488,10 @@ Get Schedulers
 * Scheduler
 
 
-<a name="schedulers-id-get"></a>
+<a name="api-v1-schedulers-id-get"></a>
 ### Get Scheduler
 ```
-GET /schedulers/{id}
+GET /api/v1/schedulers/{id}
 ```
 
 
@@ -1531,10 +1531,10 @@ Get Scheduler by id
 * Scheduler
 
 
-<a name="schedulers-id-delete"></a>
+<a name="api-v1-schedulers-id-delete"></a>
 ### Destroy Scheduler
 ```
-DELETE /schedulers/{id}
+DELETE /api/v1/schedulers/{id}
 ```
 
 
@@ -1574,10 +1574,10 @@ Destroy by id
 * Scheduler
 
 
-<a name="schedulers-id-patch"></a>
+<a name="api-v1-schedulers-id-patch"></a>
 ### Update Scheduler
 ```
-PATCH /schedulers/{id}
+PATCH /api/v1/schedulers/{id}
 ```
 
 
@@ -1618,10 +1618,10 @@ Update by json config
 * Scheduler
 
 
-<a name="security-groups-post"></a>
+<a name="api-v1-security-groups-post"></a>
 ### Create SecurityGroup
 ```
-POST /security-groups
+POST /api/v1/security-groups
 ```
 
 
@@ -1661,10 +1661,10 @@ create by json config
 * SecurityGroup
 
 
-<a name="security-groups-get"></a>
+<a name="api-v1-security-groups-get"></a>
 ### Get SecurityGroups
 ```
-GET /security-groups
+GET /api/v1/security-groups
 ```
 
 
@@ -1705,10 +1705,10 @@ Get SecurityGroups
 * SecurityGroup
 
 
-<a name="security-groups-id-get"></a>
+<a name="api-v1-security-groups-id-get"></a>
 ### Get SecurityGroup
 ```
-GET /security-groups/{id}
+GET /api/v1/security-groups/{id}
 ```
 
 
@@ -1748,10 +1748,10 @@ Get SecurityGroup by id
 * SecurityGroup
 
 
-<a name="security-groups-id-patch"></a>
+<a name="api-v1-security-groups-id-patch"></a>
 ### Update SecurityGroup
 ```
-PATCH /security-groups/{id}
+PATCH /api/v1/security-groups/{id}
 ```
 
 
@@ -1792,10 +1792,10 @@ Update by json config
 * SecurityGroup
 
 
-<a name="security-groups-id-cdn-clusters-cdn_cluster_id-put"></a>
+<a name="api-v1-security-groups-id-cdn-clusters-cdn_cluster_id-put"></a>
 ### Add CDN to SecurityGroup
 ```
-PUT /security-groups/{id}/cdn-clusters/{cdn_cluster_id}
+PUT /api/v1/security-groups/{id}/cdn-clusters/{cdn_cluster_id}
 ```
 
 
@@ -1836,10 +1836,10 @@ Add CDN to SecurityGroup
 * SecurityGroup
 
 
-<a name="security-groups-id-scheduler-clusters-scheduler_cluster_id-put"></a>
+<a name="api-v1-security-groups-id-scheduler-clusters-scheduler_cluster_id-put"></a>
 ### Add Scheduler to SecurityGroup
 ```
-PUT /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}
+PUT /api/v1/security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}
 ```
 
 
@@ -1880,10 +1880,10 @@ Add Scheduler to SecurityGroup
 * SecurityGroup
 
 
-<a name="securitygroups-id-delete"></a>
+<a name="api-v1-securitygroups-id-delete"></a>
 ### Destroy SecurityGroup
 ```
-DELETE /securityGroups/{id}
+DELETE /api/v1/securityGroups/{id}
 ```
 
 
@@ -1923,10 +1923,10 @@ Destroy by id
 * SecurityGroup
 
 
-<a name="user-signin-name-get"></a>
+<a name="api-v1-user-signin-name-get"></a>
 ### Oauth Signin
 ```
-GET /user/signin/{name}
+GET /api/v1/user/signin/{name}
 ```
 
 
@@ -1966,10 +1966,10 @@ oauth signin by json config
 * User
 
 
-<a name="user-signin-name-callback-get"></a>
+<a name="api-v1-user-signin-name-callback-get"></a>
 ### Oauth Signin Callback
 ```
-GET /user/signin/{name}/callback
+GET /api/v1/user/signin/{name}/callback
 ```
 
 
@@ -2000,10 +2000,10 @@ oauth signin callback by json config
 * Oauth
 
 
-<a name="user-signup-post"></a>
+<a name="api-v1-user-signup-post"></a>
 ### SignUp user
 ```
-POST /user/signup
+POST /api/v1/user/signup
 ```
 
 
@@ -2042,10 +2042,10 @@ signup by json config
 * User
 
 
-<a name="users-id-reset_password-post"></a>
+<a name="api-v1-users-id-reset_password-post"></a>
 ### Reset Password For User
 ```
-POST /users/:id/reset_password
+POST /api/v1/users/:id/reset_password
 ```
 
 
@@ -2084,10 +2084,10 @@ reset password by json config
 * User
 
 
-<a name="users-id-roles-get"></a>
+<a name="api-v1-users-id-roles-get"></a>
 ### Get User Roles
 ```
-GET /users/:id/roles
+GET /api/v1/users/:id/roles
 ```
 
 
@@ -2121,10 +2121,10 @@ get roles by json config
 * User
 
 
-<a name="users-id-roles-role-put"></a>
+<a name="api-v1-users-id-roles-role-put"></a>
 ### Add Role For User
 ```
-PUT /users/:id/roles/:role
+PUT /api/v1/users/:id/roles/:role
 ```
 
 
@@ -2164,10 +2164,10 @@ add role to user by uri config
 * Users
 
 
-<a name="users-id-roles-role-delete"></a>
+<a name="api-v1-users-id-roles-role-delete"></a>
 ### Delete Role For User
 ```
-DELETE /users/:id/roles/:role
+DELETE /api/v1/users/:id/roles/:role
 ```
 
 
