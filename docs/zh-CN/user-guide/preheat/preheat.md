@@ -1,6 +1,6 @@
-# Preheat
+# 预热
 
-P2P provides two types of preheating: `image` and `file`. Users can be preheat in the `console` or directly call `preheat api` for preheating
+P2P 加速可预热两种类型数据 `image` 和 `file`, 用户可以在控制台操作或者直接调用 api 进行预热。
 
 ## Console
 
@@ -8,7 +8,7 @@ TODO
 
 ## API
 
-Use preheat apis for preheating. First create a POST request for preheating, you can refer to [create preheat api document](../../api/api.md#create-preheat)
+用户使用 api 进行预热。首先发送 POST 请求创建预热任务，具体 api 可以参考文档 [create preheat api document](../../api/api.md#create-preheat)。
 
 ```bash
 curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
@@ -20,19 +20,20 @@ curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
 }'
 ```
 
-If the output of command above has content like
+命令行日志返回预热任务 ID。
 
 ```bash
 {"id":"group_28439e0b-d4c3-43bf-945e-482b54c49dc5","status":"PENDING","create_at":"2021-10-09T11:54:50.6182794Z"}
 ```
 
-Polling the preheating status with id. if status is `SUCCESS`, preheating is successful, you can refer to [get preheat api document](../../api/api.md#get-preheat)
+使用预热任务 ID 轮训查询任务是否成功，具体 api 可以参考文档 [get preheat api document](../../api/api.md#get-preheat)。
+
 
 ```bash
 curl --request GET 'http://manager-domain:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
 ```
 
-If the status is `SUCCESS`, the preheating is successful.
+如果返回预热任务状态为 `SUCCESS`，表示预热成功。
 
 ```bash
 {"id":"group_28439e0b-d4c3-43bf-945e-482b54c49dc5","status":"SUCCESS","create_at":"2021-10-09T11:54:50.5712334Z"}
