@@ -26,7 +26,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -34,22 +34,27 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 )
 
 var tracer = otel.Tracer("scheduler-server")
 
-type SchedulerServer struct {
+type server struct {
+	*grpc.Server
 	service *core.SchedulerService
 }
 
-// NewSchedulerServer returns a new transparent scheduler server from the given options
-func NewSchedulerServer(service *core.SchedulerService) (server.SchedulerServer, error) {
-	return &SchedulerServer{
+// New returns a new transparent scheduler server from the given options
+func New(service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Server, error) {
+	svr := &server{
 		service: service,
-	}, nil
+	}
+
+	svr.Server = schedulerserver.New(svr, opts...)
+	return svr.Server, nil
 }
 
-func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
 	defer func() {
 		logger.Debugf("peer %s register result %v, err: %v", request.PeerId, resp, err)
 	}()
@@ -116,7 +121,7 @@ func (s *SchedulerServer) RegisterPeerTask(ctx context.Context, request *schedul
 	}
 }
 
-func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	var span trace.Span
 	ctx, span := tracer.Start(stream.Context(), config.SpanReportPieceResult, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
@@ -175,7 +180,7 @@ func (s *SchedulerServer) ReportPieceResult(stream scheduler.Scheduler_ReportPie
 	}
 }
 
-func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
+func (s *server) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
 	logger.Debugf("report peer result %v", result)
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanReportPeerResult, trace.WithSpanKind(trace.SpanKindServer))
@@ -193,7 +198,7 @@ func (s *SchedulerServer) ReportPeerResult(ctx context.Context, result *schedule
 	return s.service.HandlePeerResult(ctx, peer, result)
 }
 
-func (s *SchedulerServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
+func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
 	logger.Debugf("leave task %v", target)
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPeerLeave, trace.WithSpanKind(trace.SpanKindServer))

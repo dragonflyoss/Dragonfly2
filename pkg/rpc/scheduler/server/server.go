@@ -25,18 +25,23 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
-func init() {
-	// set register with server implementation.
-	rpc.SetRegister(func(s *grpc.Server, impl interface{}) {
-		scheduler.RegisterSchedulerServer(s, &proxy{server: impl.(SchedulerServer)})
-	})
+// SchedulerServer refer to scheduler.SchedulerServer
+type SchedulerServer interface {
+	// RegisterPeerTask registers a peer into one task.
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
+	// ReportPieceResult reports piece results and receives peer packets.
+	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
+	// ReportPeerResult reports downloading result for the peer task.
+	ReportPeerResult(context.Context, *scheduler.PeerResult) error
+	// LeaveTask makes the peer leaving from scheduling overlay for the task.
+	LeaveTask(context.Context, *scheduler.PeerTarget) error
 }
 
 type proxy struct {
@@ -44,67 +49,73 @@ type proxy struct {
 	scheduler.UnimplementedSchedulerServer
 }
 
-// SchedulerServer scheduler.SchedulerServer
-type SchedulerServer interface {
-	// RegisterPeerTask register a peer to scheduler
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error)
-	// ReportPieceResult report piece result to scheduler
-	ReportPieceResult(scheduler.Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult report peer download result to scheduler
-	ReportPeerResult(context.Context, *scheduler.PeerResult) error
-	// LeaveTask leave peer from scheduler
-	LeaveTask(context.Context, *scheduler.PeerTarget) error
+func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	scheduler.RegisterSchedulerServer(grpcServer, &proxy{server: schedulerServer})
+	return grpcServer
 }
 
-func (p *proxy) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest) (rr *scheduler.RegisterResult, err error) {
-	rr, err = p.server.RegisterPeerTask(ctx, ptr)
-
-	var taskID = "unknown"
-	var suc bool
-	var code base.Code
-
-	if err == nil && rr != nil {
-		taskID = rr.TaskId
-		suc = true
+func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	metrics.RegisterPeerTaskCount.Inc()
+	taskID := "unknown"
+	isSuccess := false
+	resp, err := p.server.RegisterPeerTask(ctx, req)
+	if err != nil {
+		taskID = resp.TaskId
+		isSuccess = true
+		metrics.RegisterPeerTaskFailureCount.Inc()
 	}
+	metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 
-	peerHost := ptr.PeerHost
+	peerHost := req.PeerHost
+	logger.StatPeerLogger.Info("Register Peer Task",
+		zap.Bool("Success", isSuccess),
+		zap.String("TaskID", taskID),
+		zap.String("URL", req.Url),
+		zap.String("PeerIP", peerHost.Ip),
+		zap.String("PeerHostName", peerHost.HostName),
+		zap.String("SecurityDomain", peerHost.SecurityDomain),
+		zap.String("IDC", peerHost.Idc),
+		zap.String("SchedulerIP", iputils.HostIP),
+		zap.String("SchedulerHostName", iputils.HostName),
+	)
 
-	logger.StatPeerLogger.Info("register peer task",
-		zap.Bool("success", suc),
-		zap.String("taskID", taskID),
-		zap.String("url", ptr.Url),
-		zap.String("peerIp", peerHost.Ip),
-		zap.String("securityDomain", peerHost.SecurityDomain),
-		zap.String("idc", peerHost.Idc),
-		zap.String("schedulerIp", iputils.HostIP),
-		zap.String("schedulerName", iputils.HostName),
-		zap.Int32("code", int32(code)))
-
-	return
+	return resp, err
 }
 
 func (p *proxy) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	metrics.ConcurrentScheduleGauge.Inc()
+	defer metrics.ConcurrentScheduleGauge.Dec()
+
 	return p.server.ReportPieceResult(stream)
 }
 
-func (p *proxy) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult) (*empty.Empty, error) {
-	err := p.server.ReportPeerResult(ctx, pr)
+func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
+	metrics.DownloadCount.Inc()
+	if req.Success {
+		metrics.P2PTraffic.Add(float64(req.Traffic))
+		metrics.PeerTaskDownloadDuration.Observe(float64(req.Cost))
+	} else {
+		metrics.DownloadFailureCount.Inc()
+	}
 
-	logger.StatPeerLogger.Info("finish peer task",
-		zap.Bool("success", pr.Success),
-		zap.String("peerID", pr.PeerId),
-		zap.String("taskID", pr.TaskId),
-		zap.String("URL", pr.Url),
-		zap.String("IDC", pr.Idc),
-		zap.String("peerIP", pr.SrcIp),
-		zap.String("securityDomain", pr.SecurityDomain),
-		zap.String("schedulerIp", iputils.HostIP),
-		zap.String("schedulerName", iputils.HostName),
-		zap.String("contentLength", unit.Bytes(pr.ContentLength).String()),
-		zap.String("traffic", unit.Bytes(uint64(pr.Traffic)).String()),
-		zap.Duration("cost", time.Duration(int64(pr.Cost))),
-		zap.Int32("code", int32(pr.Code)))
+	err := p.server.ReportPeerResult(ctx, req)
+
+	logger.StatPeerLogger.Info("Finish Peer Task",
+		zap.Bool("Success", req.Success),
+		zap.String("TaskID", req.TaskId),
+		zap.String("PeerID", req.PeerId),
+		zap.String("URL", req.Url),
+		zap.String("PeerIP", req.SrcIp),
+		zap.String("SecurityDomain", req.SecurityDomain),
+		zap.String("IDC", req.Idc),
+		zap.String("SchedulerIP", iputils.HostIP),
+		zap.String("SchedulerHostName", iputils.HostName),
+		zap.String("ContentLength", unit.Bytes(req.ContentLength).String()),
+		zap.String("Traffic", unit.Bytes(uint64(req.Traffic)).String()),
+		zap.Duration("Cost", time.Duration(int64(req.Cost))),
+		zap.Int32("Code", int32(req.Code)))
+
 	return new(empty.Empty), err
 }
 

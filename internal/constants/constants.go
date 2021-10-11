@@ -22,3 +22,11 @@ const (
 	CDNPattern    = "cdn"
 	P2PPattern    = "p2p"
 )
+
+const (
+	MetricsNamespace     = "dragonfly"
+	ManagerMetricsName   = "manager"
+	SchedulerMetricsName = "scheduler"
+	DfdaemonMetricsName  = "dfdaemon"
+	CDNMetricsName       = "cdn"
+)

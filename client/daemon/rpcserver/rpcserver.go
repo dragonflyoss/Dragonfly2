@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -53,24 +52,21 @@ type server struct {
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
 
-	downloadServer rpc.Server
-	peerServer     rpc.Server
+	downloadServer *grpc.Server
+	peerServer     *grpc.Server
 	uploadAddr     string
 }
 
-var _ dfdaemonserver.DaemonServer = (*server)(nil)
-var _ Server = (*server)(nil)
-
-func NewServer(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
-	mgr := &server{
+func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
+	svr := &server{
 		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
 	}
-	mgr.downloadServer = rpc.NewServer(mgr, downloadOpts...)
-	mgr.peerServer = rpc.NewServer(mgr, peerOpts...)
-	return mgr, nil
+	svr.downloadServer = dfdaemonserver.New(svr, downloadOpts...)
+	svr.peerServer = dfdaemonserver.New(svr, peerOpts...)
+	return svr, nil
 }
 
 func (m *server) ServeDownload(listener net.Listener) error {

@@ -136,7 +136,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// download fail
 	if err != nil {
 		downloadSpan.RecordError(err)
-		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), 0, 0)
+		server.StatSeedFinish(task.TaskID, task.URL, false, err, start, time.Now(), 0, 0)
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusSourceError)
 		return seedTask, err
 	}
@@ -146,13 +146,13 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, task, detectResult)
 	if err != nil {
-		server.StatSeedFinish(task.TaskID, task.URL, false, err, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
+		server.StatSeedFinish(task.TaskID, task.URL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)
 		task.Log().Errorf("failed to write for task: %v", err)
 		seedTask.UpdateStatus(types.TaskInfoCdnStatusFailed)
 		return seedTask, err
 	}
-	server.StatSeedFinish(task.TaskID, task.URL, true, nil, start.Nanosecond(), time.Now().Nanosecond(), downloadMetadata.backSourceLength,
+	server.StatSeedFinish(task.TaskID, task.URL, true, nil, start, time.Now(), downloadMetadata.backSourceLength,
 		downloadMetadata.realSourceFileLength)
 	sourceDigest := reader.Digest()
 	// fifth: handle CDN result
