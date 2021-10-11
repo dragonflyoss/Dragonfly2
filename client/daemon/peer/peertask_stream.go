@@ -41,10 +41,10 @@ import (
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
 type StreamPeerTask interface {
 	Task
-	// Start start the special peer task, return a io.Reader for stream io
-	// when all data transferred, reader return a io.EOF
+	// Start starts the special peer task, return an io.Reader for stream io
+	// when all data transferred, reader return an io.EOF
 	// attribute stands some extra data, like HTTP response Header
-	Start(ctx context.Context) (reader io.Reader, attribute map[string]string, err error)
+	Start(ctx context.Context) (rc io.ReadCloser, attribute map[string]string, err error)
 }
 
 type streamPeerTask struct {
@@ -227,7 +227,7 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	return s.finish()
 }
 
-func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]string, error) {
+func (s *streamPeerTask) Start(ctx context.Context) (io.ReadCloser, map[string]string, error) {
 	s.ctx, s.cancel = context.WithCancel(ctx)
 	if s.needBackSource {
 		go s.backSource()
@@ -272,7 +272,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 
 	pr, pw := io.Pipe()
 	attr := map[string]string{}
-	var reader io.Reader = pr
+	var readCloser io.ReadCloser = pr
 	var writer io.Writer = pw
 	if s.contentLength.Load() != -1 {
 		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength.Load())
@@ -366,7 +366,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.Reader, map[string]strin
 		}
 	}(firstPiece)
 
-	return reader, attr, nil
+	return readCloser, attr, nil
 }
 
 func (s *streamPeerTask) finish() error {

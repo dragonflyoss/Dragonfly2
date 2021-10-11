@@ -237,8 +237,8 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
-	reader, attribute, err := pt.Start(ctx)
-	return ioutil.NopCloser(reader), attribute, err
+	readCloser, attribute, err := pt.Start(ctx)
+	return readCloser, attribute, err
 }
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {
