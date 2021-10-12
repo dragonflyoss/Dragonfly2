@@ -36,10 +36,10 @@ scheduler:
 
 # when enable, pprof will be enabled
 verbose: true
+
 # telemetry config
-telemetry:
-  # jaeger url, like: http://jaeger.dragonfly.svc:14268
-  jaeger: ""
+# jaeger url, like: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""
 
 # current host info used for scheduler
 host:
