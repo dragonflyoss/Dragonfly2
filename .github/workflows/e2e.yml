@@ -34,6 +34,7 @@ jobs:
       - name: Get dependencies
         run: |
           go mod vendor
+          go get github.com/onsi/ginkgo/ginkgo
           mkdir -p /tmp/artifact
 
       - name: Setup Kind
