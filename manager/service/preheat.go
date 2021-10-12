@@ -23,11 +23,13 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/goharbor/harbor/src/pkg/p2p/preheat/models/provider"
 )
 
 const (
 	V1PreheatingStatusPending = "WAITING"
+	V1PreheatingStatusSuccess = "SUCCESS"
+	V1PreheatingStatusFail    = "FAIL"
+	V1PreheatingStatusRunning = "RUNNING"
 )
 
 func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
@@ -108,12 +110,12 @@ func convertStatus(status string) string {
 	case machineryv1tasks.StatePending, machineryv1tasks.StateReceived, machineryv1tasks.StateRetry:
 		return V1PreheatingStatusPending
 	case machineryv1tasks.StateStarted:
-		return provider.PreheatingStatusRunning
+		return V1PreheatingStatusRunning
 	case machineryv1tasks.StateSuccess:
-		return provider.PreheatingStatusSuccess
+		return V1PreheatingStatusSuccess
 	case machineryv1tasks.StateFailure:
-		return provider.PreheatingStatusFail
+		return V1PreheatingStatusFail
 	}
 
-	return provider.PreheatingStatusFail
+	return V1PreheatingStatusFail
 }
