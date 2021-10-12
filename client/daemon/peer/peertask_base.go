@@ -369,7 +369,6 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 
 func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	defer func() {
-		close(pt.failedPieceCh)
 		cleanUnfinishedFunc()
 	}()
 
