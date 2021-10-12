@@ -204,7 +204,7 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(p.ID).To(Equal(preheat.ID))
 			printPreheat(p)
-			switch preheat.Status {
+			switch p.Status {
 			case machineryv1tasks.StateSuccess:
 				return true
 			case machineryv1tasks.StateFailure:
