@@ -1,6 +1,6 @@
 module d7y.io/dragonfly/v2
 
-go 1.15
+go 1.16
 
 require (
 	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
