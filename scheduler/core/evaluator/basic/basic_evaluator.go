@@ -17,7 +17,10 @@
 package basic
 
 import (
+	"strings"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -134,8 +137,18 @@ func getDistance(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	if dst.Host == src.Host {
 		hostDist = 0.0
 	} else {
-		if src.Host.NetTopology != "" && dst.Host.NetTopology == src.Host.NetTopology {
-			hostDist = 10.0
+		if src.Host.NetTopology != "" && dst.Host.NetTopology != "" {
+			srcNetTopologies := strings.Split(src.Host.NetTopology, "|")
+			dstNetTopologies := strings.Split(dst.Host.NetTopology, "|")
+			minLen := mathutils.MinInt(len(srcNetTopologies), len(dstNetTopologies))
+			for i := 0; i < minLen; i++ {
+				if srcNetTopologies[i] != dstNetTopologies[i] {
+					break
+				}
+			}
+			if dst.Host.NetTopology == src.Host.NetTopology {
+				hostDist = 10.0
+			}
 		} else if src.Host.IDC != "" && dst.Host.IDC == src.Host.IDC {
 			hostDist = 20.0
 		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
