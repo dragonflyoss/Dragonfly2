@@ -27,7 +27,40 @@
 
 Dragonfly Helm 支持自动更改 docker 配置。
 
-**情况 1:【推荐的】支持任意仓库**
+**情况 1:【推荐的】支持指定仓库**
+
+定制 values.yaml 文件:
+```yaml
+containerRuntime:
+  docker:
+    enable: true
+    # -- Inject domains into /etc/hosts to force redirect traffic to dfdaemon.
+    # Caution: This feature need dfdaemon to implement SNI Proxy, confirm image tag is greater than v2.0.0.
+    # When use certs and inject hosts in docker, no necessary to restart docker daemon.
+    injectHosts: true
+    registryDomains:
+    - "harbor.example.com"
+    - "harbor.example.net"
+```
+
+When upgrade dfdaemon, the old pods will be deleted and the injected hosts info will be removed,
+then docker will pull image without dragonfly, finally, the new pods will be created.
+
+Advantages:
+* Support upgrade dfdaemon smoothness
+
+此配置允许 docker 通过 Dragonfly 拉取 `harbor.example.com` 和 `harbor.example.net` 域名镜像。
+使用上述配置部署 Dragonfly 时，无需重新启动 docker。
+
+优点：
+* 支持 dfdaemon 自身平滑升级
+
+> 这种模式下，当删除 dfdaemon pod 的时候，`preStop` 钩子将会清理已经注入到 `/etc/hosts` 下的所有主机信息，所有流量将会走原来的镜像中心。
+
+限制:
+* 只支持指定域名。
+
+**情况 2: 支持任意仓库**
 
 定制 values.yaml 文件:
 ```yaml
@@ -46,28 +79,6 @@ containerRuntime:
 限制:
 * 必须开启 docker 的 `live-restore` 功能
 * 需要重启 docker daemon
-
-**情况 2: 支持指定仓库**
-
-定制 values.yaml 文件:
-```yaml
-containerRuntime:
-  docker:
-    enable: true
-    # -- Inject domains into /etc/hosts to force redirect traffic to dfdaemon.
-    # Caution: This feature need dfdaemon to implement SNI Proxy, confirm image tag is greater than v0.4.0.
-    # When use certs and inject hosts in docker, no necessary to restart docker daemon.
-    injectHosts: true
-    registryDomains:
-    - "harbor.example.com"
-    - "harbor.example.net"
-```
-
-此配置允许 docker 通过 Dragonfly 拉取 `harbor.example.com` 和 `harbor.example.net` 域名镜像。
-使用上述配置部署 Dragonfly 时，无需重新启动 docker。
-
-限制:
-* 只支持指定域名。
 
 #### 2. Containerd
 
