@@ -29,7 +29,35 @@ Dragonfly helm supports config docker automatically.
 
 Config cases:
 
-**Case 1: [Preferred] Arbitrary registries support with restart docker**
+**Case 1: [Preferred] Implicit registries support without restart docker**
+
+Chart customize values.yaml:
+```yaml
+containerRuntime:
+  docker:
+    enable: true
+    # -- Inject domains into /etc/hosts to force redirect traffic to dfdaemon.
+    # Caution: This feature need dfdaemon to implement SNI Proxy, confirm image tag is greater than v2.0.0.
+    # When use certs and inject hosts in docker, no necessary to restart docker daemon.
+    injectHosts: true
+    registryDomains:
+    - "harbor.example.com"
+    - "harbor.example.net"
+```
+
+This config enables docker pulling images from registries `harbor.example.com` and `harbor.example.net` via Dragonfly.
+When deploying Dragonfly with above config, it's unnecessary to restart docker daemon.
+
+Advantages:
+* Support upgrade dfdaemon smoothness
+
+> In this mode, when dfdaemon pod deleted, the `preStop` hook will remove all injected hosts info in /etc/hosts,
+> all images traffic fallbacks to original registries.
+
+Limitations:
+* Only support implicit registries
+
+**Case 2: Arbitrary registries support with restart docker**
 
 Chart customize values.yaml:
 ```yaml
@@ -48,31 +76,13 @@ containerRuntime:
 This config enables docker pulling images from arbitrary registries via Dragonfly.
 When deploying Dragonfly with above config, dfdaemon will restart docker daemon.
 
+Advantages:
+* Support arbitrary registries
+
 Limitations:
 * Must enable live-restore feature in docker
 * Need restart docker daemon
-
-**Case 2: Implicit registries support without restart docker**
-
-Chart customize values.yaml:
-```yaml
-containerRuntime:
-  docker:
-    enable: true
-    # -- Inject domains into /etc/hosts to force redirect traffic to dfdaemon.
-    # Caution: This feature need dfdaemon to implement SNI Proxy, confirm image tag is greater than v0.4.0.
-    # When use certs and inject hosts in docker, no necessary to restart docker daemon.
-    injectHosts: true
-    registryDomains:
-    - "harbor.example.com"
-    - "harbor.example.net"
-```
-
-This config enables docker pulling images from registries `harbor.example.com` and `harbor.example.net` via Dragonfly.
-When deploying Dragonfly with above config, it's unnecessary to restart docker daemon.
-
-Limitations:
-* Only support implicit registries
+* When upgrade dfdaemon, new image must be pulled beforehand.
 
 #### 2. Containerd
 
