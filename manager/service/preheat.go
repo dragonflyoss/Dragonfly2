@@ -17,8 +17,17 @@
 package service
 
 import (
+	"time"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/goharbor/harbor/src/pkg/p2p/preheat/models/provider"
+)
+
+const (
+	V1PreheatingStatusPending = "WAITING"
 )
 
 func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
@@ -62,4 +71,49 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 
 func (s *rest) GetPreheat(id string) (*types.Preheat, error) {
 	return s.job.GetPreheat(id)
+}
+
+func (s *rest) CreateV1Preheat(json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
+	p, err := s.CreatePreheat(types.CreatePreheatRequest{
+		Type:    json.Type,
+		URL:     json.URL,
+		Filter:  json.Filter,
+		Headers: json.Headers,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.CreateV1PreheatResponse{
+		ID: p.ID,
+	}, nil
+}
+
+func (s *rest) GetV1Preheat(id string) (*types.GetV1PreheatResponse, error) {
+	p, err := s.job.GetPreheat(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.GetV1PreheatResponse{
+		ID:         p.ID,
+		Status:     convertStatus(p.Status),
+		StartTime:  p.CreatedAt.String(),
+		FinishTime: time.Now().String(),
+	}, nil
+}
+
+func convertStatus(status string) string {
+	switch status {
+	case machineryv1tasks.StatePending, machineryv1tasks.StateReceived, machineryv1tasks.StateRetry:
+		return V1PreheatingStatusPending
+	case machineryv1tasks.StateStarted:
+		return provider.PreheatingStatusRunning
+	case machineryv1tasks.StateSuccess:
+		return provider.PreheatingStatusSuccess
+	case machineryv1tasks.StateFailure:
+		return provider.PreheatingStatusFail
+	}
+
+	return provider.PreheatingStatusFail
 }
