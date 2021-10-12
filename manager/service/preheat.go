@@ -26,10 +26,17 @@ import (
 )
 
 const (
+	// V1PreheatingStatusPending is the preheating is waiting for starting
 	V1PreheatingStatusPending = "WAITING"
-	V1PreheatingStatusSuccess = "SUCCESS"
-	V1PreheatingStatusFail    = "FAIL"
+
+	// V1PreheatingStatusRunning is the preheating is running
 	V1PreheatingStatusRunning = "RUNNING"
+
+	// V1PreheatingStatusSuccess is the preheating is success
+	V1PreheatingStatusSuccess = "SUCCESS"
+
+	// V1PreheatingStatusFail is the preheating is failed
+	V1PreheatingStatusFail = "FAIL"
 )
 
 func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
