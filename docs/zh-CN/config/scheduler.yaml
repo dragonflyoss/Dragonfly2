@@ -123,7 +123,7 @@ verbose: false
 pprofPort: -1
 
 # jaeger 地址
-# 默认使用空字符串（不配置 jaeger）
+# 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
 jaeger: ""
 
 # tracer 中使用的 service-name
