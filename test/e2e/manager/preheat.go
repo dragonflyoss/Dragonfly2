@@ -63,6 +63,7 @@ var _ = Describe("Preheat with manager", func() {
 				preheatJob := &types.Preheat{}
 				err = json.Unmarshal(out, preheatJob)
 				Expect(err).NotTo(HaveOccurred())
+				printPreheat(preheatJob)
 				done := waitForDone(preheatJob, fsPod)
 				Expect(done).Should(BeTrue())
 
@@ -110,6 +111,7 @@ var _ = Describe("Preheat with manager", func() {
 			preheatJob := &types.Preheat{}
 			err = json.Unmarshal(out, preheatJob)
 			Expect(err).NotTo(HaveOccurred())
+			printPreheat(preheatJob)
 			done := waitForDone(preheatJob, fsPod)
 			Expect(done).Should(BeTrue())
 
@@ -163,6 +165,7 @@ var _ = Describe("Preheat with manager", func() {
 			preheatJob := &types.Preheat{}
 			err = json.Unmarshal(out, preheatJob)
 			Expect(err).NotTo(HaveOccurred())
+			printPreheat(preheatJob)
 			done := waitForDone(preheatJob, fsPod)
 			Expect(done).Should(BeTrue())
 
@@ -180,6 +183,9 @@ var _ = Describe("Preheat with manager", func() {
 })
 
 func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
+	if preheat == nil || preheat.ID == "" {
+		return false
+	}
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
@@ -193,8 +199,11 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 				fmt.Sprintf("http://%s:%s/%s/%s", managerService, managerPort, preheatPath, preheat.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
-			err = json.Unmarshal(out, preheat)
+			p := &types.Preheat{}
+			err = json.Unmarshal(out, p)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(p.ID).To(Equal(preheat.ID))
+			printPreheat(p)
 			switch preheat.Status {
 			case machineryv1tasks.StateSuccess:
 				return true
@@ -258,4 +267,13 @@ func getFileServerExec() *e2eutil.PodExec {
 	fmt.Println(podName)
 	Expect(strings.HasPrefix(podName, "file-server-")).Should(BeTrue())
 	return e2eutil.NewPodExec(e2eNamespace, podName, "")
+}
+
+// printPreheat print the preheat job details for debug.
+func printPreheat(job *types.Preheat) {
+	if job == nil {
+		fmt.Println("job is nil")
+	} else {
+		fmt.Printf("id: %s, status: %s\n", job.ID, job.Status)
+	}
 }
