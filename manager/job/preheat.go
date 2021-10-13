@@ -102,6 +102,7 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 		return nil, errors.New("unknow preheat type")
 	}
 
+	logger.Infof("preheat file count: %d queues: %v", len(files), queues)
 	return p.createGroupJob(files, queues)
 }
 
