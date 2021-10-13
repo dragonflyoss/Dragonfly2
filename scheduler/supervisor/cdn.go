@@ -155,11 +155,6 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 					return nil, err
 				}
 
-				if cdnPeer == nil {
-					logger.Errorf("init empty cdn peer")
-					return nil, errors.Wrapf(ErrInitCDNPeerFail, "empty cdn peer")
-				}
-
 				logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
 				if !task.CanSchedule() {
 					task.SetStatus(TaskStatusSeeding)
