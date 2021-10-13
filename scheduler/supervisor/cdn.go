@@ -128,7 +128,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 					span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
 					return cdnPeer, nil
 				}
-				return cdnPeer, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
+				return nil, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
 			}
 
 			span.RecordError(err)
@@ -137,22 +137,27 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
 				case dfcodes.CdnTaskRegistryFail:
-					return cdnPeer, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
+					return nil, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
 				case dfcodes.CdnTaskDownloadFail:
-					return cdnPeer, errors.Wrapf(ErrCDNDownloadFail, "receive piece")
+					return nil, errors.Wrapf(ErrCDNDownloadFail, "receive piece")
 				default:
-					return cdnPeer, errors.Wrapf(ErrCDNUnknown, "recive piece")
+					return nil, errors.Wrapf(ErrCDNUnknown, "recive piece")
 				}
 			}
-			return cdnPeer, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
+			return nil, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
 		}
 
 		if piece != nil {
 			logger.Infof("task %s add piece %v", task.ID, piece)
 			if !initialized {
 				cdnPeer, err = c.initCDNPeer(ctx, task, piece)
-				if err != nil || cdnPeer == nil {
+				if err != nil {
 					return nil, err
+				}
+
+				if cdnPeer == nil {
+					logger.Errorf("init empty cdn peer")
+					return nil, errors.Wrapf(ErrInitCDNPeerFail, "empty cdn peer")
 				}
 
 				logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
@@ -161,6 +166,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 				}
 				initialized = true
 			}
+
 			span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 			cdnPeer.Touch()
 			if piece.Done {

@@ -324,6 +324,10 @@ func (peer *Peer) ReplaceParent(parent *Peer) {
 	}
 }
 
+func (peer *Peer) DeleteParent() {
+	peer.parent.Store(nil)
+}
+
 func (peer *Peer) GetChildren() *sync.Map {
 	return peer.children
 }
