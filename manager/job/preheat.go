@@ -123,6 +123,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 			})
 		}
 	}
+	logger.Infof("preheat file count: %d queues: %v", len(signatures), queues)
 
 	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
@@ -208,8 +209,8 @@ func (p *preheat) parseLayers(resp *http.Response, filter string, header http.He
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),
 		}
-		logger.Infof("preheat layer: %+v", layer)
 
+		logger.Infof("preheat layer: %+v", layer)
 		layers = append(layers, layer)
 	}
 
