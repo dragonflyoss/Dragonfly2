@@ -44,6 +44,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: PrepareReg Names
+        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
@@ -57,7 +60,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ github.repository }}/scheduler:${{ steps.get_version.outputs.VERSION }}
+            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/scheduler:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_dfdaemon_to_registry:
@@ -98,6 +101,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: PrepareReg Names
+        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
@@ -111,7 +117,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/dfdaemon:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ github.repository }}/dfdaemon:${{ steps.get_version.outputs.VERSION }}
+            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/dfdaemon:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_cdn_to_registry:
@@ -152,6 +158,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: PrepareReg Names
+        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
@@ -165,7 +174,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/cdn:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ github.repository }}/cdn:${{ steps.get_version.outputs.VERSION }}
+            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/cdn:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_manager_to_registry:
@@ -206,6 +215,9 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: PrepareReg Names
+        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
         with:
@@ -219,5 +231,5 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/manager:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ github.repository }}/manager:${{ steps.get_version.outputs.VERSION }}
+            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/manager:${{ steps.get_version.outputs.VERSION }}
           push: true
