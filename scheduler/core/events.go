@@ -395,7 +395,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 
 func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {
 	parent, ok := peer.GetParent()
-	peer.DeleteParent()
+	peer.ReplaceParent(nil)
 
 	// parent frees up upload resources
 	if ok {

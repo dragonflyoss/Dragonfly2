@@ -324,16 +324,13 @@ func (peer *Peer) ReplaceParent(parent *Peer) {
 	}
 }
 
-func (peer *Peer) DeleteParent() {
-	peer.parent.Store(nil)
-}
-
 func (peer *Peer) GetChildren() *sync.Map {
 	return peer.children
 }
 
 func (peer *Peer) SetParent(parent *Peer) {
 	if parent == nil {
+		peer.parent.Store(nil)
 		return
 	}
 
@@ -466,6 +463,7 @@ func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer
 
 func (peer *Peer) setConn(conn *Channel) {
 	if conn == nil {
+		peer.conn.Store(nil)
 		return
 	}
 
