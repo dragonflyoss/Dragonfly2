@@ -103,6 +103,8 @@ type REST interface {
 
 	CreatePreheat(types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(string) (*types.Preheat, error)
+	CreateV1Preheat(types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
+	GetV1Preheat(string) (*types.GetV1PreheatResponse, error)
 }
 
 type rest struct {

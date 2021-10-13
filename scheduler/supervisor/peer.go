@@ -329,6 +329,10 @@ func (peer *Peer) GetChildren() *sync.Map {
 }
 
 func (peer *Peer) SetParent(parent *Peer) {
+	if parent == nil {
+		return
+	}
+
 	peer.parent.Store(parent)
 }
 
@@ -457,6 +461,10 @@ func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer
 }
 
 func (peer *Peer) setConn(conn *Channel) {
+	if conn == nil {
+		return
+	}
+
 	peer.conn.Store(conn)
 }
 

@@ -176,6 +176,12 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	ph.POST("", h.CreatePreheat)
 	ph.GET(":id", h.GetPreheat)
 
+	// Compatible with the V1 preheat.
+	pv1 := r.Group("preheats")
+	r.GET("/_ping", h.GetHealth)
+	pv1.POST("", h.CreateV1Preheat)
+	pv1.GET(":id", h.GetV1Preheat)
+
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)
 

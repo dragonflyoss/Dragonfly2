@@ -10,6 +10,8 @@ TODO
 
 Use preheat apis for preheating. First create a POST request for preheating, you can refer to [create preheat api document](../../api/api.md#create-preheat)
 
+If the `scheduler_cluster_id` does not exist, it means to preheat all scheduler clusters.
+
 ```bash
 curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
 --header 'Content-Type: application/json' \
