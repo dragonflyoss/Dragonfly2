@@ -369,7 +369,6 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 
 func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	defer func() {
-		close(pt.failedPieceCh)
 		cleanUnfinishedFunc()
 	}()
 
@@ -605,10 +604,10 @@ func (pt *peerTask) waitFailedPiece() (int32, bool) {
 	// use no default branch select to wait failed piece or exit
 	select {
 	case <-pt.done:
-		pt.Infof("peer task done, stop wait failed piece")
+		pt.Infof("peer task done, stop to wait failed piece")
 		return -1, false
 	case <-pt.ctx.Done():
-		pt.Debugf("context done due to %s, stop wait failed piece", pt.ctx.Err())
+		pt.Debugf("context done due to %s, stop to wait failed piece", pt.ctx.Err())
 		return -1, false
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)

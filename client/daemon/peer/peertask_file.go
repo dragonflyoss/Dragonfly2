@@ -238,8 +238,15 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	if !result.pieceResult.Success {
 		result.pieceResult.FinishedCount = pt.readyPieces.Settled()
 		_ = pt.peerPacketStream.Send(result.pieceResult)
-		pt.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
-		pt.Errorf("%d download failed, retry later", result.piece.PieceNum)
+		select {
+		case <-pt.done:
+			pt.Infof("peer task done, stop to send failed piece")
+		case <-pt.ctx.Done():
+			pt.Debugf("context done due to %s, stop to send failed piece", pt.ctx.Err())
+		case pt.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum:
+			pt.Warnf("%d download failed, retry later", result.piece.PieceNum)
+		}
+
 		return nil
 	}
 
