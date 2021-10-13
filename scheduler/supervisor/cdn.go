@@ -124,7 +124,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *client.Piece
 		if err != nil {
 			if err == io.EOF {
 				logger.Infof("task %s connection closed", task.ID)
-				if task.GetStatus() == TaskStatusSuccess {
+				if cdnPeer != nil && task.GetStatus() == TaskStatusSuccess {
 					span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
 					return cdnPeer, nil
 				}
