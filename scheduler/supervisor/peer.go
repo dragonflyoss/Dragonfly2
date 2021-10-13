@@ -329,10 +329,6 @@ func (peer *Peer) GetChildren() *sync.Map {
 }
 
 func (peer *Peer) SetParent(parent *Peer) {
-	if parent == nil {
-		return
-	}
-
 	peer.parent.Store(parent)
 }
 
@@ -342,7 +338,12 @@ func (peer *Peer) GetParent() (*Peer, bool) {
 		return nil, false
 	}
 
-	return parent.(*Peer), true
+	p, ok := parent.(*Peer)
+	if p == nil || !ok {
+		return nil, false
+	}
+
+	return p, true
 }
 
 func (peer *Peer) Touch() {
@@ -461,10 +462,6 @@ func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer
 }
 
 func (peer *Peer) setConn(conn *Channel) {
-	if conn == nil {
-		return
-	}
-
 	peer.conn.Store(conn)
 }
 
@@ -474,7 +471,12 @@ func (peer *Peer) getConn() (*Channel, bool) {
 		return nil, false
 	}
 
-	return conn.(*Channel), true
+	c, ok := conn.(*Channel)
+	if c == nil || !ok {
+		return nil, false
+	}
+
+	return c, true
 }
 
 func (peer *Peer) IsConnected() bool {
