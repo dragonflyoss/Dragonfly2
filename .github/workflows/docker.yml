@@ -45,7 +45,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PrepareReg Names
-        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+        run: |
+          echo IMAGE_REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          echo IMAGE_TAG=$(echo ${{ github.ref }} | tr '[:upper:]' '[:lower:]' | awk '{split($0,a,"/"); print a[3]}') >> $GITHUB_ENV
 
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
@@ -102,7 +104,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PrepareReg Names
-        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+        run: |
+          echo IMAGE_REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          echo IMAGE_TAG=$(echo ${{ github.ref }} | tr '[:upper:]' '[:lower:]' | awk '{split($0,a,"/"); print a[3]}') >> $GITHUB_ENV
 
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
@@ -159,7 +163,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PrepareReg Names
-        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+        run: |
+          echo IMAGE_REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          echo IMAGE_TAG=$(echo ${{ github.ref }} | tr '[:upper:]' '[:lower:]' | awk '{split($0,a,"/"); print a[3]}') >> $GITHUB_ENV
 
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
@@ -216,7 +222,9 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PrepareReg Names
-        run: echo ::set-env name=IMAGE_REPOSITORY::$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')
+        run: |
+          echo IMAGE_REPOSITORY=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+          echo IMAGE_TAG=$(echo ${{ github.ref }} | tr '[:upper:]' '[:lower:]' | awk '{split($0,a,"/"); print a[3]}') >> $GITHUB_ENV
 
       - name: Push to Docker Hub
         uses: docker/build-push-action@v2
