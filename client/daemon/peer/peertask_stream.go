@@ -194,7 +194,14 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	// retry failed piece
 	if !result.pieceResult.Success {
 		_ = s.peerPacketStream.Send(result.pieceResult)
-		s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum
+		select {
+		case <-s.done:
+			s.Infof("peer task done, stop to send failed piece")
+		case <-s.ctx.Done():
+			s.Debugf("context done due to %s, stop to send failed piece", s.ctx.Err())
+		case s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum:
+			s.Warnf("%d download failed, retry later", result.piece.PieceNum)
+		}
 		return nil
 	}
 

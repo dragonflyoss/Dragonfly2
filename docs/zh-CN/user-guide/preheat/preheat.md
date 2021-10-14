@@ -10,6 +10,8 @@ TODO
 
 用户使用 api 进行预热。首先发送 POST 请求创建预热任务，具体 api 可以参考文档 [create preheat api document](../../api/api.md#create-preheat)。
 
+如果 `scheduler_cluster_id` 不存在，表示对所有 scheduler cluster 进行预热。
+
 ```bash
 curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
 --header 'Content-Type: application/json' \
@@ -27,7 +29,6 @@ curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
 ```
 
 使用预热任务 ID 轮训查询任务是否成功，具体 api 可以参考文档 [get preheat api document](../../api/api.md#get-preheat)。
-
 
 ```bash
 curl --request GET 'http://manager-domain:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
