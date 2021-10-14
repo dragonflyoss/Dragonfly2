@@ -28,6 +28,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
@@ -45,7 +46,8 @@ const (
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
-	CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error)
+	CreatePreheat([]model.Scheduler, types.CreatePreheatRequest) (*types.Preheat, error)
+	GetPreheat(string) (*types.Preheat, error)
 }
 
 type preheat struct {
@@ -67,13 +69,26 @@ func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
 	}, nil
 }
 
-func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
+func (p *preheat) GetPreheat(id string) (*types.Preheat, error) {
+	groupJobState, err := p.job.GetGroupJobState(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &types.Preheat{
+		ID:        groupJobState.GroupUUID,
+		Status:    groupJobState.State,
+		CreatedAt: groupJobState.CreatedAt,
+	}, nil
+}
+
+func (p *preheat) CreatePreheat(schedulers []model.Scheduler, json types.CreatePreheatRequest) (*types.Preheat, error) {
 	url := json.URL
 	filter := json.Filter
 	rawheader := json.Headers
 
 	// Initialize queues
-	queues := getSchedulerQueues(hostnames)
+	queues := getSchedulerQueues(schedulers)
 
 	// Generate download files
 	var files []*internaljob.PreheatRequest
@@ -102,7 +117,10 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 		return nil, errors.New("unknow preheat type")
 	}
 
-	logger.Infof("preheat file count: %d queues: %v", len(files), queues)
+	for _, f := range files {
+		logger.Infof("preheat %s file url: %v queues: %v", json.URL, f.URL, queues)
+	}
+
 	return p.createGroupJob(files, queues)
 }
 
@@ -123,8 +141,6 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 			})
 		}
 	}
-	logger.Infof("preheat file count: %d queues: %v", len(signatures), queues)
-
 	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
 		return nil, err
@@ -163,7 +179,7 @@ func (p *preheat) getLayers(url string, filter string, header http.Header, image
 		}
 	}
 
-	layers, err := p.parseLayers(resp, filter, header, image)
+	layers, err := p.parseLayers(resp, url, filter, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +204,7 @@ func (p *preheat) getManifests(url string, header http.Header) (*http.Response, 
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, url, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -210,7 +226,6 @@ func (p *preheat) parseLayers(resp *http.Response, filter string, header http.He
 			Headers: httputils.HeaderToMap(header),
 		}
 
-		logger.Infof("preheat layer: %+v", layer)
 		layers = append(layers, layer)
 	}
 
@@ -271,10 +286,10 @@ func parseAccessURL(url string) (*preheatImage, error) {
 	}, nil
 }
 
-func getSchedulerQueues(hostnames []string) []internaljob.Queue {
+func getSchedulerQueues(schedulers []model.Scheduler) []internaljob.Queue {
 	var queues []internaljob.Queue
-	for _, hostname := range hostnames {
-		queue, err := internaljob.GetSchedulerQueue(hostname)
+	for _, scheduler := range schedulers {
+		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.HostName)
 		if err != nil {
 			continue
 		}

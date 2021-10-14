@@ -49,7 +49,7 @@ type job struct {
 	cfg          *config.JobConfig
 }
 
-func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *core.SchedulerService) (Job, error) {
+func New(ctx context.Context, cfg *config.JobConfig, clusterID uint, hostname string, service *core.SchedulerService) (Job, error) {
 	redisConfig := &internaljob.Config{
 		Host:      cfg.Redis.Host,
 		Port:      cfg.Redis.Port,
@@ -70,7 +70,7 @@ func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *c
 		return nil, err
 	}
 
-	localQueue, err := internaljob.GetSchedulerQueue(hostname)
+	localQueue, err := internaljob.GetSchedulerQueue(clusterID, hostname)
 	if err != nil {
 		logger.Errorf("get local job queue name error: %v", err)
 		return nil, err
