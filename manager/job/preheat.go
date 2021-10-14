@@ -147,9 +147,11 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 	}
 
 	if _, err := p.job.Server.SendGroup(group, 0); err != nil {
+		logger.Error("create preheat group job failed", err)
 		return nil, err
 	}
 
+	logger.Infof("create preheat group job successed, group uuid: %s ", group.GroupUUID)
 	return &types.Preheat{
 		ID:        group.GroupUUID,
 		Status:    machineryv1tasks.StatePending,

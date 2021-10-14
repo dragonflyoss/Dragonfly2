@@ -31,7 +31,7 @@ curl --request POST 'http://dragonfly-manager:8080/api/v1/preheats' \
 使用预热任务 ID 轮训查询任务是否成功，具体 api 可以参考文档 [get preheat api document](../../api/api.md#get-preheat)。
 
 ```bash
-curl --request GET 'http://manager-domain:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
+curl --request GET 'http://dragonfly-manager:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
 ```
 
 如果返回预热任务状态为 `SUCCESS`，表示预热成功。

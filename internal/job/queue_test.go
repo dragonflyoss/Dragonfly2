@@ -35,7 +35,7 @@ func TestJobGetSchedulerQueue(t *testing.T) {
 			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
-				assert.Equal(Queue("scheduler_foo"), result)
+				assert.Equal(Queue("scheduler_1_foo"), result)
 			},
 		},
 		{
@@ -79,7 +79,7 @@ func TestJobGetCDNQueue(t *testing.T) {
 			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
-				assert.Equal(Queue("cdn_foo"), result)
+				assert.Equal(Queue("cdn_1_foo"), result)
 			},
 		},
 		{
