@@ -50,14 +50,15 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonCli
 var once sync.Once
 var elasticDaemonClient *daemonClient
 
-func GetElasticClient(opts ...grpc.DialOption) (DaemonClient, error) {
+func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	once.Do(func() {
 		elasticDaemonClient = &daemonClient{
-			rpc.NewConnection(context.Background(), "", nil, []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), rpc.DaemonScheme, nil, []rpc.ConnOption{
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
+	elasticDaemonClient.AddServerNode(addr)
 	return elasticDaemonClient, nil
 }
 

@@ -39,7 +39,7 @@ func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer,
 		Type: dfnet.TCP,
 		Addr: destAddr,
 	}
-	client, err := getClient(toCdn)
+	client, err := getClient(netAddr, toCdn)
 	if err != nil {
 		return nil, err
 	}
@@ -49,9 +49,9 @@ func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer,
 	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
 }
 
-func getClient(toCdn bool) (rpc.Closer, error) {
+func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
 	if toCdn {
-		return cdnclient.GetElasticClient()
+		return cdnclient.GetElasticClientByAddr(netAddr)
 	}
-	return GetElasticClient()
+	return GetElasticClientByAddr(netAddr)
 }

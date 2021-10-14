@@ -117,12 +117,17 @@ func NewConnection(ctx context.Context, scheme string, addrs []dfnet.NetAddr, co
 	return conn
 }
 
-func (conn *Connection) AddServerNodes(addrs []dfnet.NetAddr) error {
+func (conn *Connection) AddServerNode(addr dfnet.NetAddr) error {
 	conn.rwMutex.Lock()
 	defer conn.rwMutex.Unlock()
-	conn.serverNodes = append(conn.serverNodes, addrs...)
+	for _, node := range conn.serverNodes {
+		if addr.Addr == node.Addr {
+			return nil
+		}
+	}
+	conn.serverNodes = append(conn.serverNodes, addr)
 	if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-		resolver.UpdateAddrs(addrs)
+		resolver.UpdateAddrs(conn.serverNodes)
 	}
 	return nil
 }

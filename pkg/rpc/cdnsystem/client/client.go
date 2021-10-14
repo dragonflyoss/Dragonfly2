@@ -45,14 +45,15 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient
 var once sync.Once
 var elasticCdnClient *cdnClient
 
-func GetElasticClient(opts ...grpc.DialOption) (CdnClient, error) {
+func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
-			rpc.NewConnection(context.Background(), "", nil, []rpc.ConnOption{
+			rpc.NewConnection(context.Background(), rpc.CDNScheme, nil, []rpc.ConnOption{
 				rpc.WithDialOption(opts),
 			}),
 		}
 	})
+	elasticCdnClient.AddServerNode(addr)
 	return elasticCdnClient, nil
 }
 
