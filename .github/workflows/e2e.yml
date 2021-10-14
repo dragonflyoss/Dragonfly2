@@ -65,6 +65,9 @@ jobs:
           files: ./coverage.txt
           flags: e2etests
 
+      - name: logs
+        run: ls -al /tmp/artifact/
+
       - name: Upload Logs
         uses: actions/upload-artifact@v2
         # if: failure()
