@@ -178,10 +178,8 @@ func getPreheatResult(task *supervisor.Task) error {
 			case supervisor.TaskStatusWaiting:
 				// New task for the first time
 				if task.CreateAt.Load() == task.LastTriggerAt.Load() {
-					logger.Infof("preheat task %s first waiting", task.ID)
 					break
 				}
-				logger.Infof("preheat task %s waiting", task.ID)
 				fallthrough
 			default:
 				logger.Errorf("preheat task %s failed", task.ID)
