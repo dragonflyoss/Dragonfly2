@@ -3,7 +3,7 @@ scheduler:
   tag: latest
   extraVolumeMounts:
     - name: logs
-      mountPath: "/var/logs/dragonfly"
+      mountPath: "/var/log/dragonfly"
   extraVolumes:
     - name: logs
       hostPath:
@@ -14,7 +14,7 @@ cdn:
   tag: latest
   extraVolumeMounts:
     - name: logs
-      mountPath: "/var/logs/dragonfly"
+      mountPath: "/var/log/dragonfly"
   extraVolumes:
     - name: logs
       hostPath:
@@ -25,7 +25,7 @@ dfdaemon:
   tag: latest
   extraVolumeMounts:
     - name: logs
-      mountPath: "/var/logs/dragonfly"
+      mountPath: "/var/log/dragonfly"
   extraVolumes:
     - name: logs
       hostPath:
@@ -52,7 +52,7 @@ manager:
   tag: latest
   extraVolumeMounts:
     - name: logs
-      mountPath: "/var/logs/dragonfly"
+      mountPath: "/var/log/dragonfly"
   extraVolumes:
     - name: logs
       hostPath:
