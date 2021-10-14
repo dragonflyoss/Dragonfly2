@@ -262,13 +262,14 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	defer synclock.UnLock(task.ID, false)
 
 	// do trigger
-	task.LastTriggerAt.Store(time.Now())
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 		return task
 	}
+
+	task.LastTriggerAt.Store(time.Now())
 	task.SetStatus(supervisor.TaskStatusRunning)
 	if s.cdn == nil {
 		// client back source

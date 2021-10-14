@@ -171,10 +171,16 @@ func getPreheatResult(task *supervisor.Task) error {
 		select {
 		case <-ticker.C:
 			switch task.GetStatus() {
-			case supervisor.TaskStatusRunning:
+			case supervisor.TaskStatusRunning, supervisor.TaskStatusSeeding:
 			case supervisor.TaskStatusSuccess:
 				logger.Info("preheat task %v successed", task.ID)
 				return nil
+			case supervisor.TaskStatusWaiting:
+				// New task for the first time
+				if task.CreateAt.Load() == task.LastTriggerAt.Load() {
+					break
+				}
+				fallthrough
 			default:
 				logger.Errorf("preheat task %v failed", task.ID)
 				return errors.Errorf("preheat task fail")
