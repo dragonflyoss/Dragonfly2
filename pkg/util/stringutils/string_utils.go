@@ -44,6 +44,10 @@ func IsBlank(str string) bool {
 	return true
 }
 
+func IsNotBlank(str string) bool {
+	return !IsBlank(str)
+}
+
 func IsEmpty(str string) bool {
 	return str == ""
 }

@@ -17,10 +17,12 @@
 package basic
 
 import (
+	"math"
 	"strings"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -133,27 +135,49 @@ func getHostLoad(host *supervisor.Host) float64 {
 
 // getDistance 0.0~1.0 larger and better
 func getDistance(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	hostDist := 40.0
+	topScore := 80.0
+	score := 40.0
 	if dst.Host == src.Host {
-		hostDist = 0.0
+		score = topScore
 	} else {
-		if src.Host.NetTopology != "" && dst.Host.NetTopology != "" {
-			srcNetTopologies := strings.Split(src.Host.NetTopology, "|")
-			dstNetTopologies := strings.Split(dst.Host.NetTopology, "|")
-			minLen := mathutils.MinInt(len(srcNetTopologies), len(dstNetTopologies))
-			for i := 0; i < minLen; i++ {
-				if srcNetTopologies[i] != dstNetTopologies[i] {
-					break
+		if stringutils.IsNotBlank(src.Host.SecurityDomain) && stringutils.IsNotBlank(dst.Host.SecurityDomain) && src.Host.SecurityDomain != dst.Host.
+			SecurityDomain {
+			score = 0.0
+		} else {
+			if stringutils.IsNotBlank(src.Host.IDC) && dst.Host.IDC == src.Host.IDC {
+				maxScore := topScore * 0.95 // distinguish from the same host
+				if src.Host.NetTopology != "" && src.Host.NetTopology == dst.Host.NetTopology {
+					score = maxScore
+				} else {
+					srcNetTopologies := strings.Split(src.Host.NetTopology, "|")
+					dstNetTopologies := strings.Split(dst.Host.NetTopology, "|")
+					minLen := mathutils.MinInt(len(srcNetTopologies), len(dstNetTopologies))
+					fragmentLength := (maxScore - score) / (math.Pow(2, float64(minLen)) - 1)
+					for i := 0; i < minLen; i++ {
+						if srcNetTopologies[i] != dstNetTopologies[i] {
+							break
+						}
+						score = score + fragmentLength*math.Pow(2, float64(i))
+					}
+				}
+			} else if stringutils.IsNotBlank(src.Host.Location) && stringutils.IsNotBlank(dst.Host.Location) {
+				maxScore := topScore * 0.9 // distinguish from the same host and same idc
+				if src.Host.Location == dst.Host.Location {
+					score = maxScore
+				} else {
+					srcLocations := strings.Split(src.Host.Location, "|")
+					dstLocations := strings.Split(dst.Host.Location, "|")
+					minLen := mathutils.MinInt(len(srcLocations), len(dstLocations))
+					fragmentLength := (maxScore - score) / (math.Pow(2, float64(minLen)) - 1)
+					for i := 0; i < minLen; i++ {
+						if srcLocations[i] != dstLocations[i] {
+							break
+						}
+						score = score + fragmentLength*math.Pow(2, float64(i))
+					}
 				}
 			}
-			if dst.Host.NetTopology == src.Host.NetTopology {
-				hostDist = 10.0
-			}
-		} else if src.Host.IDC != "" && dst.Host.IDC == src.Host.IDC {
-			hostDist = 20.0
-		} else if dst.Host.SecurityDomain != src.Host.SecurityDomain {
-			hostDist = 80.0
 		}
 	}
-	return 1.0 - hostDist/80.0
+	return score / topScore
 }
