@@ -81,4 +81,4 @@ jobs:
         # if: failure()
         with:
           name: ${{ matrix.module }}-compatibility-e2e-tests-logs
-          path: /tmp/artifact/
+          path: /tmp/artifact/**/*
