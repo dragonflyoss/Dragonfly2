@@ -160,14 +160,14 @@ func (t *job) preheat(req string) error {
 		UrlMeta: meta,
 	})
 	if err != nil {
-		plogger.Error("preheat failed", err)
+		plogger.Errorf("preheat failed: %v", err)
 		return err
 	}
 
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			plogger.Error("preheat recive piece failed", err)
+			plogger.Errorf("preheat recive piece failed: %v", err)
 			return err
 		}
 
