@@ -78,7 +78,11 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v2
-        if: failure()
+        if: always()
         with:
           name: ${{ matrix.module }}-compatibility-e2e-tests-logs
-          path: /tmp/artifact/
+          path: |
+            /tmp/artifact/manager/*.log
+            /tmp/artifact/daemon/*.log
+            /tmp/artifact/scheduler/*.log
+            /tmp/artifact/cdn/*.log
