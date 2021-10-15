@@ -27,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"github.com/go-playground/validator/v10"
-	"github.com/pkg/errors"
 )
 
 type Job interface {
@@ -131,8 +130,8 @@ func (t *job) preheat(req string) error {
 	}
 
 	if err := validator.New().Struct(request); err != nil {
-		logger.Errorf("request url %s validate failed: %v", request.URL, err)
-		return errors.Errorf("invalid url: %s", request.URL)
+		logger.Errorf("url %s validate failed: %v", request.URL, err)
+		return err
 	}
 
 	// Generate meta
@@ -152,6 +151,7 @@ func (t *job) preheat(req string) error {
 	// Generate taskID
 	taskID := idgen.TaskID(request.URL, meta)
 
+	// Trigger CDN download seeds
 	plogger := logger.WithTaskIDAndURL(taskID, request.URL)
 	plogger.Info("ready to preheat")
 	stream, err := t.service.CDN.GetClient().ObtainSeeds(t.ctx, &cdnsystem.SeedRequest{
