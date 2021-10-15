@@ -24,9 +24,9 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 )
@@ -136,10 +136,11 @@ func (t *job) preheat(req string) error {
 	}
 
 	if err := validator.New().Struct(request); err != nil {
-		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
+		logger.Errorf("request url %s validate failed: %v", request.URL, err)
 		return errors.Errorf("invalid url: %s", request.URL)
 	}
 
+	// Generate meta
 	meta := &base.UrlMeta{
 		Header: request.Headers,
 		Tag:    request.Tag,
@@ -147,44 +148,37 @@ func (t *job) preheat(req string) error {
 		Digest: request.Digest,
 	}
 
-	// Generate range
 	if request.Headers != nil {
 		if rg := request.Headers["Range"]; len(rg) > 0 {
 			meta.Range = rg
 		}
 	}
 
+	// Generate taskID
 	taskID := idgen.TaskID(request.URL, meta)
-	logger.Infof("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 
-	task := supervisor.NewTask(taskID, request.URL, meta)
-	task = t.service.GetOrCreateTask(t.ctx, task)
-	return getPreheatResult(task)
-}
-
-//TODO(@zzy987) check better ways to get result
-func getPreheatResult(task *supervisor.Task) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	plogger := logger.WithTaskIDAndURL(taskID, request.URL)
+	plogger.Info("ready to preheat")
+	stream, err := t.service.CDN.GetClient().ObtainSeeds(t.ctx, &cdnsystem.SeedRequest{
+		TaskId:  taskID,
+		Url:     request.URL,
+		UrlMeta: meta,
+	})
+	if err != nil {
+		plogger.Error("preheat failed", err)
+		return err
+	}
 
 	for {
-		select {
-		case <-ticker.C:
-			switch task.GetStatus() {
-			case supervisor.TaskStatusRunning, supervisor.TaskStatusSeeding:
-			case supervisor.TaskStatusSuccess:
-				logger.Infof("preheat task %s successed", task.ID)
-				return nil
-			case supervisor.TaskStatusWaiting:
-				// New task for the first time
-				if task.CreateAt.Load() == task.LastTriggerAt.Load() {
-					break
-				}
-				fallthrough
-			default:
-				logger.Errorf("preheat task %s failed", task.ID)
-				return errors.Errorf("preheat task fail")
-			}
+		piece, err := stream.Recv()
+		if err != nil {
+			plogger.Error("preheat recive piece failed", err)
+			return err
+		}
+
+		if piece.Done == true {
+			plogger.Info("preheat successed")
+			return nil
 		}
 	}
 }

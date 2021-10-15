@@ -52,12 +52,15 @@ var (
 var tracer = otel.Tracer("scheduler-cdn")
 
 type CDN interface {
+	// CetClient get cdn grpc client
+	GetClient() CDNDynmaicClient
+
 	// StartSeedTask start seed cdn task
 	StartSeedTask(context.Context, *Task) (*Peer, error)
 }
 
 type cdn struct {
-	// client is cdn dynamic client
+	// Client is cdn dynamic client
 	client CDNDynmaicClient
 	// peerManager is peer manager
 	peerManager PeerManager
@@ -71,6 +74,10 @@ func NewCDN(client CDNDynmaicClient, peerManager PeerManager, hostManager HostMa
 		peerManager: peerManager,
 		hostManager: hostManager,
 	}
+}
+
+func (c *cdn) GetClient() CDNDynmaicClient {
+	return c.client
 }
 
 func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
