@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v2
-        # if: failure()
+        if: always()
         with:
           name: ${{ matrix.module }}-compatibility-e2e-tests-logs
           path: |
