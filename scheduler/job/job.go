@@ -18,7 +18,6 @@ package job
 
 import (
 	"context"
-	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -29,10 +28,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
-)
-
-const (
-	interval = time.Second
 )
 
 type Job interface {
