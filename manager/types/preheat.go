@@ -35,3 +35,21 @@ type Preheat struct {
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"create_at"`
 }
+
+type CreateV1PreheatRequest struct {
+	Type    string            `json:"type" binding:"required,oneof=image file"`
+	URL     string            `json:"url" binding:"required"`
+	Filter  string            `json:"filter" binding:"omitempty"`
+	Headers map[string]string `json:"headers" binding:"omitempty"`
+}
+
+type CreateV1PreheatResponse struct {
+	ID string `json:"ID"`
+}
+
+type GetV1PreheatResponse struct {
+	ID         string `json:"ID"`
+	Status     string `json:"status"`
+	StartTime  string `json:"startTime,omitempty"`
+	FinishTime string `json:"finishTime,omitempty"`
+}

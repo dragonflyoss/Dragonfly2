@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
@@ -101,6 +102,7 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 		return nil, errors.New("unknow preheat type")
 	}
 
+	logger.Infof("preheat file count: %d queues: %v", len(files), queues)
 	return p.createGroupJob(files, queues)
 }
 
@@ -110,6 +112,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 		for _, file := range files {
 			args, err := internaljob.MarshalRequest(file)
 			if err != nil {
+				logger.Errorf("preheat marshal request: %v, error: %v", file, err)
 				continue
 			}
 
@@ -120,6 +123,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 			})
 		}
 	}
+	logger.Infof("preheat file count: %d queues: %v", len(signatures), queues)
 
 	group, err := machineryv1tasks.NewGroup(signatures...)
 	if err != nil {
@@ -198,13 +202,16 @@ func (p *preheat) parseLayers(resp *http.Response, filter string, header http.He
 	var layers []*internaljob.PreheatRequest
 	for _, v := range manifest.References() {
 		digest := v.Digest.String()
-		layers = append(layers, &internaljob.PreheatRequest{
+		layer := &internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     p.bizTag,
 			Filter:  filter,
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),
-		})
+		}
+
+		logger.Infof("preheat layer: %+v", layer)
+		layers = append(layers, layer)
 	}
 
 	return layers, nil

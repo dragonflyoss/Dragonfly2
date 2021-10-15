@@ -341,7 +341,12 @@ func (peer *Peer) GetParent() (*Peer, bool) {
 		return nil, false
 	}
 
-	return parent.(*Peer), true
+	p, ok := parent.(*Peer)
+	if p == nil || !ok {
+		return nil, false
+	}
+
+	return p, true
 }
 
 func (peer *Peer) Touch() {
@@ -470,7 +475,12 @@ func (peer *Peer) getConn() (*Channel, bool) {
 		return nil, false
 	}
 
-	return conn.(*Channel), true
+	c, ok := conn.(*Channel)
+	if c == nil || !ok {
+		return nil, false
+	}
+
+	return c, true
 }
 
 func (peer *Peer) IsConnected() bool {

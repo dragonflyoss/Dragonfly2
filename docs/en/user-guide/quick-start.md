@@ -23,3 +23,4 @@ This table describes some container runtimes version and documents.
 - Container Runtimes
     - [cri-o mirror](../user-guide/registry-mirror/cri-o.md) - make Dragonfly as Registry Mirror for CRIO daemon
     - [cri-containerd mirror](../user-guide/registry-mirror/cri-containerd.md) - make Dragonfly as Registry Mirror for containerd daemon
+- [preheat](../user-guide/preheat/preheat.md) - preheat feature
