@@ -126,6 +126,10 @@ func (p *preheat) CreatePreheat(schedulers []model.Scheduler, json types.CreateP
 
 func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*types.Preheat, error) {
 	signatures := []*machineryv1tasks.Signature{}
+	var urls []string
+	for i := range files {
+		urls := append(urls, files[i].URL)
+	}
 	for _, queue := range queues {
 		for _, file := range files {
 			args, err := internaljob.MarshalRequest(file)
@@ -152,7 +156,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job successed, group uuid: %s， signatures:%+v", group.GroupUUID, signatures)
+	logger.Infof("create preheat group job successed, group uuid: %s， urls:%s", group.GroupUUID, urls)
 	return &types.Preheat{
 		ID:        group.GroupUUID,
 		Status:    machineryv1tasks.StatePending,
