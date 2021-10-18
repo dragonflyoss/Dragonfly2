@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ["scheduler", "cdn"]
+        module: ["manager", "scheduler", "cdn", "dfdaemon"]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
