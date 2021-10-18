@@ -222,17 +222,20 @@ func checkPreheatResult(cdnPods [1]*e2eutil.PodExec, cdnTaskID string) string {
 
 		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
+
 		// file name is the same as task id
 		file := cdnTaskID
 		if !strings.Contains(string(out), file) {
 			continue
 		}
+		fmt.Println(string(out))
 
 		// calculate digest of downloaded file
 		out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
 		fmt.Println(string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
+		fmt.Println(string(sha256sum2))
 		break
 	}
 	return sha256sum2
