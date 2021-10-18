@@ -30,19 +30,19 @@ func InitManager(console bool) error {
 
 	logDir := path.Join(dfpath.LogDir, "manager")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
 	if err != nil {
 		return err
 	}
@@ -58,25 +58,25 @@ func InitScheduler(console bool) error {
 
 	logDir := path.Join(dfpath.LogDir, "scheduler")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
 
-	statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), 300, 30, 0, true, true)
+	statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), true, true)
 	if err != nil {
 		return err
 	}
@@ -92,37 +92,37 @@ func InitCdnSystem(console bool) error {
 
 	logDir := path.Join(dfpath.LogDir, "cdn")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 300, 30, 0, false, false)
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 300, 30, 0, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), 300, 7, 0, false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
 
-	statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), 300, 30, 0, true, true)
+	statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), true, true)
 	if err != nil {
 		return err
 	}
 	logger.SetStatSeedLogger(statSeedLogger)
 
-	downloaderLogger, err := CreateLogger(path.Join(logDir, "downloader.log"), 300, 7, 0, false, false)
+	downloaderLogger, err := CreateLogger(path.Join(logDir, "downloader.log"), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetDownloadLogger(downloaderLogger)
 
-	keepAliveLogger, err := CreateLogger(path.Join(logDir, "keepAlive.log"), 300, 7, 0, false, false)
+	keepAliveLogger, err := CreateLogger(path.Join(logDir, "keepAlive.log"), false, false)
 	if err != nil {
 		return err
 	}
@@ -137,19 +137,19 @@ func InitDaemon(console bool) error {
 
 	logDir := path.Join(dfpath.LogDir, "daemon")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 100, 7, 14, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), 100, 7, 14, false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
 	if err != nil {
 		return err
 	}
@@ -165,13 +165,13 @@ func InitDfget(console bool) error {
 
 	logDir := path.Join(dfpath.LogDir, "dfget")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), 100, 7, 14, false, false)
+	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), 100, 7, 14, false, false)
+	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
