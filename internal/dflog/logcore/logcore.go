@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	CoreLogFileName       = fmt.Sprintf("core-%d.log", time.Now().UnixNano())
+	CoreLogFileName       = fmt.Sprintf("core-%d.llog", time.Now().UnixNano())
 	GrpcLogFileName       = fmt.Sprintf("grpc-%d.log", time.Now().UnixNano())
 	GCLogFileName         = fmt.Sprintf("gc-%d.log", time.Now().UnixNano())
 	StatPeerLogFileName   = fmt.Sprintf("stat/peer-%d.log", time.Now().UnixNano())
