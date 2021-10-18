@@ -82,8 +82,9 @@ func (c *cdn) GetClient() CDNDynmaicClient {
 
 func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 	logger.Infof("start seed task %s", task.ID)
-	defer logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
-
+	defer func() {
+		logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
+	}()
 	var seedSpan trace.Span
 	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()
