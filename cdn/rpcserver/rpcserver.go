@@ -136,12 +136,6 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	task, err := css.taskMgr.Get(req.TaskId)
-	if err != nil {
-		err = dferrors.Newf(dfcodes.CdnError, "failed to get task(%s): %v", req.TaskId, err)
-		span.RecordError(err)
-		return err
-	}
 	peerID := cdnutil.GenCDNPeerID(req.TaskId)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
@@ -155,11 +149,16 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 				PieceOffset: piece.OriginRange.StartIndex,
 				PieceStyle:  base.PieceStyle(piece.PieceStyle),
 			},
-			Done:          false,
-			ContentLength: task.SourceFileLength,
+			Done: false,
 		}
 	}
-	if task.CdnStatus != types.TaskInfoCdnStatusSuccess {
+	task, err := css.taskMgr.Get(req.TaskId)
+	if err != nil {
+		err = dferrors.Newf(dfcodes.CdnError, "failed to get task(%s): %v", req.TaskId, err)
+		span.RecordError(err)
+		return err
+	}
+	if !task.IsSuccess() {
 		err = dferrors.Newf(dfcodes.CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 		span.RecordError(err)
 		return err
