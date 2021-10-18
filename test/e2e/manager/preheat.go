@@ -214,7 +214,6 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 			// if the directory does not exist, skip this cdn
 			continue
 		}
-		fmt.Println("cdn cache path: ", string(out))
 		// directory name is the first three characters of the task id
 		dir := cdnTaskID[0:3]
 		if !strings.Contains(string(out), dir) {
@@ -223,7 +222,6 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 
 		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
-		fmt.Println("cdn cache dir: ", string(out))
 
 		// file name is the same as task id
 		file := cdnTaskID
