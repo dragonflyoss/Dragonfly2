@@ -2,13 +2,6 @@ scheduler:
   image: d7yio/scheduler
   tag: latest
   replicas: 3
-  resources:
-    requests:
-      cpu: "1"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -21,13 +14,6 @@ cdn:
   image: d7yio/cdn
   tag: latest
   replicas: 3
-  resources:
-    requests:
-      cpu: "1"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -39,13 +25,6 @@ cdn:
 dfdaemon:
   image: d7yio/dfdaemon
   tag: latest
-  resources:
-    requests:
-      cpu: "1"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -74,13 +53,6 @@ manager:
   image: d7yio/manager
   tag: latest
   replicas: 3
-  resources:
-    requests:
-      cpu: "1"
-      memory: "1Gi"
-    limits:
-      cpu: "1"
-      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
