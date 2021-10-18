@@ -17,9 +17,11 @@
 package router
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/config"
@@ -38,9 +40,12 @@ import (
 )
 
 const (
-	GinLogFileName          = "gin.log"
 	PrometheusSubsystemName = "dragonfly_manager"
 	OtelServiceName         = "dragonfly-manager"
+)
+
+var (
+	GinLogFileName = fmt.Sprintf("gin-%d.log", time.Now().Unix())
 )
 
 func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
