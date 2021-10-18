@@ -128,7 +128,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 	signatures := []*machineryv1tasks.Signature{}
 	var urls []string
 	for i := range files {
-		urls := append(urls, files[i].URL)
+		urls = append(urls, files[i].URL)
 	}
 	for _, queue := range queues {
 		for _, file := range files {
