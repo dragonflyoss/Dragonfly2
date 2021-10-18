@@ -109,15 +109,15 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	defer span.End()
 	span.SetAttributes(config.AttributeObtainSeedsRequest.String(req.String()))
 	span.SetAttributes(config.AttributeTaskID.String(req.TaskId))
+	logger.Infof("obtain seeds request: %+v", req)
 	defer func() {
 		if r := recover(); r != nil {
 			err = dferrors.Newf(dfcodes.UnknownError, "obtain task(%s) seeds encounter an panic: %v", req.TaskId, r)
 			span.RecordError(err)
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
+		logger.Infof("seeds task %s result success: %t", req.TaskId, err == nil)
 	}()
-	logger.Infof("obtain seeds request: %+v", req)
-
 	registerRequest, err := constructRegisterRequest(req)
 	if err != nil {
 		err = dferrors.Newf(dfcodes.BadRequest, "bad seed request for task(%s): %v", req.TaskId, err)
