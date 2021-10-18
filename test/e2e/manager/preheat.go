@@ -36,8 +36,8 @@ import (
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat files should be ok", func() {
-			var cdnPods [3]*e2eutil.PodExec
-			for i := 0; i < 3; i++ {
+			var cdnPods [1]*e2eutil.PodExec
+			for i := 0; i < 1; i++ {
 				cdnPods[i] = getCDNExec(i)
 			}
 			fsPod := getFileServerExec()
