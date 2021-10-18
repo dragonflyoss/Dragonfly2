@@ -36,8 +36,8 @@ import (
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat files should be ok", func() {
-			var cdnPods [3]*e2eutil.PodExec
-			for i := 0; i < 3; i++ {
+			var cdnPods [1]*e2eutil.PodExec
+			for i := 0; i < 1; i++ {
 				cdnPods[i] = getCDNExec(i)
 			}
 			fsPod := getFileServerExec()
@@ -93,8 +93,8 @@ var _ = Describe("Preheat with manager", func() {
 				}
 			)
 
-			var cdnPods [3]*e2eutil.PodExec
-			for i := 0; i < 3; i++ {
+			var cdnPods [1]*e2eutil.PodExec
+			for i := 0; i < 1; i++ {
 				cdnPods[i] = getCDNExec(i)
 			}
 			fsPod := getFileServerExec()
@@ -146,8 +146,8 @@ var _ = Describe("Preheat with manager", func() {
 			Expect(err).NotTo(HaveOccurred())
 			sha256sum1 := strings.Split(string(out), " ")[0]
 
-			var cdnPods [3]*e2eutil.PodExec
-			for i := 0; i < 3; i++ {
+			var cdnPods [1]*e2eutil.PodExec
+			for i := 0; i < 1; i++ {
 				cdnPods[i] = getCDNExec(i)
 			}
 			fsPod := getFileServerExec()
@@ -206,7 +206,7 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 	}
 }
 
-func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
+func checkPreheatResult(cdnPods [1]*e2eutil.PodExec, cdnTaskID string) string {
 	var sha256sum2 string
 	for _, cdn := range cdnPods {
 		out, err := cdn.Command("ls", cdnCachePath).CombinedOutput()
