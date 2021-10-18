@@ -116,7 +116,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			span.RecordError(err)
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
-		logger.Infof("seeds result success: %t", err == nil)
+		logger.Infof("seeds task %s result success: %t", req.TaskId, err == nil)
 	}()
 	registerRequest, err := constructRegisterRequest(req)
 	if err != nil {
