@@ -26,10 +26,14 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-const (
-	CoreLogFileName = "core.log"
-	GrpcLogFileName = "grpc.log"
-	GCLogFileName   = "gc.log"
+var (
+	CoreLogFileName       = fmt.Sprintf("core-%d.log", time.Now().Unix())
+	GrpcLogFileName       = fmt.Sprintf("grpc-%d.log", time.Now().Unix())
+	GCLogFileName         = fmt.Sprintf("gc-%d.log", time.Now().Unix())
+	StatPeerLogFileName   = fmt.Sprintf("stat/peer-%d.log", time.Now().Unix())
+	StatSeedLogFileName   = fmt.Sprintf("stat/seed-%d.log", time.Now().Unix())
+	DownloaderLogFileName = fmt.Sprintf("downloader-%d.log", time.Now().Unix())
+	KeepAliveLogFileName  = fmt.Sprintf("keepalive-%d.log", time.Now().Unix())
 )
 
 const (
@@ -39,7 +43,6 @@ const (
 )
 
 const (
-	timeFormat       = "1970-01-01-15-01-01"
 	encodeTimeFormat = "2006-01-02 15:04:05.000"
 )
 
@@ -48,7 +51,7 @@ var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
 
 func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, error) {
 	rotateConfig := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s-%s", filePath, time.Now().Format(timeFormat)),
+		Filename:   fmt.Sprintf("%s-%d", filePath, time.Now().Unix()),
 		MaxSize:    defaultRotateMaxSize,
 		MaxAge:     defaultRotateMaxAge,
 		MaxBackups: defaultRotateMaxBackups,

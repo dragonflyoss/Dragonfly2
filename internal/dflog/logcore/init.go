@@ -42,7 +42,7 @@ func InitManager(console bool) error {
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
 	if err != nil {
 		return err
 	}
@@ -70,13 +70,13 @@ func InitScheduler(console bool) error {
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
 
-	statPeerLogger, err := CreateLogger(path.Join(logDir, "stat/peer.log"), true, true)
+	statPeerLogger, err := CreateLogger(path.Join(logDir, StatPeerLogFileName), true, true)
 	if err != nil {
 		return err
 	}
@@ -104,25 +104,25 @@ func InitCdnSystem(console bool) error {
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := CreateLogger(path.Join(logDir, "gc.log"), false, false)
+	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
 
-	statSeedLogger, err := CreateLogger(path.Join(logDir, "stat/seed.log"), true, true)
+	statSeedLogger, err := CreateLogger(path.Join(logDir, StatSeedLogFileName), true, true)
 	if err != nil {
 		return err
 	}
 	logger.SetStatSeedLogger(statSeedLogger)
 
-	downloaderLogger, err := CreateLogger(path.Join(logDir, "downloader.log"), false, false)
+	downloaderLogger, err := CreateLogger(path.Join(logDir, DownloaderLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetDownloadLogger(downloaderLogger)
 
-	keepAliveLogger, err := CreateLogger(path.Join(logDir, "keepAlive.log"), false, false)
+	keepAliveLogger, err := CreateLogger(path.Join(logDir, KeepAliveLogFileName), false, false)
 	if err != nil {
 		return err
 	}
