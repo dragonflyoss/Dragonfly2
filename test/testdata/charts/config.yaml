@@ -4,11 +4,11 @@ scheduler:
   replicas: 3
   resources:
     requests:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -23,11 +23,11 @@ cdn:
   replicas: 3
   resources:
     requests:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -41,11 +41,11 @@ dfdaemon:
   tag: latest
   resources:
     requests:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -76,11 +76,11 @@ manager:
   replicas: 3
   resources:
     requests:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "1Gi"
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
