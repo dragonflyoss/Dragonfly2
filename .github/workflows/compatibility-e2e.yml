@@ -25,7 +25,6 @@ jobs:
     strategy:
       matrix:
         module: ["manager", "scheduler", "cdn", "dfdaemon"]
-      max-parallel: 2
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
