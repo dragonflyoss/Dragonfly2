@@ -150,6 +150,7 @@ func (t *job) preheat(req string) error {
 			meta.Range = rg
 		}
 	}
+	logger.Infof("preheat %s meta: %v", request.URL, meta)
 
 	// Generate taskID
 	taskID := idgen.TaskID(request.URL, meta)
