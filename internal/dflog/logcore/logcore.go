@@ -27,13 +27,13 @@ import (
 )
 
 var (
-	CoreLogFileName       = fmt.Sprintf("core-%d.log", time.Now().Unix())
-	GrpcLogFileName       = fmt.Sprintf("grpc-%d.log", time.Now().Unix())
-	GCLogFileName         = fmt.Sprintf("gc-%d.log", time.Now().Unix())
-	StatPeerLogFileName   = fmt.Sprintf("stat/peer-%d.log", time.Now().Unix())
-	StatSeedLogFileName   = fmt.Sprintf("stat/seed-%d.log", time.Now().Unix())
-	DownloaderLogFileName = fmt.Sprintf("downloader-%d.log", time.Now().Unix())
-	KeepAliveLogFileName  = fmt.Sprintf("keepalive-%d.log", time.Now().Unix())
+	CoreLogFileName       = fmt.Sprintf("core-%d.log", time.Now().UnixNano())
+	GrpcLogFileName       = fmt.Sprintf("grpc-%d.log", time.Now().UnixNano())
+	GCLogFileName         = fmt.Sprintf("gc-%d.log", time.Now().UnixNano())
+	StatPeerLogFileName   = fmt.Sprintf("stat/peer-%d.log", time.Now().UnixNano())
+	StatSeedLogFileName   = fmt.Sprintf("stat/seed-%d.log", time.Now().UnixNano())
+	DownloaderLogFileName = fmt.Sprintf("downloader-%d.log", time.Now().UnixNano())
+	KeepAliveLogFileName  = fmt.Sprintf("keepalive-%d.log", time.Now().UnixNano())
 )
 
 const (
