@@ -142,6 +142,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 		}
 	}
 	group, err := machineryv1tasks.NewGroup(signatures...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +152,7 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job successed, group uuid: %s ", group.GroupUUID)
+	logger.Infof("create preheat group job successed, group uuid: %s， signatures:%+v", group.GroupUUID, signatures)
 	return &types.Preheat{
 		ID:        group.GroupUUID,
 		Status:    machineryv1tasks.StatePending,
