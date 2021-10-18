@@ -148,12 +148,14 @@ func (t *job) preheat(req string) error {
 	}
 
 	// Generate range
-	if rg := request.Headers["Range"]; len(rg) > 0 {
-		meta.Range = rg
+	if request.Headers != nil {
+		if rg := request.Headers["Range"]; len(rg) > 0 {
+			meta.Range = rg
+		}
 	}
 
 	taskID := idgen.TaskID(request.URL, meta)
-	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
+	logger.Infof("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
 
 	task := supervisor.NewTask(taskID, request.URL, meta)
 	task = t.service.GetOrCreateTask(t.ctx, task)
@@ -174,6 +176,7 @@ func getPreheatResult(task *supervisor.Task) error {
 			case supervisor.TaskStatusSuccess:
 				return nil
 			default:
+				logger.Infof("preheat task %v status: %v", task.ID, task.GetStatus())
 			}
 		}
 	}

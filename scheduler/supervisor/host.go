@@ -77,7 +77,9 @@ type Host struct {
 	Location string
 	// IDC idc where the peer host is located
 	IDC string
-	// NetTopology network device path: switch|router|...
+	// NetTopology network device path
+	// according to the user's own network topology definition, the coverage range from large to small, using the | symbol segmentation,
+	// Example: switch|router|...
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
 	TotalUploadLoad int32
