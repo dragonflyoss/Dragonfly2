@@ -1,6 +1,7 @@
 scheduler:
   image: d7yio/scheduler
   tag: latest
+  replicas: 1
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -12,6 +13,7 @@ scheduler:
 cdn:
   image: d7yio/cdn
   tag: latest
+  replicas: 1
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
@@ -50,6 +52,7 @@ dfdaemon:
 manager:
   image: d7yio/manager
   tag: latest
+  replicas: 1
   extraVolumeMounts:
     - name: logs
       mountPath: "/var/log/dragonfly"
