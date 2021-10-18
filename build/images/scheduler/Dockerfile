@@ -20,6 +20,8 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 
 COPY --from=builder /opt/dragonfly/bin/scheduler /opt/dragonfly/bin/scheduler
 
+RUN echo "hosts: files dns" > /etc/nsswitch.conf
+
 EXPOSE 8002
 
 ENTRYPOINT ["/opt/dragonfly/bin/scheduler"]
