@@ -51,7 +51,7 @@ var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
 
 func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, error) {
 	rotateConfig := &lumberjack.Logger{
-		Filename:   fmt.Sprintf("%s-%d", filePath, time.Now().Unix()),
+		Filename:   filePath,
 		MaxSize:    defaultRotateMaxSize,
 		MaxAge:     defaultRotateMaxAge,
 		MaxBackups: defaultRotateMaxBackups,
