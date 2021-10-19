@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -40,22 +42,54 @@ var (
 )
 
 type DynconfigData struct {
-	CDNs []*CDN `yaml:"cdns" mapstructure:"cdns"`
+	CDNs             []*CDN            `yaml:"cdns" mapstructure:"cdns" json:"cdns"`
+	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
 }
 
 type CDN struct {
-	HostName      string `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	IP            string `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port          int32  `yaml:"port" mapstructure:"port" json:"port"`
-	DownloadPort  int32  `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
-	SecurityGroup string `yaml:"securityGroup" mapstructure:"securityGroup" json:"security_group"`
-	Location      string `yaml:"location" mapstructure:"location" json:"location"`
-	IDC           string `yaml:"idc" mapstructure:"idc" json:"idc"`
-	NetTopology   string `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
-	LoadLimit     int32  `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit"`
+	Id            uint        `yaml:"id" mapstructure:"id" json:"id"`
+	HostName      string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	IP            string      `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port          int32       `yaml:"port" mapstructure:"port" json:"port"`
+	DownloadPort  int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
+	SecurityGroup string      `yaml:"securityGroup" mapstructure:"securityGroup" json:"security_group"`
+	Location      string      `yaml:"location" mapstructure:"location" json:"location"`
+	IDC           string      `yaml:"idc" mapstructure:"idc" json:"idc"`
+	CDNCluster    *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`
+}
+
+type CDNCluster struct {
+	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
+}
+
+type SchedulerCluster struct {
+	Config       []byte `yaml:"config" mapstructure:"config" json:"config"`
+	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
+}
+
+func (c *CDN) GetCDNClusterConfig() (types.CDNClusterConfig, bool) {
+	if c.CDNCluster == nil {
+		return types.CDNClusterConfig{}, false
+	}
+
+	var config types.CDNClusterConfig
+	if err := json.Unmarshal(c.CDNCluster.Config, &config); err != nil {
+		return types.CDNClusterConfig{}, false
+	}
+
+	return config, true
 }
 
 type DynconfigInterface interface {
+	// Get the scheduler cluster config.
+	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool)
+
+	// Get the client config.
+	GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool)
+
+	// Get the cdn cluster config.
+	GetCDNClusterConfig(uint) (types.CDNClusterConfig, bool)
+
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
 
@@ -105,6 +139,60 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 	return d, nil
 }
 
+func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
+	data, err := d.Get()
+	if err != nil {
+		return types.SchedulerClusterConfig{}, false
+	}
+
+	if data.SchedulerCluster != nil {
+		return types.SchedulerClusterConfig{}, false
+	}
+
+	var config types.SchedulerClusterConfig
+	if err := json.Unmarshal(data.SchedulerCluster.Config, &config); err != nil {
+		return types.SchedulerClusterConfig{}, false
+	}
+
+	return config, true
+}
+
+func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
+	data, err := d.Get()
+	if err != nil {
+		return types.SchedulerClusterClientConfig{}, false
+	}
+
+	if data.SchedulerCluster != nil {
+		return types.SchedulerClusterClientConfig{}, false
+	}
+
+	var config types.SchedulerClusterClientConfig
+	if err := json.Unmarshal(data.SchedulerCluster.ClientConfig, &config); err != nil {
+		return types.SchedulerClusterClientConfig{}, false
+	}
+
+	return config, true
+}
+
+func (d *dynconfig) GetCDNClusterConfig(id uint) (types.CDNClusterConfig, bool) {
+	data, err := d.Get()
+	if err != nil {
+		return types.CDNClusterConfig{}, false
+	}
+
+	for _, cdn := range data.CDNs {
+		if cdn.Id == id {
+			var config types.CDNClusterConfig
+			if err := json.Unmarshal(cdn.CDNCluster.Config, &config); err == nil {
+				return config, true
+			}
+		}
+	}
+
+	return types.CDNClusterConfig{}, false
+}
+
 func (d *dynconfig) Get() (*DynconfigData, error) {
 	var config DynconfigData
 	if d.cdnDirPath != "" {
@@ -132,6 +220,7 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 	}); err != nil {
 		return nil, err
 	}
+
 	return &config, nil
 }
 
@@ -245,6 +334,10 @@ func (mc *managerClient) Get() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Println("22222222222222")
+	fmt.Println(scheduler)
+	fmt.Println("22222222222222")
 
 	return scheduler, nil
 }

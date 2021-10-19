@@ -122,8 +122,10 @@ func seed(db *gorm.DB) error {
 			Model: model.Model{
 				ID: uint(1),
 			},
-			Name:      "cdn-cluster-1",
-			Config:    map[string]interface{}{},
+			Name: "cdn-cluster-1",
+			Config: map[string]interface{}{
+				"load_limit": 100,
+			},
 			IsDefault: true,
 		}).Error; err != nil {
 			return err
@@ -139,10 +141,13 @@ func seed(db *gorm.DB) error {
 			Model: model.Model{
 				ID: uint(1),
 			},
-			Name:         "scheduler-cluster-1",
-			Config:       map[string]interface{}{},
-			ClientConfig: map[string]interface{}{},
-			IsDefault:    true,
+			Name:   "scheduler-cluster-1",
+			Config: map[string]interface{}{},
+			ClientConfig: map[string]interface{}{
+				"load_limit": 10,
+			},
+			Scopes:    map[string]interface{}{},
+			IsDefault: true,
 		}).Error; err != nil {
 			return err
 		}
