@@ -17,9 +17,7 @@
 package logcore
 
 import (
-	"fmt"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -27,13 +25,13 @@ import (
 )
 
 var (
-	CoreLogFileName       = fmt.Sprintf("core-%d.llog", time.Now().UnixNano())
-	GrpcLogFileName       = fmt.Sprintf("grpc-%d.log", time.Now().UnixNano())
-	GCLogFileName         = fmt.Sprintf("gc-%d.log", time.Now().UnixNano())
-	StatPeerLogFileName   = fmt.Sprintf("stat/peer-%d.log", time.Now().UnixNano())
-	StatSeedLogFileName   = fmt.Sprintf("stat/seed-%d.log", time.Now().UnixNano())
-	DownloaderLogFileName = fmt.Sprintf("downloader-%d.log", time.Now().UnixNano())
-	KeepAliveLogFileName  = fmt.Sprintf("keepalive-%d.log", time.Now().UnixNano())
+	CoreLogFileName       = "core.log"
+	GrpcLogFileName       = "grpc.log"
+	GCLogFileName         = "gc.log"
+	StatPeerLogFileName   = "peer.log"
+	StatSeedLogFileName   = "stat/seed.log"
+	DownloaderLogFileName = "downloader.log"
+	KeepAliveLogFileName  = "keepalive.log"
 )
 
 const (
