@@ -204,7 +204,6 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 								SecurityGroup: "",
 								Location:      "foo",
 								IDC:           "foo",
-								NetTopology:   "",
 							},
 							{
 								HostName:      "bar",
@@ -214,7 +213,6 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 								SecurityGroup: "",
 								Location:      "bar",
 								IDC:           "bar",
-								NetTopology:   "",
 							},
 						},
 					}, data))
