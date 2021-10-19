@@ -140,7 +140,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
-		s.job, err = job.New(context.Background(), cfg.Job, iputils.HostName, s.service)
+		s.job, err = job.New(context.Background(), cfg.Job, cfg.Manager.SchedulerClusterID, iputils.HostName, s.service)
 		if err != nil {
 			return nil, err
 		}
