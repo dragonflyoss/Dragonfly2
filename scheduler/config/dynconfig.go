@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -47,7 +46,7 @@ type DynconfigData struct {
 }
 
 type CDN struct {
-	Id            uint        `yaml:"id" mapstructure:"id" json:"id"`
+	ID            uint        `yaml:"id" mapstructure:"id" json:"id"`
 	HostName      string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
 	IP            string      `yaml:"ip" mapstructure:"ip" json:"ip"`
 	Port          int32       `yaml:"port" mapstructure:"port" json:"port"`
@@ -182,7 +181,7 @@ func (d *dynconfig) GetCDNClusterConfig(id uint) (types.CDNClusterConfig, bool) 
 	}
 
 	for _, cdn := range data.CDNs {
-		if cdn.Id == id {
+		if cdn.ID == id {
 			var config types.CDNClusterConfig
 			if err := json.Unmarshal(cdn.CDNCluster.Config, &config); err == nil {
 				return config, true
@@ -334,10 +333,6 @@ func (mc *managerClient) Get() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("22222222222222")
-	fmt.Println(scheduler)
-	fmt.Println("22222222222222")
 
 	return scheduler, nil
 }
