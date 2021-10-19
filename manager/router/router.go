@@ -38,9 +38,12 @@ import (
 )
 
 const (
-	GinLogFileName          = "gin.log"
 	PrometheusSubsystemName = "dragonfly_manager"
 	OtelServiceName         = "dragonfly-manager"
+)
+
+var (
+	GinLogFileName = "gin.log"
 )
 
 func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {

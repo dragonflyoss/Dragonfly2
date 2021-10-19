@@ -383,6 +383,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 			return false
 		})
 	} else {
+		task.SetStatus(supervisor.TaskStatusFail)
 		task.GetPeers().Range(func(data sortedlist.Item) bool {
 			peer := data.(*supervisor.Peer)
 			if err := peer.CloseChannelWithError(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed")); err != nil {

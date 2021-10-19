@@ -19,6 +19,8 @@ COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/start-cdn.sh /root/start.sh
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/cdn-nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /opt/dragonfly/df-cdn/cdn /opt/dragonfly/df-cdn/cdn
 
+RUN echo "hosts: files dns" > /etc/nsswitch.conf
+
 EXPOSE 8001 8003
 
 ENTRYPOINT ["/root/start.sh"]
