@@ -24,20 +24,28 @@ import (
 
 type Queue string
 
-func GetSchedulerQueue(hostname string) (Queue, error) {
+func GetSchedulerQueue(clusterID uint, hostname string) (Queue, error) {
+	if clusterID == 0 {
+		return Queue(""), errors.New("empty cluster id config is not specified")
+	}
+
 	if hostname == "" {
 		return Queue(""), errors.New("empty hostname config is not specified")
 	}
 
-	return Queue(fmt.Sprintf("scheduler_%s", hostname)), nil
+	return Queue(fmt.Sprintf("scheduler_%d_%s", clusterID, hostname)), nil
 }
 
-func GetCDNQueue(hostname string) (Queue, error) {
+func GetCDNQueue(clusterID uint, hostname string) (Queue, error) {
+	if clusterID == 0 {
+		return Queue(""), errors.New("empty cluster id config is not specified")
+	}
+
 	if hostname == "" {
 		return Queue(""), errors.New("empty hostname config is not specified")
 	}
 
-	return Queue(fmt.Sprintf("cdn_%s", hostname)), nil
+	return Queue(fmt.Sprintf("cdn_%d_%s", clusterID, hostname)), nil
 }
 
 func (q Queue) String() string {

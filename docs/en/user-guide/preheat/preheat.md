@@ -31,7 +31,7 @@ If the output of command above has content like
 Polling the preheating status with id. if status is `SUCCESS`, preheating is successful, you can refer to [get preheat api document](../../api/api.md#get-preheat)
 
 ```bash
-curl --request GET 'http://manager-domain:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
+curl --request GET 'http://dragonfly-manager:8080/api/v1/preheats/group_28439e0b-d4c3-43bf-945e-482b54c49dc5'
 ```
 
 If the status is `SUCCESS`, the preheating is successful.

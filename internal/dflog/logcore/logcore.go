@@ -17,56 +17,49 @@
 package logcore
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
+var (
+	CoreLogFileName       = "core.log"
+	GrpcLogFileName       = "grpc.log"
+	GCLogFileName         = "gc.log"
+	StatPeerLogFileName   = "peer.log"
+	StatSeedLogFileName   = "stat/seed.log"
+	DownloaderLogFileName = "downloader.log"
+	KeepAliveLogFileName  = "keepalive.log"
+)
+
 const (
-	CoreLogFileName = "core.log"
-	GrpcLogFileName = "grpc.log"
-	GCLogFileName   = "gc.log"
+	defaultRotateMaxSize    = 300
+	defaultRotateMaxBackups = 50
+	defaultRotateMaxAge     = 7
+)
+
+const (
+	encodeTimeFormat = "2006-01-02 15:04:05.000"
 )
 
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
 
-func CreateLogger(filePath string, maxSize int, maxAge int, maxBackups int, compress bool, stats bool) (*zap.Logger, error) {
-	var syncer zapcore.WriteSyncer
-
-	if maxAge < 0 || maxBackups < 0 {
-		if err := fileutils.MkdirAll(filepath.Dir(filePath)); err != nil {
-			return nil, err
-		}
-		fileInfo, err := os.Stat(filePath)
-		if err == nil && fileInfo.Size() >= int64(maxSize)*unit.MB.ToNumber() {
-			_, _ = filerw.CopyFile(filePath, filePath+".old")
-			_ = filerw.CleanFile(filePath)
-		}
-		if syncer, _, err = zap.Open(filePath); err != nil {
-			return nil, err
-		}
-	} else {
-		rotateConfig := &lumberjack.Logger{
-			Filename:   filePath,
-			MaxSize:    maxSize,
-			MaxAge:     maxAge,
-			MaxBackups: maxBackups,
-			LocalTime:  true,
-			Compress:   compress,
-		}
-		syncer = zapcore.AddSync(rotateConfig)
+func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, error) {
+	rotateConfig := &lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    defaultRotateMaxSize,
+		MaxAge:     defaultRotateMaxAge,
+		MaxBackups: defaultRotateMaxBackups,
+		LocalTime:  true,
+		Compress:   compress,
 	}
+	syncer := zapcore.AddSync(rotateConfig)
 
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006-01-02 15:04:05.000")
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(encodeTimeFormat)
 
 	level := zap.NewAtomicLevel()
 	if strings.HasSuffix(filePath, GrpcLogFileName) {

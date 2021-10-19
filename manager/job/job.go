@@ -19,21 +19,14 @@ package job
 import (
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/types"
 )
 
-type Job interface {
-	CreatePreheat([]string, types.CreatePreheatRequest) (*types.Preheat, error)
-	GetPreheat(string) (*types.Preheat, error)
+type Job struct {
+	Preheat
 }
 
-type job struct {
-	*internaljob.Job
-	Preheat Preheat
-}
-
-func New(cfg *config.Config) (Job, error) {
-	t, err := internaljob.New(&internaljob.Config{
+func New(cfg *config.Config) (*Job, error) {
+	j, err := internaljob.New(&internaljob.Config{
 		Host:      cfg.Database.Redis.Host,
 		Port:      cfg.Database.Redis.Port,
 		Password:  cfg.Database.Redis.Password,
@@ -44,30 +37,12 @@ func New(cfg *config.Config) (Job, error) {
 		return nil, err
 	}
 
-	p, err := newPreheat(t, cfg.Server.Name)
+	p, err := newPreheat(j, cfg.Server.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	return &job{
-		Job:     t,
+	return &Job{
 		Preheat: p,
-	}, nil
-}
-
-func (t *job) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
-	return t.Preheat.CreatePreheat(hostnames, json)
-}
-
-func (t *job) GetPreheat(id string) (*types.Preheat, error) {
-	groupJobState, err := t.GetGroupJobState(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &types.Preheat{
-		ID:        groupJobState.GroupUUID,
-		Status:    groupJobState.State,
-		CreatedAt: groupJobState.CreatedAt,
 	}, nil
 }

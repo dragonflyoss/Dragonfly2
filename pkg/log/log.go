@@ -46,19 +46,19 @@ func SetupDaemon(logDir string, console bool) error {
 		logDir = path.Join(dfpath.LogDir, "daemon")
 	}
 
-	coreLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.CoreLogFileName), 100, 7, 14, false, false)
+	coreLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.CoreLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GrpcLogFileName), 100, 7, 14, false, false)
+	grpcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GrpcLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetGrpcLogger(grpcLogger.Sugar())
 
-	gcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GCLogFileName), 100, 7, 14, false, false)
+	gcLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.GCLogFileName), false, false)
 	if err != nil {
 		return err
 	}

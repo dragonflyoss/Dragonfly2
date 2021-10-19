@@ -52,12 +52,15 @@ var (
 var tracer = otel.Tracer("scheduler-cdn")
 
 type CDN interface {
+	// CetClient get cdn grpc client
+	GetClient() CDNDynmaicClient
+
 	// StartSeedTask start seed cdn task
 	StartSeedTask(context.Context, *Task) (*Peer, error)
 }
 
 type cdn struct {
-	// client is cdn dynamic client
+	// Client is cdn dynamic client
 	client CDNDynmaicClient
 	// peerManager is peer manager
 	peerManager PeerManager
@@ -73,10 +76,15 @@ func NewCDN(client CDNDynmaicClient, peerManager PeerManager, hostManager HostMa
 	}
 }
 
+func (c *cdn) GetClient() CDNDynmaicClient {
+	return c.client
+}
+
 func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 	logger.Infof("start seed task %s", task.ID)
-	defer logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
-
+	defer func() {
+		logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
+	}()
 	var seedSpan trace.Span
 	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer seedSpan.End()

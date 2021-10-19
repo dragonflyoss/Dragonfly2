@@ -24,6 +24,7 @@ import (
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	redigo "github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -40,6 +41,15 @@ func Error() gin.HandlerFunc {
 		c.Next()
 		err := c.Errors.Last()
 		if err == nil {
+			return
+		}
+
+		// Redigo error handler
+		if errors.Is(err, redigo.ErrNil) {
+			c.JSON(http.StatusNotFound, ErrorResponse{
+				Message: http.StatusText(http.StatusNotFound),
+			})
+			c.Abort()
 			return
 		}
 

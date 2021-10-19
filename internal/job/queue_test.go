@@ -24,31 +24,43 @@ import (
 
 func TestJobGetSchedulerQueue(t *testing.T) {
 	tests := []struct {
-		name     string
-		hostname string
-		expect   func(t *testing.T, result Queue, err error)
+		name      string
+		clusterID uint
+		hostname  string
+		expect    func(t *testing.T, result Queue, err error)
 	}{
 		{
-			name:     "get scheduler queue succeeded",
-			hostname: "foo",
+			name:      "get scheduler queue succeeded",
+			clusterID: 1,
+			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
-				assert.Equal(Queue("scheduler_foo"), result)
+				assert.Equal(Queue("scheduler_1_foo"), result)
 			},
 		},
 		{
-			name:     "get scheduler queue with empty hostname",
-			hostname: "",
+			name:      "get scheduler queue with empty hostname",
+			clusterID: 1,
+			hostname:  "",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "empty hostname config is not specified")
+			},
+		},
+		{
+			name:      "get scheduler queue with empty clusterID",
+			clusterID: 0,
+			hostname:  "foo",
+			expect: func(t *testing.T, result Queue, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "empty cluster id config is not specified")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			queue, err := GetSchedulerQueue(tc.hostname)
+			queue, err := GetSchedulerQueue(tc.clusterID, tc.hostname)
 			tc.expect(t, queue, err)
 		})
 	}
@@ -56,31 +68,43 @@ func TestJobGetSchedulerQueue(t *testing.T) {
 
 func TestJobGetCDNQueue(t *testing.T) {
 	tests := []struct {
-		name     string
-		hostname string
-		expect   func(t *testing.T, result Queue, err error)
+		name      string
+		clusterID uint
+		hostname  string
+		expect    func(t *testing.T, result Queue, err error)
 	}{
 		{
-			name:     "get cdn queue succeeded",
-			hostname: "foo",
+			name:      "get cdn queue succeeded",
+			clusterID: 1,
+			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
-				assert.Equal(Queue("cdn_foo"), result)
+				assert.Equal(Queue("cdn_1_foo"), result)
 			},
 		},
 		{
-			name:     "get cdn queue with empty hostname",
-			hostname: "",
+			name:      "get cdn queue with empty hostname",
+			clusterID: 1,
+			hostname:  "",
 			expect: func(t *testing.T, result Queue, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "empty hostname config is not specified")
+			},
+		},
+		{
+			name:      "get scheduler queue with empty clusterID",
+			clusterID: 0,
+			hostname:  "foo",
+			expect: func(t *testing.T, result Queue, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "empty cluster id config is not specified")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			queue, err := GetCDNQueue(tc.hostname)
+			queue, err := GetCDNQueue(tc.clusterID, tc.hostname)
 			tc.expect(t, queue, err)
 		})
 	}

@@ -54,7 +54,7 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 			return nil, err
 		}
 
-		return s.job.CreatePreheat([]string{scheduler.HostName}, json)
+		return s.job.CreatePreheat([]model.Scheduler{scheduler}, json)
 	}
 
 	schedulerClusters := []model.SchedulerCluster{}
@@ -62,7 +62,7 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 		return nil, err
 	}
 
-	hostnames := []string{}
+	var schedulers []model.Scheduler
 	for _, schedulerCluster := range schedulerClusters {
 		scheduler := model.Scheduler{}
 		if err := s.db.First(&scheduler, model.Scheduler{
@@ -72,10 +72,10 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 			continue
 		}
 
-		hostnames = append(hostnames, scheduler.HostName)
+		schedulers = append(schedulers, scheduler)
 	}
 
-	return s.job.CreatePreheat(hostnames, json)
+	return s.job.CreatePreheat(schedulers, json)
 }
 
 func (s *rest) GetPreheat(id string) (*types.Preheat, error) {

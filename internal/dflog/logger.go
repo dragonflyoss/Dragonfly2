@@ -94,9 +94,15 @@ func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	}
 }
 
-func WithTaskAndPeerID(taskID string, peerID string) *SugaredLoggerOnWith {
+func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
+	}
+}
+
+func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"taskId", taskID, "url", url},
 	}
 }
 
