@@ -193,13 +193,14 @@ type Task struct {
 }
 
 func NewTask(id, url string, meta *base.UrlMeta) *Task {
+	now := time.Now()
 	task := &Task{
 		ID:                id,
 		URL:               url,
 		URLMeta:           meta,
-		CreateAt:          atomic.NewTime(time.Now()),
-		LastTriggerAt:     atomic.NewTime(time.Now()),
-		lastAccessAt:      atomic.NewTime(time.Now()),
+		CreateAt:          atomic.NewTime(now),
+		LastTriggerAt:     atomic.NewTime(now),
+		lastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
 		peers:             sortedlist.NewSortedList(),

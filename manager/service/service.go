@@ -111,12 +111,12 @@ type rest struct {
 	db       *gorm.DB
 	rdb      *redis.Client
 	cache    *cache.Cache
-	job      job.Job
+	job      *job.Job
 	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache, job job.Job, enforcer *casbin.Enforcer) REST {
+func NewREST(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer) REST {
 	return &rest{
 		db:       database.DB,
 		rdb:      database.RDB,
