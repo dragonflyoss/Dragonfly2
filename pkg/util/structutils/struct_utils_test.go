@@ -66,7 +66,7 @@ func TestStructToMap(t *testing.T) {
 			s:    nil,
 			expect: func(t *testing.T, m map[string]interface{}, err error) {
 				assert := assert.New(t)
-				assert.Equal(m, nil)
+				assert.Equal(m, map[string]interface{}(nil))
 			},
 		},
 	}

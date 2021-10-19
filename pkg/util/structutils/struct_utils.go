@@ -22,10 +22,6 @@ import (
 )
 
 func StructToMap(t interface{}) (map[string]interface{}, error) {
-	if t == nil {
-		return nil, nil
-	}
-
 	var m map[string]interface{}
 	b, err := json.Marshal(t)
 	if err != nil {
