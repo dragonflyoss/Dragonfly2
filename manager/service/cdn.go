@@ -17,11 +17,13 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
+func (s *rest) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{
 		HostName:     json.HostName,
 		IDC:          json.IDC,
@@ -39,7 +41,7 @@ func (s *rest) CreateCDN(json types.CreateCDNRequest) (*model.CDN, error) {
 	return &cdn, nil
 }
 
-func (s *rest) DestroyCDN(id uint) error {
+func (s *rest) DestroyCDN(ctx context.Context, id uint) error {
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Error; err != nil {
 		return err
@@ -52,7 +54,7 @@ func (s *rest) DestroyCDN(id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateCDN(id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
+func (s *rest) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Updates(model.CDN{
 		IDC:          json.IDC,
@@ -68,7 +70,7 @@ func (s *rest) UpdateCDN(id uint, json types.UpdateCDNRequest) (*model.CDN, erro
 	return &cdn, nil
 }
 
-func (s *rest) GetCDN(id uint) (*model.CDN, error) {
+func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.First(&cdn, id).Error; err != nil {
 		return nil, err
@@ -77,7 +79,7 @@ func (s *rest) GetCDN(id uint) (*model.CDN, error) {
 	return &cdn, nil
 }
 
-func (s *rest) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
+func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, error) {
 	cdns := []model.CDN{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
 		HostName:     q.HostName,
@@ -94,7 +96,7 @@ func (s *rest) GetCDNs(q types.GetCDNsQuery) (*[]model.CDN, error) {
 	return &cdns, nil
 }
 
-func (s *rest) CDNTotalCount(q types.GetCDNsQuery) (int64, error) {
+func (s *rest) CDNTotalCount(ctx context.Context, q types.GetCDNsQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.CDN{}).Where(&model.CDN{
 		HostName:     q.HostName,

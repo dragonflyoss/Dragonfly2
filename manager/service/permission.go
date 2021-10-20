@@ -17,10 +17,12 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"github.com/gin-gonic/gin"
 )
 
-func (s *rest) GetPermissions(g *gin.Engine) []rbac.Permission {
+func (s *rest) GetPermissions(ctx context.Context, g *gin.Engine) []rbac.Permission {
 	return rbac.GetPermissions(g)
 }

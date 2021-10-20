@@ -19,5 +19,13 @@ package config
 import "go.opentelemetry.io/otel/attribute"
 
 const (
-	AttributeID = attribute.Key("d7y.manager.id")
+	AttributeID          = attribute.Key("d7y.manager.id")
+	AttributePreheatType = attribute.Key("d7y.manager.preheat.type")
+	AttributePreheatURL  = attribute.Key("d7y.manager.preheat.url")
+)
+
+const (
+	SpanPreheat          = "preheat"
+	SpanGetLayers        = "get-layers"
+	SpanAuthWithRegistry = "auth-with-registry"
 )

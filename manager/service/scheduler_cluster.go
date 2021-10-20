@@ -17,12 +17,14 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
-func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) CreateSchedulerCluster(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -52,7 +54,7 @@ func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) 
 	}
 
 	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -60,12 +62,12 @@ func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) 
 	return &schedulerCluster, nil
 }
 
-func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
 	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.CreateSchedulerCluster(json)
+		return s.CreateSchedulerCluster(ctx, json)
 	}
 
 	config, err := structutils.StructToMap(json.Config)
@@ -97,7 +99,7 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 	}
 
 	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -105,7 +107,7 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 	return &schedulerCluster, nil
 }
 
-func (s *rest) DestroySchedulerCluster(id uint) error {
+func (s *rest) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
 		return err
@@ -118,7 +120,7 @@ func (s *rest) DestroySchedulerCluster(id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) UpdateSchedulerCluster(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -147,7 +149,7 @@ func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerCluster
 	}
 
 	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -155,12 +157,12 @@ func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerCluster
 	return &schedulerCluster, nil
 }
 
-func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
 	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.UpdateSchedulerCluster(id, json)
+		return s.UpdateSchedulerCluster(ctx, id, json)
 	}
 
 	config, err := structutils.StructToMap(json.Config)
@@ -192,7 +194,7 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 	}
 
 	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(json.CDNClusterID, schedulerCluster.ID); err != nil {
+		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -200,7 +202,7 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) {
+func (s *rest) GetSchedulerCluster(ctx context.Context, id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.Preload("CDNClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
@@ -209,7 +211,7 @@ func (s *rest) GetSchedulerCluster(id uint) (*model.SchedulerCluster, error) {
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error) {
+func (s *rest) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error) {
 	schedulerClusters := []model.SchedulerCluster{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
@@ -220,7 +222,7 @@ func (s *rest) GetSchedulerClusters(q types.GetSchedulerClustersQuery) (*[]model
 	return &schedulerClusters, nil
 }
 
-func (s *rest) SchedulerClusterTotalCount(q types.GetSchedulerClustersQuery) (int64, error) {
+func (s *rest) SchedulerClusterTotalCount(ctx context.Context, q types.GetSchedulerClustersQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.SchedulerCluster{}).Where(&model.SchedulerCluster{
 		Name: q.Name,
@@ -231,7 +233,7 @@ func (s *rest) SchedulerClusterTotalCount(q types.GetSchedulerClustersQuery) (in
 	return count, nil
 }
 
-func (s *rest) AddSchedulerToSchedulerCluster(id, schedulerID uint) error {
+func (s *rest) AddSchedulerToSchedulerCluster(ctx context.Context, id, schedulerID uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Error; err != nil {
 		return err

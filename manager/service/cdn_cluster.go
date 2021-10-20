@@ -17,12 +17,14 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
-func (s *rest) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -41,7 +43,7 @@ func (s *rest) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNC
 	return &cdnCluster, nil
 }
 
-func (s *rest) DestroyCDNCluster(id uint) error {
+func (s *rest) DestroyCDNCluster(ctx context.Context, id uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return err
@@ -54,12 +56,12 @@ func (s *rest) DestroyCDNCluster(id uint) error {
 	return nil
 }
 
-func (s *rest) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) CreateCDNClusterWithSecurityGroupDomain(ctx context.Context, json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
 	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.CreateCDNCluster(json)
+		return s.CreateCDNCluster(ctx, json)
 	}
 
 	config, err := structutils.StructToMap(json.Config)
@@ -81,7 +83,7 @@ func (s *rest) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClust
 	return &cdnCluster, nil
 }
 
-func (s *rest) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -99,12 +101,12 @@ func (s *rest) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*m
 	return &cdnCluster, nil
 }
 
-func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
 	if err := s.db.First(&securityGroup).Error; err != nil {
-		return s.UpdateCDNCluster(id, json)
+		return s.UpdateCDNCluster(ctx, id, json)
 	}
 
 	config, err := structutils.StructToMap(json.Config)
@@ -125,7 +127,7 @@ func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.Updat
 	return &cdnCluster, nil
 }
 
-func (s *rest) GetCDNCluster(id uint) (*model.CDNCluster, error) {
+func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return nil, err
@@ -134,7 +136,7 @@ func (s *rest) GetCDNCluster(id uint) (*model.CDNCluster, error) {
 	return &cdnCluster, nil
 }
 
-func (s *rest) GetCDNClusters(q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
+func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
 	cdnClusters := []model.CDNCluster{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
 		Name: q.Name,
@@ -145,7 +147,7 @@ func (s *rest) GetCDNClusters(q types.GetCDNClustersQuery) (*[]model.CDNCluster,
 	return &cdnClusters, nil
 }
 
-func (s *rest) CDNClusterTotalCount(q types.GetCDNClustersQuery) (int64, error) {
+func (s *rest) CDNClusterTotalCount(ctx context.Context, q types.GetCDNClustersQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.CDNCluster{}).Where(&model.CDNCluster{
 		Name: q.Name,
@@ -156,7 +158,7 @@ func (s *rest) CDNClusterTotalCount(q types.GetCDNClustersQuery) (int64, error) 
 	return count, nil
 }
 
-func (s *rest) AddCDNToCDNCluster(id, cdnID uint) error {
+func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return err
@@ -174,7 +176,7 @@ func (s *rest) AddCDNToCDNCluster(id, cdnID uint) error {
 	return nil
 }
 
-func (s *rest) AddSchedulerClusterToCDNCluster(id, schedulerClusterID uint) error {
+func (s *rest) AddSchedulerClusterToCDNCluster(ctx context.Context, id, schedulerClusterID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Error; err != nil {
 		return err

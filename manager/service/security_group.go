@@ -17,11 +17,13 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *rest) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{
 		Name:        json.Name,
 		BIO:         json.BIO,
@@ -36,7 +38,7 @@ func (s *rest) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*mode
 	return &securityGroup, nil
 }
 
-func (s *rest) DestroySecurityGroup(id uint) error {
+func (s *rest) DestroySecurityGroup(ctx context.Context, id uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
@@ -49,7 +51,7 @@ func (s *rest) DestroySecurityGroup(id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateSecurityGroup(id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Updates(model.SecurityGroup{
 		Name:        json.Name,
@@ -63,7 +65,7 @@ func (s *rest) UpdateSecurityGroup(id uint, json types.UpdateSecurityGroupReques
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroup(id uint) (*model.SecurityGroup, error) {
+func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return nil, err
@@ -72,7 +74,7 @@ func (s *rest) GetSecurityGroup(id uint) (*model.SecurityGroup, error) {
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroups(q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
+func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
 	securityGroups := []model.SecurityGroup{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name:   q.Name,
@@ -84,7 +86,7 @@ func (s *rest) GetSecurityGroups(q types.GetSecurityGroupsQuery) (*[]model.Secur
 	return &securityGroups, nil
 }
 
-func (s *rest) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64, error) {
+func (s *rest) SecurityGroupTotalCount(ctx context.Context, q types.GetSecurityGroupsQuery) (int64, error) {
 	var count int64
 	if err := s.db.Model(&model.SecurityGroup{}).Where(&model.SecurityGroup{
 		Name:   q.Name,
@@ -96,7 +98,7 @@ func (s *rest) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64, e
 	return count, nil
 }
 
-func (s *rest) AddSchedulerClusterToSecurityGroup(id, schedulerClusterID uint) error {
+func (s *rest) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
@@ -114,7 +116,7 @@ func (s *rest) AddSchedulerClusterToSecurityGroup(id, schedulerClusterID uint) e
 	return nil
 }
 
-func (s *rest) AddCDNClusterToSecurityGroup(id, cdnClusterID uint) error {
+func (s *rest) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.First(&securityGroup, id).Error; err != nil {
 		return err
