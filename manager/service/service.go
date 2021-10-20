@@ -112,6 +112,13 @@ type REST interface {
 
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)
+
+	CreateCallSystem(types.CreateCallSystemRequest) (*model.CallSystem, error)
+	DestroyCallSystem(uint) error
+	UpdateCallSystem(uint, types.UpdateCallSystemRequest) (*model.CallSystem, error)
+	GetCallSystem(uint) (*model.CallSystem, error)
+	GetCallSystems(types.GetCallSystemsQuery) (*[]model.CallSystem, error)
+	CallSystemTotalCount(types.GetCallSystemsQuery) (int64, error)
 }
 
 type rest struct {
