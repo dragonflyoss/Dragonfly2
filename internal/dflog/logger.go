@@ -27,6 +27,7 @@ var (
 	CoreLogger       *zap.SugaredLogger
 	GrpcLogger       *zap.SugaredLogger
 	GcLogger         *zap.SugaredLogger
+	JobLogger        *zap.SugaredLogger
 	KeepAliveLogger  *zap.SugaredLogger
 	StatPeerLogger   *zap.Logger
 	StatSeedLogger   *zap.Logger
@@ -76,6 +77,10 @@ func SetDownloadLogger(log *zap.Logger) {
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
 	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
+}
+
+func SetJobLogger(log *zap.SugaredLogger) {
+	JobLogger = log
 }
 
 type SugaredLoggerOnWith struct {
