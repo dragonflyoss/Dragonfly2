@@ -48,6 +48,12 @@ func InitManager(console bool) error {
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
 
+	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetJobLogger(jobLogger.Sugar())
+
 	return nil
 }
 
@@ -75,6 +81,12 @@ func InitScheduler(console bool) error {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
+
+	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetJobLogger(jobLogger.Sugar())
 
 	statPeerLogger, err := CreateLogger(path.Join(logDir, StatPeerLogFileName), true, true)
 	if err != nil {
@@ -109,6 +121,12 @@ func InitCdnSystem(console bool) error {
 		return err
 	}
 	logger.SetGcLogger(gcLogger.Sugar())
+
+	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetJobLogger(jobLogger.Sugar())
 
 	statSeedLogger, err := CreateLogger(path.Join(logDir, StatSeedLogFileName), true, true)
 	if err != nil {
