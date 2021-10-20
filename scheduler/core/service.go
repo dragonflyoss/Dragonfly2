@@ -72,12 +72,13 @@ type SchedulerService struct {
 	// Peer manager
 	peerManager supervisor.PeerManager
 
-	sched   scheduler.Scheduler
-	worker  worker
-	config  *config.SchedulerConfig
-	monitor *monitor
-	done    chan struct{}
-	wg      sync.WaitGroup
+	sched     scheduler.Scheduler
+	worker    worker
+	config    *config.SchedulerConfig
+	monitor   *monitor
+	done      chan struct{}
+	wg        sync.WaitGroup
+	dynconfig config.DynconfigInterface
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
@@ -116,6 +117,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		sched:       sched,
 		config:      cfg,
 		done:        make(chan struct{}),
+		dynconfig:   dynConfig,
 	}
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
@@ -225,8 +227,15 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	peerHost := req.PeerHost
 	host, ok := s.hostManager.Get(peerHost.Uuid)
 	if !ok {
+		var options []supervisor.HostOption
+		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+			options = []supervisor.HostOption{
+				supervisor.WithTotalUploadLoad(int32(clientConfig.LoadLimit)),
+			}
+		}
+
 		host = supervisor.NewClientHost(peerHost.Uuid, peerHost.Ip, peerHost.HostName, peerHost.RpcPort, peerHost.DownPort,
-			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, peerHost.NetTopology, s.config.ClientLoad)
+			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, options...)
 		s.hostManager.Add(host)
 	}
 	// get or creat PeerTask

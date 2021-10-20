@@ -81,8 +81,6 @@ func New() *Config {
 						SecurityGroup: "",
 						Location:      "",
 						IDC:           "",
-						NetTopology:   "",
-						LoadLimit:     100,
 					},
 				},
 			},

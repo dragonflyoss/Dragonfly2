@@ -19,15 +19,31 @@ package service
 import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
 func (s *rest) CreateSchedulerCluster(json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	scopes, err := structutils.StructToMap(json.Scopes)
+	if err != nil {
+		return nil, err
+	}
+
 	schedulerCluster := model.SchedulerCluster{
 		Name:         json.Name,
 		BIO:          json.BIO,
-		Config:       json.Config,
-		ClientConfig: json.ClientConfig,
-		Scopes:       json.Scopes,
+		Config:       config,
+		ClientConfig: clientConfig,
+		Scopes:       scopes,
 		IsDefault:    json.IsDefault,
 	}
 
@@ -52,12 +68,27 @@ func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(json types.CreateSc
 		return s.CreateSchedulerCluster(json)
 	}
 
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	scopes, err := structutils.StructToMap(json.Scopes)
+	if err != nil {
+		return nil, err
+	}
+
 	schedulerCluster := model.SchedulerCluster{
 		Name:         json.Name,
 		BIO:          json.BIO,
-		Config:       json.Config,
-		ClientConfig: json.ClientConfig,
-		Scopes:       json.Scopes,
+		Config:       config,
+		ClientConfig: clientConfig,
+		Scopes:       scopes,
 		IsDefault:    json.IsDefault,
 	}
 
@@ -88,13 +119,28 @@ func (s *rest) DestroySchedulerCluster(id uint) error {
 }
 
 func (s *rest) UpdateSchedulerCluster(id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	scopes, err := structutils.StructToMap(json.Scopes)
+	if err != nil {
+		return nil, err
+	}
+
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.First(&schedulerCluster, id).Updates(model.SchedulerCluster{
 		Name:         json.Name,
 		BIO:          json.BIO,
-		Config:       json.Config,
-		ClientConfig: json.ClientConfig,
-		Scopes:       json.Scopes,
+		Config:       config,
+		ClientConfig: clientConfig,
+		Scopes:       scopes,
 		IsDefault:    json.IsDefault,
 	}).Error; err != nil {
 		return nil, err
@@ -117,12 +163,27 @@ func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(id uint, json types
 		return s.UpdateSchedulerCluster(id, json)
 	}
 
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	scopes, err := structutils.StructToMap(json.Scopes)
+	if err != nil {
+		return nil, err
+	}
+
 	schedulerCluster := model.SchedulerCluster{
 		Name:         json.Name,
 		BIO:          json.BIO,
-		Config:       json.Config,
-		ClientConfig: json.ClientConfig,
-		Scopes:       json.Scopes,
+		Config:       config,
+		ClientConfig: clientConfig,
+		Scopes:       scopes,
 		IsDefault:    json.IsDefault,
 	}
 

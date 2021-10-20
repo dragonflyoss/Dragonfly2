@@ -19,13 +19,19 @@ package service
 import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
 func (s *rest) CreateCDNCluster(json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
 	cdnCluster := model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
-		Config: json.Config,
+		Config: config,
 	}
 
 	if err := s.db.Create(&cdnCluster).Error; err != nil {
@@ -56,10 +62,15 @@ func (s *rest) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClust
 		return s.CreateCDNCluster(json)
 	}
 
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
 	cdnCluster := model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
-		Config: json.Config,
+		Config: config,
 	}
 
 	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
@@ -71,11 +82,16 @@ func (s *rest) CreateCDNClusterWithSecurityGroupDomain(json types.CreateCDNClust
 }
 
 func (s *rest) UpdateCDNCluster(id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.First(&cdnCluster, id).Updates(model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
-		Config: json.Config,
+		Config: config,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -91,10 +107,15 @@ func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(id uint, json types.Updat
 		return s.UpdateCDNCluster(id, json)
 	}
 
+	config, err := structutils.StructToMap(json.Config)
+	if err != nil {
+		return nil, err
+	}
+
 	cdnCluster := model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
-		Config: json.Config,
+		Config: config,
 	}
 
 	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {

@@ -31,6 +31,11 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 )
 
+const (
+	defaultCDNLoadLimit    = 100
+	defaultClientLoadLimit = 10
+)
+
 type Database struct {
 	DB  *gorm.DB
 	RDB *redis.Client
@@ -122,8 +127,10 @@ func seed(db *gorm.DB) error {
 			Model: model.Model{
 				ID: uint(1),
 			},
-			Name:      "cdn-cluster-1",
-			Config:    map[string]interface{}{},
+			Name: "cdn-cluster-1",
+			Config: map[string]interface{}{
+				"load_limit": defaultCDNLoadLimit,
+			},
 			IsDefault: true,
 		}).Error; err != nil {
 			return err
@@ -139,10 +146,13 @@ func seed(db *gorm.DB) error {
 			Model: model.Model{
 				ID: uint(1),
 			},
-			Name:         "scheduler-cluster-1",
-			Config:       map[string]interface{}{},
-			ClientConfig: map[string]interface{}{},
-			IsDefault:    true,
+			Name:   "scheduler-cluster-1",
+			Config: map[string]interface{}{},
+			ClientConfig: map[string]interface{}{
+				"load_limit": defaultClientLoadLimit,
+			},
+			Scopes:    map[string]interface{}{},
+			IsDefault: true,
 		}).Error; err != nil {
 			return err
 		}
