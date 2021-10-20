@@ -29,6 +29,7 @@ import (
 
 	"github.com/RichardKnop/machinery/v1"
 	machineryv1config "github.com/RichardKnop/machinery/v1/config"
+	machineryv1log "github.com/RichardKnop/machinery/v1/log"
 )
 
 const (
@@ -50,6 +51,9 @@ type Job struct {
 }
 
 func New(cfg *Config, queue Queue) (*Job, error) {
+	// Set logger
+	machineryv1log.Set(&MachineryLogger{})
+
 	broker := fmt.Sprintf("redis://%s@%s:%d/%d", cfg.Password, cfg.Host, cfg.Port, cfg.BrokerDB)
 	if err := ping(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
