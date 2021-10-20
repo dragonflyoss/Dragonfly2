@@ -307,8 +307,16 @@ func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
 func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 	hosts := map[string]*Host{}
 	for _, cdn := range cdns {
+		var options []HostOption
+		if config, ok := cdn.GetCDNClusterConfig(); ok {
+			options = []HostOption{
+				WithNetTopology(config.NetTopology),
+				WithTotalUploadLoad(int32(config.LoadLimit)),
+			}
+		}
+
 		id := idgen.CDN(cdn.HostName, cdn.Port)
-		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, cdn.NetTopology, cdn.LoadLimit)
+		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, options...)
 	}
 
 	return hosts

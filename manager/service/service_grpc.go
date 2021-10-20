@@ -222,6 +222,11 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 
 	var pbCDNs []*manager.CDN
 	for _, cdnCluster := range scheduler.SchedulerCluster.CDNClusters {
+		cdnClusterConfig, err := cdnCluster.Config.MarshalJSON()
+		if err != nil {
+			return nil, status.Error(codes.DataLoss, err.Error())
+		}
+
 		for _, cdn := range cdnCluster.CDNs {
 			pbCDNs = append(pbCDNs, &manager.CDN{
 				Id:           uint64(cdn.ID),
@@ -232,7 +237,13 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 				Port:         cdn.Port,
 				DownloadPort: cdn.DownloadPort,
 				CdnClusterId: uint64(cdn.CDNClusterID),
-				Status:       cdn.Status,
+				CdnCluster: &manager.CDNCluster{
+					Id:     uint64(cdnCluster.ID),
+					Name:   cdnCluster.Name,
+					Bio:    cdnCluster.BIO,
+					Config: cdnClusterConfig,
+				},
+				Status: cdn.Status,
 			})
 		}
 	}
