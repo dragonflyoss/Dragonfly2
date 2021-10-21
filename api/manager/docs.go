@@ -561,6 +561,227 @@ var doc = `{
                 }
             }
         },
+        "/configs": {
+            "get": {
+                "description": "Get Configs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get Configs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Config"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Create Config",
+                "parameters": [
+                    {
+                        "description": "Config",
+                        "name": "Config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/configs/{id}": {
+            "get": {
+                "description": "Get Config by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Destroy Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Update Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Config",
+                        "name": "Config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/healthy": {
             "get": {
                 "description": "Get app health",
@@ -852,7 +1073,7 @@ var doc = `{
                 "tags": [
                     "Preheat"
                 ],
-                "summary": "Create Preheat",
+                "summary": "Create V1 Preheat",
                 "parameters": [
                     {
                         "description": "Preheat",
@@ -860,7 +1081,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreatePreheatRequest"
+                            "$ref": "#/definitions/types.CreateV1PreheatRequest"
                         }
                     }
                 ],
@@ -868,7 +1089,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Preheat"
+                            "$ref": "#/definitions/types.CreateV1PreheatResponse"
                         }
                     },
                     "400": {
@@ -895,7 +1116,7 @@ var doc = `{
                 "tags": [
                     "Preheat"
                 ],
-                "summary": "Get Preheat",
+                "summary": "Get V1 Preheat",
                 "parameters": [
                     {
                         "type": "string",
@@ -909,7 +1130,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Preheat"
+                            "$ref": "#/definitions/types.GetV1PreheatResponse"
                         }
                     },
                     "400": {
@@ -2212,61 +2433,67 @@ var doc = `{
                     }
                 }
             }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Get User by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "model.Assertion": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "policy": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "policyMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "rm": {
-                    "$ref": "#/definitions/rbac.RoleManager"
-                },
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AssertionMap": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/model.Assertion"
-            }
-        },
         "model.CDN": {
             "type": "object",
             "properties": {
                 "cdnclusterID": {
                     "type": "integer"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -2282,6 +2509,9 @@ var doc = `{
                 },
                 "status": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2294,14 +2524,49 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "is_default": {
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
-                "securityGroupID": {
+                "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Config": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -2321,10 +2586,19 @@ var doc = `{
                 "client_secret": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2332,8 +2606,14 @@ var doc = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -2356,6 +2636,9 @@ var doc = `{
                 "status": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "vips": {
                     "type": "string"
                 }
@@ -2367,11 +2650,23 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "cdn_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CDNCluster"
+                    }
+                },
                 "client_config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -2382,8 +2677,11 @@ var doc = `{
                 "scopes": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
-                "securityGroupID": {
+                "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2393,13 +2691,22 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "proxy_domain": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2413,8 +2720,14 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -2425,10 +2738,10 @@ var doc = `{
                 "phone": {
                     "type": "string"
                 },
-                "private_token": {
+                "state": {
                     "type": "string"
                 },
-                "state": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2448,9 +2761,6 @@ var doc = `{
                 }
             }
         },
-        "rbac.RoleManager": {
-            "type": "object"
-        },
         "types.AddPermissionForRoleRequest": {
             "type": "object",
             "required": [
@@ -2466,6 +2776,17 @@ var doc = `{
                 }
             }
         },
+        "types.CDNClusterConfig": {
+            "type": "object",
+            "properties": {
+                "load_limit": {
+                    "type": "integer"
+                },
+                "net_topology": {
+                    "type": "string"
+                }
+            }
+        },
         "types.CreateCDNClusterRequest": {
             "type": "object",
             "required": [
@@ -2477,8 +2798,7 @@ var doc = `{
                     "type": "string"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.CDNClusterConfig"
                 },
                 "name": {
                     "type": "string"
@@ -2519,6 +2839,28 @@ var doc = `{
                 },
                 "port": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.CreateConfigRequest": {
+            "type": "object",
+            "required": [
+                "key",
+                "user_id",
+                "value"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -2607,12 +2949,10 @@ var doc = `{
                     "type": "integer"
                 },
                 "client_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -2621,8 +2961,7 @@ var doc = `{
                     "type": "string"
                 },
                 "scopes": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
                 "security_group_domain": {
                     "type": "string"
@@ -2687,6 +3026,38 @@ var doc = `{
                 }
             }
         },
+        "types.CreateV1PreheatRequest": {
+            "type": "object",
+            "required": [
+                "type",
+                "url"
+            ],
+            "properties": {
+                "filter": {
+                    "type": "string"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateV1PreheatResponse": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "type": "string"
+                }
+            }
+        },
         "types.DeletePermissionForRoleRequest": {
             "type": "object",
             "required": [
@@ -2698,6 +3069,23 @@ var doc = `{
                     "type": "string"
                 },
                 "object": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.GetV1PreheatResponse": {
+            "type": "object",
+            "properties": {
+                "ID": {
+                    "type": "string"
+                },
+                "finishTime": {
+                    "type": "string"
+                },
+                "startTime": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }
@@ -2730,6 +3118,20 @@ var doc = `{
                     "type": "string"
                 }
             }
+        },
+        "types.SchedulerClusterClientConfig": {
+            "type": "object",
+            "properties": {
+                "load_limit": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.SchedulerClusterConfig": {
+            "type": "object"
+        },
+        "types.SchedulerClusterScopes": {
+            "type": "object"
         },
         "types.SignUpRequest": {
             "type": "object",
@@ -2769,8 +3171,7 @@ var doc = `{
                     "type": "string"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.CDNClusterConfig"
                 },
                 "name": {
                     "type": "string"
@@ -2800,6 +3201,23 @@ var doc = `{
                 },
                 "port": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.UpdateConfigRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "key": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
@@ -2833,12 +3251,10 @@ var doc = `{
                     "type": "integer"
                 },
                 "client_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -2847,8 +3263,7 @@ var doc = `{
                     "type": "string"
                 },
                 "scopes": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
                 "security_group_domain": {
                     "type": "string"

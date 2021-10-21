@@ -547,6 +547,223 @@ Update by json config
 * CDN
 
 
+<a name="api-v1-configs-post"></a>
+### Create Config
+```
+POST /api/v1/configs
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**Config**  <br>*required*|Config|[types.CreateConfigRequest](#types-createconfigrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Config
+
+
+<a name="api-v1-configs-get"></a>
+### Get Configs
+```
+GET /api/v1/configs
+```
+
+
+#### Description
+Get Configs
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.Config](#model-config) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Config
+
+
+<a name="api-v1-configs-id-get"></a>
+### Get Config
+```
+GET /api/v1/configs/{id}
+```
+
+
+#### Description
+Get Config by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Config
+
+
+<a name="api-v1-configs-id-delete"></a>
+### Destroy Config
+```
+DELETE /api/v1/configs/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Config
+
+
+<a name="api-v1-configs-id-patch"></a>
+### Update Config
+```
+PATCH /api/v1/configs/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**Config**  <br>*required*|Config|[types.UpdateConfigRequest](#types-updateconfigrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Config
+
+
 <a name="api-v1-healthy-get"></a>
 ### Get Health
 ```
@@ -831,7 +1048,7 @@ Get Permissions
 
 
 <a name="api-v1-preheats-post"></a>
-### Create Preheat
+### Create V1 Preheat
 ```
 POST /api/v1/preheats
 ```
@@ -845,14 +1062,14 @@ create by json config
 
 |Type|Name|Description|Schema|
 |---|---|---|---|
-|**Body**|**CDN**  <br>*required*|Preheat|[types.CreatePreheatRequest](#types-createpreheatrequest)|
+|**Body**|**CDN**  <br>*required*|Preheat|[types.CreateV1PreheatRequest](#types-createv1preheatrequest)|
 
 
 #### Responses
 
 |HTTP Code|Description|Schema|
 |---|---|---|
-|**200**|OK|[types.Preheat](#types-preheat)|
+|**200**|OK|[types.CreateV1PreheatResponse](#types-createv1preheatresponse)|
 |**400**||No Content|
 |**404**||No Content|
 |**500**||No Content|
@@ -874,7 +1091,7 @@ create by json config
 
 
 <a name="api-v1-preheats-id-get"></a>
-### Get Preheat
+### Get V1 Preheat
 ```
 GET /api/v1/preheats/{id}
 ```
@@ -895,7 +1112,7 @@ Get Preheat by id
 
 |HTTP Code|Description|Schema|
 |---|---|---|
-|**200**|OK|[types.Preheat](#types-preheat)|
+|**200**|OK|[types.GetV1PreheatResponse](#types-getv1preheatresponse)|
 |**400**||No Content|
 |**404**||No Content|
 |**500**||No Content|
@@ -2230,28 +2447,53 @@ delete role by uri config
 * Users
 
 
+<a name="api-v1-users-id-get"></a>
+### Get User
+```
+GET /api/v1/users/{id}
+```
+
+
+#### Description
+Get User by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.User](#model-user)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
 
 
 <a name="definitions"></a>
 ## Definitions
-
-<a name="model-assertion"></a>
-### model.Assertion
-
-|Name|Schema|
-|---|---|
-|**key**  <br>*optional*|string|
-|**policy**  <br>*optional*|< < string > array > array|
-|**policyMap**  <br>*optional*|< string, integer > map|
-|**rm**  <br>*optional*|[rbac.RoleManager](#rbac-rolemanager)|
-|**tokens**  <br>*optional*|< string > array|
-|**value**  <br>*optional*|string|
-
-
-<a name="model-assertionmap"></a>
-### model.AssertionMap
-*Type* : < string, [model.Assertion](#model-assertion) > map
-
 
 <a name="model-cdn"></a>
 ### model.CDN
@@ -2259,13 +2501,16 @@ delete role by uri config
 |Name|Schema|
 |---|---|
 |**cdnclusterID**  <br>*optional*|integer|
+|**created_at**  <br>*optional*|string|
 |**download_port**  <br>*optional*|integer|
 |**host_name**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**idc**  <br>*optional*|string|
 |**ip**  <br>*optional*|string|
 |**location**  <br>*optional*|string|
 |**port**  <br>*optional*|integer|
 |**status**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
 
 
 <a name="model-cdncluster"></a>
@@ -2275,9 +2520,26 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
+|**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
-|**securityGroupID**  <br>*optional*|integer|
+|**security_group_id**  <br>*optional*|integer|
+|**updated_at**  <br>*optional*|string|
+
+
+<a name="model-config"></a>
+### model.Config
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
+|**key**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
+|**user_id**  <br>*optional*|integer|
+|**value**  <br>*optional*|string|
 
 
 <a name="model-jsonmap"></a>
@@ -2293,8 +2555,11 @@ delete role by uri config
 |**bio**  <br>*optional*|string|
 |**client_id**  <br>*optional*|string|
 |**client_secret**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
 |**redirect_url**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
 
 
 <a name="model-scheduler"></a>
@@ -2302,7 +2567,9 @@ delete role by uri config
 
 |Name|Schema|
 |---|---|
+|**created_at**  <br>*optional*|string|
 |**host_name**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**idc**  <br>*optional*|string|
 |**ip**  <br>*optional*|string|
 |**location**  <br>*optional*|string|
@@ -2310,6 +2577,7 @@ delete role by uri config
 |**port**  <br>*optional*|integer|
 |**schedulerClusterID**  <br>*optional*|integer|
 |**status**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
 |**vips**  <br>*optional*|string|
 
 
@@ -2319,12 +2587,16 @@ delete role by uri config
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
+|**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
 |**client_config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
 |**config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
+|**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
 |**scopes**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**securityGroupID**  <br>*optional*|integer|
+|**security_group_id**  <br>*optional*|integer|
+|**updated_at**  <br>*optional*|string|
 
 
 <a name="model-securitygroup"></a>
@@ -2333,9 +2605,12 @@ delete role by uri config
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
 |**domain**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
 |**proxy_domain**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
 
 
 <a name="model-user"></a>
@@ -2345,12 +2620,14 @@ delete role by uri config
 |---|---|
 |**avatar**  <br>*optional*|string|
 |**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
 |**email**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
 |**location**  <br>*optional*|string|
 |**name**  <br>*optional*|string|
 |**phone**  <br>*optional*|string|
-|**private_token**  <br>*optional*|string|
 |**state**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
 
 
 <a name="rbac-permission"></a>
@@ -2362,11 +2639,6 @@ delete role by uri config
 |**object**  <br>*required*|string|
 
 
-<a name="rbac-rolemanager"></a>
-### rbac.RoleManager
-*Type* : object
-
-
 <a name="types-addpermissionforrolerequest"></a>
 ### types.AddPermissionForRoleRequest
 
@@ -2376,13 +2648,22 @@ delete role by uri config
 |**object**  <br>*required*|string|
 
 
+<a name="types-cdnclusterconfig"></a>
+### types.CDNClusterConfig
+
+|Name|Schema|
+|---|---|
+|**load_limit**  <br>*optional*|integer|
+|**net_topology**  <br>*optional*|string|
+
+
 <a name="types-createcdnclusterrequest"></a>
 ### types.CreateCDNClusterRequest
 
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
-|**config**  <br>*required*|object|
+|**config**  <br>*required*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*required*|string|
 |**security_group_domain**  <br>*optional*|string|
 
@@ -2399,6 +2680,17 @@ delete role by uri config
 |**ip**  <br>*required*|string|
 |**location**  <br>*optional*|string|
 |**port**  <br>*required*|integer|
+
+
+<a name="types-createconfigrequest"></a>
+### types.CreateConfigRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**key**  <br>*required*|string|
+|**user_id**  <br>*required*|integer|
+|**value**  <br>*required*|string|
 
 
 <a name="types-createoauthrequest"></a>
@@ -2441,11 +2733,11 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*optional*|string|
 |**cdn_cluster_id**  <br>*optional*|integer|
-|**client_config**  <br>*required*|object|
-|**config**  <br>*required*|object|
+|**client_config**  <br>*required*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
+|**config**  <br>*required*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*required*|string|
-|**scopes**  <br>*optional*|object|
+|**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
 |**security_group_domain**  <br>*optional*|string|
 
 
@@ -2475,6 +2767,25 @@ delete role by uri config
 |**proxy_domain**  <br>*optional*|string|
 
 
+<a name="types-createv1preheatrequest"></a>
+### types.CreateV1PreheatRequest
+
+|Name|Schema|
+|---|---|
+|**filter**  <br>*optional*|string|
+|**headers**  <br>*optional*|< string, string > map|
+|**type**  <br>*required*|string|
+|**url**  <br>*required*|string|
+
+
+<a name="types-createv1preheatresponse"></a>
+### types.CreateV1PreheatResponse
+
+|Name|Schema|
+|---|---|
+|**ID**  <br>*optional*|string|
+
+
 <a name="types-deletepermissionforrolerequest"></a>
 ### types.DeletePermissionForRoleRequest
 
@@ -2482,6 +2793,17 @@ delete role by uri config
 |---|---|
 |**action**  <br>*required*|string|
 |**object**  <br>*required*|string|
+
+
+<a name="types-getv1preheatresponse"></a>
+### types.GetV1PreheatResponse
+
+|Name|Schema|
+|---|---|
+|**ID**  <br>*optional*|string|
+|**finishTime**  <br>*optional*|string|
+|**startTime**  <br>*optional*|string|
+|**status**  <br>*optional*|string|
 
 
 <a name="types-preheat"></a>
@@ -2501,6 +2823,24 @@ delete role by uri config
 |---|---|
 |**new_password**  <br>*required*|string|
 |**old_password**  <br>*required*|string|
+
+
+<a name="types-schedulerclusterclientconfig"></a>
+### types.SchedulerClusterClientConfig
+
+|Name|Schema|
+|---|---|
+|**load_limit**  <br>*optional*|integer|
+
+
+<a name="types-schedulerclusterconfig"></a>
+### types.SchedulerClusterConfig
+*Type* : object
+
+
+<a name="types-schedulerclusterscopes"></a>
+### types.SchedulerClusterScopes
+*Type* : object
 
 
 <a name="types-signuprequest"></a>
@@ -2523,7 +2863,7 @@ delete role by uri config
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
-|**config**  <br>*optional*|object|
+|**config**  <br>*optional*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*optional*|string|
 |**security_group_domain**  <br>*optional*|string|
 
@@ -2539,6 +2879,17 @@ delete role by uri config
 |**ip**  <br>*optional*|string|
 |**location**  <br>*optional*|string|
 |**port**  <br>*optional*|integer|
+
+
+<a name="types-updateconfigrequest"></a>
+### types.UpdateConfigRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**key**  <br>*optional*|string|
+|**user_id**  <br>*optional*|integer|
+|**value**  <br>*optional*|string|
 
 
 <a name="types-updateoauthrequest"></a>
@@ -2560,11 +2911,11 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*optional*|string|
 |**cdn_cluster_id**  <br>*optional*|integer|
-|**client_config**  <br>*optional*|object|
-|**config**  <br>*optional*|object|
+|**client_config**  <br>*optional*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
+|**config**  <br>*optional*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
-|**scopes**  <br>*optional*|object|
+|**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
 |**security_group_domain**  <br>*optional*|string|
 
 

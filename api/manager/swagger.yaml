@@ -1,40 +1,17 @@
 basePath: /api/v1
 definitions:
-  model.Assertion:
-    properties:
-      key:
-        type: string
-      policy:
-        items:
-          items:
-            type: string
-          type: array
-        type: array
-      policyMap:
-        additionalProperties:
-          type: integer
-        type: object
-      rm:
-        $ref: '#/definitions/rbac.RoleManager'
-      tokens:
-        items:
-          type: string
-        type: array
-      value:
-        type: string
-    type: object
-  model.AssertionMap:
-    additionalProperties:
-      $ref: '#/definitions/model.Assertion'
-    type: object
   model.CDN:
     properties:
       cdnclusterID:
         type: integer
+      created_at:
+        type: string
       download_port:
         type: integer
       host_name:
         type: string
+      id:
+        type: integer
       idc:
         type: string
       ip:
@@ -45,6 +22,8 @@ definitions:
         type: integer
       status:
         type: string
+      updated_at:
+        type: string
     type: object
   model.CDNCluster:
     properties:
@@ -52,12 +31,35 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/model.JSONMap'
+      created_at:
+        type: string
+      id:
+        type: integer
       is_default:
         type: boolean
       name:
         type: string
-      securityGroupID:
+      security_group_id:
         type: integer
+      updated_at:
+        type: string
+    type: object
+  model.Config:
+    properties:
+      bio:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      key:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      value:
+        type: string
     type: object
   model.JSONMap:
     additionalProperties: true
@@ -70,15 +72,25 @@ definitions:
         type: string
       client_secret:
         type: string
+      created_at:
+        type: string
+      id:
+        type: integer
       name:
         type: string
       redirect_url:
         type: string
+      updated_at:
+        type: string
     type: object
   model.Scheduler:
     properties:
+      created_at:
+        type: string
       host_name:
         type: string
+      id:
+        type: integer
       idc:
         type: string
       ip:
@@ -93,6 +105,8 @@ definitions:
         type: integer
       status:
         type: string
+      updated_at:
+        type: string
       vips:
         type: string
     type: object
@@ -100,28 +114,44 @@ definitions:
     properties:
       bio:
         type: string
+      cdn_clusters:
+        items:
+          $ref: '#/definitions/model.CDNCluster'
+        type: array
       client_config:
         $ref: '#/definitions/model.JSONMap'
       config:
         $ref: '#/definitions/model.JSONMap'
+      created_at:
+        type: string
+      id:
+        type: integer
       is_default:
         type: boolean
       name:
         type: string
       scopes:
         $ref: '#/definitions/model.JSONMap'
-      securityGroupID:
+      security_group_id:
         type: integer
+      updated_at:
+        type: string
     type: object
   model.SecurityGroup:
     properties:
       bio:
         type: string
+      created_at:
+        type: string
       domain:
         type: string
+      id:
+        type: integer
       name:
         type: string
       proxy_domain:
+        type: string
+      updated_at:
         type: string
     type: object
   model.User:
@@ -130,17 +160,21 @@ definitions:
         type: string
       bio:
         type: string
+      created_at:
+        type: string
       email:
         type: string
+      id:
+        type: integer
       location:
         type: string
       name:
         type: string
       phone:
         type: string
-      private_token:
-        type: string
       state:
+        type: string
+      updated_at:
         type: string
     type: object
   rbac.Permission:
@@ -153,8 +187,6 @@ definitions:
     - action
     - object
     type: object
-  rbac.RoleManager:
-    type: object
   types.AddPermissionForRoleRequest:
     properties:
       action:
@@ -165,13 +197,19 @@ definitions:
     - action
     - object
     type: object
+  types.CDNClusterConfig:
+    properties:
+      load_limit:
+        type: integer
+      net_topology:
+        type: string
+    type: object
   types.CreateCDNClusterRequest:
     properties:
       bio:
         type: string
       config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.CDNClusterConfig'
       name:
         type: string
       security_group_domain:
@@ -203,6 +241,21 @@ definitions:
     - idc
     - ip
     - port
+    type: object
+  types.CreateConfigRequest:
+    properties:
+      bio:
+        type: string
+      key:
+        type: string
+      user_id:
+        type: integer
+      value:
+        type: string
+    required:
+    - key
+    - user_id
+    - value
     type: object
   types.CreateOauthRequest:
     properties:
@@ -258,18 +311,15 @@ definitions:
       cdn_cluster_id:
         type: integer
       client_config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterClientConfig'
       config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterScopes'
       security_group_domain:
         type: string
     required:
@@ -317,6 +367,27 @@ definitions:
     - domain
     - name
     type: object
+  types.CreateV1PreheatRequest:
+    properties:
+      filter:
+        type: string
+      headers:
+        additionalProperties:
+          type: string
+        type: object
+      type:
+        type: string
+      url:
+        type: string
+    required:
+    - type
+    - url
+    type: object
+  types.CreateV1PreheatResponse:
+    properties:
+      ID:
+        type: string
+    type: object
   types.DeletePermissionForRoleRequest:
     properties:
       action:
@@ -326,6 +397,17 @@ definitions:
     required:
     - action
     - object
+    type: object
+  types.GetV1PreheatResponse:
+    properties:
+      ID:
+        type: string
+      finishTime:
+        type: string
+      startTime:
+        type: string
+      status:
+        type: string
     type: object
   types.Preheat:
     properties:
@@ -345,6 +427,15 @@ definitions:
     required:
     - new_password
     - old_password
+    type: object
+  types.SchedulerClusterClientConfig:
+    properties:
+      load_limit:
+        type: integer
+    type: object
+  types.SchedulerClusterConfig:
+    type: object
+  types.SchedulerClusterScopes:
     type: object
   types.SignUpRequest:
     properties:
@@ -372,8 +463,7 @@ definitions:
       bio:
         type: string
       config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.CDNClusterConfig'
       name:
         type: string
       security_group_domain:
@@ -393,6 +483,17 @@ definitions:
         type: string
       port:
         type: integer
+    type: object
+  types.UpdateConfigRequest:
+    properties:
+      bio:
+        type: string
+      key:
+        type: string
+      user_id:
+        type: integer
+      value:
+        type: string
     type: object
   types.UpdateOauthRequest:
     properties:
@@ -414,18 +515,15 @@ definitions:
       cdn_cluster_id:
         type: integer
       client_config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterClientConfig'
       config:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterConfig'
       is_default:
         type: boolean
       name:
         type: string
       scopes:
-        additionalProperties: true
-        type: object
+        $ref: '#/definitions/types.SchedulerClusterScopes'
       security_group_domain:
         type: string
     type: object
@@ -826,6 +924,154 @@ paths:
       summary: Update CDN
       tags:
       - CDN
+  /configs:
+    get:
+      consumes:
+      - application/json
+      description: Get Configs
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Config'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Configs
+      tags:
+      - Config
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Config
+        in: body
+        name: Config
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Config'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Config
+      tags:
+      - Config
+  /configs/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Config
+      tags:
+      - Config
+    get:
+      consumes:
+      - application/json
+      description: Get Config by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Config'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Config
+      tags:
+      - Config
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Config
+        in: body
+        name: Config
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateConfigRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Config'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Config
+      tags:
+      - Config
   /healthy:
     get:
       consumes:
@@ -1023,21 +1269,21 @@ paths:
         name: CDN
         required: true
         schema:
-          $ref: '#/definitions/types.CreatePreheatRequest'
+          $ref: '#/definitions/types.CreateV1PreheatRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.Preheat'
+            $ref: '#/definitions/types.CreateV1PreheatResponse'
         "400":
           description: ""
         "404":
           description: ""
         "500":
           description: ""
-      summary: Create Preheat
+      summary: Create V1 Preheat
       tags:
       - Preheat
   /preheats/{id}:
@@ -1057,14 +1303,14 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/types.Preheat'
+            $ref: '#/definitions/types.GetV1PreheatResponse'
         "400":
           description: ""
         "404":
           description: ""
         "500":
           description: ""
-      summary: Get Preheat
+      summary: Get V1 Preheat
       tags:
       - Preheat
   /roles:
@@ -1925,4 +2171,31 @@ paths:
       summary: Add Role For User
       tags:
       - Users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get User by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get User
+      tags:
+      - User
 swagger: "2.0"

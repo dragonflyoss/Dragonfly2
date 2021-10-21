@@ -290,7 +290,6 @@ help:
 	@echo "make e2e-test                       run e2e tests"
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make clean-e2e-test                 clean e2e tests"
-	@echo "make swag-manager                   generate swagger api"
 	@echo "make kind-load-image                kind load docker image"
 	@echo "make kind-load-cdn                  kind load cdn docker image"
 	@echo "make kind-load-scheduler            kind load scheduler docker image"

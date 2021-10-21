@@ -114,6 +114,7 @@ func migrate(db *gorm.DB) error {
 		&model.SecurityGroup{},
 		&model.User{},
 		&model.Oauth{},
+		&model.Config{},
 	)
 }
 
