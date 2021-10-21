@@ -17,11 +17,13 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateOauth(json types.CreateOauthRequest) (*model.Oauth, error) {
+func (s *rest) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (*model.Oauth, error) {
 	oauth := model.Oauth{
 		Name:         json.Name,
 		BIO:          json.BIO,
@@ -30,29 +32,29 @@ func (s *rest) CreateOauth(json types.CreateOauthRequest) (*model.Oauth, error) 
 		RedirectURL:  json.RedirectURL,
 	}
 
-	if err := s.db.Create(&oauth).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&oauth).Error; err != nil {
 		return nil, err
 	}
 
 	return &oauth, nil
 }
 
-func (s *rest) DestroyOauth(id uint) error {
+func (s *rest) DestroyOauth(ctx context.Context, id uint) error {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Unscoped().Delete(&model.Oauth{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Oauth{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *rest) UpdateOauth(id uint, json types.UpdateOauthRequest) (*model.Oauth, error) {
+func (s *rest) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthRequest) (*model.Oauth, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, id).Updates(model.Oauth{
+	if err := s.db.WithContext(ctx).First(&oauth, id).Updates(model.Oauth{
 		Name:         json.Name,
 		BIO:          json.BIO,
 		ClientID:     json.ClientID,
@@ -65,18 +67,18 @@ func (s *rest) UpdateOauth(id uint, json types.UpdateOauthRequest) (*model.Oauth
 	return &oauth, nil
 }
 
-func (s *rest) GetOauth(id uint) (*model.Oauth, error) {
+func (s *rest) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &oauth, nil
 }
 
-func (s *rest) GetOauths(q types.GetOauthsQuery) (*[]model.Oauth, error) {
+func (s *rest) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, error) {
 	oauths := []model.Oauth{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
 		Name:     q.Name,
 		ClientID: q.ClientID,
 	}).Find(&oauths).Error; err != nil {
@@ -86,9 +88,9 @@ func (s *rest) GetOauths(q types.GetOauthsQuery) (*[]model.Oauth, error) {
 	return &oauths, nil
 }
 
-func (s *rest) OauthTotalCount(q types.GetOauthsQuery) (int64, error) {
+func (s *rest) OauthTotalCount(ctx context.Context, q types.GetOauthsQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.Oauth{}).Where(&model.Oauth{
+	if err := s.db.WithContext(ctx).Model(&model.Oauth{}).Where(&model.Oauth{
 		Name:     q.Name,
 		ClientID: q.ClientID,
 	}).Count(&count).Error; err != nil {

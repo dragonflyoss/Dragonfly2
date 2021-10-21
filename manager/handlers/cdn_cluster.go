@@ -42,7 +42,7 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.CreateCDNClusterWithSecurityGroupDomain(json)
+		cdn, err := h.service.CreateCDNClusterWithSecurityGroupDomain(ctx.Request.Context(), json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -52,7 +52,7 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.CreateCDNCluster(json)
+	cdnCluster, err := h.service.CreateCDNCluster(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -79,7 +79,7 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.DestroyCDNCluster(params.ID); err != nil {
+	if err := h.service.DestroyCDNCluster(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -113,7 +113,7 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.UpdateCDNClusterWithSecurityGroupDomain(params.ID, json)
+		cdn, err := h.service.UpdateCDNClusterWithSecurityGroupDomain(ctx.Request.Context(), params.ID, json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -123,7 +123,7 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.UpdateCDNCluster(params.ID, json)
+	cdnCluster, err := h.service.UpdateCDNCluster(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -150,7 +150,7 @@ func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	cdnCluster, err := h.service.GetCDNCluster(params.ID)
+	cdnCluster, err := h.service.GetCDNCluster(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -179,13 +179,13 @@ func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.service.GetCDNClusters(query)
+	cdns, err := h.service.GetCDNClusters(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.CDNClusterTotalCount(query)
+	totalCount, err := h.service.CDNClusterTotalCount(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -214,7 +214,7 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.AddCDNToCDNCluster(params.ID, params.CDNID); err != nil {
+	if err := h.service.AddCDNToCDNCluster(ctx.Request.Context(), params.ID, params.CDNID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -241,7 +241,7 @@ func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.AddSchedulerClusterToCDNCluster(params.ID, params.SchedulerClusterID); err != nil {
+	if err := h.service.AddSchedulerClusterToCDNCluster(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}

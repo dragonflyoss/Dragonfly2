@@ -17,11 +17,13 @@
 package service
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *rest) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{
 		Name:        json.Name,
 		BIO:         json.BIO,
@@ -29,29 +31,29 @@ func (s *rest) CreateSecurityGroup(json types.CreateSecurityGroupRequest) (*mode
 		ProxyDomain: json.ProxyDomain,
 	}
 
-	if err := s.db.Create(&securityGroup).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&securityGroup).Error; err != nil {
 		return nil, err
 	}
 
 	return &securityGroup, nil
 }
 
-func (s *rest) DestroySecurityGroup(id uint) error {
+func (s *rest) DestroySecurityGroup(ctx context.Context, id uint) error {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Unscoped().Delete(&model.SecurityGroup{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SecurityGroup{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *rest) UpdateSecurityGroup(id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Updates(model.SecurityGroup{
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Updates(model.SecurityGroup{
 		Name:        json.Name,
 		BIO:         json.BIO,
 		Domain:      json.Domain,
@@ -63,18 +65,18 @@ func (s *rest) UpdateSecurityGroup(id uint, json types.UpdateSecurityGroupReques
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroup(id uint) (*model.SecurityGroup, error) {
+func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroups(q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
+func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
 	securityGroups := []model.SecurityGroup{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name:   q.Name,
 		Domain: q.Domain,
 	}).Find(&securityGroups).Error; err != nil {
@@ -84,9 +86,9 @@ func (s *rest) GetSecurityGroups(q types.GetSecurityGroupsQuery) (*[]model.Secur
 	return &securityGroups, nil
 }
 
-func (s *rest) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64, error) {
+func (s *rest) SecurityGroupTotalCount(ctx context.Context, q types.GetSecurityGroupsQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.SecurityGroup{}).Where(&model.SecurityGroup{
+	if err := s.db.WithContext(ctx).Model(&model.SecurityGroup{}).Where(&model.SecurityGroup{
 		Name:   q.Name,
 		Domain: q.Domain,
 	}).Count(&count).Error; err != nil {
@@ -96,36 +98,36 @@ func (s *rest) SecurityGroupTotalCount(q types.GetSecurityGroupsQuery) (int64, e
 	return count, nil
 }
 
-func (s *rest) AddSchedulerClusterToSecurityGroup(id, schedulerClusterID uint) error {
+func (s *rest) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *rest) AddCDNClusterToSecurityGroup(id, cdnClusterID uint) error {
+func (s *rest) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.First(&securityGroup, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
 	}
 
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, cdnClusterID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdnCluster, cdnClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return err
 	}
 

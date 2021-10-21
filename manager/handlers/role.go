@@ -40,7 +40,7 @@ func (h *Handlers) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.CreateRole(json); err != nil {
+	if err := h.service.CreateRole(ctx.Request.Context(), json); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -65,7 +65,7 @@ func (h *Handlers) DestroyRole(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.service.DestroyRole(params.Role); err != nil {
+	if ok, err := h.service.DestroyRole(ctx.Request.Context(), params.Role); err != nil {
 		ctx.Error(err)
 		return
 	} else if !ok {
@@ -93,7 +93,7 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, h.service.GetRole(params.Role))
+	ctx.JSON(http.StatusOK, h.service.GetRole(ctx.Request.Context(), params.Role))
 }
 
 // @Summary Get Roles
@@ -106,7 +106,7 @@ func (h *Handlers) GetRole(ctx *gin.Context) {
 // @Failure 500
 // @Router /roles [get]
 func (h *Handlers) GetRoles(ctx *gin.Context) {
-	roles := h.service.GetRoles()
+	roles := h.service.GetRoles(ctx.Request.Context())
 	ctx.JSON(http.StatusOK, roles)
 }
 
@@ -134,7 +134,7 @@ func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.service.AddPermissionForRole(params.Role, json); err != nil {
+	if ok, err := h.service.AddPermissionForRole(ctx.Request.Context(), params.Role, json); err != nil {
 		ctx.Error(err)
 		return
 	} else if !ok {
@@ -169,7 +169,7 @@ func (h *Handlers) DeletePermissionForRole(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.service.DeletePermissionForRole(params.Role, json); err != nil {
+	if ok, err := h.service.DeletePermissionForRole(ctx.Request.Context(), params.Role, json); err != nil {
 		ctx.Error(err)
 		return
 	} else if !ok {

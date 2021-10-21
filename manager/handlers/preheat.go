@@ -41,7 +41,7 @@ func (h *Handlers) CreatePreheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.service.CreatePreheat(json)
+	preheat, err := h.service.CreatePreheat(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -68,7 +68,7 @@ func (h *Handlers) GetPreheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.service.GetPreheat(params.ID)
+	preheat, err := h.service.GetPreheat(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -95,7 +95,7 @@ func (h *Handlers) CreateV1Preheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.service.CreateV1Preheat(json)
+	preheat, err := h.service.CreateV1Preheat(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -122,7 +122,7 @@ func (h *Handlers) GetV1Preheat(ctx *gin.Context) {
 		return
 	}
 
-	preheat, err := h.service.GetV1Preheat(params.ID)
+	preheat, err := h.service.GetV1Preheat(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return

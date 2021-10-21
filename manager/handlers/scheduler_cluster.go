@@ -42,7 +42,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.CreateSchedulerClusterWithSecurityGroupDomain(json)
+		scheduler, err := h.service.CreateSchedulerClusterWithSecurityGroupDomain(ctx.Request.Context(), json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -52,7 +52,7 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateSchedulerCluster(json)
+	schedulerCluster, err := h.service.CreateSchedulerCluster(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -79,7 +79,7 @@ func (h *Handlers) DestroySchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.DestroySchedulerCluster(params.ID); err != nil {
+	if err := h.service.DestroySchedulerCluster(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -113,7 +113,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	}
 
 	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.UpdateSchedulerClusterWithSecurityGroupDomain(params.ID, json)
+		scheduler, err := h.service.UpdateSchedulerClusterWithSecurityGroupDomain(ctx.Request.Context(), params.ID, json)
 		if err != nil {
 			ctx.Error(err)
 			return
@@ -123,7 +123,7 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateSchedulerCluster(params.ID, json)
+	schedulerCluster, err := h.service.UpdateSchedulerCluster(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -150,7 +150,7 @@ func (h *Handlers) GetSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.GetSchedulerCluster(params.ID)
+	schedulerCluster, err := h.service.GetSchedulerCluster(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -179,13 +179,13 @@ func (h *Handlers) GetSchedulerClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, err := h.service.GetSchedulerClusters(query)
+	schedulerClusters, err := h.service.GetSchedulerClusters(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SchedulerClusterTotalCount(query)
+	totalCount, err := h.service.SchedulerClusterTotalCount(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -214,7 +214,7 @@ func (h *Handlers) AddSchedulerToSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerToSchedulerCluster(params.ID, params.SchedulerID)
+	err := h.service.AddSchedulerToSchedulerCluster(ctx.Request.Context(), params.ID, params.SchedulerID)
 	if err != nil {
 		ctx.Error(err)
 		return

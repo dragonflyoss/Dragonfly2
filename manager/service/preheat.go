@@ -17,6 +17,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"d7y.io/dragonfly/v2/manager/model"
@@ -39,33 +40,33 @@ const (
 	V1PreheatingStatusFail = "FAIL"
 )
 
-func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, error) {
+func (s *rest) CreatePreheat(ctx context.Context, json types.CreatePreheatRequest) (*types.Preheat, error) {
 	if json.SchedulerClusterID != nil {
 		schedulerCluster := model.SchedulerCluster{}
-		if err := s.db.First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
+		if err := s.db.WithContext(ctx).First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
 			return nil, err
 		}
 
 		scheduler := model.Scheduler{}
-		if err := s.db.First(&scheduler, model.Scheduler{
+		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {
 			return nil, err
 		}
 
-		return s.job.CreatePreheat([]model.Scheduler{scheduler}, json)
+		return s.job.CreatePreheat(ctx, []model.Scheduler{scheduler}, json)
 	}
 
 	schedulerClusters := []model.SchedulerCluster{}
-	if err := s.db.Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
 		return nil, err
 	}
 
 	var schedulers []model.Scheduler
 	for _, schedulerCluster := range schedulerClusters {
 		scheduler := model.Scheduler{}
-		if err := s.db.First(&scheduler, model.Scheduler{
+		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {
@@ -75,15 +76,15 @@ func (s *rest) CreatePreheat(json types.CreatePreheatRequest) (*types.Preheat, e
 		schedulers = append(schedulers, scheduler)
 	}
 
-	return s.job.CreatePreheat(schedulers, json)
+	return s.job.CreatePreheat(ctx, schedulers, json)
 }
 
-func (s *rest) GetPreheat(id string) (*types.Preheat, error) {
-	return s.job.GetPreheat(id)
+func (s *rest) GetPreheat(ctx context.Context, id string) (*types.Preheat, error) {
+	return s.job.GetPreheat(ctx, id)
 }
 
-func (s *rest) CreateV1Preheat(json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
-	p, err := s.CreatePreheat(types.CreatePreheatRequest{
+func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
+	p, err := s.CreatePreheat(ctx, types.CreatePreheatRequest{
 		Type:    json.Type,
 		URL:     json.URL,
 		Filter:  json.Filter,
@@ -98,8 +99,8 @@ func (s *rest) CreateV1Preheat(json types.CreateV1PreheatRequest) (*types.Create
 	}, nil
 }
 
-func (s *rest) GetV1Preheat(id string) (*types.GetV1PreheatResponse, error) {
-	p, err := s.job.GetPreheat(id)
+func (s *rest) GetV1Preheat(ctx context.Context, id string) (*types.GetV1PreheatResponse, error) {
+	p, err := s.job.GetPreheat(ctx, id)
 	if err != nil {
 		return nil, err
 	}
