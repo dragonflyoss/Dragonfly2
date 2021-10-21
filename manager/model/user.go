@@ -32,4 +32,5 @@ type User struct {
 	State             string `gorm:"column:state;type:varchar(256);default:'enable';comment:state" json:"state"`
 	Location          string `gorm:"column:location;type:varchar(256);comment:location" json:"location"`
 	BIO               string `gorm:"column:bio;type:varchar(256);comment:biography" json:"bio"`
+	Jobs              []Job  `json:"-"`
 }
