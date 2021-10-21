@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	defaultCDNLoadLimit    = 100
-	defaultClientLoadLimit = 10
+	defaultCDNLoadLimit    = 300
+	defaultClientLoadLimit = 100
 )
 
 type Database struct {

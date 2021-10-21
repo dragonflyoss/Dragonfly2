@@ -22,33 +22,62 @@ Default root username: `root` password: `dragonfly`.
 
 ## Pages
 
-### Sign in
+### User
+
+#### Sign in
 
 ![signin][signin]
 
-### Sign up
+#### Sign up
 
 ![signup][signup]
 
-### Scheduler Cluster
+### Configuration
+
+#### Scheduler Cluster
+
+##### Scheduler Cluster List
 
 ![scheduler-cluster][scheduler-cluster]
 
-### Add Scheduler Cluster
+##### Add Scheduler Cluster
 
 ![add-scheduler-cluster][add-scheduler-cluster]
 
-### CDN Cluster
+##### Configure Scheduler Cluster
+
+![configure-scheduler-cluster][configure-scheduler-cluster]
+
+##### Configure Scheduler Cluster's Client
+
+![configure-scheduler-cluster-client][configure-scheduler-cluster-client]
+
+- `load_limit`: client host can provide the maximum upload load.
+
+#### CDN Cluster
+
+##### CDN Cluster List
 
 ![cdn-cluster][cdn-cluster]
 
-### Add CDN Cluster
+##### Add CDN Cluster
 
 ![add-cdn-cluster][add-cdn-cluster]
+
+##### Configure CDN Cluster
+
+![configure-cdn-cluster][configure-cdn-cluster]
+
+- `load_limit`: CDN host can provide the maximum upload load.
+
 
 [signin]: ../../images/manager-console/signin.jpg
 [signup]: ../../images/manager-console/signup.jpg
 [scheduler-cluster]: ../../images/manager-console/scheduler-cluster.jpg
 [add-scheduler-cluster]: ../../images/manager-console/add-scheduler-cluster.jpg
+[configure-scheduler-cluster]: ../../images/manager-console/configure-scheduler-cluster.jpg
+[configure-scheduler-cluster-client]: ../../images/manager-console/configure-scheduler-cluster-client.jpg
+[configure-]: ../../images/manager-console/add-scheduler-cluster.jpg
 [cdn-cluster]: ../../images/manager-console/cdn-cluster.jpg
 [add-cdn-cluster]: ../../images/manager-console/add-cdn-cluster.jpg
+[configure-cdn-cluster]: ../../images/manager-console/configure-cdn-cluster.jpg
