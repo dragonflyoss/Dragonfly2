@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/host_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor HostManager
+
 package supervisor
 
 import (
