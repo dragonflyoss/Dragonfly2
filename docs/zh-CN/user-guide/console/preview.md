@@ -22,29 +22,59 @@ CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。�
 
 ## 功能页面
 
-### 登陆页面
+### 用户
+
+#### 登陆
 
 ![signin][signin]
 
-### 注册页面
+#### 注册
 
 ![signup][signup]
 
-### Scheduler 集群
+### 配置管理
+
+#### Scheduler 集群
+
+##### Scheduler 集群列表
 
 ![scheduler-cluster][scheduler-cluster]
 
-### 添加 Scheduler 集群
+##### 添加 Scheduler 集群
 
 ![add-scheduler-cluster][add-scheduler-cluster]
 
-### CDN 集群
+##### 配置 Scheduler 集群
+
+<p align="center">
+  <img width="500" height="500" src="../../../en/images/manager-console/configure-scheduler-cluster.jpg">
+</p>
+
+##### 配置 Scheduler 集群覆盖的客户端
+
+<p align="center">
+  <img width="500" height="500" src="../../../en/images/manager-console/configure-scheduler-cluster-client.jpg">
+</p>
+
+- `load_limit`: 客户端可以提供的最大下载任务负载数。
+
+#### CDN 集群
+
+##### CDN 集群列表
 
 ![cdn-cluster][cdn-cluster]
 
-### 添加 CDN 集群
+##### 添加 CDN 集群
 
 ![add-cdn-cluster][add-cdn-cluster]
+
+##### 配置 CDN 集群
+
+<p align="center">
+  <img width="500" height="500" src="../../../en/images/manager-console/configure-cdn-cluster.jpg">
+</p>
+
+- `load_limit`: CDN 可以提供的最大下载任务负载数。
 
 [signin]: ../../../en/images/manager-console/signin.jpg
 [signup]: ../../../en/images/manager-console/signup.jpg
