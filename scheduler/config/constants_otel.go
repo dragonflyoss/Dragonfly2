@@ -47,6 +47,7 @@ const (
 	SpanReportPieceResult = "report-piece-result"
 	SpanReportPeerResult  = "report-peer-result"
 	SpanPeerLeave         = "peer-leave"
+	SpanPreheat           = "preheat"
 )
 
 const (

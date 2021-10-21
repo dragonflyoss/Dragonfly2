@@ -17,6 +17,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -30,18 +31,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (s *rest) GetUser(id uint) (*model.User, error) {
+func (s *rest) GetUser(ctx context.Context, id uint) (*model.User, error) {
 	user := model.User{}
-	if err := s.db.First(&user, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
+func (s *rest) SignIn(ctx context.Context, json types.SignInRequest) (*model.User, error) {
 	user := model.User{}
-	if err := s.db.First(&user, model.User{
+	if err := s.db.WithContext(ctx).First(&user, model.User{
 		Name: json.Name,
 	}).Error; err != nil {
 		return nil, err
@@ -54,9 +55,9 @@ func (s *rest) SignIn(json types.SignInRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) ResetPassword(id uint, json types.ResetPasswordRequest) error {
+func (s *rest) ResetPassword(ctx context.Context, id uint, json types.ResetPasswordRequest) error {
 	user := model.User{}
-	if err := s.db.First(&user, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return err
 	}
 
@@ -69,7 +70,7 @@ func (s *rest) ResetPassword(id uint, json types.ResetPasswordRequest) error {
 		return err
 	}
 
-	if err := s.db.First(&user, id).Updates(model.User{
+	if err := s.db.WithContext(ctx).First(&user, id).Updates(model.User{
 		EncryptedPassword: string(encryptedPasswordBytes),
 	}).Error; err != nil {
 		return err
@@ -78,7 +79,7 @@ func (s *rest) ResetPassword(id uint, json types.ResetPasswordRequest) error {
 	return nil
 }
 
-func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
+func (s *rest) SignUp(ctx context.Context, json types.SignUpRequest) (*model.User, error) {
 	encryptedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(json.Password), bcrypt.MinCost)
 	if err != nil {
 		return nil, err
@@ -95,7 +96,7 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 		State:             model.UserStateEnabled,
 	}
 
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return nil, err
 	}
 
@@ -106,9 +107,9 @@ func (s *rest) SignUp(json types.SignUpRequest) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) OauthSignin(name string) (string, error) {
+func (s *rest) OauthSignin(ctx context.Context, name string) (string, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return "", err
 	}
 
@@ -120,9 +121,9 @@ func (s *rest) OauthSignin(name string) (string, error) {
 	return o.AuthCodeURL(), nil
 }
 
-func (s *rest) OauthSigninCallback(name, code string) (*model.User, error) {
+func (s *rest) OauthSigninCallback(ctx context.Context, name, code string) (*model.User, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return nil, err
 	}
 
@@ -147,7 +148,7 @@ func (s *rest) OauthSigninCallback(name, code string) (*model.User, error) {
 		Avatar: oauthUser.Avatar,
 		State:  model.UserStateEnabled,
 	}
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
 		if err, ok := errors.Cause(err).(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
 			return &user, nil
 		}
@@ -162,14 +163,14 @@ func (s *rest) OauthSigninCallback(name, code string) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *rest) GetRolesForUser(id uint) ([]string, error) {
+func (s *rest) GetRolesForUser(ctx context.Context, id uint) ([]string, error) {
 	return s.enforcer.GetRolesForUser(fmt.Sprint(id))
 }
 
-func (s *rest) AddRoleForUser(json types.AddRoleForUserParams) (bool, error) {
+func (s *rest) AddRoleForUser(ctx context.Context, json types.AddRoleForUserParams) (bool, error) {
 	return s.enforcer.AddRoleForUser(fmt.Sprint(json.ID), json.Role)
 }
 
-func (s *rest) DeleteRoleForUser(json types.DeleteRoleForUserParams) (bool, error) {
+func (s *rest) DeleteRoleForUser(ctx context.Context, json types.DeleteRoleForUserParams) (bool, error) {
 	return s.enforcer.DeleteRoleForUser(fmt.Sprint(json.ID), json.Role)
 }
