@@ -103,6 +103,13 @@ type REST interface {
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
 
+	CreateConfig(context.Context, types.CreateConfigRequest) (*model.Config, error)
+	DestroyConfig(context.Context, uint) error
+	UpdateConfig(context.Context, uint, types.UpdateConfigRequest) (*model.Config, error)
+	GetConfig(context.Context, uint) (*model.Config, error)
+	GetConfigs(context.Context, types.GetConfigsQuery) (*[]model.Config, error)
+	ConfigTotalCount(context.Context, types.GetConfigsQuery) (int64, error)
+
 	CreatePreheat(context.Context, types.CreatePreheatRequest) (*types.Preheat, error)
 	GetPreheat(context.Context, string) (*types.Preheat, error)
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
