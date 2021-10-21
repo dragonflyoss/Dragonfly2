@@ -130,8 +130,7 @@ func (t *job) Stop() {
 }
 
 func (t *job) preheat(ctx context.Context, req string) error {
-	logger.Info("preheat context", ctx)
-
+	// machinery can't passing context to worker, refer https://github.com/RichardKnop/machinery/issues/175
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()

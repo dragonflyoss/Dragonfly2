@@ -29,7 +29,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
-	gormopentracing "gorm.io/plugin/opentracing"
 )
 
 const (
@@ -100,14 +99,6 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 
 	// Run seed
 	if err := seed(db); err != nil {
-		return nil, err
-	}
-
-	// Middleware
-	if err := db.Use(gormopentracing.New(
-		gormopentracing.WithLogResult(true),
-		gormopentracing.WithSqlParameters(true),
-	)); err != nil {
 		return nil, err
 	}
 
