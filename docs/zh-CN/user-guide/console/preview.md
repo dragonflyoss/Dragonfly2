@@ -40,7 +40,9 @@ CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。�
 
 #### 添加 Scheduler 集群
 
-![add-scheduler-cluster][add-scheduler-cluster]
+<p align="center">
+  <img width="300" height="300" src="../../images/manager-console/configure-scheduler-cluster.jpg">
+</p>
 
 #### 配置 Scheduler 集群
 
@@ -48,7 +50,9 @@ CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。�
 
 #### 配置 Scheduler 集群覆盖的客户端
 
-![configure-scheduler-cluster-client][configure-scheduler-cluster-client]{ width: 200px; height: 200px; margin: 0 auto; display: block; }
+<p align="center">
+  <img width="300" height="300" src="../../images/manager-console/configure-scheduler-cluster-client.jpg">
+</p>
 
 - `load_limit`: 客户端可以提供的最大下载任务负载数。
 
@@ -65,6 +69,10 @@ CDN 实例信息通过，配置文件启动实例上报指定 CDN 集群 ID。�
 #### 配置 CDN 集群
 
 ![configure-cdn-cluster][configure-cdn-cluster]{ width: 200px; height: 200px; margin: 0 auto; display: block; }
+
+<p align="center">
+  <img width="300" height="300" src="../../images/manager-console/configure-cdn-cluster.jpg">
+</p>
 
 - `load_limit`: CDN 可以提供的最大下载任务负载数。
 
