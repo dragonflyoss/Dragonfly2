@@ -46,11 +46,11 @@ Default root username: `root` password: `dragonfly`.
 
 ##### Configure Scheduler Cluster
 
-![configure-scheduler-cluster][configure-scheduler-cluster]
+![configure-scheduler-cluster][configure-scheduler-cluster]{ width: 200px; height: 200px; margin: 0 auto; display: block; }
 
 ##### Configure Scheduler Cluster's Client
 
-![configure-scheduler-cluster-client][configure-scheduler-cluster-client]
+![configure-scheduler-cluster-client][configure-scheduler-cluster-client]{ width: 200px; height: 200px; margin: 0 auto; display: block; }
 
 - `load_limit`: client host can provide the maximum upload load.
 
@@ -66,7 +66,7 @@ Default root username: `root` password: `dragonfly`.
 
 ##### Configure CDN Cluster
 
-![configure-cdn-cluster][configure-cdn-cluster]
+![configure-cdn-cluster][configure-cdn-cluster]{ width: 200px; height: 200px; margin: 0 auto; display: block; }
 
 - `load_limit`: CDN host can provide the maximum upload load.
 
