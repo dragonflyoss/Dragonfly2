@@ -43,12 +43,12 @@ const (
 func (s *rest) CreatePreheat(ctx context.Context, json types.CreatePreheatRequest) (*types.Preheat, error) {
 	if json.SchedulerClusterID != nil {
 		schedulerCluster := model.SchedulerCluster{}
-		if err := s.db.First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
+		if err := s.db.WithContext(ctx).First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
 			return nil, err
 		}
 
 		scheduler := model.Scheduler{}
-		if err := s.db.First(&scheduler, model.Scheduler{
+		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {
@@ -59,14 +59,14 @@ func (s *rest) CreatePreheat(ctx context.Context, json types.CreatePreheatReques
 	}
 
 	schedulerClusters := []model.SchedulerCluster{}
-	if err := s.db.Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
 		return nil, err
 	}
 
 	var schedulers []model.Scheduler
 	for _, schedulerCluster := range schedulerClusters {
 		scheduler := model.Scheduler{}
-		if err := s.db.First(&scheduler, model.Scheduler{
+		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 			SchedulerClusterID: schedulerCluster.ID,
 			Status:             model.SchedulerStatusActive,
 		}).Error; err != nil {

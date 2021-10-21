@@ -34,7 +34,7 @@ func (s *rest) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*mod
 		CDNClusterID: json.CDNClusterID,
 	}
 
-	if err := s.db.Create(&cdn).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&cdn).Error; err != nil {
 		return nil, err
 	}
 
@@ -43,11 +43,11 @@ func (s *rest) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*mod
 
 func (s *rest) DestroyCDN(ctx context.Context, id uint) error {
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdn, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Unscoped().Delete(&model.CDN{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.CDN{}, id).Error; err != nil {
 		return err
 	}
 
@@ -56,7 +56,7 @@ func (s *rest) DestroyCDN(ctx context.Context, id uint) error {
 
 func (s *rest) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, id).Updates(model.CDN{
+	if err := s.db.WithContext(ctx).First(&cdn, id).Updates(model.CDN{
 		IDC:          json.IDC,
 		Location:     json.Location,
 		IP:           json.IP,
@@ -72,7 +72,7 @@ func (s *rest) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNReque
 
 func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdn, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -81,7 +81,7 @@ func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 
 func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, error) {
 	cdns := []model.CDN{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
 		HostName:     q.HostName,
 		IDC:          q.IDC,
 		Location:     q.Location,
@@ -98,7 +98,7 @@ func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN,
 
 func (s *rest) CDNTotalCount(ctx context.Context, q types.GetCDNsQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.CDN{}).Where(&model.CDN{
+	if err := s.db.WithContext(ctx).Model(&model.CDN{}).Where(&model.CDN{
 		HostName:     q.HostName,
 		IDC:          q.IDC,
 		Location:     q.Location,

@@ -33,7 +33,7 @@ import (
 
 func (s *rest) GetUser(ctx context.Context, id uint) (*model.User, error) {
 	user := model.User{}
-	if err := s.db.First(&user, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (s *rest) GetUser(ctx context.Context, id uint) (*model.User, error) {
 
 func (s *rest) SignIn(ctx context.Context, json types.SignInRequest) (*model.User, error) {
 	user := model.User{}
-	if err := s.db.First(&user, model.User{
+	if err := s.db.WithContext(ctx).First(&user, model.User{
 		Name: json.Name,
 	}).Error; err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func (s *rest) SignIn(ctx context.Context, json types.SignInRequest) (*model.Use
 
 func (s *rest) ResetPassword(ctx context.Context, id uint, json types.ResetPasswordRequest) error {
 	user := model.User{}
-	if err := s.db.First(&user, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&user, id).Error; err != nil {
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (s *rest) ResetPassword(ctx context.Context, id uint, json types.ResetPassw
 		return err
 	}
 
-	if err := s.db.First(&user, id).Updates(model.User{
+	if err := s.db.WithContext(ctx).First(&user, id).Updates(model.User{
 		EncryptedPassword: string(encryptedPasswordBytes),
 	}).Error; err != nil {
 		return err
@@ -96,7 +96,7 @@ func (s *rest) SignUp(ctx context.Context, json types.SignUpRequest) (*model.Use
 		State:             model.UserStateEnabled,
 	}
 
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (s *rest) SignUp(ctx context.Context, json types.SignUpRequest) (*model.Use
 
 func (s *rest) OauthSignin(ctx context.Context, name string) (string, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return "", err
 	}
 
@@ -123,7 +123,7 @@ func (s *rest) OauthSignin(ctx context.Context, name string) (string, error) {
 
 func (s *rest) OauthSigninCallback(ctx context.Context, name, code string) (*model.User, error) {
 	oauth := model.Oauth{}
-	if err := s.db.First(&oauth, model.Oauth{Name: name}).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&oauth, model.Oauth{Name: name}).Error; err != nil {
 		return nil, err
 	}
 
@@ -148,7 +148,7 @@ func (s *rest) OauthSigninCallback(ctx context.Context, name, code string) (*mod
 		Avatar: oauthUser.Avatar,
 		State:  model.UserStateEnabled,
 	}
-	if err := s.db.Create(&user).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
 		if err, ok := errors.Cause(err).(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
 			return &user, nil
 		}

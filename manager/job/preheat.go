@@ -89,7 +89,8 @@ func (p *preheat) GetPreheat(ctx context.Context, id string) (*types.Preheat, er
 }
 
 func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Scheduler, json types.CreatePreheatRequest) (*types.Preheat, error) {
-	ctx, span := tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributePreheatType.String(json.Type))
 	span.SetAttributes(config.AttributePreheatURL.String(json.URL))
 	defer span.End()

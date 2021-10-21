@@ -35,7 +35,7 @@ func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRe
 		SchedulerClusterID: json.SchedulerClusterID,
 	}
 
-	if err := s.db.Create(&scheduler).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {
 		return nil, err
 	}
 
@@ -44,11 +44,11 @@ func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRe
 
 func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
 	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Unscoped().Delete(&model.Scheduler{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Scheduler{}, id).Error; err != nil {
 		return err
 	}
 
@@ -57,7 +57,7 @@ func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
 
 func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, id).Updates(model.Scheduler{
+	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(model.Scheduler{
 		VIPs:               json.VIPs,
 		IDC:                json.IDC,
 		Location:           json.Location,
@@ -74,7 +74,7 @@ func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSc
 
 func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
-	if err := s.db.First(&scheduler, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -83,7 +83,7 @@ func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, err
 
 func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, error) {
 	schedulers := []model.Scheduler{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
 		HostName:           q.HostName,
 		IDC:                q.IDC,
 		Location:           q.Location,
@@ -99,7 +99,7 @@ func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*
 
 func (s *rest) SchedulerTotalCount(ctx context.Context, q types.GetSchedulersQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.Scheduler{}).Where(&model.Scheduler{
+	if err := s.db.WithContext(ctx).Model(&model.Scheduler{}).Where(&model.Scheduler{
 		HostName:           q.HostName,
 		IDC:                q.IDC,
 		Location:           q.Location,

@@ -36,7 +36,7 @@ func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNCluster
 		Config: config,
 	}
 
-	if err := s.db.Create(&cdnCluster).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&cdnCluster).Error; err != nil {
 		return nil, err
 	}
 
@@ -45,11 +45,11 @@ func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNCluster
 
 func (s *rest) DestroyCDNCluster(ctx context.Context, id uint) error {
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Unscoped().Delete(&model.CDNCluster{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.CDNCluster{}, id).Error; err != nil {
 		return err
 	}
 
@@ -60,7 +60,7 @@ func (s *rest) CreateCDNClusterWithSecurityGroupDomain(ctx context.Context, json
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
 		return s.CreateCDNCluster(ctx, json)
 	}
 
@@ -75,7 +75,7 @@ func (s *rest) CreateCDNClusterWithSecurityGroupDomain(ctx context.Context, json
 		Config: config,
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return nil, err
 
 	}
@@ -90,7 +90,7 @@ func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateC
 	}
 
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, id).Updates(model.CDNCluster{
+	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Updates(model.CDNCluster{
 		Name:   json.Name,
 		BIO:    json.BIO,
 		Config: config,
@@ -105,7 +105,7 @@ func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(ctx context.Context, id u
 	securityGroup := model.SecurityGroup{
 		Domain: json.SecurityGroupDomain,
 	}
-	if err := s.db.First(&securityGroup).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
 		return s.UpdateCDNCluster(ctx, id, json)
 	}
 
@@ -120,7 +120,7 @@ func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(ctx context.Context, id u
 		Config: config,
 	}
 
-	if err := s.db.Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +129,7 @@ func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(ctx context.Context, id u
 
 func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -138,7 +138,7 @@ func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, e
 
 func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
 	cdnClusters := []model.CDNCluster{}
-	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
 		Name: q.Name,
 	}).Find(&cdnClusters).Error; err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) 
 
 func (s *rest) CDNClusterTotalCount(ctx context.Context, q types.GetCDNClustersQuery) (int64, error) {
 	var count int64
-	if err := s.db.Model(&model.CDNCluster{}).Where(&model.CDNCluster{
+	if err := s.db.WithContext(ctx).Model(&model.CDNCluster{}).Where(&model.CDNCluster{
 		Name: q.Name,
 	}).Count(&count).Error; err != nil {
 		return 0, err
@@ -160,16 +160,16 @@ func (s *rest) CDNClusterTotalCount(ctx context.Context, q types.GetCDNClustersQ
 
 func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err
 	}
 
 	cdn := model.CDN{}
-	if err := s.db.First(&cdn, cdnID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdn, cdnID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
+	if err := s.db.WithContext(ctx).Model(&cdnCluster).Association("CDNs").Append(&cdn); err != nil {
 		return err
 	}
 
@@ -178,16 +178,16 @@ func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
 
 func (s *rest) AddSchedulerClusterToCDNCluster(ctx context.Context, id, schedulerClusterID uint) error {
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.First(&cdnCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err
 	}
 
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
 

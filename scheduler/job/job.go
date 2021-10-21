@@ -130,7 +130,10 @@ func (t *job) Stop() {
 }
 
 func (t *job) preheat(ctx context.Context, req string) error {
-	ctx, span := tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindConsumer))
+	logger.Info("preheat context", ctx)
+
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindConsumer))
 	defer span.End()
 
 	request := &internaljob.PreheatRequest{}
