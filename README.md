@@ -55,11 +55,6 @@ Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as an In
 
 **Dfget:** The client of Dragonfly used for downloading files. It's similar to wget.
 
-## Getting Started
-
-- [Quick Start][quickstart]
-- [Installation][installation]
-
 ## Documentation
 
 You can find the full documentation [on the repo][document].
@@ -84,8 +79,6 @@ Please refer to our [Code of Conduct][codeconduct].
 
 [arch]: docs/en/images/arch.png
 [logo-linear]: docs/en/images/logo/dragonfly-linear.svg
-[quickstart]: docs/en/user-guide/quick-start.md
-[installation]: docs/en/user-guide/install/README.md
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md

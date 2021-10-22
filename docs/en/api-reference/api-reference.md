@@ -1,4 +1,8 @@
-# Dragonfly Manager
+# API Reference
+
+Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see `API Reference`. Like command line document, all API docs are auto generated via source code.
+
+## Dragonfly Manager
 
 
 <a name="overview"></a>

@@ -1,21 +1,10 @@
-# Kubernetes with Dragonfly
+# Helm Support
 
-Now we can deploy all components of Dragonfly in Kubernetes cluster. We deploy scheduler and cdn as `StatefulSets`,
-daemon as `DaemonSets`, manager as `Deployments`.
-
-Table of contents:
-
-* [Helm](#helm-support)
-* [Kustomize](#kustomize-support)
-* [TODO Upgrade Guide](#upgrade-guide)
-
-## Helm Support
-
-### Runtime Configuration Guide for Dragonfly Helm Chart
+## Runtime Configuration Guide for Dragonfly Helm Chart
 
 When enable runtime configuration in dragonfly, you can skip [Configure Runtime](#configure-runtime-manually) manually.
 
-#### 1. Docker
+### 1. Docker
 
 > **We did not recommend to using dragonfly with docker in Kubernetes** due to many reasons: 1. no fallback image pulling policy. 2. deprecated in Kubernetes.
 > Because the original `daemonset` in Kubernetes did not support `Surging Rolling Update` policy.
@@ -84,7 +73,7 @@ Limitations:
 * Need restart docker daemon
 * When upgrade dfdaemon, new image must be pulled beforehand.
 
-#### 2. Containerd
+### 2. Containerd
 
 The config of containerd has two version with complicated fields. These are many cases to consider:
 
@@ -143,7 +132,7 @@ containerRuntime:
     enable: true
 ```
 
-#### 3. [WIP] CRI-O
+### 3. [WIP] CRI-O
 
 > DON'T USE, Work in progress
 
@@ -163,21 +152,21 @@ containerRuntime:
     - "https://harbor.example.com:8443"
 ```
 
-### Prepare Kubernetes Cluster
+## Prepare Kubernetes Cluster
 
 If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
-### Install Dragonfly
+## Install Dragonfly
 
-#### Install with default configuration
+### Install with default configuration
 
 ```shell
 helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
 helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
 ```
 
-#### Install with custom configuration
+### Install with custom configuration
 
 Create the `values.yaml` configuration file. It is recommended to use external redis and mysql instead of containers.
 
@@ -211,7 +200,7 @@ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
 helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
-#### Install with an existing manager
+### Install with an existing manager
 
 Create the `values.yaml` configuration file. Need to configure the cluster id associated with scheduler and cdn.
 
@@ -250,7 +239,7 @@ mysql:
   enable: false
 ```
 
-### Wait Dragonfly Ready
+## Wait Dragonfly Ready
 
 Wait all pods running
 
@@ -258,19 +247,19 @@ Wait all pods running
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
-### Manager Console
+## Manager Console
 
 The console page will be displayed on `dragonfly-manager.dragonfly-system.svc.cluster.local:8080`.
 
 If you need to bind Ingress, you can refer to [configuration options](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values) of Helm Charts, or create it manually.
 
-Console features preview reference document [console preview](../user-guide/console/preview.md).
+Console features preview reference document [console preview](../../../design/manager.md).
 
-### Configure Runtime Manually
+## Configure Runtime Manually
 
-Use Containerd with CRI as example, more runtimes can be found [here](../user-guide/quick-start.md)
+Use Containerd with CRI as example, more runtimes can be found [here](../../../quick-start.md)
 
-> This example is for single registry, multiple registries configuration is [here](../user-guide/registry-mirror/cri-containerd.md)
+> This example is for single registry, multiple registries configuration is [here](../../../container-runtimes)
 
 For private registry:
 
@@ -296,7 +285,7 @@ Add above config to `/etc/containerd/config.toml` and restart Containerd
 systemctl restart containerd
 ```
 
-### Using Dragonfly
+## Using Dragonfly
 
 After all above steps, create a new pod with target registry. Or just pull an image with `crictl`:
 
@@ -321,33 +310,3 @@ Example output:
 ```
 {"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
 ```
-
-## Kustomize Support
-
-### Prepare Kubernetes Cluster
-
-If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
-recommended. Just run `minikube start`.
-
-### Build and Apply Kustomize Configuration
-
-```shell
-git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
-```
-
-### Wait Dragonfly Ready
-
-Wait all pods running
-
-```shell
-kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
-```
-
-### Next Steps
-
-Following [Configure Runtime](#configure-runtime-manually) to configure runtime.
-
-Following [Using Dragonfly](#using-dragonfly) to use Dragonfly.
-
-## Upgrade Guide
