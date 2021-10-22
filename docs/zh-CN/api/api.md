@@ -547,6 +547,223 @@ Update by json config
 * CDN
 
 
+<a name="api-v1-configs-post"></a>
+### Create Config
+```
+POST /api/v1/configs
+```
+
+
+#### 说明
+create by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Body**|**Config**  <br>*必填*|Config|[types.CreateConfigRequest](#types-createconfigrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Config
+
+
+<a name="api-v1-configs-get"></a>
+### Get Configs
+```
+GET /api/v1/configs
+```
+
+
+#### 说明
+Get Configs
+
+
+#### 参数
+
+|类型|名称|说明|类型|默认值|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*必填*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*必填*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< [model.Config](#model-config) > array|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Config
+
+
+<a name="api-v1-configs-id-get"></a>
+### Get Config
+```
+GET /api/v1/configs/{id}
+```
+
+
+#### 说明
+Get Config by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Config
+
+
+<a name="api-v1-configs-id-delete"></a>
+### Destroy Config
+```
+DELETE /api/v1/configs/{id}
+```
+
+
+#### 说明
+Destroy by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Config
+
+
+<a name="api-v1-configs-id-patch"></a>
+### Update Config
+```
+PATCH /api/v1/configs/{id}
+```
+
+
+#### 说明
+Update by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Body**|**Config**  <br>*必填*|Config|[types.UpdateConfigRequest](#types-updateconfigrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Config](#model-config)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Config
+
+
 <a name="api-v1-healthy-get"></a>
 ### Get Health
 ```
@@ -831,7 +1048,7 @@ Get Permissions
 
 
 <a name="api-v1-preheats-post"></a>
-### Create Preheat
+### Create V1 Preheat
 ```
 POST /api/v1/preheats
 ```
@@ -845,14 +1062,14 @@ create by json config
 
 |类型|名称|说明|类型|
 |---|---|---|---|
-|**Body**|**CDN**  <br>*必填*|Preheat|[types.CreatePreheatRequest](#types-createpreheatrequest)|
+|**Body**|**CDN**  <br>*必填*|Preheat|[types.CreateV1PreheatRequest](#types-createv1preheatrequest)|
 
 
 #### 响应
 
 |HTTP代码|说明|类型|
 |---|---|---|
-|**200**|OK|[types.Preheat](#types-preheat)|
+|**200**|OK|[types.CreateV1PreheatResponse](#types-createv1preheatresponse)|
 |**400**||无内容|
 |**404**||无内容|
 |**500**||无内容|
@@ -874,7 +1091,7 @@ create by json config
 
 
 <a name="api-v1-preheats-id-get"></a>
-### Get Preheat
+### Get V1 Preheat
 ```
 GET /api/v1/preheats/{id}
 ```
@@ -895,7 +1112,7 @@ Get Preheat by id
 
 |HTTP代码|说明|类型|
 |---|---|---|
-|**200**|OK|[types.Preheat](#types-preheat)|
+|**200**|OK|[types.GetV1PreheatResponse](#types-getv1preheatresponse)|
 |**400**||无内容|
 |**404**||无内容|
 |**500**||无内容|
@@ -2230,28 +2447,53 @@ delete role by uri config
 * Users
 
 
+<a name="api-v1-users-id-get"></a>
+### Get User
+```
+GET /api/v1/users/{id}
+```
+
+
+#### 说明
+Get User by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.User](#model-user)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* User
+
+
 
 
 <a name="definitions"></a>
 ## 定义
-
-<a name="model-assertion"></a>
-### model.Assertion
-
-|名称|类型|
-|---|---|
-|**key**  <br>*可选*|string|
-|**policy**  <br>*可选*|< < string > array > array|
-|**policyMap**  <br>*可选*|< string, integer > map|
-|**rm**  <br>*可选*|[rbac.RoleManager](#rbac-rolemanager)|
-|**tokens**  <br>*可选*|< string > array|
-|**value**  <br>*可选*|string|
-
-
-<a name="model-assertionmap"></a>
-### model.AssertionMap
-*类型* : < string, [model.Assertion](#model-assertion) > map
-
 
 <a name="model-cdn"></a>
 ### model.CDN
@@ -2259,13 +2501,16 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**cdnclusterID**  <br>*可选*|integer|
+|**created_at**  <br>*可选*|string|
 |**download_port**  <br>*可选*|integer|
 |**host_name**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**idc**  <br>*可选*|string|
 |**ip**  <br>*可选*|string|
 |**location**  <br>*可选*|string|
 |**port**  <br>*可选*|integer|
 |**status**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
 
 
 <a name="model-cdncluster"></a>
@@ -2275,9 +2520,26 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*可选*|string|
 |**config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
+|**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*可选*|string|
-|**securityGroupID**  <br>*可选*|integer|
+|**security_group_id**  <br>*可选*|integer|
+|**updated_at**  <br>*可选*|string|
+
+
+<a name="model-config"></a>
+### model.Config
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
+|**key**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
+|**user_id**  <br>*可选*|integer|
+|**value**  <br>*可选*|string|
 
 
 <a name="model-jsonmap"></a>
@@ -2293,8 +2555,11 @@ delete role by uri config
 |**bio**  <br>*可选*|string|
 |**client_id**  <br>*可选*|string|
 |**client_secret**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
 |**redirect_url**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
 
 
 <a name="model-scheduler"></a>
@@ -2302,7 +2567,9 @@ delete role by uri config
 
 |名称|类型|
 |---|---|
+|**created_at**  <br>*可选*|string|
 |**host_name**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**idc**  <br>*可选*|string|
 |**ip**  <br>*可选*|string|
 |**location**  <br>*可选*|string|
@@ -2310,6 +2577,7 @@ delete role by uri config
 |**port**  <br>*可选*|integer|
 |**schedulerClusterID**  <br>*可选*|integer|
 |**status**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
 |**vips**  <br>*可选*|string|
 
 
@@ -2319,12 +2587,16 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
+|**cdn_clusters**  <br>*可选*|< [model.CDNCluster](#model-cdncluster) > array|
 |**client_config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
 |**config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
+|**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*可选*|string|
 |**scopes**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
-|**securityGroupID**  <br>*可选*|integer|
+|**security_group_id**  <br>*可选*|integer|
+|**updated_at**  <br>*可选*|string|
 
 
 <a name="model-securitygroup"></a>
@@ -2333,9 +2605,12 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
 |**domain**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
 |**proxy_domain**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
 
 
 <a name="model-user"></a>
@@ -2345,12 +2620,14 @@ delete role by uri config
 |---|---|
 |**avatar**  <br>*可选*|string|
 |**bio**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
 |**email**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
 |**location**  <br>*可选*|string|
 |**name**  <br>*可选*|string|
 |**phone**  <br>*可选*|string|
-|**private_token**  <br>*可选*|string|
 |**state**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
 
 
 <a name="rbac-permission"></a>
@@ -2362,11 +2639,6 @@ delete role by uri config
 |**object**  <br>*必填*|string|
 
 
-<a name="rbac-rolemanager"></a>
-### rbac.RoleManager
-*类型* : object
-
-
 <a name="types-addpermissionforrolerequest"></a>
 ### types.AddPermissionForRoleRequest
 
@@ -2376,13 +2648,22 @@ delete role by uri config
 |**object**  <br>*必填*|string|
 
 
+<a name="types-cdnclusterconfig"></a>
+### types.CDNClusterConfig
+
+|名称|类型|
+|---|---|
+|**load_limit**  <br>*可选*|integer|
+|**net_topology**  <br>*可选*|string|
+
+
 <a name="types-createcdnclusterrequest"></a>
 ### types.CreateCDNClusterRequest
 
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
-|**config**  <br>*必填*|object|
+|**config**  <br>*必填*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*必填*|string|
 |**security_group_domain**  <br>*可选*|string|
 
@@ -2399,6 +2680,17 @@ delete role by uri config
 |**ip**  <br>*必填*|string|
 |**location**  <br>*可选*|string|
 |**port**  <br>*必填*|integer|
+
+
+<a name="types-createconfigrequest"></a>
+### types.CreateConfigRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**key**  <br>*必填*|string|
+|**user_id**  <br>*必填*|integer|
+|**value**  <br>*必填*|string|
 
 
 <a name="types-createoauthrequest"></a>
@@ -2441,11 +2733,11 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*可选*|string|
 |**cdn_cluster_id**  <br>*可选*|integer|
-|**client_config**  <br>*必填*|object|
-|**config**  <br>*必填*|object|
+|**client_config**  <br>*必填*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
+|**config**  <br>*必填*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*必填*|string|
-|**scopes**  <br>*可选*|object|
+|**scopes**  <br>*可选*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
 |**security_group_domain**  <br>*可选*|string|
 
 
@@ -2475,6 +2767,25 @@ delete role by uri config
 |**proxy_domain**  <br>*可选*|string|
 
 
+<a name="types-createv1preheatrequest"></a>
+### types.CreateV1PreheatRequest
+
+|名称|类型|
+|---|---|
+|**filter**  <br>*可选*|string|
+|**headers**  <br>*可选*|< string, string > map|
+|**type**  <br>*必填*|string|
+|**url**  <br>*必填*|string|
+
+
+<a name="types-createv1preheatresponse"></a>
+### types.CreateV1PreheatResponse
+
+|名称|类型|
+|---|---|
+|**ID**  <br>*可选*|string|
+
+
 <a name="types-deletepermissionforrolerequest"></a>
 ### types.DeletePermissionForRoleRequest
 
@@ -2482,6 +2793,17 @@ delete role by uri config
 |---|---|
 |**action**  <br>*必填*|string|
 |**object**  <br>*必填*|string|
+
+
+<a name="types-getv1preheatresponse"></a>
+### types.GetV1PreheatResponse
+
+|名称|类型|
+|---|---|
+|**ID**  <br>*可选*|string|
+|**finishTime**  <br>*可选*|string|
+|**startTime**  <br>*可选*|string|
+|**status**  <br>*可选*|string|
 
 
 <a name="types-preheat"></a>
@@ -2501,6 +2823,24 @@ delete role by uri config
 |---|---|
 |**new_password**  <br>*必填*|string|
 |**old_password**  <br>*必填*|string|
+
+
+<a name="types-schedulerclusterclientconfig"></a>
+### types.SchedulerClusterClientConfig
+
+|名称|类型|
+|---|---|
+|**load_limit**  <br>*可选*|integer|
+
+
+<a name="types-schedulerclusterconfig"></a>
+### types.SchedulerClusterConfig
+*类型* : object
+
+
+<a name="types-schedulerclusterscopes"></a>
+### types.SchedulerClusterScopes
+*类型* : object
 
 
 <a name="types-signuprequest"></a>
@@ -2523,7 +2863,7 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
-|**config**  <br>*可选*|object|
+|**config**  <br>*可选*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*可选*|string|
 |**security_group_domain**  <br>*可选*|string|
 
@@ -2539,6 +2879,17 @@ delete role by uri config
 |**ip**  <br>*可选*|string|
 |**location**  <br>*可选*|string|
 |**port**  <br>*可选*|integer|
+
+
+<a name="types-updateconfigrequest"></a>
+### types.UpdateConfigRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**key**  <br>*可选*|string|
+|**user_id**  <br>*可选*|integer|
+|**value**  <br>*可选*|string|
 
 
 <a name="types-updateoauthrequest"></a>
@@ -2560,11 +2911,11 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*可选*|string|
 |**cdn_cluster_id**  <br>*可选*|integer|
-|**client_config**  <br>*可选*|object|
-|**config**  <br>*可选*|object|
+|**client_config**  <br>*可选*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
+|**config**  <br>*可选*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*可选*|string|
-|**scopes**  <br>*可选*|object|
+|**scopes**  <br>*可选*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
 |**security_group_domain**  <br>*可选*|string|
 
 
