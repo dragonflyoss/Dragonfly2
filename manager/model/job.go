@@ -22,7 +22,8 @@ type Job struct {
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Type              string             `gorm:"column:type;type:varchar(256);comment:type" json:"type"`
 	Status            string             `gorm:"column:status;type:varchar(256);default:'PENDING';comment:service status" json:"status"`
-	Body              JSONMap            `gorm:"column:body;not null;comment:task request body" json:"body"`
+	Args              JSONMap            `gorm:"column:args;not null;comment:task request args" json:"args"`
+	Result            JSONMap            `gorm:"column:result;not null;comment:task result" json:"result"`
 	UserID            uint               `gorm:"comment:user id" json:"user_id"`
 	User              User               `json:"-"`
 	CDNClusters       []CDNCluster       `gorm:"many2many:job_cdn_cluster;" json:"cdn_clusters"`

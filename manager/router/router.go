@@ -182,6 +182,14 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	config.GET(":id", h.GetConfig)
 	config.GET("", h.GetConfigs)
 
+	// Job
+	job := apiv1.Group("/jobs")
+	job.POST("", h.CreateJob)
+	job.DELETE(":id", h.DestroyJob)
+	job.PATCH(":id", h.UpdateJob)
+	job.GET(":id", h.GetJob)
+	job.GET("", h.GetJobs)
+
 	// Preheat
 	ph := apiv1.Group("/preheats")
 	ph.POST("", h.CreatePreheat)

@@ -52,8 +52,8 @@ const (
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
-	CreatePreheat(context.Context, []model.Scheduler, types.CreatePreheatRequest) (*types.Preheat, error)
-	GetPreheat(context.Context, string) (*types.Preheat, error)
+	CreatePreheat(context.Context, []model.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
+	GetPreheat(context.Context, string) (*internaljob.GroupJobState, error)
 }
 
 type preheat struct {
@@ -75,20 +75,20 @@ func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
 	}, nil
 }
 
-func (p *preheat) GetPreheat(ctx context.Context, id string) (*types.Preheat, error) {
+func (p *preheat) GetPreheat(ctx context.Context, id string) (*internaljob.GroupJobState, error) {
 	groupJobState, err := p.job.GetGroupJobState(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &types.Preheat{
-		ID:        groupJobState.GroupUUID,
-		Status:    groupJobState.State,
+	return &internaljob.GroupJobState{
+		GroupUUID: groupJobState.GroupUUID,
+		State:     groupJobState.State,
 		CreatedAt: groupJobState.CreatedAt,
 	}, nil
 }
 
-func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Scheduler, json types.CreatePreheatRequest) (*types.Preheat, error) {
+func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
 	span.SetAttributes(config.AttributePreheatType.String(json.Type))
@@ -136,7 +136,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 	return p.createGroupJob(ctx, files, queues)
 }
 
-func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*types.Preheat, error) {
+func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	signatures := []*machineryv1tasks.Signature{}
 	var urls []string
 	for i := range files {
@@ -169,9 +169,9 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 	}
 
 	logger.Infof("create preheat group job successed, group uuid: %s， urls:%s", group.GroupUUID, urls)
-	return &types.Preheat{
-		ID:        group.GroupUUID,
-		Status:    machineryv1tasks.StatePending,
+	return &internaljob.GroupJobState{
+		GroupUUID: group.GroupUUID,
+		State:     machineryv1tasks.StatePending,
 		CreatedAt: time.Now(),
 	}, nil
 }
