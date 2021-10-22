@@ -17,7 +17,10 @@
 package peer
 
 import (
+	"context"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -90,7 +93,8 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(p.pt.ctx))
+	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
@@ -119,7 +123,8 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)
-	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(p.pt.ctx))
+	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
