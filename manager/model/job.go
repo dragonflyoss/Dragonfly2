@@ -18,12 +18,13 @@ package model
 
 type Job struct {
 	Model
-	Name   string  `gorm:"column:name;type:varchar(256);index:uk_cdn_cluster_name,unique;not null;comment:name" json:"name"`
-	BIO    string  `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
-	TaskID string  `gorm:"column:task_id;type:varchar(256);not null;comment:task id" json:"task_id"`
-	Type   string  `gorm:"column:type;type:varchar(256);comment:type" json:"type"`
-	Status string  `gorm:"column:status;type:varchar(256);default:'PENDING';comment:service status" json:"status"`
-	Body   JSONMap `gorm:"column:body;not null;comment:task request body" json:"body"`
-	UserID uint    `gorm:"comment:user id" json:"user_id"`
-	User   User    `json:"-"`
+	TaskID            string             `gorm:"column:task_id;type:varchar(256);not null;comment:task id" json:"task_id"`
+	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
+	Type              string             `gorm:"column:type;type:varchar(256);comment:type" json:"type"`
+	Status            string             `gorm:"column:status;type:varchar(256);default:'PENDING';comment:service status" json:"status"`
+	Body              JSONMap            `gorm:"column:body;not null;comment:task request body" json:"body"`
+	UserID            uint               `gorm:"comment:user id" json:"user_id"`
+	User              User               `json:"-"`
+	CDNClusters       []CDNCluster       `gorm:"many2many:job_cdn_cluster;" json:"cdn_clusters"`
+	SchedulerClusters []SchedulerCluster `gorm:"many2many:job_scheduler_cluster;" json:"scheduler_clusters"`
 }

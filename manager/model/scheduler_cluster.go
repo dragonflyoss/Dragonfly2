@@ -28,4 +28,5 @@ type SchedulerCluster struct {
 	Schedulers      []Scheduler   `json:"-"`
 	SecurityGroupID uint          `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup   SecurityGroup `json:"-"`
+	Jobs            []Job         `json:"-"`
 }
