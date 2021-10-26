@@ -11,6 +11,7 @@ Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感
     * [cdn](cli-reference/cdn.md)
     * [scheduler](cli-reference/scheduler.md)
     * [manager](cli-reference/manager.md)
+* [问题排查](troubleshooting/README.md)
 * [API 参考](#API参考)
 * [生态](#生态)
     * [Kubernetes 集成](ecosystem/Kubernetes-with-Dragonfly.md)
