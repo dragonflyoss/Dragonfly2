@@ -1,6 +1,7 @@
 # Product Thinking and Design
 
 ## Positioning
+
 Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented) file distribution and management services, and become the cloud-native best practice and standard solution in this realm.
 
 ## What problems are solved
@@ -46,7 +47,7 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 
 #### CDN system
 
-![cdn][cdn]
+![cdn][TODO cdn]
 
 ### Sub-system function
 
@@ -100,6 +101,5 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 
 
 [arch]: ../images/arch.png
-[association]: ../../zh-CN/images/association.png
-[download-process]: ../../zh-CN/images/download-process.png
-[cdn]: ../../zh-CN/images/cdn.png
+[association]: ../images/association.png
+[download-process]: ../images/download-process.png
