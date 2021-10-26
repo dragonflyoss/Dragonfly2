@@ -200,3 +200,31 @@ func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 
 	ctx.Status(http.StatusOK)
 }
+
+// @Summary Delete Scheduler to CallSystem
+// @Description Delete Scheduler to CallSystem
+// @Tags CallSystem
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param scheduler_cluster_id path string true "scheduler cluster id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /callsystem/{id}/scheduler-clusters/{scheduler_cluster_id} [delete]
+func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
+	var params types.DeleteSchedulerClusterToCallSystemParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.DeleteSchedulerClusterToCallSystem(params.ID, params.SchedulerClusterID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}

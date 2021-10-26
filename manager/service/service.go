@@ -120,6 +120,7 @@ type REST interface {
 	GetCallSystems(types.GetCallSystemsQuery) (*[]model.CallSystem, error)
 	CallSystemTotalCount(types.GetCallSystemsQuery) (int64, error)
 	AddSchedulerClusterToCallSystem(uint, uint) error
+	DeleteSchedulerClusterToCallSystem(uint, uint) error
 }
 
 type rest struct {

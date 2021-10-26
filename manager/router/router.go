@@ -154,6 +154,8 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	cs.PATCH(":id", h.UpdateCallSystem)
 	cs.GET(":id", h.GetCallSystem)
 	cs.GET("", h.GetCallSystems)
+	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCallSystem)
+	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToCallSystem)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
