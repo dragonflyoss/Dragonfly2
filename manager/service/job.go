@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
@@ -101,26 +102,26 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 	retry.Run(ctx, func() (interface{}, bool, error) {
 		groupJob, err := s.job.GetGroupJobState(taskID)
 		if err != nil {
-			logger.Errorf("polling job %s and task %s failed: %v", id, taskID, err)
-			return nil, false, nil
+			logger.Errorf("polling job %d and task %s failed: %v", id, taskID, err)
+			return nil, false, err
 		}
 
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
 			Status: groupJob.State,
 		}).Error; err != nil {
-			logger.Errorf("polling job %s and task %s store failed: %v", id, taskID, err)
+			logger.Errorf("polling job %d and task %s store failed: %v", id, taskID, err)
 			return nil, true, err
 		}
 
 		switch job.Status {
 		case machineryv1tasks.StateSuccess:
-			logger.Infof("polling job %s and task %s is finally successful", id, taskID)
+			logger.Infof("polling job %d and task %s is finally successful", id, taskID)
 			return nil, true, nil
 		case machineryv1tasks.StateFailure:
-			logger.Errorf("polling job %s and task %s is finally failed", id, taskID)
+			logger.Errorf("polling job %d and task %s is finally failed", id, taskID)
 			return nil, true, nil
 		default:
-			return nil, false, nil
+			return nil, false, fmt.Errorf("polling job %d and task %s status is %s", id, taskID, job.Status)
 		}
 	}, 5, 10, 120, nil)
 
@@ -130,9 +131,9 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
 			Status: machineryv1tasks.StateFailure,
 		}).Error; err != nil {
-			logger.Errorf("polling job %s and task %s store failed: %v", id, taskID, err)
+			logger.Errorf("polling job %d and task %s store failed: %v", id, taskID, err)
 		}
-		logger.Errorf("polling job %s and task %s timeout", id, taskID)
+		logger.Errorf("polling job %d and task %s timeout", id, taskID)
 	}
 }
 
@@ -151,7 +152,7 @@ func (s *rest) DestroyJob(ctx context.Context, id uint) error {
 
 func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
+	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
 		BIO:    json.BIO,
 		UserID: json.UserID,
 	}).Error; err != nil {
@@ -163,7 +164,7 @@ func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobReque
 
 func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Error; err != nil {
 		return nil, err
 	}
 

@@ -17,19 +17,18 @@
 package types
 
 type CreateJobRequest struct {
-	BIO                 string                 `uri:"bio" binding:"omitempty"`
-	Type                string                 `uri:"type" binding:"required"`
-	Status              string                 `uri:"status" binding:"required,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
-	Args                map[string]interface{} `uri:"args" binding:"omitempty"`
-	Result              map[string]interface{} `uri:"result" binding:"omitempty"`
-	UserID              uint                   `uri:"user_id" binding:"required"`
-	CDNClusterIDs       []uint                 `uri:"cdn_cluster_ids" binding:"omitempty"`
-	SchedulerClusterIDs []uint                 `uri:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string                 `json:"bio" binding:"omitempty"`
+	Type                string                 `json:"type" binding:"required"`
+	Args                map[string]interface{} `json:"args" binding:"omitempty"`
+	Result              map[string]interface{} `json:"result" binding:"omitempty"`
+	UserID              uint                   `json:"user_id" binding:"required"`
+	CDNClusterIDs       []uint                 `json:"cdn_cluster_ids" binding:"omitempty"`
+	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type UpdateJobRequest struct {
-	BIO    string `uri:"bio" binding:"omitempty"`
-	UserID uint   `uri:"user_id" binding:"required"`
+	BIO    string `json:"bio" binding:"omitempty"`
+	UserID uint   `json:"user_id" binding:"required"`
 }
 
 type JobParams struct {
@@ -38,20 +37,19 @@ type JobParams struct {
 
 type GetJobsQuery struct {
 	Type    string `form:"type" binding:"omitempty"`
-	Status  string `form:"status" binding:"omitempty"`
+	Status  string `form:"status" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }
 
 type CreatePreheatJobRequest struct {
-	BIO                 string                 `uri:"bio" binding:"omitempty"`
-	Type                string                 `uri:"type" binding:"required"`
-	Status              string                 `uri:"status" binding:"required,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
-	Args                PreheatArgs            `uri:"args" binding:"omitempty"`
-	Result              map[string]interface{} `uri:"result" binding:"omitempty"`
-	UserID              uint                   `uri:"user_id" binding:"required"`
-	SchedulerClusterIDs []uint                 `uri:"scheduler_cluster_ids" binding:"required"`
+	BIO                 string                 `json:"bio" binding:"omitempty"`
+	Type                string                 `json:"type" binding:"required"`
+	Args                PreheatArgs            `json:"args" binding:"omitempty"`
+	Result              map[string]interface{} `json:"result" binding:"omitempty"`
+	UserID              uint                   `json:"user_id" binding:"required"`
+	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type PreheatArgs struct {

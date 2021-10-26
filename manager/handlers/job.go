@@ -6,6 +6,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 )
 
 // @Summary Create Job
@@ -21,7 +22,7 @@ import (
 // @Router /jobs [post]
 func (h *Handlers) CreateJob(ctx *gin.Context) {
 	var json types.CreateJobRequest
-	if err := ctx.ShouldBindJSON(&json); err != nil {
+	if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
@@ -29,7 +30,7 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 	switch json.Type {
 	case job.PreheatJob:
 		var json types.CreatePreheatJobRequest
-		if err := ctx.ShouldBindJSON(&json); err != nil {
+		if err := ctx.ShouldBindBodyWith(&json, binding.JSON); err != nil {
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 			return
 		}
