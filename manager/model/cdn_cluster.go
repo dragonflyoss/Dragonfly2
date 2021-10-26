@@ -26,5 +26,5 @@ type CDNCluster struct {
 	CDNs              []CDN              `json:"-"`
 	SecurityGroupID   uint               `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
-	Jobs              []Job              `json:"-"`
+	Jobs              []Job              `gorm:"many2many:job_cdn_cluster;" json:"jobs"`
 }

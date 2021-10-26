@@ -190,11 +190,6 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	job.GET(":id", h.GetJob)
 	job.GET("", h.GetJobs)
 
-	// Preheat
-	ph := apiv1.Group("/preheats")
-	ph.POST("", h.CreatePreheat)
-	ph.GET(":id", h.GetPreheat)
-
 	// Compatible with the V1 preheat.
 	pv1 := r.Group("preheats")
 	r.GET("/_ping", h.GetHealth)

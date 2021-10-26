@@ -18,7 +18,9 @@ package service
 
 import (
 	"context"
+	"strconv"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -43,7 +45,7 @@ const (
 )
 
 func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
-	p, err := s.CreatePreheatJob(ctx, types.CreatePreheatRequest{
+	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatRequest{
 		Type: internaljob.PreheatJob,
 		Args: types.PreheatArgs{
 			Type:    json.Type,
@@ -57,20 +59,23 @@ func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRe
 	}
 
 	return &types.CreateV1PreheatResponse{
-		ID: p.TaskID,
+		ID: strconv.FormatUint(uint64(job.ID), 10),
 	}, nil
 }
 
-func (s *rest) GetV1Preheat(ctx context.Context, id string) (*types.GetV1PreheatResponse, error) {
+func (s *rest) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1PreheatResponse, error) {
+	id, err := strconv.ParseUint(rawID, 10, 32)
+	if err != nil {
+		logger.Errorf("preheat convert error", err)
+	}
+
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).First(&job, &model.Job{
-		TaskID: id,
-	}).Error; err != nil {
+	if err := s.db.WithContext(ctx).First(&job, uint(id)).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &types.GetV1PreheatResponse{
-		ID:         job.TaskID,
+		ID:         strconv.FormatUint(uint64(job.ID), 10),
 		Status:     convertStatus(job.Status),
 		StartTime:  job.CreatedAt.String(),
 		FinishTime: job.UpdatedAt.String(),

@@ -33,3 +33,7 @@ type GetV1PreheatResponse struct {
 	StartTime  string `json:"startTime,omitempty"`
 	FinishTime string `json:"finishTime,omitempty"`
 }
+
+type V1PreheatParams struct {
+	ID string `uri:"id" binding:"required"`
+}
