@@ -24,7 +24,7 @@ type Job struct {
 	Status            string             `gorm:"column:status;type:varchar(256);not null;default:'PENDING';comment:service status" json:"status"`
 	Args              JSONMap            `gorm:"column:args;not null;comment:task request args" json:"args"`
 	Result            JSONMap            `gorm:"column:result;comment:task result" json:"result"`
-	UserID            uint               `gorm:"comment:user id" json:"user_id"`
+	UserID            uint               `gorm:"column:user_id;not null;comment:user id" json:"user_id"`
 	User              User               `json:"-"`
 	CDNClusters       []CDNCluster       `gorm:"many2many:job_cdn_cluster;" json:"cdn_clusters"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:job_scheduler_cluster;" json:"scheduler_clusters"`
