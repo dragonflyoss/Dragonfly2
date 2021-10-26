@@ -217,7 +217,7 @@ func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 			return false
 		case <-ticker.C:
 			out, err := pod.CurlCommand("", nil, nil,
-				fmt.Sprintf("http://%s:%s/%s/%s", managerService, managerPort, preheatPath, preheat.ID)).CombinedOutput()
+				fmt.Sprintf("http://%s:%s/%s/%d", managerService, managerPort, preheatPath, preheat.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(out, preheat)

@@ -30,6 +30,7 @@ import (
 func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
 	var schedulerClusters []model.SchedulerCluster
+
 	if len(json.SchedulerClusterIDs) != 0 {
 		for _, schedulerClusterID := range json.SchedulerClusterIDs {
 			schedulerCluster := model.SchedulerCluster{}
@@ -48,12 +49,10 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 			schedulers = append(schedulers, scheduler)
 		}
 	} else {
-		schedulerClusters = []model.SchedulerCluster{}
 		if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
 			return nil, err
 		}
 
-		var schedulers []model.Scheduler
 		for _, schedulerCluster := range schedulerClusters {
 			scheduler := model.Scheduler{}
 			if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
