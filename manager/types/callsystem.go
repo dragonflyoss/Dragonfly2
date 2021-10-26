@@ -34,7 +34,7 @@ type CreateCallSystemRequest struct {
 	Name           string   `json:"name" binding:"required"`
 	DisplayName    string   `json:"display_name" binding:"required"`
 	LimitRate      string   `json:"limit_rate" binding:"required"`
-	UrlRegexs      []string `json:"url_regexs" binding:"required"`
+	URLRegexs      []string `json:"url_regexs" binding:"required"`
 	TermOfValidity string   `json:"term_of_validity" binding:"required"`
 	IsEnable       bool     `json:"is_enable" binding:"omitempty"`
 }
@@ -43,7 +43,7 @@ type UpdateCallSystemRequest struct {
 	Name           string   `json:"name" binding:"required"`
 	DisplayName    string   `json:"display_name" binding:"required"`
 	LimitRate      string   `json:"limit_rate" binding:"required"`
-	UrlRegexs      []string `json:"url_regexs" binding:"required"`
+	URLRegexs      []string `json:"url_regexs" binding:"required"`
 	TermOfValidity string   `json:"term_of_validity" binding:"required"`
 	IsEnable       bool     `json:"is_enable" binding:"omitempty"`
 }

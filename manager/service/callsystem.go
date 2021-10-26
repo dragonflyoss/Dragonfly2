@@ -26,7 +26,7 @@ func (s *rest) CreateCallSystem(json types.CreateCallSystemRequest) (*model.Call
 		Name:           json.Name,
 		DisplayName:    json.DisplayName,
 		LimitRate:      json.LimitRate,
-		UrlRegexs:      json.UrlRegexs,
+		URLRegexs:      json.URLRegexs,
 		TermOfValidity: json.TermOfValidity,
 		IsEnable:       json.IsEnable,
 	}
@@ -57,7 +57,7 @@ func (s *rest) UpdateCallSystem(id uint, json types.UpdateCallSystemRequest) (*m
 		Name:           json.Name,
 		DisplayName:    json.DisplayName,
 		LimitRate:      json.LimitRate,
-		UrlRegexs:      json.UrlRegexs,
+		URLRegexs:      json.URLRegexs,
 		TermOfValidity: json.TermOfValidity,
 		IsEnable:       json.IsEnable,
 	}).Error; err != nil {

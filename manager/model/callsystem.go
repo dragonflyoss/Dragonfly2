@@ -21,7 +21,7 @@ type CallSystem struct {
 	Name              string             `gorm:"column:name;type:varchar(256);index:uk_callsystem_name,unique;not null;comment:name" json:"name"`
 	DisplayName       string             `gorm:"column:display_name;type:varchar(1024);comment:display_name" json:"display_name"`
 	LimitRate         string             `gorm:"column:limit_rate;type:varchar(1024);comment:limit_rate" json:"limit_rate"`
-	UrlRegexs         JSONList           `gorm:"column:url_regexs;not null;comment:url_regexs" json:"url_regexs"`
+	URLRegexs         JSONList           `gorm:"column:url_regexs;not null;comment:url_regexs" json:"url_regexs"`
 	TermOfValidity    string             `gorm:"column:term_of_validity;type:varchar(1024);comment:term_of_validity" json:"term_of_validity"`
 	IsEnable          bool               `gorm:"column:is_enable;not null;default:true;comment:enable callsystem" json:"is_enable"`
 	SchedulerClusters []SchedulerCluster `json:"-"`
