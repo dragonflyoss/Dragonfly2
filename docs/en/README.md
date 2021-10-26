@@ -20,7 +20,7 @@ Organization of document is as following:
   * [scheduler](cli-reference/scheduler.md)
   * [manager](cli-reference/manager.md)
 * [Runtime Integration](runtime-integration/README.md)
-  * [containerd](runtime-integration/containerd.md)
+  * [containerd](runtime-integration/containerd/README.md)
   * [cri-o](runtime-integration/cri-o.md)
   * [docker](runtime-integration/docker.md)
 * [Preheat](preheat/README.md)

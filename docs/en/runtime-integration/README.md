@@ -2,6 +2,6 @@
 
 Table of contents:
 
-* [containerd](containerd.md)
+* [containerd](containerd/README.md)
 * [cri-o](cri-o.md)
 * [docker](docker.md)
