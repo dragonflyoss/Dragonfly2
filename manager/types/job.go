@@ -21,14 +21,14 @@ type CreateJobRequest struct {
 	Type                string                 `json:"type" binding:"required"`
 	Args                map[string]interface{} `json:"args" binding:"omitempty"`
 	Result              map[string]interface{} `json:"result" binding:"omitempty"`
-	UserID              uint                   `json:"user_id" binding:"required"`
+	UserID              uint                   `json:"user_id" binding:"omitempty"`
 	CDNClusterIDs       []uint                 `json:"cdn_cluster_ids" binding:"omitempty"`
 	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type UpdateJobRequest struct {
 	BIO    string `json:"bio" binding:"omitempty"`
-	UserID uint   `json:"user_id" binding:"required"`
+	UserID uint   `json:"user_id" binding:"omitempty"`
 }
 
 type JobParams struct {
@@ -48,7 +48,7 @@ type CreatePreheatJobRequest struct {
 	Type                string                 `json:"type" binding:"required"`
 	Args                PreheatArgs            `json:"args" binding:"omitempty"`
 	Result              map[string]interface{} `json:"result" binding:"omitempty"`
-	UserID              uint                   `json:"user_id" binding:"required"`
+	UserID              uint                   `json:"user_id" binding:"omitempty"`
 	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
