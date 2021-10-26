@@ -531,6 +531,7 @@ func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
 		done:     make(chan struct{}),
 	}
 
+	c.wg.Add(2)
 	c.start()
 	return c
 }
@@ -539,7 +540,6 @@ func (c *Channel) start() {
 	startWG := &sync.WaitGroup{}
 	startWG.Add(2)
 
-	c.wg.Add(2)
 	go c.receiveLoop(startWG)
 	go c.sendLoop(startWG)
 	startWG.Wait()
