@@ -202,7 +202,8 @@ proxy:
         insecure: true
         # optional certificates if the host uses self-signed certificates
         certs: []
-
+  # max tasks to download same time, 0 is no limit
+  maxConcurrency: 0
   whiteList:
     # the host of the whitelist
     - host: ""
