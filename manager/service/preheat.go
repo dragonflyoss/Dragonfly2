@@ -18,10 +18,14 @@ package service
 
 import (
 	"context"
-	"time"
+	"strconv"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
@@ -40,76 +44,41 @@ const (
 	V1PreheatingStatusFail = "FAIL"
 )
 
-func (s *rest) CreatePreheat(ctx context.Context, json types.CreatePreheatRequest) (*types.Preheat, error) {
-	if json.SchedulerClusterID != nil {
-		schedulerCluster := model.SchedulerCluster{}
-		if err := s.db.WithContext(ctx).First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
-			return nil, err
-		}
-
-		scheduler := model.Scheduler{}
-		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
-			SchedulerClusterID: schedulerCluster.ID,
-			Status:             model.SchedulerStatusActive,
-		}).Error; err != nil {
-			return nil, err
-		}
-
-		return s.job.CreatePreheat(ctx, []model.Scheduler{scheduler}, json)
-	}
-
-	schedulerClusters := []model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
-		return nil, err
-	}
-
-	var schedulers []model.Scheduler
-	for _, schedulerCluster := range schedulerClusters {
-		scheduler := model.Scheduler{}
-		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
-			SchedulerClusterID: schedulerCluster.ID,
-			Status:             model.SchedulerStatusActive,
-		}).Error; err != nil {
-			continue
-		}
-
-		schedulers = append(schedulers, scheduler)
-	}
-
-	return s.job.CreatePreheat(ctx, schedulers, json)
-}
-
-func (s *rest) GetPreheat(ctx context.Context, id string) (*types.Preheat, error) {
-	return s.job.GetPreheat(ctx, id)
-}
-
 func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
-	p, err := s.CreatePreheat(ctx, types.CreatePreheatRequest{
-		Type:    json.Type,
-		URL:     json.URL,
-		Filter:  json.Filter,
-		Headers: json.Headers,
+	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatJobRequest{
+		Type: internaljob.PreheatJob,
+		Args: types.PreheatArgs{
+			Type:    json.Type,
+			URL:     json.URL,
+			Filter:  json.Filter,
+			Headers: json.Headers,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.CreateV1PreheatResponse{
-		ID: p.ID,
+		ID: strconv.FormatUint(uint64(job.ID), 10),
 	}, nil
 }
 
-func (s *rest) GetV1Preheat(ctx context.Context, id string) (*types.GetV1PreheatResponse, error) {
-	p, err := s.job.GetPreheat(ctx, id)
+func (s *rest) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1PreheatResponse, error) {
+	id, err := strconv.ParseUint(rawID, 10, 32)
 	if err != nil {
-		return nil, err
+		logger.Errorf("preheat convert error", err)
+	}
+
+	job := model.Job{}
+	if err := s.db.WithContext(ctx).First(&job, uint(id)).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &types.GetV1PreheatResponse{
-		ID:         p.ID,
-		Status:     convertStatus(p.Status),
-		StartTime:  p.CreatedAt.String(),
-		FinishTime: time.Now().String(),
+		ID:         strconv.FormatUint(uint64(job.ID), 10),
+		Status:     convertStatus(job.Status),
+		StartTime:  job.CreatedAt.String(),
+		FinishTime: job.UpdatedAt.String(),
 	}, nil
 }
 

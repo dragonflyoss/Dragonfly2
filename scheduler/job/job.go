@@ -68,7 +68,7 @@ func New(ctx context.Context, cfg *config.JobConfig, clusterID uint, hostname st
 		logger.Errorf("create scheduler job queue error: %v", err)
 		return nil, err
 	}
-	logger.Infof("create global job queue: %v", schedulerJob)
+	logger.Infof("create scheduler job queue: %v", schedulerJob)
 
 	localQueue, err := internaljob.GetSchedulerQueue(clusterID, hostname)
 	if err != nil {
