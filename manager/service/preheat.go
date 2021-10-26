@@ -18,10 +18,12 @@ package service
 
 import (
 	"context"
-	"time"
 
+	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
@@ -40,76 +42,38 @@ const (
 	V1PreheatingStatusFail = "FAIL"
 )
 
-func (s *rest) CreatePreheat(ctx context.Context, json types.CreatePreheatRequest) (*types.Preheat, error) {
-	if json.SchedulerClusterID != nil {
-		schedulerCluster := model.SchedulerCluster{}
-		if err := s.db.WithContext(ctx).First(&schedulerCluster, json.SchedulerClusterID).Error; err != nil {
-			return nil, err
-		}
-
-		scheduler := model.Scheduler{}
-		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
-			SchedulerClusterID: schedulerCluster.ID,
-			Status:             model.SchedulerStatusActive,
-		}).Error; err != nil {
-			return nil, err
-		}
-
-		return s.job.CreatePreheat(ctx, []model.Scheduler{scheduler}, json)
-	}
-
-	schedulerClusters := []model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
-		return nil, err
-	}
-
-	var schedulers []model.Scheduler
-	for _, schedulerCluster := range schedulerClusters {
-		scheduler := model.Scheduler{}
-		if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
-			SchedulerClusterID: schedulerCluster.ID,
-			Status:             model.SchedulerStatusActive,
-		}).Error; err != nil {
-			continue
-		}
-
-		schedulers = append(schedulers, scheduler)
-	}
-
-	return s.job.CreatePreheat(ctx, schedulers, json)
-}
-
-func (s *rest) GetPreheat(ctx context.Context, id string) (*types.Preheat, error) {
-	return s.job.GetPreheat(ctx, id)
-}
-
 func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
-	p, err := s.CreatePreheat(ctx, types.CreatePreheatRequest{
-		Type:    json.Type,
-		URL:     json.URL,
-		Filter:  json.Filter,
-		Headers: json.Headers,
+	p, err := s.CreatePreheatJob(ctx, types.CreatePreheatRequest{
+		Type: internaljob.PreheatJob,
+		Args: types.PreheatArgs{
+			Type:    json.Type,
+			URL:     json.URL,
+			Filter:  json.Filter,
+			Headers: json.Headers,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &types.CreateV1PreheatResponse{
-		ID: p.ID,
+		ID: p.TaskID,
 	}, nil
 }
 
 func (s *rest) GetV1Preheat(ctx context.Context, id string) (*types.GetV1PreheatResponse, error) {
-	p, err := s.job.GetPreheat(ctx, id)
-	if err != nil {
-		return nil, err
+	job := model.Job{}
+	if err := s.db.WithContext(ctx).First(&job, &model.Job{
+		TaskID: id,
+	}).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	return &types.GetV1PreheatResponse{
-		ID:         p.ID,
-		Status:     convertStatus(p.Status),
-		StartTime:  p.CreatedAt.String(),
-		FinishTime: time.Now().String(),
+		ID:         job.TaskID,
+		Status:     convertStatus(job.Status),
+		StartTime:  job.CreatedAt.String(),
+		FinishTime: job.UpdatedAt.String(),
 	}, nil
 }
 

@@ -19,19 +19,24 @@ package service
 import (
 	"context"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
 func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
+	var schedulerClusters []model.SchedulerCluster
 	if len(json.SchedulerClusterIDs) != 0 {
 		for _, schedulerClusterID := range json.SchedulerClusterIDs {
 			schedulerCluster := model.SchedulerCluster{}
 			if err := s.db.WithContext(ctx).First(&schedulerCluster, schedulerClusterID).Error; err != nil {
 				return nil, err
 			}
+			schedulerClusters = append(schedulerClusters, schedulerCluster)
 
 			scheduler := model.Scheduler{}
 			if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
@@ -40,11 +45,10 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatReq
 			}).Error; err != nil {
 				return nil, err
 			}
-
 			schedulers = append(schedulers, scheduler)
 		}
 	} else {
-		schedulerClusters := []model.SchedulerCluster{}
+		schedulerClusters = []model.SchedulerCluster{}
 		if err := s.db.WithContext(ctx).Find(&schedulerClusters).Error; err != nil {
 			return nil, err
 		}
@@ -63,20 +67,74 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatReq
 		}
 	}
 
-	groupJobState := s.job.CreatePreheat(ctx, schedulers, json.Args)
+	groupJobState, err := s.job.CreatePreheat(ctx, schedulers, json.Args)
+	if err != nil {
+		return nil, err
+	}
+
+	args, err := structutils.StructToMap(json.Args)
+	if err != nil {
+		return nil, err
+	}
 
 	job := model.Job{
-		BIO:    json.BIO,
-		Type:   json.Type,
-		Args:   structutils.StructToMap(json.Args),
-		UserID: json.UserID,
+		TaskID:            groupJobState.GroupUUID,
+		BIO:               json.BIO,
+		Type:              json.Type,
+		Status:            groupJobState.State,
+		Args:              args,
+		UserID:            json.UserID,
+		SchedulerClusters: schedulerClusters,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&job).Error; err != nil {
 		return nil, err
 	}
 
+	go s.pollingJob(context.Background(), job.ID, job.TaskID)
+
 	return &job, nil
+}
+
+func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
+	var job model.Job
+
+	retry.Run(ctx, func() (interface{}, bool, error) {
+		groupJob, err := s.job.GetGroupJobState(taskID)
+		if err != nil {
+			logger.Errorf("polling job %s and task %s failed: %v", id, taskID, err)
+			return nil, false, nil
+		}
+
+		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
+			Status: groupJob.State,
+		}).Error; err != nil {
+			logger.Errorf("polling job %s and task %s store failed: %v", id, taskID, err)
+			return nil, true, err
+		}
+
+		switch job.Status {
+		case machineryv1tasks.StateSuccess:
+			logger.Infof("polling job %s and task %s is finally successful", id, taskID)
+			return nil, true, nil
+		case machineryv1tasks.StateFailure:
+			logger.Errorf("polling job %s and task %s is finally failed", id, taskID)
+			return nil, true, nil
+		default:
+			return nil, false, nil
+		}
+	}, 5, 10, 120, nil)
+
+	// Polling timeout
+	if job.Status != machineryv1tasks.StateSuccess && job.Status != machineryv1tasks.StateFailure {
+		job := model.Job{}
+		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
+			Status: machineryv1tasks.StateFailure,
+		}).Error; err != nil {
+			logger.Errorf("polling job %s and task %s store failed: %v", id, taskID, err)
+		}
+		logger.Errorf("polling job %s and task %s timeout", id, taskID)
+	}
 }
 
 func (s *rest) DestroyJob(ctx context.Context, id uint) error {
@@ -95,12 +153,8 @@ func (s *rest) DestroyJob(ctx context.Context, id uint) error {
 func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
-		IDC:          json.IDC,
-		Location:     json.Location,
-		IP:           json.IP,
-		Port:         json.Port,
-		DownloadPort: json.DownloadPort,
-		JobClusterID: json.JobClusterID,
+		BIO:    json.BIO,
+		UserID: json.UserID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -120,13 +174,9 @@ func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, error) {
 	jobs := []model.Job{}
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
-		HostName:     q.HostName,
-		IDC:          q.IDC,
-		Location:     q.Location,
-		IP:           q.IP,
-		Port:         q.Port,
-		DownloadPort: q.DownloadPort,
-		JobClusterID: q.JobClusterID,
+		Type:   q.Type,
+		Status: q.Status,
+		UserID: q.UserID,
 	}).Find(&jobs).Error; err != nil {
 		return nil, err
 	}
@@ -137,13 +187,9 @@ func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job,
 func (s *rest) JobTotalCount(ctx context.Context, q types.GetJobsQuery) (int64, error) {
 	var count int64
 	if err := s.db.WithContext(ctx).Model(&model.Job{}).Where(&model.Job{
-		HostName:     q.HostName,
-		IDC:          q.IDC,
-		Location:     q.Location,
-		IP:           q.IP,
-		Port:         q.Port,
-		DownloadPort: q.DownloadPort,
-		JobClusterID: q.JobClusterID,
+		Type:   q.Type,
+		Status: q.Status,
+		UserID: q.UserID,
 	}).Count(&count).Error; err != nil {
 		return 0, err
 	}

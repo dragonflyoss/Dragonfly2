@@ -46,3 +46,16 @@ func New(cfg *config.Config) (*Job, error) {
 		Preheat: p,
 	}, nil
 }
+
+func (j *Job) GetGroupJobState(id string) (*internaljob.GroupJobState, error) {
+	groupJobState, err := j.GetGroupJobState(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &internaljob.GroupJobState{
+		GroupUUID: groupJobState.GroupUUID,
+		State:     groupJobState.State,
+		CreatedAt: groupJobState.CreatedAt,
+	}, nil
+}

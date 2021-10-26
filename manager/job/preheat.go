@@ -53,7 +53,6 @@ var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
 	CreatePreheat(context.Context, []model.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
-	GetPreheat(context.Context, string) (*internaljob.GroupJobState, error)
 }
 
 type preheat struct {
@@ -72,19 +71,6 @@ func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
 	return &preheat{
 		job:    job,
 		bizTag: bizTag,
-	}, nil
-}
-
-func (p *preheat) GetPreheat(ctx context.Context, id string) (*internaljob.GroupJobState, error) {
-	groupJobState, err := p.job.GetGroupJobState(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &internaljob.GroupJobState{
-		GroupUUID: groupJobState.GroupUUID,
-		State:     groupJobState.State,
-		CreatedAt: groupJobState.CreatedAt,
 	}, nil
 }
 
