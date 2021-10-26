@@ -21,7 +21,7 @@ const (
 
 	managerService = "dragonfly-manager.dragonfly-system.svc"
 	managerPort    = "8080"
-	preheatPath    = "api/v1/preheats"
+	preheatPath    = "api/v1/jobs"
 	managerTag     = "d7y/manager"
 
 	dragonflyNamespace = "dragonfly-system"

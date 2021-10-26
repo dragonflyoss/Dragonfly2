@@ -25,8 +25,11 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/structutils"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo" //nolint
@@ -53,17 +56,25 @@ var _ = Describe("Preheat with manager", func() {
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-					map[string]interface{}{"type": "file", "url": url},
+				req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+					Type: internaljob.PreheatJob,
+					Args: types.PreheatArgs{
+						Type: "file",
+						URL:  url,
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 					fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 
 				// wait for success
-				preheatJob := &types.Preheat{}
-				err = json.Unmarshal(out, preheatJob)
+				job := &model.Job{}
+				err = json.Unmarshal(out, job)
 				Expect(err).NotTo(HaveOccurred())
-				done := waitForDone(preheatJob, fsPod)
+				done := waitForDone(job, fsPod)
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
@@ -100,17 +111,25 @@ var _ = Describe("Preheat with manager", func() {
 			fsPod := getFileServerExec()
 
 			// preheat file
-			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-				map[string]interface{}{"type": "image", "url": url},
+			req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type: "image",
+					URL:  url,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
 			// wait for success
-			preheatJob := &types.Preheat{}
-			err = json.Unmarshal(out, preheatJob)
+			job := &model.Job{}
+			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
-			done := waitForDone(preheatJob, fsPod)
+			done := waitForDone(job, fsPod)
 			Expect(done).Should(BeTrue())
 
 			for i, cdnTaskID := range cdnTaskIDs {
@@ -153,17 +172,25 @@ var _ = Describe("Preheat with manager", func() {
 			fsPod := getFileServerExec()
 
 			// use a curl to preheat the same file, git a id to wait for success
-			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-				map[string]interface{}{"type": "file", "url": url},
+			req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type: "file",
+					URL:  url,
+				},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
 			// wait for success
-			preheatJob := &types.Preheat{}
-			err = json.Unmarshal(out, preheatJob)
+			job := &model.Job{}
+			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
-			done := waitForDone(preheatJob, fsPod)
+			done := waitForDone(job, fsPod)
 			Expect(done).Should(BeTrue())
 
 			// generate task id to find the file
@@ -179,7 +206,7 @@ var _ = Describe("Preheat with manager", func() {
 	})
 })
 
-func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
+func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

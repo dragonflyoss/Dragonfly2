@@ -45,7 +45,7 @@ const (
 )
 
 func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
-	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatRequest{
+	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatJobRequest{
 		Type: internaljob.PreheatJob,
 		Args: types.PreheatArgs{
 			Type:    json.Type,

@@ -110,7 +110,7 @@ type REST interface {
 	GetConfigs(context.Context, types.GetConfigsQuery) (*[]model.Config, error)
 	ConfigTotalCount(context.Context, types.GetConfigsQuery) (int64, error)
 
-	CreatePreheatJob(context.Context, types.CreatePreheatRequest) (*model.Job, error)
+	CreatePreheatJob(context.Context, types.CreatePreheatJobRequest) (*model.Job, error)
 	DestroyJob(context.Context, uint) error
 	UpdateJob(context.Context, uint, types.UpdateJobRequest) (*model.Job, error)
 	GetJob(context.Context, uint) (*model.Job, error)

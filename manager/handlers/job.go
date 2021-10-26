@@ -28,7 +28,7 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 
 	switch json.Type {
 	case job.PreheatJob:
-		var json types.CreatePreheatRequest
+		var json types.CreatePreheatJobRequest
 		if err := ctx.ShouldBindJSON(&json); err != nil {
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 			return

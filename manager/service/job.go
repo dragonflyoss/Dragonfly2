@@ -27,7 +27,7 @@ import (
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
-func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatRequest) (*model.Job, error) {
+func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
 	var schedulerClusters []model.SchedulerCluster
 	if len(json.SchedulerClusterIDs) != 0 {

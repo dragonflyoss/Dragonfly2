@@ -44,7 +44,7 @@ type GetJobsQuery struct {
 	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }
 
-type CreatePreheatRequest struct {
+type CreatePreheatJobRequest struct {
 	BIO                 string                 `uri:"bio" binding:"omitempty"`
 	Type                string                 `uri:"type" binding:"required"`
 	Status              string                 `uri:"status" binding:"required,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
