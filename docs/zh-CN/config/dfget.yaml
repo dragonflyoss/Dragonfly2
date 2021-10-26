@@ -193,6 +193,8 @@ proxy:
         insecure: true
         # 可选：对端证书
         certs: []
+  # 同时下载任务数, 0 代表不限制
+  maxConcurrency: 0
   # 白名单，如果设置了，仅白名单内可以走代理，其他的都拒绝
   whiteList:
     # 主机信息
