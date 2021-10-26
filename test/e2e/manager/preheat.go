@@ -62,7 +62,6 @@ var _ = Describe("Preheat with manager", func() {
 						Type: "file",
 						URL:  url,
 					},
-					UserID: 1,
 				})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -118,7 +117,6 @@ var _ = Describe("Preheat with manager", func() {
 					Type: "image",
 					URL:  url,
 				},
-				UserID: 1,
 			})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -180,7 +178,6 @@ var _ = Describe("Preheat with manager", func() {
 					Type: "file",
 					URL:  url,
 				},
-				UserID: 1,
 			})
 
 			Expect(err).NotTo(HaveOccurred())
