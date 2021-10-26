@@ -172,3 +172,31 @@ func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
 	ctx.JSON(http.StatusOK, schedulerClusters)
 }
+
+// @Summary Add Scheduler to CallSystem
+// @Description Add Scheduler to CallSystem
+// @Tags CallSystem
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param scheduler_cluster_id path string true "scheduler cluster id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /callsystem/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
+func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
+	var params types.AddSchedulerClusterToCallSystemParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddSchedulerClusterToCallSystem(params.ID, params.SchedulerClusterID)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}

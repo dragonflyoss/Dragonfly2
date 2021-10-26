@@ -97,3 +97,39 @@ func (s *rest) CallSystemTotalCount(q types.GetCallSystemsQuery) (int64, error) 
 
 	return count, nil
 }
+
+func (s *rest) AddSchedulerClusterToCallSystem(id, schedulerClusterID uint) error {
+	callsystem := model.CallSystem{}
+	if err := s.db.First(&callsystem, id).Error; err != nil {
+		return err
+	}
+
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&callsystem).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *rest) DeleteSchedulerClusterToCallSystem(id, schedulerClusterID uint) error {
+	callsystem := model.CallSystem{}
+	if err := s.db.First(&callsystem, id).Error; err != nil {
+		return err
+	}
+
+	schedulerCluster := model.SchedulerCluster{}
+	if err := s.db.First(&schedulerCluster, schedulerClusterID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.Model(&callsystem).Association("SchedulerClusters").Delete(&schedulerCluster); err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -20,6 +20,16 @@ type CallSystemParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
+type AddSchedulerClusterToCallSystemParams struct {
+	ID                 uint `uri:"id" binding:"required"`
+	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
+}
+
+type DeleteSchedulerClusterToCallSystemParams struct {
+	ID                 uint `uri:"id" binding:"required"`
+	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
+}
+
 type CreateCallSystemRequest struct {
 	Name           string   `json:"name" binding:"required"`
 	DisplayName    string   `json:"display_name" binding:"required"`
