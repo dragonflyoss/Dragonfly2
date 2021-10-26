@@ -182,7 +182,7 @@ var _ = Describe("Preheat with manager", func() {
 func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	for {
 		select {
@@ -222,6 +222,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 
 		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
+
 		// file name is the same as task id
 		file := cdnTaskID
 		if !strings.Contains(string(out), file) {
@@ -233,6 +234,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 		fmt.Println(string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
+		fmt.Println(string(sha256sum2))
 		break
 	}
 	return sha256sum2

@@ -63,8 +63,8 @@ func WithDisableCDN(disableCDN bool) Option {
 }
 
 type SchedulerService struct {
-	// cdn manager
-	cdn supervisor.CDN
+	// CDN manager
+	CDN supervisor.CDN
 	// task manager
 	taskManager supervisor.TaskManager
 	// host manager
@@ -72,12 +72,13 @@ type SchedulerService struct {
 	// Peer manager
 	peerManager supervisor.PeerManager
 
-	sched   scheduler.Scheduler
-	worker  worker
-	config  *config.SchedulerConfig
-	monitor *monitor
-	done    chan struct{}
-	wg      sync.WaitGroup
+	sched     scheduler.Scheduler
+	worker    worker
+	config    *config.SchedulerConfig
+	monitor   *monitor
+	done      chan struct{}
+	wg        sync.WaitGroup
+	dynconfig config.DynconfigInterface
 }
 
 func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
@@ -116,6 +117,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		sched:       sched,
 		config:      cfg,
 		done:        make(chan struct{}),
+		dynconfig:   dynConfig,
 	}
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
@@ -131,7 +133,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 		if err != nil {
 			return nil, errors.Wrap(err, "new cdn manager")
 		}
-		s.cdn = cdn
+		s.CDN = cdn
 	}
 	return s, nil
 }
@@ -147,7 +149,7 @@ func (s *SchedulerService) Serve() {
 
 func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
 	defer s.wg.Done()
-	s.worker.start(newState(s.sched, s.peerManager, s.cdn, wsdq))
+	s.worker.start(newState(s.sched, s.peerManager, s.CDN, wsdq))
 }
 
 func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterface) {
@@ -225,8 +227,15 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	peerHost := req.PeerHost
 	host, ok := s.hostManager.Get(peerHost.Uuid)
 	if !ok {
+		var options []supervisor.HostOption
+		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+			options = []supervisor.HostOption{
+				supervisor.WithTotalUploadLoad(int32(clientConfig.LoadLimit)),
+			}
+		}
+
 		host = supervisor.NewClientHost(peerHost.Uuid, peerHost.Ip, peerHost.HostName, peerHost.RpcPort, peerHost.DownPort,
-			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, peerHost.NetTopology, s.config.ClientLoad)
+			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, options...)
 		s.hostManager.Add(host)
 	}
 	// get or creat PeerTask
@@ -262,15 +271,16 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	defer synclock.UnLock(task.ID, false)
 
 	// do trigger
-	task.LastTriggerAt.Store(time.Now())
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 		return task
 	}
+
+	task.LastTriggerAt.Store(time.Now())
 	task.SetStatus(supervisor.TaskStatusRunning)
-	if s.cdn == nil {
+	if s.CDN == nil {
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 		task.BackToSourceWeight.Store(s.config.BackSourceCount)
@@ -279,7 +289,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 
 	go func() {
-		if cdnPeer, err := s.cdn.StartSeedTask(ctx, task); err != nil {
+		if cdnPeer, err := s.CDN.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))

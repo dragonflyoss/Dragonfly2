@@ -27,22 +27,22 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 )
 
-var defaultServerOptions = []grpc.ServerOption{
-	grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-		grpc_validator.StreamServerInterceptor(),
-		grpc_recovery.StreamServerInterceptor(),
-		grpc_prometheus.StreamServerInterceptor,
-		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
-	)),
-	grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-		grpc_validator.UnaryServerInterceptor(),
-		grpc_recovery.UnaryServerInterceptor(),
-		grpc_prometheus.UnaryServerInterceptor,
-		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
-	)),
+var defaultStreamMiddleWares = []grpc.StreamServerInterceptor{
+	grpc_validator.StreamServerInterceptor(),
+	grpc_recovery.StreamServerInterceptor(),
+	grpc_prometheus.StreamServerInterceptor,
+	grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+}
+
+var defaultUnaryMiddleWares = []grpc.UnaryServerInterceptor{
+	grpc_validator.UnaryServerInterceptor(),
+	grpc_recovery.UnaryServerInterceptor(),
+	grpc_prometheus.UnaryServerInterceptor,
+	grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
 }
 
 // ManagerServer is the server API for Manager service.
@@ -66,8 +66,17 @@ type proxy struct {
 	manager.UnimplementedManagerServer
 }
 
-func New(managerServer ManagerServer, opts ...grpc.ServerOption) *grpc.Server {
-	grpcServer := grpc.NewServer(append(defaultServerOptions, opts...)...)
+func New(managerServer ManagerServer, jaeger bool, opts ...grpc.ServerOption) *grpc.Server {
+	if jaeger {
+		defaultStreamMiddleWares = append(defaultStreamMiddleWares, otelgrpc.StreamServerInterceptor())
+		defaultUnaryMiddleWares = append(defaultUnaryMiddleWares, otelgrpc.UnaryServerInterceptor())
+	}
+
+	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares...)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
+	}, opts...)...)
+
 	manager.RegisterManagerServer(grpcServer, &proxy{server: managerServer})
 	return grpcServer
 }
