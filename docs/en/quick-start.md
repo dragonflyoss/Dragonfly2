@@ -9,10 +9,11 @@ This table describes some container runtimes version and documents.
 
 | Runtime | Version | Document | CRI Support | Pull Command |
 | --- | --- | --- | --- | --- | 
-| Containerd without CRI | All | [Link](runtime-integration/containerd.md) | No | ctr image pull docker.io/library/alpine |
-| Containerd with CRI | v1.1.0+ | [Link](runtime-integration/containerd.md) | Yes | crictl pull docker.io/library/alpine:latest |
+| Containerd<sup>*</sup> | v1.1.0+ | [Link](runtime-integration/containerd/mirror.md) | Yes | crictl pull docker.io/library/alpine:latest |
+| Containerd without CRI | < v1.1.0 | [Link](runtime-integration/containerd/proxy.md) | No | ctr image pull docker.io/library/alpine |
 | CRI-O | All | [Link](runtime-integration/cri-o.md) | Yes | crictl pull docker.io/library/alpine:latest |
 
+**:`containerd` is recommended*
 ## Runtime Configuration Guide for Dragonfly Helm Chart
 
 Dragonfly helm supports config docker automatically.
