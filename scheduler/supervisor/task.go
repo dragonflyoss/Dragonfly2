@@ -311,6 +311,10 @@ func (task *Task) AddBackToSourcePeer(peerID string) {
 		return
 	}
 
+	if task.BackToSourceWeight.Load() <= 0 {
+		return
+	}
+
 	task.lock.Lock()
 	defer task.lock.Unlock()
 
