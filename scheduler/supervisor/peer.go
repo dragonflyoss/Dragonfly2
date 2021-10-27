@@ -33,6 +33,8 @@ const (
 	PeerGCID = "peer"
 )
 
+var ErrChannelBusy = errors.New("channel busy")
+
 type PeerManager interface {
 	// Add peer
 	Add(*Peer)
@@ -513,14 +515,13 @@ func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
 }
 
 type Channel struct {
-	startOnce sync.Once
-	sender    chan *scheduler.PeerPacket
-	receiver  chan *scheduler.PieceResult
-	stream    scheduler.Scheduler_ReportPieceResultServer
-	closed    *atomic.Bool
-	done      chan struct{}
-	wg        sync.WaitGroup
-	err       error
+	sender   chan *scheduler.PeerPacket
+	receiver chan *scheduler.PieceResult
+	stream   scheduler.Scheduler_ReportPieceResultServer
+	closed   *atomic.Bool
+	done     chan struct{}
+	wg       sync.WaitGroup
+	err      error
 }
 
 func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
@@ -531,16 +532,19 @@ func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
 		closed:   atomic.NewBool(false),
 		done:     make(chan struct{}),
 	}
+
+	c.wg.Add(2)
 	c.start()
 	return c
 }
 
 func (c *Channel) start() {
-	c.startOnce.Do(func() {
-		c.wg.Add(2)
-		go c.receiveLoop()
-		go c.sendLoop()
-	})
+	startWG := &sync.WaitGroup{}
+	startWG.Add(2)
+
+	go c.receiveLoop(startWG)
+	go c.sendLoop(startWG)
+	startWG.Wait()
 }
 
 func (c *Channel) Send(packet *scheduler.PeerPacket) error {
@@ -550,7 +554,7 @@ func (c *Channel) Send(packet *scheduler.PeerPacket) error {
 	case c.sender <- packet:
 		return nil
 	default:
-		return errors.New("send channel is blocking")
+		return ErrChannelBusy
 	}
 }
 
@@ -583,12 +587,14 @@ func (c *Channel) IsClosed() bool {
 	return c.closed.Load()
 }
 
-func (c *Channel) receiveLoop() {
+func (c *Channel) receiveLoop(startWG *sync.WaitGroup) {
 	defer func() {
 		close(c.receiver)
 		c.wg.Done()
 		c.Close()
 	}()
+
+	startWG.Done()
 
 	for {
 		select {
@@ -608,11 +614,13 @@ func (c *Channel) receiveLoop() {
 	}
 }
 
-func (c *Channel) sendLoop() {
+func (c *Channel) sendLoop(startWG *sync.WaitGroup) {
 	defer func() {
 		c.wg.Done()
 		c.Close()
 	}()
+
+	startWG.Done()
 
 	for {
 		select {
