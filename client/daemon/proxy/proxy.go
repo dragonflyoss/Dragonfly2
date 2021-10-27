@@ -55,7 +55,7 @@ var (
 	portHTTPS = 443
 )
 
-// Proxy is an http proxy handler. It proxies requests with dragonfly
+// Proxy is a http proxy handler. It proxies requests with dragonfly
 // if any defined proxy rules is matched
 type Proxy struct {
 	// reverse proxy upstream url for the default registry
@@ -73,7 +73,7 @@ type Proxy struct {
 	// certCache is a in-memory cache store for TLS certs used in HTTPS hijack. Lazy init.
 	certCache *lru.Cache
 
-	// directHandler are used to handle non proxy requests
+	// directHandler are used to handle non-proxy requests
 	directHandler http.Handler
 
 	// peerTaskManager is the peer task manager
@@ -143,6 +143,14 @@ func WithCert(cert *tls.Certificate) Option {
 // WithDirectHandler sets the handler for non-proxy requests
 func WithDirectHandler(h *http.ServeMux) Option {
 	return func(p *Proxy) *Proxy {
+		if p.registry == nil || p.registry.Remote == nil || p.registry.Remote.URL == nil {
+			logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
+			h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, fmt.Sprintf("registry mirror feature is disabled"), http.StatusNotFound)
+			})
+			p.directHandler = h
+			return p
+		}
 		// Make sure the root handler of the given server mux is the
 		// registry mirror reverse proxy
 		h.HandleFunc("/", p.mirrorRegistry)
