@@ -18,7 +18,7 @@ package model
 
 type Config struct {
 	Model
-	Key    string `gorm:"column:key;type:varchar(256);index:uk_config_key,unique;not null;comment:config key" json:"key"`
+	Name   string `gorm:"column:name;type:varchar(256);index:uk_config_name,unique;not null;comment:config name" json:"name"`
 	Value  string `gorm:"column:value;type:varchar(1024);not null;comment:config value" json:"value"`
 	BIO    string `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	UserID uint   `gorm:"comment:user id" json:"user_id"`

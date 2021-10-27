@@ -21,21 +21,21 @@ type ConfigParams struct {
 }
 
 type CreateConfigRequest struct {
-	Key    string `json:"key" binding:"required"`
+	Name   string `json:"name" binding:"required"`
 	Value  string `json:"value" binding:"required"`
 	BIO    string `json:"bio" binding:"omitempty"`
 	UserID uint   `json:"user_id" binding:"required"`
 }
 
 type UpdateConfigRequest struct {
-	Key    string `json:"key" binding:"omitempty"`
+	Name   string `json:"name" binding:"omitempty"`
 	Value  string `json:"value" binding:"omitempty"`
 	BIO    string `json:"bio" binding:"omitempty"`
 	UserID uint   `json:"user_id" binding:"omitempty"`
 }
 
 type GetConfigsQuery struct {
-	Key     string `form:"key" binding:"omitempty"`
+	Name    string `form:"name" binding:"omitempty"`
 	Value   string `form:"value" binding:"omitempty"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
