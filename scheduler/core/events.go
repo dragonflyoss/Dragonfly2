@@ -145,8 +145,12 @@ func (e startReportPieceResultEvent) apply(s *state) {
 		return
 	}
 	if err := e.peer.SendSchedulePacket(constructSuccessPeerPacket(e.peer, parent, candidates)); err != nil {
-		e.peer.Log().Warnf("send schedule packet failed: %v", err)
-		s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, 10*time.Millisecond)
+		if err == supervisor.ErrChannelBusy {
+			e.peer.Log().Info("send schedule packet channel busy")
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer}, 10*time.Millisecond)
+		} else {
+			e.peer.Log().Errorf("send schedule packet failed: %v", err)
+		}
 	}
 }
 

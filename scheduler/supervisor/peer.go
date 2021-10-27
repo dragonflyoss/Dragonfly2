@@ -33,6 +33,8 @@ const (
 	PeerGCID = "peer"
 )
 
+var ErrChannelBusy = errors.New("channel busy")
+
 type PeerManager interface {
 	// Add peer
 	Add(*Peer)
@@ -552,7 +554,7 @@ func (c *Channel) Send(packet *scheduler.PeerPacket) error {
 	case c.sender <- packet:
 		return nil
 	default:
-		return errors.New("send channel is blocking")
+		return ErrChannelBusy
 	}
 }
 
