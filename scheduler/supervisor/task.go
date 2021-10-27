@@ -314,8 +314,10 @@ func (task *Task) AddBackToSourcePeer(peerID string) {
 	task.lock.Lock()
 	defer task.lock.Unlock()
 
-	task.backToSourcePeers = append(task.backToSourcePeers, peerID)
-	task.BackToSourceWeight.Dec()
+	if task.BackToSourceWeight.Load() > 0 {
+		task.backToSourcePeers = append(task.backToSourcePeers, peerID)
+		task.BackToSourceWeight.Dec()
+	}
 }
 
 func (task *Task) GetBackToSourcePeers() []string {
