@@ -125,7 +125,9 @@ func TestGCRun(t *testing.T) {
 					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
 				)
 
-				gc.Run(id)
+				if err := gc.Run(id); err != nil {
+					t.Error(err)
+				}
 			},
 		},
 		{
@@ -148,7 +150,9 @@ func TestGCRun(t *testing.T) {
 					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
 				)
 
-				gc.Run(id)
+				if err := gc.Run(id); err != nil {
+					t.Error(err)
+				}
 			},
 		},
 		{

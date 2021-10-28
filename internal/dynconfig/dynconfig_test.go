@@ -65,17 +65,23 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
 				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
+				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
-				}, &d)
+				}, &d); err != nil {
+					t.Error(err)
+				}
+
 				m.Get().Return(d, nil).AnyTimes()
 			},
 			expect: func(t *testing.T, data interface{}) {
 				assert := assert.New(t)
 				var d TestDynconfig
-				mapstructure.Decode(data, &d)
+				if err := mapstructure.Decode(data, &d); err != nil {
+					t.Error(err)
+				}
+
 				assert.EqualValues(d, TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
@@ -101,11 +107,14 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
 				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
+				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
-				}, &d)
+				}, &d); err != nil {
+					t.Error(err)
+				}
+
 				m.Get().Return(d, nil).Times(1)
 			},
 			expect: func(t *testing.T, data interface{}) {
@@ -135,11 +144,14 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
 				var d map[string]interface{}
-				mapstructure.Decode(TestDynconfig{
+				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
 					},
-				}, &d)
+				}, &d); err != nil {
+					t.Error(err)
+				}
+
 				m.Get().Return(d, nil).Times(1)
 				m.Get().Return(nil, errors.New("manager serivce error")).Times(1)
 			},
@@ -207,7 +219,10 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 			expect: func(t *testing.T, data interface{}) {
 				assert := assert.New(t)
 				var d TestDynconfig
-				mapstructure.Decode(data, &d)
+				if err := mapstructure.Decode(data, &d); err != nil {
+					t.Error(err)
+				}
+
 				assert.EqualValues(d, TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,

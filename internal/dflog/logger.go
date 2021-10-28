@@ -156,6 +156,10 @@ func Warnf(template string, args ...interface{}) {
 	CoreLogger.Warnf(template, args...)
 }
 
+func Warn(args ...interface{}) {
+	CoreLogger.Warn(args...)
+}
+
 func Errorf(template string, args ...interface{}) {
 	CoreLogger.Errorf(template, args...)
 }

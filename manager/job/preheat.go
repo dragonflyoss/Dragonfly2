@@ -240,33 +240,39 @@ func (p *preheat) parseLayers(resp *http.Response, url, filter string, header ht
 	return layers, nil
 }
 
-func getAuthToken(ctx context.Context, header http.Header) (token string) {
+func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	authURL := authURL(header.Values("WWW-Authenticate"))
 	if len(authURL) == 0 {
-		return
+		return "", errors.New("authURL is empty")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var result map[string]interface{}
-	json.Unmarshal(body, &result)
-	if result["token"] != nil {
-		token = fmt.Sprintf("%v", result["token"])
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
 	}
-	return
+
+	if result["token"] == nil {
+		return "", errors.New("token is empty")
+	}
+
+	token := fmt.Sprintf("%v", result["token"])
+	return token, nil
+
 }
 
 func authURL(wwwAuth []string) string {

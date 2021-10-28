@@ -81,8 +81,13 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	schedulerConfigYAML := &Config{}
 	contentYAML, _ := ioutil.ReadFile("./testdata/scheduler.yaml")
 	var dataYAML map[string]interface{}
-	yaml.Unmarshal(contentYAML, &dataYAML)
-	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
+	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
+		t.Fatal(err)
+	}
 	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
 }
 

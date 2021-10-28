@@ -138,7 +138,10 @@ retry:
 				SourceType: keepalive.SourceType,
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
-				stream.CloseAndRecv()
+				if _, err := stream.CloseAndRecv(); err != nil {
+					logger.Errorf("hostname %s cluster id %s close and recv stream failed", keepalive.HostName, keepalive.ClusterId, err)
+				}
+
 				cancel()
 				goto retry
 			}

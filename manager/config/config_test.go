@@ -76,7 +76,13 @@ func TestManagerConfig_Load(t *testing.T) {
 	managerConfigYAML := &Config{}
 	contentYAML, _ := ioutil.ReadFile("./testdata/manager.yaml")
 	var dataYAML map[string]interface{}
-	yaml.Unmarshal(contentYAML, &dataYAML)
-	mapstructure.Decode(dataYAML, &managerConfigYAML)
+	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mapstructure.Decode(dataYAML, &managerConfigYAML); err != nil {
+		t.Fatal(err)
+	}
+
 	assert.EqualValues(config, managerConfigYAML)
 }
