@@ -174,7 +174,11 @@ func (p *preheat) getLayers(ctx context.Context, url string, filter string, head
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token := getAuthToken(ctx, resp.Header)
+			token, err := getAuthToken(ctx, resp.Header)
+			if err != nil {
+				return nil, err
+			}
+
 			bearer := "Bearer " + token
 			header.Add("Authorization", bearer)
 

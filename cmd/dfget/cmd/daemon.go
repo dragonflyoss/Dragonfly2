@@ -130,7 +130,11 @@ func runDaemon() error {
 			break
 		}
 	}
-	defer lock.Unlock()
+	defer func() {
+		if err := lock.Unlock(); err != nil {
+			logger.Errorf("flock unlock failed %s", err)
+		}
+	}()
 
 	logger.Infof("daemon is launched by pid: %d", viper.GetInt("launcher"))
 

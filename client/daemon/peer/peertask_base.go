@@ -401,9 +401,13 @@ loop:
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
 					pt.failedCode = dfcodes.ClientContextCanceled
-					pt.callback.Fail(pt, pt.failedCode, pt.ctx.Err().Error())
+					if err := pt.callback.Fail(pt, pt.failedCode, pt.ctx.Err().Error()); err != nil {
+						pt.Errorf("peer task callback failed %s", err)
+					}
 				} else {
-					pt.callback.Fail(pt, pt.failedCode, pt.failedReason)
+					if err := pt.callback.Fail(pt, pt.failedCode, pt.failedReason); err != nil {
+						pt.Errorf("peer task callback failed %s", err)
+					}
 				}
 			}
 			break loop
@@ -635,7 +639,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 					pt.Errorf("request limiter error: %s", err)
 					waitSpan.RecordError(err)
 					waitSpan.End()
-					pti.ReportPieceResult(&pieceTaskResult{
+					if err := pti.ReportPieceResult(&pieceTaskResult{
 						piece: request.piece,
 						pieceResult: &scheduler.PieceResult{
 							TaskId:        pt.GetTaskID(),
@@ -648,7 +652,10 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 							FinishedCount: 0, // update by peer task
 						},
 						err: err,
-					})
+					}); err != nil {
+						pt.Errorf("report piece result failed %s", err)
+					}
+
 					pt.failedReason = err.Error()
 					pt.failedCode = dfcodes.ClientRequestLimitFail
 					pt.cancel()
