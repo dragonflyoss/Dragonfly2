@@ -44,7 +44,7 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 
 	user, err := h.service.GetUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 
 	user, err := h.service.SignUp(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -101,7 +101,7 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	}
 
 	if err := h.service.ResetPassword(ctx.Request.Context(), params.ID, json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -128,7 +128,7 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 
 	authURL, err := h.service.OauthSignin(ctx.Request.Context(), params.Name)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -161,7 +161,7 @@ func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Contex
 
 		user, err := h.service.OauthSigninCallback(ctx.Request.Context(), params.Name, query.Code)
 		if err != nil {
-			ctx.Error(err)
+			ctx.Error(err) // nolint: errcheck
 			return
 		}
 
@@ -188,7 +188,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 
 	roles, err := h.service.GetRolesForUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -214,7 +214,7 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.AddRoleForUser(ctx.Request.Context(), params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusConflict)
@@ -243,7 +243,7 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.DeleteRoleForUser(ctx.Request.Context(), params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusNotFound)

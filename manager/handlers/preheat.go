@@ -43,7 +43,7 @@ func (h *Handlers) CreateV1Preheat(ctx *gin.Context) {
 
 	preheat, err := h.service.CreateV1Preheat(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *Handlers) GetV1Preheat(ctx *gin.Context) {
 
 	preheat, err := h.service.GetV1Preheat(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
