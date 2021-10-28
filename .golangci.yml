@@ -18,6 +18,7 @@ linters:
     - deadcode
     - gocyclo
     - staticcheck
+    - errcheck
 
 output:
   format: colored-line-number

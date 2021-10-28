@@ -58,6 +58,7 @@ func (l *SortedList) Add(data Item) (err error) {
 	l.addItem(key1, key2, data)
 	return
 }
+
 func (l *SortedList) Update(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
 	if key1 > BucketMaxLength || key1 < 0 {
