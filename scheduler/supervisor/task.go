@@ -262,6 +262,7 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 
 func (task *Task) AddPeer(peer *Peer) {
 	task.peers.UpdateOrAdd(peer)
+	task.logger.Debugf("peer %s has been added, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
@@ -270,6 +271,7 @@ func (task *Task) UpdatePeer(peer *Peer) {
 
 func (task *Task) DeletePeer(peer *Peer) {
 	task.peers.Delete(peer)
+	task.logger.Debugf("peer %s has been deleted, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) GetPeers() *sortedlist.SortedList {

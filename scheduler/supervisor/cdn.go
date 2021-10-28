@@ -215,6 +215,7 @@ func (c *cdn) initCDNPeer(ctx context.Context, task *Task, ps *cdnsystem.PieceSe
 
 	peer.SetStatus(PeerStatusRunning)
 	c.peerManager.Add(peer)
+	peer.Task.Log().Debugf("cdn peer %s has been added", peer.ID)
 	return peer, nil
 }
 

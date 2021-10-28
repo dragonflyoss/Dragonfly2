@@ -140,7 +140,7 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 
 func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, blankChildren sets.String) (candidateChildren []*supervisor.Peer) {
 	peer.Log().Debug("start schedule children flow")
-	defer peer.Log().Debugf("finish schedule parent flow, select num %d candidate children, "+
+	defer peer.Log().Debugf("finish schedule children flow, select num %d candidate children, "+
 		"current task tree node count %d, back source peers: %v", len(candidateChildren), peer.Task.GetPeers().Size(), peer.Task.GetBackToSourcePeers())
 	candidateChildren = peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
