@@ -23,7 +23,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/structure/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"github.com/pkg/errors"
 )
@@ -31,7 +30,7 @@ import (
 const RangeHeaderName = "Range"
 
 func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, error) {
-	headers := maputils.DeepCopyMap(nil, task.Header)
+	headers := make(map[string]string)
 	if detectResult.breakPoint > 0 {
 		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
 		if err != nil {
