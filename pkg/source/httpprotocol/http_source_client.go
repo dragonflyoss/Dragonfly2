@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/cdn/types"
+	"d7y.io/dragonfly/v2/pkg/util/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 
 	"github.com/go-http-utils/headers"
@@ -118,7 +119,7 @@ func (client *httpSourceClient) GetContentLength(ctx context.Context, url string
 }
 
 func (client *httpSourceClient) IsSupportRange(ctx context.Context, url string, header source.RequestHeader) (bool, error) {
-	copied := make(map[string]string)
+	copied := maputils.DeepCopy(header)
 	copied[headers.Range] = "bytes=0-0"
 
 	resp, err := client.doRequest(ctx, http.MethodGet, url, copied)
@@ -139,7 +140,7 @@ func (client *httpSourceClient) IsExpired(ctx context.Context, url string, heade
 	}
 
 	// set header: header is a reference to map, should not change it
-	copied := make(map[string]string)
+	copied := maputils.DeepCopy(header)
 	if lastModified > 0 {
 		copied[headers.IfModifiedSince] = expireInfo[headers.LastModified]
 	}
