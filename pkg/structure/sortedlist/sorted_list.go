@@ -21,8 +21,8 @@ import (
 	"sync"
 )
 
-const BucketMaxLength = 10000
-const InnerBucketMaxLength = 100
+const BucketMaxLength = 100000
+const InnerBucketMaxLength = 10000
 
 type Item interface {
 	GetSortKeys() (key1 int, key2 int)
