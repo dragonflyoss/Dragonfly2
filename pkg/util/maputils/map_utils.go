@@ -16,11 +16,10 @@
 
 package maputils
 
-// DeepCopyMap copies the src to dst and return a non-nil dst map.
-func DeepCopyMap(dst, src map[string]string) map[string]string {
-	if dst == nil {
-		dst = make(map[string]string)
-	}
+// DeepCopy copies the src to dst and return a non-nil dst map.
+func DeepCopy(src map[string]string) map[string]string {
+	dst := make(map[string]string)
+
 	for k, v := range src {
 		dst[k] = v
 	}
