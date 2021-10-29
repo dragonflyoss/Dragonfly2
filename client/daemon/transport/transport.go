@@ -21,8 +21,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"regexp"
+	"strconv"
 	"time"
+
+	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -61,6 +65,9 @@ type transport struct {
 
 	// defaultBiz is used when http request without X-Dragonfly-Biz Header
 	defaultBiz string
+
+	// dumpHTTPContent indicates to dump http request header and response header
+	dumpHTTPContent bool
 }
 
 // Option is functional config for transport.
@@ -114,6 +121,13 @@ func WithDefaultBiz(b string) Option {
 	}
 }
 
+func WithDumpHTTPContent(b bool) Option {
+	return func(rt *transport) *transport {
+		rt.dumpHTTPContent = b
+		return rt
+	}
+}
+
 // New constructs a new instance of a RoundTripper with additional options.
 func New(options ...Option) (http.RoundTripper, error) {
 	rt := &transport{
@@ -130,19 +144,25 @@ func New(options ...Option) (http.RoundTripper, error) {
 
 // RoundTrip only process first redirect at present
 // fix resource release
-func (rt *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
-		return rt.download(req)
+		resp, err = rt.download(req)
+	} else {
+		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
+		req.Host = req.URL.Host
+		req.Header.Set("Host", req.Host)
+		resp, err = rt.baseRoundTripper.RoundTrip(req)
 	}
-	logger.Debugf("round trip directly: %s %s", req.Method, req.URL.String())
-	req.Host = req.URL.Host
-	req.Header.Set("Host", req.Host)
-
-	return rt.baseRoundTripper.RoundTrip(req)
+	if err != nil {
+		logger.With("method", req.Method, "url", req.URL.String()).
+			Errorf("round trip error: %s", err)
+	}
+	rt.processDumpHTTPContent(req, resp)
+	return resp, err
 }
 
 // NeedUseDragonfly is the default value for shouldUseDragonfly, which downloads all
@@ -202,12 +222,43 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	hdr := httputils.MapToHeader(attr)
 	log.Infof("download stream attribute: %v", hdr)
 
+	var contentLength int64 = -1
+	if l, ok := attr[headers.ContentLength]; ok {
+		if i, e := strconv.ParseInt(l, 10, 64); e == nil {
+			contentLength = i
+		}
+	}
+
 	resp := &http.Response{
-		StatusCode: 200,
-		Body:       body,
-		Header:     hdr,
+		StatusCode:    http.StatusOK,
+		Body:          body,
+		Header:        hdr,
+		ContentLength: contentLength,
+
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
 	}
 	return resp, nil
+}
+
+func (rt *transport) processDumpHTTPContent(req *http.Request, resp *http.Response) {
+	if !rt.dumpHTTPContent {
+		return
+	}
+	if out, e := httputil.DumpRequest(req, false); e == nil {
+		logger.Debugf("dump request in transport: %s", string(out))
+	} else {
+		logger.Errorf("dump request in transport error: %s", e)
+	}
+	if resp == nil {
+		return
+	}
+	if out, e := httputil.DumpResponse(resp, false); e == nil {
+		logger.Debugf("dump response in transport: %s", string(out))
+	} else {
+		logger.Errorf("dump response in transport error: %s", e)
+	}
 }
 
 func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
