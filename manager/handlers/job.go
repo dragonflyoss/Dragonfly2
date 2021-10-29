@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"d7y.io/dragonfly/v2/internal/job"
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
