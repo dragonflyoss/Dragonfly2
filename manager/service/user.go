@@ -40,6 +40,34 @@ func (s *rest) GetUser(ctx context.Context, id uint) (*model.User, error) {
 	return &user, nil
 }
 
+func (s *rest) GetUsers(ctx context.Context, q types.GetUsersQuery) (*[]model.User, error) {
+	users := []model.User{}
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.User{
+		Name:     q.Name,
+		Email:    q.Email,
+		Location: q.Location,
+		State:    q.State,
+	}).Find(&users).Error; err != nil {
+		return nil, err
+	}
+
+	return &users, nil
+}
+
+func (s *rest) UserTotalCount(ctx context.Context, q types.GetUsersQuery) (int64, error) {
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&model.User{}).Where(&model.User{
+		Name:     q.Name,
+		Email:    q.Email,
+		Location: q.Location,
+		State:    q.State,
+	}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (s *rest) SignIn(ctx context.Context, json types.SignInRequest) (*model.User, error) {
 	user := model.User{}
 	if err := s.db.WithContext(ctx).First(&user, model.User{
