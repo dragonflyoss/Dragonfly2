@@ -74,28 +74,16 @@ func (s *rest) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
 	return &config, nil
 }
 
-func (s *rest) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, error) {
-	configs := []model.Config{}
+func (s *rest) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, int64, error) {
+	var count int64
+	var configs []model.Config
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
 		Name:   q.Name,
 		Value:  q.Value,
 		UserID: q.UserID,
-	}).Find(&configs).Error; err != nil {
-		return nil, err
+	}).Find(&configs).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &configs, nil
-}
-
-func (s *rest) ConfigTotalCount(ctx context.Context, q types.GetConfigsQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.Config{}).Where(&model.Config{
-		Name:   q.Name,
-		Value:  q.Value,
-		UserID: q.UserID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &configs, count, nil
 }

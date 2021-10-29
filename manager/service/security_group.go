@@ -74,28 +74,17 @@ func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGr
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error) {
-	securityGroups := []model.SecurityGroup{}
+func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error) {
+	var count int64
+	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name:   q.Name,
 		Domain: q.Domain,
-	}).Find(&securityGroups).Error; err != nil {
-		return nil, err
+	}).Find(&securityGroups).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &securityGroups, nil
-}
-
-func (s *rest) SecurityGroupTotalCount(ctx context.Context, q types.GetSecurityGroupsQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.SecurityGroup{}).Where(&model.SecurityGroup{
-		Name:   q.Name,
-		Domain: q.Domain,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &securityGroups, count, nil
 }
 
 func (s *rest) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {

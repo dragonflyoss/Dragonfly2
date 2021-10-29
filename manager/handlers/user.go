@@ -71,19 +71,13 @@ func (h *Handlers) GetUsers(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	users, err := h.service.GetUsers(ctx.Request.Context(), query)
+	users, count, err := h.service.GetUsers(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.UserTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, users)
 }
 

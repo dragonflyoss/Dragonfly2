@@ -157,18 +157,12 @@ func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulers, err := h.service.GetSchedulers(ctx.Request.Context(), query)
+	schedulers, count, err := h.service.GetSchedulers(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SchedulerTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, schedulers)
 }

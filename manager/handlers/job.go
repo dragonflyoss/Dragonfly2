@@ -154,18 +154,12 @@ func (h *Handlers) GetJobs(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	jobs, err := h.service.GetJobs(ctx.Request.Context(), query)
+	jobs, count, err := h.service.GetJobs(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.JobTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, jobs)
 }

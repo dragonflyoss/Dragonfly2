@@ -136,26 +136,16 @@ func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, e
 	return &cdnCluster, nil
 }
 
-func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, error) {
-	cdnClusters := []model.CDNCluster{}
+func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error) {
+	var count int64
+	var cdnClusters []model.CDNCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
 		Name: q.Name,
-	}).Find(&cdnClusters).Error; err != nil {
-		return nil, err
+	}).Find(&cdnClusters).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &cdnClusters, nil
-}
-
-func (s *rest) CDNClusterTotalCount(ctx context.Context, q types.GetCDNClustersQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.CDNCluster{}).Where(&model.CDNCluster{
-		Name: q.Name,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &cdnClusters, count, nil
 }
 
 func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
