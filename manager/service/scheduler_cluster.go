@@ -211,26 +211,16 @@ func (s *rest) GetSchedulerCluster(ctx context.Context, id uint) (*model.Schedul
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error) {
-	schedulerClusters := []model.SchedulerCluster{}
+func (s *rest) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error) {
+	var count int64
+	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
-	}).Preload("CDNClusters").Find(&schedulerClusters).Error; err != nil {
-		return nil, err
+	}).Preload("CDNClusters").Find(&schedulerClusters).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &schedulerClusters, nil
-}
-
-func (s *rest) SchedulerClusterTotalCount(ctx context.Context, q types.GetSchedulerClustersQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.SchedulerCluster{}).Where(&model.SchedulerCluster{
-		Name: q.Name,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &schedulerClusters, count, nil
 }
 
 func (s *rest) AddSchedulerToSchedulerCluster(ctx context.Context, id, schedulerID uint) error {

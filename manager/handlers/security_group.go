@@ -157,19 +157,13 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	securityGroups, err := h.service.GetSecurityGroups(ctx.Request.Context(), query)
+	securityGroups, count, err := h.service.GetSecurityGroups(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.SecurityGroupTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, securityGroups)
 }
 
