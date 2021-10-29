@@ -371,9 +371,10 @@ func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	defer func() {
 		cleanUnfinishedFunc()
 	}()
-
-	if !pt.waitFirstPeerPacket() {
-		// TODO 如果是客户端直接回源，这里不应该在输出错误日志
+	if ok, backSource := pt.waitFirstPeerPacket(); !ok {
+		if backSource {
+			return
+		}
 		pt.Errorf("wait first peer packet error")
 		return
 	}
@@ -487,7 +488,7 @@ func (pt *peerTask) init(piecePacket *base.PiecePacket, pieceBufferSize int32) (
 	return pieceRequestCh, true
 }
 
-func (pt *peerTask) waitFirstPeerPacket() bool {
+func (pt *peerTask) waitFirstPeerPacket() (done bool, backSource bool) {
 	// wait first available peer
 	select {
 	case <-pt.ctx.Done():
@@ -502,13 +503,14 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 			// preparePieceTasksByPeer func already send piece result with error
 			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
 				time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
-			return true
+			return true, false
 		}
 		// when scheduler says dfcodes.SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
 		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source")
 		pt.needBackSource = true
 		pt.backSource()
+		return false, true
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
@@ -521,9 +523,10 @@ func (pt *peerTask) waitFirstPeerPacket() bool {
 			pt.span.AddEvent("back source due to schedule timeout")
 			pt.needBackSource = true
 			pt.backSource()
+			return false, true
 		}
 	}
-	return false
+	return false, false
 }
 
 func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
