@@ -34,6 +34,7 @@ import (
 
 type REST interface {
 	GetUser(context.Context, uint) (*model.User, error)
+	GetUsers(context.Context, types.GetUsersQuery) (*[]model.User, int64, error)
 	SignIn(context.Context, types.SignInRequest) (*model.User, error)
 	SignUp(context.Context, types.SignUpRequest) (*model.User, error)
 	OauthSignin(context.Context, string) (string, error)
@@ -56,8 +57,7 @@ type REST interface {
 	DestroyOauth(context.Context, uint) error
 	UpdateOauth(context.Context, uint, types.UpdateOauthRequest) (*model.Oauth, error)
 	GetOauth(context.Context, uint) (*model.Oauth, error)
-	GetOauths(context.Context, types.GetOauthsQuery) (*[]model.Oauth, error)
-	OauthTotalCount(context.Context, types.GetOauthsQuery) (int64, error)
+	GetOauths(context.Context, types.GetOauthsQuery) (*[]model.Oauth, int64, error)
 
 	CreateCDNCluster(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	CreateCDNClusterWithSecurityGroupDomain(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
@@ -65,8 +65,7 @@ type REST interface {
 	UpdateCDNCluster(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
 	UpdateCDNClusterWithSecurityGroupDomain(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
 	GetCDNCluster(context.Context, uint) (*model.CDNCluster, error)
-	GetCDNClusters(context.Context, types.GetCDNClustersQuery) (*[]model.CDNCluster, error)
-	CDNClusterTotalCount(context.Context, types.GetCDNClustersQuery) (int64, error)
+	GetCDNClusters(context.Context, types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error)
 	AddCDNToCDNCluster(context.Context, uint, uint) error
 	AddSchedulerClusterToCDNCluster(context.Context, uint, uint) error
 
@@ -74,8 +73,7 @@ type REST interface {
 	DestroyCDN(context.Context, uint) error
 	UpdateCDN(context.Context, uint, types.UpdateCDNRequest) (*model.CDN, error)
 	GetCDN(context.Context, uint) (*model.CDN, error)
-	GetCDNs(context.Context, types.GetCDNsQuery) (*[]model.CDN, error)
-	CDNTotalCount(context.Context, types.GetCDNsQuery) (int64, error)
+	GetCDNs(context.Context, types.GetCDNsQuery) (*[]model.CDN, int64, error)
 
 	CreateSchedulerCluster(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	CreateSchedulerClusterWithSecurityGroupDomain(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
@@ -83,23 +81,20 @@ type REST interface {
 	UpdateSchedulerCluster(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	UpdateSchedulerClusterWithSecurityGroupDomain(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	GetSchedulerCluster(context.Context, uint) (*model.SchedulerCluster, error)
-	GetSchedulerClusters(context.Context, types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, error)
-	SchedulerClusterTotalCount(context.Context, types.GetSchedulerClustersQuery) (int64, error)
+	GetSchedulerClusters(context.Context, types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error)
 	AddSchedulerToSchedulerCluster(context.Context, uint, uint) error
 
 	CreateScheduler(context.Context, types.CreateSchedulerRequest) (*model.Scheduler, error)
 	DestroyScheduler(context.Context, uint) error
 	UpdateScheduler(context.Context, uint, types.UpdateSchedulerRequest) (*model.Scheduler, error)
 	GetScheduler(context.Context, uint) (*model.Scheduler, error)
-	GetSchedulers(context.Context, types.GetSchedulersQuery) (*[]model.Scheduler, error)
-	SchedulerTotalCount(context.Context, types.GetSchedulersQuery) (int64, error)
+	GetSchedulers(context.Context, types.GetSchedulersQuery) (*[]model.Scheduler, int64, error)
 
 	CreateSecurityGroup(context.Context, types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(context.Context, uint) error
 	UpdateSecurityGroup(context.Context, uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
 	GetSecurityGroup(context.Context, uint) (*model.SecurityGroup, error)
-	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, error)
-	SecurityGroupTotalCount(context.Context, types.GetSecurityGroupsQuery) (int64, error)
+	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error)
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
 
@@ -107,15 +102,13 @@ type REST interface {
 	DestroyConfig(context.Context, uint) error
 	UpdateConfig(context.Context, uint, types.UpdateConfigRequest) (*model.Config, error)
 	GetConfig(context.Context, uint) (*model.Config, error)
-	GetConfigs(context.Context, types.GetConfigsQuery) (*[]model.Config, error)
-	ConfigTotalCount(context.Context, types.GetConfigsQuery) (int64, error)
+	GetConfigs(context.Context, types.GetConfigsQuery) (*[]model.Config, int64, error)
 
 	CreatePreheatJob(context.Context, types.CreatePreheatJobRequest) (*model.Job, error)
 	DestroyJob(context.Context, uint) error
 	UpdateJob(context.Context, uint, types.UpdateJobRequest) (*model.Job, error)
 	GetJob(context.Context, uint) (*model.Job, error)
-	GetJobs(context.Context, types.GetJobsQuery) (*[]model.Job, error)
-	JobTotalCount(context.Context, types.GetJobsQuery) (int64, error)
+	GetJobs(context.Context, types.GetJobsQuery) (*[]model.Job, int64, error)
 
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)

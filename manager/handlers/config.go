@@ -157,18 +157,12 @@ func (h *Handlers) GetConfigs(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	configs, err := h.service.GetConfigs(ctx.Request.Context(), query)
+	configs, count, err := h.service.GetConfigs(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	totalCount, err := h.service.ConfigTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, configs)
 }

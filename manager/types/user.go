@@ -20,6 +20,15 @@ type UserParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
+type GetUsersQuery struct {
+	Name     string `form:"name" binding:"omitempty"`
+	Email    string `form:"email" binding:"omitempty"`
+	Location string `form:"location" binding:"omitempty"`
+	State    string `form:"state" binding:"omitempty"`
+	Page     int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage  int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+}
+
 type SignInRequest struct {
 	Name     string `json:"name" binding:"required,min=3,max=10"`
 	Password string `json:"password" binding:"required,min=8,max=20"`

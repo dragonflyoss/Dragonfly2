@@ -157,18 +157,12 @@ func (h *Handlers) GetOauths(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	oauth, err := h.service.GetOauths(ctx.Request.Context(), query)
+	oauth, count, err := h.service.GetOauths(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	totalCount, err := h.service.OauthTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, oauth)
 }

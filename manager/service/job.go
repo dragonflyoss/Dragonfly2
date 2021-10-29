@@ -173,30 +173,18 @@ func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	return &job, nil
 }
 
-func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, error) {
-	jobs := []model.Job{}
+func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, int64, error) {
+	var count int64
+	var jobs []model.Job
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
 		Type:   q.Type,
 		Status: q.Status,
 		UserID: q.UserID,
-	}).Find(&jobs).Error; err != nil {
-		return nil, err
+	}).Find(&jobs).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &jobs, nil
-}
-
-func (s *rest) JobTotalCount(ctx context.Context, q types.GetJobsQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.Job{}).Where(&model.Job{
-		Type:   q.Type,
-		Status: q.Status,
-		UserID: q.UserID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &jobs, count, nil
 }
 
 func (s *rest) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {

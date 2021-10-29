@@ -179,19 +179,13 @@ func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.service.GetCDNClusters(ctx.Request.Context(), query)
+	cdns, count, err := h.service.GetCDNClusters(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	totalCount, err := h.service.CDNClusterTotalCount(ctx.Request.Context(), query)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, cdns)
 }
 
