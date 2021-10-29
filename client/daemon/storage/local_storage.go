@@ -343,7 +343,7 @@ func (t *localTaskStore) reclaimData(sLogger *logger.SugaredLoggerOnWith) error 
 	if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
 		dest, err0 := os.Readlink(data)
 		if err0 == nil {
-			if err = os.Remove(dest); err != nil && !os.IsNotExist(err){
+			if err = os.Remove(dest); err != nil && !os.IsNotExist(err) {
 				sLogger.Warnf("remove symlink target file %s error: %s", dest, err)
 			} else {
 				sLogger.Infof("remove data file %s", dest)
@@ -355,7 +355,7 @@ func (t *localTaskStore) reclaimData(sLogger *logger.SugaredLoggerOnWith) error 
 			return err
 		}
 	}
-	if err = os.Remove(data); err != nil && !os.IsNotExist(err){
+	if err = os.Remove(data); err != nil && !os.IsNotExist(err) {
 		sLogger.Errorf("remove data file %s error: %s", data, err)
 		return err
 	}
