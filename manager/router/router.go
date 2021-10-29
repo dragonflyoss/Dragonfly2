@@ -97,6 +97,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	// User
 	u := apiv1.Group("/users")
 	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
+	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)

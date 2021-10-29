@@ -34,6 +34,8 @@ import (
 
 type REST interface {
 	GetUser(context.Context, uint) (*model.User, error)
+	GetUsers(context.Context, types.GetUsersQuery) (*[]model.User, error)
+	UserTotalCount(context.Context, types.GetUsersQuery) (int64, error)
 	SignIn(context.Context, types.SignInRequest) (*model.User, error)
 	SignUp(context.Context, types.SignUpRequest) (*model.User, error)
 	OauthSignin(context.Context, string) (string, error)
