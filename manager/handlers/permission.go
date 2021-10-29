@@ -19,6 +19,7 @@ package handlers
 import (
 	"net/http"
 
+	_ "d7y.io/dragonfly/v2/manager/permission/rbac"
 	"github.com/gin-gonic/gin"
 )
 
