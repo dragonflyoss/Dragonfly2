@@ -181,12 +181,12 @@ build-dfget-man-page:
 
 # Run unittests
 test:
-	@go test -gcflags "all=-l" -race -short ${PKG_LIST}
+	@go test -v -gcflags "all=-l" -race -short ${PKG_LIST}
 .PHONY: test
 
 # Run tests with coverage
 test-coverage:
-	@go test -gcflags "all=-l" -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
+	@go test -v -gcflags "all=-l" -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 

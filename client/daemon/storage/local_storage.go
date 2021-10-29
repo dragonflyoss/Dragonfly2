@@ -26,12 +26,13 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/atomic"
+
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"go.uber.org/atomic"
 )
 
 type localTaskStore struct {
@@ -342,19 +343,19 @@ func (t *localTaskStore) reclaimData(sLogger *logger.SugaredLoggerOnWith) error 
 	if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
 		dest, err0 := os.Readlink(data)
 		if err0 == nil {
-			if err = os.Remove(dest); err != nil {
+			if err = os.Remove(dest); err != nil && !os.IsNotExist(err) {
 				sLogger.Warnf("remove symlink target file %s error: %s", dest, err)
 			} else {
 				sLogger.Infof("remove data file %s", dest)
 			}
 		}
 	} else { // remove cache file
-		if err = os.Remove(t.DataFilePath); err != nil {
+		if err = os.Remove(t.DataFilePath); err != nil && !os.IsNotExist(err) {
 			sLogger.Errorf("remove data file %s error: %s", data, err)
 			return err
 		}
 	}
-	if err = os.Remove(data); err != nil {
+	if err = os.Remove(data); err != nil && !os.IsNotExist(err) {
 		sLogger.Errorf("remove data file %s error: %s", data, err)
 		return err
 	}
