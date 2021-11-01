@@ -65,7 +65,10 @@ type d7yPicker struct {
 }
 
 func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	var ret balancer.PickResult
+	var (
+		targetAddr string
+		ret        balancer.PickResult
+	)
 	pickReq, ok := info.Ctx.Value(PickKey{}).(*PickReq)
 	if !ok {
 		pickReq = &PickReq{
@@ -75,15 +78,23 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	}
 	log.Printf("pick for %s, for %d time(s)\n", pickReq.Key, pickReq.Attempt)
 
-	if v, ok := p.pickHistory.Load(pickReq.Key); ok {
-		targetAddr := v.(string)
-		ret.SubConn = p.subConns[targetAddr]
-		p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
-	} else if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
-		targetAddr := targetAddrs[pickReq.Attempt-1]
-		ret.SubConn = p.subConns[targetAddr]
-		p.pickHistory.Store(pickReq.Key, targetAddr)
-		p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+	if pickReq.Attempt == 1 {
+		if v, ok := p.pickHistory.Load(pickReq.Key); ok {
+			targetAddr = v.(string)
+			ret.SubConn = p.subConns[targetAddr]
+			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+		} else if targetAddr, ok = p.hashRing.GetNode(pickReq.Key); ok {
+			p.pickHistory.Store(pickReq.Key, targetAddr)
+			ret.SubConn = p.subConns[targetAddr]
+			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+		}
+	} else {
+		if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
+			targetAddr = targetAddrs[pickReq.Attempt-1]
+			p.pickHistory.Store(pickReq.Key, targetAddr)
+			ret.SubConn = p.subConns[targetAddr]
+			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+		}
 	}
 
 	if ret.SubConn == nil {
