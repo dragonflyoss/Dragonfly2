@@ -18,10 +18,10 @@ package rpc
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
-
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
 )
@@ -44,22 +44,24 @@ type PickResult struct {
 	PickTime time.Time
 }
 
-func newD7yPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult) *d7yPicker {
+func newD7yPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult, pickHistory *sync.Map) *d7yPicker {
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
 	}
 	return &d7yPicker{
-		subConns:   subConns,
-		hashRing:   hashring.New(addrs),
-		reportChan: reportChan,
+		subConns:    subConns,
+		hashRing:    hashring.New(addrs),
+		reportChan:  reportChan,
+		pickHistory: pickHistory,
 	}
 }
 
 type d7yPicker struct {
-	subConns   map[string]balancer.SubConn // address string -> balancer.SubConn
-	hashRing   *hashring.HashRing
-	reportChan chan<- PickResult
+	subConns    map[string]balancer.SubConn // address string -> balancer.SubConn
+	hashRing    *hashring.HashRing
+	reportChan  chan<- PickResult
+	pickHistory *sync.Map
 }
 
 func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
@@ -72,10 +74,18 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		}
 	}
 	log.Printf("pick for %s, for %d time(s)\n", pickReq.Key, pickReq.Attempt)
-	if targetAddr, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
-		ret.SubConn = p.subConns[targetAddr[pickReq.Attempt-1]]
+
+	if v, ok := p.pickHistory.Load(pickReq.Key); ok {
+		targetAddr := v.(string)
+		ret.SubConn = p.subConns[targetAddr]
+		p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+	} else if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
+		targetAddr := targetAddrs[pickReq.Attempt-1]
+		ret.SubConn = p.subConns[targetAddr]
+		p.pickHistory.Store(pickReq.Key, targetAddr)
 		p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
 	}
+
 	if ret.SubConn == nil {
 		//return ret, balancer.ErrNoSubConnAvailable
 		return ret, dferrors.ErrNoCandidateNode

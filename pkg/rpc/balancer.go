@@ -56,6 +56,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 		subConns:          make(map[string]balancer.SubConn),
 		scInfos:           sync.Map{},
 		pickResultChan:    make(chan PickResult, 1),
+		pickHistory:       sync.Map{},
 		subConnAccessTime: sync.Map{},
 	}
 	go b.scManager()
@@ -98,6 +99,8 @@ type d7yBalancer struct {
 
 	// pickResultChan is the channel for the picker to report PickResult to the balancer.
 	pickResultChan chan PickResult
+	// pickHistory maps pickReq.Key(taskID) to the last picked targetAddr string.
+	pickHistory sync.Map
 	//subConnAccessTime maps subConn to its latest access time.
 	subConnAccessTime sync.Map
 }
@@ -192,7 +195,7 @@ func (b *d7yBalancer) regeneratePicker() {
 		b.picker = base.NewErrPicker(b.mergeErrors())
 	} else {
 		b.state = connectivity.Ready
-		b.picker = newD7yPicker(availableSCs, b.pickResultChan)
+		b.picker = newD7yPicker(availableSCs, b.pickResultChan, &b.pickHistory)
 	}
 }
 
@@ -299,15 +302,30 @@ func (b *d7yBalancer) scManager() {
 		ticker := time.NewTicker(2 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
-			b.subConnAccessTime.Range(func(key, value interface{}) bool {
-				subConn := key.(balancer.SubConn)
-				accessTime := value.(time.Time)
+			b.pickHistory.Range(func(key, value interface{}) bool {
+				addr := value.(string)
+				subConn := b.subConns[addr]
+				_accessTime, _ := b.subConnAccessTime.Load(subConn)
+				accessTime := _accessTime.(time.Time)
 				if accessTime.Add(connectionLifetime).Before(time.Now()) {
+					b.pickHistory.Delete(key)
 					b.resetSubConn(subConn)
 					b.subConnAccessTime.Delete(subConn)
 				}
 				return true
 			})
 		}
+
+		//for range ticker.C {
+		//	b.subConnAccessTime.Range(func(key, value interface{}) bool {
+		//		subConn := key.(balancer.SubConn)
+		//		accessTime := value.(time.Time)
+		//		if accessTime.Add(connectionLifetime).Before(time.Now()) {
+		//			b.resetSubConn(subConn)
+		//			b.subConnAccessTime.Delete(subConn)
+		//		}
+		//		return true
+		//	})
+		//}
 	}()
 }
