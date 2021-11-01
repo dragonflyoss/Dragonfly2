@@ -16,8 +16,6 @@
 
 package rpc
 
-//
-
 import (
 	"context"
 	"fmt"
@@ -33,6 +31,10 @@ import (
 	"google.golang.org/grpc/resolver/manual"
 	"google.golang.org/grpc/status"
 	testpb "google.golang.org/grpc/test/grpc_testing"
+)
+
+const (
+	testPickKey = "balancer_test"
 )
 
 type tester struct{}
@@ -59,13 +61,17 @@ func RunSubTests(t *testing.T, x tester) {
 
 type testServer struct {
 	testpb.UnimplementedTestServiceServer
+
+	testChan chan struct{}
 }
 
 func newTestServer() *testServer {
-	return &testServer{}
+	// Each testServer is disposable.
+	return &testServer{testChan: make(chan struct{}, 1)}
 }
 
 func (s *testServer) EmptyCall(ctx context.Context, in *testpb.Empty) (*testpb.Empty, error) {
+	s.testChan <- struct{}{}
 	return &testpb.Empty{}, nil
 }
 
@@ -127,16 +133,69 @@ func (tester) TestOneBackend(t *testing.T) {
 	defer cc.Close()
 
 	testc := testpb.NewTestServiceClient(cc)
+
 	// The first RPC should fail because there's no address.
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
-	if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
-		t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
+			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+		}
 	}
 
 	r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
+
 	// The second RPC should succeed.
-	if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err != nil {
-		t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+	{
+		if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err != nil {
+			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
+	}
+}
+
+func (tester) TestMigration(t *testing.T) {
+	r := manual.NewBuilderWithScheme("whatever")
+
+	test, err := startTestServers(2)
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test.cleanup()
+
+	cc, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r),
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, d7yBalancerPolicy)))
+	if err != nil {
+		t.Fatalf("failed to dial: %v", err)
+	}
+	defer cc.Close()
+
+	r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}}})
+	testc := testpb.NewTestServiceClient(cc)
+
+	// The first RPC should succeed.
+	{
+		ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), PickKey{}, &PickReq{Key: testPickKey, Attempt: 1}), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err != nil {
+			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
+	}
+
+	// Because each testServer is disposable, the second RPC should fail.
+	{
+		ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), PickKey{}, &PickReq{Key: testPickKey, Attempt: 1}), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
+			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+		}
+	}
+
+	// The third RPC change the Attempt in PickReq, so it should succeed.
+	{
+		ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), PickKey{}, &PickReq{Key: testPickKey, Attempt: 2}), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err != nil {
+			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
 	}
 }
