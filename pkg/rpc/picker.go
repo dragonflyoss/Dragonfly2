@@ -17,6 +17,7 @@
 package rpc
 
 import (
+	"context"
 	"log"
 	"sync"
 	"time"
@@ -40,8 +41,11 @@ var (
 )
 
 type PickResult struct {
-	SC       balancer.SubConn
-	PickTime time.Time
+	Key        string
+	TargetAddr string
+	SC         balancer.SubConn
+	Ctx        context.Context
+	PickTime   time.Time
 }
 
 func newD7yPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult, pickHistory *sync.Map) *d7yPicker {
@@ -82,18 +86,16 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		if v, ok := p.pickHistory.Load(pickReq.Key); ok {
 			targetAddr = v.(string)
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		} else if targetAddr, ok = p.hashRing.GetNode(pickReq.Key); ok {
-			p.pickHistory.Store(pickReq.Key, targetAddr)
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		}
 	} else {
 		if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
 			targetAddr = targetAddrs[pickReq.Attempt-1]
-			p.pickHistory.Store(pickReq.Key, targetAddr)
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{SC: ret.SubConn, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		}
 	}
 
