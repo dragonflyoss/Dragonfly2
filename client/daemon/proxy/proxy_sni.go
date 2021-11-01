@@ -108,11 +108,18 @@ func (proxy *Proxy) handleTLSConn(clientConn net.Conn, port int) {
 	defer tlsConn.Close()
 
 	rp := &httputil.ReverseProxy{
-		Director: func(r *http.Request) {
-			r.URL.Scheme = schemaHTTPS
-			r.URL.Host = serverName
+		Director: func(req *http.Request) {
+			req.URL.Scheme = schemaHTTPS
+			req.URL.Host = serverName
 			if port != portHTTPS {
-				r.URL.Host = fmt.Sprintf("%s:%d", serverName, port)
+				req.URL.Host = fmt.Sprintf("%s:%d", serverName, port)
+			}
+			if proxy.dumpHTTPContent {
+				if out, e := httputil.DumpRequest(req, false); e == nil {
+					logger.Debugf("dump request in SNI ReverseProxy: %s", string(out))
+				} else {
+					logger.Errorf("dump request in SNI ReverseProxy error: %s", e)
+				}
 			}
 		},
 		Transport: proxy.newTransport(proxy.remoteConfig(serverName)),
@@ -122,7 +129,8 @@ func (proxy *Proxy) handleTLSConn(clientConn net.Conn, port int) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	// NOTE: http.Serve always returns a non-nil error
-	if err := http.Serve(&singleUseListener{&customCloseConn{tlsConn, wg.Done}}, rp); err != errServerClosed && err != http.ErrServerClosed {
+	err = http.Serve(&singleUseListener{&customCloseConn{tlsConn, wg.Done}}, rp)
+	if err != errServerClosed && err != http.ErrServerClosed {
 		logger.Errorf("failed to accept incoming HTTPS connections: %v", err)
 	}
 	wg.Wait()

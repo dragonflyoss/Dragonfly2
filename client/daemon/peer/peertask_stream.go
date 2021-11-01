@@ -277,10 +277,7 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.ReadCloser, map[string]s
 		firstPiece = first
 	}
 
-	pr, pw := io.Pipe()
 	attr := map[string]string{}
-	var readCloser io.ReadCloser = pr
-	var writer io.Writer = pw
 	if s.contentLength.Load() != -1 {
 		attr[headers.ContentLength] = fmt.Sprintf("%d", s.contentLength.Load())
 	} else {
@@ -289,89 +286,9 @@ func (s *streamPeerTask) Start(ctx context.Context) (io.ReadCloser, map[string]s
 	attr[config.HeaderDragonflyTask] = s.taskID
 	attr[config.HeaderDragonflyPeer] = s.peerID
 
-	go func(first int32) {
-		defer func() {
-			s.cancel()
-			s.span.End()
-		}()
-		var (
-			desired int32
-			cur     int32
-			wrote   int64
-			err     error
-			//ok      bool
-			cache = make(map[int32]bool)
-		)
-		// update first piece to cache and check cur with desired
-		cache[first] = true
-		cur = first
-		for {
-			if desired == cur {
-				for {
-					delete(cache, desired)
-					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
-					span.SetAttributes(config.AttributePiece.Int(int(desired)))
-					wrote, err = s.writeTo(writer, desired)
-					if err != nil {
-						span.RecordError(err)
-						span.End()
-						s.Errorf("write to pipe error: %s", err)
-						_ = pw.CloseWithError(err)
-						return
-					}
-					span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
-					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
-					span.End()
-					desired++
-					cached := cache[desired]
-					if !cached {
-						break
-					}
-				}
-			} else {
-				// not desired piece, cache it
-				cache[cur] = true
-				if cur < desired {
-					s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur)
-				}
-			}
-
-			select {
-			case <-s.ctx.Done():
-				s.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
-				s.span.RecordError(s.ctx.Err())
-				if err := pw.CloseWithError(s.ctx.Err()); err != nil {
-					s.Errorf("CloseWithError failed: %s", err)
-				}
-				return
-			case <-s.streamDone:
-				for {
-					// all data wrote to local storage, and all data wrote to pipe write
-					if s.readyPieces.Settled() == desired {
-						pw.Close()
-						return
-					}
-					_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
-					span.SetAttributes(config.AttributePiece.Int(int(desired)))
-					wrote, err = s.writeTo(pw, desired)
-					if err != nil {
-						span.RecordError(err)
-						span.End()
-						s.span.RecordError(err)
-						s.Errorf("write to pipe error: %s", err)
-						_ = pw.CloseWithError(err)
-						return
-					}
-					span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
-					span.End()
-					s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
-					desired++
-				}
-			case cur = <-s.successPieceCh:
-				continue
-			}
-		}
-	}(firstPiece)
+	pr, pw := io.Pipe()
+	var readCloser io.ReadCloser = pr
+	go s.writeToPipe(firstPiece, pw)
 
 	return readCloser, attr, nil
 }
@@ -428,7 +345,7 @@ func (s *streamPeerTask) SetTotalPieces(i int32) {
 	s.totalPiece = i
 }
 
-func (s *streamPeerTask) writeTo(w io.Writer, pieceNum int32) (int64, error) {
+func (s *streamPeerTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
 	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetaData: storage.PeerTaskMetaData{
 			PeerID: s.peerID,
@@ -475,4 +392,88 @@ func (s *streamPeerTask) backSource() {
 	backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	_ = s.finish()
 	return
+}
+
+func (s *streamPeerTask) writeToPipe(firstPiece int32, pw *io.PipeWriter) {
+	defer func() {
+		s.cancel()
+		s.span.End()
+	}()
+	var (
+		desired int32
+		cur     int32
+		wrote   int64
+		err     error
+		cache   = make(map[int32]bool)
+	)
+	// update first piece to cache and check cur with desired
+	cache[firstPiece] = true
+	cur = firstPiece
+	for {
+		if desired == cur {
+			for {
+				delete(cache, desired)
+				_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+				span.SetAttributes(config.AttributePiece.Int(int(desired)))
+				wrote, err = s.writeOnePiece(pw, desired)
+				if err != nil {
+					span.RecordError(err)
+					span.End()
+					s.Errorf("write to pipe error: %s", err)
+					_ = pw.CloseWithError(err)
+					return
+				}
+				span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
+				s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+				span.End()
+				desired++
+				cached := cache[desired]
+				if !cached {
+					break
+				}
+			}
+		} else {
+			// not desired piece, cache it
+			cache[cur] = true
+			if cur < desired {
+				s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur)
+			}
+		}
+
+		select {
+		case <-s.ctx.Done():
+			s.Errorf("ctx.PeerTaskDone due to: %s", s.ctx.Err())
+			s.span.RecordError(s.ctx.Err())
+			if err := pw.CloseWithError(s.ctx.Err()); err != nil {
+				s.Errorf("CloseWithError failed: %s", err)
+			}
+			return
+		case <-s.streamDone:
+			for {
+				// all data wrote to local storage, and all data wrote to pipe write
+				if s.readyPieces.Settled() == desired {
+					s.Debugf("all %d pieces wrote to pipe", desired)
+					pw.Close()
+					return
+				}
+				_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+				span.SetAttributes(config.AttributePiece.Int(int(desired)))
+				wrote, err = s.writeOnePiece(pw, desired)
+				if err != nil {
+					span.RecordError(err)
+					span.End()
+					s.span.RecordError(err)
+					s.Errorf("write to pipe error: %s", err)
+					_ = pw.CloseWithError(err)
+					return
+				}
+				span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
+				span.End()
+				s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+				desired++
+			}
+		case cur = <-s.successPieceCh:
+			continue
+		}
+	}
 }

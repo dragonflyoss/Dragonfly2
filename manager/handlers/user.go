@@ -19,6 +19,8 @@ package handlers
 import (
 	"net/http"
 
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -49,6 +51,36 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+// @Summary Get Users
+// @Description Get Users
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param page query int true "current page" default(0)
+// @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
+// @Success 200 {object} []model.CDN
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /users [get]
+func (h *Handlers) GetUsers(ctx *gin.Context) {
+	var query types.GetUsersQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	h.setPaginationDefault(&query.Page, &query.PerPage)
+	users, count, err := h.service.GetUsers(ctx.Request.Context(), query)
+	if err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
+	ctx.JSON(http.StatusOK, users)
 }
 
 // @Summary SignUp user

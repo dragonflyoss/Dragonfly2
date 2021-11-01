@@ -22,6 +22,7 @@ import (
 )
 
 type Job struct {
+	*internaljob.Job
 	Preheat
 }
 
@@ -43,6 +44,20 @@ func New(cfg *config.Config) (*Job, error) {
 	}
 
 	return &Job{
+		Job:     j,
 		Preheat: p,
+	}, nil
+}
+
+func (j *Job) GetGroupJobState(id string) (*internaljob.GroupJobState, error) {
+	groupJobState, err := j.Job.GetGroupJobState(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &internaljob.GroupJobState{
+		GroupUUID: groupJobState.GroupUUID,
+		State:     groupJobState.State,
+		CreatedAt: groupJobState.CreatedAt,
 	}, nil
 }

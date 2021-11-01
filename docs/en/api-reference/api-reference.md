@@ -1,8 +1,4 @@
-# API Reference
-
-Commandline is the easiest way to experience Dragonfly's ability. API extension will bring more further experience of Dragonfly. Commandline is just one kind of combination usage of API, if you wish to hack or take more advantages of Dragonfly, please see `API Reference`. Like command line document, all API docs are auto generated via source code.
-
-## Dragonfly Manager
+# Dragonfly Manager
 
 
 <a name="overview"></a>
@@ -802,6 +798,223 @@ Get app health
 #### Tags
 
 * Health
+
+
+<a name="api-v1-jobs-post"></a>
+### Create Job
+```
+POST /api/v1/jobs
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**Job**  <br>*required*|Job|[types.CreateJobRequest](#types-createjobrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Job
+
+
+<a name="api-v1-jobs-get"></a>
+### Get Jobs
+```
+GET /api/v1/jobs
+```
+
+
+#### Description
+Get Jobs
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.Job](#model-job) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Job
+
+
+<a name="api-v1-jobs-id-get"></a>
+### Get Job
+```
+GET /api/v1/jobs/{id}
+```
+
+
+#### Description
+Get Job by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Job
+
+
+<a name="api-v1-jobs-id-delete"></a>
+### Destroy Job
+```
+DELETE /api/v1/jobs/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Job
+
+
+<a name="api-v1-jobs-id-patch"></a>
+### Update Job
+```
+PATCH /api/v1/jobs/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**Job**  <br>*required*|Job|[types.UpdateJobRequest](#types-updatejobrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Job
 
 
 <a name="api-v1-oauth-post"></a>
@@ -2286,6 +2499,50 @@ signup by json config
 * User
 
 
+<a name="api-v1-users-get"></a>
+### Get Users
+```
+GET /api/v1/users
+```
+
+
+#### Description
+Get Users
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.CDN](#model-cdn) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* CDN
+
+
 <a name="api-v1-users-id-reset_password-post"></a>
 ### Reset Password For User
 ```
@@ -2527,7 +2784,9 @@ Get User by id
 |**created_at**  <br>*optional*|string|
 |**id**  <br>*optional*|integer|
 |**is_default**  <br>*optional*|boolean|
+|**jobs**  <br>*optional*|< [model.Job](#model-job) > array|
 |**name**  <br>*optional*|string|
+|**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
 |**security_group_id**  <br>*optional*|integer|
 |**updated_at**  <br>*optional*|string|
 
@@ -2540,7 +2799,7 @@ Get User by id
 |**bio**  <br>*optional*|string|
 |**created_at**  <br>*optional*|string|
 |**id**  <br>*optional*|integer|
-|**key**  <br>*optional*|string|
+|**name**  <br>*optional*|string|
 |**updated_at**  <br>*optional*|string|
 |**user_id**  <br>*optional*|integer|
 |**value**  <br>*optional*|string|
@@ -2549,6 +2808,25 @@ Get User by id
 <a name="model-jsonmap"></a>
 ### model.JSONMap
 *Type* : object
+
+
+<a name="model-job"></a>
+### model.Job
+
+|Name|Schema|
+|---|---|
+|**args**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
+|**bio**  <br>*optional*|string|
+|**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
+|**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
+|**result**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
+|**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
+|**status**  <br>*optional*|string|
+|**task_id**  <br>*optional*|string|
+|**type**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
+|**user_id**  <br>*optional*|integer|
 
 
 <a name="model-oauth"></a>
@@ -2597,6 +2875,7 @@ Get User by id
 |**created_at**  <br>*optional*|string|
 |**id**  <br>*optional*|integer|
 |**is_default**  <br>*optional*|boolean|
+|**jobs**  <br>*optional*|< [model.Job](#model-job) > array|
 |**name**  <br>*optional*|string|
 |**scopes**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
 |**security_group_id**  <br>*optional*|integer|
@@ -2692,9 +2971,23 @@ Get User by id
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
-|**key**  <br>*required*|string|
+|**name**  <br>*required*|string|
 |**user_id**  <br>*required*|integer|
 |**value**  <br>*required*|string|
+
+
+<a name="types-createjobrequest"></a>
+### types.CreateJobRequest
+
+|Name|Schema|
+|---|---|
+|**args**  <br>*optional*|object|
+|**bio**  <br>*optional*|string|
+|**cdn_cluster_ids**  <br>*optional*|< integer > array|
+|**result**  <br>*optional*|object|
+|**scheduler_cluster_ids**  <br>*optional*|< integer > array|
+|**type**  <br>*required*|string|
+|**user_id**  <br>*optional*|integer|
 
 
 <a name="types-createoauthrequest"></a>
@@ -2707,18 +3000,6 @@ Get User by id
 |**client_secret**  <br>*required*|string|
 |**name**  <br>*required*|string|
 |**redirect_url**  <br>*optional*|string|
-
-
-<a name="types-createpreheatrequest"></a>
-### types.CreatePreheatRequest
-
-|Name|Schema|
-|---|---|
-|**filter**  <br>*optional*|string|
-|**headers**  <br>*optional*|< string, string > map|
-|**scheduler_cluster_id**  <br>*optional*|integer|
-|**type**  <br>*required*|string|
-|**url**  <br>*required*|string|
 
 
 <a name="types-createrolerequest"></a>
@@ -2787,7 +3068,7 @@ Get User by id
 
 |Name|Schema|
 |---|---|
-|**ID**  <br>*optional*|string|
+|**id**  <br>*optional*|string|
 
 
 <a name="types-deletepermissionforrolerequest"></a>
@@ -2804,19 +3085,9 @@ Get User by id
 
 |Name|Schema|
 |---|---|
-|**ID**  <br>*optional*|string|
 |**finishTime**  <br>*optional*|string|
-|**startTime**  <br>*optional*|string|
-|**status**  <br>*optional*|string|
-
-
-<a name="types-preheat"></a>
-### types.Preheat
-
-|Name|Schema|
-|---|---|
-|**create_at**  <br>*optional*|string|
 |**id**  <br>*optional*|string|
+|**startTime**  <br>*optional*|string|
 |**status**  <br>*optional*|string|
 
 
@@ -2891,9 +3162,18 @@ Get User by id
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
-|**key**  <br>*optional*|string|
+|**name**  <br>*optional*|string|
 |**user_id**  <br>*optional*|integer|
 |**value**  <br>*optional*|string|
+
+
+<a name="types-updatejobrequest"></a>
+### types.UpdateJobRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**user_id**  <br>*optional*|integer|
 
 
 <a name="types-updateoauthrequest"></a>

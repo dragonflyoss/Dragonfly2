@@ -25,7 +25,7 @@ import (
 
 func (s *rest) CreateConfig(ctx context.Context, json types.CreateConfigRequest) (*model.Config, error) {
 	config := model.Config{
-		Key:    json.Key,
+		Name:   json.Name,
 		Value:  json.Value,
 		BIO:    json.BIO,
 		UserID: json.UserID,
@@ -54,7 +54,7 @@ func (s *rest) DestroyConfig(ctx context.Context, id uint) error {
 func (s *rest) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfigRequest) (*model.Config, error) {
 	config := model.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Updates(model.Config{
-		Key:    json.Key,
+		Name:   json.Name,
 		Value:  json.Value,
 		BIO:    json.BIO,
 		UserID: json.UserID,
@@ -74,28 +74,16 @@ func (s *rest) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
 	return &config, nil
 }
 
-func (s *rest) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, error) {
-	configs := []model.Config{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
-		Key:    q.Key,
-		Value:  q.Value,
-		UserID: q.UserID,
-	}).Find(&configs).Error; err != nil {
-		return nil, err
-	}
-
-	return &configs, nil
-}
-
-func (s *rest) ConfigTotalCount(ctx context.Context, q types.GetConfigsQuery) (int64, error) {
+func (s *rest) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, int64, error) {
 	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.Config{}).Where(&model.Config{
-		Key:    q.Key,
+	var configs []model.Config
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
+		Name:   q.Name,
 		Value:  q.Value,
 		UserID: q.UserID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
+	}).Find(&configs).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return count, nil
+	return &configs, count, nil
 }

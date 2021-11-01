@@ -37,11 +37,11 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 
 ### Entity relationship
 
-![alt][TODO association]
+![alt][association]
 
 ### Image file download process
 
-![alt][TODO download-process]
+![alt][download-process]
 
 ### Sub-system architecture
 
@@ -101,3 +101,5 @@ Provide enterprise-level (efficient, stable, secure, low-cost, product-oriented)
 
 
 [arch]: ../images/arch.png
+[association]: ../images/association.png
+[download-process]: ../images/download-process.png

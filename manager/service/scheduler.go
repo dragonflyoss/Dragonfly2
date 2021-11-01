@@ -81,8 +81,9 @@ func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, err
 	return &scheduler, nil
 }
 
-func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, error) {
-	schedulers := []model.Scheduler{}
+func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, int64, error) {
+	var count int64
+	var schedulers []model.Scheduler
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
 		HostName:           q.HostName,
 		IDC:                q.IDC,
@@ -90,25 +91,9 @@ func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*
 		IP:                 q.IP,
 		Status:             q.Status,
 		SchedulerClusterID: q.SchedulerClusterID,
-	}).Find(&schedulers).Error; err != nil {
-		return nil, err
+	}).Find(&schedulers).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &schedulers, nil
-}
-
-func (s *rest) SchedulerTotalCount(ctx context.Context, q types.GetSchedulersQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.Scheduler{}).Where(&model.Scheduler{
-		HostName:           q.HostName,
-		IDC:                q.IDC,
-		Location:           q.Location,
-		IP:                 q.IP,
-		Status:             q.Status,
-		SchedulerClusterID: q.SchedulerClusterID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &schedulers, count, nil
 }

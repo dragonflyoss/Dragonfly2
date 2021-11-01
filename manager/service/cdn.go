@@ -79,8 +79,9 @@ func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 	return &cdn, nil
 }
 
-func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, error) {
-	cdns := []model.CDN{}
+func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, int64, error) {
+	var count int64
+	var cdns []model.CDN
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{
 		HostName:     q.HostName,
 		IDC:          q.IDC,
@@ -89,26 +90,9 @@ func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN,
 		Port:         q.Port,
 		DownloadPort: q.DownloadPort,
 		CDNClusterID: q.CDNClusterID,
-	}).Find(&cdns).Error; err != nil {
-		return nil, err
+	}).Find(&cdns).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &cdns, nil
-}
-
-func (s *rest) CDNTotalCount(ctx context.Context, q types.GetCDNsQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.CDN{}).Where(&model.CDN{
-		HostName:     q.HostName,
-		IDC:          q.IDC,
-		Location:     q.Location,
-		IP:           q.IP,
-		Port:         q.Port,
-		DownloadPort: q.DownloadPort,
-		CDNClusterID: q.CDNClusterID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &cdns, count, nil
 }

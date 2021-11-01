@@ -162,7 +162,7 @@ func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterCli
 		return types.SchedulerClusterClientConfig{}, false
 	}
 
-	if data.SchedulerCluster != nil {
+	if data.SchedulerCluster == nil {
 		return types.SchedulerClusterClientConfig{}, false
 	}
 

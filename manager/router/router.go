@@ -97,6 +97,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	// User
 	u := apiv1.Group("/users")
 	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
+	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
 	u.POST("/signin", jwt.LoginHandler)
 	u.POST("/signout", jwt.LogoutHandler)
 	u.POST("/signup", h.SignUp)
@@ -182,10 +183,13 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	config.GET(":id", h.GetConfig)
 	config.GET("", h.GetConfigs)
 
-	// Preheat
-	ph := apiv1.Group("/preheats")
-	ph.POST("", h.CreatePreheat)
-	ph.GET(":id", h.GetPreheat)
+	// Job
+	job := apiv1.Group("/jobs")
+	job.POST("", h.CreateJob)
+	job.DELETE(":id", h.DestroyJob)
+	job.PATCH(":id", h.UpdateJob)
+	job.GET(":id", h.GetJob)
+	job.GET("", h.GetJobs)
 
 	// Compatible with the V1 preheat.
 	pv1 := r.Group("preheats")

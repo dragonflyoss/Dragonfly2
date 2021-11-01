@@ -47,6 +47,7 @@ func init() {
 		SetStatPeerLogger(log)
 		SetStatSeedLogger(log)
 		SetDownloadLogger(log)
+		SetJobLogger(sugar)
 	}
 }
 

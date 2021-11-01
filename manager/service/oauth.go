@@ -76,26 +76,15 @@ func (s *rest) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	return &oauth, nil
 }
 
-func (s *rest) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, error) {
-	oauths := []model.Oauth{}
+func (s *rest) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, int64, error) {
+	var count int64
+	var oauths []model.Oauth
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
 		Name:     q.Name,
 		ClientID: q.ClientID,
-	}).Find(&oauths).Error; err != nil {
-		return nil, err
+	}).Find(&oauths).Count(&count).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return &oauths, nil
-}
-
-func (s *rest) OauthTotalCount(ctx context.Context, q types.GetOauthsQuery) (int64, error) {
-	var count int64
-	if err := s.db.WithContext(ctx).Model(&model.Oauth{}).Where(&model.Oauth{
-		Name:     q.Name,
-		ClientID: q.ClientID,
-	}).Count(&count).Error; err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return &oauths, count, nil
 }

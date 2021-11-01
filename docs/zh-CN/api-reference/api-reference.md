@@ -800,6 +800,223 @@ Get app health
 * Health
 
 
+<a name="api-v1-jobs-post"></a>
+### Create Job
+```
+POST /api/v1/jobs
+```
+
+
+#### 说明
+create by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Body**|**Job**  <br>*必填*|Job|[types.CreateJobRequest](#types-createjobrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Job
+
+
+<a name="api-v1-jobs-get"></a>
+### Get Jobs
+```
+GET /api/v1/jobs
+```
+
+
+#### 说明
+Get Jobs
+
+
+#### 参数
+
+|类型|名称|说明|类型|默认值|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*必填*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*必填*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< [model.Job](#model-job) > array|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Job
+
+
+<a name="api-v1-jobs-id-get"></a>
+### Get Job
+```
+GET /api/v1/jobs/{id}
+```
+
+
+#### 说明
+Get Job by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Job
+
+
+<a name="api-v1-jobs-id-delete"></a>
+### Destroy Job
+```
+DELETE /api/v1/jobs/{id}
+```
+
+
+#### 说明
+Destroy by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Job
+
+
+<a name="api-v1-jobs-id-patch"></a>
+### Update Job
+```
+PATCH /api/v1/jobs/{id}
+```
+
+
+#### 说明
+Update by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Body**|**Job**  <br>*必填*|Job|[types.UpdateJobRequest](#types-updatejobrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Job](#model-job)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Job
+
+
 <a name="api-v1-oauth-post"></a>
 ### Create Oauth
 ```
@@ -2282,6 +2499,50 @@ signup by json config
 * User
 
 
+<a name="api-v1-users-get"></a>
+### Get Users
+```
+GET /api/v1/users
+```
+
+
+#### 说明
+Get Users
+
+
+#### 参数
+
+|类型|名称|说明|类型|默认值|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*必填*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*必填*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< [model.CDN](#model-cdn) > array|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* CDN
+
+
 <a name="api-v1-users-id-reset_password-post"></a>
 ### Reset Password For User
 ```
@@ -2523,7 +2784,9 @@ Get User by id
 |**created_at**  <br>*可选*|string|
 |**id**  <br>*可选*|integer|
 |**is_default**  <br>*可选*|boolean|
+|**jobs**  <br>*可选*|< [model.Job](#model-job) > array|
 |**name**  <br>*可选*|string|
+|**scheduler_clusters**  <br>*可选*|< [model.SchedulerCluster](#model-schedulercluster) > array|
 |**security_group_id**  <br>*可选*|integer|
 |**updated_at**  <br>*可选*|string|
 
@@ -2536,7 +2799,7 @@ Get User by id
 |**bio**  <br>*可选*|string|
 |**created_at**  <br>*可选*|string|
 |**id**  <br>*可选*|integer|
-|**key**  <br>*可选*|string|
+|**name**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
 |**user_id**  <br>*可选*|integer|
 |**value**  <br>*可选*|string|
@@ -2545,6 +2808,25 @@ Get User by id
 <a name="model-jsonmap"></a>
 ### model.JSONMap
 *类型* : object
+
+
+<a name="model-job"></a>
+### model.Job
+
+|名称|类型|
+|---|---|
+|**args**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
+|**bio**  <br>*可选*|string|
+|**cdn_clusters**  <br>*可选*|< [model.CDNCluster](#model-cdncluster) > array|
+|**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
+|**result**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
+|**scheduler_clusters**  <br>*可选*|< [model.SchedulerCluster](#model-schedulercluster) > array|
+|**status**  <br>*可选*|string|
+|**task_id**  <br>*可选*|string|
+|**type**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
+|**user_id**  <br>*可选*|integer|
 
 
 <a name="model-oauth"></a>
@@ -2593,6 +2875,7 @@ Get User by id
 |**created_at**  <br>*可选*|string|
 |**id**  <br>*可选*|integer|
 |**is_default**  <br>*可选*|boolean|
+|**jobs**  <br>*可选*|< [model.Job](#model-job) > array|
 |**name**  <br>*可选*|string|
 |**scopes**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
 |**security_group_id**  <br>*可选*|integer|
@@ -2688,9 +2971,23 @@ Get User by id
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
-|**key**  <br>*必填*|string|
+|**name**  <br>*必填*|string|
 |**user_id**  <br>*必填*|integer|
 |**value**  <br>*必填*|string|
+
+
+<a name="types-createjobrequest"></a>
+### types.CreateJobRequest
+
+|名称|类型|
+|---|---|
+|**args**  <br>*可选*|object|
+|**bio**  <br>*可选*|string|
+|**cdn_cluster_ids**  <br>*可选*|< integer > array|
+|**result**  <br>*可选*|object|
+|**scheduler_cluster_ids**  <br>*可选*|< integer > array|
+|**type**  <br>*必填*|string|
+|**user_id**  <br>*可选*|integer|
 
 
 <a name="types-createoauthrequest"></a>
@@ -2703,18 +3000,6 @@ Get User by id
 |**client_secret**  <br>*必填*|string|
 |**name**  <br>*必填*|string|
 |**redirect_url**  <br>*可选*|string|
-
-
-<a name="types-createpreheatrequest"></a>
-### types.CreatePreheatRequest
-
-|名称|类型|
-|---|---|
-|**filter**  <br>*可选*|string|
-|**headers**  <br>*可选*|< string, string > map|
-|**scheduler_cluster_id**  <br>*可选*|integer|
-|**type**  <br>*必填*|string|
-|**url**  <br>*必填*|string|
 
 
 <a name="types-createrolerequest"></a>
@@ -2783,7 +3068,7 @@ Get User by id
 
 |名称|类型|
 |---|---|
-|**ID**  <br>*可选*|string|
+|**id**  <br>*可选*|string|
 
 
 <a name="types-deletepermissionforrolerequest"></a>
@@ -2800,19 +3085,9 @@ Get User by id
 
 |名称|类型|
 |---|---|
-|**ID**  <br>*可选*|string|
 |**finishTime**  <br>*可选*|string|
-|**startTime**  <br>*可选*|string|
-|**status**  <br>*可选*|string|
-
-
-<a name="types-preheat"></a>
-### types.Preheat
-
-|名称|类型|
-|---|---|
-|**create_at**  <br>*可选*|string|
 |**id**  <br>*可选*|string|
+|**startTime**  <br>*可选*|string|
 |**status**  <br>*可选*|string|
 
 
@@ -2887,9 +3162,18 @@ Get User by id
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
-|**key**  <br>*可选*|string|
+|**name**  <br>*可选*|string|
 |**user_id**  <br>*可选*|integer|
 |**value**  <br>*可选*|string|
+
+
+<a name="types-updatejobrequest"></a>
+### types.UpdateJobRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**user_id**  <br>*可选*|integer|
 
 
 <a name="types-updateoauthrequest"></a>

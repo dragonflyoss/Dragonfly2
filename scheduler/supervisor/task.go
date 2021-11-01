@@ -261,15 +261,27 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	task.peers.UpdateOrAdd(peer)
+	err := task.peers.UpdateOrAdd(peer)
+	if err != nil {
+		task.logger.Errorf("add peer %s failed: %v", peer.ID, err)
+	}
+	task.logger.Debugf("peer %s has been added, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
-	task.peers.Update(peer)
+	err := task.peers.Update(peer)
+	if err != nil {
+		task.logger.Errorf("update peer %s failed: %v", peer.ID, err)
+	}
+	task.logger.Debugf("peer %s has been updated, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	task.peers.Delete(peer)
+	err := task.peers.Delete(peer)
+	if err != nil {
+		task.logger.Errorf("delete peer %s failed: %v", peer.ID, err)
+	}
+	task.logger.Debugf("peer %s has been deleted, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) GetPeers() *sortedlist.SortedList {
@@ -308,6 +320,10 @@ func (task *Task) ContainsBackToSourcePeer(peerID string) bool {
 
 func (task *Task) AddBackToSourcePeer(peerID string) {
 	if ok := task.ContainsBackToSourcePeer(peerID); ok {
+		return
+	}
+
+	if task.BackToSourceWeight.Load() <= 0 {
 		return
 	}
 
