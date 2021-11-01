@@ -89,12 +89,10 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 		if dr != nil {
 			if dr.TaskId != drs.hashKey {
 				logger.WithTaskAndPeerID(dr.TaskId, dr.PeerId).Warnf("down result stream correct taskId from %s to %s", drs.hashKey, dr.TaskId)
-				//drs.dc.Connection.CorrectKey2NodeRelation(drs.hashKey, dr.TaskId)
 				drs.hashKey = dr.TaskId
 			}
 		}
 	}()
-	//drs.dc.UpdateAccessNodeMapByHashKey(drs.hashKey)
 	return drs.stream.Recv()
 }
 

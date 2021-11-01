@@ -99,7 +99,6 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	taskID = rr.TaskId
 	if taskID != key {
 		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
-		//sc.Connection.CorrectKey2NodeRelation(key, taskID)
 	}
 	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
 		Infof("register peer task result success url: %s", ptr.Url)
@@ -132,7 +131,6 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 	taskID = rr.TaskId
 	if taskID != hashKey {
 		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", hashKey, taskID)
-		//sc.Connection.CorrectKey2NodeRelation(hashKey, taskID)
 	}
 	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
 		Infof("register peer task result success url: %s", ptr.Url)

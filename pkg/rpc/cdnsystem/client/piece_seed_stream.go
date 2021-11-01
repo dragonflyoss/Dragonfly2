@@ -84,7 +84,6 @@ func (pss *PieceSeedStream) initStream() error {
 }
 
 func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
-	//pss.sc.UpdateAccessNodeMapByHashKey(pss.hashKey)
 	return pss.stream.Recv()
 }
 
