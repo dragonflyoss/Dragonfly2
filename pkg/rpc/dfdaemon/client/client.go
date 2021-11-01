@@ -35,7 +35,7 @@ import (
 
 var _ DaemonClient = (*daemonClient)(nil)
 
-func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of daemon is empty")
 	}
