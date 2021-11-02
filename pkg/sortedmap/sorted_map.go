@@ -16,34 +16,122 @@
 
 package sortedmap
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
 
 type Item interface {
-	SortedValue() int
+	SortedValue() uint
 }
 
 type SortedMap interface {
-	Add(string, Item)
+	Add(string, Item) error
 }
 
 type sortedMap struct {
 	mu     *sync.RWMutex
-	bucket []string
-	data   *sync.Map
+	bucket Bucket
+	data   map[string]Item
+	len    uint
 }
 
-func New(len int) SortedMap {
+func New(len uint) SortedMap {
 	return &sortedMap{
 		mu:     &sync.RWMutex{},
-		bucket: make([]string, len),
-		data:   &sync.Map{},
+		bucket: NewBucket(len),
+		data:   map[string]Item{},
+		len:    len,
 	}
 }
 
-func (s *sortedMap) Add(key string, item Item) {
+func (s *sortedMap) Add(key string, item Item) error {
+	if item.SortedValue() > s.len {
+		return errors.New("sorted value is illegal")
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	oldItem, ok := s.data[key]
+	if ok {
+		oldBkey := oldItem.SortedValue()
+		s.bucket.Delete(oldBkey, key)
 
-	s.bucket[item.SortedValue()] = key
-	s.data.Store(key, item)
+		bkey := item.SortedValue()
+		s.bucket.Add(bkey, key)
+		s.data[key] = item
+		return nil
+	}
+
+	bKey := item.SortedValue()
+	s.bucket.Add(bKey, key)
+	s.data[key] = item
+	return nil
+}
+
+func (s *sortedMap) Update(key string, item Item) error {
+	if item.SortedValue() > s.len || item.SortedValue() < 0 {
+		return errors.New("sorted value is illegal")
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	oldItem, ok := s.data[key]
+	if !ok {
+		return errors.New("key does not exist")
+	}
+
+	oldBkey := oldItem.SortedValue()
+	s.bucket.Delete(oldBkey, key)
+
+	bkey := item.SortedValue()
+	s.bucket.Add(bkey, key)
+	s.data[key] = item
+	return nil
+}
+
+func (s *sortedMap) Delete(key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	item, ok := s.data[key]
+	if !ok {
+		return errors.New("key does not exist")
+	}
+
+	bkey := item.SortedValue()
+	s.bucket.Delete(bkey, key)
+	delete(s.data, key)
+	return nil
+}
+
+func (s *sortedMap) Range(fn func(Item) bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	s.bucket.Range(func(v interface{}) bool {
+		if k, ok := v.(string); ok {
+			if item, ok := s.data[k]; ok {
+				if fn(item) {
+					return true
+				}
+			}
+		}
+
+		return false
+	})
+}
+
+func (s *sortedMap) ReverseRange(fn func(Item) bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	s.bucket.ReverseRange(func(v interface{}) bool {
+		if k, ok := v.(string); ok {
+			if item, ok := s.data[k]; ok {
+				if fn(item) {
+					return true
+				}
+			}
+		}
+
+		return false
+	})
 }
