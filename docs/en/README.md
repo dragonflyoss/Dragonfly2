@@ -26,7 +26,7 @@ Organization of document is as following:
   * [manager](design/manager.md)
   * [TODO scheduler](design/scheduler.md)
   * [TODO cdn](design/cdn.md)
-  * [TODO dfdaemon](desigin/dfdaemon.md)
+  * [TODO dfdaemon](design/dfdaemon.md)
 * [Developer Guide](developer-guide/developer-guide.md)
 * [Test Guide](test-guide/test-guide.md)
 * [API Reference](api-reference/api-reference.md)
