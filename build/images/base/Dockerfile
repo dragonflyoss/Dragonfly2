@@ -3,7 +3,7 @@ FROM quay.io/iovisor/bpftrace:v0.13.0
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update \
-    && apt-get install -y binutils bpfcc-tools curl git iproute2 iputils-ping jq socat tree vim wget \
+    && apt-get install -y binutils bpfcc-tools curl dnsutils git iproute2 iputils-ping jq netcat socat tree vim wget \
     && apt-get install -y openssh-client openssh-server \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /run/sshd
