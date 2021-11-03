@@ -21,10 +21,11 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -35,7 +36,7 @@ type Config struct {
 	Manager      *ManagerConfig   `yaml:"manager" mapstructure:"manager"`
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
-	Metrics      *RestConfig      `yaml:"metrics" mapstructure:"metrics"`
+	Metrics      *MetricsConfig   `yaml:"metrics" mapstructure:"metrics"`
 	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
@@ -209,8 +210,9 @@ type GCConfig struct {
 	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
 }
 
-type RestConfig struct {
-	Addr string `yaml:"addr" mapstructure:"addr"`
+type MetricsConfig struct {
+	Addr           string `yaml:"addr" mapstructure:"addr"`
+	EnablePeerHost bool   `yaml:"enablePeerHost" mapstructure:"enablePeerHost"`
 }
 
 type HostConfig struct {

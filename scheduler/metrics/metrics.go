@@ -19,13 +19,14 @@ package metrics
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/internal/constants"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+
+	"d7y.io/dragonfly/v2/internal/constants"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 // Variables declared for metrics.
@@ -65,6 +66,13 @@ var (
 		Help:      "Counter of the number of p2p traffic.",
 	})
 
+	PeerHostTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "peer_host_traffic",
+		Help:      "Counter of the number of per peer host traffic.",
+	}, []string{"traffic_type", "peer_host_uuid", "peer_host_ip"})
+
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
@@ -84,11 +92,11 @@ var (
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "concurrent_schedule_total",
-		Help:      "Gauger of the number of concurrent of the scheduling.",
+		Help:      "Gauge of the number of concurrent of the scheduling.",
 	})
 )
 
-func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {
+func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
 	grpc_prometheus.Register(grpcServer)
 
 	mux := http.NewServeMux()

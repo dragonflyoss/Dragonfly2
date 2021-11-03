@@ -22,11 +22,12 @@ import (
 	"testing"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
+
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 )
 
 func TestSchedulerConfig_Load(t *testing.T) {
@@ -72,7 +73,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 				BackendDB: 2,
 			},
 		},
-		Metrics: &RestConfig{
+		Metrics: &MetricsConfig{
 			Addr: ":8000",
 		},
 		DisableCDN: true,
