@@ -2,25 +2,37 @@
 
 ## Runtime Configuration Guide for Dragonfly Helm Chart
 
-When enable runtime configuration in dragonfly, you can skip [Configure Runtime](#configure-runtime-manually) manually.
+When enable runtime configuration in dragonfly,
+you can skip [Configure Runtime](#configure-runtime-manually) manually.
 
 ### 1. Docker
 
-> **We did not recommend to using dragonfly with docker in Kubernetes** due to many reasons: 1. no fallback image pulling policy. 2. deprecated in Kubernetes.
-> Because the original `daemonset` in Kubernetes did not support `Surging Rolling Update` policy.
-> When kill current dfdaemon pod, the new pod image can not be pulled anymore.
-
-> If you can not change runtime from docker to others, remind to choose a plan when upgrade dfdaemon:
->     Option 1: pull newly dfdaemon image manually before upgrade dragonfly, or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) to pull image automate.
->     Option 2: keep the image registry of dragonfly is different from common registries and add host in `containerRuntime.docker.skipHosts`.
+> **We did not recommend to using dragonfly
+with docker in Kubernetes**
+due to many reasons:
+no fallback image pulling policy.
+deprecated in Kubernetes.
+> Because the original `daemonset` in
+Kubernetes did not support `Surging Rolling Update` policy.
+> When kill current dfdaemon pod,
+the new pod image can not be pulled anymore.
+> If you can not change runtime from docker to others,
+remind to choose a plan when upgrade dfdaemon:
+> pull newly dfdaemon image manually before upgrade dragonfly,
+or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) to
+pull image automate.
+> keep the image registry of dragonfly is
+different from common registries and add host in `containerRuntime.docker.skipHosts`.
 
 Dragonfly helm supports config docker automatically.
 
 Config cases:
 
-**Case 1: [Preferred] Implicit registries support without restart docker**
+#### Case 1: [Preferred] Implicit registries support without restart docker
 
 Chart customize values.yaml:
+
+<!-- markdownlint-disable -->
 ```yaml
 containerRuntime:
   docker:
@@ -33,22 +45,30 @@ containerRuntime:
     - "harbor.example.com"
     - "harbor.example.net"
 ```
+<!-- markdownlint-restore -->
 
-This config enables docker pulling images from registries `harbor.example.com` and `harbor.example.net` via Dragonfly.
-When deploying Dragonfly with above config, it's unnecessary to restart docker daemon.
+This config enables docker pulling images from
+registries `harbor.example.com` and `harbor.example.net` via Dragonfly.
+When deploying Dragonfly with above config,
+it's unnecessary to restart docker daemon.
 
 Advantages:
-* Support upgrade dfdaemon smoothness
 
-> In this mode, when dfdaemon pod deleted, the `preStop` hook will remove all injected hosts info in /etc/hosts,
+- Support upgrade dfdaemon smoothness
+
+> In this mode, when dfdaemon pod deleted,
+  the `preStop` hook will remove all injected hosts info in /etc/hosts,
 > all images traffic fallbacks to original registries.
 
 Limitations:
-* Only support implicit registries
 
-**Case 2: Arbitrary registries support with restart docker**
+- Only support implicit registries
+
+#### Case 2: Arbitrary registries support with restart docker
 
 Chart customize values.yaml:
+
+<!-- markdownlint-disable -->
 ```yaml
 containerRuntime:
   docker:
@@ -61,25 +81,30 @@ containerRuntime:
     - "127.0.0.1"
     - "docker.io" # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
 ```
+<!-- markdownlint-restore -->
 
 This config enables docker pulling images from arbitrary registries via Dragonfly.
 When deploying Dragonfly with above config, dfdaemon will restart docker daemon.
 
 Advantages:
-* Support arbitrary registries
+
+- Support arbitrary registries
 
 Limitations:
-* Must enable live-restore feature in docker
-* Need restart docker daemon
-* When upgrade dfdaemon, new image must be pulled beforehand.
+
+- Must enable live-restore feature in docker
+- Need restart docker daemon
+- When upgrade dfdaemon, new image must be pulled beforehand.
 
 ### 2. Containerd
 
-The config of containerd has two version with complicated fields. These are many cases to consider:
+The config of containerd has two version with complicated fields.
+These are many cases to consider:
 
-**Case 1: Version 2 config with config_path**
+#### Case 1: Version 2 config with config_path
 
 There is `config_path` in `/etc/containerd/config.toml`:
+
 ```toml
 [plugins."io.containerd.grpc.v1.cri".registry]
   config_path = "/etc/containerd/certs.d"
@@ -88,31 +113,6 @@ There is `config_path` in `/etc/containerd/config.toml`:
 This case is very simple to enable multiple registry mirrors support.
 
 Chart customize values.yaml:
-```yaml
-containerRuntime:
-  containerd:
-    enable: true
-```
-
-**Case 2: Version 2 config without config_path**
-
-* Option 1 - Allow charts to inject config_path and restart containerd.
-
-This option also enable multiple registry mirrors support.
-
-> Caution: if there are already many other mirror config in config.toml, should not use this option, or migrate your config with `config_path`.
-
-Chart customize values.yaml:
-```yaml
-containerRuntime:
-  containerd:
-    enable: true
-    injectConfigPath: true
-```
-
-* Option 2 - Just mirror only one registry which `dfdaemon.config.proxy.registryMirror.url` is
-
-Chart customize values.yaml:
 
 ```yaml
 containerRuntime:
@@ -120,9 +120,39 @@ containerRuntime:
     enable: true
 ```
 
-**Case 3: Version 1**
+#### Case 2: Version 2 config without config_path
 
-With version 1 config.toml, only support the registry which `dfdaemon.config.proxy.registryMirror.url` is.
+- Option 1 - Allow charts to inject config_path and restart containerd.
+
+    This option also enable multiple registry mirrors support.
+
+    > Caution: if there are already many other mirror config in config.toml,
+    should not use this option, or migrate your config with `config_path`.
+
+    Chart customize values.yaml:
+
+    ```yaml
+    containerRuntime:
+      containerd:
+        enable: true
+        injectConfigPath: true
+    ```
+
+- Option 2 - Just mirror only one registry
+which `dfdaemon.config.proxy.registryMirror.url` is
+
+    Chart customize values.yaml:
+
+    ```yaml
+    containerRuntime:
+      containerd:
+        enable: true
+    ```
+
+#### Case 3: Version 1
+
+With version 1 config.toml, only support
+the registry which `dfdaemon.config.proxy.registryMirror.url` is.
 
 Chart customize values.yaml:
 
@@ -139,6 +169,7 @@ containerRuntime:
 Dragonfly helm supports config CRI-O automatically with drop-in registries.
 
 Chart customize values.yaml:
+
 ```yaml
 containerRuntime:
   crio:
@@ -154,7 +185,8 @@ containerRuntime:
 
 ## Prepare Kubernetes Cluster
 
-If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
+If there is no available Kubernetes cluster for testing,
+[minikube](https://minikube.sigs.k8s.io/docs/start/) is
 recommended. Just run `minikube start`.
 
 ## Install Dragonfly
@@ -168,9 +200,12 @@ helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly
 
 ### Install with custom configuration
 
-Create the `values.yaml` configuration file. It is recommended to use external redis and mysql instead of containers.
+Create the `values.yaml` configuration file.
+It is recommended to use external redis and mysql instead of containers.
 
-The example uses external mysql and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
+The example uses external mysql and redis.
+Refer to the document for
+[configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
 
 ```yaml
 mysql:
@@ -197,14 +232,17 @@ Install dragonfly with `values.yaml`.
 
 ```shell
 helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
+helm install --create-namespace --namespace dragonfly-system \
+    dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
 ### Install with an existing manager
 
-Create the `values.yaml` configuration file. Need to configure the cluster id associated with scheduler and cdn.
+Create the `values.yaml` configuration file.
+Need to configure the cluster id associated with scheduler and cdn.
 
-The example is to deploy a cluster using the existing manager and redis. Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
+The example is to deploy a cluster using the existing manager and redis.
+Refer to the document for [configuration](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values).
 
 ```yaml
 scheduler:
@@ -251,7 +289,9 @@ kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 
 The console page will be displayed on `dragonfly-manager.dragonfly-system.svc.cluster.local:8080`.
 
-If you need to bind Ingress, you can refer to [configuration options](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values) of Helm Charts, or create it manually.
+If you need to bind Ingress, you can refer to
+[configuration options](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values)
+of Helm Charts, or create it manually.
 
 Console features preview reference document [console preview](../../../design/manager.md).
 
@@ -287,7 +327,8 @@ systemctl restart containerd
 
 ## Using Dragonfly
 
-After all above steps, create a new pod with target registry. Or just pull an image with `crictl`:
+After all above steps, create a new pod with
+target registry. Or just pull an image with `crictl`:
 
 ```shell
 crictl harbor.example.com/library/alpine:latest
@@ -298,6 +339,7 @@ crictl pull docker.io/library/alpine:latest
 ```
 
 After pulled images, find logs in dfdaemon pod:
+
 ```shell
 # find pods
 kubectl -n dragonfly-system get pod -l component=dfdaemon
@@ -307,7 +349,8 @@ kubectl -n dragonfly-system exec -it ${pod_name} -- grep "peer task done" /var/l
 ```
 
 Example output:
-```
+
+```shell
 {
     "level": "info",
     "ts": "2021-06-28 06:02:30.924",

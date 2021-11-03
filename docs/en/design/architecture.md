@@ -94,11 +94,13 @@ data market, multi-tenancy, and permission control, etc.
 - The scheduling results can be quantitatively compared and support A/B Testing
 - Scheduling strategy plug-in and CDN subsystem plug-in
 - Meta-information distribution pipeline
-- Client download results and back-to-source results statistics and docking with monitoring services
+- Client download results and back-to-source results statistics and
+  docking with monitoring services
 
 #### CDN
 
-- Multi-source adaptation capabilities, including catalog download and range download functions
+- Multi-source adaptation capabilities, including catalog download
+  and range download functions
 - DMA read and write
 - Transfer back to the source
 - Distribute warm-up
@@ -110,10 +112,12 @@ data market, multi-tenancy, and permission control, etc.
 
 #### Dfget daemon
 
-- Multi-source adaptation capabilities, including catalog download and range download functions
+- Multi-source adaptation capabilities, including catalog
+  download and range download functions
 - Efficient IO mechanism
 - IO scheduling of multiple download tasks (high IO throughput)
-- Reduce the number of file reads and writes: improve the storage of temporary files and improve file integrity verification
+- Reduce the number of file reads and writes: improve
+  the storage of temporary files and improve file integrity verification
 - DMA read and write
 - Streaming
 - Client download Proxy capability (http & https)

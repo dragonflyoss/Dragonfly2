@@ -27,4 +27,4 @@ jobs:
         uses: docker://avtodev/markdown-lint:v1
         with:
           args: '**/*.md'
-          ignore: 'deploy/helm-charts manager/console CHANGELOG.md docs/en/api-reference docs/zh-CN/api-reference'
+          ignore: 'deploy/helm-charts manager/console CHANGELOG.md docs/en/api-reference docs/zh-CN/api-reference docs/en/cli-reference/dfget.1.md'
