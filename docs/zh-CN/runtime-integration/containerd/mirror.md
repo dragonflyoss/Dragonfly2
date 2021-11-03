@@ -116,9 +116,12 @@ grep 'register peer task result' /var/log/dragonfly/daemon/*.log
 如果正常日志输出如下:
 
 ```shell
-{"level":"info","ts":"2021-02-23 20:03:20.306","caller":"client/client.go:83",
-"msg":"register peer task result:true[200] for
-taskId:adf62a86f001e17037eedeaaba3393f3519b80ce,
-peerIp:10.15.233.91,securityDomain:,idc:,scheduler:127.0.0.1:8002",
-"peerId":"10.15.233.91-65000-43096-1614081800301788000","errMsg":null}
+{
+    "level": "info",
+    "ts": "2021-02-23 20:03:20.306",
+    "caller": "client/client.go:83",
+    "msg": "register peer task result:true[200]",
+    "peerId": "10.15.233.91-65000-43096-1614081800301788000",
+    "errMsg": null
+}
 ```

@@ -4,7 +4,7 @@
 
 ## 使用 Helm Charts 进行安装
 
-> ArtifactHub 仓库链接为: https://artifacthub.io/packages/helm/dragonfly/dragonfly
+> ArtifactHub 仓库链接为: <https://artifacthub.io/packages/helm/dragonfly/dragonfly>
 
 推荐使用 Helm Charts 进行安装，简单且快捷。参考文档 [Kubernetes-with-Dragonfly](../../kubernetes/README.md)。
 
