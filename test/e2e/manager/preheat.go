@@ -24,6 +24,10 @@ import (
 	"strings"
 	"time"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	. "github.com/onsi/ginkgo" //nolint
+	. "github.com/onsi/gomega" //nolint
+
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
@@ -31,9 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	. "github.com/onsi/ginkgo" //nolint
-	. "github.com/onsi/gomega" //nolint
 )
 
 var _ = Describe("Preheat with manager", func() {

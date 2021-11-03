@@ -26,13 +26,12 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-
+	"github.com/colinmarc/hdfs/v2"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"github.com/colinmarc/hdfs/v2"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 const (

@@ -19,8 +19,9 @@ package idgen
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 func TestTaskID(t *testing.T) {

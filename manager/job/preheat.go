@@ -27,17 +27,18 @@ import (
 	"strings"
 	"time"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/manifest/schema2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/distribution/distribution/v3"
-	"github.com/distribution/distribution/v3/manifest/schema2"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("sender")
