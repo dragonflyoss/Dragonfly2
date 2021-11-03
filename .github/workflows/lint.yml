@@ -25,3 +25,5 @@ jobs:
 
       - name: Markdown lint
         uses: avtodev/markdown-lint@v1
+        with:
+          args: "**/*.md"
