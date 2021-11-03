@@ -22,3 +22,8 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.40.1
+
+      - name: Markdown lint
+        uses: avtodev/markdown-lint@v1
+        with:
+          version: v1.40.1

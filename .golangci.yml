@@ -9,6 +9,7 @@ linters-settings:
 linters:
   disable-all: true
   enable:
+    - gci
     - gofmt
     - goimports
     - golint
