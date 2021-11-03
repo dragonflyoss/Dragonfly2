@@ -19,9 +19,10 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/permission/rbac"
-	"github.com/gin-gonic/gin"
 )
 
 // @Summary Get Permissions

@@ -17,8 +17,9 @@
 package storedriver
 
 import (
-	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"github.com/pkg/errors"
+
+	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 )
 
 // CheckGetRaw check before get Raw

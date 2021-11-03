@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/stretchr/testify/assert"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
@@ -106,7 +105,7 @@ func TestConvert(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := assert.New(t)
+				assert := testifyassert.New(t)
 				assert.Equal("127.0.0.1", cfg.Job.Redis.Host)
 			},
 		},
@@ -123,7 +122,7 @@ func TestConvert(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := assert.New(t)
+				assert := testifyassert.New(t)
 				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
 			},
 		},
@@ -140,7 +139,7 @@ func TestConvert(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := assert.New(t)
+				assert := testifyassert.New(t)
 				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
 			},
 		},
@@ -157,7 +156,7 @@ func TestConvert(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := assert.New(t)
+				assert := testifyassert.New(t)
 				assert.Equal("", cfg.Job.Redis.Host)
 			},
 		},
@@ -174,7 +173,7 @@ func TestConvert(t *testing.T) {
 				},
 			},
 			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := assert.New(t)
+				assert := testifyassert.New(t)
 				assert.Equal("localhost", cfg.Job.Redis.Host)
 			},
 		},

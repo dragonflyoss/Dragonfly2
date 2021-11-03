@@ -20,8 +20,9 @@ import (
 	"strconv"
 	"testing"
 
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 func TestHost_New(t *testing.T) {
