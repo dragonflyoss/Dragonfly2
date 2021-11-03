@@ -25,5 +25,3 @@ jobs:
 
       - name: Markdown lint
         uses: avtodev/markdown-lint@v1
-        with:
-          version: v1.40.1
