@@ -19,13 +19,14 @@ package metrics
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/internal/constants"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+
+	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/internal/constants"
 )
 
 // Variables declared for metrics.

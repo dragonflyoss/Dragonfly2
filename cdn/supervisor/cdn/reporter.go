@@ -19,12 +19,13 @@ package cdn
 import (
 	"context"
 
+	"github.com/pkg/errors"
+	"go.uber.org/zap"
+
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/types"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"github.com/pkg/errors"
-	"go.uber.org/zap"
 )
 
 type reporter struct {

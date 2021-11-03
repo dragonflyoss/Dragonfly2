@@ -19,11 +19,12 @@ package handlers
 import (
 	"net/http"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
+
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/gin-gonic/gin"
 )
 
 // @Summary Get User

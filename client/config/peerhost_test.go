@@ -22,13 +22,12 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"gopkg.in/yaml.v3"
-
 	testifyassert "github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 func Test_AllUnmarshalYAML(t *testing.T) {

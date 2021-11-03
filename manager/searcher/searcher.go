@@ -19,9 +19,10 @@ package searcher
 import (
 	"sort"
 
-	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/mitchellh/mapstructure"
 	"gonum.org/v1/gonum/stat"
+
+	"d7y.io/dragonfly/v2/manager/model"
 )
 
 const (

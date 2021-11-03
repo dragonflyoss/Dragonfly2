@@ -20,13 +20,14 @@ import (
 	"context"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/supervisor/mock"
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestTaskManagerSuite(t *testing.T) {

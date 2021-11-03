@@ -17,10 +17,10 @@
 package ratelimiter
 
 import (
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
-
 	"sync"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
 // RateLimiter is used for limiting the rate of transporting.

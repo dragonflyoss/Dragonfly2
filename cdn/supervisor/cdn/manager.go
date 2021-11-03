@@ -17,32 +17,29 @@
 package cdn
 
 import (
+	"context"
 	"crypto/md5"
+	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"context"
-	"fmt"
-
-	"d7y.io/dragonfly/v2/cdn/supervisor"
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // To register diskStorage
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // To register hybridStorage
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-
-	"d7y.io/dragonfly/v2/pkg/synclock"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
-
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // nolint
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // nolint
 	"d7y.io/dragonfly/v2/cdn/types"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 // Ensure that Manager implements the CDNMgr interface

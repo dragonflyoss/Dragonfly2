@@ -19,10 +19,11 @@ package metrics
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/config"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+
+	"d7y.io/dragonfly/v2/manager/config"
 )
 
 func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {

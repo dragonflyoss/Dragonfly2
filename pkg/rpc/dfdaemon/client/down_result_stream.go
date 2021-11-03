@@ -19,14 +19,15 @@ package client
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 )
 
 type DownResultStream struct {

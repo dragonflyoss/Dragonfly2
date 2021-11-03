@@ -19,9 +19,10 @@ package scheduler
 import (
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type Scheduler interface {

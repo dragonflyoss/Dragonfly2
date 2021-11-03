@@ -25,6 +25,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
@@ -37,8 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestCDNManagerSuite(t *testing.T) {

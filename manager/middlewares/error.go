@@ -19,8 +19,6 @@ package middlewares
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
@@ -28,6 +26,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 )
 
 type ErrorResponse struct {

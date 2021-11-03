@@ -19,8 +19,9 @@ package dependency
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/version"
 	"github.com/spf13/cobra"
+
+	"d7y.io/dragonfly/v2/version"
 )
 
 var VersionCmd = &cobra.Command{

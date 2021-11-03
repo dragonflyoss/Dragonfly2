@@ -21,12 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"go.uber.org/atomic"
 )
 
 const (

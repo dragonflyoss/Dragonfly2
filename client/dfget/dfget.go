@@ -26,6 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/schollz/progressbar/v3"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dfheaders"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -36,8 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"github.com/schollz/progressbar/v3"
 )
 
 func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {

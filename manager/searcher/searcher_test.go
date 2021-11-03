@@ -19,8 +19,9 @@ package searcher
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/manager/model"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/manager/model"
 )
 
 func TestSchedulerCluster(t *testing.T) {

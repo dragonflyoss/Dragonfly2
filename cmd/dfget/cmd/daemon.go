@@ -21,6 +21,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/gofrs/flock"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+
 	"d7y.io/dragonfly/v2/client/config"
 	server "d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -30,11 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/version"
-	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 var (

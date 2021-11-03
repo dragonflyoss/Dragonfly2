@@ -23,9 +23,10 @@ import (
 	"strconv"
 	"strings"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
+
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type Bytes int64

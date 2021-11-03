@@ -27,6 +27,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
+
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
@@ -36,8 +39,6 @@ import (
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/suite"
 )
 
 func TestCacheDetectorSuite(t *testing.T) {

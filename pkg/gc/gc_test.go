@@ -22,9 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/gc/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/pkg/gc/mocks"
 )
 
 func TestGCAdd(t *testing.T) {

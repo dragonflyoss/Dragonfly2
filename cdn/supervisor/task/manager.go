@@ -21,6 +21,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -31,9 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces

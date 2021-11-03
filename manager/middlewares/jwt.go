@@ -21,11 +21,12 @@ import (
 	"net/http"
 	"time"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
-	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/gin-gonic/gin"
 )
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {

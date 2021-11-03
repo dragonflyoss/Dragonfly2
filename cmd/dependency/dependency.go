@@ -27,7 +27,6 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"github.com/go-echarts/statsview"
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
@@ -46,6 +45,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfpath"

@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"strings"
 
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"google.golang.org/grpc"
 )
 
 func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {

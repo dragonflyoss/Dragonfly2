@@ -19,10 +19,11 @@ package dependency
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
+
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 // genDocCommand is used to implement 'doc' command.

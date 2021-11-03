@@ -26,6 +26,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/agiledragon/gomonkey"
+	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -34,10 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/mocks"
-	"github.com/agiledragon/gomonkey"
-	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 var (

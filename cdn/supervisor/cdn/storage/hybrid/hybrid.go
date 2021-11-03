@@ -26,6 +26,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/atomic"
+
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
@@ -37,8 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 const StorageMode = storage.HybridStorageMode

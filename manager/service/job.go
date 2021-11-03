@@ -20,12 +20,13 @@ import (
 	"context"
 	"fmt"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
 func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {

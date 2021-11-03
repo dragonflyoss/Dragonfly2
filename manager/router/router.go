@@ -21,12 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/handlers"
-	"d7y.io/dragonfly/v2/manager/middlewares"
-	"d7y.io/dragonfly/v2/manager/service"
-
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
@@ -35,6 +29,12 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/handlers"
+	"d7y.io/dragonfly/v2/manager/middlewares"
+	"d7y.io/dragonfly/v2/manager/service"
 )
 
 const (

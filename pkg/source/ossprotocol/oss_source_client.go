@@ -25,14 +25,14 @@ import (
 	"strconv"
 	"sync"
 
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-
-	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
+
+	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 const ossClient = "oss"

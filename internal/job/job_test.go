@@ -20,9 +20,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJobMarshal(t *testing.T) {

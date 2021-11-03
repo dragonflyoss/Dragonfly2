@@ -20,14 +20,14 @@ import (
 	"context"
 	"strconv"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
 const (

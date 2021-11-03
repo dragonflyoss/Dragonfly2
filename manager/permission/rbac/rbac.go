@@ -22,14 +22,15 @@ import (
 	"net/http"
 	"regexp"
 
-	managermodel "d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	managermodel "d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 // Syntax for models see https://casbin.org/docs/en/syntax-for-models

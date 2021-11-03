@@ -23,11 +23,12 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
+
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
 )
 
 // Driver defines an interface to manage the data stored in the driver.
