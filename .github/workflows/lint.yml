@@ -24,6 +24,6 @@ jobs:
           version: v1.40.1
 
       - name: Markdown lint
-        uses: avtodev/markdown-lint@v1
+        uses: docker://avtodev/markdown-lint:v1
         with:
           args: "**/*.md"
