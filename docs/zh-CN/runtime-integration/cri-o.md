@@ -33,17 +33,18 @@ location = "docker.io"
 
 ## Step 3: 重启 CRI-O
 
-```
+```shell
 systemctl restart crio
 ```
 
-如果遇到如下错误 `mixing sysregistry v1/v2 is not supported` 或 `registry must be in v2 format but is in v1`, 请将您的镜像仓库配置为 v2。
+如果遇到如下错误 `mixing sysregistry v1/v2 is not supported` 或
+`registry must be in v2 format but is in v1`, 请将您的镜像仓库配置为 v2。
 
 ## Step 4: 拉取镜像
 
 使用以下命令拉取镜像:
 
-```
+```shell
 crictl pull docker.io/library/busybox
 ```
 
@@ -51,12 +52,15 @@ crictl pull docker.io/library/busybox
 
 可以查看日志，判断 busybox 镜像正常拉取。
 
-```bash
+```shell
 grep 'register peer task result' /var/log/dragonfly/daemon/*.log
 ```
 
 如果正常日志输出如下:
 
-```
-{"level":"info","ts":"2021-02-23 20:03:20.306","caller":"client/client.go:83","msg":"register peer task result:true[200] for taskId:adf62a86f001e17037eedeaaba3393f3519b80ce,peerIp:10.15.233.91,securityDomain:,idc:,scheduler:127.0.0.1:8002","peerId":"10.15.233.91-65000-43096-1614081800301788000","errMsg":null}
+```shell
+{"level":"info","ts":"2021-02-23 20:03:20.306","caller":"client/client.go:83",
+"msg":"register peer task result:true[200] for taskId:adf62a86f001e17037eedeaaba3393f3519b80ce,
+peerIp:10.15.233.91,securityDomain:,idc:,scheduler:127.0.0.1:8002",
+"peerId":"10.15.233.91-65000-43096-1614081800301788000","errMsg":null}
 ```

@@ -26,4 +26,5 @@ jobs:
       - name: Markdown lint
         uses: docker://avtodev/markdown-lint:v1
         with:
-          args: "**/*.md"
+          args: '**/*.md'
+          ignore: 'deploy/helm-charts manager/console CHANGELOG.md docs/en/api-reference docs/zh-CN/api-reference'
