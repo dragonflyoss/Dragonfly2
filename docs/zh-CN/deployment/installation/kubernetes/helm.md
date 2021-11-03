@@ -1,20 +1,10 @@
-# Dragonfly 部署 kubernetes 集群
+# Helm 部署
 
-下面会解释如何在 Kubernetes 集群内部署 Dragonfly。Dragonfly 部署具体模块包括 4 部分: scheduler 和 cdn 会作为 `StatefulSets` 部署, dfdaemon 会作为 `DaemonSets` 部署, manager 会作为 `Deployments` 部署。
+## Helm Chart 运行时配置
 
-部署方式:
+当使用 Helm Chart 运行时配置时，可以忽略 [运行时配置](#运行时配置) 章节。因为 Helm Chart 安装时会自动帮助改变 Docker、Containerd 等配置, 无需再手动配置。
 
-* [Helm](#helm-support)
-* [Kustomize](#kustomize-support)
-* [TODO Upgrade Guide](#upgrade-guide)
-
-## Helm 部署
-
-### Helm Chart 运行时配置
-
-当使用 Helm Chart 运行时配置时，可以忽略 [运行时配置](#configure-runtime-manually) 章节。因为 Helm Chart 安装时会自动帮助改变 Docker、Containerd 等配置, 无需再手动配置。
-
-#### 1. Docker
+### 1. Docker
 
 > **不推荐在 docker 环境中使用蜻蜓**：1. 拉镜像没有 fallback 机制，2. 在未来的 Kubernetes 中已经废弃。
 > 
@@ -42,12 +32,6 @@ containerRuntime:
     - "harbor.example.com"
     - "harbor.example.net"
 ```
-
-When upgrade dfdaemon, the old pods will be deleted and the injected hosts info will be removed,
-then docker will pull image without dragonfly, finally, the new pods will be created.
-
-Advantages:
-* Support upgrade dfdaemon smoothness
 
 此配置允许 docker 通过 Dragonfly 拉取 `harbor.example.com` 和 `harbor.example.net` 域名镜像。
 使用上述配置部署 Dragonfly 时，无需重新启动 docker。
@@ -80,7 +64,7 @@ containerRuntime:
 * 必须开启 docker 的 `live-restore` 功能
 * 需要重启 docker daemon
 
-#### 2. Containerd
+### 2. Containerd
 
 Containerd 的配置有两个版本，字段复杂。有很多情况需要考虑：
 
@@ -141,7 +125,7 @@ containerRuntime:
     enable: true
 ```
 
-#### 3. [WIP] CRI-O
+### 3. [WIP] CRI-O
 
 > 请勿使用，开发中。
 
@@ -162,20 +146,20 @@ containerRuntime:
     - "https://harbor.example.com:8443"
 ```
 
-### 准备 Kubernetes 集群 
+## 准备 Kubernetes 集群 
 
 如果没有可用的 Kubernetes 集群进行测试，推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
 
-### 安装 Dragonfly
+## 安装 Dragonfly
 
-#### 默认配置安装
+### 默认配置安装
 
 ```shell
 helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
 helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly
 ```
 
-#### 自定义配置安装
+### 自定义配置安装
 
 创建 `values.yaml` 配置文件。建议使用外部 redis 和 mysql 代替容器启动。
 
@@ -209,7 +193,7 @@ helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
 helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
-#### 安装 Drgonfly 使用已经部署的 manager
+### 安装 Drgonfly 使用已经部署的 manager
 
 创建 `values.yaml` 配置文件。需要配置 scheduler 和 cdn 关联的对应集群的 id。
 
@@ -256,19 +240,19 @@ mysql:
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
-### Manager 控制台
+## Manager 控制台
 
 控制台页面会在 `dragonfly-manager.dragonfly-system.svc.cluster.local:8080` 展示。
 
 需要绑定 Ingress 可以参考 [Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), 或者手动自行创建 Ingress。
 
-控制台功能预览参考文档 [console preview](../user-guide/console/preview.md)。
+控制台功能预览参考文档 [console preview](../../../design/manager.md)。
 
-### 运行时配置
+## 运行时配置
 
-以 Containerd 和 CRI 为例，更多运行时[文档](../user-guide/quick-start.md)
+以 Containerd 和 CRI 为例，更多运行时[文档](../../../quick-start.md)
 
-> 例子为单镜像仓库配置，多镜像仓库配置参考[文档](../user-guide/registry-mirror/cri-containerd.md)
+> 例子为单镜像仓库配置，多镜像仓库配置参考[文档](../../../runtime-integration)
 
 私有仓库:
 
@@ -294,7 +278,7 @@ endpoint = ["http://127.0.0.1:65001", "https://registry-1.docker.io"]
 systemctl restart containerd
 ```
 
-### 使用 Dragonfly
+## 使用 Dragonfly
 
 以上步骤执行完毕，可以使用 `crictl` 命令拉取镜像:
 
@@ -321,32 +305,3 @@ kubectl -n dragonfly-system exec -it ${pod_name} -- grep "peer task done" /var/l
 ```
 {"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
 ```
-
-## Kustomize 支持
-
-### 准备 Kubernetes 集群 
-
-如果没有可用的 Kubernetes 集群进行测试，推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
-
-### 构建 Kustomize 模版并部署
-
-```shell
-git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
-```
-
-### 等待部署成功
-
-等待所有的服务运行成功。
-
-```shell
-kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
-```
-
-### 下一步
-
-按照[文档](#configure-runtime-manually)来配置运行时。
-
-按照[文档](#configure-runtime-manually)来使用 Dragonfly。
-
-## 升级指南

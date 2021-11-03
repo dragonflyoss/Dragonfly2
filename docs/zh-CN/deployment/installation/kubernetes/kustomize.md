@@ -1,40 +1,39 @@
-# Kustomize Support
+# Kustomize 支持
 
-## Prepare Kubernetes Cluster
+## 准备 Kubernetes 集群 
 
-If there is no available Kubernetes cluster for testing, [minikube](https://minikube.sigs.k8s.io/docs/start/) is
-recommended. Just run `minikube start`.
+如果没有可用的 Kubernetes 集群进行测试，推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
 
-## Build and Apply Kustomize Configuration
+## 构建 Kustomize 模版并部署
 
 ```shell
 git clone https://github.com/dragonflyoss/Dragonfly2.git
 kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
 ```
 
-## Wait Dragonfly Ready
+## 等待部署成功
 
-Wait all pods running
+等待所有的服务运行成功。
 
 ```shell
 kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 ```
 
-## Manager Console
+## Manager 控制台
 
-The console page will be displayed on `dragonfly-manager.dragonfly-system.svc.cluster.local:8080`.
+控制台页面会在 `dragonfly-manager.dragonfly-system.svc.cluster.local:8080` 展示。
 
-If you need to bind Ingress, you can refer to [configuration options](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values) of Helm Charts, or create it manually.
+需要绑定 Ingress 可以参考 [Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), 或者手动自行创建 Ingress。
 
-Console features preview reference document [console preview](../../../design/manager.md).
+控制台功能预览参考文档 [console preview](../../../design/manager.md)。
 
-## Configure Runtime Manually
+## 运行时配置
 
-Use Containerd with CRI as example, more runtimes can be found [here](../../../quick-start.md)
+以 Containerd 和 CRI 为例，更多运行时[文档](../../../quick-start.md)
 
-> This example is for single registry, multiple registries configuration is [here](../../../runtime-integration)
+> 例子为单镜像仓库配置，多镜像仓库配置参考[文档](../../../runtime-integration)
 
-For private registry:
+私有仓库:
 
 ```toml
 # explicitly use v2 config format, if already v2, skip the "version = 2"
@@ -43,7 +42,7 @@ version = 2
 endpoint = ["http://127.0.0.1:65001", "https://harbor.example.com"]
 ```
 
-For docker public registry:
+dockerhub 官方仓库:
 
 ```toml
 # explicitly use v2 config format, if already v2, skip the "version = 2"
@@ -52,15 +51,15 @@ version = 2
 endpoint = ["http://127.0.0.1:65001", "https://registry-1.docker.io"]
 ```
 
-Add above config to `/etc/containerd/config.toml` and restart Containerd
+增加配置到 `/etc/containerd/config.toml` 文件并重启 Containerd。
 
 ```shell
 systemctl restart containerd
 ```
 
-## Using Dragonfly
+## 使用 Dragonfly
 
-After all above steps, create a new pod with target registry. Or just pull an image with `crictl`:
+以上步骤执行完毕，可以使用 `crictl` 命令拉取镜像:
 
 ```shell
 crictl harbor.example.com/library/alpine:latest
@@ -70,7 +69,8 @@ crictl harbor.example.com/library/alpine:latest
 crictl pull docker.io/library/alpine:latest
 ```
 
-After pulled images, find logs in dfdaemon pod:
+拉取镜像后可以在 dfdaemon 查询日志:
+
 ```shell
 # find pods
 kubectl -n dragonfly-system get pod -l component=dfdaemon
@@ -79,7 +79,8 @@ pod_name=dfdaemon-xxxxx
 kubectl -n dragonfly-system exec -it ${pod_name} -- grep "peer task done" /var/log/dragonfly/daemon/core.log
 ```
 
-Example output:
+日志输出例子:
+
 ```
 {"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
 ```
