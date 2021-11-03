@@ -153,4 +153,3 @@ proxy:
 ```
 openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
 ```
-
