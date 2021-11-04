@@ -24,10 +24,11 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/olekukonko/tablewriter"
 	"go.uber.org/zap"
 	"k8s.io/client-go/util/workqueue"
+
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 type monitor struct {

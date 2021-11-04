@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-redis/cache/v8"
+
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
-	"github.com/go-redis/cache/v8"
 )
 
 const (

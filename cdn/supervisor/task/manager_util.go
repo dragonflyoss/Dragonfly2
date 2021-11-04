@@ -22,6 +22,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
@@ -31,8 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // addOrUpdateTask add a new task or update exist task

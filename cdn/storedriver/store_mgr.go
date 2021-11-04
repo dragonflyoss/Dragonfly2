@@ -21,9 +21,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
+
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/mitchellh/mapstructure"
 )
 
 // DriverBuilder is a function that creates a new storage driver plugin instant with the giving Config.

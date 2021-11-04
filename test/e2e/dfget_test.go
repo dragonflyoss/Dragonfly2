@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
+
+	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
 
 var _ = Describe("Download with dfget", func() {

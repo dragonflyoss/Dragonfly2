@@ -19,8 +19,9 @@ package hybrid
 import (
 	"regexp"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type shmSwitch struct {

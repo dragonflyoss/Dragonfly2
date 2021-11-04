@@ -27,14 +27,14 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
