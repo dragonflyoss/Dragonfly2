@@ -1,4 +1,6 @@
-# dfget
+# dfdaemon
+
+## dfget
 
 `dfget` 是Dragonfly用以下载和上传文件的客户端。
 
@@ -8,23 +10,24 @@ dfget 是 Dragonfly 的一个客户端，也是p2p网络中的一个peer。当�
 dfget 将从其他peer下载文件。同时，它也能作为上传者，以支持其他peer对它已拥有对部分对下载。
 此外，dfget 还提供了一些高级功能，如网络带宽限制、加密传输等。
 
-```
+```text
 dfget [flags]
 ```
 
 ### Example
 
-```
+```text
 dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/object"
 ```
 
-## Log configuration
+### Log configuration
 
 如果您想要在Terminal中查看日志，请使用 --console 将环境变量 console 设置为 true。
 
-### Options
+#### Options
 
-```
+<!-- markdownlint-disable -->
+```text
       --alivetime duration           alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --cacerts strings              the cacert file which is used to verify remote server when supernode interact with the source.
       --callsystem string            the name of dfget caller which is for debugging. Once set, it will be passed to all components around the request to make debugging easy
@@ -56,18 +59,19 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
       --totallimit ratelimit         network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte (default 104857600.000000)
   -u, --url string                   URL of user requested downloading file(only HTTP/HTTPs supported)
       --verbose                      enable verbose mode, all debug log will be display
-
 ```
+<!-- markdownlint-restore -->
 
-# dfget daemon
+## dfget daemon
 
-## Log configuration
+### Daemon Log configuration
 
 如果您想要在Terminal中查看日志，请使用 --console 将环境变量 console 设置为 true。
 
-### Options
+#### Daemon Options
 
-```
+<!-- markdownlint-disable -->
+```text
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
       --alivetime duration       alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --data string               local directory which stores temporary files for p2p uploading
@@ -95,3 +99,4 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
       --upload-rate ratelimit     upload rate limit for other peers (default 104857600.000000)
       --verbose                   print verbose log and enable golang debug info
 ```
+<!-- markdownlint-restore -->

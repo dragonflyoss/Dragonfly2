@@ -1,17 +1,18 @@
 # CDN
 
-CDN is a long-running process which caches downloaded data from source to avoid downloading the same files from source repeatedly
+CDN is a long-running process which caches downloaded data
+from source to avoid downloading the same files from source repeatedly.
 
 ## Usage
 
-```
+```shell
 cdn [flags]
 cdn [command]
 ```
 
-## Available Commands:
+## Available Commands
 
-```
+```text
 doc         generate documents 
 help        Help about any command
 version     show version
@@ -19,7 +20,8 @@ version     show version
 
 ## Flags
 
-```
+<!-- markdownlint-disable -->
+```text
     --config string         the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/cdn.yaml, it can 
       also be set by environment variable cdn_config
     --console               whether logger output records to the stdout
@@ -29,3 +31,4 @@ version     show version
     --service-name string   name of the service for tracer (default "dragonfly-cdn")
     --verbose               whether logger use debug level
 ```
+<!-- markdownlint-restore -->

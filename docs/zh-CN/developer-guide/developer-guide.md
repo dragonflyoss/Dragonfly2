@@ -2,11 +2,11 @@
 
 快速搭建本地开发环境
 
-### 第一步：安装 docker 和 docker compose
+## 第一步：安装 docker 和 docker compose
 
 详见文档 [docs.docker.com]
 
-### 第二步：启动 dragonfly
+## 第二步：启动 dragonfly
 
 打开 dragonfly 文档、启动 docker-compose.
 
@@ -19,10 +19,11 @@ Creating dfdaemon  ... done
 Attaching to cdn, scheduler, dfdaemon
 ```
 
-### 第三步：日志分析
+## 第三步：日志分析
 
 查看 dragonfly 日志
 
+<!-- markdownlint-disable -->
 ```bash
 $ tail -f log/**/*.log
 ==> log/dragonfly/cdn/core.log <==
@@ -48,8 +49,9 @@ $ tail -f log/**/*.log
 {"level":"info","ts":"2021-02-26 05:43:37.342","caller":"worker/sender.go:49","msg":"start sender worker : 50"}
 {"level":"info","ts":"2021-02-26 05:43:37.343","caller":"worker/worker_group.go:64","msg":"start scheduler worker number:6"}
 ```
+<!-- markdownlint-restore -->
 
-### 第四步：关闭 dragonfly
+## 第四步：关闭 dragonfly
 
 ```bash
 $ docker-compose down

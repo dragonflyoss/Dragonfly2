@@ -7,8 +7,12 @@ Table of contents:
 
 ## Installation
 
-Installation documents provide you with several options available to deploy the Dragonfly, such as [Kubernetes](installation/kubernetes/README.md) and [Docker](installation/docker/README.md).
+Installation documents provide you with several options available to
+deploy the Dragonfly, such as [Kubernetes](installation/kubernetes/README.md)
+and [Docker](installation/docker/README.md).
 
 ## Configuration
 
-[Configuration](configuration) is content all about customizing the Dragonfly. It includes information about the configuration of all components and their corresponding explanations.
+[Configuration](configuration) is content all about customizing the Dragonfly.
+It includes information about the configuration of all components and
+their corresponding explanations.
