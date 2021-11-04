@@ -1,6 +1,6 @@
-# 蜻蜓文档
+# Dragonfly 文档
 
-Dragonfly Document 是关于 Dragonfly 的介绍。对于一般对 Dragonfly 感兴趣的人，这个 repo 的 README.md 就足够了。对于最终用户来说，`/docs` 中包含的所有详细信息是最好的指南。而对于开发者来说，[开发者指南](developer-guide/developer-guide.md)部分的内容才是最需要的。
+Dragonfly 文档介绍了 Dragonfly 各方面的信息。如果您对 Dragonfly 感兴趣，请阅读 repo 的 README.md 。更进一步地，如果您是 Dragonfly 的用户，请阅读`/docs` 中的内容；如果您想成为 Dragonfly 的开发者，请阅读[开发者指南](developer-guide/developer-guide.md)。
 
 文档文件组织如下：
 
