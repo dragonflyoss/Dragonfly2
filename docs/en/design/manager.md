@@ -1,6 +1,7 @@
 # Manager
 
-Used to manage the dynamic configuration that each module depends on, and provide keepalive and metrics functions.
+Used to manage the dynamic configuration that each module depends on,
+and provide keepalive and metrics functions.
 
 ## Relationship
 
@@ -8,13 +9,19 @@ Used to manage the dynamic configuration that each module depends on, and provid
 - CDN cluster and CDN instance have a `1:N` relationship
 - Scheduler cluster and Scheduler instance have a `1:N` relationship
 
+<!-- markdownlint-disable -->
 <div align="center">
   <img src="../images/manager-console/relationship.jpg" width="500" title="manager-relationship">
 </div>
+<!-- markdownlint-restore -->
 
-When the Scheduler instance starts, it reports to the manager the Scheduler Cluster ID. Refer to [document](../deployment/configuration/scheduler.yaml) to configure `schedulerClusterID`.
+When the Scheduler instance starts,
+it reports to the manager the Scheduler Cluster ID.
+Refer to [document](../deployment/configuration/scheduler.yaml) to configure `schedulerClusterID`.
 
-When the CDN instance starts, it reports to the manager the CDN Cluster ID. Refer to [document](../deployment/configuration/cdn.yaml) to configure `cdnClusterID`.
+When the CDN instance starts,
+it reports to the manager the CDN Cluster ID.
+Refer to [document](../deployment/configuration/cdn.yaml) to configure `cdnClusterID`.
 
 ## User account
 
@@ -46,15 +53,19 @@ Default root username: `root` password: `dragonfly`.
 
 ##### Configure Scheduler Cluster
 
+<!-- markdownlint-disable -->
 <p align="center">
   <img width="500" height="500" src="../images/manager-console/configure-scheduler-cluster.jpg">
 </p>
+<!-- markdownlint-restore -->
 
 ##### Configure Scheduler Cluster's Client
 
+<!-- markdownlint-disable -->
 <p align="center">
   <img width="500" height="500" src="../images/manager-console/configure-scheduler-cluster-client.jpg">
 </p>
+<!-- markdownlint-restore -->
 
 - `load_limit`: client host can provide the maximum upload load.
 
@@ -70,12 +81,13 @@ Default root username: `root` password: `dragonfly`.
 
 ##### Configure CDN Cluster
 
+<!-- markdownlint-disable -->
 <p align="center">
   <img width="500" height="500" src="../images/manager-console/configure-cdn-cluster.jpg">
 </p>
+<!-- markdownlint-restore -->
 
 - `load_limit`: CDN host can provide the maximum upload load.
-
 
 [signin]: ../images/manager-console/signin.jpg
 [signup]: ../images/manager-console/signup.jpg

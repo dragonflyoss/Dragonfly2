@@ -1,30 +1,37 @@
-# dfget
+# dfdaemon
+
+## dfget
 
 `dfget` is the client of Dragonfly used to download and upload files
 
 ### Synopsis
 
-dfget is the client of Dragonfly which takes a role of peer in a P2P network. When user triggers a file downloading
-task, dfget will download the pieces of file from other peers. Meanwhile, it will act as an uploader to support other
-peers to download pieces from it if it owns them. In addition, dfget has the abilities to provide more advanced
-functionality, such as network bandwidth limit, transmission encryption and so on.
+dfget is the client of Dragonfly which takes
+a role of peer in a P2P network. When user triggers a file downloading
+task, dfget will download the pieces of
+file from other peers. Meanwhile, it will act as an uploader to support other
+peers to download pieces from it if it owns them.
+In addition, dfget has the abilities to provide more advanced
+functionality, such as network bandwidth limit,
+transmission encryption and so on.
 
-```
+```shell
 dfget [flags]
 ```
 
 ### Example
 
-```
+```shell
 dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/object"
 ```
 
-## Log configuration
+### Log configuration
 
 set environment variable console=true if you want to print logs to Terminal
 
 ### Options
 
+<!-- markdownlint-disable -->
 ```
       --alivetime duration           alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --cacerts strings              the cacert file which is used to verify remote server when supernode interact with the source.
@@ -57,23 +64,24 @@ set environment variable console=true if you want to print logs to Terminal
       --totallimit ratelimit         network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte (default 104857600.000000)
   -u, --url string                   URL of user requested downloading file(only HTTP/HTTPs supported)
       --verbose                      enable verbose mode, all debug log will be display
-
 ```
+<!-- markdownlint-restore -->
 
-# dfget daemon
+## dfget daemon
 
-## Log configuration
+### Daemon Log configuration
 
 set environment variable console=true if you want to print logs to Terminal
 
-### Options
+### Daemon Options
 
+<!-- markdownlint-disable -->
 ```
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
-      --alivetime duration       alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
+      --alivetime duration        alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --data string               local directory which stores temporary files for p2p uploading
       --download-rate ratelimit   download rate limit for other peers and back source (default 104857600.000000)
-      --expiretime duration      caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted (default 3m0s)
+      --expiretime duration       caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted (default 3m0s)
       --gc-interval duration      gc interval (default 1m0s)
       --grpc-port int             the listen address for grpc with other peers (default 65000)
       --grpc-port-end int         the listen address for grpc with other peers (default 65000)
@@ -96,3 +104,4 @@ set environment variable console=true if you want to print logs to Terminal
       --upload-rate ratelimit     upload rate limit for other peers (default 104857600.000000)
       --verbose                   print verbose log and enable golang debug info
 ```
+<!-- markdownlint-restore -->

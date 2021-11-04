@@ -4,16 +4,17 @@
 
 1. Confirm limit rate in [dfget.yaml](https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/deployment/configuration/dfget.yaml#L65)
 
-```yaml
-download:
-  # total download limit per second
-  totalRateLimit: 200Mi
-  # per peer task download limit per second
-  perPeerRateLimit: 100Mi # default is 20Mi, this default is in consideration of extreme environments.
-upload:
-  # upload limit per second
-  rateLimit: 100Mi
-```
+    ```yaml
+    download:
+      # total download limit per second
+      totalRateLimit: 200Mi
+      # per peer task download limit per second
+      # default is 20Mi, this default is in consideration of extreme environments
+      perPeerRateLimit: 100Mi 
+    upload:
+      # upload limit per second
+      rateLimit: 100Mi
+    ```
 
 2. Confirm source connection speed in CDN and dfdaemon
 
@@ -23,6 +24,7 @@ upload:
 2. Check source connectivity(dns error or certificate error)
 
 Example:
+
 ```shell
 curl https://example.harbor.local/
 ```

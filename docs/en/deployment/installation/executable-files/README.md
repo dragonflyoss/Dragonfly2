@@ -1,6 +1,7 @@
 # Installation
 
-There are installation methods to install the executable files separately according to the modules.
+There are installation methods to install
+the executable files separately according to the modules.
 
 ## Install separately
 

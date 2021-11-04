@@ -1,14 +1,17 @@
 # Kustomize 支持
 
-## 准备 Kubernetes 集群 
+## 准备 Kubernetes 集群
 
-如果没有可用的 Kubernetes 集群进行测试，推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
+如果没有可用的 Kubernetes 集群进行测试，
+推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
 
 ## 构建 Kustomize 模版并部署
 
 ```shell
 git clone https://github.com/dragonflyoss/Dragonfly2.git
-kustomize build Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | kubectl apply -f -
+kustomize build \
+    Dragonfly2/deploy/kustomize/single-cluster-native/overlays/sample | \
+    kubectl apply -f -
 ```
 
 ## 等待部署成功
@@ -23,7 +26,9 @@ kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 
 控制台页面会在 `dragonfly-manager.dragonfly-system.svc.cluster.local:8080` 展示。
 
-需要绑定 Ingress 可以参考 [Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), 或者手动自行创建 Ingress。
+需要绑定 Ingress 可以参考
+[Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values),
+或者手动自行创建 Ingress。
 
 控制台功能预览参考文档 [console preview](../../../design/manager.md)。
 
@@ -81,6 +86,14 @@ kubectl -n dragonfly-system exec -it ${pod_name} -- grep "peer task done" /var/l
 
 日志输出例子:
 
-```
-{"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
+```shell
+{
+    "level": "info",
+    "ts": "2021-06-28 06:02:30.924",
+    "caller": "peer/peertask_stream_callback.go:77",
+    "msg": "stream peer task done, cost: 2838ms",
+    "peer": "172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e",
+    "task": "3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7",
+    "component": "streamPeerTask"
+}
 ```

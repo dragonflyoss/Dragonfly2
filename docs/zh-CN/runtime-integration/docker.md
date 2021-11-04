@@ -16,29 +16,29 @@ openssl genrsa -out ca.key 2048
 
 ```text
 [ req ]
-#default_bits		= 2048
-#default_md		= sha256
-#default_keyfile 	= privkey.pem
-distinguished_name	= req_distinguished_name
-attributes		= req_attributes
+#default_bits = 2048
+#default_md = sha256
+#default_keyfile = privkey.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
 extensions               = v3_ca
 req_extensions           = v3_ca
 [ req_distinguished_name ]
-countryName			= Country Name (2 letter code)
-countryName_min			= 2
-countryName_max			= 2
-stateOrProvinceName		= State or Province Name (full name)
-localityName			= Locality Name (eg, city)
-0.organizationName		= Organization Name (eg, company)
-organizationalUnitName		= Organizational Unit Name (eg, section)
-commonName			= Common Name (eg, fully qualified host name)
-commonName_max			= 64
-emailAddress			= Email Address
-emailAddress_max		= 64
+countryName = Country Name (2 letter code)
+countryName_min = 2
+countryName_max = 2
+stateOrProvinceName = State or Province Name (full name)
+localityName = Locality Name (eg, city)
+0.organizationName = Organization Name (eg, company)
+organizationalUnitName = Organizational Unit Name (eg, section)
+commonName = Common Name (eg, fully qualified host name)
+commonName_max = 64
+emailAddress = Email Address
+emailAddress_max = 64
 [ req_attributes ]
-challengePassword		= A challenge password
-challengePassword_min		= 4
-challengePassword_max		= 20
+challengePassword = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
 [ v3_ca ]
 basicConstraints         = CA:TRUE
 ```
@@ -47,7 +47,8 @@ basicConstraints         = CA:TRUE
 
 ```bash
 openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
-openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
+openssl x509 -req -days 36500 -extfile openssl.conf \
+    -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
 ### 第二步：配置 dfget daemon
@@ -74,7 +75,7 @@ proxy:
 
 ### 第三步：配置 Docker daemon
 
-为了忽略您的证书错误，您需要在 
+为了忽略您的证书错误，您需要在
 `/etc/docker/daemon.json` 中把 `insecure-registries` 设置为您的私有代理：
 
 ```json
@@ -85,10 +86,10 @@ proxy:
 
 ### 第四步：继续配置 Docker daemon
 
-在 `/etc/systemd/system/docker.service.d/http-proxy.conf` 设置 dfdaemon 为 docker daemon 的
- `HTTP_PROXY` 和 `HTTPS_PROXY` 代理：
+在 `/etc/systemd/system/docker.service.d/http-proxy.conf` 设置 dfdaemon 为
+docker daemon 的 `HTTP_PROXY` 和 `HTTPS_PROXY` 代理：
 
-```
+```toml
 [Service]
 Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
@@ -150,6 +151,7 @@ proxy:
 
 您能使用以下命令获取您服务器的证书：
 
-```
-openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
+```shell
+openssl x509 -in <(openssl s_client -showcerts \
+    -servername your.domain.com -connect your.domain.com:443 -prexit 2>/dev/null)
 ```

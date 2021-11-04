@@ -1,6 +1,7 @@
 # 使用 dfget daemon 作为 containerd 的 http 代理
 
-目前 containerd 的 `ctr` 命令不支持带有 registry-mirrors 的私有注册表，为此，我们需要为 containerd 使用 HTTP 代理。
+目前 containerd 的 `ctr` 命令不支持带有
+registry-mirrors 的私有注册表，为此我们需要为 containerd 使用 HTTP 代理。
 
 ## 快速开始
 
@@ -16,31 +17,31 @@ openssl genrsa -out ca.key 2048
 
 ```text
 [ req ]
-#default_bits		= 2048
-#default_md		= sha256
-#default_keyfile 	= privkey.pem
-distinguished_name	= req_distinguished_name
-attributes		= req_attributes
+#default_bits = 2048
+#default_md = sha256
+#default_keyfile = privkey.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
 extensions               = v3_ca
 req_extensions           = v3_ca
 
 [ req_distinguished_name ]
-countryName			= Country Name (2 letter code)
-countryName_min			= 2
-countryName_max			= 2
-stateOrProvinceName		= State or Province Name (full name)
-localityName			= Locality Name (eg, city)
-0.organizationName		= Organization Name (eg, company)
-organizationalUnitName		= Organizational Unit Name (eg, section)
-commonName			= Common Name (eg, fully qualified host name)
-commonName_max			= 64
-emailAddress			= Email Address
-emailAddress_max		= 64
+countryName = Country Name (2 letter code)
+countryName_min = 2
+countryName_max = 2
+stateOrProvinceName = State or Province Name (full name)
+localityName = Locality Name (eg, city)
+0.organizationName = Organization Name (eg, company)
+organizationalUnitName = Organizational Unit Name (eg, section)
+commonName = Common Name (eg, fully qualified host name)
+commonName_max = 64
+emailAddress = Email Address
+emailAddress_max = 64
 
 [ req_attributes ]
-challengePassword		= A challenge password
-challengePassword_min		= 4
-challengePassword_max		= 20
+challengePassword = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
 
 [ v3_ca ]
 basicConstraints         = CA:TRUE
@@ -50,7 +51,8 @@ basicConstraints         = CA:TRUE
 
 ```bash
 openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
-openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
+openssl x509 -req -days 36500 -extfile openssl.conf \
+      -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
 ### 第二步：配置 dfget daemon
@@ -77,10 +79,10 @@ proxy:
 
 ### 第三步：配置 containerd
 
-在 `/etc/systemd/system/containerd.service.d/http-proxy.conf` 设置 dfdaemon 为 docker daemon 的
-`HTTP_PROXY` 和 `HTTPS_PROXY` 代理：
+在 `/etc/systemd/system/containerd.service.d/http-proxy.conf`
+设置 dfdaemon 为 docker daemon 的 `HTTP_PROXY` 和 `HTTPS_PROXY` 代理：
 
-```
+```toml
 [Service]
 Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
@@ -142,6 +144,7 @@ proxy:
 
 您能使用以下命令获取您服务器的证书：
 
-```
-openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
+```bash
+openssl x509 -in <(openssl s_client -showcerts \
+    -servername your.domain.com -connect your.domain.com:443 -prexit 2>/dev/null)
 ```

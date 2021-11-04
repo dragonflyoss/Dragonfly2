@@ -45,9 +45,8 @@ version = 2
 
 配置支持两个镜像仓库地址 `http://127.0.0.1:65001` 以及 `https://registry-1.docker.io`.
 
-> 详细 Containerd 配置文档参照: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint
-
-> 镜像仓库配置参照文档: https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration
+> 详细 Containerd 配置文档参照: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint>
+> 镜像仓库配置参照文档: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
 
 ### 选项 2: 多镜像仓库
 
@@ -84,17 +83,17 @@ server = "https://example.com"
 
 ##### 选项 2: 自动生成 hosts.toml
 
-自动生成 hosts.toml 脚本为 https://github.com/dragonflyoss/Dragonfly2/blob/main/hack/gen-containerd-hosts.sh
+自动生成 hosts.toml 脚本为 <https://github.com/dragonflyoss/Dragonfly2/blob/main/hack/gen-containerd-hosts.sh>
 
 ```shell
 bash gen-containerd-hosts.sh example.com
 ```
 
-> 镜像仓库配置详细文档参照: https://github.com/containerd/containerd/blob/main/docs/hosts.md#registry-configuration---examples
+> 镜像仓库配置详细文档参照: <https://github.com/containerd/containerd/blob/main/docs/hosts.md#registry-configuration---examples>
 
 ## Step 3: 重启 Containerd
 
-```
+```shell
 systemctl restart containerd
 ```
 
@@ -102,7 +101,7 @@ systemctl restart containerd
 
 使用以下命令拉取镜像:
 
-```
+```shell
 crictl pull docker.io/library/busybox
 ```
 
@@ -110,12 +109,19 @@ crictl pull docker.io/library/busybox
 
 可以查看日志，判断 busybox 镜像正常拉取。
 
-```bash
+```shell
 grep 'register peer task result' /var/log/dragonfly/daemon/*.log
 ```
 
 如果正常日志输出如下:
 
-```
-{"level":"info","ts":"2021-02-23 20:03:20.306","caller":"client/client.go:83","msg":"register peer task result:true[200] for taskId:adf62a86f001e17037eedeaaba3393f3519b80ce,peerIp:10.15.233.91,securityDomain:,idc:,scheduler:127.0.0.1:8002","peerId":"10.15.233.91-65000-43096-1614081800301788000","errMsg":null}
+```shell
+{
+    "level": "info",
+    "ts": "2021-02-23 20:03:20.306",
+    "caller": "client/client.go:83",
+    "msg": "register peer task result:true[200]",
+    "peerId": "10.15.233.91-65000-43096-1614081800301788000",
+    "errMsg": null
+}
 ```

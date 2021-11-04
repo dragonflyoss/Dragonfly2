@@ -7,7 +7,8 @@
 
 ## 安装
 
-安装文档为您提供了几个可以用部署 Dragonfly 的方式，例如 [Kubernetes](installation/kubernetes/README.md) 和 [Docker](installation/docker/README.md)。
+安装文档为您提供了几个可以用部署 Dragonfly 的方式，
+例如 [Kubernetes](installation/kubernetes/README.md) 和 [Docker](installation/docker/README.md)。
 
 ## 配置
 
