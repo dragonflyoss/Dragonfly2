@@ -20,6 +20,7 @@ import (
 	"net/http"
 
 	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
 )
