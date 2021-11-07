@@ -42,8 +42,10 @@ func Paginate(page, perPage int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-type JSONMap map[string]interface{}
-type JSONList []string
+type (
+	JSONMap map[string]interface{}
+	Array   []string
+)
 
 func (m JSONMap) Value() (driver.Value, error) {
 	if m == nil {
@@ -53,11 +55,11 @@ func (m JSONMap) Value() (driver.Value, error) {
 	return string(ba), err
 }
 
-func (l JSONList) Value() (driver.Value, error) {
-	if l == nil {
+func (a Array) Value() (driver.Value, error) {
+	if a == nil {
 		return nil, nil
 	}
-	ba, err := l.MarshalJSON()
+	ba, err := a.MarshalJSON()
 	return string(ba), err
 }
 
@@ -77,7 +79,7 @@ func (m *JSONMap) Scan(val interface{}) error {
 	return err
 }
 
-func (l *JSONList) Scan(val interface{}) error {
+func (a *Array) Scan(val interface{}) error {
 	var ba []byte
 	switch v := val.(type) {
 	case []byte:
@@ -89,7 +91,7 @@ func (l *JSONList) Scan(val interface{}) error {
 	}
 	t := []string{}
 	err := json.Unmarshal(ba, &t)
-	*l = JSONList(t)
+	*a = Array(t)
 	return err
 }
 
@@ -101,11 +103,11 @@ func (m JSONMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(t)
 }
 
-func (l JSONList) MarshalJSON() ([]byte, error) {
-	if l == nil {
+func (a Array) MarshalJSON() ([]byte, error) {
+	if a == nil {
 		return []byte("null"), nil
 	}
-	t := ([]string)(l)
+	t := ([]string)(a)
 	return json.Marshal(t)
 }
 
@@ -116,10 +118,10 @@ func (m *JSONMap) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-func (l *JSONList) UnmarshalJSON(b []byte) error {
+func (a *Array) UnmarshalJSON(b []byte) error {
 	t := []string{}
 	err := json.Unmarshal(b, &t)
-	*l = JSONList(t)
+	*a = Array(t)
 	return err
 }
 
@@ -131,10 +133,10 @@ func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return "text"
 }
 
-func (l JSONList) GormDataType() string {
-	return "jsonlist"
+func (Array) GormDataType() string {
+	return "array"
 }
 
-func (JSONList) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+func (Array) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return "text"
 }

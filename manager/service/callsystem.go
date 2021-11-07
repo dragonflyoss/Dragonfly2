@@ -24,10 +24,9 @@ import (
 func (s *rest) CreateCallSystem(json types.CreateCallSystemRequest) (*model.CallSystem, error) {
 	callsystem := model.CallSystem{
 		Name:           json.Name,
-		DisplayName:    json.DisplayName,
-		LimitRate:      json.LimitRate,
+		LimitFrequency: json.LimitFrequency,
 		URLRegexs:      json.URLRegexs,
-		TermOfValidity: json.TermOfValidity,
+		ValidityPeriod: json.ValidityPeriod,
 		IsEnable:       json.IsEnable,
 	}
 
@@ -55,10 +54,9 @@ func (s *rest) UpdateCallSystem(id uint, json types.UpdateCallSystemRequest) (*m
 	schedulerCluster := model.CallSystem{}
 	if err := s.db.First(&schedulerCluster, id).Updates(model.CallSystem{
 		Name:           json.Name,
-		DisplayName:    json.DisplayName,
-		LimitRate:      json.LimitRate,
+		LimitFrequency: json.LimitFrequency,
 		URLRegexs:      json.URLRegexs,
-		TermOfValidity: json.TermOfValidity,
+		ValidityPeriod: json.ValidityPeriod,
 		IsEnable:       json.IsEnable,
 	}).Error; err != nil {
 		return nil, err
