@@ -19,6 +19,7 @@ package handlers
 import (
 	"net/http"
 
+	// nolint
 	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
 )
