@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// Package cdnsystem cdn server
 package cdn
 
 import (
@@ -176,7 +175,11 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(iputils.HostIP, s.config.ListenPort, s.config.ListenPort)
+	var listen = iputils.HostIP
+	if s.config.AdvertiseIP != "" {
+		listen = s.config.AdvertiseIP
+	}
+	lis, _, err := rpc.ListenWithPortRange(listen, s.config.ListenPort, s.config.ListenPort)
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %+v", err)
 	}
