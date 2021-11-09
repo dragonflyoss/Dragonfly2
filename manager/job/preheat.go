@@ -202,9 +202,6 @@ func (p *preheat) getLayers(ctx context.Context, url string, filter string, head
 }
 
 func (p *preheat) getManifests(ctx context.Context, url string, header http.Header) (*http.Response, error) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
