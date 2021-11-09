@@ -116,8 +116,12 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	// when Md5 is empty, try to get md5 from reader
 	if req.PieceMetaData.Md5 == "" {
+		t.Warnf("piece md5 not found in metadata, read from reader")
 		if get, ok := req.Reader.(digestutils.DigestReader); ok {
 			req.PieceMetaData.Md5 = get.Digest()
+			t.Infof("read md5 from reader, value: %s", req.PieceMetaData.Md5)
+		} else {
+			t.Warnf("reader is not a DigestReader")
 		}
 	}
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
@@ -275,7 +279,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	defer t.RUnlock()
 	t.touch()
 	if t.TotalPieces > 0 && req.StartNum >= t.TotalPieces {
-		logger.Errorf("invalid start num: %d", req.StartNum)
+		t.Errorf("invalid start num: %d", req.StartNum)
 		return nil, dferrors.ErrInvalidArgument
 	}
 	for i := int32(0); i < req.Limit; i++ {
@@ -316,88 +320,87 @@ func (t *localTaskStore) MarkReclaim() {
 		TaskID: t.TaskID,
 	})
 	t.reclaimMarked.Store(true)
-	logger.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
+	t.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
 }
 
 func (t *localTaskStore) Reclaim() error {
-	log := logger.With("gc", t.StoreStrategy, "task", t.TaskID)
-	log.Infof("start gc task data")
-	err := t.reclaimData(log)
+	t.Infof("start gc task data")
+	err := t.reclaimData()
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	// close and remove metadata
-	err = t.reclaimMeta(log)
+	err = t.reclaimMeta()
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
 	// remove task work metaDir
 	if err = os.Remove(t.dataDir); err != nil && !os.IsNotExist(err) {
-		log.Warnf("remove task data directory %q error: %s", t.dataDir, err)
+		t.Warnf("remove task data directory %q error: %s", t.dataDir, err)
 		return err
 	}
-	log.Infof("purged task work directory: %s", t.dataDir)
+	t.Infof("purged task work directory: %s", t.dataDir)
 
 	taskDir := path.Dir(t.dataDir)
 	if dirs, err := ioutil.ReadDir(taskDir); err != nil {
-		log.Warnf("stat task directory %q error: %s", taskDir, err)
+		t.Warnf("stat task directory %q error: %s", taskDir, err)
 	} else {
 		if len(dirs) == 0 {
 			if err := os.Remove(taskDir); err != nil {
-				log.Warnf("remove unused task directory %q error: %s", taskDir, err)
+				t.Warnf("remove unused task directory %q error: %s", taskDir, err)
 			}
 		} else {
-			log.Warnf("task directory %q is not empty", taskDir)
+			t.Warnf("task directory %q is not empty", taskDir)
 		}
 	}
 	return nil
 }
 
-func (t *localTaskStore) reclaimData(sLogger *logger.SugaredLoggerOnWith) error {
+func (t *localTaskStore) reclaimData() error {
 	// remove data
 	data := path.Join(t.dataDir, taskData)
 	stat, err := os.Lstat(data)
 	if err != nil {
-		sLogger.Errorf("stat task data %q error: %s", data, err)
+		t.Errorf("stat task data %q error: %s", data, err)
 		return err
 	}
-	// remove sym link cache file
+	// remove symbol link cache file
 	if stat.Mode()&os.ModeSymlink == os.ModeSymlink {
 		dest, err0 := os.Readlink(data)
 		if err0 == nil {
 			if err = os.Remove(dest); err != nil && !os.IsNotExist(err) {
-				sLogger.Warnf("remove symlink target file %s error: %s", dest, err)
+				t.Warnf("remove symlink target file %s error: %s", dest, err)
 			} else {
-				sLogger.Infof("remove data file %s", dest)
+				t.Infof("remove data file %s", dest)
 			}
 		}
 	} else { // remove cache file
 		if err = os.Remove(t.DataFilePath); err != nil && !os.IsNotExist(err) {
-			sLogger.Errorf("remove data file %s error: %s", data, err)
+			t.Errorf("remove data file %s error: %s", data, err)
 			return err
 		}
 	}
 	if err = os.Remove(data); err != nil && !os.IsNotExist(err) {
-		sLogger.Errorf("remove data file %s error: %s", data, err)
+		t.Errorf("remove data file %s error: %s", data, err)
 		return err
 	}
-	sLogger.Infof("purged task data: %s", data)
+	t.Infof("purged task data: %s", data)
 	return nil
 }
 
-func (t *localTaskStore) reclaimMeta(sLogger *logger.SugaredLoggerOnWith) error {
+func (t *localTaskStore) reclaimMeta() error {
 	if err := t.metadataFile.Close(); err != nil {
-		sLogger.Warnf("close task meta data %q error: %s", t.metadataFilePath, err)
+		t.Warnf("close task meta data %q error: %s", t.metadataFilePath, err)
 		return err
 	}
-	sLogger.Infof("start gc task metadata")
+	t.Infof("start gc task metadata")
 	if err := os.Remove(t.metadataFilePath); err != nil && !os.IsNotExist(err) {
-		sLogger.Warnf("remove task meta data %q error: %s", t.metadataFilePath, err)
+		t.Warnf("remove task meta data %q error: %s", t.metadataFilePath, err)
 		return err
 	}
-	sLogger.Infof("purged task mata data: %s", t.metadataFilePath)
+	t.Infof("purged task mata data: %s", t.metadataFilePath)
 	return nil
 }
 
@@ -414,7 +417,7 @@ func (t *localTaskStore) saveMetadata() error {
 	}
 	_, err = t.metadataFile.Write(data)
 	if err != nil {
-		logger.Errorf("save metadata error: %s", err)
+		t.Errorf("save metadata error: %s", err)
 	}
 	return err
 }

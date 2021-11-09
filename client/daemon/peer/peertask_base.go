@@ -463,7 +463,7 @@ loop:
 		if len(piecePacket.PieceMd5Sign) > 0 && len(pt.md5) == 0 {
 			pt.md5 = piecePacket.PieceMd5Sign
 			_ = pt.callback.Update(pt)
-			pt.Debugf("update md5 digest: %s", pt.md5)
+			pt.Debugf("update digest: %s", pt.md5)
 		}
 
 		// 3. dispatch piece request to all workers
