@@ -72,7 +72,7 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 			logger.Warnf("digest not match, desired: %s, actual: %s", dr.digest, digest)
 			return n, ErrDigestNotMatch
 		}
-		logger.Debugf("digests match: %s", digest)
+		logger.Debugf("digest match: %s", digest)
 	}
 	return n, err
 }

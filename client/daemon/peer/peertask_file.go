@@ -295,6 +295,12 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 
 func (pt *filePeerTask) finish() error {
 	var err error
+	if err = pt.callback.ValidateDigest(pt); err != nil {
+		pt.Errorf("validate digest error: %s", err)
+		pt.span.RecordError(err)
+		pt.cleanUnfinished()
+		return err
+	}
 	// send last progress
 	pt.once.Do(func() {
 		defer pt.recoverFromPanic()

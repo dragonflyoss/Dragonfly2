@@ -452,6 +452,12 @@ func (s *streamPeerTask) writeToPipe(firstPiece int32, pw *io.PipeWriter) {
 			for {
 				// all data wrote to local storage, and all data wrote to pipe write
 				if s.readyPieces.Settled() == desired {
+					if err = s.callback.ValidateDigest(s); err != nil {
+						s.span.RecordError(err)
+						s.Errorf("validate digest error: %s", err)
+						_ = pw.CloseWithError(err)
+						return
+					}
 					s.Debugf("all %d pieces wrote to pipe", desired)
 					pw.Close()
 					return

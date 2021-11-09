@@ -396,6 +396,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	pt.SetTotalPieces(maxPieceNum)
 	pt.SetContentLength(contentLength)
+	// TODO update and check md5
 	log.Infof("download from source ok")
 	return nil
 }

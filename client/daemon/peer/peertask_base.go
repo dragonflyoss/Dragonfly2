@@ -87,6 +87,7 @@ type peerTask struct {
 	peerID          string
 	taskID          string
 	totalPiece      int32
+	md5             string
 	contentLength   *atomic.Int64
 	completedLength *atomic.Int64
 	usedTraffic     *atomic.Int64
@@ -175,6 +176,14 @@ func (pt *peerTask) GetTotalPieces() int32 {
 
 func (pt *peerTask) SetTotalPieces(i int32) {
 	pt.setTotalPiecesFunc(i)
+}
+
+func (pt *peerTask) SetPieceMd5Sign(md5 string) {
+	pt.md5 = md5
+}
+
+func (pt *peerTask) GetPieceMd5Sign() string {
+	return pt.md5
 }
 
 func (pt *peerTask) Context() context.Context {
@@ -337,6 +346,8 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 	span.SetAttributes(config.AttributePiece.Int(int(pt.singlePiece.PieceInfo.PieceNum)))
 
 	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
+	pt.SetTotalPieces(1)
+	pt.SetPieceMd5Sign(pt.singlePiece.PieceInfo.PieceMd5)
 	if err := pt.callback.Init(pt); err != nil {
 		pt.failedReason = err.Error()
 		pt.failedCode = dfcodes.ClientError
@@ -446,6 +457,13 @@ loop:
 			pt.totalPiece = piecePacket.TotalPiece
 			_ = pt.callback.Update(pt)
 			pt.Debugf("update total piece count: %d", pt.totalPiece)
+		}
+
+		// update md5 digest
+		if len(piecePacket.PieceMd5Sign) > 0 && len(pt.md5) == 0 {
+			pt.md5 = piecePacket.PieceMd5Sign
+			_ = pt.callback.Update(pt)
+			pt.Debugf("update md5 digest: %s", pt.md5)
 		}
 
 		// 3. dispatch piece request to all workers
@@ -574,7 +592,8 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 
 func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceRequest, piecePacket *base.PiecePacket) {
 	for _, piece := range piecePacket.PieceInfos {
-		pt.Infof("get piece %d from %s/%s", piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid)
+		pt.Infof("get piece %d from %s/%s, md5: %s, start: %d, size: %d",
+			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
 		if !pt.requestedPieces.IsSet(piece.PieceNum) {
 			pt.requestedPieces.Set(piece.PieceNum)
 		}

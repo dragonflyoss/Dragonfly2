@@ -134,7 +134,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest)
 	if err != nil {
 		return nil, err
 	}

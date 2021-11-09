@@ -112,6 +112,20 @@ func (mr *MockTaskStorageDriverMockRecorder) UpdateTask(ctx, req interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTask", reflect.TypeOf((*MockTaskStorageDriver)(nil).UpdateTask), ctx, req)
 }
 
+// ValidateDigest mocks base method.
+func (m *MockTaskStorageDriver) ValidateDigest(ctx context.Context, req *storage.PeerTaskMetaData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateDigest", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateDigest indicates an expected call of ValidateDigest.
+func (mr *MockTaskStorageDriverMockRecorder) ValidateDigest(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateDigest", reflect.TypeOf((*MockTaskStorageDriver)(nil).ValidateDigest), ctx, req)
+}
+
 // WritePiece mocks base method.
 func (m *MockTaskStorageDriver) WritePiece(ctx context.Context, req *storage.WritePieceRequest) (int64, error) {
 	m.ctrl.T.Helper()
@@ -351,6 +365,20 @@ func (m *MockManager) UpdateTask(ctx context.Context, req *storage.UpdateTaskReq
 func (mr *MockManagerMockRecorder) UpdateTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTask", reflect.TypeOf((*MockManager)(nil).UpdateTask), ctx, req)
+}
+
+// ValidateDigest mocks base method.
+func (m *MockManager) ValidateDigest(ctx context.Context, req *storage.PeerTaskMetaData) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateDigest", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateDigest indicates an expected call of ValidateDigest.
+func (mr *MockManagerMockRecorder) ValidateDigest(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateDigest", reflect.TypeOf((*MockManager)(nil).ValidateDigest), ctx, req)
 }
 
 // WritePiece mocks base method.

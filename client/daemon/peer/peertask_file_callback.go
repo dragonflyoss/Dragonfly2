@@ -53,6 +53,7 @@ func (p *filePeerTaskCallback) Init(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
@@ -70,6 +71,7 @@ func (p *filePeerTaskCallback) Update(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("update task to storage manager failed: %s", err)
@@ -149,4 +151,19 @@ func (p *filePeerTaskCallback) Fail(pt Task, code base.Code, reason string) erro
 		pt.Log().Infof("step 3: report fail peer result ok")
 	}
 	return nil
+}
+
+func (p *filePeerTaskCallback) ValidateDigest(pt Task) error {
+	if !p.ptm.calculateDigest {
+		return nil
+	}
+	err := p.ptm.storageManager.ValidateDigest(p.pt.ctx,
+		&storage.PeerTaskMetaData{
+			PeerID: pt.GetPeerID(),
+			TaskID: pt.GetTaskID(),
+		})
+	if err != nil {
+		pt.Log().Errorf("%s", err)
+	}
+	return err
 }

@@ -140,6 +140,30 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	if t.TotalPieces == 0 {
 		t.TotalPieces = req.TotalPieces
 	}
+	if len(t.PieceMd5Sign) == 0 {
+		t.PieceMd5Sign = req.PieceMd5Sign
+	}
+	return nil
+}
+
+func (t *localTaskStore) ValidateDigest(ctx context.Context, req *PeerTaskMetaData) error {
+	t.Lock()
+	defer t.Unlock()
+	if t.TotalPieces <= 0 {
+		t.Errorf("total piece count not set when validate digest")
+		return ErrPieceCountNotSet
+	}
+
+	var pieceDigests []string
+	for i := int32(0); i < t.TotalPieces; i++ {
+		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
+	}
+
+	digest := digestutils.Sha256(pieceDigests...)
+	if digest != t.PieceMd5Sign {
+		t.Errorf("invalid digest, desired: %s, actual: %s", t.PieceMd5Sign, digest)
+		return ErrInvalidDigest
+	}
 	return nil
 }
 
