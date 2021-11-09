@@ -50,6 +50,9 @@ type localTaskStore struct {
 	lastAccess    atomic.Int64
 	reclaimMarked atomic.Bool
 	gcCallback    func(CommonTaskRequest)
+
+	// when digest not match, invalid will be set
+	invalid atomic.Bool
 }
 
 var _ TaskStorageDriver = (*localTaskStore)(nil)
@@ -147,14 +150,25 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	if len(t.PieceMd5Sign) == 0 {
 		t.PieceMd5Sign = req.PieceMd5Sign
 	}
+	if req.GenPieceDigest {
+		var pieceDigests []string
+		for i := int32(0); i < t.TotalPieces; i++ {
+			pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
+		}
+
+		digest := digestutils.Sha256(pieceDigests...)
+		t.PieceMd5Sign = digest
+		t.Infof("generated digest: %s", digest)
+	}
 	return nil
 }
 
-func (t *localTaskStore) ValidateDigest(ctx context.Context, req *PeerTaskMetaData) error {
+func (t *localTaskStore) ValidateDigest(*PeerTaskMetaData) error {
 	t.Lock()
 	defer t.Unlock()
 	if t.TotalPieces <= 0 {
 		t.Errorf("total piece count not set when validate digest")
+		t.invalid.Store(true)
 		return ErrPieceCountNotSet
 	}
 
@@ -171,8 +185,17 @@ func (t *localTaskStore) ValidateDigest(ctx context.Context, req *PeerTaskMetaDa
 	return nil
 }
 
+func (t *localTaskStore) IsInvalid(*PeerTaskMetaData) (bool, error) {
+	return t.invalid.Load(), nil
+}
+
 // ReadPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get pieces")
+		return nil, nil, ErrInvalidDigest
+	}
+
 	t.touch()
 	file, err := os.Open(t.DataFilePath)
 	if err != nil {
@@ -203,6 +226,11 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 }
 
 func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaData) (io.ReadCloser, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to read all pieces")
+		return nil, ErrInvalidDigest
+	}
+
 	t.touch()
 	file, err := os.Open(t.DataFilePath)
 	if err != nil {
@@ -274,6 +302,11 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 }
 
 func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get pieces")
+		return nil, ErrInvalidDigest
+	}
+
 	var pieces []*base.PieceInfo
 	t.RLock()
 	defer t.RUnlock()

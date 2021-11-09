@@ -363,6 +363,7 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 		DstPid:  pt.singlePiece.DstPid,
 		DstAddr: pt.singlePiece.DstAddr,
 		piece:   pt.singlePiece.PieceInfo,
+		log:     pt.Log(),
 	}
 	if pt.pieceManager.DownloadPiece(ctx, pt, request) {
 		pt.Infof("single piece download success")
@@ -602,6 +603,7 @@ func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceReque
 			DstPid:  piecePacket.DstPid,
 			DstAddr: piecePacket.DstAddr,
 			piece:   piece,
+			log:     pt.Log(),
 		}
 		select {
 		case pieceRequestCh <- req:

@@ -256,7 +256,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		}
 	}
 	if pm.calculateDigest {
-		reader = digestutils.NewDigestReader(reader)
+		pt.Log().Debugf("calculate digest")
+		reader = digestutils.NewDigestReader(pt.Log(), reader)
 	}
 	var n int64
 	n, err = pm.storageManager.WritePiece(
@@ -338,7 +339,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 
 	// calc total md5
 	if pm.calculateDigest && request.UrlMeta.Digest != "" {
-		reader = digestutils.NewDigestReader(body, request.UrlMeta.Digest)
+		reader = digestutils.NewDigestReader(pt.Log(), body, request.UrlMeta.Digest)
 	}
 
 	// 2. save to storage
@@ -364,14 +365,14 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 							PeerID: pt.GetPeerID(),
 							TaskID: pt.GetTaskID(),
 						},
-						ContentLength: contentLength,
+						ContentLength:  contentLength,
+						GenPieceDigest: true,
 					})
 				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
 		}
 		//unreachable code
-		//return nil
 	}
 
 	maxPieceNum := int32(math.Ceil(float64(contentLength) / float64(pieceSize)))
@@ -396,7 +397,16 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	pt.SetTotalPieces(maxPieceNum)
 	pt.SetContentLength(contentLength)
-	// TODO update and check md5
+	pm.storageManager.UpdateTask(ctx,
+		&storage.UpdateTaskRequest{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerID: pt.GetPeerID(),
+				TaskID: pt.GetTaskID(),
+			},
+			ContentLength:  contentLength,
+			TotalPieces:    maxPieceNum,
+			GenPieceDigest: true,
+		})
 	log.Infof("download from source ok")
 	return nil
 }

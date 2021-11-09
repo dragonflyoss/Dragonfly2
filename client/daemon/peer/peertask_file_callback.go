@@ -157,13 +157,15 @@ func (p *filePeerTaskCallback) ValidateDigest(pt Task) error {
 	if !p.ptm.calculateDigest {
 		return nil
 	}
-	err := p.ptm.storageManager.ValidateDigest(p.pt.ctx,
+	err := p.ptm.storageManager.ValidateDigest(
 		&storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		})
 	if err != nil {
 		pt.Log().Errorf("%s", err)
+	} else {
+		pt.Log().Debugf("validated digest")
 	}
 	return err
 }

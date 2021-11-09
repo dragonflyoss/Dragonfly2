@@ -61,7 +61,9 @@ type TaskStorageDriver interface {
 	// Store stores task data to the target path
 	Store(ctx context.Context, req *StoreRequest) error
 
-	ValidateDigest(ctx context.Context, req *PeerTaskMetaData) error
+	ValidateDigest(req *PeerTaskMetaData) error
+
+	IsInvalid(req *PeerTaskMetaData) (bool, error)
 }
 
 // Reclaimer stands storage reclaimer
@@ -394,6 +396,9 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 		return nil
 	}
 	for _, t := range ts {
+		if t.invalid.Load() {
+			continue
+		}
 		// touch it before marking reclaim
 		t.touch()
 		// already marked, skip
@@ -435,7 +440,7 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 	s.indexTask2PeerTask[taskID] = remain
 }
 
-func (s *storageManager) ValidateDigest(ctx context.Context, req *PeerTaskMetaData) error {
+func (s *storageManager) ValidateDigest(req *PeerTaskMetaData) error {
 	t, ok := s.LoadTask(
 		PeerTaskMetaData{
 			TaskID: req.TaskID,
@@ -444,7 +449,19 @@ func (s *storageManager) ValidateDigest(ctx context.Context, req *PeerTaskMetaDa
 	if !ok {
 		return ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).ValidateDigest(ctx, req)
+	return t.(TaskStorageDriver).ValidateDigest(req)
+}
+
+func (s *storageManager) IsInvalid(req *PeerTaskMetaData) (bool, error) {
+	t, ok := s.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return false, ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).IsInvalid(req)
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {

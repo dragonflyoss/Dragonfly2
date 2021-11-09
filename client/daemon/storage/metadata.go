@@ -86,6 +86,8 @@ type UpdateTaskRequest struct {
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string
+	// GenPieceDigest is used when back source
+	GenPieceDigest bool
 }
 
 type ReusePeerTask = UpdateTaskRequest
