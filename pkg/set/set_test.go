@@ -63,14 +63,14 @@ func TestSetAdd(t *testing.T) {
 }
 
 func TestSetAdd_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(4)
+	runtime.GOMAXPROCS(2)
 
 	s := NewSet()
 	nums := rand.Perm(N)
 
 	var wg sync.WaitGroup
 	wg.Add(len(nums))
-	for i := 0; i < len(Perm); i++ {
+	for i := 0; i < len(nums); i++ {
 		go func(i int) {
 			s.Add(i)
 			wg.Done()
@@ -78,9 +78,264 @@ func TestSetAdd_Concurrent(t *testing.T) {
 	}
 
 	wg.Wait()
-	for _, n := range Perm {
+	for _, n := range nums {
 		if !s.Contains(n) {
-			t.Errorf("Set is missing element: %v", i)
+			t.Errorf("Set is missing element: %v", n)
 		}
+	}
+}
+
+func TestSetDelete(t *testing.T) {
+	tests := []struct {
+		name   string
+		value  interface{}
+		expect func(t *testing.T, s Set, value interface{})
+	}{
+		{
+			name:  "delete value succeeded",
+			value: "foo",
+			expect: func(t *testing.T, s Set, value interface{}) {
+				assert := assert.New(t)
+				s.Delete(value)
+				assert.Equal(s.Len(), 0)
+			},
+		},
+		{
+			name:  "delete value does not exist",
+			value: "foo",
+			expect: func(t *testing.T, s Set, _ interface{}) {
+				assert := assert.New(t)
+				s.Delete("bar")
+				assert.Equal(s.Len(), 1)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSet()
+			s.Add(tc.value)
+			tc.expect(t, s, tc.value)
+		})
+	}
+}
+
+func TestSetDelete_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	s := NewSet()
+	nums := rand.Perm(N)
+	for _, v := range nums {
+		s.Add(v)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(nums))
+	for _, v := range nums {
+		go func(i int) {
+			s.Delete(i)
+			wg.Done()
+		}(v)
+	}
+	wg.Wait()
+
+	if s.Len() != 0 {
+		t.Errorf("Expected cardinality 0; got %v", s.Len())
+	}
+}
+
+func TestSetContains(t *testing.T) {
+	tests := []struct {
+		name   string
+		value  interface{}
+		expect func(t *testing.T, s Set, value interface{})
+	}{
+		{
+			name:  "contains value succeeded",
+			value: "foo",
+			expect: func(t *testing.T, s Set, value interface{}) {
+				assert := assert.New(t)
+				assert.Equal(s.Contains(value), true)
+			},
+		},
+		{
+			name:  "contains value does not exist",
+			value: "foo",
+			expect: func(t *testing.T, s Set, _ interface{}) {
+				assert := assert.New(t)
+				assert.Equal(s.Contains("bar"), false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSet()
+			s.Add(tc.value)
+			tc.expect(t, s, tc.value)
+		})
+	}
+}
+
+func TestSetContains_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	s := NewSet()
+	nums := rand.Perm(N)
+	interfaces := make([]interface{}, 0)
+	for _, v := range nums {
+		s.Add(v)
+		interfaces = append(interfaces, v)
+	}
+
+	var wg sync.WaitGroup
+	for range nums {
+		wg.Add(1)
+		go func() {
+			s.Contains(interfaces...)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+}
+
+func TestSetLen(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, s Set)
+	}{
+		{
+			name: "get length succeeded",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				s.Add("foo")
+				assert.Equal(s.Len(), 1)
+			},
+		},
+		{
+			name: "get empty set length",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				assert.Equal(s.Len(), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSet()
+			tc.expect(t, s)
+		})
+	}
+}
+
+func TestSetLen_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	s := NewSet()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		elems := s.Len()
+		for i := 0; i < N; i++ {
+			newElems := s.Len()
+			if newElems < elems {
+				t.Errorf("Len shrunk from %v to %v", elems, newElems)
+			}
+		}
+		wg.Done()
+	}()
+
+	for i := 0; i < N; i++ {
+		s.Add(rand.Int())
+	}
+	wg.Wait()
+}
+
+func TestSetValues(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, s Set)
+	}{
+		{
+			name: "get values succeeded",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				s.Add("foo")
+				assert.Equal(s.Values(), []interface{}{"foo"})
+			},
+		},
+		{
+			name: "get empty values",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				assert.Equal(s.Values(), []interface{}{})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSet()
+			tc.expect(t, s)
+		})
+	}
+}
+
+func TestSetValues_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	s := NewSet()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		elems := s.Values()
+		for i := 0; i < N; i++ {
+			newElems := s.Values()
+			if len(newElems) < len(elems) {
+				t.Errorf("Values shrunk from %v to %v", elems, newElems)
+			}
+		}
+		wg.Done()
+	}()
+
+	for i := 0; i < N; i++ {
+		s.Add(rand.Int())
+	}
+	wg.Wait()
+}
+
+func TestSetRange(t *testing.T) {
+	tests := []struct {
+		name   string
+		value  interface{}
+		expect func(t *testing.T, s Set, value interface{})
+	}{
+		{
+			name:  "contains value succeeded",
+			value: "foo",
+			expect: func(t *testing.T, s Set, value interface{}) {
+				assert := assert.New(t)
+				assert.Equal(s.Contains(value), true)
+			},
+		},
+		{
+			name:  "contains value does not exist",
+			value: "foo",
+			expect: func(t *testing.T, s Set, _ interface{}) {
+				assert := assert.New(t)
+				assert.Equal(s.Contains("bar"), false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSet()
+			s.Add(tc.value)
+			tc.expect(t, s, tc.value)
+		})
 	}
 }
