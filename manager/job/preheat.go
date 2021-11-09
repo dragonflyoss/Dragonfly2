@@ -18,6 +18,7 @@ package job
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -48,6 +49,10 @@ type PreheatType string
 const (
 	PreheatImageType PreheatType = "image"
 	PreheatFileType  PreheatType = "file"
+)
+
+const (
+	timeout = 1 * time.Minute
 )
 
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
@@ -205,7 +210,14 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	req.Header = header
 	req.Header.Add("Accept", schema2.MediaTypeManifest)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +267,14 @@ func getAuthToken(ctx context.Context, header http.Header) (token string) {
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}
