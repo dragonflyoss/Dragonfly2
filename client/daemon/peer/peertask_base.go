@@ -784,7 +784,7 @@ retry:
 	})
 	if perr != nil {
 		span.RecordError(perr)
-		pt.Errorf("send piece result error: %s, code: %d", err, code)
+		pt.Errorf("send piece result error: %s, code to send: %d", err, code)
 	}
 
 	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
@@ -829,7 +829,7 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			})
 			if er != nil {
 				span.RecordError(er)
-				pt.Errorf("send piece result error: %s, code: %d", peer.PeerId, er)
+				pt.Errorf("send piece result with dfcodes.ClientWaitPieceReady error: %s", er)
 			}
 			// fast way to exit retry
 			lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)

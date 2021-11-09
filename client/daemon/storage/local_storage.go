@@ -69,6 +69,8 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	// piece already exists
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
+		// discard data for back source
+		io.Copy(ioutil.Discard, req.Reader)
 		t.RUnlock()
 		return piece.Range.Length, nil
 	}
@@ -117,7 +119,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 			return n, ErrShortRead
 		}
 	}
-	// when Md5 is empty, try to get md5 from reader
+	// when Md5 is empty, try to get md5 from reader, it's useful for back source
 	if req.PieceMetaData.Md5 == "" {
 		t.Warnf("piece md5 not found in metadata, read from reader")
 		if get, ok := req.Reader.(digestutils.DigestReader); ok {
