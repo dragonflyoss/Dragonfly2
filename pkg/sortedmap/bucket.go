@@ -34,12 +34,21 @@ type bucket struct {
 }
 
 func NewBucket(len uint) Bucket {
+	data := make([]set.Set, len)
+	for i := range data {
+		data[i] = set.New()
+	}
+
 	return &bucket{
-		data: make([]set.Set, len),
+		data: data,
 	}
 }
 
 func (b *bucket) Add(i uint, v interface{}) bool {
+	if b.Len() <= i {
+		return false
+	}
+
 	if ok := b.data[i].Add(v); !ok {
 		return false
 	}
@@ -48,10 +57,18 @@ func (b *bucket) Add(i uint, v interface{}) bool {
 }
 
 func (b *bucket) Delete(i uint, v interface{}) {
+	if b.Len() <= i {
+		return
+	}
+
 	b.data[i].Delete(v)
 }
 
 func (b *bucket) Contains(i uint, v interface{}) bool {
+	if b.Len() <= i {
+		return false
+	}
+
 	if ok := b.data[i].Contains(v); !ok {
 		return false
 	}

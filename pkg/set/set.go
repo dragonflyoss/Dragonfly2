@@ -16,7 +16,9 @@
 
 package set
 
-import "sync"
+import (
+	"sync"
+)
 
 type Set interface {
 	Values() []interface{}
@@ -32,7 +34,7 @@ type set struct {
 	data map[interface{}]struct{}
 }
 
-func NewSet() Set {
+func New() Set {
 	return &set{
 		mu:   &sync.RWMutex{},
 		data: make(map[interface{}]struct{}),
