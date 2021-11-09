@@ -37,7 +37,7 @@ type set struct {
 func New() Set {
 	return &set{
 		mu:   &sync.RWMutex{},
-		data: map[interface{}]struct{}{},
+		data: make(map[interface{}]struct{}),
 	}
 }
 

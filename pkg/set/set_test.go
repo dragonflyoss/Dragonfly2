@@ -279,7 +279,7 @@ func TestSetValues(t *testing.T) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
-				assert.Equal(s.Values(), []interface{}{"foo", "bar"})
+				assert.EqualValues(s.Values(), []interface{}{"bar", "foo"})
 			},
 		},
 	}

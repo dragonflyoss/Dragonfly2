@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/sorted_map_mock.go -package mocks d7y.io/dragonfly/v2/pkg/sortedmap Item
+
 package sortedmap
 
 import (
@@ -27,6 +29,10 @@ type Item interface {
 
 type SortedMap interface {
 	Add(string, Item) error
+	Update(string, Item) error
+	Delete(string) error
+	Range(func(string, Item) bool)
+	ReverseRange(func(string, Item) bool)
 }
 
 type sortedMap struct {
@@ -46,7 +52,7 @@ func New(len uint) SortedMap {
 }
 
 func (s *sortedMap) Add(key string, item Item) error {
-	if item.SortedValue() > s.len {
+	if item.SortedValue() > s.len-1 {
 		return errors.New("sorted value is illegal")
 	}
 
@@ -70,7 +76,7 @@ func (s *sortedMap) Add(key string, item Item) error {
 }
 
 func (s *sortedMap) Update(key string, item Item) error {
-	if item.SortedValue() > s.len || item.SortedValue() < 0 {
+	if item.SortedValue() > s.len-1 {
 		return errors.New("sorted value is illegal")
 	}
 
@@ -104,13 +110,13 @@ func (s *sortedMap) Delete(key string) error {
 	return nil
 }
 
-func (s *sortedMap) Range(fn func(Item) bool) {
+func (s *sortedMap) Range(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	s.bucket.Range(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
-				if fn(item) {
+				if fn(k, item) {
 					return true
 				}
 			}
@@ -120,13 +126,13 @@ func (s *sortedMap) Range(fn func(Item) bool) {
 	})
 }
 
-func (s *sortedMap) ReverseRange(fn func(Item) bool) {
+func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	s.bucket.ReverseRange(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
-				if fn(item) {
+				if fn(k, item) {
 					return true
 				}
 			}

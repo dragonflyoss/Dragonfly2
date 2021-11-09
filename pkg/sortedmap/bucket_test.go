@@ -25,8 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const N = 1000
-
 func TestBucketAdd(t *testing.T) {
 	tests := []struct {
 		name   string

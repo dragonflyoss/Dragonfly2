@@ -15,3 +15,314 @@
  */
 
 package sortedmap
+
+import (
+	"fmt"
+	"math/rand"
+	"runtime"
+	"sync"
+	"testing"
+
+	"d7y.io/dragonfly/v2/pkg/sortedmap/mocks"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
+
+const N = 1000
+
+func TestSortedMapAdd(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		len    uint
+		mock   func(m *mocks.MockItemMockRecorder)
+		expect func(t *testing.T, s SortedMap, key string, item Item)
+	}{
+		{
+			name: "add value succeeded",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(2)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.NoError(s.Add(key, item))
+			},
+		},
+		{
+			name: "item sorted value exceeds length",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(1)).Times(1)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.EqualError(s.Add(key, item), "sorted value is illegal")
+			},
+		},
+		{
+			name: "add multi values",
+			key:  "foo",
+			len:  2,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(1)).Times(4)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.NoError(s.Add(key, item))
+				assert.NoError(s.Add("bar", item))
+			},
+		},
+		{
+			name: "add same values",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(5)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.NoError(s.Add(key, item))
+				assert.NoError(s.Add(key, item))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockItem := mocks.NewMockItem(ctl)
+			tc.mock(mockItem.EXPECT())
+			tc.expect(t, New(tc.len), tc.key, mockItem)
+		})
+	}
+}
+
+func TestSortedMapAdd_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockItem := mocks.NewMockItem(ctl)
+	mockItem.EXPECT().SortedValue().DoAndReturn(func() uint { return uint(rand.Intn(N)) }).AnyTimes()
+
+	s := New(N)
+	nums := rand.Perm(N)
+
+	var wg sync.WaitGroup
+	wg.Add(len(nums))
+	for i := 0; i < len(nums); i++ {
+		go func(i int) {
+			if err := s.Add(fmt.Sprint(i), mockItem); err != nil {
+				t.Error(err)
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	count := 0
+	s.Range(func(key string, item Item) bool {
+		count++
+		return false
+	})
+	if count != len(nums) {
+		t.Errorf("SortedMap is missing element")
+	}
+}
+
+func TestSortedMapUpdate(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		len    uint
+		mock   func(m *mocks.MockItemMockRecorder)
+		expect func(t *testing.T, s SortedMap, key string, item Item)
+	}{
+		{
+			name: "update value succeeded",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(5)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.NoError(s.Update(key, item))
+			},
+		},
+		{
+			name: "item sorted value exceeds length",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				gomock.InOrder(
+					m.SortedValue().Return(uint(0)).Times(2),
+					m.SortedValue().Return(uint(1)).Times(1),
+				)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.EqualError(s.Add(key, item), "sorted value is illegal")
+			},
+		},
+		{
+			name: "add key dost not exits",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(3)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.EqualError(s.Update("bar", item), "key does not exist")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockItem := mocks.NewMockItem(ctl)
+			tc.mock(mockItem.EXPECT())
+			s := New(tc.len)
+			s.Add(tc.key, mockItem)
+			tc.expect(t, s, tc.key, mockItem)
+		})
+	}
+}
+
+func TestSortedMapUpdate_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockItem := mocks.NewMockItem(ctl)
+	mockItem.EXPECT().SortedValue().AnyTimes()
+
+	s := New(N)
+	nums := rand.Perm(N)
+
+	for i := 0; i < len(nums); i++ {
+		s.Add(fmt.Sprint(i), mockItem)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(nums))
+	for i := 0; i < len(nums); i++ {
+		go func(v int) {
+			if err := s.Update(fmt.Sprint(v), mockItem); err != nil {
+				t.Error(err)
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	count := 0
+	s.Range(func(key string, item Item) bool {
+		count++
+		return false
+	})
+	if count != len(nums) {
+		fmt.Println(count)
+		fmt.Println(len(nums))
+		t.Errorf("SortedMap is missing element")
+	}
+}
+
+func TestSortedMapDelete(t *testing.T) {
+	tests := []struct {
+		name   string
+		key    string
+		len    uint
+		mock   func(m *mocks.MockItemMockRecorder)
+		expect func(t *testing.T, s SortedMap, key string, item Item)
+	}{
+		{
+			name: "delete value succeeded",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(3)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.NoError(s.Delete(key))
+				count := 0
+				s.Range(func(key string, item Item) bool {
+					count++
+					return false
+				})
+
+				assert.Equal(count, 0)
+			},
+		},
+		{
+			name: "delete key dost not exits",
+			key:  "foo",
+			len:  1,
+			mock: func(m *mocks.MockItemMockRecorder) {
+				m.SortedValue().Return(uint(0)).Times(2)
+			},
+			expect: func(t *testing.T, s SortedMap, key string, item Item) {
+				assert := assert.New(t)
+				assert.EqualError(s.Delete("bar"), "key does not exist")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			mockItem := mocks.NewMockItem(ctl)
+			tc.mock(mockItem.EXPECT())
+			s := New(tc.len)
+			s.Add(tc.key, mockItem)
+			tc.expect(t, s, tc.key, mockItem)
+		})
+	}
+}
+
+func TestSortedMapDelete_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockItem := mocks.NewMockItem(ctl)
+	mockItem.EXPECT().SortedValue().DoAndReturn(func() uint { return uint(rand.Intn(N)) }).AnyTimes()
+
+	s := New(N)
+	nums := rand.Perm(N)
+
+	for i := 0; i < len(nums); i++ {
+		s.Add(fmt.Sprint(i), mockItem)
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(len(nums))
+	for i := 0; i < len(nums); i++ {
+		go func(i int) {
+			if err := s.Delete(fmt.Sprint(i)); err != nil {
+				t.Error(err)
+			}
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	count := 0
+	s.Range(func(key string, item Item) bool {
+		count++
+		return false
+	})
+	if count != 0 {
+		t.Errorf("SortedMap is redundant elements")
+	}
+}
