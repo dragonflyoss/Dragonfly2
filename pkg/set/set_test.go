@@ -273,6 +273,15 @@ func TestSetValues(t *testing.T) {
 				assert.Equal(s.Values(), []interface{}(nil))
 			},
 		},
+		{
+			name: "get multi values succeeded",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				s.Add("foo")
+				s.Add("bar")
+				assert.Equal(s.Values(), []interface{}{"foo", "bar"})
+			},
+		},
 	}
 
 	for _, tc := range tests {

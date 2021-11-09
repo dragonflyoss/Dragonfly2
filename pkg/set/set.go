@@ -37,7 +37,7 @@ type set struct {
 func New() Set {
 	return &set{
 		mu:   &sync.RWMutex{},
-		data: make(map[interface{}]struct{}),
+		data: map[interface{}]struct{}{},
 	}
 }
 
@@ -45,7 +45,7 @@ func (s *set) Values() []interface{} {
 	var result []interface{}
 	s.Range(func(v interface{}) bool {
 		result = append(result, v)
-		return true
+		return false
 	})
 
 	return result

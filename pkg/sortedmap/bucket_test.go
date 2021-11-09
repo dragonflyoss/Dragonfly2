@@ -301,9 +301,9 @@ func TestBucketRange(t *testing.T) {
 				b.Add(0, "foo")
 				b.Add(0, "bar")
 				b.Range(func(v interface{}) bool {
-					assert.Contains([]string{"foo", "bar"}, "foo")
+					assert.Contains([]string{"foo", "bar"}, v)
 					count++
-					return true
+					return false
 				})
 				assert.Equal(count, 2)
 			},
@@ -401,7 +401,7 @@ func TestBucketReverseRange(t *testing.T) {
 				b.ReverseRange(func(v interface{}) bool {
 					assert.Contains([]string{"foo", "bar"}, "foo")
 					count++
-					return true
+					return false
 				})
 				assert.Equal(count, 2)
 			},
@@ -435,7 +435,7 @@ func TestBucketReverseRange_Concurrent(t *testing.T) {
 			j++
 			return false
 		})
-		if i < j {
+		if j < i {
 			t.Errorf("Values shrunk from %v to %v", i, j)
 		}
 		wg.Done()

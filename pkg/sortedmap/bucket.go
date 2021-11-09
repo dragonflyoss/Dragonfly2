@@ -93,8 +93,8 @@ func (b *bucket) Range(fn func(interface{}) bool) {
 }
 
 func (b *bucket) ReverseRange(fn func(interface{}) bool) {
-	for i := b.Len() - 1; i >= 0; i-- {
-		s := b.data[i]
+	for i := range b.data {
+		s := b.data[b.Len()-uint(1+i)]
 		if s.Len() > 0 {
 			for _, v := range s.Values() {
 				if fn(v) {
