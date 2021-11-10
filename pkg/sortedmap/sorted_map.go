@@ -117,13 +117,13 @@ func (s *sortedMap) Range(fn func(key string, item Item) bool) {
 	s.bucket.Range(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
-				if fn(k, item) {
-					return true
+				if !fn(k, item) {
+					return false
 				}
 			}
 		}
 
-		return false
+		return true
 	})
 }
 
@@ -133,13 +133,13 @@ func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 	s.bucket.ReverseRange(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
-				if fn(k, item) {
-					return true
+				if !fn(k, item) {
+					return false
 				}
 			}
 		}
 
-		return false
+		return true
 	})
 }
 

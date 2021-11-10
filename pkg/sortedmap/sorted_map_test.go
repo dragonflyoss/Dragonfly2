@@ -127,7 +127,7 @@ func TestSortedMapAdd_Concurrent(t *testing.T) {
 	count := 0
 	s.Range(func(key string, item Item) bool {
 		count++
-		return false
+		return true
 	})
 	if count != len(nums) {
 		t.Errorf("SortedMap is missing element")
@@ -226,7 +226,7 @@ func TestSortedMapUpdate_Concurrent(t *testing.T) {
 	count := 0
 	s.Range(func(key string, item Item) bool {
 		count++
-		return false
+		return true
 	})
 	if count != len(nums) {
 		t.Errorf("SortedMap is missing element")
@@ -254,7 +254,7 @@ func TestSortedMapDelete(t *testing.T) {
 				count := 0
 				s.Range(func(key string, item Item) bool {
 					count++
-					return false
+					return true
 				})
 
 				assert.Equal(count, 0)
@@ -317,7 +317,7 @@ func TestSortedMapDelete_Concurrent(t *testing.T) {
 	count := 0
 	s.Range(func(key string, item Item) bool {
 		count++
-		return false
+		return true
 	})
 	if count != 0 {
 		t.Errorf("SortedMap is redundant elements")
@@ -363,7 +363,7 @@ func TestSortedMapRange(t *testing.T) {
 				s.Range(func(key string, item Item) bool {
 					assert.Equal(key, "foo")
 					assert.Equal(item.SortedValue(), uint(1))
-					return true
+					return false
 				})
 			},
 		},
@@ -392,7 +392,7 @@ func TestSortedMapRange(t *testing.T) {
 						assert.Equal(item.SortedValue(), uint(1))
 					}
 					count++
-					return false
+					return true
 				})
 				assert.Equal(count, 2)
 			},
@@ -420,7 +420,7 @@ func TestSortedMapRange(t *testing.T) {
 						assert.Equal("baz", key)
 					}
 					count++
-					return false
+					return true
 				})
 				assert.Equal(count, 3)
 			},
@@ -456,13 +456,13 @@ func TestSortedMapRange_Concurrent(t *testing.T) {
 		i := 0
 		s.Range(func(key string, item Item) bool {
 			i++
-			return false
+			return true
 		})
 
 		j := 0
 		s.Range(func(key string, item Item) bool {
 			j++
-			return false
+			return true
 		})
 		if j < i {
 			t.Errorf("Values shrunk from %v to %v", i, j)
@@ -495,7 +495,7 @@ func TestSortedMapReverseRange(t *testing.T) {
 				s.ReverseRange(func(key string, item Item) bool {
 					assert.Equal(key, "foo")
 					assert.Equal(item.SortedValue(), uint(0))
-					return false
+					return true
 				})
 			},
 		},
@@ -514,7 +514,7 @@ func TestSortedMapReverseRange(t *testing.T) {
 				s.Add("bar", item)
 				s.ReverseRange(func(key string, item Item) bool {
 					assert.Equal(key, "bar")
-					return true
+					return false
 				})
 			},
 		},
@@ -539,7 +539,7 @@ func TestSortedMapReverseRange(t *testing.T) {
 						assert.Equal(key, "foo")
 					}
 					count++
-					return false
+					return true
 				})
 				assert.Equal(count, 2)
 			},
@@ -567,7 +567,7 @@ func TestSortedMapReverseRange(t *testing.T) {
 						assert.Contains([]string{"foo", "bar"}, key)
 					}
 					count++
-					return false
+					return true
 				})
 				assert.Equal(count, 3)
 			},
@@ -603,13 +603,13 @@ func TestSortedMapReverseRange_Concurrent(t *testing.T) {
 		i := 0
 		s.ReverseRange(func(key string, item Item) bool {
 			i++
-			return false
+			return true
 		})
 
 		j := 0
 		s.ReverseRange(func(key string, item Item) bool {
 			j++
-			return false
+			return true
 		})
 		if j < i {
 			t.Errorf("Values shrunk from %v to %v", i, j)

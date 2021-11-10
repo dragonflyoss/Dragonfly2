@@ -279,7 +279,8 @@ func TestSetValues(t *testing.T) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
-				assert.EqualValues(s.Values(), []interface{}{"bar", "foo"})
+				assert.Contains(s.Values(), "bar")
+				assert.Contains(s.Values(), "foo")
 			},
 		},
 	}
@@ -328,7 +329,7 @@ func TestSetRange(t *testing.T) {
 				s.Add("foo")
 				s.Range(func(v interface{}) bool {
 					assert.Equal(v, "foo")
-					return false
+					return true
 				})
 			},
 		},
@@ -340,7 +341,7 @@ func TestSetRange(t *testing.T) {
 				s.Add("bar")
 				s.Range(func(v interface{}) bool {
 					assert.Equal(s.Contains(v), true)
-					return true
+					return false
 				})
 			},
 		},
@@ -366,7 +367,7 @@ func TestSetRange_Concurrent(t *testing.T) {
 		i := 0
 		s.Range(func(v interface{}) bool {
 			i++
-			return false
+			return true
 		})
 		if i < len(elems) {
 			t.Errorf("Values shrunk from %v to %v", elems, i)

@@ -45,7 +45,7 @@ func (s *set) Values() []interface{} {
 	var result []interface{}
 	s.Range(func(v interface{}) bool {
 		result = append(result, v)
-		return false
+		return true
 	})
 
 	return result
@@ -94,7 +94,7 @@ func (s *set) Range(fn func(interface{}) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for v := range s.data {
-		if fn(v) {
+		if !fn(v) {
 			break
 		}
 	}
