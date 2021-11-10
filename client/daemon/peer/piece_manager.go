@@ -96,7 +96,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 		if success {
 			pm.pushSuccessResult(pt, request.DstPid, request.piece, start, end)
 		} else {
-			pm.pushFailResult(pt, request.DstPid, request.piece, start, end, err)
+			pm.pushFailResult(pt, request.DstPid, request.piece, start, end, err, false)
 		}
 		rspan.End()
 	}()
@@ -183,7 +183,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *b
 	}
 }
 
-func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error) {
+func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error, notRetry bool) {
 	err = peerTask.ReportPieceResult(
 		&pieceTaskResult{
 			piece: piece,
@@ -199,7 +199,8 @@ func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base
 				HostLoad:      nil,
 				FinishedCount: 0, // update by peer task
 			},
-			err: err,
+			err:      err,
+			notRetry: notRetry,
 		})
 	if err != nil {
 		peerTask.Log().Errorf("report piece task error: %v", err)
@@ -245,7 +246,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 					PieceMd5:    "",
 					PieceOffset: pieceOffset,
 					PieceStyle:  0,
-				}, start, end, err)
+				}, start, end, err, true)
 		}
 	}()
 
@@ -387,7 +388,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		log.Debugf("download piece %d", pieceNum)
 		n, er := pm.processPieceFromSource(pt, reader, contentLength, pieceNum, offset, size)
 		if er != nil {
-			log.Errorf("download piece %d error: %s", pieceNum, err)
+			log.Errorf("download piece %d error: %s", pieceNum, er)
 			return er
 		}
 		if n != int64(size) {

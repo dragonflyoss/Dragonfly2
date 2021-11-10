@@ -135,6 +135,7 @@ type peerTask struct {
 type pieceTaskResult struct {
 	piece       *base.PieceInfo
 	pieceResult *scheduler.PieceResult
+	notRetry    bool
 	err         error
 }
 
@@ -573,6 +574,7 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source ")
 		pt.needBackSource = true
+		// TODO optimize back source when already downloaded some pieces
 		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
@@ -742,10 +744,10 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 
 	// when cdn returns dfcodes.CdnTaskNotFound, report it to scheduler and wait cdn download it.
 retry:
-	pt.Debugf("get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
+	pt.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := pt.getPieceTasks(span, curPeerPacket, peer, request)
 	if err == nil {
-		pt.Infof("get piece task from peer %s ok, pieces length: %d", peer.PeerId, len(p.PieceInfos))
+		pt.Infof("got piece task from peer %s ok, pieces length: %d", peer.PeerId, len(p.PieceInfos))
 		span.SetAttributes(config.AttributeGetPieceCount.Int(len(p.PieceInfos)))
 		return p, nil
 	}
@@ -761,7 +763,7 @@ retry:
 		// context canceled, just exit
 		if se.GRPCStatus().Code() == codes.Canceled {
 			span.AddEvent("context canceled")
-			pt.Warnf("get piece task from peer(%s) canceled: %s", peer.PeerId, err)
+			pt.Warnf("get piece task from peer %s canceled: %s", peer.PeerId, err)
 			return nil, err
 		}
 	}
@@ -771,7 +773,7 @@ retry:
 		pt.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
 		code = de.Code
 	}
-	pt.Errorf("get piece task from peer(%s) error: %s, code: %d", peer.PeerId, err, code)
+	pt.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
 	perr := pt.peerPacketStream.Send(&scheduler.PieceResult{
 		TaskId:        pt.taskID,
 		SrcPid:        pt.peerID,

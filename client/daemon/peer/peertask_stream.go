@@ -193,14 +193,19 @@ func (s *streamPeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	defer s.recoverFromPanic()
 	// retry failed piece
 	if !result.pieceResult.Success {
+		result.pieceResult.FinishedCount = s.readyPieces.Settled()
 		_ = s.peerPacketStream.Send(result.pieceResult)
+		if result.notRetry {
+			s.Warnf("piece %d download failed, no retry", result.piece.PieceNum)
+			return nil
+		}
 		select {
 		case <-s.done:
 			s.Infof("peer task done, stop to send failed piece")
 		case <-s.ctx.Done():
 			s.Debugf("context done due to %s, stop to send failed piece", s.ctx.Err())
 		case s.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum:
-			s.Warnf("%d download failed, retry later", result.piece.PieceNum)
+			s.Warnf("piece %d download failed, retry later", result.piece.PieceNum)
 		}
 		return nil
 	}
@@ -297,6 +302,10 @@ func (s *streamPeerTask) finish() error {
 	// send last progress
 	s.once.Do(func() {
 		s.success = true
+		if err := s.callback.Update(s); err != nil {
+			s.span.RecordError(err)
+			s.Errorf("update callback error: %s", err)
+		}
 		// let stream return immediately
 		close(s.streamDone)
 		// send EOF piece result to scheduler

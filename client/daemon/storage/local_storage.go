@@ -69,9 +69,15 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	// piece already exists
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
-		// discard data for back source
-		io.Copy(ioutil.Discard, req.Reader)
 		t.RUnlock()
+		// discard data for back source
+		n, err := io.Copy(ioutil.Discard, io.LimitReader(req.Reader, req.Range.Length))
+		if err != nil && err != io.EOF {
+			return n, err
+		}
+		if n != piece.Range.Length {
+			return n, ErrShortRead
+		}
 		return piece.Range.Length, nil
 	}
 	t.RUnlock()
@@ -146,7 +152,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	t.Lock()
 	defer t.Unlock()
 	t.persistentMetadata.ContentLength = req.ContentLength
-	if t.TotalPieces == 0 {
+	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
 	}
 	if len(t.PieceMd5Sign) == 0 {
@@ -168,6 +174,9 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 func (t *localTaskStore) ValidateDigest(*PeerTaskMetaData) error {
 	t.Lock()
 	defer t.Unlock()
+	if t.persistentMetadata.PieceMd5Sign == "" {
+		return ErrDigestNotSet
+	}
 	if t.TotalPieces <= 0 {
 		t.Errorf("total piece count not set when validate digest")
 		t.invalid.Store(true)
@@ -252,7 +261,9 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	t.Done = true
 	t.touch()
 	if req.TotalPieces > 0 {
+		t.Lock()
 		t.TotalPieces = req.TotalPieces
+		t.Unlock()
 	}
 	if !req.StoreOnly {
 		err := t.saveMetadata()

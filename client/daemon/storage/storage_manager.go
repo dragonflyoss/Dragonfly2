@@ -94,6 +94,7 @@ var (
 	ErrTaskNotFound     = errors.New("task not found")
 	ErrPieceNotFound    = errors.New("piece not found")
 	ErrPieceCountNotSet = errors.New("total piece count not set")
+	ErrDigestNotSet     = errors.New("piece digest not set")
 	ErrInvalidDigest    = errors.New("invalid digest")
 )
 
