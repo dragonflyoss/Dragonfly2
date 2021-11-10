@@ -186,5 +186,4 @@ func BenchmarkAdd(b *testing.B) {
 	if b.N != l.Size() {
 		b.Errorf("BenchmarkAdd failed count required[%d] but get [%d]", b.N, l.Size())
 	}
-	fmt.Println(l.Size(), b.N)
 }

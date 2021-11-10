@@ -33,26 +33,27 @@ type SortedMap interface {
 	Delete(string) error
 	Range(func(string, Item) bool)
 	ReverseRange(func(string, Item) bool)
+	Len() uint
 }
 
 type sortedMap struct {
-	mu     *sync.RWMutex
-	bucket Bucket
-	data   map[string]Item
-	len    uint
+	mu        *sync.RWMutex
+	bucket    Bucket
+	data      map[string]Item
+	bucketLen uint
 }
 
-func New(len uint) SortedMap {
+func New(bucketLen uint) SortedMap {
 	return &sortedMap{
-		mu:     &sync.RWMutex{},
-		bucket: NewBucket(len),
-		data:   map[string]Item{},
-		len:    len,
+		mu:        &sync.RWMutex{},
+		bucket:    NewBucket(bucketLen),
+		data:      map[string]Item{},
+		bucketLen: bucketLen,
 	}
 }
 
 func (s *sortedMap) Add(key string, item Item) error {
-	if item.SortedValue() > s.len-1 {
+	if item.SortedValue() > s.bucketLen-1 {
 		return errors.New("sorted value is illegal")
 	}
 
@@ -76,7 +77,7 @@ func (s *sortedMap) Add(key string, item Item) error {
 }
 
 func (s *sortedMap) Update(key string, item Item) error {
-	if item.SortedValue() > s.len-1 {
+	if item.SortedValue() > s.bucketLen-1 {
 		return errors.New("sorted value is illegal")
 	}
 
@@ -140,4 +141,10 @@ func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 
 		return false
 	})
+}
+
+func (s *sortedMap) Len() uint {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return uint(len(s.data))
 }
