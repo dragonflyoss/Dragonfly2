@@ -121,7 +121,7 @@ func (m *peerManager) Delete(id string) {
 
 func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peers.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
