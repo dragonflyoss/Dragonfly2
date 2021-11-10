@@ -213,7 +213,7 @@ func TestPeer_Cost(t *testing.T) {
 				average, success := peer.GetPieceAverageCost()
 				assert.True(success)
 				assert.Equal(4, average)
-				assert.Equal(peer.SortedValue(), 4*HostMaxLoad+100)
+				assert.Equal(peer.SortedValue(), uint(4*HostMaxLoad+100))
 			},
 		},
 		{
