@@ -24,6 +24,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/sortedmap"
 	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"go.uber.org/atomic"
@@ -32,12 +33,6 @@ import (
 const (
 	TaskGCID     = "task"
 	TinyFileSize = 128
-)
-
-const (
-	// When using the manager configuration parameter, limit the maximum load number of CDN to 10000, refer to
-	MaxCDNLoad  = 10000
-	MaxHostLoad = 1000
 )
 
 type TaskManager interface {
@@ -183,8 +178,8 @@ type Task struct {
 	lastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
-	// peers is peer list
-	peers *sortedlist.SortedList
+	// peers is peer sortedmap
+	peers sortedmap.SortedMap
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -210,7 +205,7 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		lastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             sortedlist.NewSortedList(),
+		peers:             sortedmap.New(HostMaxLoad * PeerMaxPieceCount),
 		logger:            logger.WithTaskID(id),
 	}
 
@@ -268,7 +263,7 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	err := task.peers.UpdateOrAdd(peer)
+	err := task.peers.Add(peer.ID, peer)
 	if err != nil {
 		task.logger.Errorf("add peer %s failed: %v", peer.ID, err)
 	}
