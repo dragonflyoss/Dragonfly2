@@ -36,8 +36,8 @@ const (
 
 const (
 	// Maximum number of pieces for a peer is 10000
-	// because a single image is less than 146G (10000 * 15M / 1024 = 146.484375 G)
-	PeerMaxPieceCount = 10000
+	// because a single image is less than 14.6G (1000 * 15M / 1024 = 14.6484375 G)
+	PeerMaxPieceCount = 1000
 )
 
 var ErrChannelBusy = errors.New("channel busy")
@@ -157,7 +157,7 @@ func (m *peerManager) RunGC() error {
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
-			if peer.Task.GetPeers().Size() == 0 {
+			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
 			}
@@ -410,7 +410,7 @@ func (peer *Peer) SortedValue() uint {
 
 	pieceCount := peer.TotalPieceCount.Load()
 	hostLoad := peer.getFreeLoad()
-	return uint(pieceCount*MaxLoad + hostLoad)
+	return uint(pieceCount*HostMaxLoad + hostLoad)
 }
 
 func (peer *Peer) getFreeLoad() int32 {

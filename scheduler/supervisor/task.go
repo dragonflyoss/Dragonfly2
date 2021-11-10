@@ -25,7 +25,6 @@ import (
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/sortedmap"
-	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"go.uber.org/atomic"
 )
@@ -109,7 +108,7 @@ func (m *taskManager) RunGC() error {
 			task.SetStatus(TaskStatusZombie)
 		}
 
-		if task.GetPeers().Size() == 0 {
+		if task.GetPeers().Len() == 0 {
 			task.Log().Info("peers is empty, task status become waiting")
 			task.SetStatus(TaskStatusWaiting)
 		}
@@ -263,30 +262,27 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	err := task.peers.Add(peer.ID, peer)
-	if err != nil {
+	if err := task.peers.Add(peer.ID, peer); err != nil {
 		task.logger.Errorf("add peer %s failed: %v", peer.ID, err)
+		return
 	}
-	task.logger.Debugf("peer %s has been added, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
-	err := task.peers.Update(peer)
-	if err != nil {
+	if err := task.peers.Update(peer.ID, peer); err != nil {
 		task.logger.Errorf("update peer %s failed: %v", peer.ID, err)
+		return
 	}
-	task.logger.Debugf("peer %s has been updated, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	err := task.peers.Delete(peer)
-	if err != nil {
+	if err := task.peers.Delete(peer.ID); err != nil {
 		task.logger.Errorf("delete peer %s failed: %v", peer.ID, err)
+		return
 	}
-	task.logger.Debugf("peer %s has been deleted, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
-func (task *Task) GetPeers() *sortedlist.SortedList {
+func (task *Task) GetPeers() sortedmap.SortedMap {
 	return task.peers
 }
 
@@ -343,45 +339,46 @@ func (task *Task) GetBackToSourcePeers() []string {
 	return task.backToSourcePeers
 }
 
-func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, false, pickFn)
-}
+func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) []*Peer {
+	var peers []*Peer
 
-func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, true, pickFn)
-}
-
-func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	if pickFn == nil {
-		return
-	}
-
-	if !reverse {
-		task.GetPeers().Range(func(data sortedlist.Item) bool {
-			if len(pickedPeers) >= limit {
-				return false
-			}
-			peer := data.(*Peer)
-			if pickFn(peer) {
-				pickedPeers = append(pickedPeers, peer)
-			}
-			return true
-		})
-		return
-	}
-
-	task.GetPeers().RangeReverse(func(data sortedlist.Item) bool {
-		if len(pickedPeers) >= limit {
+	task.GetPeers().Range(func(_ string, item sortedmap.Item) bool {
+		if len(peers) >= limit {
 			return false
 		}
-		peer := data.(*Peer)
+		peer, ok := item.(*Peer)
+		if !ok {
+			return true
+		}
+
 		if pickFn(peer) {
-			pickedPeers = append(pickedPeers, peer)
+			peers = append(peers, peer)
 		}
 		return true
 	})
 
-	return
+	return peers
+}
+
+func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) []*Peer {
+	var peers []*Peer
+
+	task.GetPeers().ReverseRange(func(_ string, item sortedmap.Item) bool {
+		if len(peers) >= limit {
+			return false
+		}
+		peer, ok := item.(*Peer)
+		if !ok {
+			return true
+		}
+
+		if pickFn(peer) {
+			peers = append(peers, peer)
+		}
+		return true
+	})
+
+	return peers
 }
 
 func (task *Task) Log() *logger.SugaredLoggerOnWith {
