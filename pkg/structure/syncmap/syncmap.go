@@ -22,10 +22,11 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 // SyncMap is a thread-safe map providing generic support

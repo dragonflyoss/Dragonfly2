@@ -19,13 +19,14 @@ package basic
 import (
 	"sort"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const name = "basic"

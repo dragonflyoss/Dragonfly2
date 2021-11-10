@@ -2,30 +2,33 @@
 
 ## Helm Chart 运行时配置
 
-当使用 Helm Chart 运行时配置时，可以忽略 [运行时配置](#运行时配置) 章节。因为 Helm Chart 安装时会自动帮助改变 Docker、Containerd 等配置, 无需再手动配置。
+当使用 Helm Chart 运行时配置时，可以忽略 [运行时配置](#运行时配置) 章节。
+因为 Helm Chart 安装时会自动帮助改变 Docker、Containerd 等配置, 无需再手动配置。
 
 ### 1. Docker
 
 > **不推荐在 docker 环境中使用蜻蜓**：1. 拉镜像没有 fallback 机制，2. 在未来的 Kubernetes 中已经废弃。
-> 
 > 因为当前 Kubernetes 里的 `daemonset` 并不支持 `Surging Rolling Update` 策略,
 > 一旦旧的 dfdaemon pod 被删除后，新的 dfdaemon 就再也拉取不了了。
-
 > 如果无法更换容器运行时的话，那在升级蜻蜓的时候，请从下面两种方案选择比较适合的：
-> 选项1：先手动拉取新的 dfdaemon 镜像，或者使用 [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) 去自动拉取，
+> 选项1：先手动拉取新的 dfdaemon 镜像，或者使用
+[ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob)
+去自动拉取。
 > 选项2：保持蜻蜓的镜像中心和通用的镜像中心不一样，同时将蜻蜓镜像中心相关的 host 加入 `containerRuntime.docker.skipHosts`。
 
 Dragonfly Helm 支持自动更改 docker 配置。
 
-**情况 1:【推荐的】支持指定仓库**
+#### 情况 1:【推荐的】支持指定仓库
 
 定制 values.yaml 文件:
+
 ```yaml
 containerRuntime:
   docker:
     enable: true
     # -- Inject domains into /etc/hosts to force redirect traffic to dfdaemon.
-    # Caution: This feature need dfdaemon to implement SNI Proxy, confirm image tag is greater than v2.0.0.
+    # Caution: This feature need dfdaemon to implement SNI Proxy,
+    # confirm image tag is greater than v2.0.0.
     # When use certs and inject hosts in docker, no necessary to restart docker daemon.
     injectHosts: true
     registryDomains:
@@ -37,23 +40,30 @@ containerRuntime:
 使用上述配置部署 Dragonfly 时，无需重新启动 docker。
 
 优点：
+
 * 支持 dfdaemon 自身平滑升级
 
 > 这种模式下，当删除 dfdaemon pod 的时候，`preStop` 钩子将会清理已经注入到 `/etc/hosts` 下的所有主机信息，所有流量将会走原来的镜像中心。
 
 限制:
+
 * 只支持指定域名。
 
-**情况 2: 支持任意仓库**
+#### 情况 2: 支持任意仓库
 
 定制 values.yaml 文件:
+
 ```yaml
 containerRuntime:
   docker:
     enable: true
     # -- Restart docker daemon to redirect traffic to dfdaemon
-    # When containerRuntime.docker.restart=true, containerRuntime.docker.injectHosts and containerRuntime.registry.domains is ignored.
-    # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
+    # When containerRuntime.docker.restart=true,
+    # containerRuntime.docker.injectHosts and
+    # containerRuntime.registry.domains is ignored.
+    # If did not want restart docker daemon,
+    # keep containerRuntime.docker.restart=false and
+    # containerRuntime.docker.injectHosts=true.
     restart: true
 ```
 
@@ -61,6 +71,7 @@ containerRuntime:
 使用上述配置部署 Dragonfly 时，dfdaemon 将重新启动 docker。
 
 限制:
+
 * 必须开启 docker 的 `live-restore` 功能
 * 需要重启 docker daemon
 
@@ -68,7 +79,7 @@ containerRuntime:
 
 Containerd 的配置有两个版本，字段复杂。有很多情况需要考虑：
 
-**情况 1: V2 版本使用配置文件**
+#### 情况 1: V2 版本使用配置文件
 
 配置文件路径是 `/etc/containerd/config.toml`:
 
@@ -80,13 +91,14 @@ Containerd 的配置有两个版本，字段复杂。有很多情况需要考虑
 这种情况很简单，并可以启用多个镜像仓库支持。
 
 定制 values.yaml 文件:
+
 ```yaml
 containerRuntime:
   containerd:
     enable: true
 ```
 
-**情况 2: V2 版本不使用配置文件**
+#### 情况 2: V2 版本不使用配置文件
 
 * 选项 1 - 允许 Charts 注入 `config_path` 并重新启动 containerd。
 
@@ -113,7 +125,7 @@ containerRuntime:
     enable: true
 ```
 
-**情况 3: V1 版本**
+#### 情况 3: V1 版本
 
 对于 V1 版本 config.toml，仅支持 `dfdaemon.config.proxy.registryMirror.url` 镜像仓库。
 
@@ -146,9 +158,10 @@ containerRuntime:
     - "https://harbor.example.com:8443"
 ```
 
-## 准备 Kubernetes 集群 
+## 准备 Kubernetes 集群
 
-如果没有可用的 Kubernetes 集群进行测试，推荐使用 [minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
+如果没有可用的 Kubernetes 集群进行测试，推荐使用
+[minikube](https://minikube.sigs.k8s.io/docs/start/)。只需运行`minikube start`。
 
 ## 安装 Dragonfly
 
@@ -190,7 +203,8 @@ externalRedis:
 
 ```shell
 helm repo add dragonfly https://dragonflyoss.github.io/helm-charts/
-helm install --create-namespace --namespace dragonfly-system dragonfly dragonfly/dragonfly -f values.yaml
+helm install --create-namespace --namespace dragonfly-system \
+    dragonfly dragonfly/dragonfly -f values.yaml
 ```
 
 ### 安装 Drgonfly 使用已经部署的 manager
@@ -244,7 +258,9 @@ kubectl -n dragonfly-system wait --for=condition=ready --all --timeout=10m pod
 
 控制台页面会在 `dragonfly-manager.dragonfly-system.svc.cluster.local:8080` 展示。
 
-需要绑定 Ingress 可以参考 [Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values), 或者手动自行创建 Ingress。
+需要绑定 Ingress 可以参考
+[Helm Charts 配置选项](https://artifacthub.io/packages/helm/dragonfly/dragonfly#values),
+或者手动自行创建 Ingress。
 
 控制台功能预览参考文档 [console preview](../../../design/manager.md)。
 
@@ -302,6 +318,14 @@ kubectl -n dragonfly-system exec -it ${pod_name} -- grep "peer task done" /var/l
 
 日志输出例子:
 
-```
-{"level":"info","ts":"2021-06-28 06:02:30.924","caller":"peer/peertask_stream_callback.go:77","msg":"stream peer task done, cost: 2838ms","peer":"172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e","task":"3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7","component":"streamPeerTask"}
+```shell
+{
+    "level": "info",
+    "ts": "2021-06-28 06:02:30.924",
+    "caller": "peer/peertask_stream_callback.go:77",
+    "msg": "stream peer task done, cost: 2838ms",
+    "peer": "172.17.0.9-1-ed7a32ae-3f18-4095-9f54-6ccfc248b16e",
+    "task": "3c658c488fd0868847fab30976c2a079d8fd63df148fb3b53fd1a418015723d7",
+    "component": "streamPeerTask"
+}
 ```

@@ -21,6 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/util/workqueue"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -32,13 +39,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
-	"k8s.io/apimachinery/pkg/util/sets"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const maxRescheduleTimes = 8
@@ -72,16 +74,18 @@ type SchedulerService struct {
 	// Peer manager
 	peerManager supervisor.PeerManager
 
-	sched     scheduler.Scheduler
-	worker    worker
-	config    *config.SchedulerConfig
-	monitor   *monitor
-	done      chan struct{}
-	wg        sync.WaitGroup
-	dynconfig config.DynconfigInterface
+	sched   scheduler.Scheduler
+	worker  worker
+	monitor *monitor
+	done    chan struct{}
+	wg      sync.WaitGroup
+
+	config        *config.SchedulerConfig
+	dynconfig     config.DynconfigInterface
+	metricsConfig *config.MetricsConfig
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
 	ops := &Options{}
 	for _, op := range options {
 		op(ops)
@@ -109,15 +113,16 @@ func NewSchedulerService(cfg *config.SchedulerConfig, dynConfig config.Dynconfig
 	work := newEventLoopGroup(cfg.WorkerNum)
 	downloadMonitor := newMonitor(cfg.OpenMonitor, peerManager)
 	s := &SchedulerService{
-		taskManager: taskManager,
-		hostManager: hostManager,
-		peerManager: peerManager,
-		worker:      work,
-		monitor:     downloadMonitor,
-		sched:       sched,
-		config:      cfg,
-		done:        make(chan struct{}),
-		dynconfig:   dynConfig,
+		taskManager:   taskManager,
+		hostManager:   hostManager,
+		peerManager:   peerManager,
+		worker:        work,
+		monitor:       downloadMonitor,
+		sched:         sched,
+		config:        cfg,
+		metricsConfig: metricsConfig,
+		dynconfig:     dynConfig,
+		done:          make(chan struct{}),
 	}
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
@@ -310,6 +315,15 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
+	if pieceResult.Success && s.metricsConfig != nil && s.metricsConfig.EnablePeerHost {
+		// TODO parse PieceStyle
+		metrics.PeerHostTraffic.WithLabelValues("download", peer.Host.UUID, peer.Host.IP).Add(float64(pieceResult.PieceInfo.RangeSize))
+		if p, ok := s.peerManager.Get(pieceResult.DstPid); ok {
+			metrics.PeerHostTraffic.WithLabelValues("upload", p.Host.UUID, p.Host.IP).Add(float64(pieceResult.PieceInfo.RangeSize))
+		} else {
+			logger.Warnf("dst peer %s not found for pieceResult %#v, pieceInfo %#v", pieceResult.DstPid, pieceResult, pieceResult.PieceInfo)
+		}
+	}
 	if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.EndOfPiece {
 		return nil
 	} else if pieceResult.PieceInfo != nil && pieceResult.PieceInfo.PieceNum == common.ZeroOfPiece {

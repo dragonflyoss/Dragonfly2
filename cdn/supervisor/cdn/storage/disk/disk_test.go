@@ -20,14 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
+
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/mock"
-	"github.com/golang/mock/gomock"
-
 	"d7y.io/dragonfly/v2/pkg/unit"
-
-	"github.com/stretchr/testify/suite"
 )
 
 func TestDiskStorageMgrSuite(t *testing.T) {

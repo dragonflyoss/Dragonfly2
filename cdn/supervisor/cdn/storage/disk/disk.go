@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
@@ -38,8 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const StorageMode = storage.DiskStorageMode

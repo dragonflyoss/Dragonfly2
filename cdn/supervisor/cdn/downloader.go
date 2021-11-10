@@ -21,11 +21,12 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"github.com/pkg/errors"
 )
 
 const RangeHeaderName = "Range"

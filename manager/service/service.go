@@ -19,17 +19,17 @@ package service
 import (
 	"context"
 
+	"github.com/casbin/casbin/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"gorm.io/gorm"
+
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/casbin/casbin/v2"
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-
-	"gorm.io/gorm"
 )
 
 type REST interface {

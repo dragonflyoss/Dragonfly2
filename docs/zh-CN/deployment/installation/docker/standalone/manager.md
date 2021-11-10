@@ -19,36 +19,36 @@ Docker|1.12.0+
 
 1. 获取最新的 Manager 镜像
 
-```sh
-docker pull dragonflyoss/manager
-```
+    ```sh
+    docker pull dragonflyoss/manager
+    ```
 
 或者您可以构建自己的 manager 镜像
 
 1. 获取 Dragonfly 的源码
 
-```sh
-git clone https://github.com/dragonflyoss/Dragonfly2.git
-```
+    ```sh
+    git clone https://github.com/dragonflyoss/Dragonfly2.git
+    ```
 
 2. 打开项目文件夹
 
-```sh
-cd Dragonfly2
-```
+    ```sh
+    cd Dragonfly2
+    ```
 
 3. 构建 manager 的 Docker 镜像
 
-```sh
-TAG="2.0.0"
-make docker-build-manager D7Y_VERSION=$TAG
-```
+    ```sh
+    TAG="2.0.0"
+    make docker-build-manager D7Y_VERSION=$TAG
+    ```
 
 4. 获取最新的 manager 镜像 ID
 
-```sh
-docker image ls | grep 'manager' | awk '{print $3}' | head -n1
-```
+    ```sh
+    docker image ls | grep 'manager' | awk '{print $3}' | head -n1
+    ```
 
 ### 启动 manager
 
