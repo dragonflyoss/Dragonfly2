@@ -36,6 +36,7 @@ type digestReader struct {
 	r      io.Reader
 	hash   hash.Hash
 	digest string
+	*logger.SugaredLoggerOnWith
 }
 
 type DigestReader interface {
@@ -45,13 +46,14 @@ type DigestReader interface {
 
 // TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
 
-func NewDigestReader(reader io.Reader, digest ...string) io.Reader {
+func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) io.Reader {
 	var d string
 	if len(digest) > 0 {
 		d = digest[0]
 	}
 	return &digestReader{
-		digest: d,
+		SugaredLoggerOnWith: log,
+		digest:              d,
 		// TODO support more digest method like sha1, sha256
 		hash: md5.New(),
 		r:    reader,
@@ -69,15 +71,15 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 	if err == io.EOF && dr.digest != "" {
 		digest := dr.Digest()
 		if digest != dr.digest {
-			logger.Warnf("digest not match, desired: %s, actual: %s", dr.digest, digest)
+			dr.Warnf("digest not match, desired: %s, actual: %s", dr.digest, digest)
 			return n, ErrDigestNotMatch
 		}
-		logger.Debugf("digests match: %s", digest)
+		dr.Debugf("digest match: %s", digest)
 	}
 	return n, err
 }
 
-// GetDigest returns the digest of contents read.
+// Digest returns the digest of contents.
 func (dr *digestReader) Digest() string {
 	return hex.EncodeToString(dr.hash.Sum(nil)[:16])
 }

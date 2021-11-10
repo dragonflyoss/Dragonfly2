@@ -59,6 +59,7 @@ type RegisterTaskRequest struct {
 	CommonTaskRequest
 	ContentLength int64
 	TotalPieces   int32
+	PieceMd5Sign  string
 }
 
 type WritePieceRequest struct {
@@ -84,6 +85,9 @@ type UpdateTaskRequest struct {
 	PeerTaskMetaData
 	ContentLength int64
 	TotalPieces   int32
+	PieceMd5Sign  string
+	// GenPieceDigest is used when back source
+	GenPieceDigest bool
 }
 
 type ReusePeerTask = UpdateTaskRequest

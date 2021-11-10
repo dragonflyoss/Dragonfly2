@@ -25,6 +25,8 @@ import (
 	"testing"
 
 	testifyassert "github.com/stretchr/testify/assert"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 func TestMain(m *testing.M) {
@@ -40,7 +42,7 @@ func TestNewDigestReader(t *testing.T) {
 	digest := hex.EncodeToString(hash.Sum(nil)[:16])
 
 	buf := bytes.NewBuffer(testBytes)
-	reader := NewDigestReader(buf, digest)
+	reader := NewDigestReader(logger.With("test", "test"), buf, digest)
 	data, err := ioutil.ReadAll(reader)
 
 	assert.Nil(err)

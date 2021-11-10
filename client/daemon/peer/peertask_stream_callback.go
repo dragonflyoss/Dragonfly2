@@ -52,6 +52,7 @@ func (p *streamPeerTaskCallback) Init(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
@@ -69,6 +70,7 @@ func (p *streamPeerTaskCallback) Update(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("update task to storage manager failed: %s", err)
@@ -147,4 +149,21 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 		pt.Log().Infof("step 3: report fail peer result ok")
 	}
 	return nil
+}
+
+func (p *streamPeerTaskCallback) ValidateDigest(pt Task) error {
+	if !p.ptm.calculateDigest {
+		return nil
+	}
+	err := p.ptm.storageManager.ValidateDigest(
+		&storage.PeerTaskMetaData{
+			PeerID: pt.GetPeerID(),
+			TaskID: pt.GetTaskID(),
+		})
+	if err != nil {
+		pt.Log().Errorf("%s", err)
+	} else {
+		pt.Log().Debugf("validated digest")
+	}
+	return err
 }

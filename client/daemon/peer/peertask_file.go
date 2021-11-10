@@ -238,13 +238,17 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 	if !result.pieceResult.Success {
 		result.pieceResult.FinishedCount = pt.readyPieces.Settled()
 		_ = pt.peerPacketStream.Send(result.pieceResult)
+		if result.notRetry {
+			pt.Warnf("piece %d download failed, no retry", result.piece.PieceNum)
+			return nil
+		}
 		select {
 		case <-pt.done:
 			pt.Infof("peer task done, stop to send failed piece")
 		case <-pt.ctx.Done():
 			pt.Debugf("context done due to %s, stop to send failed piece", pt.ctx.Err())
 		case pt.failedPieceCh <- result.pieceResult.PieceInfo.PieceNum:
-			pt.Warnf("%d download failed, retry later", result.piece.PieceNum)
+			pt.Warnf("piece %d download failed, retry later", result.piece.PieceNum)
 		}
 
 		return nil
@@ -295,6 +299,12 @@ func (pt *filePeerTask) ReportPieceResult(result *pieceTaskResult) error {
 
 func (pt *filePeerTask) finish() error {
 	var err error
+	if err = pt.callback.ValidateDigest(pt); err != nil {
+		pt.Errorf("validate digest error: %s", err)
+		pt.span.RecordError(err)
+		pt.cleanUnfinished()
+		return err
+	}
 	// send last progress
 	pt.once.Do(func() {
 		defer pt.recoverFromPanic()
