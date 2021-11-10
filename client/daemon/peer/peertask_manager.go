@@ -73,6 +73,8 @@ type Task interface {
 	SetCallback(TaskCallback)
 	AddTraffic(int64)
 	GetTraffic() int64
+	SetPieceMd5Sign(string)
+	GetPieceMd5Sign() string
 }
 
 // TaskCallback inserts some operations for peer task download lifecycle
@@ -82,6 +84,7 @@ type TaskCallback interface {
 	Update(pt Task) error
 	Fail(pt Task, code base.Code, reason string) error
 	GetStartTime() time.Time
+	ValidateDigest(pt Task) error
 }
 
 type TinyData struct {
@@ -113,6 +116,8 @@ type peerTaskManager struct {
 	// currently, only check completed peer task after register to scheduler
 	// TODO multiplex the running peer task
 	enableMultiplex bool
+
+	calculateDigest bool
 }
 
 func NewPeerTaskManager(
@@ -122,7 +127,8 @@ func NewPeerTaskManager(
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
-	multiplex bool) (TaskManager, error) {
+	multiplex bool,
+	calculateDigest bool) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:             host,
@@ -133,6 +139,7 @@ func NewPeerTaskManager(
 		schedulerOption:  schedulerOption,
 		perPeerRateLimit: perPeerRateLimit,
 		enableMultiplex:  multiplex,
+		calculateDigest:  calculateDigest,
 	}
 	return ptm, nil
 }
@@ -266,6 +273,7 @@ func (ptm *peerTaskManager) storeTinyPeerTask(ctx context.Context, tiny *TinyDat
 			},
 			ContentLength: l,
 			TotalPieces:   1,
+			// TODO check md5 digest
 		})
 	if err != nil {
 		logger.Errorf("register tiny data storage failed: %s", err)
