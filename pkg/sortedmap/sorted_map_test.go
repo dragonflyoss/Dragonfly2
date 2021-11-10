@@ -23,9 +23,10 @@ import (
 	"sync"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/sortedmap/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/pkg/sortedmap/mocks"
 )
 
 const N = 1000

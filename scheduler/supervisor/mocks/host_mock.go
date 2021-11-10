@@ -6,8 +6,9 @@ package mocks
 import (
 	reflect "reflect"
 
-	supervisor "d7y.io/dragonfly/v2/scheduler/supervisor"
 	gomock "github.com/golang/mock/gomock"
+
+	supervisor "d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 // MockHostManager is a mock of HostManager interface.
