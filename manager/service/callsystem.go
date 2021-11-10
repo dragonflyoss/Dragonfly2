@@ -67,7 +67,7 @@ func (s *rest) UpdateCallSystem(id uint, json types.UpdateCallSystemRequest) (*m
 
 func (s *rest) GetCallSystem(id uint) (*model.CallSystem, error) {
 	schedulerCluster := model.CallSystem{}
-	if err := s.db.Preload("CDNClusters").First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.Preload("SchedulerClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -78,7 +78,7 @@ func (s *rest) GetCallSystems(q types.GetCallSystemsQuery) (*[]model.CallSystem,
 	schedulerClusters := []model.CallSystem{}
 	if err := s.db.Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CallSystem{
 		Name: q.Name,
-	}).Preload("CDNClusters").Find(&schedulerClusters).Error; err != nil {
+	}).Preload("SchedulerClusters").Find(&schedulerClusters).Error; err != nil {
 		return nil, err
 	}
 
