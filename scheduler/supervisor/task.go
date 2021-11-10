@@ -34,6 +34,12 @@ const (
 	TinyFileSize = 128
 )
 
+const (
+	// When using the manager configuration parameter, limit the maximum load number of CDN to 10000, refer to
+	MaxCDNLoad  = 10000
+	MaxHostLoad = 1000
+)
+
 type TaskManager interface {
 	// Add task
 	Add(*Task)
