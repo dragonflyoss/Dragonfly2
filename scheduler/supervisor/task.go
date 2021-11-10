@@ -270,7 +270,7 @@ func (task *Task) AddPeer(peer *Peer) {
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
-	if err := task.peers.Update(peer.ID, peer); err != nil {
+	if err := task.peers.Add(peer.ID, peer); err != nil {
 		task.logger.Errorf("update peer %s failed: %v", peer.ID, err)
 		return
 	}
