@@ -143,6 +143,17 @@ func TestBucketDelete(t *testing.T) {
 			},
 		},
 		{
+			name:  "delete index does not exist",
+			value: "foo",
+			index: 0,
+			len:   2,
+			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+				assert := assert.New(t)
+				b.Delete(1, "bar")
+				assert.Equal(b.Contains(index, value), true)
+			},
+		},
+		{
 			name:  "delete value exceeds length",
 			value: "foo",
 			index: 0,
@@ -216,6 +227,16 @@ func TestBucketContains(t *testing.T) {
 			expect: func(t *testing.T, b Bucket, index uint, _ interface{}) {
 				assert := assert.New(t)
 				assert.Equal(b.Contains(index, "bar"), false)
+			},
+		},
+		{
+			name:  "contains index does not exist",
+			value: "foo",
+			index: 0,
+			len:   2,
+			expect: func(t *testing.T, b Bucket, index uint, _ interface{}) {
+				assert := assert.New(t)
+				assert.Equal(b.Contains(1, "bar"), false)
 			},
 		},
 		{
