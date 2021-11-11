@@ -12,6 +12,7 @@ require (
 	github.com/casbin/casbin/v2 v2.34.1
 	github.com/casbin/gorm-adapter/v3 v3.3.2
 	github.com/colinmarc/hdfs/v2 v2.2.0
+	github.com/daixiang0/gci v0.2.9 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20210804104954-38ab4c606ee3
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0

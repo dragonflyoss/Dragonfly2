@@ -367,8 +367,8 @@ func TestTask_Pick(t *testing.T) {
 			for i := 0; i < tc.number; i++ {
 				index := strconv.Itoa(i)
 				peer := mockAPeer(index, task)
-				peer.UpdateProgress((int32)(i), i)
 				task.AddPeer(peer)
+				peer.UpdateProgress((int32)(i), i)
 			}
 			var peers []*supervisor.Peer
 			if tc.reverse {
