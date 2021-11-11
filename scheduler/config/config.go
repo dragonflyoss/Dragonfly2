@@ -189,7 +189,7 @@ type SchedulerConfig struct {
 	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
 	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
 	CDNLoad              int           `yaml:"cdnLoad" mapstructure:"cdnLoad"`
-	ClientLoad           int32         `yaml:"clientLoad" mapstructure:"clientLoad"`
+	ClientLoad           int           `yaml:"clientLoad" mapstructure:"clientLoad"`
 	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
 	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`
 }

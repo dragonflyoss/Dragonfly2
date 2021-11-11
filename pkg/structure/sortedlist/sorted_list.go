@@ -116,7 +116,7 @@ func (l *sortedList) Delete(data Item) (err error) {
 	defer l.l.Unlock()
 	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
 	if !ok {
-		return errors.Errorf("data does not exist")
+		return errDataNotFound
 	}
 	l.deleteItem(oldKey1, oldKey2, data)
 	return

@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -208,7 +209,7 @@ func (s *SchedulerService) Stop() {
 	s.wg.Wait()
 }
 
-func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) string {
+func (s *SchedulerService) generateTaskID(url string, meta *base.UrlMeta, peerID string) string {
 	if s.config.ABTest {
 		return idgen.TwinsTaskID(url, meta, peerID)
 	}
@@ -254,10 +255,14 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	return peer
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
+func (s *SchedulerService) GetOrCreateTask(ctx context.Context, request *schedulerRPC.PeerTaskRequest) (*supervisor.Task, error) {
 	span := trace.SpanFromContext(ctx)
-	synclock.Lock(task.ID, true)
-
+	taskID := s.generateTaskID(request.Url, request.UrlMeta, request.PeerId)
+	synclock.Lock(taskID, true)
+	task, err := supervisor.NewTask(taskID, request.Url, request.UrlMeta, mathutils.MaxInt(s.config.CDNLoad, s.config.ClientLoad))
+	if err != nil {
+		return nil, err
+	}
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
@@ -265,7 +270,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		if task.LastTriggerAt.Load().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			synclock.UnLock(task.ID, true)
-			return task
+			return task, nil
 		}
 	} else {
 		task.Log().Infof("add new task %s", task.ID)
@@ -280,7 +285,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if task.IsHealth() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-		return task
+		return task, nil
 	}
 
 	task.LastTriggerAt.Store(time.Now())
@@ -289,7 +294,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
 		task.BackToSourceWeight.Store(s.config.BackSourceCount)
-		return task
+		return task, nil
 	}
 	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 
@@ -310,7 +315,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 		}
 	}()
 
-	return task
+	return task, nil
 }
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {

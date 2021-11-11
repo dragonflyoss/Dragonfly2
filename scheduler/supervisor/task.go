@@ -194,7 +194,11 @@ type Task struct {
 	lock sync.RWMutex
 }
 
-func NewTask(id, url string, meta *base.UrlMeta) *Task {
+func NewTask(id, url string, meta *base.UrlMeta, maxLoad int) (*Task, error) {
+	sl, err := sortedlist.NewSortedList(maxLoad)
+	if err != nil {
+		return nil, err
+	}
 	now := time.Now()
 	task := &Task{
 		ID:                id,
@@ -205,12 +209,12 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		lastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             sortedlist.NewSortedList(),
+		peers:             sl,
 		logger:            logger.WithTaskID(id),
 	}
 
 	task.status.Store(TaskStatusWaiting)
-	return task
+	return task, nil
 }
 
 func (task *Task) SetStatus(status TaskStatus) {

@@ -3,11 +3,9 @@ module d7y.io/dragonfly/v2
 go 1.15
 
 require (
-	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.5-0.20210827121450-79689222c755
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect

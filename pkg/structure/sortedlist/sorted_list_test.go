@@ -35,7 +35,7 @@ type item struct {
 	key2 int
 }
 
-func NewSortedListItem(key1, key2 int) *item {
+func NewSortedListItem(key1, key2 int) Item {
 	return &item{key1, key2}
 }
 
@@ -73,12 +73,13 @@ func TestUpdate(t *testing.T) {
 		left:           0,
 		right:          0,
 		bucketCapacity: N,
+		keyMap:         make(map[Item]KeyIndex),
 	}
 	it := NewSortedListItem(1, 3)
 	l.Add(NewSortedListItem(1, 2))
 	l.Add(NewSortedListItem(2, 2))
 	l.Add(it)
-	it.key1 = 2
+	it.(*item).key1 = 2
 	l.Update(it)
 	l.Add(NewSortedListItem(2, 3))
 	key1, key2, ok := l.getKeyMapKey(it)
@@ -92,12 +93,13 @@ func TestRange(t *testing.T) {
 		left:           0,
 		right:          0,
 		bucketCapacity: N,
+		keyMap:         make(map[Item]KeyIndex),
 	}
 	it := NewSortedListItem(1, 3)
 	l.Add(NewSortedListItem(1, 2))
 	l.Add(NewSortedListItem(2, 2))
 	l.Add(it)
-	it.key1 = 2
+	it.(*item).key1 = 2
 	l.Update(it)
 	l.Add(NewSortedListItem(2, 3))
 	key1, key2, ok := l.getKeyMapKey(it)
@@ -122,12 +124,13 @@ func TestRangeLimit(t *testing.T) {
 		left:           0,
 		right:          0,
 		bucketCapacity: N,
+		keyMap:         make(map[Item]KeyIndex),
 	}
 	it := NewSortedListItem(1, 3)
 	l.Add(NewSortedListItem(1, 2))
 	l.Add(NewSortedListItem(2, 2))
 	l.Add(it)
-	it.key1 = 2
+	it.(*item).key1 = 2
 	l.Update(it)
 	l.Add(NewSortedListItem(2, 3))
 	key1, key2, ok := l.getKeyMapKey(it)
@@ -152,13 +155,13 @@ func TestRangeReverse(t *testing.T) {
 		left:           0,
 		right:          0,
 		bucketCapacity: N,
+		keyMap:         make(map[Item]KeyIndex),
 	}
 	it := NewSortedListItem(1, 3)
 	l.Add(NewSortedListItem(1, 2))
 	l.Add(NewSortedListItem(2, 2))
 	l.Add(it)
-	it.key1 = 2
-	l.Update(it)
+	it.(*item).key1 = 2
 	l.Add(NewSortedListItem(2, 3))
 	key1, key2, ok := l.getKeyMapKey(it)
 	if l.Size() != 4 || key1 != 2 || key2 != 3 || !ok {
@@ -182,12 +185,13 @@ func TestRangeReverseLimit(t *testing.T) {
 		left:           0,
 		right:          0,
 		bucketCapacity: N,
+		keyMap:         make(map[Item]KeyIndex),
 	}
 	it := NewSortedListItem(1, 3)
 	l.Add(NewSortedListItem(1, 2))
 	l.Add(NewSortedListItem(2, 2))
 	l.Add(it)
-	it.key1 = 2
+	it.(*item).key1 = 2
 	l.Update(it)
 	l.Add(NewSortedListItem(2, 3))
 	key1, key2, ok := l.getKeyMapKey(it)
@@ -241,86 +245,29 @@ func TestSortedListAdd_Concurrent(t *testing.T) {
 	}
 }
 
-func TestSortedListUpdate(t *testing.T) {
-	tests := []struct {
-		name     string
-		key      string
-		capacity int
-		mock     func(m *mocks.MockItemMockRecorder)
-		expect   func(t *testing.T, s SortedList, item Item)
-	}{
-		{
-			name:     "update value succeeded",
-			capacity: 1,
-			mock: func(m *mocks.MockItemMockRecorder) {
-				m.GetSortKeys().Return(0).Times(5)
-			},
-			expect: func(t *testing.T, s SortedList, item Item) {
-				assert := assert.New(t)
-				assert.NoError(s.Update(item))
-			},
-		},
-		{
-			name:     "item sorted value exceeds length",
-			capacity: 1,
-			mock: func(m *mocks.MockItemMockRecorder) {
-				gomock.InOrder(
-					m.GetSortKeys().Return(0, 1).Times(2),
-					m.GetSortKeys().Return(1, 2).Times(1),
-				)
-			},
-			expect: func(t *testing.T, s SortedList, item Item) {
-				assert := assert.New(t)
-				assert.EqualError(s.Add(item), "sorted value is illegal")
-			},
-		},
-		{
-			name: "add key dost not exits",
-			key:  "foo",
-			mock: func(m *mocks.MockItemMockRecorder) {
-				m.GetSortKeys().Return(0).Times(3)
-			},
-			expect: func(t *testing.T, s SortedList, item Item) {
-				assert := assert.New(t)
-				assert.EqualError(s.Update(item), "key does not exist")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			mockItem := mocks.NewMockItem(ctl)
-			tc.mock(mockItem.EXPECT())
-			s, _ := NewSortedList(tc.capacity)
-			s.Add(mockItem)
-			tc.expect(t, s, mockItem)
-		})
-	}
-}
-
 func TestSortedListUpdate_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
 	ctl := gomock.NewController(t)
 	defer ctl.Finish()
-	mockItem := mocks.NewMockItem(ctl)
-	mockItem.EXPECT().GetSortKeys().AnyTimes()
 
 	s, err := NewSortedList(N)
 	assert.Nil(t, err)
-	nums := rand.Perm(N)
+	nums := rand.Intn(N)
 
-	for i := 0; i < len(nums); i++ {
+	var mockItems []*mocks.MockItem
+	for i := 0; i < nums; i++ {
+		mockItem := mocks.NewMockItem(ctl)
+		mockItem.EXPECT().GetSortKeys().AnyTimes()
 		s.Add(mockItem)
+		mockItems = append(mockItems, mockItem)
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for i := 0; i < len(nums); i++ {
+	wg.Add(nums)
+	for i := 0; i < nums; i++ {
 		go func(v int) {
-			if err := s.Update(mockItem); err != nil {
+			if err := s.Update(mockItems[v]); err != nil {
 				t.Error(err)
 			}
 			wg.Done()
@@ -333,60 +280,8 @@ func TestSortedListUpdate_Concurrent(t *testing.T) {
 		count++
 		return true
 	})
-	if count != len(nums) {
+	if count != nums {
 		t.Errorf("SortedList is missing element")
-	}
-}
-
-func TestSortedListDelete(t *testing.T) {
-	tests := []struct {
-		name     string
-		key      string
-		capacity int
-		mock     func(m *mocks.MockItemMockRecorder)
-		expect   func(t *testing.T, s SortedList, item Item)
-	}{
-		{
-			name:     "delete value succeeded",
-			key:      "foo",
-			capacity: 1,
-			mock: func(m *mocks.MockItemMockRecorder) {
-				m.GetSortKeys().Return(0).Times(3)
-			},
-			expect: func(t *testing.T, s SortedList, item Item) {
-				assert := assert.New(t)
-				assert.NoError(s.Delete(item))
-				count := 0
-				s.Range(func(item Item) bool {
-					count++
-					return true
-				})
-
-				assert.Equal(count, 0)
-			},
-		},
-		{
-			name: "delete data dost not exits",
-			mock: func(m *mocks.MockItemMockRecorder) {
-				m.GetSortKeys().Return(0).Times(2)
-			},
-			expect: func(t *testing.T, s SortedList, item Item) {
-				assert := assert.New(t)
-				assert.EqualError(s.Delete(item), "data does not exist")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			mockItem := mocks.NewMockItem(ctl)
-			tc.mock(mockItem.EXPECT())
-			s, _ := NewSortedList(tc.capacity)
-			s.Add(mockItem)
-			tc.expect(t, s, mockItem)
-		})
 	}
 }
 

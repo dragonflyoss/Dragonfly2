@@ -31,39 +31,68 @@ import (
 )
 
 func TestTask_New(t *testing.T) {
+	type args struct {
+		id       string
+		url      string
+		meta     *base.UrlMeta
+		capacity int
+	}
 	tests := []struct {
 		name   string
-		task   *supervisor.Task
-		expect func(t *testing.T, task *supervisor.Task)
+		args   args
+		expect func(t *testing.T, task *supervisor.Task, err error)
 	}{
 		{
 			name: "create by normal config",
-			task: supervisor.NewTask("main", "127.0.0.1", &base.UrlMeta{}),
-			expect: func(t *testing.T, task *supervisor.Task) {
+			args: args{
+				id:       "main",
+				url:      "127.0.0.1",
+				meta:     &base.UrlMeta{},
+				capacity: 100,
+			},
+			expect: func(t *testing.T, task *supervisor.Task, err error) {
 				assert := assert.New(t)
+				assert.Nil(err)
 				assert.Equal("main", task.ID)
 			},
 		},
 		{
 			name: "create by special symbol",
-			task: supervisor.NewTask("\x07\b%$!！\x7F✌ (>‿<)✌", "d7y.io/dragonfly", &base.UrlMeta{Tag: "d7y-test"}),
-			expect: func(t *testing.T, task *supervisor.Task) {
+			args: args{
+				id:       "\x07\b%$!！\x7F✌ (>‿<)✌",
+				url:      "d7y.io/dragonfly",
+				meta:     &base.UrlMeta{Tag: "d7y-test"},
+				capacity: 100,
+			},
+			expect: func(t *testing.T, task *supervisor.Task, err error) {
 				assert := assert.New(t)
+				assert.Nil(err)
 				assert.Equal("\x07\b%$!！\x7F✌ (>‿<)✌", task.ID)
 			},
 		},
 		{
 			name: "create by http url",
-			task: supervisor.NewTask("task", "http://370.moe/", &base.UrlMeta{}),
-			expect: func(t *testing.T, task *supervisor.Task) {
+			args: args{
+				id:       "task",
+				url:      "http://370.moe/",
+				meta:     &base.UrlMeta{},
+				capacity: 100,
+			},
+			expect: func(t *testing.T, task *supervisor.Task, err error) {
 				assert := assert.New(t)
+				assert.Nil(nil)
 				assert.Equal("task", task.ID)
 			},
 		},
 		{
 			name: "create by normal config",
-			task: supervisor.NewTask("task", "android://370.moe", &base.UrlMeta{}),
-			expect: func(t *testing.T, task *supervisor.Task) {
+			args: args{
+				id:       "task",
+				url:      "android://370.moe",
+				meta:     &base.UrlMeta{},
+				capacity: 100,
+			},
+			expect: func(t *testing.T, task *supervisor.Task, err error) {
 				assert := assert.New(t)
 				assert.Equal("task", task.ID)
 			},
@@ -71,7 +100,8 @@ func TestTask_New(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, tc.task)
+			task, err := supervisor.NewTask(tc.args.id, tc.args.url, tc.args.meta, tc.args.capacity)
+			tc.expect(t, task, err)
 		})
 	}
 }
@@ -573,5 +603,6 @@ func mockATask(ID string) *supervisor.Task {
 	urlMeta := &base.UrlMeta{
 		Tag: "d7y-test",
 	}
-	return supervisor.NewTask(ID, "d7y.io/dragonfly", urlMeta)
+	task, _ := supervisor.NewTask(ID, "d7y.io/dragonfly", urlMeta, 100)
+	return task
 }
