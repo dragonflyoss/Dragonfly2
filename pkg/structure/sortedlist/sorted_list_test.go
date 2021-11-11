@@ -164,6 +164,7 @@ func TestRangeReverse(t *testing.T) {
 	l.Add(it)
 	it.(*item).key1 = 2
 	l.Add(NewSortedListItem(2, 3))
+	l.Update(it)
 	key1, key2, ok := l.getKeyMapKey(it)
 	if l.Size() != 4 || key1 != 2 || key2 != 3 || !ok {
 		t.Errorf("TestRangeReverse failed count required[4] but get [%d]", l.Size())
