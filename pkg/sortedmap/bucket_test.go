@@ -17,9 +17,6 @@
 package sortedmap
 
 import (
-	"math/rand"
-	"runtime"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -89,29 +86,6 @@ func TestBucketAdd(t *testing.T) {
 	}
 }
 
-func TestBucketAdd_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	b := NewBucket(N)
-	nums := rand.Perm(N)
-
-	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for i := 0; i < len(nums); i++ {
-		go func(i int) {
-			b.Add(uint(i), i)
-			wg.Done()
-		}(i)
-	}
-
-	wg.Wait()
-	for _, n := range nums {
-		if !b.Contains(uint(n), n) {
-			t.Errorf("Bucket is missing element: %v", n)
-		}
-	}
-}
-
 func TestBucketDelete(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -175,32 +149,6 @@ func TestBucketDelete(t *testing.T) {
 	}
 }
 
-func TestSetDelete_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	b := NewBucket(N)
-	nums := rand.Perm(N)
-	for _, v := range nums {
-		b.Add(uint(v), v)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for _, v := range nums {
-		go func(i int) {
-			b.Delete(uint(i), i)
-			wg.Done()
-		}(v)
-	}
-	wg.Wait()
-
-	for _, v := range nums {
-		if ok := b.Contains(uint(v), v); ok {
-			t.Errorf("Contains error %v", v)
-		}
-	}
-}
-
 func TestBucketContains(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -260,26 +208,6 @@ func TestBucketContains(t *testing.T) {
 	}
 }
 
-func TestBucketContains_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	b := NewBucket(N)
-	nums := rand.Perm(N)
-	for _, v := range nums {
-		b.Add(uint(v), v)
-	}
-
-	var wg sync.WaitGroup
-	for _, v := range nums {
-		wg.Add(1)
-		go func(i int) {
-			b.Contains(uint(i), i)
-			wg.Done()
-		}(v)
-	}
-	wg.Wait()
-}
-
 func TestBucketRange(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -335,37 +263,6 @@ func TestBucketRange(t *testing.T) {
 			tc.expect(t, s)
 		})
 	}
-}
-
-func TestBucketRange_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	b := NewBucket(N)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		i := 0
-		b.Range(func(v interface{}) bool {
-			i++
-			return true
-		})
-
-		j := 0
-		b.Range(func(v interface{}) bool {
-			j++
-			return true
-		})
-		if j < i {
-			t.Errorf("Values shrunk from %v to %v", i, j)
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < N; i++ {
-		b.Add(uint(i), i)
-	}
-	wg.Wait()
 }
 
 func TestBucketReverseRange(t *testing.T) {
@@ -433,35 +330,4 @@ func TestBucketReverseRange(t *testing.T) {
 			tc.expect(t, s)
 		})
 	}
-}
-
-func TestBucketReverseRange_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	b := NewBucket(N)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		i := 0
-		b.ReverseRange(func(v interface{}) bool {
-			i++
-			return true
-		})
-
-		j := 0
-		b.ReverseRange(func(v interface{}) bool {
-			j++
-			return true
-		})
-		if j < i {
-			t.Errorf("Values shrunk from %v to %v", i, j)
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < N; i++ {
-		b.Add(uint(i), i)
-	}
-	wg.Wait()
 }

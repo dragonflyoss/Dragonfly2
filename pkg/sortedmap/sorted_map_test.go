@@ -729,15 +729,12 @@ func TestSortedMapLen_Concurrent(t *testing.T) {
 
 type item struct{}
 
-func (i *item) SortedValue() uint { return uint(rand.Intn(N)) }
+func (i *item) SortedValue() uint { return uint(rand.Int()) }
 
 func BenchmarkSortedMapAdd(b *testing.B) {
-	s := New(N)
+	s := New(uint(b.N))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		s.Add(fmt.Sprint(i), &item{})
-	}
-	if uint(b.N) != s.Len() {
-		b.Errorf("BenchmarkAdd failed count required[%d] but get [%d]", b.N, s.Len())
 	}
 }

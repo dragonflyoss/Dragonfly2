@@ -16,10 +16,6 @@
 
 package set
 
-import (
-	"sync"
-)
-
 type Set interface {
 	Values() []interface{}
 	Add(interface{}) bool
@@ -30,13 +26,11 @@ type Set interface {
 }
 
 type set struct {
-	mu   *sync.RWMutex
 	data map[interface{}]struct{}
 }
 
 func New() Set {
 	return &set{
-		mu:   &sync.RWMutex{},
 		data: make(map[interface{}]struct{}),
 	}
 }
@@ -52,29 +46,20 @@ func (s *set) Values() []interface{} {
 }
 
 func (s *set) Add(v interface{}) bool {
-	s.mu.RLock()
 	_, found := s.data[v]
 	if found {
-		s.mu.RUnlock()
 		return false
 	}
-	s.mu.RUnlock()
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	s.data[v] = struct{}{}
 	return true
 }
 
 func (s *set) Delete(v interface{}) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.data, v)
 }
 
 func (s *set) Contains(vals ...interface{}) bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for _, v := range vals {
 		if _, ok := s.data[v]; !ok {
 			return false
@@ -85,14 +70,10 @@ func (s *set) Contains(vals ...interface{}) bool {
 }
 
 func (s *set) Len() uint {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	return uint(len(s.data))
 }
 
 func (s *set) Range(fn func(interface{}) bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for v := range s.data {
 		if !fn(v) {
 			break

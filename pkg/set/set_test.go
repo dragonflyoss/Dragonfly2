@@ -17,9 +17,6 @@
 package set
 
 import (
-	"math/rand"
-	"runtime"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,29 +59,6 @@ func TestSetAdd(t *testing.T) {
 	}
 }
 
-func TestSetAdd_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-	nums := rand.Perm(N)
-
-	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for i := 0; i < len(nums); i++ {
-		go func(i int) {
-			s.Add(i)
-			wg.Done()
-		}(i)
-	}
-
-	wg.Wait()
-	for _, n := range nums {
-		if !s.Contains(n) {
-			t.Errorf("Set is missing element: %v", n)
-		}
-	}
-}
-
 func TestSetDelete(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -117,30 +91,6 @@ func TestSetDelete(t *testing.T) {
 			s.Add(tc.value)
 			tc.expect(t, s, tc.value)
 		})
-	}
-}
-
-func TestSetDelete_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-	nums := rand.Perm(N)
-	for _, v := range nums {
-		s.Add(v)
-	}
-
-	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for _, v := range nums {
-		go func(i int) {
-			s.Delete(i)
-			wg.Done()
-		}(v)
-	}
-	wg.Wait()
-
-	if s.Len() != 0 {
-		t.Errorf("Expected len 0; got %v", s.Len())
 	}
 }
 
@@ -177,28 +127,6 @@ func TestSetContains(t *testing.T) {
 	}
 }
 
-func TestSetContains_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-	nums := rand.Perm(N)
-	interfaces := make([]interface{}, 0)
-	for _, v := range nums {
-		s.Add(v)
-		interfaces = append(interfaces, v)
-	}
-
-	var wg sync.WaitGroup
-	for range nums {
-		wg.Add(1)
-		go func() {
-			s.Contains(interfaces...)
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-}
-
 func TestSetLen(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -227,30 +155,6 @@ func TestSetLen(t *testing.T) {
 			tc.expect(t, s)
 		})
 	}
-}
-
-func TestSetLen_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		elems := s.Len()
-		for i := 0; i < N; i++ {
-			newElems := s.Len()
-			if newElems < elems {
-				t.Errorf("Len shrunk from %v to %v", elems, newElems)
-			}
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < N; i++ {
-		s.Add(rand.Int())
-	}
-	wg.Wait()
 }
 
 func TestSetValues(t *testing.T) {
@@ -293,30 +197,6 @@ func TestSetValues(t *testing.T) {
 	}
 }
 
-func TestSetValues_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		elems := s.Values()
-		for i := 0; i < N; i++ {
-			newElems := s.Values()
-			if len(newElems) < len(elems) {
-				t.Errorf("Values shrunk from %v to %v", elems, newElems)
-			}
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < N; i++ {
-		s.Add(rand.Int())
-	}
-	wg.Wait()
-}
-
 func TestSetRange(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -353,30 +233,4 @@ func TestSetRange(t *testing.T) {
 			tc.expect(t, s)
 		})
 	}
-}
-
-func TestSetRange_Concurrent(t *testing.T) {
-	runtime.GOMAXPROCS(2)
-
-	s := New()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		elems := s.Values()
-		i := 0
-		s.Range(func(v interface{}) bool {
-			i++
-			return true
-		})
-		if i < len(elems) {
-			t.Errorf("Values shrunk from %v to %v", elems, i)
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < N; i++ {
-		s.Add(rand.Int())
-	}
-	wg.Wait()
 }

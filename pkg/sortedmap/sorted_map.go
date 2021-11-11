@@ -53,12 +53,13 @@ func New(bucketLen uint) SortedMap {
 }
 
 func (s *sortedMap) Add(key string, item Item) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if item.SortedValue() > s.bucketLen-1 {
 		return errors.New("sorted value is illegal")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	oldItem, ok := s.data[key]
 	if ok {
 		oldBkey := oldItem.SortedValue()
@@ -77,12 +78,13 @@ func (s *sortedMap) Add(key string, item Item) error {
 }
 
 func (s *sortedMap) Update(key string, item Item) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	if item.SortedValue() > s.bucketLen-1 {
 		return errors.New("sorted value is illegal")
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
 	oldItem, ok := s.data[key]
 	if !ok {
 		return errors.New("key does not exist")
@@ -100,6 +102,7 @@ func (s *sortedMap) Update(key string, item Item) error {
 func (s *sortedMap) Delete(key string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	item, ok := s.data[key]
 	if !ok {
 		return errors.New("key does not exist")
@@ -114,6 +117,7 @@ func (s *sortedMap) Delete(key string) error {
 func (s *sortedMap) Range(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	s.bucket.Range(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
@@ -130,6 +134,7 @@ func (s *sortedMap) Range(fn func(key string, item Item) bool) {
 func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	s.bucket.ReverseRange(func(v interface{}) bool {
 		if k, ok := v.(string); ok {
 			if item, ok := s.data[k]; ok {
@@ -146,5 +151,6 @@ func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 func (s *sortedMap) Len() uint {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	return uint(len(s.data))
 }
