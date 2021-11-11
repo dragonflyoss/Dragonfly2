@@ -17,27 +17,27 @@
 package set
 
 type Set interface {
-	Values() []interface{}
-	Add(interface{}) bool
-	Delete(interface{})
-	Contains(...interface{}) bool
+	Values() []string
+	Add(string) bool
+	Delete(string)
+	Contains(...string) bool
 	Len() uint
-	Range(func(interface{}) bool)
+	Range(func(string) bool)
 }
 
 type set struct {
-	data map[interface{}]struct{}
+	data map[string]struct{}
 }
 
 func New() Set {
 	return &set{
-		data: make(map[interface{}]struct{}),
+		data: make(map[string]struct{}),
 	}
 }
 
-func (s *set) Values() []interface{} {
-	var result []interface{}
-	s.Range(func(v interface{}) bool {
+func (s *set) Values() []string {
+	var result []string
+	s.Range(func(v string) bool {
 		result = append(result, v)
 		return true
 	})
@@ -45,7 +45,7 @@ func (s *set) Values() []interface{} {
 	return result
 }
 
-func (s *set) Add(v interface{}) bool {
+func (s *set) Add(v string) bool {
 	_, found := s.data[v]
 	if found {
 		return false
@@ -55,11 +55,11 @@ func (s *set) Add(v interface{}) bool {
 	return true
 }
 
-func (s *set) Delete(v interface{}) {
+func (s *set) Delete(v string) {
 	delete(s.data, v)
 }
 
-func (s *set) Contains(vals ...interface{}) bool {
+func (s *set) Contains(vals ...string) bool {
 	for _, v := range vals {
 		if _, ok := s.data[v]; !ok {
 			return false
@@ -73,7 +73,7 @@ func (s *set) Len() uint {
 	return uint(len(s.data))
 }
 
-func (s *set) Range(fn func(interface{}) bool) {
+func (s *set) Range(fn func(string) bool) {
 	for v := range s.data {
 		if !fn(v) {
 			break

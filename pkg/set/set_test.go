@@ -27,26 +27,26 @@ const N = 1000
 func TestSetAdd(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
-		expect func(t *testing.T, ok bool, s Set, value interface{})
+		value  string
+		expect func(t *testing.T, ok bool, s Set, value string)
 	}{
 		{
 			name:  "add value succeeded",
 			value: "foo",
-			expect: func(t *testing.T, ok bool, s Set, value interface{}) {
+			expect: func(t *testing.T, ok bool, s Set, value string) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
-				assert.Equal(s.Values(), []interface{}{value})
+				assert.Equal(s.Values(), []string{value})
 			},
 		},
 		{
 			name:  "add value failed",
 			value: "foo",
-			expect: func(t *testing.T, _ bool, s Set, value interface{}) {
+			expect: func(t *testing.T, _ bool, s Set, value string) {
 				assert := assert.New(t)
 				ok := s.Add("foo")
 				assert.Equal(ok, false)
-				assert.Equal(s.Values(), []interface{}{value})
+				assert.Equal(s.Values(), []string{value})
 			},
 		},
 	}
@@ -62,13 +62,13 @@ func TestSetAdd(t *testing.T) {
 func TestSetDelete(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
-		expect func(t *testing.T, s Set, value interface{})
+		value  string
+		expect func(t *testing.T, s Set, value string)
 	}{
 		{
 			name:  "delete value succeeded",
 			value: "foo",
-			expect: func(t *testing.T, s Set, value interface{}) {
+			expect: func(t *testing.T, s Set, value string) {
 				assert := assert.New(t)
 				s.Delete(value)
 				assert.Equal(s.Len(), uint(0))
@@ -77,7 +77,7 @@ func TestSetDelete(t *testing.T) {
 		{
 			name:  "delete value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s Set, _ interface{}) {
+			expect: func(t *testing.T, s Set, _ string) {
 				assert := assert.New(t)
 				s.Delete("bar")
 				assert.Equal(s.Len(), uint(1))
@@ -97,13 +97,13 @@ func TestSetDelete(t *testing.T) {
 func TestSetContains(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
-		expect func(t *testing.T, s Set, value interface{})
+		value  string
+		expect func(t *testing.T, s Set, value string)
 	}{
 		{
 			name:  "contains value succeeded",
 			value: "foo",
-			expect: func(t *testing.T, s Set, value interface{}) {
+			expect: func(t *testing.T, s Set, value string) {
 				assert := assert.New(t)
 				assert.Equal(s.Contains(value), true)
 			},
@@ -111,7 +111,7 @@ func TestSetContains(t *testing.T) {
 		{
 			name:  "contains value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s Set, _ interface{}) {
+			expect: func(t *testing.T, s Set, _ string) {
 				assert := assert.New(t)
 				assert.Equal(s.Contains("bar"), false)
 			},
@@ -167,14 +167,14 @@ func TestSetValues(t *testing.T) {
 			expect: func(t *testing.T, s Set) {
 				assert := assert.New(t)
 				s.Add("foo")
-				assert.Equal(s.Values(), []interface{}{"foo"})
+				assert.Equal(s.Values(), []string{"foo"})
 			},
 		},
 		{
 			name: "get empty values",
 			expect: func(t *testing.T, s Set) {
 				assert := assert.New(t)
-				assert.Equal(s.Values(), []interface{}(nil))
+				assert.Equal(s.Values(), []string(nil))
 			},
 		},
 		{
@@ -207,7 +207,7 @@ func TestSetRange(t *testing.T) {
 			expect: func(t *testing.T, s Set) {
 				assert := assert.New(t)
 				s.Add("foo")
-				s.Range(func(v interface{}) bool {
+				s.Range(func(v string) bool {
 					assert.Equal(v, "foo")
 					return true
 				})
@@ -219,7 +219,7 @@ func TestSetRange(t *testing.T) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
-				s.Range(func(v interface{}) bool {
+				s.Range(func(v string) bool {
 					assert.Equal(s.Contains(v), true)
 					return false
 				})

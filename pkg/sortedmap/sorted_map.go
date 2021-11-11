@@ -124,12 +124,10 @@ func (s *sortedMap) Range(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	s.bucket.Range(func(v interface{}) bool {
-		if k, ok := v.(string); ok {
-			if item, ok := s.data[k]; ok {
-				if !fn(k, item) {
-					return false
-				}
+	s.bucket.Range(func(k string) bool {
+		if item, ok := s.data[k]; ok {
+			if !fn(k, item) {
+				return false
 			}
 		}
 
@@ -141,12 +139,10 @@ func (s *sortedMap) ReverseRange(fn func(key string, item Item) bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	s.bucket.ReverseRange(func(v interface{}) bool {
-		if k, ok := v.(string); ok {
-			if item, ok := s.data[k]; ok {
-				if !fn(k, item) {
-					return false
-				}
+	s.bucket.ReverseRange(func(k string) bool {
+		if item, ok := s.data[k]; ok {
+			if !fn(k, item) {
+				return false
 			}
 		}
 

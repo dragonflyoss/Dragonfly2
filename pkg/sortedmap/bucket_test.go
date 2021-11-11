@@ -25,17 +25,17 @@ import (
 func TestBucketAdd(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
+		value  string
 		index  uint
 		len    uint
-		expect func(t *testing.T, ok bool, b Bucket, index uint, value interface{})
+		expect func(t *testing.T, ok bool, b Bucket, index uint, value string)
 	}{
 		{
 			name:  "add value succeeded",
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, ok bool, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, ok bool, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
 				assert.Equal(b.Contains(index, value), true)
@@ -46,7 +46,7 @@ func TestBucketAdd(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, _ bool, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, _ bool, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				ok := b.Add(index, value)
 				assert.Equal(ok, false)
@@ -58,7 +58,7 @@ func TestBucketAdd(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   2,
-			expect: func(t *testing.T, _ bool, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, _ bool, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				ok := b.Add(1, "bar")
 				assert.Equal(ok, true)
@@ -71,7 +71,7 @@ func TestBucketAdd(t *testing.T) {
 			value: "foo",
 			index: 1,
 			len:   0,
-			expect: func(t *testing.T, ok bool, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, ok bool, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				assert.Equal(ok, false)
 			},
@@ -89,17 +89,17 @@ func TestBucketAdd(t *testing.T) {
 func TestBucketDelete(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
+		value  string
 		index  uint
 		len    uint
-		expect func(t *testing.T, b Bucket, index uint, value interface{})
+		expect func(t *testing.T, b Bucket, index uint, value string)
 	}{
 		{
 			name:  "delete value succeeded",
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				b.Delete(index, value)
 				assert.Equal(b.Contains(index, value), false)
@@ -110,7 +110,7 @@ func TestBucketDelete(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				b.Delete(index, "bar")
 				assert.Equal(b.Contains(index, value), true)
@@ -121,7 +121,7 @@ func TestBucketDelete(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   2,
-			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				b.Delete(1, "bar")
 				assert.Equal(b.Contains(index, value), true)
@@ -132,7 +132,7 @@ func TestBucketDelete(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				b.Delete(1, "bar")
 				assert.Equal(b.Contains(index, value), true)
@@ -152,17 +152,17 @@ func TestBucketDelete(t *testing.T) {
 func TestBucketContains(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
+		value  string
 		index  uint
 		len    uint
-		expect func(t *testing.T, b Bucket, index uint, value interface{})
+		expect func(t *testing.T, b Bucket, index uint, value string)
 	}{
 		{
 			name:  "contains value succeeded",
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, index uint, value interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, value string) {
 				assert := assert.New(t)
 				assert.Equal(b.Contains(index, value), true)
 			},
@@ -172,7 +172,7 @@ func TestBucketContains(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, index uint, _ interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, _ string) {
 				assert := assert.New(t)
 				assert.Equal(b.Contains(index, "bar"), false)
 			},
@@ -182,7 +182,7 @@ func TestBucketContains(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   2,
-			expect: func(t *testing.T, b Bucket, index uint, _ interface{}) {
+			expect: func(t *testing.T, b Bucket, index uint, _ string) {
 				assert := assert.New(t)
 				assert.Equal(b.Contains(1, "bar"), false)
 			},
@@ -192,7 +192,7 @@ func TestBucketContains(t *testing.T) {
 			value: "foo",
 			index: 0,
 			len:   1,
-			expect: func(t *testing.T, b Bucket, _ uint, _ interface{}) {
+			expect: func(t *testing.T, b Bucket, _ uint, _ string) {
 				assert := assert.New(t)
 				assert.Equal(b.Contains(2, "bar"), false)
 			},
@@ -220,7 +220,7 @@ func TestBucketRange(t *testing.T) {
 			expect: func(t *testing.T, b Bucket) {
 				assert := assert.New(t)
 				b.Add(0, "foo")
-				b.Range(func(v interface{}) bool {
+				b.Range(func(v string) bool {
 					assert.Equal(v, "foo")
 					return true
 				})
@@ -233,7 +233,7 @@ func TestBucketRange(t *testing.T) {
 				assert := assert.New(t)
 				b.Add(0, "foo")
 				b.Add(1, "bar")
-				b.Range(func(v interface{}) bool {
+				b.Range(func(v string) bool {
 					assert.Equal(v, "foo")
 					return false
 				})
@@ -247,7 +247,7 @@ func TestBucketRange(t *testing.T) {
 				count := 0
 				b.Add(0, "foo")
 				b.Add(0, "bar")
-				b.Range(func(v interface{}) bool {
+				b.Range(func(v string) bool {
 					assert.Contains([]string{"foo", "bar"}, v)
 					count++
 					return true
@@ -281,7 +281,7 @@ func TestBucketReverseRange(t *testing.T) {
 				b.Add(1, "baz")
 
 				i := 0
-				b.ReverseRange(func(v interface{}) bool {
+				b.ReverseRange(func(v string) bool {
 					if i == 0 {
 						assert.Equal(v, "baz")
 					} else {
@@ -300,7 +300,7 @@ func TestBucketReverseRange(t *testing.T) {
 				assert := assert.New(t)
 				b.Add(0, "foo")
 				b.Add(1, "bar")
-				b.ReverseRange(func(v interface{}) bool {
+				b.ReverseRange(func(v string) bool {
 					assert.Equal(v, "bar")
 					return false
 				})
@@ -314,7 +314,7 @@ func TestBucketReverseRange(t *testing.T) {
 				count := 0
 				b.Add(0, "foo")
 				b.Add(0, "bar")
-				b.ReverseRange(func(v interface{}) bool {
+				b.ReverseRange(func(v string) bool {
 					assert.Contains([]string{"foo", "bar"}, "foo")
 					count++
 					return true
