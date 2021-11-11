@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	HostMaxLoad = 10 * 1000
+	HostMaxLoad = 5 * 1000
 )
 
 func TestPeer_New(t *testing.T) {
