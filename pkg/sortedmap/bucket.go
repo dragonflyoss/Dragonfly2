@@ -17,6 +17,8 @@
 package sortedmap
 
 import (
+	"sync"
+
 	"d7y.io/dragonfly/v2/pkg/set"
 )
 
@@ -30,11 +32,13 @@ type Bucket interface {
 }
 
 type bucket struct {
+	mu   *sync.RWMutex
 	data []set.Set
 }
 
 func NewBucket(len uint) Bucket {
 	return &bucket{
+		mu:   &sync.RWMutex{},
 		data: make([]set.Set, len),
 	}
 }
@@ -44,9 +48,11 @@ func (b *bucket) Add(i uint, v interface{}) bool {
 		return false
 	}
 
+	b.mu.Lock()
 	if s := b.data[i]; s == nil {
 		b.data[i] = set.New()
 	}
+	b.mu.Unlock()
 
 	if ok := b.data[i].Add(v); !ok {
 		return false
@@ -60,9 +66,12 @@ func (b *bucket) Delete(i uint, v interface{}) {
 		return
 	}
 
+	b.mu.RLock()
 	if s := b.data[i]; s == nil {
+		b.mu.RUnlock()
 		return
 	}
+	b.mu.RUnlock()
 
 	b.data[i].Delete(v)
 }
@@ -72,9 +81,12 @@ func (b *bucket) Contains(i uint, v interface{}) bool {
 		return false
 	}
 
+	b.mu.RLock()
 	if s := b.data[i]; s == nil {
+		b.mu.RUnlock()
 		return false
 	}
+	b.mu.RUnlock()
 
 	if ok := b.data[i].Contains(v); !ok {
 		return false
@@ -88,6 +100,8 @@ func (b *bucket) Len() uint {
 }
 
 func (b *bucket) Range(fn func(interface{}) bool) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	for _, s := range b.data {
 		if s != nil && s.Len() > 0 {
 			for _, v := range s.Values() {
@@ -100,6 +114,8 @@ func (b *bucket) Range(fn func(interface{}) bool) {
 }
 
 func (b *bucket) ReverseRange(fn func(interface{}) bool) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
 	for i := range b.data {
 		s := b.data[b.Len()-uint(1+i)]
 		if s != nil && s.Len() > 0 {
