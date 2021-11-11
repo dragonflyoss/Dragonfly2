@@ -18,12 +18,15 @@
 package sortedlist
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
-const BucketMaxLength = 100000
-const InnerBucketMaxLength = 10000
+var (
+	errDataNotFound     = errors.New("data not found")
+	errDataAlreadyExist = errors.New("data already exist")
+)
 
 type Item interface {
 	GetSortKeys() (key1 int, key2 int)
@@ -39,54 +42,51 @@ type SortedList interface {
 	Size() int
 }
 
-type sortedList struct {
-	l       sync.RWMutex
-	buckets []bucket
-	keyMap  map[Item]int
-	left    int
-	right   int
+type KeyIndex struct {
+	majorIndex     int
+	secondaryIndex int
 }
 
-func NewSortedList() SortedList {
-	l := &sortedList{
-		left:   0,
-		right:  0,
-		keyMap: make(map[Item]int),
+type sortedList struct {
+	l              sync.RWMutex
+	buckets        []bucket
+	keyMap         map[Item]KeyIndex
+	left           int
+	right          int
+	bucketCapacity int
+}
+
+func NewSortedList(bucketCapacity int) (SortedList, error) {
+	if bucketCapacity <= 0 {
+		return nil, errors.Errorf("bucketCapacity should larger than zero, invalid %d:", bucketCapacity)
 	}
-	return l
+	l := &sortedList{
+		left:           0,
+		right:          0,
+		bucketCapacity: bucketCapacity,
+		keyMap:         make(map[Item]KeyIndex),
+	}
+	return l, nil
 }
 
 func (l *sortedList) Add(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
-	if key1 > BucketMaxLength || key1 < 0 {
-		return fmt.Errorf("sorted list key1 out of range")
-	}
-	if key2 > InnerBucketMaxLength || key2 < 0 {
-		return fmt.Errorf("sorted list key2 out of range")
-	}
 	l.l.Lock()
 	defer l.l.Unlock()
+	_, _, ok := l.getKeyMapKey(data)
+	if ok {
+		return errDataAlreadyExist
+	}
 	l.addItem(key1, key2, data)
 	return
 }
 func (l *sortedList) Update(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
-	if key1 > BucketMaxLength || key1 < 0 {
-		return fmt.Errorf("sorted list key1 out of range")
-	}
-	if key2 > InnerBucketMaxLength || key2 < 0 {
-		return fmt.Errorf("sorted list key2 out of range")
-	}
-
 	l.l.Lock()
 	defer l.l.Unlock()
 	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
 	if !ok {
-		return
-	}
-
-	if key1 == oldKey1 && key2 == oldKey2 {
-		return
+		return errDataNotFound
 	}
 
 	l.deleteItem(oldKey1, oldKey2, data)
@@ -96,22 +96,12 @@ func (l *sortedList) Update(data Item) (err error) {
 
 func (l *sortedList) UpdateOrAdd(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
-	if key1 > BucketMaxLength || key1 < 0 {
-		return fmt.Errorf("sorted list key1 out of range")
-	}
-	if key2 > InnerBucketMaxLength || key2 < 0 {
-		return fmt.Errorf("sorted list key2 out of range")
-	}
 
 	l.l.Lock()
 	defer l.l.Unlock()
 	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
 	if !ok {
 		l.addItem(key1, key2, data)
-		return
-	}
-
-	if key1 == oldKey1 && key2 == oldKey2 {
 		return
 	}
 
@@ -126,7 +116,7 @@ func (l *sortedList) Delete(data Item) (err error) {
 	defer l.l.Unlock()
 	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
 	if !ok {
-		return
+		return errors.Errorf("data does not exist")
 	}
 	l.deleteItem(oldKey1, oldKey2, data)
 	return
@@ -200,14 +190,17 @@ func (l *sortedList) Size() int {
 func (l *sortedList) addItem(key1, key2 int, data Item) {
 	l.addKey(key1)
 	l.buckets[key1].Add(key2, data)
-	l.setKeyMapKey(key1, key2, data)
+	l.keyMap[data] = KeyIndex{
+		majorIndex:     key1,
+		secondaryIndex: key2,
+	}
 	l.shrink()
 }
 
 func (l *sortedList) deleteItem(key1, key2 int, data Item) {
 	l.addKey(key1)
 	l.buckets[key1].Delete(key2, data)
-	l.deleteKeyMapKey(data)
+	delete(l.keyMap, data)
 	l.shrink()
 }
 
@@ -232,17 +225,9 @@ func (l *sortedList) shrink() {
 	}
 }
 
-func (l *sortedList) setKeyMapKey(key1, key2 int, data Item) {
-	l.keyMap[data] = key1*1000 + key2
-}
-
 func (l *sortedList) getKeyMapKey(data Item) (key1, key2 int, ok bool) {
 	key, ok := l.keyMap[data]
-	key1 = key / 1000
-	key2 = key % 1000
+	key1 = key.majorIndex
+	key2 = key.secondaryIndex
 	return
-}
-
-func (l *sortedList) deleteKeyMapKey(data Item) {
-	delete(l.keyMap, data)
 }
