@@ -518,8 +518,8 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					Warnf("load task from disk error: %s", err0)
 				continue
 			}
-			logger.Debugf("load task %s/%s from disk, metadata %s",
-				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath)
+			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %s, expire time: %s",
+				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, t.lastAccess, t.expireTime)
 			s.tasks.Store(PeerTaskMetaData{
 				PeerID: peerID,
 				TaskID: taskID,
@@ -624,7 +624,6 @@ func (s *storageManager) TryGC() (bool, error) {
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
-			logger.Warnf("task %s/%s marked, but not found", key.TaskID, key.PeerID)
 			continue
 		}
 		task := t.(*localTaskStore)
@@ -642,7 +641,13 @@ func (s *storageManager) TryGC() (bool, error) {
 			continue
 		}
 		logger.Infof("task %s/%s reclaimed", key.TaskID, key.PeerID)
-
+		// remove reclaimed task in markedTasks
+		for i, k := range markedTasks {
+			if k.TaskID == key.TaskID && k.PeerID == key.PeerID {
+				markedTasks = append(markedTasks[:i], markedTasks[i+1:]...)
+				break
+			}
+		}
 		span.End()
 	}
 	logger.Infof("marked %d task(s), reclaimed %d task(s)", len(markedTasks), len(s.markedReclaimTasks))
