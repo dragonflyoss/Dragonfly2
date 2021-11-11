@@ -26,9 +26,7 @@ type Bucket interface {
 }
 
 type bucket struct {
-	data  []Set
-	start uint
-	end   uint
+	data []Set
 }
 
 func NewBucket(len uint) Bucket {
@@ -44,14 +42,6 @@ func (b *bucket) Add(i uint, v string) bool {
 
 	if s := b.data[i]; s == nil {
 		b.data[i] = NewSet()
-
-		if b.start >= i {
-			b.start = i
-		}
-
-		if b.end <= i {
-			b.end = i
-		}
 	}
 
 	if ok := b.data[i].Add(v); !ok {
@@ -71,10 +61,6 @@ func (b *bucket) Delete(i uint, v string) {
 	}
 
 	b.data[i].Delete(v)
-
-	if b.data[i].Len() == 0 {
-		b.shrink(i)
-	}
 }
 
 func (b *bucket) Contains(i uint, v string) bool {
@@ -98,8 +84,7 @@ func (b *bucket) Len() uint {
 }
 
 func (b *bucket) Range(fn func(string) bool) {
-	for i := b.start; i <= b.end; i++ {
-		s := b.data[i]
+	for _, s := range b.data {
 		if s != nil && s.Len() > 0 {
 			for _, v := range s.Values() {
 				if !fn(v) {
@@ -111,8 +96,8 @@ func (b *bucket) Range(fn func(string) bool) {
 }
 
 func (b *bucket) ReverseRange(fn func(string) bool) {
-	for i := b.end; i >= b.start; i-- {
-		s := b.data[i]
+	for i := range b.data {
+		s := b.data[b.Len()-uint(1+i)]
 		if s != nil && s.Len() > 0 {
 			for _, v := range s.Values() {
 				if !fn(v) {
@@ -120,19 +105,5 @@ func (b *bucket) ReverseRange(fn func(string) bool) {
 				}
 			}
 		}
-
-		if i == 0 {
-			break
-		}
-	}
-}
-
-func (b *bucket) shrink(i uint) {
-	if b.start < b.end && b.start == i {
-		b.start++
-	}
-
-	if b.start < b.end && b.end == i {
-		b.end--
 	}
 }
