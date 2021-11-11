@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/sortedmap/mocks"
 )
 
-const N = 1000
+const N = 100 * 1000
 
 func TestSortedMapAdd(t *testing.T) {
 	tests := []struct {
