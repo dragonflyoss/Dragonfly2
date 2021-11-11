@@ -179,7 +179,7 @@ type Task struct {
 	// status is task status and type is TaskStatus
 	status atomic.Value
 	// peers is peer list
-	peers *sortedlist.SortedList
+	peers sortedlist.SortedList
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -286,7 +286,7 @@ func (task *Task) DeletePeer(peer *Peer) {
 	task.logger.Debugf("peer %s has been deleted, current total peer count is %d", peer.ID, task.peers.Size())
 }
 
-func (task *Task) GetPeers() *sortedlist.SortedList {
+func (task *Task) GetPeers() sortedlist.SortedList {
 	return task.peers
 }
 
@@ -370,7 +370,7 @@ func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (p
 		return
 	}
 
-	task.GetPeers().RangeReverse(func(data sortedlist.Item) bool {
+	task.GetPeers().ReverseRange(func(data sortedlist.Item) bool {
 		if len(pickedPeers) >= limit {
 			return false
 		}

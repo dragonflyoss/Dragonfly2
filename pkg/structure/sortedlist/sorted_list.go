@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mocks/sorted_map_mock.go -package mocks d7y.io/dragonfly/v2/pkg/structure/sortedlist SortedList,Item
 
 package sortedlist
 
@@ -28,7 +29,17 @@ type Item interface {
 	GetSortKeys() (key1 int, key2 int)
 }
 
-type SortedList struct {
+type SortedList interface {
+	Add(Item) error
+	Update(Item) error
+	UpdateOrAdd(Item) error
+	Delete(Item) error
+	Range(func(Item) bool)
+	ReverseRange(func(Item) bool)
+	Size() int
+}
+
+type sortedList struct {
 	l       sync.RWMutex
 	buckets []bucket
 	keyMap  map[Item]int
@@ -36,8 +47,8 @@ type SortedList struct {
 	right   int
 }
 
-func NewSortedList() *SortedList {
-	l := &SortedList{
+func NewSortedList() SortedList {
+	l := &sortedList{
 		left:   0,
 		right:  0,
 		keyMap: make(map[Item]int),
@@ -45,7 +56,7 @@ func NewSortedList() *SortedList {
 	return l
 }
 
-func (l *SortedList) Add(data Item) (err error) {
+func (l *sortedList) Add(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
 	if key1 > BucketMaxLength || key1 < 0 {
 		return fmt.Errorf("sorted list key1 out of range")
@@ -58,7 +69,7 @@ func (l *SortedList) Add(data Item) (err error) {
 	l.addItem(key1, key2, data)
 	return
 }
-func (l *SortedList) Update(data Item) (err error) {
+func (l *sortedList) Update(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
 	if key1 > BucketMaxLength || key1 < 0 {
 		return fmt.Errorf("sorted list key1 out of range")
@@ -83,7 +94,7 @@ func (l *SortedList) Update(data Item) (err error) {
 	return
 }
 
-func (l *SortedList) UpdateOrAdd(data Item) (err error) {
+func (l *sortedList) UpdateOrAdd(data Item) (err error) {
 	key1, key2 := data.GetSortKeys()
 	if key1 > BucketMaxLength || key1 < 0 {
 		return fmt.Errorf("sorted list key1 out of range")
@@ -110,7 +121,7 @@ func (l *SortedList) UpdateOrAdd(data Item) (err error) {
 	return
 }
 
-func (l *SortedList) Delete(data Item) (err error) {
+func (l *sortedList) Delete(data Item) (err error) {
 	l.l.Lock()
 	defer l.l.Unlock()
 	oldKey1, oldKey2, ok := l.getKeyMapKey(data)
@@ -121,11 +132,11 @@ func (l *SortedList) Delete(data Item) (err error) {
 	return
 }
 
-func (l *SortedList) Range(fn func(data Item) bool) {
+func (l *sortedList) Range(fn func(data Item) bool) {
 	l.RangeLimit(-1, fn)
 }
 
-func (l *SortedList) RangeLimit(limit int, fn func(Item) bool) {
+func (l *sortedList) RangeLimit(limit int, fn func(Item) bool) {
 	if limit == 0 {
 		return
 	}
@@ -151,11 +162,11 @@ func (l *SortedList) RangeLimit(limit int, fn func(Item) bool) {
 	}
 }
 
-func (l *SortedList) RangeReverse(fn func(data Item) bool) {
-	l.RangeReverseLimit(-1, fn)
+func (l *sortedList) ReverseRange(fn func(data Item) bool) {
+	l.ReverseRangeLimit(-1, fn)
 }
 
-func (l *SortedList) RangeReverseLimit(limit int, fn func(Item) bool) {
+func (l *sortedList) ReverseRangeLimit(limit int, fn func(Item) bool) {
 	if limit == 0 {
 		return
 	}
@@ -180,27 +191,27 @@ func (l *SortedList) RangeReverseLimit(limit int, fn func(Item) bool) {
 	}
 }
 
-func (l *SortedList) Size() int {
+func (l *sortedList) Size() int {
 	l.l.RLock()
 	defer l.l.RUnlock()
 	return len(l.keyMap)
 }
 
-func (l *SortedList) addItem(key1, key2 int, data Item) {
+func (l *sortedList) addItem(key1, key2 int, data Item) {
 	l.addKey(key1)
 	l.buckets[key1].Add(key2, data)
 	l.setKeyMapKey(key1, key2, data)
 	l.shrink()
 }
 
-func (l *SortedList) deleteItem(key1, key2 int, data Item) {
+func (l *sortedList) deleteItem(key1, key2 int, data Item) {
 	l.addKey(key1)
 	l.buckets[key1].Delete(key2, data)
 	l.deleteKeyMapKey(data)
 	l.shrink()
 }
 
-func (l *SortedList) addKey(key int) {
+func (l *sortedList) addKey(key int) {
 	for key >= len(l.buckets) {
 		l.buckets = append(l.buckets, bucket{})
 	}
@@ -212,7 +223,7 @@ func (l *SortedList) addKey(key int) {
 	}
 }
 
-func (l *SortedList) shrink() {
+func (l *sortedList) shrink() {
 	for l.left < l.right && l.buckets[l.left].Size() == 0 {
 		l.left++
 	}
@@ -221,17 +232,17 @@ func (l *SortedList) shrink() {
 	}
 }
 
-func (l *SortedList) setKeyMapKey(key1, key2 int, data Item) {
+func (l *sortedList) setKeyMapKey(key1, key2 int, data Item) {
 	l.keyMap[data] = key1*1000 + key2
 }
 
-func (l *SortedList) getKeyMapKey(data Item) (key1, key2 int, ok bool) {
+func (l *sortedList) getKeyMapKey(data Item) (key1, key2 int, ok bool) {
 	key, ok := l.keyMap[data]
 	key1 = key / 1000
 	key2 = key % 1000
 	return
 }
 
-func (l *SortedList) deleteKeyMapKey(data Item) {
+func (l *sortedList) deleteKeyMapKey(data Item) {
 	delete(l.keyMap, data)
 }
