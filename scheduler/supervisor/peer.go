@@ -36,7 +36,7 @@ const (
 )
 
 const (
-	// Maximum number of pieces for a peer is 10000
+	// Maximum number of pieces for a peer is 1000
 	// because a single image is less than 14.6G (1000 * 15M / 1024 = 14.6484375 G)
 	PeerMaxPieceCount = 1000
 )
