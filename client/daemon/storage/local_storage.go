@@ -352,7 +352,9 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 
 func (t *localTaskStore) CanReclaim() bool {
 	access := time.Unix(0, t.lastAccess.Load())
-	return access.Add(t.expireTime).Before(time.Now())
+	reclaim := access.Add(t.expireTime).Before(time.Now())
+	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
+	return reclaim
 }
 
 // MarkReclaim will try to invoke gcCallback (normal leave peer task)
