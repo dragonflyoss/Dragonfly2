@@ -23,9 +23,9 @@ import (
 	"sync"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/structure/sortedlist/mocks"
+	"d7y.io/dragonfly/v2/pkg/structure/sortedlist/mocks" //nolint:gci
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert" //nolint:gci
 )
 
 const N = 1000
