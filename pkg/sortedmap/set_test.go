@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package set
+package sortedmap
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-const N = 1000
 
 func TestSetAdd(t *testing.T) {
 	tests := []struct {
@@ -53,7 +51,7 @@ func TestSetAdd(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			tc.expect(t, s.Add(tc.value), s, tc.value)
 		})
 	}
@@ -87,7 +85,7 @@ func TestSetDelete(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			s.Add(tc.value)
 			tc.expect(t, s, tc.value)
 		})
@@ -120,7 +118,7 @@ func TestSetContains(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			s.Add(tc.value)
 			tc.expect(t, s, tc.value)
 		})
@@ -151,7 +149,7 @@ func TestSetLen(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			tc.expect(t, s)
 		})
 	}
@@ -191,7 +189,7 @@ func TestSetValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			tc.expect(t, s)
 		})
 	}
@@ -229,7 +227,7 @@ func TestSetRange(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := New()
+			s := NewSet()
 			tc.expect(t, s)
 		})
 	}

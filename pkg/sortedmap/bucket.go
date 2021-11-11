@@ -16,10 +16,6 @@
 
 package sortedmap
 
-import (
-	"d7y.io/dragonfly/v2/pkg/set"
-)
-
 type Bucket interface {
 	Len() uint
 	Add(uint, string) bool
@@ -30,14 +26,14 @@ type Bucket interface {
 }
 
 type bucket struct {
-	data  []set.Set
+	data  []Set
 	start uint
 	end   uint
 }
 
 func NewBucket(len uint) Bucket {
 	return &bucket{
-		data: make([]set.Set, len),
+		data: make([]Set, len),
 	}
 }
 
@@ -47,7 +43,7 @@ func (b *bucket) Add(i uint, v string) bool {
 	}
 
 	if s := b.data[i]; s == nil {
-		b.data[i] = set.New()
+		b.data[i] = NewSet()
 
 		if b.start >= i {
 			b.start = i

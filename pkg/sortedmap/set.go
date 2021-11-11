@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package set
+package sortedmap
 
 type Set interface {
 	Values() []string
@@ -29,7 +29,7 @@ type set struct {
 	data map[string]struct{}
 }
 
-func New() Set {
+func NewSet() Set {
 	return &set{
 		data: make(map[string]struct{}),
 	}
