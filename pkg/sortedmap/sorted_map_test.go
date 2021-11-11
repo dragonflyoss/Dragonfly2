@@ -732,8 +732,8 @@ type item struct{}
 func (i *item) SortedValue() uint { return uint(rand.Intn(N)) }
 
 func BenchmarkSortedMapAdd(b *testing.B) {
-	b.ResetTimer()
 	s := New(N)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		s.Add(fmt.Sprint(i), &item{})
 	}
