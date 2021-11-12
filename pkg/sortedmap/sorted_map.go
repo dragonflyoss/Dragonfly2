@@ -57,12 +57,10 @@ func (s *sortedMap) Add(key string, item Item) error {
 		return errors.New("sorted value is illegal")
 	}
 
-	s.mu.RLock()
-	oldItem, ok := s.data[key]
-	s.mu.RUnlock()
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	oldItem, ok := s.data[key]
 	if ok {
 		oldBkey := oldItem.SortedValue()
 		s.bucket.Delete(oldBkey, key)
@@ -84,15 +82,13 @@ func (s *sortedMap) Update(key string, item Item) error {
 		return errors.New("sorted value is illegal")
 	}
 
-	s.mu.RLock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	oldItem, ok := s.data[key]
-	s.mu.RUnlock()
 	if !ok {
 		return errors.New("key does not exist")
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	oldBkey := oldItem.SortedValue()
 	s.bucket.Delete(oldBkey, key)
@@ -104,15 +100,13 @@ func (s *sortedMap) Update(key string, item Item) error {
 }
 
 func (s *sortedMap) Delete(key string) error {
-	s.mu.RLock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	item, ok := s.data[key]
-	s.mu.RUnlock()
 	if !ok {
 		return errors.New("key does not exist")
 	}
-
-	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	bkey := item.SortedValue()
 	s.bucket.Delete(bkey, key)

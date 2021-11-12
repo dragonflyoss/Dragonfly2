@@ -25,14 +25,10 @@ type Set interface {
 	Range(func(string) bool)
 }
 
-type set struct {
-	data map[string]struct{}
-}
+type set map[string]struct{}
 
 func NewSet() Set {
-	return &set{
-		data: make(map[string]struct{}),
-	}
+	return &set{}
 }
 
 func (s *set) Values() []string {
@@ -46,22 +42,22 @@ func (s *set) Values() []string {
 }
 
 func (s *set) Add(v string) bool {
-	_, found := s.data[v]
+	_, found := (*s)[v]
 	if found {
 		return false
 	}
 
-	s.data[v] = struct{}{}
+	(*s)[v] = struct{}{}
 	return true
 }
 
 func (s *set) Delete(v string) {
-	delete(s.data, v)
+	delete(*s, v)
 }
 
 func (s *set) Contains(vals ...string) bool {
 	for _, v := range vals {
-		if _, ok := s.data[v]; !ok {
+		if _, ok := (*s)[v]; !ok {
 			return false
 		}
 	}
@@ -70,11 +66,11 @@ func (s *set) Contains(vals ...string) bool {
 }
 
 func (s *set) Len() uint {
-	return uint(len(s.data))
+	return uint(len(*s))
 }
 
 func (s *set) Range(fn func(string) bool) {
-	for v := range s.data {
+	for v := range *s {
 		if !fn(v) {
 			break
 		}

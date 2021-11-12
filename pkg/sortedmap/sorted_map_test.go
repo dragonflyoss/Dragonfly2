@@ -739,6 +739,30 @@ func BenchmarkSortedMapAdd(b *testing.B) {
 	}
 }
 
+func BenchmarkSortedMapDelete(b *testing.B) {
+	s := New(uint(b.N))
+	for i := 0; i < b.N; i++ {
+		s.Add(fmt.Sprint(i), &item{})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.Delete(fmt.Sprint(i))
+	}
+}
+
+func BenchmarkSortedMapUpdate(b *testing.B) {
+	s := New(uint(b.N))
+	for i := 0; i < b.N; i++ {
+		s.Add(fmt.Sprint(i), &item{})
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		s.Update(fmt.Sprint(i), &item{})
+	}
+}
+
 func BenchmarkSortedMapRange(b *testing.B) {
 	s := New(uint(b.N))
 	for i := 0; i < b.N; i++ {
@@ -747,4 +771,14 @@ func BenchmarkSortedMapRange(b *testing.B) {
 
 	b.ResetTimer()
 	s.Range(func(_ string, item Item) bool { return true })
+}
+
+func BenchmarkSortedMapReverseRange(b *testing.B) {
+	s := New(uint(b.N))
+	for i := 0; i < b.N; i++ {
+		s.Add(fmt.Sprint(i), &item{})
+	}
+
+	b.ResetTimer()
+	s.ReverseRange(func(_ string, item Item) bool { return true })
 }
