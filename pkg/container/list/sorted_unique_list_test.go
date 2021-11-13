@@ -17,7 +17,6 @@
 package list
 
 import (
-	"fmt"
 	"math/rand"
 	"runtime"
 	"sync"
@@ -32,7 +31,7 @@ import (
 func TestSortedUniqueListInsert(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -126,7 +125,7 @@ func TestSortedUniqueListInsert_Concurrent(t *testing.T) {
 func TestSortedUniqueListRemove(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -214,7 +213,7 @@ func TestSortedUniqueListRemove_Concurrent(t *testing.T) {
 func TestSortedUniqueListContains(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -289,7 +288,7 @@ func TestSortedUniqueListContains_Concurrent(t *testing.T) {
 func TestSortedUniqueListLen(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -377,7 +376,7 @@ func TestSortedUniqueListLen_Concurrent(t *testing.T) {
 func TestSortedUniqueListRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -396,11 +395,31 @@ func TestSortedUniqueListRange(t *testing.T) {
 
 				i := 0
 				ul.Range(func(item Item) bool {
-					if i == 0 {
-						assert.Equal(item, items[0])
-					} else {
-						assert.Equal(item, items[1])
-					}
+					assert.Equal(item, items[i])
+					i++
+					return true
+				})
+			},
+		},
+		{
+			name: "range multi values succeeded",
+			mock: func(m ...*mocks.MockItemMockRecorder) {
+				for i := range m {
+					m[i].SortedValue().Return(i).AnyTimes()
+				}
+			},
+			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
+				assert := assert.New(t)
+				for _, item := range items {
+					ul.Insert(item)
+				}
+				ul.Insert(items[1])
+				assert.Equal(ul.Len(), 10)
+
+				i := 0
+				ul.Range(func(item Item) bool {
+					assert.Equal(item, items[i])
+					i++
 					return true
 				})
 			},
@@ -469,9 +488,16 @@ func TestSortedUniqueListRange(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
-			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
-			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
+			var mockItems []Item
+			var mockItemRecorders []*mocks.MockItemMockRecorder
+			for i := 0; i < 10; i++ {
+				mockItem := mocks.NewMockItem(ctl)
+				mockItemRecorders = append(mockItemRecorders, mockItem.EXPECT())
+				mockItems = append(mockItems, mockItem)
+			}
+
+			tc.mock(mockItemRecorders...)
+			tc.expect(t, NewSortedUniqueList(), mockItems...)
 		})
 	}
 }
@@ -521,7 +547,7 @@ func TestSortedUniqueListRange_Concurrent(t *testing.T) {
 func TestSortedUniqueListReverseRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(mocks ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*mocks.MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
@@ -538,13 +564,33 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 				ul.Insert(items[1])
 				assert.Equal(ul.Len(), 2)
 
-				i := 0
+				i := 1
 				ul.ReverseRange(func(item Item) bool {
-					if i == 0 {
-						assert.Equal(item, items[0])
-					} else {
-						assert.Equal(item, items[1])
-					}
+					assert.Equal(item, items[i])
+					i--
+					return true
+				})
+			},
+		},
+		{
+			name: "reverse range multi values succeeded",
+			mock: func(m ...*mocks.MockItemMockRecorder) {
+				for i := range m {
+					m[i].SortedValue().Return(i).AnyTimes()
+				}
+			},
+			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
+				assert := assert.New(t)
+				for _, item := range items {
+					ul.Insert(item)
+				}
+				ul.Insert(items[1])
+				assert.Equal(ul.Len(), 10)
+
+				i := 9
+				ul.Range(func(item Item) bool {
+					assert.Equal(item, items[i])
+					i--
 					return true
 				})
 			},
@@ -613,9 +659,16 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
-			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
-			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
+			var mockItems []Item
+			var mockItemRecorders []*mocks.MockItemMockRecorder
+			for i := 0; i < 10; i++ {
+				mockItem := mocks.NewMockItem(ctl)
+				mockItemRecorders = append(mockItemRecorders, mockItem.EXPECT())
+				mockItems = append(mockItems, mockItem)
+			}
+
+			tc.mock(mockItemRecorders...)
+			tc.expect(t, NewSortedUniqueList(), mockItems...)
 		})
 	}
 }
@@ -667,19 +720,13 @@ func BenchmarkSortedUniqueListInsert(b *testing.B) {
 
 	var mockItems []*item
 	for i := 0; i < b.N; i++ {
-		mockItem := new(item)
-		mockItems = append(mockItems, mockItem)
+		mockItems = append(mockItems, &item{id: i})
 	}
 
 	b.ResetTimer()
 	for _, mockItem := range mockItems {
 		ul.Insert(mockItem)
 	}
-
-	fmt.Println("111111111")
-	fmt.Println(ul.Len())
-	fmt.Println(mockItems)
-	fmt.Println("111111111")
 }
 
 func BenchmarkSortedUniqueListRemove(b *testing.B) {
@@ -687,7 +734,7 @@ func BenchmarkSortedUniqueListRemove(b *testing.B) {
 
 	var mockItems []*item
 	for i := 0; i < b.N; i++ {
-		mockItem := new(item)
+		mockItem := &item{id: i}
 		ul.Insert(mockItem)
 		mockItems = append(mockItems, mockItem)
 	}
@@ -703,7 +750,7 @@ func BenchmarkSortedUniqueListContains(b *testing.B) {
 
 	var mockItems []*item
 	for i := 0; i < b.N; i++ {
-		mockItem := new(item)
+		mockItem := &item{id: i}
 		ul.Insert(mockItem)
 		mockItems = append(mockItems, mockItem)
 	}
@@ -718,7 +765,8 @@ func BenchmarkSortedUniqueListRange(b *testing.B) {
 	ul := NewSortedUniqueList()
 
 	for i := 0; i < b.N; i++ {
-		ul.Insert(new(item))
+		mockItem := item{id: i}
+		ul.Insert(&mockItem)
 	}
 
 	b.ResetTimer()
@@ -729,7 +777,8 @@ func BenchmarkSortedUniqueListReverseRange(b *testing.B) {
 	ul := NewSortedUniqueList()
 
 	for i := 0; i < b.N; i++ {
-		ul.Insert(new(item))
+		mockItem := item{id: i}
+		ul.Insert(&mockItem)
 	}
 
 	b.ResetTimer()

@@ -29,7 +29,6 @@ type SortedUniqueList interface {
 	Contains(Item) bool
 	Range(func(Item) bool)
 	ReverseRange(fn func(Item) bool)
-	Clear()
 }
 
 type sortedUniqueList struct {
@@ -104,17 +103,4 @@ func (ul *sortedUniqueList) ReverseRange(fn func(item Item) bool) {
 		}
 		return true
 	})
-}
-
-func (ul *sortedUniqueList) Clear() {
-	ul.mu.Lock()
-	defer ul.mu.Unlock()
-
-	if ul.container.Len() > 0 {
-		ul.container = NewSortedList()
-	}
-
-	if ul.data.Len() > 0 {
-		ul.data = set.New()
-	}
 }

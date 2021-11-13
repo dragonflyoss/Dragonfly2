@@ -34,7 +34,6 @@ type SortedList interface {
 	Contains(Item) bool
 	Range(func(Item) bool)
 	ReverseRange(fn func(Item) bool)
-	Clear()
 }
 
 type sortedList struct {
@@ -134,14 +133,5 @@ func (l *sortedList) ReverseRange(fn func(Item) bool) {
 		if !fn(v) {
 			return
 		}
-	}
-}
-
-func (l *sortedList) Clear() {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	if l.container.Len() > 0 {
-		l.container = list.New()
 	}
 }
