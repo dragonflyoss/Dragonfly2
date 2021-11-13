@@ -96,12 +96,12 @@ var _ = Describe("Preheat with manager", func() {
 
 			var (
 				cdnTaskIDs = []string{
-					"effb4ac6e36d9a2a425ab142ba0a21fd0d49feea67a839fbd776ebb04e6f9eb7",
-					"ceaaf57ceba7221c2d54c62d77860e28b091837f235ba802c0722c522d6c7a8a",
+					"1e8a4f36f5eaa7d9711de14675329dde55738c8d602244dff8d9444e3b9a6f90",
+					"408611293f7525215c51d0f92b04922eb970746144f4aaa73e10f93d74132bff",
 				}
 				sha256sum1 = []string{
-					"14119a10abf4669e8cdbdff324a9f9605d99697215a0d21c360fe8dfa8471bab",
-					"a0d0a0d46f8b52473982a3c466318f479767577551a53ffc9074c9fa7035982e",
+					"0a97eee8041e2b6c0e65abb2700b0705d0da5525ca69060b9e0bde8a3d17afdb",
+					"97518928ae5f3d52d4164b314a7e73654eb686ecd8aafa0b79acd980773a740d",
 				}
 			)
 
