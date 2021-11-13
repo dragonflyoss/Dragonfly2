@@ -35,12 +35,6 @@ const (
 	PeerGCID = "peer"
 )
 
-const (
-	// Maximum number of pieces for a peer is 1000
-	// because a single image is less than 14.6G (1000 * 15M / 1024 = 14.6484375 G)
-	PeerMaxPieceCount = 1000
-)
-
 var ErrChannelBusy = errors.New("channel busy")
 
 type PeerManager interface {
@@ -405,13 +399,13 @@ func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 
 }
 
-func (peer *Peer) SortedValue() uint {
+func (peer *Peer) SortedValue() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
 	pieceCount := peer.TotalPieceCount.Load()
 	hostLoad := peer.getFreeLoad()
-	return uint(pieceCount*HostMaxLoad + hostLoad)
+	return int(pieceCount*HostMaxLoad + hostLoad)
 }
 
 func (peer *Peer) getFreeLoad() int32 {

@@ -24,9 +24,9 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/list"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/sortedmap"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -178,8 +178,8 @@ type Task struct {
 	lastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
-	// peers is peer sortedmap
-	peers sortedmap.SortedMap
+	// peers is peer sorted unique list
+	peers list.SortedUniqueList
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -205,7 +205,7 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		lastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             sortedmap.New(HostMaxLoad * PeerMaxPieceCount),
+		peers:             list.NewSortedUniqueList(),
 		logger:            logger.WithTaskID(id),
 	}
 
@@ -263,27 +263,18 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	if err := task.peers.Add(peer.ID, peer); err != nil {
-		task.logger.Errorf("add peer %s failed: %v", peer.ID, err)
-		return
-	}
+	task.peers.Insert(peer)
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
-	if err := task.peers.Add(peer.ID, peer); err != nil {
-		task.logger.Errorf("update peer %s failed: %v", peer.ID, err)
-		return
-	}
+	task.peers.Insert(peer)
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	if err := task.peers.Delete(peer.ID); err != nil {
-		task.logger.Errorf("delete peer %s failed: %v", peer.ID, err)
-		return
-	}
+	task.peers.Remove(peer)
 }
 
-func (task *Task) GetPeers() sortedmap.SortedMap {
+func (task *Task) GetPeers() list.SortedUniqueList {
 	return task.peers
 }
 
@@ -343,7 +334,7 @@ func (task *Task) GetBackToSourcePeers() []string {
 func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) []*Peer {
 	var peers []*Peer
 
-	task.GetPeers().Range(func(_ string, item sortedmap.Item) bool {
+	task.GetPeers().Range(func(item list.Item) bool {
 		if len(peers) >= limit {
 			return false
 		}
@@ -364,7 +355,7 @@ func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) []*Peer {
 func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) []*Peer {
 	var peers []*Peer
 
-	task.GetPeers().ReverseRange(func(_ string, item sortedmap.Item) bool {
+	task.GetPeers().ReverseRange(func(item list.Item) bool {
 		if len(peers) >= limit {
 			return false
 		}

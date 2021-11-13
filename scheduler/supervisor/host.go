@@ -27,10 +27,8 @@ import (
 )
 
 const (
-	// When using the manager configuration parameter, limit the maximum load number to 3000
-	// refer to https://github.com/dragonflyoss/Dragonfly2/blob/feature/sortedmap/manager/types/cdn_cluster.go#L54
-	// refer to https://github.com/dragonflyoss/Dragonfly2/blob/feature/sortedmap/manager/types/scheduler_cluster.go#L60
-	HostMaxLoad = 3 * 1000
+	// When using the manager configuration parameter, limit the maximum load number to 5000
+	HostMaxLoad = 5 * 1000
 )
 
 type HostManager interface {

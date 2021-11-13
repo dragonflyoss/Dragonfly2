@@ -27,8 +27,8 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/list"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/sortedmap"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -371,7 +371,7 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 
 func handleCDNSeedTaskFail(task *supervisor.Task) {
 	if task.CanBackToSource() {
-		task.GetPeers().Range(func(_ string, item sortedmap.Item) bool {
+		task.GetPeers().Range(func(item list.Item) bool {
 			peer, ok := item.(*supervisor.Peer)
 			if !ok {
 				return true
@@ -390,7 +390,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 		})
 	} else {
 		task.SetStatus(supervisor.TaskStatusFail)
-		task.GetPeers().Range(func(_ string, item sortedmap.Item) bool {
+		task.GetPeers().Range(func(item list.Item) bool {
 			peer, ok := item.(*supervisor.Peer)
 			if !ok {
 				return true
