@@ -76,7 +76,6 @@ type subConnInfo struct {
 }
 
 type subConnPickRecord struct {
-	mu         sync.Mutex
 	ctxs       []context.Context
 	accessTime time.Time
 }
@@ -95,6 +94,8 @@ type d7yBalancer struct {
 	subConns map[string]balancer.SubConn
 	// scInfos maps the balancer.SubConn to subConnInfo.
 	scInfos sync.Map
+	// baseInfosLock is the lock for addrInfos, subConns and scInfos.
+	baseInfosLock sync.RWMutex
 
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
 	picker balancer.Picker
@@ -110,6 +111,8 @@ type d7yBalancer struct {
 	pickHistory sync.Map
 	//subConnPickRecords maps subConn to its *subConnPickRecord.
 	subConnPickRecords sync.Map
+	// pickInfosLock is the lock for pickHistory and subConnPickRecords.
+	pickInfosLock sync.RWMutex
 }
 
 // UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
@@ -117,6 +120,8 @@ type d7yBalancer struct {
 func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	b.resolverErr = nil
 	addrsSet := make(map[string]struct{})
+
+	b.baseInfosLock.Lock()
 	for _, a := range s.ResolverState.Addresses {
 		addr := a.Addr
 		b.addrInfos[addr] = a
@@ -149,9 +154,12 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	for a, sc := range b.subConns {
 		if _, ok := addrsSet[a]; !ok {
 			b.cc.RemoveSubConn(sc)
+			delete(b.addrInfos, a)
 			delete(b.subConns, a)
 		}
 	}
+	b.baseInfosLock.Unlock()
+
 	if len(s.ResolverState.Addresses) == 0 {
 		b.ResolverError(fmt.Errorf("produced zero addresses"))
 		return balancer.ErrBadResolverState
@@ -187,16 +195,20 @@ func (b *d7yBalancer) ResolverError(err error) {
 // regeneratePicker generates a new picker to replace the old one with new data.
 func (b *d7yBalancer) regeneratePicker() {
 	availableSCs := make(map[string]balancer.SubConn)
+
+	b.baseInfosLock.RLock()
 	for addr, sc := range b.subConns {
-		// The next line may not be safe, but we have to use subConns without check,
-		// for we have not set up connections with any SubConn, all of them are Idle.
 		if st, ok := b.scInfos.Load(sc); ok {
 			info := st.(*subConnInfo)
-			if info.state != connectivity.Shutdown && info.state != connectivity.TransientFailure {
+			// The next line may not be safe, but we have to use subConns without check,
+			// for we have not set up connections with any SubConn, all of them are Idle.
+			if info.state != connectivity.Shutdown {
 				availableSCs[addr] = sc
 			}
 		}
 	}
+	b.baseInfosLock.RUnlock()
+
 	if len(availableSCs) == 0 {
 		b.state = connectivity.TransientFailure
 		b.picker = base.NewErrPicker(b.mergeErrors())
@@ -235,7 +247,13 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		// I do not know when it will come here.
 		// sc.Connect()
 	case connectivity.Shutdown:
+		b.baseInfosLock.Lock()
+		v, _ := b.scInfos.Load(sc)
+		addr := v.(*subConnInfo).addr
+		delete(b.subConns, addr)
+		delete(b.addrInfos, addr)
 		b.scInfos.Delete(sc)
+		b.baseInfosLock.Unlock()
 	case connectivity.TransientFailure:
 		b.connErr = state.ConnectionError
 	}
@@ -273,6 +291,7 @@ func (b *d7yBalancer) getSubConnAddr(sc balancer.SubConn) (string, error) {
 
 // resetSubConnWithAddr creates a new idle SubConn for the address string, and remove the old one.
 func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
+	b.baseInfosLock.RLock()
 	sc, ok := b.subConns[addr]
 	if !ok {
 		return ErrSubConnNotFound
@@ -280,15 +299,20 @@ func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 	b.scInfos.Delete(sc)
 	b.cc.RemoveSubConn(sc)
 	newSC, err := b.cc.NewSubConn([]resolver.Address{b.addrInfos[addr]}, balancer.NewSubConnOptions{HealthCheckEnabled: false})
+	b.baseInfosLock.RUnlock()
 	if err != nil {
 		log.Printf("Consistent Hash Balancer: failed to create new SubConn: %v", err)
 		return ErrResetSubConnFail
 	}
+
+	b.baseInfosLock.Lock()
 	b.subConns[addr] = newSC
 	b.scInfos.Store(newSC, &subConnInfo{
 		state: connectivity.Idle,
 		addr:  addr,
 	})
+	b.baseInfosLock.Unlock()
+
 	b.regeneratePicker()
 	b.cc.UpdateState(balancer.State{ConnectivityState: b.state, Picker: b.picker})
 	return nil
@@ -300,13 +324,12 @@ func (b *d7yBalancer) scManager() {
 	go func() {
 		for {
 			pickResult := <-b.pickResultChan
+			b.pickInfosLock.Lock()
 			b.pickHistory.Store(pickResult.Key, pickResult.TargetAddr)
 			if v, ok := b.subConnPickRecords.Load(pickResult.SC); ok {
 				pickRecord := v.(*subConnPickRecord)
-				pickRecord.mu.Lock()
 				pickRecord.ctxs = append(pickRecord.ctxs, pickResult.Ctx)
 				pickRecord.accessTime = pickResult.PickTime
-				pickRecord.mu.Unlock()
 			} else {
 				b.subConnPickRecords.Store(pickResult.SC,
 					&subConnPickRecord{
@@ -315,6 +338,7 @@ func (b *d7yBalancer) scManager() {
 					},
 				)
 			}
+			b.pickInfosLock.Unlock()
 		}
 	}()
 
@@ -323,12 +347,13 @@ func (b *d7yBalancer) scManager() {
 		ticker := time.NewTicker(2 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
+			b.pickInfosLock.Lock()
 			b.pickHistory.Range(func(key, value interface{}) bool {
+				b.baseInfosLock.RLock()
 				addr := value.(string)
 				subConn := b.subConns[addr]
 				_pickRecord, _ := b.subConnPickRecords.Load(subConn)
 				pickRecord := _pickRecord.(*subConnPickRecord)
-				pickRecord.mu.Lock()
 				for i, ctx := range pickRecord.ctxs {
 					select {
 					case <-ctx.Done():
@@ -344,21 +369,10 @@ func (b *d7yBalancer) scManager() {
 						b.subConnPickRecords.Delete(subConn)
 					}
 				}
-				pickRecord.mu.Unlock()
+				b.baseInfosLock.RUnlock()
 				return true
 			})
+			b.pickInfosLock.Unlock()
 		}
-
-		//for range ticker.C {
-		//	b.subConnPickRecords.Range(func(key, value interface{}) bool {
-		//		subConn := key.(balancer.SubConn)
-		//		accessTime := value.(time.Time)
-		//		if accessTime.Add(connectionLifetime).Before(time.Now()) {
-		//			b.resetSubConn(subConn)
-		//			b.subConnPickRecords.Delete(subConn)
-		//		}
-		//		return true
-		//	})
-		//}
 	}()
 }
