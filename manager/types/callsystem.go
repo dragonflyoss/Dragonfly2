@@ -30,24 +30,30 @@ type DeleteSchedulerClusterToCallSystemParams struct {
 	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
+type AddCDNClusterToCallSystemParams struct {
+	ID           uint `uri:"id" binding:"required"`
+	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
+}
+
+type DeleteCDNClusterToCallSystemParams struct {
+	ID           uint `uri:"id" binding:"required"`
+	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
+}
+
 type CreateCallSystemRequest struct {
-	Name           string   `json:"name" binding:"required"`
-	LimitFrequency string   `json:"limit_frequency" binding:"required"`
-	URLRegexs      []string `json:"url_regexs" binding:"required"`
-	ValidityPeriod string   `json:"validity_period" binding:"required"`
-	IsEnable       bool     `json:"is_enable" binding:"omitempty"`
+	Name           string `json:"name" binding:"required"`
+	LimitFrequency string `json:"limit_frequency" binding:"omitempty"`
+	URLRegex       string `json:"url_regexs" binding:"omitempty"`
 }
 
 type UpdateCallSystemRequest struct {
-	Name           string   `json:"name" binding:"required"`
-	LimitFrequency string   `json:"limit_frequency" binding:"required"`
-	URLRegexs      []string `json:"url_regexs" binding:"required"`
-	ValidityPeriod string   `json:"validity_period" binding:"required"`
-	IsEnable       bool     `json:"is_enable" binding:"omitempty"`
+	Name           string `json:"name" binding:"required"`
+	LimitFrequency string `json:"limit_frequency" binding:"required"`
+	URLRegex       string `json:"url_regexs" binding:"required"`
+	State          string `json:"state" binding:"required,oneof=enable disable"`
 }
 
 type GetCallSystemsQuery struct {
-	Name    string `form:"name" binding:"omitempty"`
-	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	Page    int `form:"page" binding:"omitempty,gte=1"`
+	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }

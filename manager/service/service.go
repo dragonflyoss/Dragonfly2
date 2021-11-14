@@ -113,14 +113,15 @@ type REST interface {
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)
 
-	CreateCallSystem(types.CreateCallSystemRequest) (*model.CallSystem, error)
-	DestroyCallSystem(uint) error
-	UpdateCallSystem(uint, types.UpdateCallSystemRequest) (*model.CallSystem, error)
-	GetCallSystem(uint) (*model.CallSystem, error)
-	GetCallSystems(types.GetCallSystemsQuery) (*[]model.CallSystem, error)
-	CallSystemTotalCount(types.GetCallSystemsQuery) (int64, error)
-	AddSchedulerClusterToCallSystem(uint, uint) error
-	DeleteSchedulerClusterToCallSystem(uint, uint) error
+	CreateCallSystem(context.Context, types.CreateCallSystemRequest) (*model.CallSystem, error)
+	DestroyCallSystem(context.Context, uint) error
+	UpdateCallSystem(context.Context, uint, types.UpdateCallSystemRequest) (*model.CallSystem, error)
+	GetCallSystem(context.Context, uint) (*model.CallSystem, error)
+	GetCallSystems(context.Context, types.GetCallSystemsQuery) (*[]model.CallSystem, int64, error)
+	AddSchedulerClusterToCallSystem(context.Context, uint, uint) error
+	DeleteSchedulerClusterToCallSystem(context.Context, uint, uint) error
+	AddCDNClusterToCallSystem(context.Context, uint, uint) error
+	DeleteCDNClusterToCallSystem(context.Context, uint, uint) error
 }
 
 type rest struct {

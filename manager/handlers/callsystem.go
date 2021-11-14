@@ -44,7 +44,7 @@ func (h *Handlers) CreateCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateCallSystem(json)
+	schedulerCluster, err := h.service.CreateCallSystem(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -71,7 +71,7 @@ func (h *Handlers) DestroyCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.DestroyCallSystem(params.ID); err != nil {
+	if err := h.service.DestroyCallSystem(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -90,7 +90,7 @@ func (h *Handlers) DestroyCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem/{id} [patch]
+// @Router /callsystems/{id} [patch]
 func (h *Handlers) UpdateCallSystem(ctx *gin.Context) {
 	var params types.CallSystemParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -104,7 +104,7 @@ func (h *Handlers) UpdateCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateCallSystem(params.ID, json)
+	schedulerCluster, err := h.service.UpdateCallSystem(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -123,7 +123,7 @@ func (h *Handlers) UpdateCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem/{id} [get]
+// @Router /callsystems/{id} [get]
 func (h *Handlers) GetCallSystem(ctx *gin.Context) {
 	var params types.CallSystemParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -131,7 +131,7 @@ func (h *Handlers) GetCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.GetCallSystem(params.ID)
+	schedulerCluster, err := h.service.GetCallSystem(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -151,7 +151,7 @@ func (h *Handlers) GetCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem [get]
+// @Router /callsystems [get]
 func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 	var query types.GetCallSystemsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
@@ -160,19 +160,13 @@ func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, err := h.service.GetCallSystems(query)
+	schedulerClusters, count, err := h.service.GetCallSystems(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	totalCount, err := h.service.CallSystemTotalCount(query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, schedulerClusters)
 }
 
@@ -187,7 +181,7 @@ func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
+// @Router /callsystems/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
 func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 	var params types.AddSchedulerClusterToCallSystemParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -195,8 +189,7 @@ func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.AddSchedulerClusterToCallSystem(params.ID, params.SchedulerClusterID)
-	if err != nil {
+	if err := h.service.AddSchedulerClusterToCallSystem(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -215,7 +208,7 @@ func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem/{id}/scheduler-clusters/{scheduler_cluster_id} [delete]
+// @Router /callsystems/{id}/scheduler-clusters/{scheduler_cluster_id} [delete]
 func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
 	var params types.DeleteSchedulerClusterToCallSystemParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -223,8 +216,61 @@ func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
 		return
 	}
 
-	err := h.service.DeleteSchedulerClusterToCallSystem(params.ID, params.SchedulerClusterID)
-	if err != nil {
+	if err := h.service.DeleteSchedulerClusterToCallSystem(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Add CDN to CallSystem
+// @Description Add CDN to CallSystem
+// @Tags CallSystem
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param cdn_cluster_id path string true "cdn cluster id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /callsystems/{id}/cdn-clusters/{cdn_cluster_id} [put]
+func (h *Handlers) AddCDNClusterToCallSystem(ctx *gin.Context) {
+	var params types.AddCDNClusterToCallSystemParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if err := h.service.AddCDNClusterToCallSystem(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
+		ctx.Error(err)
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Delete CDN to CallSystem
+// @Description Delete CDN to CallSystem
+// @Tags CallSystem
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param cdn_cluster_id path string true "cdn cluster id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /callsystems/{id}/cdn-clusters/{cdn_cluster_id} [delete]
+func (h *Handlers) DeleteCDNClusterToCallSystem(ctx *gin.Context) {
+	var params types.DeleteCDNClusterToCallSystemParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if err := h.service.DeleteCDNClusterToCallSystem(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}
