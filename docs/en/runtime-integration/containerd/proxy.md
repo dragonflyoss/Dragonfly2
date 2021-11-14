@@ -13,35 +13,36 @@ Generate a CA certificate private key.
 openssl genrsa -out ca.key 2048
 ```
 
-Open openssl config file `openssl.conf`. Note set `basicConstraints` to true, that you can modify the values.
+Open openssl config file `openssl.conf`.
+Note set `basicConstraints` to true, that you can modify the values.
 
 ```text
 [ req ]
-#default_bits		= 2048
-#default_md		= sha256
-#default_keyfile 	= privkey.pem
-distinguished_name	= req_distinguished_name
-attributes		= req_attributes
+#default_bits = 2048
+#default_md = sha256
+#default_keyfile = privkey.pem
+distinguished_name = req_distinguished_name
+attributes = req_attributes
 extensions               = v3_ca
 req_extensions           = v3_ca
 
 [ req_distinguished_name ]
-countryName			= Country Name (2 letter code)
-countryName_min			= 2
-countryName_max			= 2
-stateOrProvinceName		= State or Province Name (full name)
-localityName			= Locality Name (eg, city)
-0.organizationName		= Organization Name (eg, company)
-organizationalUnitName		= Organizational Unit Name (eg, section)
-commonName			= Common Name (eg, fully qualified host name)
-commonName_max			= 64
-emailAddress			= Email Address
-emailAddress_max		= 64
+countryName = Country Name (2 letter code)
+countryName_min = 2
+countryName_max = 2
+stateOrProvinceName = State or Province Name (full name)
+localityName = Locality Name (eg, city)
+0.organizationName = Organization Name (eg, company)
+organizationalUnitName = Organizational Unit Name (eg, section)
+commonName = Common Name (eg, fully qualified host name)
+commonName_max = 64
+emailAddress = Email Address
+emailAddress_max = 64
 
 [ req_attributes ]
-challengePassword		= A challenge password
-challengePassword_min		= 4
-challengePassword_max		= 20
+challengePassword = A challenge password
+challengePassword_min = 4
+challengePassword_max = 20
 
 [ v3_ca ]
 basicConstraints         = CA:TRUE
@@ -51,13 +52,15 @@ Generate the CA certificate.
 
 ```bash
 openssl req -new -key ca.key -nodes -out ca.csr -config openssl.conf
-openssl x509 -req -days 36500 -extfile openssl.conf -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
+openssl x509 -req -days 36500 -extfile openssl.conf \
+    -extensions v3_ca -in ca.csr -signkey ca.key -out ca.crt
 ```
 
 ### Step 2: Configure dfget daemon
 
 To use dfget daemon as HTTP proxy, first you need to append a proxy rule in
-`/etc/dragonfly/dfget.yaml`, This will proxy `your.private.registry`'s requests for image layers:
+`/etc/dragonfly/dfget.yaml`, This will proxy
+`your.private.registry`'s requests for image layers:
 
 ```yaml
 proxy:
@@ -81,7 +84,7 @@ proxy:
 Set dfget damone as `HTTP_PROXY` and `HTTPS_PROXY` for containerd in
 `/etc/systemd/system/containerd.service.d/http-proxy.conf`:
 
-```
+```toml
 [Service]
 Environment="HTTP_PROXY=http://127.0.0.1:65001"
 Environment="HTTPS_PROXY=http://127.0.0.1:65001"
@@ -144,6 +147,7 @@ proxy:
 
 You can get the certificate of your server with:
 
-```
-openssl x509 -in <(openssl s_client -showcerts -servername xxx -connect xxx:443 -prexit 2>/dev/null)
+```bash
+openssl x509 -in <(openssl s_client -showcerts \
+    -servername your.domain.com -connect your.domain.com:443 -prexit 2>/dev/null)
 ```

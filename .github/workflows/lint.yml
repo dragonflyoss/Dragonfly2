@@ -22,3 +22,9 @@ jobs:
         uses: golangci/golangci-lint-action@v2
         with:
           version: v1.40.1
+
+      - name: Markdown lint
+        uses: docker://avtodev/markdown-lint:v1
+        with:
+          args: '**/*.md'
+          ignore: 'deploy/helm-charts manager/console CHANGELOG.md docs/en/api-reference docs/zh-CN/api-reference docs/en/cli-reference/dfget.1.md'

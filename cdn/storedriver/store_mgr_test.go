@@ -21,9 +21,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"github.com/stretchr/testify/assert"
 )
 
 type mockDriver struct {

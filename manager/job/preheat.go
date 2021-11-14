@@ -18,6 +18,7 @@ package job
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,17 +28,18 @@ import (
 	"strings"
 	"time"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/manifest/schema2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/distribution/distribution/v3"
-	"github.com/distribution/distribution/v3/manifest/schema2"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("sender")
@@ -47,6 +49,10 @@ type PreheatType string
 const (
 	PreheatImageType PreheatType = "image"
 	PreheatFileType  PreheatType = "file"
+)
+
+const (
+	timeout = 1 * time.Minute
 )
 
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
@@ -204,7 +210,14 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	req.Header = header
 	req.Header.Add("Accept", schema2.MediaTypeManifest)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +267,14 @@ func getAuthToken(ctx context.Context, header http.Header) (token string) {
 		return
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}

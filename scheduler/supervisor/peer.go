@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mocks/peer_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor PeerManager
 
 package supervisor
 
@@ -21,12 +22,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 const (
@@ -289,7 +291,7 @@ func isDescendant(ancestor, offspring *Peer) bool {
 		parent, ok := node.GetParent()
 		if !ok {
 			return false
-		} else if node.ID == ancestor.ID {
+		} else if parent.ID == ancestor.ID {
 			return true
 		}
 		node = parent

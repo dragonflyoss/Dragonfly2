@@ -20,8 +20,9 @@ import (
 	"io"
 	"os"
 
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"github.com/pkg/errors"
+
+	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 // CopyFile copies the file, not dir, src to dst.

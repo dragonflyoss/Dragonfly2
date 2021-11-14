@@ -19,6 +19,8 @@ package config
 import (
 	"time"
 
+	"gopkg.in/yaml.v3"
+
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
@@ -28,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"gopkg.in/yaml.v3"
 )
 
 // New creates an instant with default values.
