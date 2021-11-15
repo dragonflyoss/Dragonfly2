@@ -116,7 +116,7 @@ func (m *peerManager) Delete(id string) {
 
 func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peers.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
@@ -152,7 +152,7 @@ func (m *peerManager) RunGC() error {
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
-			if peer.Task.GetPeers().Size() == 0 {
+			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
 			}
@@ -396,22 +396,23 @@ func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 		peer.Task.UpdatePeer(peer)
 		return
 	}
+
 }
 
-func (peer *Peer) GetSortKeys() (key1, key2 int) {
+func (peer *Peer) SortedValue() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	key1 = int(peer.TotalPieceCount.Load())
-	key2 = peer.getFreeLoad()
-	return
+	pieceCount := peer.TotalPieceCount.Load()
+	hostLoad := peer.getFreeLoad()
+	return int(pieceCount*HostMaxLoad + hostLoad)
 }
 
-func (peer *Peer) getFreeLoad() int {
+func (peer *Peer) getFreeLoad() int32 {
 	if peer.Host == nil {
 		return 0
 	}
-	return int(peer.Host.GetFreeUploadLoad())
+	return peer.Host.GetFreeUploadLoad()
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
