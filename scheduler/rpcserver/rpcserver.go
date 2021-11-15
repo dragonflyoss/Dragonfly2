@@ -63,6 +63,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
 	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 	defer span.End()
+
 	logger.Debugf("register peer task, req: %+v", request)
 	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {
@@ -71,6 +72,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 		span.RecordError(err)
 		return
 	}
+
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
