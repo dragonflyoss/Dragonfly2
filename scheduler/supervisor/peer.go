@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mocks/peer_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor PeerManager
 
 package supervisor
 
@@ -21,12 +22,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 const (
@@ -114,7 +116,7 @@ func (m *peerManager) Delete(id string) {
 
 func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peers.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
@@ -150,7 +152,7 @@ func (m *peerManager) RunGC() error {
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
-			if peer.Task.GetPeers().Size() == 0 {
+			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
 			}
@@ -289,7 +291,7 @@ func isDescendant(ancestor, offspring *Peer) bool {
 		parent, ok := node.GetParent()
 		if !ok {
 			return false
-		} else if node.ID == ancestor.ID {
+		} else if parent.ID == ancestor.ID {
 			return true
 		}
 		node = parent
@@ -394,22 +396,23 @@ func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 		peer.Task.UpdatePeer(peer)
 		return
 	}
+
 }
 
-func (peer *Peer) GetSortKeys() (key1, key2 int) {
+func (peer *Peer) SortedValue() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	key1 = int(peer.TotalPieceCount.Load())
-	key2 = peer.getFreeLoad()
-	return
+	pieceCount := peer.TotalPieceCount.Load()
+	hostLoad := peer.getFreeLoad()
+	return int(pieceCount*HostMaxLoad + hostLoad)
 }
 
-func (peer *Peer) getFreeLoad() int {
+func (peer *Peer) getFreeLoad() int32 {
 	if peer.Host == nil {
 		return 0
 	}
-	return int(peer.Host.GetFreeUploadLoad())
+	return peer.Host.GetFreeUploadLoad()
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {

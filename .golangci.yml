@@ -5,10 +5,13 @@ run:
 linters-settings:
   gocyclo:
     min-complexity: 40
+  gci:
+    local-prefixes: d7y.io/dragonfly/v2
 
 linters:
   disable-all: true
   enable:
+    - gci
     - gofmt
     - goimports
     - golint

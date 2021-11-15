@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/host_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor HostManager
+
 package supervisor
 
 import (
 	"sync"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
+const (
+	// When using the manager configuration parameter, limit the maximum load number to 5000
+	HostMaxLoad = 5 * 1000
 )
 
 type HostManager interface {

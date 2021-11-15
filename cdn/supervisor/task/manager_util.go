@@ -22,6 +22,9 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
@@ -31,8 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // addOrUpdateTask add a new task or update exist task
@@ -92,7 +93,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if err != nil {
 		task.Log().Errorf("failed to get url (%s) content length: %v", task.URL, err)
 		if cdnerrors.IsURLNotReachable(err) {
-			tm.taskURLUnReachableStore.Add(taskID, time.Now())
+			if err := tm.taskURLUnReachableStore.Add(taskID, time.Now()); err != nil {
+				task.Log().Errorf("failed to add url (%s) to unreachable store: %v", task.URL, err)
+			}
 			return nil, err
 		}
 	}
@@ -118,9 +121,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		pieceSize := cdnutil.ComputePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
-	tm.taskStore.Add(task.TaskID, task)
-	logger.Debugf("success add task: %+v into taskStore", task)
+	if err := tm.taskStore.Add(task.TaskID, task); err != nil {
+		return nil, err
+	}
 
+	logger.Debugf("success add task: %+v into taskStore", task)
 	return task, nil
 }
 

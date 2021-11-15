@@ -2,11 +2,11 @@
 
 Easily set up a local development environment.
 
-### Step 1: Install docker and docker compose
+## Step 1: Install docker and docker compose
 
 See documentation on [docs.docker.com]
 
-### Step 2: Start dragonfly
+## Step 2: Start dragonfly
 
 Enter dragonfly documentation and start docker-compose.
 
@@ -19,10 +19,11 @@ Creating dfdaemon  ... done
 Attaching to cdn, scheduler, dfdaemon
 ```
 
-### Step 3: Log analysis
+## Step 3: Log analysis
 
 Show dragonfly logs.
 
+<!-- markdownlint-disable -->
 ```bash
 $ tail -f log/**/*.log
 ==> log/dragonfly/cdn/core.log <==
@@ -48,8 +49,9 @@ $ tail -f log/**/*.log
 {"level":"info","ts":"2021-02-26 05:43:37.342","caller":"worker/sender.go:49","msg":"start sender worker : 50"}
 {"level":"info","ts":"2021-02-26 05:43:37.343","caller":"worker/worker_group.go:64","msg":"start scheduler worker number:6"}
 ```
+<!-- markdownlint-restore -->
 
-### Step 4: Stop dragonfly
+## Step 4: Stop dragonfly
 
 ```bash
 $ docker-compose down

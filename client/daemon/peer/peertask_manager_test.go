@@ -64,7 +64,7 @@ type componentsOption struct {
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
-	// 1. setup a mock daemon server for uploading pieces info
+	// 1. set up a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
@@ -153,10 +153,11 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
+	tempDir, _ := ioutil.TempDir("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: test.DataDir,
+			DataPath: tempDir,
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},

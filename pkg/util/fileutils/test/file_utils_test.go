@@ -24,15 +24,16 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils/filerw"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 )
 
 type FileUtilsTestSuite struct {
@@ -131,7 +132,9 @@ func (s *FileUtilsTestSuite) TestIsEmptyDir() {
 	_, err = fileutils.IsEmptyDir(s.testDir)
 	s.Require().NotNil(err)
 
-	fileutils.MkdirAll(s.testDir)
+	err = fileutils.MkdirAll(s.testDir)
+	s.Require().Nil(err)
+
 	b, err := fileutils.IsEmptyDir(s.testDir)
 	s.Require().Nil(err)
 	s.Require().True(b)
@@ -143,7 +146,9 @@ func (s *FileUtilsTestSuite) TestCopyFile() {
 
 	f, err := fileutils.OpenFile(s.testFile, syscall.O_WRONLY|syscall.O_CREAT, 0644)
 	s.Require().Nil(err)
-	f.WriteString("hello,world")
+
+	_, err = f.WriteString("hello,world")
+	s.Require().Nil(err)
 	f.Close()
 
 	_, err = filerw.CopyFile(s.testFile, s.testFile+".new")
@@ -161,12 +166,14 @@ func (s *FileUtilsTestSuite) TestTryLock() {
 	f2, err := fileutils.NewFileLock(s.testFile)
 	s.Require().Nil(err)
 
-	f1.Lock()
+	err = f1.Lock()
+	s.Require().NotNil(err)
 
 	err = f2.TryLock()
 	s.Require().NotNil(err)
 
-	f1.Unlock()
+	err = f1.Unlock()
+	s.Require().NotNil(err)
 
 	err = f2.TryLock()
 	s.Require().Nil(err)

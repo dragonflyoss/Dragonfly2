@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
@@ -38,8 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const StorageMode = storage.DiskStorageMode
@@ -50,7 +50,9 @@ var (
 )
 
 func init() {
-	storage.Register(StorageMode, newStorageManager)
+	if err := storage.Register(StorageMode, newStorageManager); err != nil {
+		logger.CoreLogger.Error(err)
+	}
 }
 
 func newStorageManager(cfg *storage.Config) (storage.Manager, error) {
@@ -265,13 +267,20 @@ func (s *diskStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 			return nil
 		},
 	}
-	s.diskDriver.Walk(r)
+	if err := s.diskDriver.Walk(r); err != nil {
+		return false, err
+	}
 
 	enoughSpace := freeSpace.ToNumber()-remainder.Load() > fileLength
 	if !enoughSpace {
-		s.cleaner.GC("disk", true)
+		if _, err := s.cleaner.GC("disk", true); err != nil {
+			return false, err
+		}
+
 		remainder.Store(0)
-		s.diskDriver.Walk(r)
+		if err := s.diskDriver.Walk(r); err != nil {
+			return false, err
+		}
 		freeSpace, err = s.diskDriver.GetFreeSpace()
 		if err != nil {
 			return false, err

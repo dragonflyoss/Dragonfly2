@@ -19,6 +19,10 @@ package job
 import (
 	"context"
 
+	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
@@ -26,9 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"github.com/go-playground/validator/v10"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("worker")

@@ -19,8 +19,9 @@ package dferrors
 import (
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/pkg/errors"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 // common and framework errors

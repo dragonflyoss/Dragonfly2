@@ -53,8 +53,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		mockContentLength = len(testBytes)
 		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
 
-		peerID = "peer-0"
-		taskID = "task-0"
+		peerID = "peer-back-source-out-content-length"
+		taskID = "task-back-source-out-content-length"
 
 		url = "http://localhost/test/data"
 	)
@@ -159,8 +159,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		mockContentLength = len(testBytes)
 		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
 
-		peerID = "peer-0"
-		taskID = "task-0"
+		peerID = "peer-back-source-without-content-length"
+		taskID = "task-back-source-without-content-length"
 
 		url = "http://localhost/test/data"
 	)

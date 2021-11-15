@@ -21,6 +21,8 @@ import (
 	"net/http"
 	"time"
 
+	"google.golang.org/grpc"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
@@ -33,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	grpc_manager_server "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
-	"google.golang.org/grpc"
 )
 
 const (

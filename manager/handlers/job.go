@@ -3,10 +3,12 @@ package handlers
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/internal/job"
-	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+
+	"d7y.io/dragonfly/v2/internal/job"
+	_ "d7y.io/dragonfly/v2/manager/model" // nolint
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
 // @Summary Create Job

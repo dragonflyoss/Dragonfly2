@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
@@ -142,6 +143,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 					PieceOffset: tt.rangeStart,
 					PieceStyle:  base.PieceStyle_PLAIN,
 				},
+				log: logger.With("test", "test"),
 			})
 			assert.Nil(err, "downloaded piece should success")
 

@@ -37,8 +37,16 @@ definitions:
         type: integer
       is_default:
         type: boolean
+      jobs:
+        items:
+          $ref: '#/definitions/model.Job'
+        type: array
       name:
         type: string
+      scheduler_clusters:
+        items:
+          $ref: '#/definitions/model.SchedulerCluster'
+        type: array
       security_group_id:
         type: integer
       updated_at:
@@ -52,7 +60,7 @@ definitions:
         type: string
       id:
         type: integer
-      key:
+      name:
         type: string
       updated_at:
         type: string
@@ -63,6 +71,37 @@ definitions:
     type: object
   model.JSONMap:
     additionalProperties: true
+    type: object
+  model.Job:
+    properties:
+      args:
+        $ref: '#/definitions/model.JSONMap'
+      bio:
+        type: string
+      cdn_clusters:
+        items:
+          $ref: '#/definitions/model.CDNCluster'
+        type: array
+      created_at:
+        type: string
+      id:
+        type: integer
+      result:
+        $ref: '#/definitions/model.JSONMap'
+      scheduler_clusters:
+        items:
+          $ref: '#/definitions/model.SchedulerCluster'
+        type: array
+      status:
+        type: string
+      task_id:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
     type: object
   model.Oauth:
     properties:
@@ -128,6 +167,10 @@ definitions:
         type: integer
       is_default:
         type: boolean
+      jobs:
+        items:
+          $ref: '#/definitions/model.Job'
+        type: array
       name:
         type: string
       scopes:
@@ -246,16 +289,41 @@ definitions:
     properties:
       bio:
         type: string
-      key:
+      name:
         type: string
       user_id:
         type: integer
       value:
         type: string
     required:
-    - key
+    - name
     - user_id
     - value
+    type: object
+  types.CreateJobRequest:
+    properties:
+      args:
+        additionalProperties: true
+        type: object
+      bio:
+        type: string
+      cdn_cluster_ids:
+        items:
+          type: integer
+        type: array
+      result:
+        additionalProperties: true
+        type: object
+      scheduler_cluster_ids:
+        items:
+          type: integer
+        type: array
+      type:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - type
     type: object
   types.CreateOauthRequest:
     properties:
@@ -273,24 +341,6 @@ definitions:
     - client_id
     - client_secret
     - name
-    type: object
-  types.CreatePreheatRequest:
-    properties:
-      filter:
-        type: string
-      headers:
-        additionalProperties:
-          type: string
-        type: object
-      scheduler_cluster_id:
-        type: integer
-      type:
-        type: string
-      url:
-        type: string
-    required:
-    - type
-    - url
     type: object
   types.CreateRoleRequest:
     properties:
@@ -385,7 +435,7 @@ definitions:
     type: object
   types.CreateV1PreheatResponse:
     properties:
-      ID:
+      id:
         type: string
     type: object
   types.DeletePermissionForRoleRequest:
@@ -400,20 +450,11 @@ definitions:
     type: object
   types.GetV1PreheatResponse:
     properties:
-      ID:
-        type: string
       finishTime:
         type: string
-      startTime:
-        type: string
-      status:
-        type: string
-    type: object
-  types.Preheat:
-    properties:
-      create_at:
-        type: string
       id:
+        type: string
+      startTime:
         type: string
       status:
         type: string
@@ -488,12 +529,19 @@ definitions:
     properties:
       bio:
         type: string
-      key:
+      name:
         type: string
       user_id:
         type: integer
       value:
         type: string
+    type: object
+  types.UpdateJobRequest:
+    properties:
+      bio:
+        type: string
+      user_id:
+        type: integer
     type: object
   types.UpdateOauthRequest:
     properties:
@@ -1091,6 +1139,154 @@ paths:
       summary: Get Health
       tags:
       - Health
+  /jobs:
+    get:
+      consumes:
+      - application/json
+      description: Get Jobs
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Job'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Jobs
+      tags:
+      - Job
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Job
+        in: body
+        name: Job
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Job
+      tags:
+      - Job
+  /jobs/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Job
+      tags:
+      - Job
+    get:
+      consumes:
+      - application/json
+      description: Get Job by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Job
+      tags:
+      - Job
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Job
+        in: body
+        name: Job
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateJobRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Job'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Job
+      tags:
+      - Job
   /oauth:
     get:
       consumes:
@@ -2067,6 +2263,44 @@ paths:
       summary: SignUp user
       tags:
       - User
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get Users
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.CDN'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Users
+      tags:
+      - CDN
   /users/:id/reset_password:
     post:
       consumes:

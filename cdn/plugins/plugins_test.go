@@ -51,7 +51,8 @@ func (s *PluginsTestSuite) TestPluginBuilder() {
 	manager := NewManager()
 
 	var testFunc = func(pt PluginType, name string, b Builder, result bool) {
-		manager.AddBuilder(pt, name, b)
+		err := manager.AddBuilder(pt, name, b)
+		s.Require().Nil(err)
 		obj, _ := manager.GetBuilder(pt, name)
 		if result {
 			s.NotNil(obj)
@@ -76,7 +77,8 @@ func (s *PluginsTestSuite) TestManagerPlugin() {
 	manager := NewManager()
 
 	var testFunc = func(p Plugin, result bool) {
-		manager.AddPlugin(p)
+		err := manager.AddPlugin(p)
+		s.Require().Nil(err)
 		obj, _ := manager.GetPlugin(p.Type(), p.Name())
 		if result {
 			s.NotNil(obj)
@@ -128,7 +130,8 @@ func (s *PluginsTestSuite) TestRepositoryIml() {
 
 	repo := NewRepository()
 	for _, v := range cases {
-		repo.Add(v.pt, v.name, v.data)
+		err := repo.Add(v.pt, v.name, v.data)
+		s.Require().Nil(err)
 		data, _ := repo.Get(v.pt, v.name)
 		if v.addResult {
 			s.NotNil(data)

@@ -19,13 +19,13 @@ package client
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -73,21 +73,24 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 	return pps, nil
 }
 
-func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
+func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) error {
 	pps.lastPieceResult = pr
 	pps.sc.UpdateAccessNodeMapByHashKey(pps.hashKey)
-	err = pps.stream.Send(pr)
+
+	if err := pps.stream.Send(pr); err != nil {
+		if err := pps.closeSend(); err != nil {
+			return err
+		}
+		return err
+	}
 
 	if pr.PieceInfo.PieceNum == common.EndOfPiece {
-		pps.closeSend()
-		return
+		if err := pps.closeSend(); err != nil {
+			return err
+		}
 	}
 
-	if err != nil {
-		pps.closeSend()
-	}
-
-	return
+	return nil
 }
 
 func (pps *peerPacketStream) closeSend() error {

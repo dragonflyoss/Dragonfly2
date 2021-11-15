@@ -1,6 +1,11 @@
 # Dragonfly Document
 
-Dragonfly Document is written, drawn, memorialized representation of all things about Dragonfly. For those who are generally interested in Dragonfly, README.md of this repo is sufficient. While for end users, all details contained in `/docs` is the best guide all should have. And for developers, contents in [Developer Guide](developer-guide/developer-guide.md) part is that all need.
+Dragonfly Document is written, drawn, memorialized representation of
+all things about Dragonfly. For those who are generally interested in Dragonfly,
+README.md of this repo is sufficient. While for end users,
+all details contained in `/docs` is the best guide all should have.
+And for developers, contents in [Developer Guide](developer-guide/developer-guide.md)
+part is that all need.
 
 Organization of document is as following:
 
@@ -26,7 +31,7 @@ Organization of document is as following:
   * [manager](design/manager.md)
   * [TODO scheduler](design/scheduler.md)
   * [TODO cdn](design/cdn.md)
-  * [TODO dfdaemon](desigin/dfdaemon.md)
+  * [TODO dfdaemon](design/dfdaemon.md)
 * [Developer Guide](developer-guide/developer-guide.md)
 * [Test Guide](test-guide/test-guide.md)
 * [API Reference](api-reference/api-reference.md)

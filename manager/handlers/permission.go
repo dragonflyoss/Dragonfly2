@@ -20,6 +20,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/permission/rbac"
 )
 
 // @Summary Get Permissions
