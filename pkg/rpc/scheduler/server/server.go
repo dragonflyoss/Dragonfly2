@@ -18,7 +18,6 @@ package server
 
 import (
 	"context"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"go.uber.org/zap"
@@ -27,7 +26,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
@@ -56,28 +54,22 @@ func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Serve
 }
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	isSuccess := true
 	metrics.RegisterPeerTaskCount.Inc()
-	taskID := "unknown"
-	isSuccess := false
 	resp, err := p.server.RegisterPeerTask(ctx, req)
 	if err != nil {
-		taskID = resp.TaskId
-		isSuccess = true
+		isSuccess = false
 		metrics.RegisterPeerTaskFailureCount.Inc()
 	}
 	metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 
-	peerHost := req.PeerHost
 	logger.StatPeerLogger.Info("Register Peer Task",
 		zap.Bool("Success", isSuccess),
-		zap.String("TaskID", taskID),
 		zap.String("URL", req.Url),
-		zap.String("PeerIP", peerHost.Ip),
-		zap.String("PeerHostName", peerHost.HostName),
-		zap.String("SecurityDomain", peerHost.SecurityDomain),
-		zap.String("IDC", peerHost.Idc),
+		zap.String("TaskID", resp.TaskId),
 		zap.String("SchedulerIP", iputils.HostIP),
 		zap.String("SchedulerHostName", iputils.HostName),
+		zap.Any("Peer", req.PeerHost),
 	)
 
 	return resp, err
@@ -99,24 +91,23 @@ func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult)
 		metrics.DownloadFailureCount.Inc()
 	}
 
-	err := p.server.ReportPeerResult(ctx, req)
-
 	logger.StatPeerLogger.Info("Finish Peer Task",
 		zap.Bool("Success", req.Success),
+		zap.String("URL", req.Url),
 		zap.String("TaskID", req.TaskId),
 		zap.String("PeerID", req.PeerId),
-		zap.String("URL", req.Url),
 		zap.String("PeerIP", req.SrcIp),
 		zap.String("SecurityDomain", req.SecurityDomain),
 		zap.String("IDC", req.Idc),
 		zap.String("SchedulerIP", iputils.HostIP),
 		zap.String("SchedulerHostName", iputils.HostName),
-		zap.String("ContentLength", unit.Bytes(req.ContentLength).String()),
-		zap.String("Traffic", unit.Bytes(uint64(req.Traffic)).String()),
-		zap.Duration("Cost", time.Duration(int64(req.Cost))),
-		zap.Int32("Code", int32(req.Code)))
+		zap.Int64("ContentLength", req.ContentLength),
+		zap.Int64("Traffic", req.Traffic),
+		zap.Uint32("Cost", req.Cost),
+		zap.Int32("Code", int32(req.Code)),
+	)
 
-	return new(empty.Empty), err
+	return new(empty.Empty), p.server.ReportPeerResult(ctx, req)
 }
 
 func (p *proxy) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget) (*empty.Empty, error) {
