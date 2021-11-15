@@ -133,9 +133,11 @@ func (s *PluginsTestSuite) TestRepositoryIml() {
 	repo := NewRepository()
 	for _, v := range cases {
 		err := repo.Add(v.pt, v.name, v.data)
-		s.Require().Nil(err)
-		data, _ := repo.Get(v.pt, v.name)
-		if v.addResult {
+		if !v.addResult {
+			s.NotNil(err)
+		}
+		data, ok := repo.Get(v.pt, v.name)
+		if ok {
 			s.NotNil(data)
 			s.Equal(data, v.data)
 			repo.Delete(v.pt, v.name)
