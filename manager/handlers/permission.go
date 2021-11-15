@@ -20,6 +20,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/permission/rbac"
 )
 
 // @Summary Get Permissions
@@ -32,6 +35,6 @@ import (
 // @Router /permissions [get]
 func (h *Handlers) GetPermissions(g *gin.Engine) func(ctx *gin.Context) {
 	return func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, h.service.GetPermissions(g))
+		ctx.JSON(http.StatusOK, h.service.GetPermissions(ctx.Request.Context(), g))
 	}
 }

@@ -16,22 +16,24 @@
 
 package types
 
-import "time"
+type CreateV1PreheatRequest struct {
+	Type    string            `json:"type" binding:"required,oneof=image file"`
+	URL     string            `json:"url" binding:"required"`
+	Filter  string            `json:"filter" binding:"omitempty"`
+	Headers map[string]string `json:"headers" binding:"omitempty"`
+}
 
-type PreheatParams struct {
+type CreateV1PreheatResponse struct {
+	ID string `json:"id"`
+}
+
+type GetV1PreheatResponse struct {
+	ID         string `json:"id"`
+	Status     string `json:"status"`
+	StartTime  string `json:"startTime,omitempty"`
+	FinishTime string `json:"finishTime,omitempty"`
+}
+
+type V1PreheatParams struct {
 	ID string `uri:"id" binding:"required"`
-}
-
-type CreatePreheatRequest struct {
-	SchedulerClusterID *uint             `json:"scheduler_cluster_id" binding:"omitempty"`
-	Type               string            `json:"type" binding:"required,oneof=image file"`
-	URL                string            `json:"url" binding:"required"`
-	Filter             string            `json:"filter" binding:"omitempty"`
-	Headers            map[string]string `json:"headers" binding:"omitempty"`
-}
-
-type Preheat struct {
-	ID        string    `json:"id"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"create_at"`
 }

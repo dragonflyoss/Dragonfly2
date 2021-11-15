@@ -21,12 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/handlers"
-	"d7y.io/dragonfly/v2/manager/middlewares"
-	"d7y.io/dragonfly/v2/manager/service"
-
 	"github.com/casbin/casbin/v2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/static"
@@ -35,12 +29,21 @@ import (
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/handlers"
+	"d7y.io/dragonfly/v2/manager/middlewares"
+	"d7y.io/dragonfly/v2/manager/service"
 )
 
 const (
-	GinLogFileName          = "gin.log"
 	PrometheusSubsystemName = "dragonfly_manager"
 	OtelServiceName         = "dragonfly-manager"
+)
+
+var (
+	GinLogFileName = "gin.log"
 )
 
 func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
@@ -93,20 +96,21 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 
 	// User
 	u := apiv1.Group("/users")
-	u.GET("/:id", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac, h.GetUser)
-	u.POST("/signin", middlewares.Tracer(), jwt.LoginHandler)
-	u.POST("/signout", middlewares.Tracer(), jwt.LogoutHandler)
-	u.POST("/signup", middlewares.Tracer(), h.SignUp)
-	u.GET("/signin/:name", middlewares.Tracer(), h.OauthSignin)
-	u.GET("/signin/:name/callback", middlewares.Tracer(), h.OauthSigninCallback(jwt))
-	u.POST("/refresh_token", middlewares.Tracer(), jwt.RefreshHandler)
-	u.POST("/:id/reset_password", middlewares.Tracer(), h.ResetPassword)
-	u.GET("/:id/roles", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac, h.GetRolesForUser)
-	u.PUT("/:id/roles/:role", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac, h.AddRoleToUser)
-	u.DELETE("/:id/roles/:role", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac, h.DeleteRoleForUser)
+	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
+	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
+	u.POST("/signin", jwt.LoginHandler)
+	u.POST("/signout", jwt.LogoutHandler)
+	u.POST("/signup", h.SignUp)
+	u.GET("/signin/:name", h.OauthSignin)
+	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
+	u.POST("/refresh_token", jwt.RefreshHandler)
+	u.POST("/:id/reset_password", h.ResetPassword)
+	u.GET("/:id/roles", jwt.MiddlewareFunc(), rbac, h.GetRolesForUser)
+	u.PUT("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
+	u.DELETE("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
 
 	// Role
-	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
 	re.DELETE("/:role", h.DestroyRole)
 	re.GET("/:role", h.GetRole)
@@ -115,11 +119,11 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	re.DELETE("/:role/permissions", h.DeletePermissionForRole)
 
 	// Permission
-	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
 	pm.GET("", h.GetPermissions(r))
 
 	// Oauth
-	oa := apiv1.Group("/oauth", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	oa := apiv1.Group("/oauth", jwt.MiddlewareFunc(), rbac)
 	oa.POST("", h.CreateOauth)
 	oa.DELETE(":id", h.DestroyOauth)
 	oa.PATCH(":id", h.UpdateOauth)
@@ -127,7 +131,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	oa.GET("", h.GetOauths)
 
 	// Scheduler Cluster
-	sc := apiv1.Group("/scheduler-clusters", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac, middlewares.Tracer())
+	sc := apiv1.Group("/scheduler-clusters", jwt.MiddlewareFunc(), rbac)
 	sc.POST("", h.CreateSchedulerCluster)
 	sc.DELETE(":id", h.DestroySchedulerCluster)
 	sc.PATCH(":id", h.UpdateSchedulerCluster)
@@ -136,7 +140,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
 	// Scheduler
-	s := apiv1.Group("/schedulers", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	s := apiv1.Group("/schedulers", jwt.MiddlewareFunc(), rbac)
 	s.POST("", h.CreateScheduler)
 	s.DELETE(":id", h.DestroyScheduler)
 	s.PATCH(":id", h.UpdateScheduler)
@@ -144,7 +148,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	s.GET("", h.GetSchedulers)
 
 	// CDN Cluster
-	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
 	cc.POST("", h.CreateCDNCluster)
 	cc.DELETE(":id", h.DestroyCDNCluster)
 	cc.PATCH(":id", h.UpdateCDNCluster)
@@ -154,7 +158,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
 
 	// CDN
-	c := apiv1.Group("/cdns", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	c := apiv1.Group("/cdns", jwt.MiddlewareFunc(), rbac)
 	c.POST("", h.CreateCDN)
 	c.DELETE(":id", h.DestroyCDN)
 	c.PATCH(":id", h.UpdateCDN)
@@ -162,7 +166,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	c.GET("", h.GetCDNs)
 
 	// Security Group
-	sg := apiv1.Group("/security-groups", jwt.MiddlewareFunc(), middlewares.Tracer(), rbac)
+	sg := apiv1.Group("/security-groups", jwt.MiddlewareFunc(), rbac)
 	sg.POST("", h.CreateSecurityGroup)
 	sg.DELETE(":id", h.DestroySecurityGroup)
 	sg.PATCH(":id", h.UpdateSecurityGroup)
@@ -171,10 +175,27 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
 
-	// Preheat
-	ph := apiv1.Group("/preheats", middlewares.Tracer())
-	ph.POST("", h.CreatePreheat)
-	ph.GET(":id", h.GetPreheat)
+	// Config
+	config := apiv1.Group("/configs")
+	config.POST("", h.CreateConfig)
+	config.DELETE(":id", h.DestroyConfig)
+	config.PATCH(":id", h.UpdateConfig)
+	config.GET(":id", h.GetConfig)
+	config.GET("", h.GetConfigs)
+
+	// Job
+	job := apiv1.Group("/jobs")
+	job.POST("", h.CreateJob)
+	job.DELETE(":id", h.DestroyJob)
+	job.PATCH(":id", h.UpdateJob)
+	job.GET(":id", h.GetJob)
+	job.GET("", h.GetJobs)
+
+	// Compatible with the V1 preheat.
+	pv1 := r.Group("preheats")
+	r.GET("/_ping", h.GetHealth)
+	pv1.POST("", h.CreateV1Preheat)
+	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check
 	r.GET("/healthy/*action", h.GetHealth)

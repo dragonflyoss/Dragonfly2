@@ -22,9 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/gc/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/pkg/gc/mocks"
 )
 
 func TestGCAdd(t *testing.T) {
@@ -125,7 +126,9 @@ func TestGCRun(t *testing.T) {
 					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
 				)
 
-				gc.Run(id)
+				if err := gc.Run(id); err != nil {
+					t.Error(err)
+				}
 			},
 		},
 		{
@@ -148,7 +151,9 @@ func TestGCRun(t *testing.T) {
 					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
 				)
 
-				gc.Run(id)
+				if err := gc.Run(id); err != nil {
+					t.Error(err)
+				}
 			},
 		},
 		{

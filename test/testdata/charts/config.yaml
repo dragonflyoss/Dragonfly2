@@ -1,15 +1,40 @@
 scheduler:
   image: d7yio/scheduler
   tag: latest
+  replicas: 3
+  extraVolumeMounts:
+    - name: logs
+      mountPath: "/var/log/dragonfly"
+  extraVolumes:
+    - name: logs
+      hostPath:
+        path: /tmp/artifact
 
 cdn:
   image: d7yio/cdn
   tag: latest
+  replicas: 3
+  extraVolumeMounts:
+    - name: logs
+      mountPath: "/var/log/dragonfly"
+  extraVolumes:
+    - name: logs
+      hostPath:
+        path: /tmp/artifact
 
 dfdaemon:
   image: d7yio/dfdaemon
   tag: latest
+  extraVolumeMounts:
+    - name: logs
+      mountPath: "/var/log/dragonfly"
+  extraVolumes:
+    - name: logs
+      hostPath:
+        path: /tmp/artifact
   config:
+    scheduler:
+      disableAutoBackSource: true
     proxy:
       defaultFilter: "Expires&Signature"
       security:
@@ -29,3 +54,11 @@ dfdaemon:
 manager:
   image: d7yio/manager
   tag: latest
+  replicas: 3
+  extraVolumeMounts:
+    - name: logs
+      mountPath: "/var/log/dragonfly"
+  extraVolumes:
+    - name: logs
+      hostPath:
+        path: /tmp/artifact

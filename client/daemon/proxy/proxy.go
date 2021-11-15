@@ -55,7 +55,7 @@ var (
 	portHTTPS = 443
 )
 
-// Proxy is an http proxy handler. It proxies requests with dragonfly
+// Proxy is a http proxy handler. It proxies requests with dragonfly
 // if any defined proxy rules is matched
 type Proxy struct {
 	// reverse proxy upstream url for the default registry
@@ -70,10 +70,10 @@ type Proxy struct {
 	// cert is the certificate used to hijack https proxy requests
 	cert *tls.Certificate
 
-	// certCache is a in-memory cache store for TLS certs used in HTTPS hijack. Lazy init.
+	// certCache is an in-memory cache store for TLS certs used in HTTPS hijack. Lazy init.
 	certCache *lru.Cache
 
-	// directHandler are used to handle non proxy requests
+	// directHandler are used to handle non-proxy requests
 	directHandler http.Handler
 
 	// peerTaskManager is the peer task manager
@@ -95,6 +95,9 @@ type Proxy struct {
 	tracer trace.Tracer
 
 	basicAuth *config.BasicAuth
+
+	// dumpHTTPContent indicates to dump http request header and response header
+	dumpHTTPContent bool
 }
 
 // Option is a functional option for configuring the proxy
@@ -143,6 +146,14 @@ func WithCert(cert *tls.Certificate) Option {
 // WithDirectHandler sets the handler for non-proxy requests
 func WithDirectHandler(h *http.ServeMux) Option {
 	return func(p *Proxy) *Proxy {
+		if p.registry == nil || p.registry.Remote == nil || p.registry.Remote.URL == nil {
+			logger.Warnf("registry mirror url is empty, registry mirror feature is disabled")
+			h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+				http.Error(w, fmt.Sprintf("registry mirror feature is disabled"), http.StatusNotFound)
+			})
+			p.directHandler = h
+			return p
+		}
 		// Make sure the root handler of the given server mux is the
 		// registry mirror reverse proxy
 		h.HandleFunc("/", p.mirrorRegistry)
@@ -189,6 +200,13 @@ func WithDefaultFilter(f string) Option {
 func WithBasicAuth(auth *config.BasicAuth) Option {
 	return func(p *Proxy) *Proxy {
 		p.basicAuth = auth
+		return p
+	}
+}
+
+func WithDumpHTTPContent(dump bool) Option {
+	return func(p *Proxy) *Proxy {
+		p.dumpHTTPContent = dump
 		return p
 	}
 }
@@ -326,12 +344,14 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 
 func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	if proxy.cert == nil {
+		logger.Debugf("proxy cert is not configured, tunneling https request for %s", r.Host)
 		tunnelHTTPS(w, r)
 		return
 	}
 
 	cConfig := proxy.remoteConfig(r.Host)
 	if cConfig == nil {
+		logger.Debugf("hijackHTTPS hosts not match, tunneling https request for %s", r.Host)
 		tunnelHTTPS(w, r)
 		return
 	}
@@ -386,9 +406,16 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	cConn.Close()
 
 	rp := &httputil.ReverseProxy{
-		Director: func(r *http.Request) {
-			r.URL.Host = r.Host
-			r.URL.Scheme = schemaHTTPS
+		Director: func(req *http.Request) {
+			req.URL.Host = req.Host
+			req.URL.Scheme = schemaHTTPS
+			if proxy.dumpHTTPContent {
+				if out, e := httputil.DumpRequest(req, false); e == nil {
+					logger.Debugf("dump request in ReverseProxy: %s", string(out))
+				} else {
+					logger.Errorf("dump request in ReverseProxy error: %s", e)
+				}
+			}
 		},
 		Transport: proxy.newTransport(cConfig),
 	}
@@ -397,7 +424,8 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	// NOTE: http.Serve always returns a non-nil error
-	if err := http.Serve(&singleUseListener{&customCloseConn{sConn, wg.Done}}, rp); err != errServerClosed && err != http.ErrServerClosed {
+	err = http.Serve(&singleUseListener{&customCloseConn{sConn, wg.Done}}, rp)
+	if err != errServerClosed && err != http.ErrServerClosed {
 		logger.Errorf("failed to accept incoming HTTP connections: %v", err)
 	}
 	wg.Wait()
@@ -411,6 +439,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultBiz(bizTag),
+		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	return rt
 }
@@ -424,6 +453,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultBiz(bizTag),
+		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to get transport: %v", err), http.StatusInternalServerError)
@@ -433,7 +463,9 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		// write error string to response body
-		rw.Write([]byte(err.Error()))
+		if _, err := rw.Write([]byte(err.Error())); err != nil {
+			logger.Errorf("write error string to response body failed %s", err)
+		}
 	}
 	reverseProxy.ServeHTTP(w, r)
 }
@@ -521,7 +553,6 @@ func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an
 // http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
-	logger.Debugf("Tunneling https request for %s", r.Host)
 	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -538,8 +569,15 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	go copyAndClose(dst, clientConn)
-	copyAndClose(clientConn, dst)
+	go func() {
+		if err := copyAndClose(dst, clientConn); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}()
+
+	if err := copyAndClose(clientConn, dst); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {

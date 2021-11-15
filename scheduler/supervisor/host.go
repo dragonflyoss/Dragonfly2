@@ -14,13 +14,21 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/host_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor HostManager
+
 package supervisor
 
 import (
 	"sync"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
+const (
+	// When using the manager configuration parameter, limit the maximum load number to 5000
+	HostMaxLoad = 5 * 1000
 )
 
 type HostManager interface {
@@ -58,6 +66,22 @@ func (m *hostManager) Delete(key string) {
 	m.Map.Delete(key)
 }
 
+type HostOption func(rt *Host) *Host
+
+func WithTotalUploadLoad(load int32) HostOption {
+	return func(h *Host) *Host {
+		h.TotalUploadLoad = load
+		return h
+	}
+}
+
+func WithNetTopology(n string) HostOption {
+	return func(h *Host) *Host {
+		h.NetTopology = n
+		return h
+	}
+}
+
 type Host struct {
 	// uuid each time the daemon starts, it will generate a different uuid
 	UUID string
@@ -77,7 +101,9 @@ type Host struct {
 	Location string
 	// IDC idc where the peer host is located
 	IDC string
-	// NetTopology network device path: switch|router|...
+	// NetTopology network device path
+	// according to the user's own network topology definition, the coverage range from large to small, using the | symbol segmentation,
+	// Example: switch|router|...
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
 	TotalUploadLoad int32
@@ -89,23 +115,16 @@ type Host struct {
 	logger *logger.SugaredLoggerOnWith
 }
 
-func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *Host {
-	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, totalUploadLoad)
+func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, options...)
 }
 
-func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *Host {
-	return newHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, totalUploadLoad)
+func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, options...)
 }
 
-func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc, netTopology string,
-	totalUploadLoad int32) *Host {
-	if totalUploadLoad == 0 {
-		totalUploadLoad = 100
-	}
-
-	return &Host{
+func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc string, options ...HostOption) *Host {
+	host := &Host{
 		UUID:            uuid,
 		IP:              ip,
 		HostName:        hostname,
@@ -115,11 +134,17 @@ func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool,
 		SecurityDomain:  securityDomain,
 		Location:        location,
 		IDC:             idc,
-		NetTopology:     netTopology,
-		TotalUploadLoad: totalUploadLoad,
+		NetTopology:     "",
+		TotalUploadLoad: 100,
 		peers:           &sync.Map{},
 		logger:          logger.With("hostUUID", uuid),
 	}
+
+	for _, opt := range options {
+		opt(host)
+	}
+
+	return host
 }
 
 func (h *Host) AddPeer(peer *Peer) {

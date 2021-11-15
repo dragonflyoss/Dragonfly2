@@ -17,6 +17,8 @@
 package job
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,13 +28,21 @@ import (
 	"strings"
 	"time"
 
-	internaljob "d7y.io/dragonfly/v2/internal/job"
-	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/distribution/distribution/v3"
 	"github.com/distribution/distribution/v3/manifest/schema2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/config"
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
+
+var tracer = otel.Tracer("sender")
 
 type PreheatType string
 
@@ -41,10 +51,14 @@ const (
 	PreheatFileType  PreheatType = "file"
 )
 
+const (
+	timeout = 1 * time.Minute
+)
+
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
 
 type Preheat interface {
-	CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error)
+	CreatePreheat(context.Context, []model.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
 }
 
 type preheat struct {
@@ -66,13 +80,19 @@ func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
 	}, nil
 }
 
-func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequest) (*types.Preheat, error) {
+func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Scheduler, json types.PreheatArgs) (*internaljob.GroupJobState, error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindProducer))
+	span.SetAttributes(config.AttributePreheatType.String(json.Type))
+	span.SetAttributes(config.AttributePreheatURL.String(json.URL))
+	defer span.End()
+
 	url := json.URL
 	filter := json.Filter
 	rawheader := json.Headers
 
 	// Initialize queues
-	queues := getSchedulerQueues(hostnames)
+	queues := getSchedulerQueues(schedulers)
 
 	// Generate download files
 	var files []*internaljob.PreheatRequest
@@ -84,7 +104,7 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 			return nil, err
 		}
 
-		files, err = p.getLayers(url, filter, httputils.MapToHeader(rawheader), image)
+		files, err = p.getLayers(ctx, url, filter, httputils.MapToHeader(rawheader), image)
 		if err != nil {
 			return nil, err
 		}
@@ -101,15 +121,24 @@ func (p *preheat) CreatePreheat(hostnames []string, json types.CreatePreheatRequ
 		return nil, errors.New("unknow preheat type")
 	}
 
-	return p.createGroupJob(files, queues)
+	for _, f := range files {
+		logger.Infof("preheat %s file url: %v queues: %v", json.URL, f.URL, queues)
+	}
+
+	return p.createGroupJob(ctx, files, queues)
 }
 
-func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*types.Preheat, error) {
+func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	signatures := []*machineryv1tasks.Signature{}
+	var urls []string
+	for i := range files {
+		urls = append(urls, files[i].URL)
+	}
 	for _, queue := range queues {
 		for _, file := range files {
 			args, err := internaljob.MarshalRequest(file)
 			if err != nil {
+				logger.Errorf("preheat marshal request: %v, error: %v", file, err)
 				continue
 			}
 
@@ -120,25 +149,30 @@ func (p *preheat) createGroupJob(files []*internaljob.PreheatRequest, queues []i
 			})
 		}
 	}
-
 	group, err := machineryv1tasks.NewGroup(signatures...)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err := p.job.Server.SendGroup(group, 0); err != nil {
+	if _, err := p.job.Server.SendGroupWithContext(ctx, group, 0); err != nil {
+		logger.Error("create preheat group job failed", err)
 		return nil, err
 	}
 
-	return &types.Preheat{
-		ID:        group.GroupUUID,
-		Status:    machineryv1tasks.StatePending,
+	logger.Infof("create preheat group job successed, group uuid: %s， urls:%s", group.GroupUUID, urls)
+	return &internaljob.GroupJobState{
+		GroupUUID: group.GroupUUID,
+		State:     machineryv1tasks.StatePending,
 		CreatedAt: time.Now(),
 	}, nil
 }
 
-func (p *preheat) getLayers(url string, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
-	resp, err := p.getManifests(url, header)
+func (p *preheat) getLayers(ctx context.Context, url string, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
+	defer span.End()
+
+	resp, err := p.getManifests(ctx, url, header)
 	if err != nil {
 		return nil, err
 	}
@@ -146,11 +180,15 @@ func (p *preheat) getLayers(url string, filter string, header http.Header, image
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token := getAuthToken(resp.Header)
+			token, err := getAuthToken(ctx, resp.Header)
+			if err != nil {
+				return nil, err
+			}
+
 			bearer := "Bearer " + token
 			header.Add("Authorization", bearer)
 
-			resp, err = p.getManifests(url, header)
+			resp, err = p.getManifests(ctx, url, header)
 			if err != nil {
 				return nil, err
 			}
@@ -159,7 +197,7 @@ func (p *preheat) getLayers(url string, filter string, header http.Header, image
 		}
 	}
 
-	layers, err := p.parseLayers(resp, filter, header, image)
+	layers, err := p.parseLayers(resp, url, filter, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -167,8 +205,8 @@ func (p *preheat) getLayers(url string, filter string, header http.Header, image
 	return layers, nil
 }
 
-func (p *preheat) getManifests(url string, header http.Header) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+func (p *preheat) getManifests(ctx context.Context, url string, header http.Header) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +214,14 @@ func (p *preheat) getManifests(url string, header http.Header) (*http.Response, 
 	req.Header = header
 	req.Header.Add("Accept", schema2.MediaTypeManifest)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +229,7 @@ func (p *preheat) getManifests(url string, header http.Header) (*http.Response, 
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, url, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -198,37 +243,60 @@ func (p *preheat) parseLayers(resp *http.Response, filter string, header http.He
 	var layers []*internaljob.PreheatRequest
 	for _, v := range manifest.References() {
 		digest := v.Digest.String()
-		layers = append(layers, &internaljob.PreheatRequest{
+		layer := &internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     p.bizTag,
 			Filter:  filter,
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),
-		})
+		}
+
+		layers = append(layers, layer)
 	}
 
 	return layers, nil
 }
 
-func getAuthToken(header http.Header) (token string) {
+func getAuthToken(ctx context.Context, header http.Header) (string, error) {
+	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
+	defer span.End()
+
 	authURL := authURL(header.Values("WWW-Authenticate"))
 	if len(authURL) == 0 {
-		return
+		return "", errors.New("authURL is empty")
 	}
 
-	resp, err := http.Get(authURL)
+	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
 	if err != nil {
-		return
+		return "", err
+	}
+
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var result map[string]interface{}
-	json.Unmarshal(body, &result)
-	if result["token"] != nil {
-		token = fmt.Sprintf("%v", result["token"])
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
 	}
-	return
+
+	if result["token"] == nil {
+		return "", errors.New("token is empty")
+	}
+
+	token := fmt.Sprintf("%v", result["token"])
+	return token, nil
+
 }
 
 func authURL(wwwAuth []string) string {
@@ -264,10 +332,10 @@ func parseAccessURL(url string) (*preheatImage, error) {
 	}, nil
 }
 
-func getSchedulerQueues(hostnames []string) []internaljob.Queue {
+func getSchedulerQueues(schedulers []model.Scheduler) []internaljob.Queue {
 	var queues []internaljob.Queue
-	for _, hostname := range hostnames {
-		queue, err := internaljob.GetSchedulerQueue(hostname)
+	for _, scheduler := range schedulers {
+		queue, err := internaljob.GetSchedulerQueue(scheduler.SchedulerClusterID, scheduler.HostName)
 		if err != nil {
 			continue
 		}

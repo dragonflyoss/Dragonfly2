@@ -19,8 +19,11 @@ package handlers
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
 // @Summary Create CDN
@@ -41,9 +44,9 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 		return
 	}
 
-	cdn, err := h.service.CreateCDN(json)
+	cdn, err := h.service.CreateCDN(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -68,8 +71,8 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.DestroyCDN(params.ID); err != nil {
-		ctx.Error(err)
+	if err := h.service.DestroyCDN(ctx.Request.Context(), params.ID); err != nil {
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -91,19 +94,19 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var params types.CDNParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	cdn, err := h.service.UpdateCDN(params.ID, json)
+	cdn, err := h.service.UpdateCDN(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -128,9 +131,9 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 		return
 	}
 
-	cdn, err := h.service.GetCDN(params.ID)
+	cdn, err := h.service.GetCDN(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -157,18 +160,12 @@ func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, err := h.service.GetCDNs(query)
+	cdns, count, err := h.service.GetCDNs(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	totalCount, err := h.service.CDNTotalCount(query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, cdns)
 }

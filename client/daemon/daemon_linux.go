@@ -22,8 +22,9 @@ import (
 	"fmt"
 	"os"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"golang.org/x/sys/unix"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 func switchNetNamespace(target string) (func() error, error) {

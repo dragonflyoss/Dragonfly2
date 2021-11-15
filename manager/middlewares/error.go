@@ -19,14 +19,16 @@ package middlewares
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	redigo "github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	"d7y.io/dragonfly/v2/internal/dfcodes"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 )
 
 type ErrorResponse struct {
@@ -40,6 +42,15 @@ func Error() gin.HandlerFunc {
 		c.Next()
 		err := c.Errors.Last()
 		if err == nil {
+			return
+		}
+
+		// Redigo error handler
+		if errors.Is(err, redigo.ErrNil) {
+			c.JSON(http.StatusNotFound, ErrorResponse{
+				Message: http.StatusText(http.StatusNotFound),
+			})
+			c.Abort()
 			return
 		}
 

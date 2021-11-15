@@ -17,7 +17,10 @@
 package peer
 
 import (
+	"context"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -49,6 +52,7 @@ func (p *streamPeerTaskCallback) Init(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
@@ -66,6 +70,7 @@ func (p *streamPeerTaskCallback) Update(pt Task) error {
 			},
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("update task to storage manager failed: %s", err)
@@ -90,7 +95,8 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		return e
 	}
 	p.ptm.PeerTaskDone(p.req.PeerId)
-	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(p.pt.ctx))
+	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
@@ -119,7 +125,8 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 	p.ptm.PeerTaskDone(p.req.PeerId)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", code, reason)
-	peerResultCtx, peerResultSpan := tracer.Start(p.pt.ctx, config.SpanReportPeerResult)
+	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(p.pt.ctx))
+	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 	err := p.pt.schedulerClient.ReportPeerResult(peerResultCtx, &scheduler.PeerResult{
 		TaskId:          pt.GetTaskID(),
@@ -142,4 +149,21 @@ func (p *streamPeerTaskCallback) Fail(pt Task, code base.Code, reason string) er
 		pt.Log().Infof("step 3: report fail peer result ok")
 	}
 	return nil
+}
+
+func (p *streamPeerTaskCallback) ValidateDigest(pt Task) error {
+	if !p.ptm.calculateDigest {
+		return nil
+	}
+	err := p.ptm.storageManager.ValidateDigest(
+		&storage.PeerTaskMetaData{
+			PeerID: pt.GetPeerID(),
+			TaskID: pt.GetTaskID(),
+		})
+	if err != nil {
+		pt.Log().Errorf("%s", err)
+	} else {
+		pt.Log().Debugf("validated digest")
+	}
+	return err
 }

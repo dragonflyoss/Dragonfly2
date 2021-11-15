@@ -19,8 +19,11 @@ package handlers
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/types"
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
 // @Summary Create Scheduler
@@ -41,9 +44,9 @@ func (h *Handlers) CreateScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := h.service.CreateScheduler(json)
+	scheduler, err := h.service.CreateScheduler(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -68,8 +71,8 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.DestroyScheduler(params.ID); err != nil {
-		ctx.Error(err)
+	if err := h.service.DestroyScheduler(ctx.Request.Context(), params.ID); err != nil {
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -91,19 +94,19 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateSchedulerRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	scheduler, err := h.service.UpdateScheduler(params.ID, json)
+	scheduler, err := h.service.UpdateScheduler(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -128,9 +131,9 @@ func (h *Handlers) GetScheduler(ctx *gin.Context) {
 		return
 	}
 
-	scheduler, err := h.service.GetScheduler(params.ID)
+	scheduler, err := h.service.GetScheduler(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -157,18 +160,12 @@ func (h *Handlers) GetSchedulers(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulers, err := h.service.GetSchedulers(query)
+	schedulers, count, err := h.service.GetSchedulers(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	totalCount, err := h.service.SchedulerTotalCount(query)
-	if err != nil {
-		ctx.Error(err)
-		return
-	}
-
-	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(totalCount))
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
 	ctx.JSON(http.StatusOK, schedulers)
 }

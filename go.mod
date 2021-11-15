@@ -31,6 +31,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
+	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.2.0
@@ -45,7 +46,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/montanaflynn/stats v0.6.6
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/onsi/ginkgo v1.16.4
+	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.14.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/pborman/uuid v1.2.1

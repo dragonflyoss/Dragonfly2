@@ -24,13 +24,17 @@ import (
 	"strings"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
+
+	"d7y.io/dragonfly/v2/internal/idgen"
+	internaljob "d7y.io/dragonfly/v2/internal/job"
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
 
 var _ = Describe("Preheat with manager", func() {
@@ -53,17 +57,25 @@ var _ = Describe("Preheat with manager", func() {
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
 				// preheat file
-				out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-					map[string]interface{}{"type": "file", "url": url},
+				req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+					Type: internaljob.PreheatJob,
+					Args: types.PreheatArgs{
+						Type: "file",
+						URL:  url,
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 					fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 				fmt.Println(string(out))
 				Expect(err).NotTo(HaveOccurred())
 
 				// wait for success
-				preheatJob := &types.Preheat{}
-				err = json.Unmarshal(out, preheatJob)
+				job := &model.Job{}
+				err = json.Unmarshal(out, job)
 				Expect(err).NotTo(HaveOccurred())
-				done := waitForDone(preheatJob, fsPod)
+				done := waitForDone(job, fsPod)
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
@@ -84,12 +96,12 @@ var _ = Describe("Preheat with manager", func() {
 
 			var (
 				cdnTaskIDs = []string{
-					"effb4ac6e36d9a2a425ab142ba0a21fd0d49feea67a839fbd776ebb04e6f9eb7",
-					"ceaaf57ceba7221c2d54c62d77860e28b091837f235ba802c0722c522d6c7a8a",
+					"1e8a4f36f5eaa7d9711de14675329dde55738c8d602244dff8d9444e3b9a6f90",
+					"408611293f7525215c51d0f92b04922eb970746144f4aaa73e10f93d74132bff",
 				}
 				sha256sum1 = []string{
-					"14119a10abf4669e8cdbdff324a9f9605d99697215a0d21c360fe8dfa8471bab",
-					"a0d0a0d46f8b52473982a3c466318f479767577551a53ffc9074c9fa7035982e",
+					"0a97eee8041e2b6c0e65abb2700b0705d0da5525ca69060b9e0bde8a3d17afdb",
+					"97518928ae5f3d52d4164b314a7e73654eb686ecd8aafa0b79acd980773a740d",
 				}
 			)
 
@@ -100,17 +112,25 @@ var _ = Describe("Preheat with manager", func() {
 			fsPod := getFileServerExec()
 
 			// preheat file
-			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-				map[string]interface{}{"type": "image", "url": url},
+			req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type: "image",
+					URL:  url,
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			out, err := fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
 			// wait for success
-			preheatJob := &types.Preheat{}
-			err = json.Unmarshal(out, preheatJob)
+			job := &model.Job{}
+			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
-			done := waitForDone(preheatJob, fsPod)
+			done := waitForDone(job, fsPod)
 			Expect(done).Should(BeTrue())
 
 			for i, cdnTaskID := range cdnTaskIDs {
@@ -153,17 +173,25 @@ var _ = Describe("Preheat with manager", func() {
 			fsPod := getFileServerExec()
 
 			// use a curl to preheat the same file, git a id to wait for success
-			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"},
-				map[string]interface{}{"type": "file", "url": url},
+			req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
+				Type: internaljob.PreheatJob,
+				Args: types.PreheatArgs{
+					Type: "file",
+					URL:  url,
+				},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 
 			// wait for success
-			preheatJob := &types.Preheat{}
-			err = json.Unmarshal(out, preheatJob)
+			job := &model.Job{}
+			err = json.Unmarshal(out, job)
 			Expect(err).NotTo(HaveOccurred())
-			done := waitForDone(preheatJob, fsPod)
+			done := waitForDone(job, fsPod)
 			Expect(done).Should(BeTrue())
 
 			// generate task id to find the file
@@ -179,10 +207,10 @@ var _ = Describe("Preheat with manager", func() {
 	})
 })
 
-func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
+func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 	for {
 		select {
@@ -190,7 +218,7 @@ func waitForDone(preheat *types.Preheat, pod *e2eutil.PodExec) bool {
 			return false
 		case <-ticker.C:
 			out, err := pod.CurlCommand("", nil, nil,
-				fmt.Sprintf("http://%s:%s/%s/%s", managerService, managerPort, preheatPath, preheat.ID)).CombinedOutput()
+				fmt.Sprintf("http://%s:%s/%s/%d", managerService, managerPort, preheatPath, preheat.ID)).CombinedOutput()
 			fmt.Println(string(out))
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(out, preheat)
@@ -222,6 +250,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 
 		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
+
 		// file name is the same as task id
 		file := cdnTaskID
 		if !strings.Contains(string(out), file) {
@@ -233,6 +262,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 		fmt.Println(string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
+		fmt.Println(string(sha256sum2))
 		break
 	}
 	return sha256sum2

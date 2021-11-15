@@ -33,13 +33,12 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type DaemonConfig = DaemonOption
@@ -152,14 +151,15 @@ type DownloadOption struct {
 
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
-	ListenOption   `mapstructure:",squash" yaml:",inline"`
-	BasicAuth      *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
-	DefaultFilter  string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
-	MaxConcurrency int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
-	RegistryMirror *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
-	WhiteList      []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-	Proxies        []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
-	HijackHTTPS    *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+	ListenOption    `mapstructure:",squash" yaml:",inline"`
+	BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
+	DefaultFilter   string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+	MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+	RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
+	WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
+	Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -236,14 +236,15 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
 	pt := struct {
-		ListenOption   `mapstructure:",squash" yaml:",inline"`
-		BasicAuth      *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
-		DefaultFilter  string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
-		MaxConcurrency int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
-		RegistryMirror *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
-		WhiteList      []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-		Proxies        []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
-		HijackHTTPS    *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+		ListenOption    `mapstructure:",squash" yaml:",inline"`
+		BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
+		DefaultFilter   string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+		MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+		RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
+		WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
+		Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+		HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+		DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
@@ -258,6 +259,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 	p.MaxConcurrency = pt.MaxConcurrency
 	p.DefaultFilter = pt.DefaultFilter
 	p.BasicAuth = pt.BasicAuth
+	p.DumpHTTPContent = pt.DumpHTTPContent
 
 	return nil
 }

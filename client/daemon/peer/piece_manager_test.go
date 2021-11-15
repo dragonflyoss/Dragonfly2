@@ -59,10 +59,11 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	)
 
 	pieceDownloadTimeout := 30 * time.Second
+	tempDir, _ := ioutil.TempDir("", "d7y-piece-manager-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: test.DataDir,
+			DataPath: tempDir,
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},

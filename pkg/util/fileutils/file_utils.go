@@ -23,10 +23,10 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
+	"github.com/pkg/errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"github.com/pkg/errors"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 const (

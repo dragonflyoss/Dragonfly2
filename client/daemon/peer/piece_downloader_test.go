@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
@@ -58,7 +59,9 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-0", r.URL.Path)
 				data := []byte("test test ")
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", len(data)))
-				w.Write(data)
+				if _, err := w.Write(data); err != nil {
+					t.Error(err)
+				}
 			},
 			taskID:          "task-0",
 			pieceRange:      "bytes=0-9",
@@ -71,7 +74,9 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-1", r.URL.Path)
 				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
-				w.Write(testData[rg.Start : rg.Start+rg.Length])
+				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
+					t.Error(err)
+				}
 			},
 			taskID:          "task-1",
 			pieceRange:      "bytes=0-99",
@@ -84,7 +89,9 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-2", r.URL.Path)
 				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
-				w.Write(testData[rg.Start : rg.Start+rg.Length])
+				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
+					t.Error(err)
+				}
 			},
 			taskID:          "task-2",
 			pieceRange:      fmt.Sprintf("bytes=512-%d", len(testData)-1),
@@ -97,7 +104,9 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 				assert.Equal(upload.PeerDownloadHTTPPathPrefix+"tas/"+"task-3", r.URL.Path)
 				rg := clientutil.MustParseRange(r.Header.Get("Range"), math.MaxInt64)
 				w.Header().Set(headers.ContentLength, fmt.Sprintf("%d", rg.Length))
-				w.Write(testData[rg.Start : rg.Start+rg.Length])
+				if _, err := w.Write(testData[rg.Start : rg.Start+rg.Length]); err != nil {
+					t.Error(err)
+				}
 			},
 			taskID:          "task-3",
 			pieceRange:      "bytes=512-1024",
@@ -134,6 +143,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 					PieceOffset: tt.rangeStart,
 					PieceStyle:  base.PieceStyle_PLAIN,
 				},
+				log: logger.With("test", "test"),
 			})
 			assert.Nil(err, "downloaded piece should success")
 

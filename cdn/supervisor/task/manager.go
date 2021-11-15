@@ -21,6 +21,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -31,9 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 // Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
@@ -137,13 +138,13 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		if err != nil {
 			task.Log().Errorf("trigger cdn get error: %v", err)
 		}
+		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		go func() {
-			if err := tm.progressMgr.PublishTask(ctx, task.TaskID, updateTaskInfo); err != nil {
+			if err := tm.progressMgr.PublishTask(ctx, task.TaskID, updatedTask); err != nil {
 				task.Log().Errorf("failed to publish task: %v", err)
 			}
 
 		}()
-		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
 		if err != nil {
 			task.Log().Errorf("failed to update task: %v", err)
 		}
@@ -189,7 +190,9 @@ func (tm Manager) Delete(taskID string) error {
 	tm.accessTimeMap.Delete(taskID)
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
-	tm.progressMgr.Clear(taskID)
+	if err := tm.progressMgr.Clear(taskID); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -226,7 +229,10 @@ func (tm *Manager) GC() error {
 		}
 		// gc task memory data
 		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
-		tm.Delete(taskID)
+		if err := tm.Delete(taskID); err != nil {
+			logger.GcLogger.With("type", "meta").Infof("gc task: failed to delete task: %s", taskID)
+			continue
+		}
 		removedTaskCount++
 	}
 

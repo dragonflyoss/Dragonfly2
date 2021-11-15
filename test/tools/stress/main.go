@@ -131,7 +131,9 @@ loop:
 func debug() {
 	debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, 18066)
 	viewer.SetConfiguration(viewer.WithAddr(debugAddr))
-	statsview.New().Start()
+	if err := statsview.New().Start(); err != nil {
+		log.Println("stat view start failed", err)
+	}
 }
 
 func forceExit(signals chan os.Signal) {
@@ -278,8 +280,10 @@ func saveToOutput(results []*Result) {
 		if v.PeerID == "" {
 			v.PeerID = "unknown"
 		}
-		out.WriteString(fmt.Sprintf("%s %s %d %v %d %d %s\n",
+		if _, err := out.WriteString(fmt.Sprintf("%s %s %d %v %d %d %s\n",
 			v.TaskID, v.PeerID, v.StatusCode, v.Cost,
-			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100, v.Message))
+			v.StartTime.UnixNano()/100, v.EndTime.UnixNano()/100, v.Message)); err != nil {
+			log.Panicln("write string failed", err)
+		}
 	}
 }

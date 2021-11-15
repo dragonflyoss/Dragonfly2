@@ -20,6 +20,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -27,10 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
@@ -154,8 +155,7 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
 	// trigger scheduling
-	pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
-	return pps, err
+	return pps, pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {

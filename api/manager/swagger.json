@@ -546,6 +546,227 @@
                 }
             }
         },
+        "/configs": {
+            "get": {
+                "description": "Get Configs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get Configs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Config"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Create Config",
+                "parameters": [
+                    {
+                        "description": "Config",
+                        "name": "Config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/configs/{id}": {
+            "get": {
+                "description": "Get Config by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Get Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Destroy Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Config"
+                ],
+                "summary": "Update Config",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Config",
+                        "name": "Config",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateConfigRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Config"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/healthy": {
             "get": {
                 "description": "Get app health",
@@ -562,6 +783,227 @@
                 "responses": {
                     "200": {
                         "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/jobs": {
+            "get": {
+                "description": "Get Jobs",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Job"
+                ],
+                "summary": "Get Jobs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Job"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Job"
+                ],
+                "summary": "Create Job",
+                "parameters": [
+                    {
+                        "description": "Job",
+                        "name": "Job",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/jobs/{id}": {
+            "get": {
+                "description": "Get Job by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Job"
+                ],
+                "summary": "Get Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Job"
+                ],
+                "summary": "Destroy Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Job"
+                ],
+                "summary": "Update Job",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Job",
+                        "name": "Job",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateJobRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Job"
+                        }
                     },
                     "400": {
                         "description": ""
@@ -837,7 +1279,7 @@
                 "tags": [
                     "Preheat"
                 ],
-                "summary": "Create Preheat",
+                "summary": "Create V1 Preheat",
                 "parameters": [
                     {
                         "description": "Preheat",
@@ -845,7 +1287,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/types.CreatePreheatRequest"
+                            "$ref": "#/definitions/types.CreateV1PreheatRequest"
                         }
                     }
                 ],
@@ -853,7 +1295,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Preheat"
+                            "$ref": "#/definitions/types.CreateV1PreheatResponse"
                         }
                     },
                     "400": {
@@ -880,7 +1322,7 @@
                 "tags": [
                     "Preheat"
                 ],
-                "summary": "Get Preheat",
+                "summary": "Get V1 Preheat",
                 "parameters": [
                     {
                         "type": "string",
@@ -894,7 +1336,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/types.Preheat"
+                            "$ref": "#/definitions/types.GetV1PreheatResponse"
                         }
                     },
                     "400": {
@@ -2041,6 +2483,61 @@
                 }
             }
         },
+        "/users": {
+            "get": {
+                "description": "Get Users",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CDN"
+                ],
+                "summary": "Get Users",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.CDN"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/users/:id/reset_password": {
             "post": {
                 "description": "reset password by json config",
@@ -2197,61 +2694,67 @@
                     }
                 }
             }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Get User by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "model.Assertion": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "policy": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "policyMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "rm": {
-                    "$ref": "#/definitions/rbac.RoleManager"
-                },
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AssertionMap": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/model.Assertion"
-            }
-        },
         "model.CDN": {
             "type": "object",
             "properties": {
                 "cdnclusterID": {
                     "type": "integer"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -2267,6 +2770,9 @@
                 },
                 "status": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2279,20 +2785,114 @@
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "is_default": {
                     "type": "boolean"
+                },
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Job"
+                    }
                 },
                 "name": {
                     "type": "string"
                 },
-                "securityGroupID": {
+                "scheduler_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
+                "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Config": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
                 }
             }
         },
         "model.JSONMap": {
             "type": "object",
             "additionalProperties": true
+        },
+        "model.Job": {
+            "type": "object",
+            "properties": {
+                "args": {
+                    "$ref": "#/definitions/model.JSONMap"
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "cdn_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CDNCluster"
+                    }
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "result": {
+                    "$ref": "#/definitions/model.JSONMap"
+                },
+                "scheduler_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
         },
         "model.Oauth": {
             "type": "object",
@@ -2306,10 +2906,19 @@
                 "client_secret": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2317,8 +2926,14 @@
         "model.Scheduler": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -2341,6 +2956,9 @@
                 "status": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "vips": {
                     "type": "string"
                 }
@@ -2352,14 +2970,32 @@
                 "bio": {
                     "type": "string"
                 },
+                "cdn_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CDNCluster"
+                    }
+                },
                 "client_config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "is_default": {
                     "type": "boolean"
+                },
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Job"
+                    }
                 },
                 "name": {
                     "type": "string"
@@ -2367,8 +3003,11 @@
                 "scopes": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
-                "securityGroupID": {
+                "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -2378,13 +3017,22 @@
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
                 },
                 "proxy_domain": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2398,8 +3046,14 @@
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -2410,10 +3064,10 @@
                 "phone": {
                     "type": "string"
                 },
-                "private_token": {
+                "state": {
                     "type": "string"
                 },
-                "state": {
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -2433,9 +3087,6 @@
                 }
             }
         },
-        "rbac.RoleManager": {
-            "type": "object"
-        },
         "types.AddPermissionForRoleRequest": {
             "type": "object",
             "required": [
@@ -2451,6 +3102,17 @@
                 }
             }
         },
+        "types.CDNClusterConfig": {
+            "type": "object",
+            "properties": {
+                "load_limit": {
+                    "type": "integer"
+                },
+                "net_topology": {
+                    "type": "string"
+                }
+            }
+        },
         "types.CreateCDNClusterRequest": {
             "type": "object",
             "required": [
@@ -2462,8 +3124,7 @@
                     "type": "string"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.CDNClusterConfig"
                 },
                 "name": {
                     "type": "string"
@@ -2507,6 +3168,65 @@
                 }
             }
         },
+        "types.CreateConfigRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "user_id",
+                "value"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateJobRequest": {
+            "type": "object",
+            "required": [
+                "type"
+            ],
+            "properties": {
+                "args": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "cdn_cluster_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "result": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "scheduler_cluster_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "types.CreateOauthRequest": {
             "type": "object",
             "required": [
@@ -2528,33 +3248,6 @@
                     "type": "string"
                 },
                 "redirect_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.CreatePreheatRequest": {
-            "type": "object",
-            "required": [
-                "type",
-                "url"
-            ],
-            "properties": {
-                "filter": {
-                    "type": "string"
-                },
-                "headers": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "string"
-                    }
-                },
-                "scheduler_cluster_id": {
-                    "type": "integer"
-                },
-                "type": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 }
             }
@@ -2592,12 +3285,10 @@
                     "type": "integer"
                 },
                 "client_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -2606,8 +3297,7 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
                 "security_group_domain": {
                     "type": "string"
@@ -2672,6 +3362,38 @@
                 }
             }
         },
+        "types.CreateV1PreheatRequest": {
+            "type": "object",
+            "required": [
+                "type",
+                "url"
+            ],
+            "properties": {
+                "filter": {
+                    "type": "string"
+                },
+                "headers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "type": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateV1PreheatResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
         "types.DeletePermissionForRoleRequest": {
             "type": "object",
             "required": [
@@ -2687,13 +3409,16 @@
                 }
             }
         },
-        "types.Preheat": {
+        "types.GetV1PreheatResponse": {
             "type": "object",
             "properties": {
-                "create_at": {
+                "finishTime": {
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "startTime": {
                     "type": "string"
                 },
                 "status": {
@@ -2715,6 +3440,20 @@
                     "type": "string"
                 }
             }
+        },
+        "types.SchedulerClusterClientConfig": {
+            "type": "object",
+            "properties": {
+                "load_limit": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.SchedulerClusterConfig": {
+            "type": "object"
+        },
+        "types.SchedulerClusterScopes": {
+            "type": "object"
         },
         "types.SignUpRequest": {
             "type": "object",
@@ -2754,8 +3493,7 @@
                     "type": "string"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.CDNClusterConfig"
                 },
                 "name": {
                     "type": "string"
@@ -2784,6 +3522,34 @@
                     "type": "string"
                 },
                 "port": {
+                    "type": "integer"
+                }
+            }
+        },
+        "types.UpdateConfigRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateJobRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "integer"
                 }
             }
@@ -2818,12 +3584,10 @@
                     "type": "integer"
                 },
                 "client_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
                 "config": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterConfig"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -2832,8 +3596,7 @@
                     "type": "string"
                 },
                 "scopes": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
                 "security_group_domain": {
                     "type": "string"

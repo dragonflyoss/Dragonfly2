@@ -20,6 +20,8 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 
 COPY --from=builder /opt/dragonfly/bin/dfget /opt/dragonfly/bin/dfget
 
+RUN echo "hosts: files dns" > /etc/nsswitch.conf
+
 EXPOSE 65001
 
 ENTRYPOINT ["/opt/dragonfly/bin/dfget", "daemon"]

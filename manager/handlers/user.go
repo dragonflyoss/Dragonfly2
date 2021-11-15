@@ -19,9 +19,12 @@ package handlers
 import (
 	"net/http"
 
-	"d7y.io/dragonfly/v2/manager/types"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+
+	// nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
 )
 
 // @Summary Get User
@@ -42,13 +45,43 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.service.GetUser(params.ID)
+	user, err := h.service.GetUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	ctx.JSON(http.StatusOK, user)
+}
+
+// @Summary Get Users
+// @Description Get Users
+// @Tags CDN
+// @Accept json
+// @Produce json
+// @Param page query int true "current page" default(0)
+// @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
+// @Success 200 {object} []model.CDN
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /users [get]
+func (h *Handlers) GetUsers(ctx *gin.Context) {
+	var query types.GetUsersQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	h.setPaginationDefault(&query.Page, &query.PerPage)
+	users, count, err := h.service.GetUsers(ctx.Request.Context(), query)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
+	ctx.JSON(http.StatusOK, users)
 }
 
 // @Summary SignUp user
@@ -68,9 +101,9 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 		return
 	}
 
-	user, err := h.service.SignUp(json)
+	user, err := h.service.SignUp(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -100,8 +133,8 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 		return
 	}
 
-	if err := h.service.ResetPassword(params.ID, json); err != nil {
-		ctx.Error(err)
+	if err := h.service.ResetPassword(ctx.Request.Context(), params.ID, json); err != nil {
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -126,9 +159,9 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 		return
 	}
 
-	authURL, err := h.service.OauthSignin(params.Name)
+	authURL, err := h.service.OauthSignin(ctx.Request.Context(), params.Name)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -159,9 +192,9 @@ func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Contex
 			return
 		}
 
-		user, err := h.service.OauthSigninCallback(params.Name, query.Code)
+		user, err := h.service.OauthSigninCallback(ctx.Request.Context(), params.Name, query.Code)
 		if err != nil {
-			ctx.Error(err)
+			ctx.Error(err) // nolint: errcheck
 			return
 		}
 
@@ -186,9 +219,9 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 		return
 	}
 
-	roles, err := h.service.GetRolesForUser(params.ID)
+	roles, err := h.service.GetRolesForUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -213,8 +246,8 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.service.AddRoleForUser(params); err != nil {
-		ctx.Error(err)
+	if ok, err := h.service.AddRoleForUser(ctx.Request.Context(), params); err != nil {
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusConflict)
@@ -242,8 +275,8 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 		return
 	}
 
-	if ok, err := h.service.DeleteRoleForUser(params); err != nil {
-		ctx.Error(err)
+	if ok, err := h.service.DeleteRoleForUser(ctx.Request.Context(), params); err != nil {
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusNotFound)

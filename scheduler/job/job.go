@@ -18,22 +18,21 @@ package job
 
 import (
 	"context"
-	"time"
+
+	"github.com/go-playground/validator/v10"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"github.com/go-playground/validator/v10"
-	"github.com/pkg/errors"
 )
 
-const (
-	interval = time.Second
-)
+var tracer = otel.Tracer("worker")
 
 type Job interface {
 	Serve() error
@@ -49,7 +48,7 @@ type job struct {
 	cfg          *config.JobConfig
 }
 
-func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *core.SchedulerService) (Job, error) {
+func New(ctx context.Context, cfg *config.JobConfig, clusterID uint, hostname string, service *core.SchedulerService) (Job, error) {
 	redisConfig := &internaljob.Config{
 		Host:      cfg.Redis.Host,
 		Port:      cfg.Redis.Port,
@@ -63,14 +62,16 @@ func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *c
 		logger.Errorf("create global job queue error: %v", err)
 		return nil, err
 	}
+	logger.Infof("create global job queue: %v", globalJob)
 
 	schedulerJob, err := internaljob.New(redisConfig, internaljob.SchedulersQueue)
 	if err != nil {
 		logger.Errorf("create scheduler job queue error: %v", err)
 		return nil, err
 	}
+	logger.Infof("create scheduler job queue: %v", schedulerJob)
 
-	localQueue, err := internaljob.GetSchedulerQueue(hostname)
+	localQueue, err := internaljob.GetSchedulerQueue(clusterID, hostname)
 	if err != nil {
 		logger.Errorf("get local job queue name error: %v", err)
 		return nil, err
@@ -81,6 +82,7 @@ func New(ctx context.Context, cfg *config.JobConfig, hostname string, service *c
 		logger.Errorf("create local job queue error: %v", err)
 		return nil, err
 	}
+	logger.Infof("create local job queue: %v", localQueue)
 
 	t := &job{
 		globalJob:    globalJob,
@@ -128,7 +130,12 @@ func (t *job) Stop() {
 	t.localJob.Worker.Quit()
 }
 
-func (t *job) preheat(req string) error {
+func (t *job) preheat(ctx context.Context, req string) error {
+	// machinery can't passing context to worker, refer https://github.com/RichardKnop/machinery/issues/175
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanPreheat, trace.WithSpanKind(trace.SpanKindConsumer))
+	defer span.End()
+
 	request := &internaljob.PreheatRequest{}
 	if err := internaljob.UnmarshalRequest(req, request); err != nil {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
@@ -136,10 +143,11 @@ func (t *job) preheat(req string) error {
 	}
 
 	if err := validator.New().Struct(request); err != nil {
-		logger.Errorf("request url \"%s\" is invalid, error: %v", request.URL, err)
-		return errors.Errorf("invalid url: %s", request.URL)
+		logger.Errorf("url %s validate failed: %v", request.URL, err)
+		return err
 	}
 
+	// Generate meta
 	meta := &base.UrlMeta{
 		Header: request.Headers,
 		Tag:    request.Tag,
@@ -147,34 +155,39 @@ func (t *job) preheat(req string) error {
 		Digest: request.Digest,
 	}
 
-	// Generate range
-	if rg := request.Headers["Range"]; len(rg) > 0 {
-		meta.Range = rg
+	if request.Headers != nil {
+		if rg := request.Headers["Range"]; len(rg) > 0 {
+			meta.Range = rg
+		}
+	}
+	logger.Infof("preheat %s meta: %v", request.URL, meta)
+
+	// Generate taskID
+	taskID := idgen.TaskID(request.URL, meta)
+
+	// Trigger CDN download seeds
+	plogger := logger.WithTaskIDAndURL(taskID, request.URL)
+	plogger.Info("ready to preheat")
+	stream, err := t.service.CDN.GetClient().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+		TaskId:  taskID,
+		Url:     request.URL,
+		UrlMeta: meta,
+	})
+	if err != nil {
+		plogger.Errorf("preheat failed: %v", err)
+		return err
 	}
 
-	taskID := idgen.TaskID(request.URL, meta)
-	logger.Debugf("ready to preheat \"%s\", taskID = %s", request.URL, taskID)
-
-	task := supervisor.NewTask(taskID, request.URL, meta)
-	task = t.service.GetOrCreateTask(t.ctx, task)
-	return getPreheatResult(task)
-}
-
-//TODO(@zzy987) check better ways to get result
-func getPreheatResult(task *supervisor.Task) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
 	for {
-		select {
-		case <-ticker.C:
-			switch task.GetStatus() {
-			case supervisor.TaskStatusFail:
-				return errors.Errorf("preheat task fail")
-			case supervisor.TaskStatusSuccess:
-				return nil
-			default:
-			}
+		piece, err := stream.Recv()
+		if err != nil {
+			plogger.Errorf("preheat recive piece failed: %v", err)
+			return err
+		}
+
+		if piece.Done == true {
+			plogger.Info("preheat successed")
+			return nil
 		}
 	}
 }

@@ -22,10 +22,10 @@ import (
 	"strings"
 	"testing"
 
-	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
 
+	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
 )
 
@@ -75,28 +75,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
-})
-
-var _ = AfterSuite(func() {
-	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=dfdaemon",
-		"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
-	podName := strings.Trim(string(out), "'")
-	Expect(err).NotTo(HaveOccurred())
-	Expect(strings.HasPrefix(podName, "dragonfly-dfdaemon-")).Should(BeTrue())
-
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, podName, "/var/log/dragonfly/daemon/core.log", "/tmp/artifact/daemon.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-0.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-0", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-0.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-1.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-1", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-1.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/core.log", "/tmp/artifact/manager-2.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonlfy-manager-2", "/var/log/dragonfly/manager/gin.log", "/tmp/artifact/manager-gin-2.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-0", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-0.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-1", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-1.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-cdn-2", "/var/log/dragonfly/cdn/core.log", "/tmp/artifact/cdn-2.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-scheduler-0", "/var/log/dragonfly/scheduler/core.log", "/tmp/artifact/scheduler-0.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-scheduler-1", "/var/log/dragonfly/scheduler/core.log", "/tmp/artifact/scheduler-1.log").CombinedOutput()
-	e2eutil.KubeCtlCopyCommand(dragonflyNamespace, "dragonfly-scheduler-2", "/var/log/dragonfly/scheduler/core.log", "/tmp/artifact/scheduler-2.log").CombinedOutput()
 })
 
 // TestE2E is the root of e2e test function

@@ -1,3 +1,5 @@
+//+build linux
+
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -26,15 +28,15 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-
-	"d7y.io/dragonfly/v2/pkg/source"
 	"github.com/agiledragon/gomonkey"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var sourceClient source.ResourceClient

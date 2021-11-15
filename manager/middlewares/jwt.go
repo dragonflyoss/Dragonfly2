@@ -17,14 +17,16 @@
 package middlewares
 
 import (
+	"context"
 	"net/http"
 	"time"
+
+	jwt "github.com/appleboy/gin-jwt/v2"
+	"github.com/gin-gonic/gin"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/manager/types"
-	jwt "github.com/appleboy/gin-jwt/v2"
-	"github.com/gin-gonic/gin"
 )
 
 func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
@@ -69,7 +71,7 @@ func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
 				return "", jwt.ErrMissingLoginValues
 			}
 
-			user, err := service.SignIn(json)
+			user, err := service.SignIn(context.TODO(), json)
 			if err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}

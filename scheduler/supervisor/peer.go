@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//go:generate mockgen -destination ./mocks/peer_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor PeerManager
 
 package supervisor
 
@@ -21,17 +22,20 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 const (
 	PeerGCID = "peer"
 )
+
+var ErrChannelBusy = errors.New("channel busy")
 
 type PeerManager interface {
 	// Add peer
@@ -112,7 +116,7 @@ func (m *peerManager) Delete(id string) {
 
 func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peers.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
@@ -148,7 +152,7 @@ func (m *peerManager) RunGC() error {
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
-			if peer.Task.GetPeers().Size() == 0 {
+			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
 			}
@@ -287,7 +291,7 @@ func isDescendant(ancestor, offspring *Peer) bool {
 		parent, ok := node.GetParent()
 		if !ok {
 			return false
-		} else if node.ID == ancestor.ID {
+		} else if parent.ID == ancestor.ID {
 			return true
 		}
 		node = parent
@@ -338,7 +342,12 @@ func (peer *Peer) GetParent() (*Peer, bool) {
 		return nil, false
 	}
 
-	return parent.(*Peer), true
+	p, ok := parent.(*Peer)
+	if p == nil || !ok {
+		return nil, false
+	}
+
+	return p, true
 }
 
 func (peer *Peer) Touch() {
@@ -387,22 +396,23 @@ func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 		peer.Task.UpdatePeer(peer)
 		return
 	}
+
 }
 
-func (peer *Peer) GetSortKeys() (key1, key2 int) {
+func (peer *Peer) SortedValue() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	key1 = int(peer.TotalPieceCount.Load())
-	key2 = peer.getFreeLoad()
-	return
+	pieceCount := peer.TotalPieceCount.Load()
+	hostLoad := peer.getFreeLoad()
+	return int(pieceCount*HostMaxLoad + hostLoad)
 }
 
-func (peer *Peer) getFreeLoad() int {
+func (peer *Peer) getFreeLoad() int32 {
 	if peer.Host == nil {
 		return 0
 	}
-	return int(peer.Host.GetFreeUploadLoad())
+	return peer.Host.GetFreeUploadLoad()
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {
@@ -466,7 +476,12 @@ func (peer *Peer) getConn() (*Channel, bool) {
 		return nil, false
 	}
 
-	return conn.(*Channel), true
+	c, ok := conn.(*Channel)
+	if c == nil || !ok {
+		return nil, false
+	}
+
+	return c, true
 }
 
 func (peer *Peer) IsConnected() bool {
@@ -503,14 +518,13 @@ func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
 }
 
 type Channel struct {
-	startOnce sync.Once
-	sender    chan *scheduler.PeerPacket
-	receiver  chan *scheduler.PieceResult
-	stream    scheduler.Scheduler_ReportPieceResultServer
-	closed    *atomic.Bool
-	done      chan struct{}
-	wg        sync.WaitGroup
-	err       error
+	sender   chan *scheduler.PeerPacket
+	receiver chan *scheduler.PieceResult
+	stream   scheduler.Scheduler_ReportPieceResultServer
+	closed   *atomic.Bool
+	done     chan struct{}
+	wg       sync.WaitGroup
+	err      error
 }
 
 func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
@@ -521,16 +535,19 @@ func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
 		closed:   atomic.NewBool(false),
 		done:     make(chan struct{}),
 	}
+
+	c.wg.Add(2)
 	c.start()
 	return c
 }
 
 func (c *Channel) start() {
-	c.startOnce.Do(func() {
-		c.wg.Add(2)
-		go c.receiveLoop()
-		go c.sendLoop()
-	})
+	startWG := &sync.WaitGroup{}
+	startWG.Add(2)
+
+	go c.receiveLoop(startWG)
+	go c.sendLoop(startWG)
+	startWG.Wait()
 }
 
 func (c *Channel) Send(packet *scheduler.PeerPacket) error {
@@ -540,7 +557,7 @@ func (c *Channel) Send(packet *scheduler.PeerPacket) error {
 	case c.sender <- packet:
 		return nil
 	default:
-		return errors.New("send channel is blocking")
+		return ErrChannelBusy
 	}
 }
 
@@ -573,12 +590,14 @@ func (c *Channel) IsClosed() bool {
 	return c.closed.Load()
 }
 
-func (c *Channel) receiveLoop() {
+func (c *Channel) receiveLoop(startWG *sync.WaitGroup) {
 	defer func() {
 		close(c.receiver)
 		c.wg.Done()
 		c.Close()
 	}()
+
+	startWG.Done()
 
 	for {
 		select {
@@ -598,11 +617,13 @@ func (c *Channel) receiveLoop() {
 	}
 }
 
-func (c *Channel) sendLoop() {
+func (c *Channel) sendLoop(startWG *sync.WaitGroup) {
 	defer func() {
 		c.wg.Done()
 		c.Close()
 	}()
+
+	startWG.Done()
 
 	for {
 		select {
