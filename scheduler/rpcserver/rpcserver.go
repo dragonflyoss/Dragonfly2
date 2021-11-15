@@ -71,7 +71,6 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 		span.RecordError(err)
 		return
 	}
-
 	taskID := s.service.GenerateTaskID(request.Url, request.UrlMeta, request.PeerId)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
