@@ -28,10 +28,10 @@ import (
 
 	"github.com/go-http-utils/headers"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
@@ -174,7 +174,7 @@ func NeedUseDragonfly(req *http.Request) bool {
 // download uses dragonfly to download.
 func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
-	peerID := clientutil.GenPeerID(rt.peerHost)
+	peerID := idgen.PeerID(rt.peerHost.Ip)
 	log := logger.With("peer", peerID, "component", "transport")
 	log.Infof("start download with url: %s", url)
 

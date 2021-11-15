@@ -39,7 +39,6 @@ message PeerTaskRequest{
 }
 
 message RegisterResult{
-
   // task id
   string task_id = 2;
   // file content length scope for the url

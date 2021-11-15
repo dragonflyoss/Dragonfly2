@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package clientutil
+package idgen
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/pborman/uuid"
-
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/google/uuid"
 )
 
-func GenPeerID(peerHost *scheduler.PeerHost) string {
-	return fmt.Sprintf("%s-%d-%s", peerHost.Ip, os.Getpid(), uuid.New())
+func CDNPeerID(ip string) string {
+	return fmt.Sprintf("%s-%s", PeerID(ip), "cdn")
+}
+
+func PeerID(ip string) string {
+	return fmt.Sprintf("%s-%d-%s", ip, os.Getpid(), uuid.New())
 }

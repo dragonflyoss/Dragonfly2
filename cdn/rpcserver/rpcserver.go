@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -137,7 +136,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	peerID := cdnutil.GenCDNPeerID(req.TaskId)
+	peerID := idgen.CDNPeerID(css.cfg.AdvertiseIP)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:   peerID,
