@@ -27,7 +27,6 @@ import (
 )
 
 type EvaluatorFactory interface {
-
 	// Evaluate todo Normalization
 	Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64
 
@@ -50,18 +49,6 @@ type evaluatorFactory struct {
 	bEvaluator                   string
 }
 
-func (ef *evaluatorFactory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	return ef.get(dst.Task.ID).Evaluate(dst, src)
-}
-
-func (ef *evaluatorFactory) NeedAdjustParent(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.ID).NeedAdjustParent(peer)
-}
-
-func (ef *evaluatorFactory) IsBadNode(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.ID).IsBadNode(peer)
-}
-
 func NewEvaluatorFactory(cfg *config.SchedulerConfig) EvaluatorFactory {
 	return &evaluatorFactory{
 		evaluators:        make(map[string]EvaluatorFactory),
@@ -73,19 +60,16 @@ func NewEvaluatorFactory(cfg *config.SchedulerConfig) EvaluatorFactory {
 	}
 }
 
-var (
-	m = make(map[string]EvaluatorFactory)
-)
-
-func Register(name string, evaluator EvaluatorFactory) {
-	m[strings.ToLower(name)] = evaluator
+func (ef *evaluatorFactory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
+	return ef.get(dst.Task.ID).Evaluate(dst, src)
 }
 
-func Get(name string) EvaluatorFactory {
-	if eval, ok := m[strings.ToLower(name)]; ok {
-		return eval
-	}
-	return nil
+func (ef *evaluatorFactory) NeedAdjustParent(peer *supervisor.Peer) bool {
+	return ef.get(peer.Task.ID).NeedAdjustParent(peer)
+}
+
+func (ef *evaluatorFactory) IsBadNode(peer *supervisor.Peer) bool {
+	return ef.get(peer.Task.ID).IsBadNode(peer)
 }
 
 type getEvaluatorFunc func(taskID string) (string, bool)
@@ -193,12 +177,12 @@ func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun getEvaluato
 	ef.lock.Unlock()
 }
 
-func (ef *Factory) Register(name string, evaluator Evaluator) {
+func (ef *evaluatorFactory) Register(name string, evaluator EvaluatorFactory) {
 	ef.add(name, evaluator)
 	ef.clearCache()
 }
 
-func (ef *Factory) RegisterGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+func (ef *evaluatorFactory) RegisterGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 	ef.addGetEvaluatorFunc(priority, fun)
 	ef.clearCache()
 }

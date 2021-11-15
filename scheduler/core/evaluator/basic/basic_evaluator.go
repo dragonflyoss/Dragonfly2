@@ -27,7 +27,7 @@ type baseEvaluator struct {
 	cfg *config.SchedulerConfig
 }
 
-func NewEvaluator(cfg *config.SchedulerConfig) evaluator.Evaluator {
+func NewEvaluator(cfg *config.SchedulerConfig) evaluator.EvaluatorFactory {
 	eval := &baseEvaluator{cfg: cfg}
 	logger.Debugf("create basic evaluator successfully")
 	return eval
