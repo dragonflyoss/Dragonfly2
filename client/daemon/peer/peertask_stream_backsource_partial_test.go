@@ -22,7 +22,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
+	"net"
 	"sync"
 	"testing"
 	"time"
@@ -94,7 +96,11 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go daemonserver.New(daemon).Serve(ln)
+	go func(daemon *mock_daemon.MockDaemonServer, ln net.Listener) {
+		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+			log.Fatal(err)
+		}
+	}(daemon, ln)
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler

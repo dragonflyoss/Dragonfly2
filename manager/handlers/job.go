@@ -39,7 +39,7 @@ func (h *Handlers) CreateJob(ctx *gin.Context) {
 
 		job, err := h.service.CreatePreheatJob(ctx.Request.Context(), json)
 		if err != nil {
-			ctx.Error(err)
+			ctx.Error(err) // nolint: errcheck
 			return
 		}
 
@@ -68,7 +68,7 @@ func (h *Handlers) DestroyJob(ctx *gin.Context) {
 	}
 
 	if err := h.service.DestroyJob(ctx.Request.Context(), params.ID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -90,19 +90,19 @@ func (h *Handlers) DestroyJob(ctx *gin.Context) {
 func (h *Handlers) UpdateJob(ctx *gin.Context) {
 	var params types.JobParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateJobRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	job, err := h.service.UpdateJob(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *Handlers) GetJob(ctx *gin.Context) {
 
 	job, err := h.service.GetJob(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -158,7 +158,7 @@ func (h *Handlers) GetJobs(ctx *gin.Context) {
 	h.setPaginationDefault(&query.Page, &query.PerPage)
 	jobs, count, err := h.service.GetJobs(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 

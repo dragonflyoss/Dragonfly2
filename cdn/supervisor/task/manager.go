@@ -190,7 +190,9 @@ func (tm Manager) Delete(taskID string) error {
 	tm.accessTimeMap.Delete(taskID)
 	tm.taskURLUnReachableStore.Delete(taskID)
 	tm.taskStore.Delete(taskID)
-	tm.progressMgr.Clear(taskID)
+	if err := tm.progressMgr.Clear(taskID); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -227,7 +229,10 @@ func (tm *Manager) GC() error {
 		}
 		// gc task memory data
 		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
-		tm.Delete(taskID)
+		if err := tm.Delete(taskID); err != nil {
+			logger.GcLogger.With("type", "meta").Infof("gc task: failed to delete task: %s", taskID)
+			continue
+		}
 		removedTaskCount++
 	}
 

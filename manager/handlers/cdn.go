@@ -46,7 +46,7 @@ func (h *Handlers) CreateCDN(ctx *gin.Context) {
 
 	cdn, err := h.service.CreateCDN(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 	}
 
 	if err := h.service.DestroyCDN(ctx.Request.Context(), params.ID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -94,19 +94,19 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var params types.CDNParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	cdn, err := h.service.UpdateCDN(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *Handlers) GetCDN(ctx *gin.Context) {
 
 	cdn, err := h.service.GetCDN(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *Handlers) GetCDNs(ctx *gin.Context) {
 	h.setPaginationDefault(&query.Page, &query.PerPage)
 	cdns, count, err := h.service.GetCDNs(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 

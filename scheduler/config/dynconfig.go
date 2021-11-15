@@ -301,7 +301,9 @@ func (d *dynconfig) watch() {
 	for {
 		select {
 		case <-tick.C:
-			d.Notify()
+			if err := d.Notify(); err != nil {
+				logger.Error("dynconfig notify failed", err)
+			}
 		case <-d.done:
 			return
 		}

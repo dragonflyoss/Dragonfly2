@@ -100,7 +100,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 	var job model.Job
 
-	retry.Run(ctx, func() (interface{}, bool, error) {
+	if _, _, err := retry.Run(ctx, func() (interface{}, bool, error) {
 		groupJob, err := s.job.GetGroupJobState(taskID)
 		if err != nil {
 			logger.Errorf("polling job %d and task %s failed: %v", id, taskID, err)
@@ -124,9 +124,11 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 		default:
 			return nil, false, fmt.Errorf("polling job %d and task %s status is %s", id, taskID, job.Status)
 		}
-	}, 5, 10, 120, nil)
+	}, 5, 10, 120, nil); err != nil {
+		logger.Errorf("polling job %d and task %s failed %s", id, taskID, err)
+	}
 
-	// Polling timeout
+	// Polling timeout and failed
 	if job.Status != machineryv1tasks.StateSuccess && job.Status != machineryv1tasks.StateFailure {
 		job := model.Job{}
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{

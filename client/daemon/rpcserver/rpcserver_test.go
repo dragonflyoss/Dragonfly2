@@ -86,7 +86,9 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	assert.Nil(err, "get free port should be ok")
 	go func() {
-		m.ServeDownload(ln)
+		if err := m.ServeDownload(ln); err != nil {
+			t.Error(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 
@@ -169,7 +171,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	assert.Nil(err, "get free port should be ok")
 	go func() {
-		m.ServePeer(ln)
+		if err := m.ServePeer(ln); err != nil {
+			t.Error(err)
+		}
 	}()
 	time.Sleep(100 * time.Millisecond)
 

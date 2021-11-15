@@ -50,7 +50,9 @@ var _ storage.Manager = (*hybridStorageMgr)(nil)
 var _ gc.Executor = (*hybridStorageMgr)(nil)
 
 func init() {
-	storage.Register(StorageMode, newStorageManager)
+	if err := storage.Register(StorageMode, newStorageManager); err != nil {
+		logger.CoreLogger.Error(err)
+	}
 }
 
 // NewStorageManager performs initialization for storage manager and return a storage Manager.
@@ -325,13 +327,20 @@ func (h *hybridStorageMgr) TryFreeSpace(fileLength int64) (bool, error) {
 			return nil
 		},
 	}
-	h.diskDriver.Walk(r)
+	if err := h.diskDriver.Walk(r); err != nil {
+		return false, err
+	}
 
 	enoughSpace := diskFreeSpace.ToNumber()-remainder.Load() > fileLength
 	if !enoughSpace {
-		h.diskDriverCleaner.GC("hybrid", true)
+		if _, err := h.diskDriverCleaner.GC("hybrid", true); err != nil {
+			return false, err
+		}
+
 		remainder.Store(0)
-		h.diskDriver.Walk(r)
+		if err := h.diskDriver.Walk(r); err != nil {
+			return false, err
+		}
 		diskFreeSpace, err = h.diskDriver.GetFreeSpace()
 		if err != nil {
 			return false, err
@@ -397,7 +406,7 @@ func (h *hybridStorageMgr) deleteTaskFiles(taskID string, deleteUploadPath bool,
 func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (string, error) {
 	if h.shmSwitch.check(url, fileLength) && h.hasShm {
 		remainder := atomic.NewInt64(0)
-		h.memoryDriver.Walk(&storedriver.Raw{
+		if err := h.memoryDriver.Walk(&storedriver.Raw{
 			WalkFn: func(filePath string, info os.FileInfo, err error) error {
 				if fileutils.IsRegular(filePath) {
 					taskID := strings.Split(path.Base(filePath), ".")[0]
@@ -416,12 +425,18 @@ func (h *hybridStorageMgr) tryShmSpace(url, taskID string, fileLength int64) (st
 				}
 				return nil
 			},
-		})
+		}); err != nil {
+			return "", err
+		}
+
 		canUseShm := h.getMemoryUsableSpace()-unit.Bytes(remainder.Load())-secureLevel >= unit.Bytes(
 			fileLength)
 		if !canUseShm {
 			// 如果剩余空间过小，则强制执行一次fullgc后在检查是否满足
-			h.memoryDriverCleaner.GC("hybrid", true)
+			if _, err := h.memoryDriverCleaner.GC("hybrid", true); err != nil {
+				return "", err
+			}
+
 			canUseShm = h.getMemoryUsableSpace()-unit.Bytes(remainder.Load())-secureLevel >= unit.Bytes(
 				fileLength)
 		}
