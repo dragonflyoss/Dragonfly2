@@ -291,7 +291,7 @@ func (b *d7yBalancer) getSubConnAddr(sc balancer.SubConn) (string, error) {
 
 // resetSubConnWithAddr creates a new idle SubConn for the address string, and remove the old one.
 func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
-	b.baseInfosLock.RLock()
+	b.baseInfosLock.Lock()
 	sc, ok := b.subConns[addr]
 	if !ok {
 		return ErrSubConnNotFound
@@ -299,7 +299,7 @@ func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 	b.scInfos.Delete(sc)
 	b.cc.RemoveSubConn(sc)
 	newSC, err := b.cc.NewSubConn([]resolver.Address{b.addrInfos[addr]}, balancer.NewSubConnOptions{HealthCheckEnabled: false})
-	b.baseInfosLock.RUnlock()
+	b.baseInfosLock.Unlock()
 	if err != nil {
 		log.Printf("Consistent Hash Balancer: failed to create new SubConn: %v", err)
 		return ErrResetSubConnFail
