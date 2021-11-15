@@ -96,7 +96,7 @@ func (eval *baseEvaluator) Evaluate(parent *supervisor.Peer, child *supervisor.P
 
 	load := getHostLoad(parent.Host)
 
-	dist := getSimilarity(parent, child)
+	dist := getAffinity(parent, child)
 
 	return profits * load * dist
 }
