@@ -78,9 +78,11 @@ func (s *PluginsTestSuite) TestManagerPlugin() {
 
 	var testFunc = func(p Plugin, result bool) {
 		err := manager.AddPlugin(p)
-		s.Require().Nil(err)
-		obj, _ := manager.GetPlugin(p.Type(), p.Name())
-		if result {
+		if !result {
+			s.NotNil(err)
+		}
+		obj, ok := manager.GetPlugin(p.Type(), p.Name())
+		if ok {
 			s.NotNil(obj)
 			s.Equal(obj, p)
 			manager.DeletePlugin(p.Type(), p.Name())
