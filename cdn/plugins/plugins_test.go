@@ -52,9 +52,11 @@ func (s *PluginsTestSuite) TestPluginBuilder() {
 
 	var testFunc = func(pt PluginType, name string, b Builder, result bool) {
 		err := manager.AddBuilder(pt, name, b)
-		s.Require().Nil(err)
-		obj, _ := manager.GetBuilder(pt, name)
-		if result {
+		if !result {
+			s.NotNil(err)
+		}
+		obj, ok := manager.GetBuilder(pt, name)
+		if ok {
 			s.NotNil(obj)
 			objVal := reflect.ValueOf(obj)
 			bVal := reflect.ValueOf(b)

@@ -167,13 +167,13 @@ func (s *FileUtilsTestSuite) TestTryLock() {
 	s.Require().Nil(err)
 
 	err = f1.Lock()
-	s.Require().NotNil(err)
+	s.Require().Nil(err)
 
 	err = f2.TryLock()
 	s.Require().NotNil(err)
 
 	err = f1.Unlock()
-	s.Require().NotNil(err)
+	s.Require().Nil(err)
 
 	err = f2.TryLock()
 	s.Require().Nil(err)
