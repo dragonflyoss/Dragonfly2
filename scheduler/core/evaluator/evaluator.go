@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
-type Evaluator interface {
+type EvaluatorFactory interface {
 
 	// Evaluate todo Normalization
 	Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64
@@ -38,53 +38,50 @@ type Evaluator interface {
 	IsBadNode(peer *supervisor.Peer) bool
 }
 
-type Factory struct {
+type evaluatorFactory struct {
 	lock                         sync.RWMutex
-	evaluators                   map[string]Evaluator
+	evaluators                   map[string]EvaluatorFactory
 	getEvaluatorFuncs            map[int]getEvaluatorFunc
 	getEvaluatorFuncPriorityList []getEvaluatorFunc
-	cache                        map[string]Evaluator
+	cache                        map[string]EvaluatorFactory
 	cacheClearFunc               sync.Once
 	abtest                       bool
 	aEvaluator                   string
 	bEvaluator                   string
 }
 
-var _ Evaluator = (*Factory)(nil)
-
-func (ef *Factory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
+func (ef *evaluatorFactory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	return ef.get(dst.Task.ID).Evaluate(dst, src)
 }
 
-func (ef *Factory) NeedAdjustParent(peer *supervisor.Peer) bool {
+func (ef *evaluatorFactory) NeedAdjustParent(peer *supervisor.Peer) bool {
 	return ef.get(peer.Task.ID).NeedAdjustParent(peer)
 }
 
-func (ef *Factory) IsBadNode(peer *supervisor.Peer) bool {
+func (ef *evaluatorFactory) IsBadNode(peer *supervisor.Peer) bool {
 	return ef.get(peer.Task.ID).IsBadNode(peer)
 }
 
-func NewEvaluatorFactory(cfg *config.SchedulerConfig) *Factory {
-	factory := &Factory{
-		evaluators:        make(map[string]Evaluator),
+func NewEvaluatorFactory(cfg *config.SchedulerConfig) EvaluatorFactory {
+	return &evaluatorFactory{
+		evaluators:        make(map[string]EvaluatorFactory),
 		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
-		cache:             map[string]Evaluator{},
+		cache:             map[string]EvaluatorFactory{},
 		abtest:            cfg.ABTest,
 		aEvaluator:        cfg.AEvaluator,
 		bEvaluator:        cfg.BEvaluator,
 	}
-	return factory
 }
 
 var (
-	m = make(map[string]Evaluator)
+	m = make(map[string]EvaluatorFactory)
 )
 
-func Register(name string, evaluator Evaluator) {
+func Register(name string, evaluator EvaluatorFactory) {
 	m[strings.ToLower(name)] = evaluator
 }
 
-func Get(name string) Evaluator {
+func Get(name string) EvaluatorFactory {
 	if eval, ok := m[strings.ToLower(name)]; ok {
 		return eval
 	}
@@ -93,7 +90,7 @@ func Get(name string) Evaluator {
 
 type getEvaluatorFunc func(taskID string) (string, bool)
 
-func (ef *Factory) get(taskID string) Evaluator {
+func (ef *evaluatorFactory) get(taskID string) EvaluatorFactory {
 	ef.lock.RLock()
 	evaluator, ok := ef.cache[taskID]
 	ef.lock.RUnlock()
@@ -146,19 +143,19 @@ func (ef *Factory) get(taskID string) Evaluator {
 	return nil
 }
 
-func (ef *Factory) clearCache() {
+func (ef *evaluatorFactory) clearCache() {
 	ef.lock.Lock()
-	ef.cache = make(map[string]Evaluator)
+	ef.cache = make(map[string]EvaluatorFactory)
 	ef.lock.Unlock()
 }
 
-func (ef *Factory) add(name string, evaluator Evaluator) {
+func (ef *evaluatorFactory) add(name string, evaluator EvaluatorFactory) {
 	ef.lock.Lock()
 	ef.evaluators[name] = evaluator
 	ef.lock.Unlock()
 }
 
-func (ef *Factory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+func (ef *evaluatorFactory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 	ef.lock.Lock()
 	defer ef.lock.Unlock()
 	_, ok := ef.getEvaluatorFuncs[priority]
@@ -178,7 +175,7 @@ func (ef *Factory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 
 }
 
-func (ef *Factory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
+func (ef *evaluatorFactory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
 	ef.lock.Lock()
 
 	delete(ef.getEvaluatorFuncs, priority)
