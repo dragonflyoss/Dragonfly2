@@ -19,8 +19,9 @@ package rpc
 import (
 	"log"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"google.golang.org/grpc/resolver"
+
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 )
 
 const (

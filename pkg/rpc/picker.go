@@ -22,9 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
 )
 
 // PickKey is a context.Context Value key. Its associated value should be a *PickReq.
