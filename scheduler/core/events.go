@@ -27,8 +27,8 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/list"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -371,8 +371,12 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 
 func handleCDNSeedTaskFail(task *supervisor.Task) {
 	if task.CanBackToSource() {
-		task.GetPeers().Range(func(data sortedlist.Item) bool {
-			peer := data.(*supervisor.Peer)
+		task.GetPeers().Range(func(item list.Item) bool {
+			peer, ok := item.(*supervisor.Peer)
+			if !ok {
+				return true
+			}
+
 			if task.CanBackToSource() {
 				if !task.ContainsBackToSourcePeer(peer.ID) {
 					if peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)) == nil {
@@ -381,12 +385,17 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 				}
 				return true
 			}
+
 			return false
 		})
 	} else {
 		task.SetStatus(supervisor.TaskStatusFail)
-		task.GetPeers().Range(func(data sortedlist.Item) bool {
-			peer := data.(*supervisor.Peer)
+		task.GetPeers().Range(func(item list.Item) bool {
+			peer, ok := item.(*supervisor.Peer)
+			if !ok {
+				return true
+			}
+
 			if err := peer.CloseChannelWithError(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed")); err != nil {
 				peer.Log().Warnf("close peer conn channel failed: %v", err)
 			}

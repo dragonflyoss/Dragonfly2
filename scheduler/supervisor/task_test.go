@@ -322,14 +322,6 @@ func TestTask_Pick(t *testing.T) {
 			limit:   100,
 			answer:  []string{},
 		},
-		{
-			name:    "invalid pickFn",
-			number:  10,
-			pick:    (func(peer *supervisor.Peer) bool)(nil),
-			reverse: false,
-			limit:   100,
-			answer:  []string{},
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

@@ -51,6 +51,6 @@ type GetCDNClustersQuery struct {
 }
 
 type CDNClusterConfig struct {
-	LoadLimit   uint   `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1"`
+	LoadLimit   uint   `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
 	NetTopology string `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
 }

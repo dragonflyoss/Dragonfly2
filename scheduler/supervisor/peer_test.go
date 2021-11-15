@@ -29,6 +29,10 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor/mocks"
 )
 
+const (
+	HostMaxLoad = 5 * 1000
+)
+
 func TestPeer_New(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -209,9 +213,7 @@ func TestPeer_Cost(t *testing.T) {
 				average, success := peer.GetPieceAverageCost()
 				assert.True(success)
 				assert.Equal(4, average)
-				finishedCountFetch, loadFetch := peer.GetSortKeys()
-				assert.Equal(4, finishedCountFetch)
-				assert.Equal(100, loadFetch)
+				assert.Equal(peer.SortedValue(), 4*HostMaxLoad+100)
 			},
 		},
 		{
