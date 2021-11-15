@@ -47,10 +47,13 @@ func newGithub(name, clientID, clientSecret, redirectURL string) *oauthGithub {
 	}
 }
 
-func (g *oauthGithub) AuthCodeURL() string {
+func (g *oauthGithub) AuthCodeURL() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b))
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b)), nil
 }
 
 func (g *oauthGithub) Exchange(code string) (*oauth2.Token, error) {

@@ -441,10 +441,14 @@ func (cd *clientDaemon) Stop() {
 		close(cd.done)
 		cd.GCManager.Stop()
 		cd.RPCManager.Stop()
-		cd.UploadManager.Stop()
+		if err := cd.UploadManager.Stop(); err != nil {
+			logger.Errorf("upload manager stop failed %s", err)
+		}
 
 		if cd.ProxyManager.IsEnabled() {
-			cd.ProxyManager.Stop()
+			if err := cd.ProxyManager.Stop(); err != nil {
+				logger.Errorf("proxy manager stop failed %s", err)
+			}
 		}
 
 		if !cd.Option.KeepStorage {

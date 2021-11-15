@@ -58,7 +58,10 @@ func TestHashFile(t *testing.T) {
 	f, err := fileutils.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, 0644)
 	assert.Nil(t, err)
 
-	f.Write([]byte("hello"))
+	if _, err := f.Write([]byte("hello")); err != nil {
+		t.Error(err)
+	}
+
 	f.Close()
 
 	assert.Equal(t, expected, HashFile(path, Md5Hash))

@@ -93,7 +93,9 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	if err != nil {
 		task.Log().Errorf("failed to get url (%s) content length: %v", task.URL, err)
 		if cdnerrors.IsURLNotReachable(err) {
-			tm.taskURLUnReachableStore.Add(taskID, time.Now())
+			if err := tm.taskURLUnReachableStore.Add(taskID, time.Now()); err != nil {
+				task.Log().Errorf("failed to add url (%s) to unreachable store: %v", task.URL, err)
+			}
 			return nil, err
 		}
 	}
@@ -119,9 +121,11 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		pieceSize := cdnutil.ComputePieceSize(task.SourceFileLength)
 		task.PieceSize = pieceSize
 	}
-	tm.taskStore.Add(task.TaskID, task)
-	logger.Debugf("success add task: %+v into taskStore", task)
+	if err := tm.taskStore.Add(task.TaskID, task); err != nil {
+		return nil, err
+	}
 
+	logger.Debugf("success add task: %+v into taskStore", task)
 	return task, nil
 }
 

@@ -133,7 +133,7 @@ func (s *rest) OauthSignin(ctx context.Context, name string) (string, error) {
 		return "", err
 	}
 
-	return o.AuthCodeURL(), nil
+	return o.AuthCodeURL()
 }
 
 func (s *rest) OauthSigninCallback(ctx context.Context, name, code string) (*model.User, error) {

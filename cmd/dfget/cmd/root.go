@@ -200,8 +200,15 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 	}
 
 	lock := flock.New(dfpath.DfgetLockPath)
-	lock.Lock()
-	defer lock.Unlock()
+	if err := lock.Lock(); err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := lock.Unlock(); err != nil {
+			logger.Errorf("flock unlock failed %s", err)
+		}
+	}()
 
 	// 2.Check with lock
 	if daemonClient.CheckHealth(context.Background(), target) == nil {

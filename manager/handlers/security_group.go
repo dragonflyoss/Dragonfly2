@@ -46,7 +46,7 @@ func (h *Handlers) CreateSecurityGroup(ctx *gin.Context) {
 
 	securityGroup, err := h.service.CreateSecurityGroup(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 	}
 
 	if err := h.service.DestroySecurityGroup(ctx.Request.Context(), params.ID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -94,19 +94,19 @@ func (h *Handlers) DestroySecurityGroup(ctx *gin.Context) {
 func (h *Handlers) UpdateSecurityGroup(ctx *gin.Context) {
 	var params types.SecurityGroupParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateSecurityGroupRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	securityGroup, err := h.service.UpdateSecurityGroup(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *Handlers) GetSecurityGroup(ctx *gin.Context) {
 
 	securityGroup, err := h.service.GetSecurityGroup(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *Handlers) GetSecurityGroups(ctx *gin.Context) {
 	h.setPaginationDefault(&query.Page, &query.PerPage)
 	securityGroups, count, err := h.service.GetSecurityGroups(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -191,7 +191,7 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 
 	err := h.service.AddSchedulerClusterToSecurityGroup(ctx.Request.Context(), params.ID, params.SchedulerClusterID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -219,7 +219,7 @@ func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
 
 	err := h.service.AddCDNClusterToSecurityGroup(ctx.Request.Context(), params.ID, params.CDNClusterID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 

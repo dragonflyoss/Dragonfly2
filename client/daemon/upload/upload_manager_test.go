@@ -64,7 +64,9 @@ func TestUploadManager_Serve(t *testing.T) {
 	addr := listen.Addr().String()
 
 	go func() {
-		um.Serve(listen)
+		if err := um.Serve(listen); err != nil {
+			t.Error(err)
+		}
 	}()
 
 	tests := []struct {

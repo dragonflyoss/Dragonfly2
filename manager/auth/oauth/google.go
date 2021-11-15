@@ -48,10 +48,13 @@ func newGoogle(name, clientID, clientSecret, redirectURL string) *oauthGoogle {
 	}
 }
 
-func (g *oauthGoogle) AuthCodeURL() string {
+func (g *oauthGoogle) AuthCodeURL() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b))
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	return g.Config.AuthCodeURL(base64.URLEncoding.EncodeToString(b)), nil
 }
 
 func (g *oauthGoogle) Exchange(code string) (*oauth2.Token, error) {

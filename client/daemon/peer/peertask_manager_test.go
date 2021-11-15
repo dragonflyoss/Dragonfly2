@@ -99,7 +99,13 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go daemonserver.New(daemon).Serve(ln)
+
+	go func() {
+		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+			panic(err)
+		}
+	}()
+
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler

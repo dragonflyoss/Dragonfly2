@@ -39,7 +39,7 @@ type User struct {
 }
 
 type Oauth interface {
-	AuthCodeURL() string
+	AuthCodeURL() (string, error)
 	Exchange(string) (*oauth2.Token, error)
 	GetUser(*oauth2.Token) (*User, error)
 }
@@ -62,7 +62,7 @@ func New(name, clientID, clientSecret, redirectURL string) (Oauth, error) {
 	return o, nil
 }
 
-func (g *oauth) AuthCodeURL() string {
+func (g *oauth) AuthCodeURL() (string, error) {
 	return g.Oauth.AuthCodeURL()
 }
 

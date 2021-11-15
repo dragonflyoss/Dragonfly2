@@ -463,7 +463,9 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy.ErrorHandler = func(rw http.ResponseWriter, req *http.Request, err error) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		// write error string to response body
-		rw.Write([]byte(err.Error()))
+		if _, err := rw.Write([]byte(err.Error())); err != nil {
+			logger.Errorf("write error string to response body failed %s", err)
+		}
 	}
 	reverseProxy.ServeHTTP(w, r)
 }
@@ -567,8 +569,15 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
-	go copyAndClose(dst, clientConn)
-	copyAndClose(clientConn, dst)
+	go func() {
+		if err := copyAndClose(dst, clientConn); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}()
+
+	if err := copyAndClose(clientConn, dst); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {

@@ -324,26 +324,39 @@ func testFillAndSerialize(t *testing.T, tc Cache) {
 
 func TestFileSerialization(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
-	tc.Add("a", "a", DefaultExpiration)
-	tc.Add("b", "b", DefaultExpiration)
+	if err := tc.Add("a", "a", DefaultExpiration); err != nil {
+		t.Error(err)
+	}
+	if err := tc.Add("b", "b", DefaultExpiration); err != nil {
+		t.Error(err)
+	}
+
 	f, err := ioutil.TempFile("", "go-cache-cache.dat")
 	if err != nil {
 		t.Fatal("Couldn't create cache file:", err)
 	}
 	fname := f.Name()
 	f.Close()
-	tc.SaveFile(fname)
+
+	if err := tc.SaveFile(fname); err != nil {
+		t.Fatal(err)
+	}
 
 	oc := New(DefaultExpiration, 0)
-	oc.Add("a", "aa", 0) // this should not be overwritten
-	err = oc.LoadFile(fname)
-	if err != nil {
+	// this should not be overwritten
+	if err := oc.Add("a", "aa", 0); err != nil {
 		t.Error(err)
 	}
+
+	if err := oc.LoadFile(fname); err != nil {
+		t.Fatal(err)
+	}
+
 	a, found := oc.Get("a")
 	if !found {
 		t.Error("a was not found")
 	}
+
 	astr := a.(string)
 	if astr != "aa" {
 		if astr == "a" {
@@ -352,10 +365,12 @@ func TestFileSerialization(t *testing.T) {
 			t.Error("a is not aa")
 		}
 	}
+
 	b, found := oc.Get("b")
 	if !found {
 		t.Error("b was not found")
 	}
+
 	if b.(string) != "b" {
 		t.Error("b is not b")
 	}
