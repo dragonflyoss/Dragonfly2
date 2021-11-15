@@ -17,15 +17,8 @@
 package cdnutil
 
 import (
-	"fmt"
-
 	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
-
-func GenCDNPeerID(taskID string) string {
-	return fmt.Sprintf("%s-%s_%s", iputils.HostName, taskID, "CDN")
-}
 
 // ComputePieceSize computes the piece size with specified fileLength.
 //
