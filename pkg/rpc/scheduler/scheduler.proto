@@ -25,7 +25,7 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
-  string url = 1;
+  string url = 1 [(validate.rules).string.uri = true];
   // url meta info
   base.UrlMeta url_meta = 2;
   // peer's id and must be global uniqueness
