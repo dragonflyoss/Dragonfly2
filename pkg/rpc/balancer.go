@@ -258,8 +258,7 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		b.connErr = state.ConnectionError
 	}
 
-	if (s == connectivity.TransientFailure || s == connectivity.Shutdown) != (oldS == connectivity.TransientFailure || oldS == connectivity.Shutdown) ||
-		b.state == connectivity.TransientFailure {
+	if (s == connectivity.Shutdown) != (oldS == connectivity.Shutdown) || b.state == connectivity.TransientFailure {
 		b.regeneratePicker()
 	}
 
