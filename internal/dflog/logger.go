@@ -29,7 +29,6 @@ var (
 	GcLogger         *zap.SugaredLogger
 	JobLogger        *zap.SugaredLogger
 	KeepAliveLogger  *zap.SugaredLogger
-	StatPeerLogger   *zap.Logger
 	StatSeedLogger   *zap.Logger
 	DownloaderLogger *zap.Logger
 )
@@ -44,7 +43,6 @@ func init() {
 		SetGrpcLogger(sugar)
 		SetGcLogger(sugar)
 		SetKeepAliveLogger(sugar)
-		SetStatPeerLogger(log)
 		SetStatSeedLogger(log)
 		SetDownloadLogger(log)
 		SetJobLogger(sugar)
@@ -61,10 +59,6 @@ func SetGcLogger(log *zap.SugaredLogger) {
 
 func SetKeepAliveLogger(log *zap.SugaredLogger) {
 	KeepAliveLogger = log
-}
-
-func SetStatPeerLogger(log *zap.Logger) {
-	StatPeerLogger = log
 }
 
 func SetStatSeedLogger(log *zap.Logger) {
