@@ -29,5 +29,5 @@ type SchedulerCluster struct {
 	SecurityGroupID uint          `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup   SecurityGroup `json:"-"`
 	Jobs            []Job         `gorm:"many2many:job_scheduler_cluster;" json:"jobs"`
-	CallSystemID    uint          `gorm:"comment:call system id" json:"call_system_id"`
+	ApplicationID   uint          `gorm:"comment:application id" json:"application_id"`
 }

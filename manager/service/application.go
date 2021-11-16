@@ -23,11 +23,14 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateCallSystem(ctx context.Context, json types.CreateCallSystemRequest) (*model.CallSystem, error) {
-	callsystem := model.CallSystem{
-		Name:           json.Name,
-		LimitFrequency: json.LimitFrequency,
-		URLRegex:       json.URLRegex,
+func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
+	callsystem := model.Application{
+		Name:              json.Name,
+		DownloadRateLimit: json.DownloadRateLimit,
+		URL:               json.URL,
+		UserID:            json.UserID,
+		BIO:               json.BIO,
+		State:             json.State,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&callsystem).Error; err != nil {
@@ -37,26 +40,28 @@ func (s *rest) CreateCallSystem(ctx context.Context, json types.CreateCallSystem
 	return &callsystem, nil
 }
 
-func (s *rest) DestroyCallSystem(ctx context.Context, id uint) error {
-	callsystem := model.CallSystem{}
+func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
+	callsystem := model.Application{}
 	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.CallSystem{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Application{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *rest) UpdateCallSystem(ctx context.Context, id uint, json types.UpdateCallSystemRequest) (*model.CallSystem, error) {
-	schedulerCluster := model.CallSystem{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Updates(model.CallSystem{
-		Name:           json.Name,
-		LimitFrequency: json.LimitFrequency,
-		URLRegex:       json.URLRegex,
-		State:          json.State,
+func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
+	schedulerCluster := model.Application{}
+	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Updates(model.Application{
+		Name:              json.Name,
+		DownloadRateLimit: json.DownloadRateLimit,
+		URL:               json.URL,
+		State:             json.State,
+		BIO:               json.BIO,
+		UserID:            json.UserID,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -64,8 +69,8 @@ func (s *rest) UpdateCallSystem(ctx context.Context, id uint, json types.UpdateC
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetCallSystem(ctx context.Context, id uint) (*model.CallSystem, error) {
-	schedulerCluster := model.CallSystem{}
+func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
+	schedulerCluster := model.Application{}
 	if err := s.db.WithContext(ctx).Preload("SchedulerClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
 	}
@@ -73,18 +78,18 @@ func (s *rest) GetCallSystem(ctx context.Context, id uint) (*model.CallSystem, e
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetCallSystems(ctx context.Context, q types.GetCallSystemsQuery) (*[]model.CallSystem, int64, error) {
+func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
 	var count int64
-	callSystems := []model.CallSystem{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SchedulerClusters").Find(&callSystems).Count(&count).Error; err != nil {
+	applications := []model.Application{}
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SchedulerClusters").Find(&applications).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return &callSystems, count, nil
+	return &applications, count, nil
 }
 
-func (s *rest) AddSchedulerClusterToCallSystem(ctx context.Context, id, schedulerClusterID uint) error {
-	callsystem := model.CallSystem{}
+func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
+	callsystem := model.Application{}
 	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
 		return err
 	}
@@ -101,8 +106,8 @@ func (s *rest) AddSchedulerClusterToCallSystem(ctx context.Context, id, schedule
 	return nil
 }
 
-func (s *rest) DeleteSchedulerClusterToCallSystem(ctx context.Context, id, schedulerClusterID uint) error {
-	callsystem := model.CallSystem{}
+func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
+	callsystem := model.Application{}
 	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
 		return err
 	}
@@ -119,8 +124,8 @@ func (s *rest) DeleteSchedulerClusterToCallSystem(ctx context.Context, id, sched
 	return nil
 }
 
-func (s *rest) AddCDNClusterToCallSystem(ctx context.Context, id, cdnClusterID uint) error {
-	callsystem := model.CallSystem{}
+func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
+	callsystem := model.Application{}
 	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
 		return err
 	}
@@ -137,8 +142,8 @@ func (s *rest) AddCDNClusterToCallSystem(ctx context.Context, id, cdnClusterID u
 	return nil
 }
 
-func (s *rest) DeleteCDNClusterToCallSystem(ctx context.Context, id, cdnClusterID uint) error {
-	callsystem := model.CallSystem{}
+func (s *rest) DeleteCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
+	callsystem := model.Application{}
 	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
 		return err
 	}

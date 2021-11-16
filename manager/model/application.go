@@ -16,13 +16,14 @@
 
 package model
 
-type CallSystem struct {
+type Application struct {
 	Model
 	Name              string             `gorm:"column:name;type:varchar(256);index:uk_callsystem_name,unique;not null;comment:name" json:"name"`
-	LimitFrequency    string             `gorm:"column:limit_frequency;type:varchar(1024);comment:limit_frequency" json:"limit_frequency"`
-	URLRegex          string             `gorm:"column:url_regexs;not null;comment:url_regexs" json:"url_regexs"`
-	IsEnable          bool               `gorm:"column:is_enable;not null;default:true;comment:enable callsystem" json:"is_enable"`
+	DownloadRateLimit string             `gorm:"column:download_rate_limit;type:varchar(1024);comment:download_rate_limit" json:"download_rate_limit"`
+	URL               string             `gorm:"column:url;not null;comment:url" json:"url"`
 	State             string             `gorm:"column:state;type:varchar(256);default:'enable';comment:state" json:"state"`
+	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
+	UserID            uint               `gorm:"comment:user id" json:"user_id"`
 	SchedulerClusters []SchedulerCluster `json:"-"`
 	CDNClusters       []CDNCluster       `json:"-"`
 }

@@ -26,25 +26,25 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-// @Summary Create CallSystem
+// @Summary Create Application
 // @Description create by json config
-// @Tags CallSystem
+// @Tags Application
 // @Accept json
 // @Produce json
-// @Param CallSystem body types.CreateCallSystemRequest true "CallSystem"
-// @Success 200 {object} model.CallSystem
+// @Param Application body types.CreateApplicationRequest true "Application"
+// @Success 200 {object} model.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
 // @Router /callsystem [post]
-func (h *Handlers) CreateCallSystem(ctx *gin.Context) {
-	var json types.CreateCallSystemRequest
+func (h *Handlers) CreateApplication(ctx *gin.Context) {
+	var json types.CreateApplicationRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateCallSystem(ctx.Request.Context(), json)
+	schedulerCluster, err := h.service.CreateApplication(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -53,9 +53,9 @@ func (h *Handlers) CreateCallSystem(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, schedulerCluster)
 }
 
-// @Summary Destroy CallSystem
+// @Summary Destroy Application
 // @Description Destroy by id
-// @Tags CallSystem
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -64,14 +64,14 @@ func (h *Handlers) CreateCallSystem(ctx *gin.Context) {
 // @Failure 404
 // @Failure 500
 // @Router /callsystem/{id} [delete]
-func (h *Handlers) DestroyCallSystem(ctx *gin.Context) {
-	var params types.CallSystemParams
+func (h *Handlers) DestroyApplication(ctx *gin.Context) {
+	var params types.ApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DestroyCallSystem(ctx.Request.Context(), params.ID); err != nil {
+	if err := h.service.DestroyApplication(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -79,32 +79,32 @@ func (h *Handlers) DestroyCallSystem(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Update CallSystem
+// @Summary Update Application
 // @Description Update by json config
-// @Tags CallSystem
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param CallSystem body types.UpdateCallSystemRequest true "CallSystem"
-// @Success 200 {object} model.CallSystem
+// @Param Application body types.UpdateApplicationRequest true "Application"
+// @Success 200 {object} model.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id} [patch]
-func (h *Handlers) UpdateCallSystem(ctx *gin.Context) {
-	var params types.CallSystemParams
+// @Router /applications/{id} [patch]
+func (h *Handlers) UpdateApplication(ctx *gin.Context) {
+	var params types.ApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	var json types.UpdateCallSystemRequest
+	var json types.UpdateApplicationRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateCallSystem(ctx.Request.Context(), params.ID, json)
+	schedulerCluster, err := h.service.UpdateApplication(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -113,25 +113,25 @@ func (h *Handlers) UpdateCallSystem(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, schedulerCluster)
 }
 
-// @Summary Get CallSystem
-// @Description Get CallSystem by id
-// @Tags CallSystem
+// @Summary Get Application
+// @Description Get Application by id
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.CallSystem
+// @Success 200 {object} model.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id} [get]
-func (h *Handlers) GetCallSystem(ctx *gin.Context) {
-	var params types.CallSystemParams
+// @Router /applications/{id} [get]
+func (h *Handlers) GetApplication(ctx *gin.Context) {
+	var params types.ApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	schedulerCluster, err := h.service.GetCallSystem(ctx.Request.Context(), params.ID)
+	schedulerCluster, err := h.service.GetApplication(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -140,27 +140,27 @@ func (h *Handlers) GetCallSystem(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, schedulerCluster)
 }
 
-// @Summary Get CallSystems
-// @Description Get CallSystems
-// @Tags CallSystem
+// @Summary Get Applications
+// @Description Get Applications
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.CallSystem
+// @Success 200 {object} []model.Application
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems [get]
-func (h *Handlers) GetCallSystems(ctx *gin.Context) {
-	var query types.GetCallSystemsQuery
+// @Router /applications [get]
+func (h *Handlers) GetApplications(ctx *gin.Context) {
+	var query types.GetApplicationsQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, count, err := h.service.GetCallSystems(ctx.Request.Context(), query)
+	schedulerClusters, count, err := h.service.GetApplications(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
@@ -170,9 +170,9 @@ func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, schedulerClusters)
 }
 
-// @Summary Add Scheduler to CallSystem
-// @Description Add Scheduler to CallSystem
-// @Tags CallSystem
+// @Summary Add Scheduler to Application
+// @Description Add Scheduler to Application
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -181,15 +181,15 @@ func (h *Handlers) GetCallSystems(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
-func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
-	var params types.AddSchedulerClusterToCallSystemParams
+// @Router /applications/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
+func (h *Handlers) AddSchedulerClusterToApplication(ctx *gin.Context) {
+	var params types.AddSchedulerClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.AddSchedulerClusterToCallSystem(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
+	if err := h.service.AddSchedulerClusterToApplication(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -197,9 +197,9 @@ func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Delete Scheduler to CallSystem
-// @Description Delete Scheduler to CallSystem
-// @Tags CallSystem
+// @Summary Delete Scheduler to Application
+// @Description Delete Scheduler to Application
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -208,15 +208,15 @@ func (h *Handlers) AddSchedulerClusterToCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id}/scheduler-clusters/{scheduler_cluster_id} [delete]
-func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
-	var params types.DeleteSchedulerClusterToCallSystemParams
+// @Router /applications/{id}/scheduler-clusters/{scheduler_cluster_id} [delete]
+func (h *Handlers) DeleteSchedulerClusterToApplication(ctx *gin.Context) {
+	var params types.DeleteSchedulerClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DeleteSchedulerClusterToCallSystem(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
+	if err := h.service.DeleteSchedulerClusterToApplication(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -224,9 +224,9 @@ func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Add CDN to CallSystem
-// @Description Add CDN to CallSystem
-// @Tags CallSystem
+// @Summary Add CDN to Application
+// @Description Add CDN to Application
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -235,15 +235,15 @@ func (h *Handlers) DeleteSchedulerClusterToCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id}/cdn-clusters/{cdn_cluster_id} [put]
-func (h *Handlers) AddCDNClusterToCallSystem(ctx *gin.Context) {
-	var params types.AddCDNClusterToCallSystemParams
+// @Router /applications/{id}/cdn-clusters/{cdn_cluster_id} [put]
+func (h *Handlers) AddCDNClusterToApplication(ctx *gin.Context) {
+	var params types.AddCDNClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.AddCDNClusterToCallSystem(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
+	if err := h.service.AddCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}
@@ -251,9 +251,9 @@ func (h *Handlers) AddCDNClusterToCallSystem(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Delete CDN to CallSystem
-// @Description Delete CDN to CallSystem
-// @Tags CallSystem
+// @Summary Delete CDN to Application
+// @Description Delete CDN to Application
+// @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -262,15 +262,15 @@ func (h *Handlers) AddCDNClusterToCallSystem(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystems/{id}/cdn-clusters/{cdn_cluster_id} [delete]
-func (h *Handlers) DeleteCDNClusterToCallSystem(ctx *gin.Context) {
-	var params types.DeleteCDNClusterToCallSystemParams
+// @Router /applications/{id}/cdn-clusters/{cdn_cluster_id} [delete]
+func (h *Handlers) DeleteCDNClusterToApplication(ctx *gin.Context) {
+	var params types.DeleteCDNClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DeleteCDNClusterToCallSystem(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
+	if err := h.service.DeleteCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
 		ctx.Error(err)
 		return
 	}

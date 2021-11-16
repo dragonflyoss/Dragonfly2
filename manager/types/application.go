@@ -16,44 +16,49 @@
 
 package types
 
-type CallSystemParams struct {
+type ApplicationParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
 
-type AddSchedulerClusterToCallSystemParams struct {
+type AddSchedulerClusterToApplicationParams struct {
 	ID                 uint `uri:"id" binding:"required"`
 	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
-type DeleteSchedulerClusterToCallSystemParams struct {
+type DeleteSchedulerClusterToApplicationParams struct {
 	ID                 uint `uri:"id" binding:"required"`
 	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
-type AddCDNClusterToCallSystemParams struct {
+type AddCDNClusterToApplicationParams struct {
 	ID           uint `uri:"id" binding:"required"`
 	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
 }
 
-type DeleteCDNClusterToCallSystemParams struct {
+type DeleteCDNClusterToApplicationParams struct {
 	ID           uint `uri:"id" binding:"required"`
 	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
 }
 
-type CreateCallSystemRequest struct {
-	Name           string `json:"name" binding:"required"`
-	LimitFrequency string `json:"limit_frequency" binding:"omitempty"`
-	URLRegex       string `json:"url_regexs" binding:"omitempty"`
+type CreateApplicationRequest struct {
+	Name              string `json:"name" binding:"required"`
+	DownloadRateLimit string `json:"download_rate_limit" binding:"omitempty"`
+	URL               string `json:"url" binding:"omitempty"`
+	BIO               string `json:"bio" binding:"omitempty"`
+	UserID            uint   `json:"user_id" binding:"omitempty"`
+	State             string `json:"state" binding:"required,oneof=enable disable"`
 }
 
-type UpdateCallSystemRequest struct {
-	Name           string `json:"name" binding:"required"`
-	LimitFrequency string `json:"limit_frequency" binding:"required"`
-	URLRegex       string `json:"url_regexs" binding:"required"`
-	State          string `json:"state" binding:"required,oneof=enable disable"`
+type UpdateApplicationRequest struct {
+	Name              string `json:"name" binding:"required"`
+	DownloadRateLimit string `json:"download_rate_limit" binding:"required"`
+	URL               string `json:"url" binding:"required"`
+	State             string `json:"state" binding:"required,oneof=enable disable"`
+	BIO               string `json:"bio" binding:"omitempty"`
+	UserID            uint   `json:"user_id" binding:"omitempty"`
 }
 
-type GetCallSystemsQuery struct {
+type GetApplicationsQuery struct {
 	Page    int `form:"page" binding:"omitempty,gte=1"`
 	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }

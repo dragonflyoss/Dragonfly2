@@ -113,15 +113,15 @@ type REST interface {
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)
 
-	CreateCallSystem(context.Context, types.CreateCallSystemRequest) (*model.CallSystem, error)
-	DestroyCallSystem(context.Context, uint) error
-	UpdateCallSystem(context.Context, uint, types.UpdateCallSystemRequest) (*model.CallSystem, error)
-	GetCallSystem(context.Context, uint) (*model.CallSystem, error)
-	GetCallSystems(context.Context, types.GetCallSystemsQuery) (*[]model.CallSystem, int64, error)
-	AddSchedulerClusterToCallSystem(context.Context, uint, uint) error
-	DeleteSchedulerClusterToCallSystem(context.Context, uint, uint) error
-	AddCDNClusterToCallSystem(context.Context, uint, uint) error
-	DeleteCDNClusterToCallSystem(context.Context, uint, uint) error
+	CreateApplication(context.Context, types.CreateApplicationRequest) (*model.Application, error)
+	DestroyApplication(context.Context, uint) error
+	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*model.Application, error)
+	GetApplication(context.Context, uint) (*model.Application, error)
+	GetApplications(context.Context, types.GetApplicationsQuery) (*[]model.Application, int64, error)
+	AddSchedulerClusterToApplication(context.Context, uint, uint) error
+	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
+	AddCDNClusterToApplication(context.Context, uint, uint) error
+	DeleteCDNClusterToApplication(context.Context, uint, uint) error
 }
 
 type rest struct {
