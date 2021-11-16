@@ -36,7 +36,7 @@ import (
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem [post]
+// @Router /applications [post]
 func (h *Handlers) CreateApplication(ctx *gin.Context) {
 	var json types.CreateApplicationRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
@@ -44,13 +44,13 @@ func (h *Handlers) CreateApplication(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.CreateApplication(ctx.Request.Context(), json)
+	applicable, err := h.service.CreateApplication(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, schedulerCluster)
+	ctx.JSON(http.StatusOK, applicable)
 }
 
 // @Summary Destroy Application
@@ -63,7 +63,7 @@ func (h *Handlers) CreateApplication(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /callsystem/{id} [delete]
+// @Router /applications/{id} [delete]
 func (h *Handlers) DestroyApplication(ctx *gin.Context) {
 	var params types.ApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -104,13 +104,13 @@ func (h *Handlers) UpdateApplication(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.UpdateApplication(ctx.Request.Context(), params.ID, json)
+	application, err := h.service.UpdateApplication(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, schedulerCluster)
+	ctx.JSON(http.StatusOK, application)
 }
 
 // @Summary Get Application
@@ -131,13 +131,13 @@ func (h *Handlers) GetApplication(ctx *gin.Context) {
 		return
 	}
 
-	schedulerCluster, err := h.service.GetApplication(ctx.Request.Context(), params.ID)
+	application, err := h.service.GetApplication(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, schedulerCluster)
+	ctx.JSON(http.StatusOK, application)
 }
 
 // @Summary Get Applications
@@ -160,14 +160,14 @@ func (h *Handlers) GetApplications(ctx *gin.Context) {
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	schedulerClusters, count, err := h.service.GetApplications(ctx.Request.Context(), query)
+	applications, count, err := h.service.GetApplications(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
-	ctx.JSON(http.StatusOK, schedulerClusters)
+	ctx.JSON(http.StatusOK, applications)
 }
 
 // @Summary Add Scheduler to Application
