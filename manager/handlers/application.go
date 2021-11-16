@@ -271,7 +271,7 @@ func (h *Handlers) DeleteCDNClusterToApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
-		ctx.Error(err) // nolint: errchec
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
