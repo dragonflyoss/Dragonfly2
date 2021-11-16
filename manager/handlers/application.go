@@ -46,7 +46,7 @@ func (h *Handlers) CreateApplication(ctx *gin.Context) {
 
 	application, err := h.service.CreateApplication(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -72,7 +72,7 @@ func (h *Handlers) DestroyApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.DestroyApplication(ctx.Request.Context(), params.ID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -94,19 +94,19 @@ func (h *Handlers) DestroyApplication(ctx *gin.Context) {
 func (h *Handlers) UpdateApplication(ctx *gin.Context) {
 	var params types.ApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	var json types.UpdateApplicationRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	application, err := h.service.UpdateApplication(ctx.Request.Context(), params.ID, json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -133,7 +133,7 @@ func (h *Handlers) GetApplication(ctx *gin.Context) {
 
 	application, err := h.service.GetApplication(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -162,7 +162,7 @@ func (h *Handlers) GetApplications(ctx *gin.Context) {
 	h.setPaginationDefault(&query.Page, &query.PerPage)
 	applications, count, err := h.service.GetApplications(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -190,7 +190,7 @@ func (h *Handlers) AddSchedulerClusterToApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.AddSchedulerClusterToApplication(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -217,7 +217,7 @@ func (h *Handlers) DeleteSchedulerClusterToApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteSchedulerClusterToApplication(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -244,7 +244,7 @@ func (h *Handlers) AddCDNClusterToApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.AddCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -271,7 +271,7 @@ func (h *Handlers) DeleteCDNClusterToApplication(ctx *gin.Context) {
 	}
 
 	if err := h.service.DeleteCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errchec
 		return
 	}
 
