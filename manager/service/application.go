@@ -24,7 +24,7 @@ import (
 )
 
 func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
-	callsystem := model.Application{
+	application := model.Application{
 		Name:              json.Name,
 		DownloadRateLimit: json.DownloadRateLimit,
 		URL:               json.URL,
@@ -33,16 +33,16 @@ func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicati
 		State:             json.State,
 	}
 
-	if err := s.db.WithContext(ctx).Create(&callsystem).Error; err != nil {
+	if err := s.db.WithContext(ctx).Create(&application).Error; err != nil {
 		return nil, err
 	}
 
-	return &callsystem, nil
+	return &application, nil
 }
 
 func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
-	callsystem := model.Application{}
-	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
@@ -54,8 +54,8 @@ func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
 }
 
 func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
-	schedulerCluster := model.Application{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Updates(model.Application{
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Updates(model.Application{
 		Name:              json.Name,
 		DownloadRateLimit: json.DownloadRateLimit,
 		URL:               json.URL,
@@ -66,16 +66,16 @@ func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.Update
 		return nil, err
 	}
 
-	return &schedulerCluster, nil
+	return &application, nil
 }
 
 func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
-	schedulerCluster := model.Application{}
-	if err := s.db.WithContext(ctx).Preload("SchedulerClusters").First(&schedulerCluster, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).Preload("SchedulerClusters").First(&application, id).Error; err != nil {
 		return nil, err
 	}
 
-	return &schedulerCluster, nil
+	return &application, nil
 }
 
 func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
@@ -89,8 +89,8 @@ func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery
 }
 
 func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
-	callsystem := model.Application{}
-	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
@@ -99,7 +99,7 @@ func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedul
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Model(&callsystem).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&application).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
 
@@ -107,8 +107,8 @@ func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedul
 }
 
 func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
-	callsystem := model.Application{}
-	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
@@ -117,7 +117,7 @@ func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, sche
 		return err
 	}
 
-	if err := s.db.Model(&callsystem).Association("SchedulerClusters").Delete(&schedulerCluster); err != nil {
+	if err := s.db.Model(&application).Association("SchedulerClusters").Delete(&schedulerCluster); err != nil {
 		return err
 	}
 
@@ -125,8 +125,8 @@ func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, sche
 }
 
 func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
-	callsystem := model.Application{}
-	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
@@ -135,7 +135,7 @@ func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID 
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Model(&callsystem).Association("CDNClusters").Append(&cdnCluster); err != nil {
+	if err := s.db.WithContext(ctx).Model(&application).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return err
 	}
 
@@ -143,8 +143,8 @@ func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID 
 }
 
 func (s *rest) DeleteCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
-	callsystem := model.Application{}
-	if err := s.db.WithContext(ctx).First(&callsystem, id).Error; err != nil {
+	application := model.Application{}
+	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
 	}
 
@@ -153,7 +153,7 @@ func (s *rest) DeleteCDNClusterToApplication(ctx context.Context, id, cdnCluster
 		return err
 	}
 
-	if err := s.db.Model(&callsystem).Association("CDNClusters").Delete(&cdnCluster); err != nil {
+	if err := s.db.Model(&application).Association("CDNClusters").Delete(&cdnCluster); err != nil {
 		return err
 	}
 
