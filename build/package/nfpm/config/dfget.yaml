@@ -24,7 +24,7 @@ scheduler:
   # schedule timeout
   scheduleTimeout: 10s
 
-# when enable, pprof will be enabled,
+# when enabled, pprof will be enabled,
 verbose: true
 console: false
 
@@ -117,7 +117,7 @@ proxy:
     key: ""
   tcpListen:
     # listen address
-    listen: 0.0.0.0
+    listen: 127.0.0.1
     # listen port, daemon will try to listen
     # when this port is not available, daemon will try next port
     port: 65001
