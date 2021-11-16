@@ -43,9 +43,7 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
-			ABTest:               false,
-			AEvaluator:           "",
-			BEvaluator:           "",
+			Algorithm:            "default",
 			WorkerNum:            runtime.GOMAXPROCS(0),
 			BackSourceCount:      3,
 			AccessWindow:         3 * time.Minute,
@@ -179,9 +177,7 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
-	AEvaluator      string `yaml:"aevaluator" mapstructure:"aevaluator"`
-	BEvaluator      string `yaml:"bevaluator" mapstructure:"bevaluator"`
+	Algorithm       string `yaml:"algorithm" mapstructure:"algorithm"`
 	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
 	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime

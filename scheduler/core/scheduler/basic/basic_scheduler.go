@@ -24,7 +24,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
-	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
@@ -45,15 +44,11 @@ func newBasicSchedulerBuilder() scheduler.Builder {
 	}
 }
 
-var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
-
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
 	logger.Debugf("start create basic scheduler...")
-	evalFactory := evaluator.NewEvaluatorFactory(cfg)
-	evalFactory.Register("default", basic.NewEvaluator(cfg))
-	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
+	evaluator := evaluator.New(cfg.Algorithm)
 	sched := &Scheduler{
-		evaluator:   evalFactory,
+		evaluator:   evaluator,
 		peerManager: opts.PeerManager,
 		cfg:         cfg,
 	}

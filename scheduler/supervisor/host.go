@@ -174,14 +174,6 @@ func (h *Host) GetPeersLen() int {
 	return length
 }
 
-func (h *Host) GetUploadLoadPercent() float64 {
-	if h.TotalUploadLoad <= 0 {
-		return 1.0
-	}
-
-	return float64(h.CurrentUploadLoad.Load()) / float64(h.TotalUploadLoad)
-}
-
 func (h *Host) GetFreeUploadLoad() int32 {
 	return h.TotalUploadLoad - h.CurrentUploadLoad.Load()
 }
