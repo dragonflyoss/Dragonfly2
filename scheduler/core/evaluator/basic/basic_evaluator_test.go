@@ -29,8 +29,7 @@ func Test_getDistance(t *testing.T) {
 	}
 	host := supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 		"china|beijing|daxing", "idc",
-		"netTopology",
-		0)
+		"netTopology")
 	tests := []struct {
 		name string
 		args args
@@ -48,12 +47,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain1",
 					"location", "idc",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain2",
 					"location", "idc",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.0,
 		}, {
@@ -61,12 +58,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc1",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc2",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.9,
 		}, {
@@ -74,12 +69,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "idc",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.95,
 		}, {
@@ -87,12 +80,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "idc",
-					"AAA|bb|cc",
-					0)),
+					"AAA|bb|cc")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc",
-					"AAA|bb|dd",
-					0)),
+					"AAA|bb|dd")),
 			},
 			want: 0.6928571428571428,
 		}, {
@@ -100,12 +91,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "idc",
-					"AAA|bb|cc",
-					0)),
+					"AAA|bb|cc")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc",
-					"BBB|bb|dd",
-					0)),
+					"BBB|bb|dd")),
 			},
 			want: 0.5,
 		}, {
@@ -113,12 +102,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "idc",
-					"AAA|bb|cc",
-					0)),
+					"AAA|bb|cc")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "idc",
-					"AAA|bbB|dd",
-					0)),
+					"AAA|bbB|dd")),
 			},
 			want: 0.5642857142857143,
 		}, {
@@ -126,12 +113,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|chaoyang", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.6714285714285714,
 		}, {
@@ -139,12 +124,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"us|new|chaoyang", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.5,
 		}, {
@@ -152,12 +135,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|shanghai|pudong", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.5571428571428572,
 		}, {
@@ -165,12 +146,10 @@ func Test_getDistance(t *testing.T) {
 			args: args{
 				dst: supervisor.NewPeer("", supervisor.NewTask("task1", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|beijing|daxing", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 				src: supervisor.NewPeer("", supervisor.NewTask("task2", "", nil), supervisor.NewClientHost("uuid", "ip", "hostname", 0, 0, "securityDomain",
 					"china|shanghai|pudong", "",
-					"netTopology",
-					0)),
+					"netTopology")),
 			},
 			want: 0.5571428571428572,
 		},

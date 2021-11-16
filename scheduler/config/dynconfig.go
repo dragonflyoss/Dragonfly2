@@ -52,6 +52,7 @@ type CDN struct {
 	Port          int32       `yaml:"port" mapstructure:"port" json:"port"`
 	DownloadPort  int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
 	SecurityGroup string      `yaml:"securityGroup" mapstructure:"securityGroup" json:"security_group"`
+	NetTopology   string      `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
 	Location      string      `yaml:"location" mapstructure:"location" json:"location"`
 	IDC           string      `yaml:"idc" mapstructure:"idc" json:"idc"`
 	CDNCluster    *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`

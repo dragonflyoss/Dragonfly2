@@ -673,6 +673,6 @@ func TestPeerManager_Delete(t *testing.T) {
 }
 
 func mockAPeer(ID string, task *supervisor.Task) *supervisor.Peer {
-	host := supervisor.NewClientHost(ID, "127.0.0.1", "Client", 8080, 8081, "", "", "")
+	host := supervisor.NewClientHost(ID, "127.0.0.1", "Client", 8080, 8081, "", "", "", "")
 	return supervisor.NewPeer(ID, task, host)
 }

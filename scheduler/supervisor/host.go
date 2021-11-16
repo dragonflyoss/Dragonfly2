@@ -115,15 +115,17 @@ type Host struct {
 	logger *logger.SugaredLoggerOnWith
 }
 
-func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
-	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, options...)
+func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string,
+	netTopology string, options ...HostOption) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, netTopology, options...)
 }
 
-func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
-	return newHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, options...)
+func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, netTopology string, options ...HostOption) *Host {
+	return newHost(uuid, ip, hostname, rpcPort, downloadPort, true, securityDomain, location, idc, netTopology, options...)
 }
 
-func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc string, options ...HostOption) *Host {
+func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc string, netTopology string,
+	options ...HostOption) *Host {
 	host := &Host{
 		UUID:            uuid,
 		IP:              ip,
@@ -134,7 +136,7 @@ func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool,
 		SecurityDomain:  securityDomain,
 		Location:        location,
 		IDC:             idc,
-		NetTopology:     "",
+		NetTopology:     netTopology,
 		TotalUploadLoad: 100,
 		peers:           &sync.Map{},
 		logger:          logger.With("hostUUID", uuid),

@@ -33,7 +33,7 @@ func TestHost_New(t *testing.T) {
 	}{
 		{
 			name: "create by normal config",
-			host: supervisor.NewClientHost("main", "127.0.0.1", "Client", 8080, 8081, "", "", ""),
+			host: supervisor.NewClientHost("main", "127.0.0.1", "Client", 8080, 8081, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("main", host.UUID)
@@ -41,7 +41,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create CDN by normal config",
-			host: supervisor.NewCDNHost("main", "127.0.0.1", "Client", 8080, 8081, "", "", ""),
+			host: supervisor.NewCDNHost("main", "127.0.0.1", "Client", 8080, 8081, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("main", host.UUID)
@@ -49,7 +49,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create by special symbols",
-			host: supervisor.NewClientHost("⁂⁎♜♝♞⁑（๑ `▽´๑)", "127.0.0.1", "Client", 8080, 8081, "", "", ""),
+			host: supervisor.NewClientHost("⁂⁎♜♝♞⁑（๑ `▽´๑)", "127.0.0.1", "Client", 8080, 8081, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("⁂⁎♜♝♞⁑（๑ `▽´๑)", host.UUID)
@@ -57,7 +57,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create by error address",
-			host: supervisor.NewClientHost("host", "0.0.0.0", "Client", 8080, 8080, "", "", ""),
+			host: supervisor.NewClientHost("host", "0.0.0.0", "Client", 8080, 8080, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("host", host.UUID)
@@ -65,7 +65,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create with geography information",
-			host: supervisor.NewClientHost("host", "127.0.0.1", "Client", 8080, 8081, "goagle", "microsaft", "facebaok"),
+			host: supervisor.NewClientHost("host", "127.0.0.1", "Client", 8080, 8081, "goagle", "microsaft", "facebaok", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("host", host.UUID)
@@ -76,7 +76,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create by error address",
-			host: supervisor.NewClientHost("host", "-1.257.w.-0", "Client", -100, 29000, "", "", ""),
+			host: supervisor.NewClientHost("host", "-1.257.w.-0", "Client", -100, 29000, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("host", host.UUID)
@@ -84,7 +84,7 @@ func TestHost_New(t *testing.T) {
 		},
 		{
 			name: "create by normal config",
-			host: supervisor.NewClientHost("host", "127.0.0.1", "Client", 8080, 8081, "", "", ""),
+			host: supervisor.NewClientHost("host", "127.0.0.1", "Client", 8080, 8081, "", "", "", ""),
 			expect: func(t *testing.T, host *supervisor.Host) {
 				assert := assert.New(t)
 				assert.Equal("host", host.UUID)
@@ -217,6 +217,6 @@ func TestHostManager_Delete(t *testing.T) {
 }
 
 func mockAHost(UUID string) *supervisor.Host {
-	host := supervisor.NewClientHost(UUID, "127.0.0.1", "Client", 8080, 8081, "", "", "")
+	host := supervisor.NewClientHost(UUID, "127.0.0.1", "Client", 8080, 8081, "", "", "", "")
 	return host
 }

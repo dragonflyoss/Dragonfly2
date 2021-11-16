@@ -318,7 +318,7 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 		}
 
 		id := idgen.CDN(cdn.HostName, cdn.Port)
-		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, options...)
+		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, cdn.NetTopology, options...)
 	}
 
 	return hosts
