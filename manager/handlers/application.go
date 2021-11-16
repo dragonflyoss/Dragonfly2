@@ -44,13 +44,13 @@ func (h *Handlers) CreateApplication(ctx *gin.Context) {
 		return
 	}
 
-	applicable, err := h.service.CreateApplication(ctx.Request.Context(), json)
+	application, err := h.service.CreateApplication(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, applicable)
+	ctx.JSON(http.StatusOK, application)
 }
 
 // @Summary Destroy Application
