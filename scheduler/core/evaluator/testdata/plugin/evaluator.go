@@ -20,7 +20,7 @@ import "d7y.io/dragonfly/v2/scheduler/supervisor"
 
 type evaluator struct{}
 
-func (e *evaluator) Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64 {
+func (e *evaluator) Evaluate(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64 {
 	return float64(1)
 }
 

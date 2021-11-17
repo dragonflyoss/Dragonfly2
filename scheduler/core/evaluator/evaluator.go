@@ -33,7 +33,7 @@ const (
 
 type Evaluator interface {
 	// Evaluate todo Normalization
-	Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64
+	Evaluate(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64
 
 	// NeedAdjustParent determine whether the peer needs a new parent node
 	NeedAdjustParent(peer *supervisor.Peer) bool
@@ -42,32 +42,16 @@ type Evaluator interface {
 	IsBadNode(peer *supervisor.Peer) bool
 }
 
-type evaluator struct {
-	strategy Evaluator
-}
-
 func New(algorithm string) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(); err == nil {
-			return &evaluator{strategy: plugin}
+			return plugin
 		}
 	// TODO Implement MLAlgorithm
 	case MLAlgorithm, DefaultAlgorithm:
-		return &evaluator{strategy: NewEvaluatorBase()}
+		return NewEvaluatorBase()
 	}
 
-	return &evaluator{strategy: NewEvaluatorBase()}
-}
-
-func (e *evaluator) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	return e.strategy.Evaluate(dst, src)
-}
-
-func (e *evaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
-	return e.strategy.NeedAdjustParent(peer)
-}
-
-func (e *evaluator) IsBadNode(peer *supervisor.Peer) bool {
-	return e.strategy.IsBadNode(peer)
+	return NewEvaluatorBase()
 }

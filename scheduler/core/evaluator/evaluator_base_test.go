@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
@@ -37,13 +38,16 @@ const (
 )
 
 type factor struct {
-	hostType          string
-	securityDomain    string
-	idc               string
-	location          string
-	netTopology       string
-	totalUploadLoad   int32
-	currentUploadLoad int32
+	hostType           string
+	securityDomain     string
+	idc                string
+	location           string
+	netTopology        string
+	totalUploadLoad    int32
+	currentUploadLoad  int32
+	finishedPieceCount int32
+	hostUUID           string
+	taskPieceCount     int32
 }
 
 func TestEvaluatorEvaluate(t *testing.T) {
@@ -56,231 +60,337 @@ func TestEvaluatorEvaluate(t *testing.T) {
 		{
 			name: "evaluate succeeded with cdn peer",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(3))
+				assert.True(mathutils.EqualFloat64(v, float64(0.6)))
 			},
 		},
 		{
 			name: "evaluate with different securityDomain",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foz",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foz",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(0))
+				assert.True(mathutils.EqualFloat64(v, float64(0)))
 			},
 		},
 		{
 			name: "evaluate with empty securityDomain",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(3))
+				assert.True(mathutils.EqualFloat64(v, float64(0.6)))
 			},
 		},
 		{
 			name: "evaluate with different idc",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "baz",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "baz",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(2.5))
+				assert.True(mathutils.EqualFloat64(v, float64(0.45)))
 			},
 		},
 		{
 			name: "evaluate with different location",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(2.96))
+				assert.True(mathutils.EqualFloat64(v, float64(0.59)))
 			},
 		},
 		{
 			name: "evaluate with empty location",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(2.8))
+				assert.True(mathutils.EqualFloat64(v, float64(0.55)))
 			},
 		},
 		{
 			name: "evaluate with excessive location",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e|f",
-				netTopology:       "a|b|c|d|e",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e|f",
+				netTopology:        "a|b|c|d|e",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e|f",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e|f",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(3))
+				assert.True(mathutils.EqualFloat64(v, float64(0.6)))
 			},
 		},
 		{
 			name: "evaluate with different netTopology",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(2.94))
+				assert.True(mathutils.EqualFloat64(v, float64(0.58)))
 			},
 		},
 		{
 			name: "evaluate with empty netTopology",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(2.7))
+				assert.True(mathutils.EqualFloat64(v, float64(0.5)))
 			},
 		},
 		{
 			name: "evaluate with excessive netTopology",
 			parent: &factor{
-				hostType:          cdnHostType,
-				securityDomain:    "foo",
-				idc:               "bar",
-				location:          "a|b|c|d|e",
-				netTopology:       "a|b|c|d|e|f",
-				totalUploadLoad:   100,
-				currentUploadLoad: 0,
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+				taskPieceCount:     100,
 			},
 			child: &factor{
-				hostType:       clientHostType,
-				securityDomain: "foo",
-				idc:            "bar",
-				location:       "a|b|c|d|e",
-				netTopology:    "a|b|c|d|e|f",
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
 			},
 			expect: func(t *testing.T, v float64) {
 				assert := assert.New(t)
-				assert.Equal(v, float64(3))
+				assert.True(mathutils.EqualFloat64(v, float64(0.6)))
+			},
+		},
+		{
+			name: "evaluate with task piece count",
+			parent: &factor{
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 20,
+				hostUUID:           "example",
+				taskPieceCount:     100,
+			},
+			child: &factor{
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				finishedPieceCount: 0,
+				hostUUID:           "example",
+			},
+			expect: func(t *testing.T, v float64) {
+				assert := assert.New(t)
+				assert.True(mathutils.EqualFloat64(v, float64(0.68)))
+			},
+		},
+		{
+			name: "evaluate without task piece count",
+			parent: &factor{
+				hostType:           cdnHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				totalUploadLoad:    100,
+				currentUploadLoad:  0,
+				finishedPieceCount: 20,
+				hostUUID:           "example",
+				taskPieceCount:     0,
+			},
+			child: &factor{
+				hostType:           clientHostType,
+				securityDomain:     "foo",
+				idc:                "bar",
+				location:           "a|b|c|d|e",
+				netTopology:        "a|b|c|d|e|f",
+				finishedPieceCount: 10,
+				hostUUID:           "example",
+			},
+			expect: func(t *testing.T, v float64) {
+				assert := assert.New(t)
+				assert.True(mathutils.EqualFloat64(v, float64(4.6)))
 			},
 		},
 	}
@@ -290,7 +400,7 @@ func TestEvaluatorEvaluate(t *testing.T) {
 			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, nil)
 
 			parentHost := supervisor.NewClientHost(
-				uuid.NewString(), "", "", 0, 0,
+				tc.parent.hostUUID, "", "", 0, 0,
 				tc.parent.securityDomain,
 				tc.parent.location,
 				tc.parent.idc,
@@ -299,18 +409,20 @@ func TestEvaluatorEvaluate(t *testing.T) {
 			)
 			parentHost.CurrentUploadLoad.Store(tc.parent.currentUploadLoad)
 			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
+			parent.TotalPieceCount.Store(tc.parent.finishedPieceCount)
 
 			childHost := supervisor.NewClientHost(
-				uuid.NewString(), "", "", 0, 0,
+				tc.parent.hostUUID, "", "", 0, 0,
 				tc.child.securityDomain,
 				tc.child.location,
 				tc.child.idc,
 				supervisor.WithNetTopology(tc.child.netTopology),
 			)
 			child := supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
+			child.TotalPieceCount.Store(tc.child.finishedPieceCount)
 
 			e := NewEvaluatorBase()
-			tc.expect(t, e.Evaluate(parent, child))
+			tc.expect(t, e.Evaluate(parent, child, tc.parent.taskPieceCount))
 		})
 	}
 }

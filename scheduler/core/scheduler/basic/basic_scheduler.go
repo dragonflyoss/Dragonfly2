@@ -78,8 +78,9 @@ func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer, blankChildren sets.S
 	}
 	evalResult := make(map[float64][]*supervisor.Peer)
 	var evalScore []float64
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	for _, child := range candidateChildren {
-		score := s.evaluator.Evaluate(peer, child)
+		score := s.evaluator.Evaluate(peer, child, taskTotalPieceCount)
 		evalResult[score] = append(evalResult[score], child)
 		evalScore = append(evalScore, score)
 	}
@@ -114,8 +115,9 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 	}
 	evalResult := make(map[float64][]*supervisor.Peer)
 	var evalScore []float64
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	for _, parent := range candidateParents {
-		score := s.evaluator.Evaluate(parent, peer)
+		score := s.evaluator.Evaluate(parent, peer, taskTotalPieceCount)
 		peer.Log().Debugf("evaluate score candidate %s is %f", parent.ID, score)
 		evalResult[score] = append(evalResult[score], parent)
 		evalScore = append(evalScore, score)

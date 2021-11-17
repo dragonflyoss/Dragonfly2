@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if score := e.Evaluate(&supervisor.Peer{}, &supervisor.Peer{}); score != float64(1) {
+	if score := e.Evaluate(&supervisor.Peer{}, &supervisor.Peer{}, int32(0)); score != float64(1) {
 		fmt.Println("Evaluate failed")
 		os.Exit(1)
 	}
