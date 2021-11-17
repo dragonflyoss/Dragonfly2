@@ -20,21 +20,47 @@ import (
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
-	"gonum.org/v1/gonum/stat"
 
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
 const (
-	conditionIDC            = "idc"
-	conditionLocation       = "location"
-	conditionNetTopology    = "net_topology"
+	// Condition IDC key
+	conditionIDC = "idc"
+
+	// Condition location key
+	conditionLocation = "location"
+
+	// Condition netTopology key
+	conditionNetTopology = "net_topology"
+
+	// Condition security domain key
 	conditionSecurityDomain = "security_domain"
 )
 
 const (
-	conditionLocationWeight = 0.7
-	conditionIDCWeight      = 0.3
+	// IDC affinity weight
+	idcAffinityWeight float64 = 0.5
+
+	// NetTopology affinity weight
+	netTopologyAffinityWeight = 0.3
+
+	// Location affinity weight
+	locationAffinityWeight = 0.2
+)
+
+const (
+	// Maximum score
+	maxScore float64 = 1.0
+
+	// Minimum score
+	minScore = 0
+)
+
+const (
+	// Maximum number of elements
+	maxElementLen = 5
 )
 
 type Scopes struct {
@@ -103,18 +129,15 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	}
 }
 
+// Evaluate the degree of matching between scheduler cluster and dfdaemon
 func evaluate(conditions map[string]string, scopes Scopes) float64 {
-	location := conditions[conditionLocation]
-	lx := calculateConditionScore(location, scopes.Location)
-
-	idc := conditions[conditionIDC]
-	ix := calculateConditionScore(idc, scopes.IDC)
-
-	return stat.Mean([]float64{lx, ix}, []float64{conditionLocationWeight, conditionIDCWeight})
+	return idcAffinityWeight*calculateIDCAffinityScore(conditions[conditionIDC], scopes.IDC) +
+		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[conditionLocation], scopes.Location) +
+		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[conditionNetTopology], scopes.NetTopology)
 }
 
-// calculateIDCAffinity 0.0~1.0 larger and better
-func calculateIDCAffinity(dst, src string) float64 {
+// calculateIDCAffinityScore 0.0~1.0 larger and better
+func calculateIDCAffinityScore(dst, src string) float64 {
 	if dst != "" && src != "" && strings.Compare(dst, src) == 0 {
 		return maxScore
 	}
@@ -122,8 +145,8 @@ func calculateIDCAffinity(dst, src string) float64 {
 	return minScore
 }
 
-// calculateMultiElementAffinity 0.0~1.0 larger and better
-func calculateMultiElementAffinity(dst, src string) float64 {
+// calculateMultiElementAffinityScore 0.0~1.0 larger and better
+func calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}
