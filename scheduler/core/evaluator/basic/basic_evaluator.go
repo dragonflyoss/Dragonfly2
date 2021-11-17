@@ -96,7 +96,7 @@ func (eval *baseEvaluator) Evaluate(parent *supervisor.Peer, child *supervisor.P
 
 	load := getHostLoad(parent.Host)
 
-	dist := getDistance(parent, child)
+	dist := getAffinity(parent, child)
 
 	return profits * load * dist
 }
@@ -128,8 +128,8 @@ func getHostLoad(host *supervisor.Host) float64 {
 	return 1.0 - host.GetUploadLoadPercent()
 }
 
-// getDistance 0.0~1.0 larger and better
-func getDistance(dst *supervisor.Peer, src *supervisor.Peer) float64 {
+// getAffinity 0.0~1.0 larger and better
+func getAffinity(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	hostDist := 40.0
 	if dst.Host == src.Host {
 		hostDist = 0.0
