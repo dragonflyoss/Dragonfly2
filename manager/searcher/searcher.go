@@ -17,7 +17,7 @@
 package searcher
 
 import (
-	"sort"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"gonum.org/v1/gonum/stat"
@@ -26,9 +26,10 @@ import (
 )
 
 const (
-	conditionSecurityDomain = "security_domain"
-	conditionLocation       = "location"
 	conditionIDC            = "idc"
+	conditionLocation       = "location"
+	conditionNetTopology    = "net_topology"
+	conditionSecurityDomain = "security_domain"
 )
 
 const (
@@ -37,8 +38,9 @@ const (
 )
 
 type Scopes struct {
-	Location []string `mapstructure:"location"`
-	IDC      []string `mapstructure:"idc"`
+	IDC         string `mapstructure:"idc"`
+	Location    string `mapstructure:"location"`
+	NetTopology string `mapstructure:"net_topology"`
 }
 
 type Searcher interface {
@@ -74,29 +76,34 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 
 	switch len(clusters) {
 	case 0:
+		// If the security domain does not match, there is no cluster available
 		return model.SchedulerCluster{}, false
 	case 1:
+		// If only one cluster matches the security domain, return the cluster directly
 		return clusters[0], true
 	default:
-		var maxMean float64 = 0
-		cluster := clusters[0]
-		for _, v := range clusters {
-			mean := calculateSchedulerClusterMean(conditions, v.Scopes)
-			if mean > maxMean {
-				maxMean = mean
-				cluster = v
+		// If there are multiple clusters matching the security domain,
+		// select the schuelder cluster with a higher score
+		var maxScore float64 = 0
+		result := clusters[0]
+		for _, cluster := range clusters {
+			var scopes Scopes
+			if err := mapstructure.Decode(cluster.Scopes, &scopes); err != nil {
+				// Scopes parse failed to skip this evaluation
+				continue
+			}
+
+			score := evaluate(conditions, scopes)
+			if score > maxScore {
+				maxScore = score
+				result = cluster
 			}
 		}
-		return cluster, true
+		return result, true
 	}
 }
 
-func calculateSchedulerClusterMean(conditions map[string]string, rawScopes map[string]interface{}) float64 {
-	var scopes Scopes
-	if err := mapstructure.Decode(rawScopes, &scopes); err != nil {
-		return 0
-	}
-
+func evaluate(conditions map[string]string, scopes Scopes) float64 {
 	location := conditions[conditionLocation]
 	lx := calculateConditionScore(location, scopes.Location)
 
@@ -106,19 +113,42 @@ func calculateSchedulerClusterMean(conditions map[string]string, rawScopes map[s
 	return stat.Mean([]float64{lx, ix}, []float64{conditionLocationWeight, conditionIDCWeight})
 }
 
-func calculateConditionScore(value string, scope []string) float64 {
-	if value == "" {
-		return 0
+// calculateIDCAffinity 0.0~1.0 larger and better
+func calculateIDCAffinity(dst, src string) float64 {
+	if dst != "" && src != "" && strings.Compare(dst, src) == 0 {
+		return maxScore
 	}
 
-	if len(scope) <= 0 {
-		return 0
+	return minScore
+}
+
+// calculateMultiElementAffinity 0.0~1.0 larger and better
+func calculateMultiElementAffinity(dst, src string) float64 {
+	if dst == "" || src == "" {
+		return minScore
 	}
 
-	i := sort.SearchStrings(scope, value)
-	if i < 0 {
-		return 0
+	if strings.Compare(dst, src) == 0 {
+		return maxScore
 	}
 
-	return 1
+	// Calculate the number of multi-element matches divided by "|"
+	var score, elementLen int
+	dstElements := strings.Split(dst, "|")
+	srcElements := strings.Split(src, "|")
+	elementLen = mathutils.MaxInt(len(dstElements), len(srcElements))
+
+	// Maximum element length is 5
+	if elementLen > maxElementLen {
+		elementLen = maxElementLen
+	}
+
+	for i := 0; i < elementLen; i++ {
+		if strings.Compare(dstElements[i], srcElements[i]) != 0 {
+			break
+		}
+		score++
+	}
+
+	return float64(score) / float64(maxElementLen)
 }
