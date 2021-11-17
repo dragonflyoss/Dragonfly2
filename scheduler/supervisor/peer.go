@@ -404,8 +404,12 @@ func (peer *Peer) SortedValue() int {
 	defer peer.lock.RUnlock()
 
 	pieceCount := peer.TotalPieceCount.Load()
-	hostLoad := peer.getFreeLoad()
-	return int(pieceCount*HostMaxLoad + hostLoad)
+	freeLoad := peer.getFreeLoad()
+	if peer.Host.IsCDN {
+		// if peer's host is CDN, peer has the lowest priority among all peers with the same number of pieces
+		return int(pieceCount * HostMaxLoad)
+	}
+	return int(pieceCount*HostMaxLoad + freeLoad)
 }
 
 func (peer *Peer) getFreeLoad() int32 {
