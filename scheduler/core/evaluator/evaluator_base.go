@@ -37,14 +37,14 @@ const (
 )
 
 const (
-	// IDC distance weight
-	idcDistanceWeight float64 = 0.5
+	// IDC affinity weight
+	idcAffinityWeight float64 = 0.5
 
-	// NetTopology distance weight
-	netTopologyDistanceWeight float64 = 0.3
+	// NetTopology affinity weight
+	netTopologyAffinityWeight float64 = 0.3
 
-	// Location distance weight
-	locationDistanceWeight float64 = 0.2
+	// Location affinity weight
+	locationAffinityWeight float64 = 0.2
 )
 
 const (
@@ -74,8 +74,8 @@ func (eb *evaluatorBase) Evaluate(parent *supervisor.Peer, child *supervisor.Pee
 		return minScore
 	}
 
-	// Profits has the highest priority, FreeLoad Percent and Distance have the same priority
-	return calculateProfits(parent, child) + calculateFreeLoadPercent(parent.Host) + calculateDistance(parent, child)
+	// Profits has the highest priority, FreeLoad Percent and Affinity have the same priority
+	return calculateProfits(parent, child) + calculateFreeLoadPercent(parent.Host) + calculateAffinity(parent, child)
 }
 
 // calculateProfits 0.0~unlimited larger and better
@@ -92,23 +92,23 @@ func calculateFreeLoadPercent(host *supervisor.Host) float64 {
 	return float64((totalLoad - load)) / float64(totalLoad)
 }
 
-// calculateDistance 0.0~1.0 larger and better
-func calculateDistance(dst *supervisor.Peer, src *supervisor.Peer) float64 {
+// calculateAffinity 0.0~1.0 larger and better
+func calculateAffinity(dst *supervisor.Peer, src *supervisor.Peer) float64 {
 	// If the host is equal, it means that the same host downloads the same peer
 	// and the host is preferentially scheduled
 	if strings.Compare(dst.Host.UUID, src.Host.UUID) == 0 {
 		return maxScore
 	}
 
-	// Distance includes three features, the specific values of the features are IDC, NetTopology and Location.
-	// Based on three features and specific weights, the distance value between 0 and 1 can be calculated.
-	return calculateIDCDistance(dst.Host.IDC, src.Host.IDC)*idcDistanceWeight +
-		calculateMultiElementDistance(dst.Host.NetTopology, src.Host.NetTopology)*netTopologyDistanceWeight +
-		calculateMultiElementDistance(dst.Host.Location, src.Host.Location)*locationDistanceWeight
+	// Affinity includes three features, the specific values of the features are IDC, NetTopology and Location.
+	// Based on three features and specific weights, the affinity value between 0 and 1 can be calculated.
+	return calculateIDCAffinity(dst.Host.IDC, src.Host.IDC)*idcAffinityWeight +
+		calculateMultiElementAffinity(dst.Host.NetTopology, src.Host.NetTopology)*netTopologyAffinityWeight +
+		calculateMultiElementAffinity(dst.Host.Location, src.Host.Location)*locationAffinityWeight
 }
 
-// calculateDistance 0.0~1.0 larger and better
-func calculateIDCDistance(dst, src string) float64 {
+// calculateIDCAffinity 0.0~1.0 larger and better
+func calculateIDCAffinity(dst, src string) float64 {
 	if dst != "" && src != "" && strings.Compare(dst, src) == 0 {
 		return maxScore
 	}
@@ -116,8 +116,8 @@ func calculateIDCDistance(dst, src string) float64 {
 	return minScore
 }
 
-// calculateMultiElementDistance 0.0~1.0 larger and better
-func calculateMultiElementDistance(dst, src string) float64 {
+// calculateMultiElementAffinity 0.0~1.0 larger and better
+func calculateMultiElementAffinity(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
 	}

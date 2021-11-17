@@ -19,10 +19,11 @@ package evaluator
 import (
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 const (
