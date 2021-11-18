@@ -86,6 +86,12 @@ type REST interface {
 	GetScheduler(context.Context, uint) (*model.Scheduler, error)
 	GetSchedulers(context.Context, types.GetSchedulersQuery) (*[]model.Scheduler, int64, error)
 
+	CreateSecurityRule(context.Context, types.CreateSecurityRuleRequest) (*model.SecurityRule, error)
+	DestroySecurityRule(context.Context, uint) error
+	UpdateSecurityRule(context.Context, uint, types.UpdateSecurityRuleRequest) (*model.SecurityRule, error)
+	GetSecurityRule(context.Context, uint) (*model.SecurityRule, error)
+	GetSecurityRules(context.Context, types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error)
+
 	CreateSecurityGroup(context.Context, types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(context.Context, uint) error
 	UpdateSecurityGroup(context.Context, uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
@@ -94,6 +100,7 @@ type REST interface {
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
+	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
 
 	CreateConfig(context.Context, types.CreateConfigRequest) (*model.Config, error)
 	DestroyConfig(context.Context, uint) error

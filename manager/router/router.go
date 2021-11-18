@@ -183,6 +183,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
 	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
+	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 
 	// Config
 	config := apiv1.Group("/configs")

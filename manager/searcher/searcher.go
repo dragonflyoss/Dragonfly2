@@ -90,13 +90,21 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	}
 
 	// If there are security domain conditions, match clusters of the same security domain.
-	// If the security domain condition does not exist, it matches clusters that does not have a security domain.
+	// If the security domain condition does not exist, it will match all scheduler security domains.
 	// Then use clusters sets to score according to scopes.
-	securityDomain := conditions[conditionSecurityDomain]
 	var clusters []model.SchedulerCluster
-	for _, v := range schedulerClusters {
-		if v.SecurityGroup.Domain == securityDomain {
-			clusters = append(clusters, v)
+	securityDomain := conditions[conditionSecurityDomain]
+	for _, schedulerCluster := range schedulerClusters {
+		if len(schedulerCluster.Schedulers) > 0 {
+			if securityDomain == "" {
+				clusters = append(clusters, schedulerCluster)
+			} else {
+				for _, securityRule := range schedulerCluster.SecurityGroup.SecurityRules {
+					if strings.Compare(securityRule.Domain, securityDomain) == 0 {
+						clusters = append(clusters, schedulerCluster)
+					}
+				}
+			}
 		}
 	}
 

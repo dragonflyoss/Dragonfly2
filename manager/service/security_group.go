@@ -63,7 +63,7 @@ func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.Upda
 
 func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
-	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityRules").First(&securityGroup, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -75,7 +75,7 @@ func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQ
 	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name: q.Name,
-	}).Find(&securityGroups).Count(&count).Error; err != nil {
+	}).Preload("SecurityRules").Find(&securityGroups).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -130,6 +130,24 @@ func (s *rest) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityR
 	}
 
 	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SecurityRules").Append(&securityRule); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *rest) DestroySecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
+	securityGroup := model.SecurityGroup{}
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
+		return err
+	}
+
+	securityRule := model.SecurityRule{}
+	if err := s.db.WithContext(ctx).First(&securityRule, securityRuleID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SecurityRules").Delete(&securityRule); err != nil {
 		return err
 	}
 

@@ -66,7 +66,7 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster.SecurityGroup").First(&cdn, &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("CDNCluster").First(&cdn, &model.CDN{
 		HostName:     req.HostName,
 		CDNClusterID: uint(req.CdnClusterId),
 	}).Error; err != nil {
@@ -93,13 +93,6 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 			Name:   cdn.CDNCluster.Name,
 			Bio:    cdn.CDNCluster.BIO,
 			Config: config,
-			SecurityGroup: &manager.SecurityGroup{
-				Id:          uint64(cdn.CDNCluster.SecurityGroup.ID),
-				Name:        cdn.CDNCluster.SecurityGroup.Name,
-				Bio:         cdn.CDNCluster.SecurityGroup.BIO,
-				Domain:      cdn.CDNCluster.SecurityGroup.Domain,
-				ProxyDomain: cdn.CDNCluster.SecurityGroup.ProxyDomain,
-			},
 		},
 	}
 
@@ -197,7 +190,7 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
-	if err := s.db.WithContext(ctx).Preload("SchedulerCluster.SecurityGroup").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
 		Status: model.CDNStatusActive,
 	}).First(&scheduler, &model.Scheduler{
 		HostName:           req.HostName,
@@ -266,13 +259,6 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 			Bio:          scheduler.SchedulerCluster.BIO,
 			Config:       schedulerClusterConfig,
 			ClientConfig: schedulerClusterClientConfig,
-			SecurityGroup: &manager.SecurityGroup{
-				Id:          uint64(scheduler.SchedulerCluster.SecurityGroup.ID),
-				Name:        scheduler.SchedulerCluster.SecurityGroup.Name,
-				Bio:         scheduler.SchedulerCluster.SecurityGroup.BIO,
-				Domain:      scheduler.SchedulerCluster.SecurityGroup.Domain,
-				ProxyDomain: scheduler.SchedulerCluster.SecurityGroup.ProxyDomain,
-			},
 		},
 		Cdns: pbCDNs,
 	}
@@ -391,7 +377,7 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
-	if err := s.db.WithContext(ctx).Preload("SecurityGroup").Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "status = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 

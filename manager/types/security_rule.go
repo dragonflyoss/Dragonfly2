@@ -21,24 +21,23 @@ type SecurityRuleParams struct {
 }
 
 type CreateSecurityRuleRequest struct {
-	Name            string `json:"name" binding:"required"`
-	BIO             string `json:"bio" binding:"omitempty"`
-	Domain          string `json:"domain" binding:"required"`
-	ProxyDomain     string `json:"proxy_domain" binding:"omitempty"`
-	SecurityGroupID string `json:"security_group_id" binding:"omitempty"`
+	Name        string `json:"name" binding:"required"`
+	BIO         string `json:"bio" binding:"omitempty"`
+	Domain      string `json:"domain" binding:"required"`
+	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
 }
 
 type UpdateSecurityRuleRequest struct {
-	Name            string `json:"name" binding:"omitempty"`
-	BIO             string `json:"bio" binding:"omitempty"`
-	Domain          string `json:"domain" binding:"omitempty"`
-	ProxyDomain     string `json:"proxy_domain" binding:"omitempty"`
-	SecurityGroupID string `json:"security_group_id" binding:"omitempty"`
+	Name        string `json:"name" binding:"omitempty"`
+	BIO         string `json:"bio" binding:"omitempty"`
+	Domain      string `json:"domain" binding:"omitempty"`
+	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
 }
 
 type GetSecurityRulesQuery struct {
-	Page    int    `form:"page" binding:"omitempty,gte=1"`
-	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	Name    string `form:"name" binding:"omitempty"`
-	Domain  string `form:"domain" binding:"omitempty"`
+	Page        int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage     int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	Name        string `form:"name" binding:"omitempty"`
+	Domain      string `form:"domain" binding:"omitempty"`
+	ProxyDomain string `form:"proxy_domain" binding:"omitempty"`
 }
