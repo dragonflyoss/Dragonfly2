@@ -2337,6 +2337,268 @@ Add Scheduler to SecurityGroup
 * SecurityGroup
 
 
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-put"></a>
+### Add SecurityRule to SecurityGroup
+```
+PUT /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### 说明
+Add SecurityRule to SecurityGroup
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**security_rule_id**  <br>*必填*|security rule id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityGroup
+
+
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-delete"></a>
+### Destroy SecurityRule to SecurityGroup
+```
+DELETE /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### 说明
+Destroy SecurityRule to SecurityGroup
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**security_rule_id**  <br>*必填*|security rule id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityGroup
+
+
+<a name="api-v1-security-rules-post"></a>
+### Create SecurityRule
+```
+POST /api/v1/security-rules
+```
+
+
+#### 说明
+create by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Body**|**SecurityRule**  <br>*必填*|SecurityRule|[types.CreateSecurityRuleRequest](#types-createsecurityrulerequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-get"></a>
+### Get SecurityRules
+```
+GET /api/v1/security-rules
+```
+
+
+#### 说明
+Get SecurityRules
+
+
+#### 参数
+
+|类型|名称|说明|类型|默认值|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*必填*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*必填*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< [model.SecurityRule](#model-securityrule) > array|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-get"></a>
+### Get SecurityRule
+```
+GET /api/v1/security-rules/{id}
+```
+
+
+#### 说明
+Get SecurityRule by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-patch"></a>
+### Update SecurityRule
+```
+PATCH /api/v1/security-rules/{id}
+```
+
+
+#### 说明
+Update by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Body**|**SecurityRule**  <br>*必填*|SecurityRule|[types.UpdateSecurityRuleRequest](#types-updatesecurityrulerequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityRule
+
+
 <a name="api-v1-securitygroups-id-delete"></a>
 ### Destroy SecurityGroup
 ```
@@ -2378,6 +2640,49 @@ Destroy by id
 #### 标签
 
 * SecurityGroup
+
+
+<a name="api-v1-securityrules-id-delete"></a>
+### Destroy SecurityRule
+```
+DELETE /api/v1/securityRules/{id}
+```
+
+
+#### 说明
+Destroy by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* SecurityRule
 
 
 <a name="api-v1-user-signin-name-get"></a>
@@ -2889,10 +3194,24 @@ Get User by id
 |---|---|
 |**bio**  <br>*可选*|string|
 |**created_at**  <br>*可选*|string|
+|**id**  <br>*可选*|integer|
+|**name**  <br>*可选*|string|
+|**security_rules**  <br>*可选*|< [model.SecurityRule](#model-securityrule) > array|
+|**updated_at**  <br>*可选*|string|
+
+
+<a name="model-securityrule"></a>
+### model.SecurityRule
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
 |**domain**  <br>*可选*|string|
 |**id**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
 |**proxy_domain**  <br>*可选*|string|
+|**security_groups**  <br>*可选*|< [model.SecurityGroup](#model-securitygroup) > array|
 |**updated_at**  <br>*可选*|string|
 
 
@@ -2948,7 +3267,6 @@ Get User by id
 |**bio**  <br>*可选*|string|
 |**config**  <br>*必填*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*必填*|string|
-|**security_group_domain**  <br>*可选*|string|
 
 
 <a name="types-createcdnrequest"></a>
@@ -3023,7 +3341,6 @@ Get User by id
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*必填*|string|
 |**scopes**  <br>*可选*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*可选*|string|
 
 
 <a name="types-createschedulerrequest"></a>
@@ -3043,6 +3360,15 @@ Get User by id
 
 <a name="types-createsecuritygrouprequest"></a>
 ### types.CreateSecurityGroupRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**name**  <br>*必填*|string|
+
+
+<a name="types-createsecurityrulerequest"></a>
+### types.CreateSecurityRuleRequest
 
 |名称|类型|
 |---|---|
@@ -3140,7 +3466,6 @@ Get User by id
 |**bio**  <br>*可选*|string|
 |**config**  <br>*可选*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*可选*|string|
-|**security_group_domain**  <br>*可选*|string|
 
 
 <a name="types-updatecdnrequest"></a>
@@ -3200,7 +3525,6 @@ Get User by id
 |**is_default**  <br>*可选*|boolean|
 |**name**  <br>*可选*|string|
 |**scopes**  <br>*可选*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*可选*|string|
 
 
 <a name="types-updateschedulerrequest"></a>
@@ -3220,6 +3544,15 @@ Get User by id
 
 <a name="types-updatesecuritygrouprequest"></a>
 ### types.UpdateSecurityGroupRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**name**  <br>*可选*|string|
+
+
+<a name="types-updatesecurityrulerequest"></a>
+### types.UpdateSecurityRuleRequest
 
 |名称|类型|
 |---|---|

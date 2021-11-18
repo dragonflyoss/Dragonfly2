@@ -2342,6 +2342,279 @@ var doc = `{
                 }
             }
         },
+        "/security-groups/{id}/security-rules/{security_rule_id}": {
+            "put": {
+                "description": "Add SecurityRule to SecurityGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityGroup"
+                ],
+                "summary": "Add SecurityRule to SecurityGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "security rule id",
+                        "name": "security_rule_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy SecurityRule to SecurityGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityGroup"
+                ],
+                "summary": "Destroy SecurityRule to SecurityGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "security rule id",
+                        "name": "security_rule_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/security-rules": {
+            "get": {
+                "description": "Get SecurityRules",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityRule"
+                ],
+                "summary": "Get SecurityRules",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SecurityRule"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityRule"
+                ],
+                "summary": "Create SecurityRule",
+                "parameters": [
+                    {
+                        "description": "SecurityRule",
+                        "name": "SecurityRule",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateSecurityRuleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SecurityRule"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/security-rules/{id}": {
+            "get": {
+                "description": "Get SecurityRule by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityRule"
+                ],
+                "summary": "Get SecurityRule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SecurityRule"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityRule"
+                ],
+                "summary": "Update SecurityRule",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "SecurityRule",
+                        "name": "SecurityRule",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSecurityRuleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SecurityRule"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/securityGroups/{id}": {
             "delete": {
                 "description": "Destroy by id",
@@ -2355,6 +2628,44 @@ var doc = `{
                     "SecurityGroup"
                 ],
                 "summary": "Destroy SecurityGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/securityRules/{id}": {
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityRule"
+                ],
+                "summary": "Destroy SecurityRule",
                 "parameters": [
                     {
                         "type": "string",
@@ -3034,6 +3345,32 @@ var doc = `{
                 "created_at": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "security_rules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SecurityRule"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SecurityRule": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
                 },
@@ -3045,6 +3382,12 @@ var doc = `{
                 },
                 "proxy_domain": {
                     "type": "string"
+                },
+                "security_groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SecurityGroup"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -3141,9 +3484,6 @@ var doc = `{
                     "$ref": "#/definitions/types.CDNClusterConfig"
                 },
                 "name": {
-                    "type": "string"
-                },
-                "security_group_domain": {
                     "type": "string"
                 }
             }
@@ -3312,9 +3652,6 @@ var doc = `{
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
-                },
-                "security_group_domain": {
-                    "type": "string"
                 }
             }
         },
@@ -3356,6 +3693,20 @@ var doc = `{
             }
         },
         "types.CreateSecurityGroupRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateSecurityRuleRequest": {
             "type": "object",
             "required": [
                 "domain",
@@ -3511,9 +3862,6 @@ var doc = `{
                 },
                 "name": {
                     "type": "string"
-                },
-                "security_group_domain": {
-                    "type": "string"
                 }
             }
         },
@@ -3611,9 +3959,6 @@ var doc = `{
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
-                },
-                "security_group_domain": {
-                    "type": "string"
                 }
             }
         },
@@ -3648,6 +3993,17 @@ var doc = `{
             }
         },
         "types.UpdateSecurityGroupRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateSecurityRuleRequest": {
             "type": "object",
             "properties": {
                 "bio": {
