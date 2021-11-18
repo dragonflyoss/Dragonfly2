@@ -18,8 +18,11 @@
 package mathutils
 
 import (
+	"math"
 	"strconv"
 )
+
+const float64EqualityThreshold = 1e-9
 
 func MaxInt(a, b int) int {
 	if a < b {
@@ -29,16 +32,16 @@ func MaxInt(a, b int) int {
 	return b
 }
 
-func MinInt(a, b int) int {
-	if a < b {
+func MaxInt32(a, b int32) int32 {
+	if a > b {
 		return a
 	}
 
 	return b
 }
 
-func MaxInt32(a, b int32) int32 {
-	if a > b {
+func MinInt(a, b int) int {
+	if a < b {
 		return a
 	}
 
@@ -83,4 +86,8 @@ func IsInteger(value string) bool {
 	}
 
 	return false
+}
+
+func EqualFloat64(a, b float64) bool {
+	return math.Abs(a-b) <= float64EqualityThreshold
 }
