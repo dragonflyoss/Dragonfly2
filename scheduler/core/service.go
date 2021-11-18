@@ -31,9 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/gc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -206,13 +204,6 @@ func (s *SchedulerService) Stop() {
 		s.worker.stop()
 	}
 	s.wg.Wait()
-}
-
-func (s *SchedulerService) GenerateTaskID(url string, meta *base.UrlMeta, peerID string) string {
-	if s.config.ABTest {
-		return idgen.TwinsTaskID(url, meta, peerID)
-	}
-	return idgen.TaskID(url, meta)
 }
 
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {

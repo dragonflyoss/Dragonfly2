@@ -17,19 +17,23 @@
 package evaluator
 
 import (
-	"sort"
-	"strings"
-	"sync"
-
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
-type Evaluator interface {
+const (
+	// DefaultAlgorithm is a rule-based scheduling algorithm
+	DefaultAlgorithm = "default"
 
+	// MLAlgorithm is a machine learning scheduling algorithm
+	MLAlgorithm = "ml"
+
+	// PluginAlgorithm is a scheduling algorithm based on plugin extension
+	PluginAlgorithm = "plugin"
+)
+
+type Evaluator interface {
 	// Evaluate todo Normalization
-	Evaluate(parent *supervisor.Peer, child *supervisor.Peer) float64
+	Evaluate(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64
 
 	// NeedAdjustParent determine whether the peer needs a new parent node
 	NeedAdjustParent(peer *supervisor.Peer) bool
@@ -38,170 +42,16 @@ type Evaluator interface {
 	IsBadNode(peer *supervisor.Peer) bool
 }
 
-type Factory struct {
-	lock                         sync.RWMutex
-	evaluators                   map[string]Evaluator
-	getEvaluatorFuncs            map[int]getEvaluatorFunc
-	getEvaluatorFuncPriorityList []getEvaluatorFunc
-	cache                        map[string]Evaluator
-	cacheClearFunc               sync.Once
-	abtest                       bool
-	aEvaluator                   string
-	bEvaluator                   string
-}
-
-var _ Evaluator = (*Factory)(nil)
-
-func (ef *Factory) Evaluate(dst *supervisor.Peer, src *supervisor.Peer) float64 {
-	return ef.get(dst.Task.ID).Evaluate(dst, src)
-}
-
-func (ef *Factory) NeedAdjustParent(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.ID).NeedAdjustParent(peer)
-}
-
-func (ef *Factory) IsBadNode(peer *supervisor.Peer) bool {
-	return ef.get(peer.Task.ID).IsBadNode(peer)
-}
-
-func NewEvaluatorFactory(cfg *config.SchedulerConfig) *Factory {
-	factory := &Factory{
-		evaluators:        make(map[string]Evaluator),
-		getEvaluatorFuncs: map[int]getEvaluatorFunc{},
-		cache:             map[string]Evaluator{},
-		abtest:            cfg.ABTest,
-		aEvaluator:        cfg.AEvaluator,
-		bEvaluator:        cfg.BEvaluator,
-	}
-	return factory
-}
-
-var (
-	m = make(map[string]Evaluator)
-)
-
-func Register(name string, evaluator Evaluator) {
-	m[strings.ToLower(name)] = evaluator
-}
-
-func Get(name string) Evaluator {
-	if eval, ok := m[strings.ToLower(name)]; ok {
-		return eval
-	}
-	return nil
-}
-
-type getEvaluatorFunc func(taskID string) (string, bool)
-
-func (ef *Factory) get(taskID string) Evaluator {
-	ef.lock.RLock()
-	evaluator, ok := ef.cache[taskID]
-	ef.lock.RUnlock()
-	if ok {
-		return evaluator
-	}
-
-	if ef.abtest {
-		name := ""
-		if strings.HasSuffix(taskID, idgen.TwinsBSuffix) {
-			if ef.bEvaluator != "" {
-				name = ef.bEvaluator
-			}
-		} else {
-			if ef.aEvaluator != "" {
-				name = ef.aEvaluator
-			}
+func New(algorithm string) Evaluator {
+	switch algorithm {
+	case PluginAlgorithm:
+		if plugin, err := LoadPlugin(); err == nil {
+			return plugin
 		}
-		if name != "" {
-			ef.lock.RLock()
-			evaluator, ok = ef.evaluators[name]
-			ef.lock.RUnlock()
-			if ok {
-				ef.lock.Lock()
-				ef.cache[taskID] = evaluator
-				ef.lock.Unlock()
-				return evaluator
-			}
-		}
+	// TODO Implement MLAlgorithm
+	case MLAlgorithm, DefaultAlgorithm:
+		return NewEvaluatorBase()
 	}
 
-	for _, fun := range ef.getEvaluatorFuncPriorityList {
-		name, ok := fun(taskID)
-		if !ok {
-			continue
-		}
-		ef.lock.RLock()
-		evaluator, ok = ef.evaluators[name]
-		ef.lock.RUnlock()
-		if !ok {
-			continue
-		}
-
-		ef.lock.Lock()
-		ef.cache[taskID] = evaluator
-		ef.lock.Unlock()
-		return evaluator
-	}
-
-	return nil
-}
-
-func (ef *Factory) clearCache() {
-	ef.lock.Lock()
-	ef.cache = make(map[string]Evaluator)
-	ef.lock.Unlock()
-}
-
-func (ef *Factory) add(name string, evaluator Evaluator) {
-	ef.lock.Lock()
-	ef.evaluators[name] = evaluator
-	ef.lock.Unlock()
-}
-
-func (ef *Factory) addGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
-	ef.lock.Lock()
-	defer ef.lock.Unlock()
-	_, ok := ef.getEvaluatorFuncs[priority]
-	if ok {
-		return
-	}
-	ef.getEvaluatorFuncs[priority] = fun
-	var priorities []int
-	for p := range ef.getEvaluatorFuncs {
-		priorities = append(priorities, p)
-	}
-	sort.Ints(priorities)
-	ef.getEvaluatorFuncPriorityList = ef.getEvaluatorFuncPriorityList[:0]
-	for i := len(priorities) - 1; i >= 0; i-- {
-		ef.getEvaluatorFuncPriorityList = append(ef.getEvaluatorFuncPriorityList, ef.getEvaluatorFuncs[priorities[i]])
-	}
-
-}
-
-func (ef *Factory) deleteGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
-	ef.lock.Lock()
-
-	delete(ef.getEvaluatorFuncs, priority)
-
-	var priorities []int
-	for p := range ef.getEvaluatorFuncs {
-		priorities = append(priorities, p)
-	}
-	sort.Ints(priorities)
-	ef.getEvaluatorFuncPriorityList = ef.getEvaluatorFuncPriorityList[:0]
-	for i := len(priorities) - 1; i >= 0; i-- {
-		ef.getEvaluatorFuncPriorityList = append(ef.getEvaluatorFuncPriorityList, ef.getEvaluatorFuncs[priorities[i]])
-	}
-
-	ef.lock.Unlock()
-}
-
-func (ef *Factory) Register(name string, evaluator Evaluator) {
-	ef.add(name, evaluator)
-	ef.clearCache()
-}
-
-func (ef *Factory) RegisterGetEvaluatorFunc(priority int, fun getEvaluatorFunc) {
-	ef.addGetEvaluatorFunc(priority, fun)
-	ef.clearCache()
+	return NewEvaluatorBase()
 }

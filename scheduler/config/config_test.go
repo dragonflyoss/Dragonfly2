@@ -39,10 +39,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			CDNDirPath: "tmp",
 		},
 		Scheduler: &SchedulerConfig{
-			ABTest:     true,
-			AEvaluator: "a-evaluator",
-			BEvaluator: "b-evaluator",
-			WorkerNum:  8,
+			Algorithm: "default",
+			WorkerNum: 8,
 		},
 		Server: &ServerConfig{
 			IP:   "127.0.0.1",

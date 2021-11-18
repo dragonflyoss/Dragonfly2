@@ -368,35 +368,20 @@ func (peer *Peer) GetPieceCosts() []int {
 	return peer.pieceCosts
 }
 
-func (peer *Peer) GetPieceAverageCost() (int, bool) {
-	costs := peer.GetPieceCosts()
-	if len(costs) < 1 {
-		return 0, false
-	}
+func (peer *Peer) SetPieceCosts(costs ...int) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
 
-	totalCost := 0
-	for _, cost := range costs {
-		totalCost += cost
-	}
-
-	return totalCost / len(costs), true
+	peer.pieceCosts = append(peer.pieceCosts, costs...)
 }
 
 func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 	if finishedCount > peer.TotalPieceCount.Load() {
 		peer.TotalPieceCount.Store(finishedCount)
-
-		peer.lock.Lock()
-		peer.pieceCosts = append(peer.pieceCosts, cost)
-		if len(peer.pieceCosts) > 20 {
-			peer.pieceCosts = peer.pieceCosts[len(peer.pieceCosts)-20:]
-		}
-		peer.lock.Unlock()
-
+		peer.SetPieceCosts(cost)
 		peer.Task.UpdatePeer(peer)
 		return
 	}
-
 }
 
 func (peer *Peer) SortedValue() int {
