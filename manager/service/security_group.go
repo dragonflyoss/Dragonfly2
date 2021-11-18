@@ -25,10 +25,8 @@ import (
 
 func (s *rest) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{
-		Name:        json.Name,
-		BIO:         json.BIO,
-		Domain:      json.Domain,
-		ProxyDomain: json.ProxyDomain,
+		Name: json.Name,
+		BIO:  json.BIO,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&securityGroup).Error; err != nil {
@@ -54,10 +52,8 @@ func (s *rest) DestroySecurityGroup(ctx context.Context, id uint) error {
 func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Updates(model.SecurityGroup{
-		Name:        json.Name,
-		BIO:         json.BIO,
-		Domain:      json.Domain,
-		ProxyDomain: json.ProxyDomain,
+		Name: json.Name,
+		BIO:  json.BIO,
 	}).Error; err != nil {
 		return nil, err
 	}
@@ -78,8 +74,7 @@ func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQ
 	var count int64
 	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
-		Name:   q.Name,
-		Domain: q.Domain,
+		Name: q.Name,
 	}).Find(&securityGroups).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
@@ -117,6 +112,24 @@ func (s *rest) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterI
 	}
 
 	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *rest) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
+	securityGroup := model.SecurityGroup{}
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
+		return err
+	}
+
+	securityRule := model.SecurityRule{}
+	if err := s.db.WithContext(ctx).First(&securityRule, securityRuleID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SecurityRules").Append(&securityRule); err != nil {
 		return err
 	}
 

@@ -112,6 +112,7 @@ func migrate(db *gorm.DB) error {
 		&model.CDN{},
 		&model.SchedulerCluster{},
 		&model.Scheduler{},
+		&model.SecurityRule{},
 		&model.SecurityGroup{},
 		&model.User{},
 		&model.Oauth{},

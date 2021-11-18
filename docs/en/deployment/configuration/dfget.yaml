@@ -25,6 +25,13 @@ keepStorage: true
 # daemon will send tasks to a fixed scheduler by hashing the task url and meta data
 # caution: only tcp is supported
 scheduler:
+  manager:
+    # get scheduler list dynamically from manager
+    enable: false
+    # manager service address
+    addr: 127.0.0.1:65003
+    # scheduler list configuration cache time
+    cacheExpireTime: 5m
   # schedule timeout
   scheduleTimeout: 30s
   # when true, only scheduler says back source, daemon can back source

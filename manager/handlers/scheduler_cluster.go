@@ -44,17 +44,6 @@ func (h *Handlers) CreateSchedulerCluster(ctx *gin.Context) {
 		return
 	}
 
-	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.CreateSchedulerClusterWithSecurityGroupDomain(ctx.Request.Context(), json)
-		if err != nil {
-			ctx.Error(err) // nolint: errcheck
-			return
-		}
-
-		ctx.JSON(http.StatusOK, scheduler)
-		return
-	}
-
 	schedulerCluster, err := h.service.CreateSchedulerCluster(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
@@ -112,17 +101,6 @@ func (h *Handlers) UpdateSchedulerCluster(ctx *gin.Context) {
 	var json types.UpdateSchedulerClusterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	if json.SecurityGroupDomain != "" {
-		scheduler, err := h.service.UpdateSchedulerClusterWithSecurityGroupDomain(ctx.Request.Context(), params.ID, json)
-		if err != nil {
-			ctx.Error(err) // nolint: errcheck
-			return
-		}
-
-		ctx.JSON(http.StatusOK, scheduler)
 		return
 	}
 
