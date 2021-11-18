@@ -17,7 +17,6 @@
 package idgen
 
 import (
-	"hash/crc32"
 	"strings"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -25,12 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 )
 
-const (
-	TwinsASuffix = "_A"
-	TwinsBSuffix = "_B"
-)
-
-// GenerateTaskID generates a taskId.
+// TaskID generates a taskId.
 // filter is separated by & character.
 func TaskID(url string, meta *base.UrlMeta) string {
 	var data []string
@@ -57,17 +51,4 @@ func TaskID(url string, meta *base.UrlMeta) string {
 	}
 
 	return digestutils.Sha256(data...)
-}
-
-// GenerateTwinsTaskId used A/B testing
-func TwinsTaskID(url string, meta *base.UrlMeta, peerID string) string {
-	taskID := TaskID(url, meta)
-
-	if crc32.ChecksumIEEE([]byte(peerID))&1 == 0 {
-		taskID += TwinsASuffix
-	} else {
-		taskID += TwinsBSuffix
-	}
-
-	return taskID
 }

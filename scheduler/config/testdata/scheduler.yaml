@@ -4,13 +4,11 @@ dynconfig:
   cdnDirPath: tmp
 
 scheduler:
-  abtest: true
-  aevaluator: "a-evaluator"
-  bevaluator: "b-evaluator"
   workerNum: 8
   workerJobPoolSize: 10000
   senderNum: 10
   senderJobPoolSize: 10000
+  algorithm: default
 
 server:
   ip: "127.0.0.1"
