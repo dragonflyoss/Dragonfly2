@@ -6,8 +6,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 
+	// nolint
 	"d7y.io/dragonfly/v2/internal/job"
-	_ "d7y.io/dragonfly/v2/manager/model" // nolint
+	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 )
 

@@ -28,6 +28,403 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/applications": {
+            "get": {
+                "description": "Get Applications",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Get Applications",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Application"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Create Application",
+                "parameters": [
+                    {
+                        "description": "Application",
+                        "name": "Application",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateApplicationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Application"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/applications/{id}": {
+            "get": {
+                "description": "Get Application by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Get Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Application"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Destroy Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Update Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Application",
+                        "name": "Application",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateApplicationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Application"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/applications/{id}/cdn-clusters/{cdn_cluster_id}": {
+            "put": {
+                "description": "Add CDN to Application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Add CDN to Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "cdn cluster id",
+                        "name": "cdn_cluster_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete CDN to Application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Delete CDN to Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "cdn cluster id",
+                        "name": "cdn_cluster_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/applications/{id}/scheduler-clusters/{scheduler_cluster_id}": {
+            "put": {
+                "description": "Add Scheduler to Application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Add Scheduler to Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "scheduler cluster id",
+                        "name": "scheduler_cluster_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete Scheduler to Application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Application"
+                ],
+                "summary": "Delete Scheduler to Application",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "scheduler cluster id",
+                        "name": "scheduler_cluster_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/cdn-clusters": {
             "get": {
                 "description": "Get CDNClusters",
@@ -2863,7 +3260,48 @@ var doc = `{
                 }
             }
         },
-        "/users/:id/reset_password": {
+        "/users/{id}": {
+            "get": {
+                "description": "Get User by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/users/{id}/reset_password": {
             "post": {
                 "description": "reset password by json config",
                 "consumes": [
@@ -2900,7 +3338,7 @@ var doc = `{
                 }
             }
         },
-        "/users/:id/roles": {
+        "/users/{id}/roles": {
             "get": {
                 "description": "get roles by json config",
                 "produces": [
@@ -2938,7 +3376,7 @@ var doc = `{
                 }
             }
         },
-        "/users/:id/roles/:role": {
+        "/users/{id}/roles/{role}": {
             "put": {
                 "description": "add role to user by uri config",
                 "consumes": [
@@ -3019,67 +3457,43 @@ var doc = `{
                     }
                 }
             }
-        },
-        "/users/{id}": {
-            "get": {
-                "description": "Get User by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "User"
-                ],
-                "summary": "Get User",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
         }
     },
     "definitions": {
+        "model.Application": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "download_rate_limit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "model.CDN": {
             "type": "object",
             "properties": {
                 "cdnclusterID": {
                     "type": "integer"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -3093,10 +3507,7 @@ var doc = `{
                 "port": {
                     "type": "integer"
                 },
-                "status": {
-                    "type": "string"
-                },
-                "updated_at": {
+                "state": {
                     "type": "string"
                 }
             }
@@ -3104,17 +3515,14 @@ var doc = `{
         "model.CDNCluster": {
             "type": "object",
             "properties": {
+                "application_id": {
+                    "type": "integer"
+                },
                 "bio": {
                     "type": "string"
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -3136,9 +3544,6 @@ var doc = `{
                 },
                 "security_group_id": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3148,16 +3553,7 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3187,12 +3583,6 @@ var doc = `{
                         "$ref": "#/definitions/model.CDNCluster"
                     }
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "result": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
@@ -3202,16 +3592,13 @@ var doc = `{
                         "$ref": "#/definitions/model.SchedulerCluster"
                     }
                 },
-                "status": {
+                "state": {
                     "type": "string"
                 },
                 "task_id": {
                     "type": "string"
                 },
                 "type": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3231,19 +3618,10 @@ var doc = `{
                 "client_secret": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3251,14 +3629,8 @@ var doc = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -3278,10 +3650,7 @@ var doc = `{
                 "schedulerClusterID": {
                     "type": "integer"
                 },
-                "status": {
-                    "type": "string"
-                },
-                "updated_at": {
+                "state": {
                     "type": "string"
                 },
                 "vips": {
@@ -3292,6 +3661,9 @@ var doc = `{
         "model.SchedulerCluster": {
             "type": "object",
             "properties": {
+                "application_id": {
+                    "type": "integer"
+                },
                 "bio": {
                     "type": "string"
                 },
@@ -3306,12 +3678,6 @@ var doc = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -3330,9 +3696,6 @@ var doc = `{
                 },
                 "security_group_id": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3342,12 +3705,6 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -3356,9 +3713,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityRule"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3368,14 +3722,8 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "domain": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -3388,9 +3736,6 @@ var doc = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3403,14 +3748,8 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -3422,9 +3761,6 @@ var doc = `{
                     "type": "string"
                 },
                 "state": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3467,6 +3803,33 @@ var doc = `{
                 },
                 "net_topology": {
                     "type": "string"
+                }
+            }
+        },
+        "types.CreateApplicationRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "user_id"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "download_rate_limit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -3786,7 +4149,7 @@ var doc = `{
                 "startTime": {
                     "type": "string"
                 },
-                "status": {
+                "state": {
                     "type": "string"
                 }
             }
@@ -3848,6 +4211,32 @@ var doc = `{
                 },
                 "phone": {
                     "type": "string"
+                }
+            }
+        },
+        "types.UpdateApplicationRequest": {
+            "type": "object",
+            "required": [
+                "user_id"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "download_rate_limit": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },

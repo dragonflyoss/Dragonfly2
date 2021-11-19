@@ -25,6 +25,399 @@ Dragonfly Manager Server
 <a name="paths"></a>
 ## Paths
 
+<a name="api-v1-applications-post"></a>
+### Create Application
+```
+POST /api/v1/applications
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**Application**  <br>*required*|Application|[types.CreateApplicationRequest](#types-createapplicationrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-get"></a>
+### Get Applications
+```
+GET /api/v1/applications
+```
+
+
+#### Description
+Get Applications
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.Application](#model-application) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-get"></a>
+### Get Application
+```
+GET /api/v1/applications/{id}
+```
+
+
+#### Description
+Get Application by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-delete"></a>
+### Destroy Application
+```
+DELETE /api/v1/applications/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-patch"></a>
+### Update Application
+```
+PATCH /api/v1/applications/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**Application**  <br>*required*|Application|[types.UpdateApplicationRequest](#types-updateapplicationrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-put"></a>
+### Add CDN to Application
+```
+PUT /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### Description
+Add CDN to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*required*|cdn cluster id|string|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-delete"></a>
+### Delete CDN to Application
+```
+DELETE /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### Description
+Delete CDN to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*required*|cdn cluster id|string|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-put"></a>
+### Add Scheduler to Application
+```
+PUT /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### Description
+Add Scheduler to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*required*|scheduler cluster id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-delete"></a>
+### Delete Scheduler to Application
+```
+DELETE /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### Description
+Delete Scheduler to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*required*|scheduler cluster id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
 <a name="api-v1-cdn-clusters-post"></a>
 ### Create CDNCluster
 ```
@@ -2848,171 +3241,6 @@ Get Users
 * CDN
 
 
-<a name="api-v1-users-id-reset_password-post"></a>
-### Reset Password For User
-```
-POST /api/v1/users/:id/reset_password
-```
-
-
-#### Description
-reset password by json config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Body**|**User**  <br>*required*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* User
-
-
-<a name="api-v1-users-id-roles-get"></a>
-### Get User Roles
-```
-GET /api/v1/users/:id/roles
-```
-
-
-#### Description
-get roles by json config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-
-
-#### Responses
-
-|HTTP Code|Description|Schema|
-|---|---|---|
-|**200**|OK|< string > array|
-|**400**||No Content|
-|**500**||No Content|
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* User
-
-
-<a name="api-v1-users-id-roles-role-put"></a>
-### Add Role For User
-```
-PUT /api/v1/users/:id/roles/:role
-```
-
-
-#### Description
-add role to user by uri config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-|**Path**|**role**  <br>*required*|role|string|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* Users
-
-
-<a name="api-v1-users-id-roles-role-delete"></a>
-### Delete Role For User
-```
-DELETE /api/v1/users/:id/roles/:role
-```
-
-
-#### Description
-delete role by uri config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-|**Path**|**role**  <br>*required*|role|string|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* Users
-
-
 <a name="api-v1-users-id-get"></a>
 ### Get User
 ```
@@ -3056,512 +3284,169 @@ Get User by id
 * User
 
 
+<a name="api-v1-users-id-reset_password-post"></a>
+### Reset Password For User
+```
+POST /api/v1/users/{id}/reset_password
+```
 
 
-<a name="definitions"></a>
-## Definitions
+#### Description
+reset password by json config
 
-<a name="model-cdn"></a>
-### model.CDN
 
-|Name|Schema|
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**User**  <br>*required*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
+
+
+#### Responses
+
+|HTTP Code|Schema|
 |---|---|
-|**cdnclusterID**  <br>*optional*|integer|
-|**created_at**  <br>*optional*|string|
-|**download_port**  <br>*optional*|integer|
-|**host_name**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**idc**  <br>*optional*|string|
-|**ip**  <br>*optional*|string|
-|**location**  <br>*optional*|string|
-|**port**  <br>*optional*|integer|
-|**status**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
 
 
-<a name="model-cdncluster"></a>
-### model.CDNCluster
+#### Consumes
 
-|Name|Schema|
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
+<a name="api-v1-users-id-roles-get"></a>
+### Get User Roles
+```
+GET /api/v1/users/{id}/roles
+```
+
+
+#### Description
+get roles by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< string > array|
+|**400**||No Content|
+|**500**||No Content|
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
+<a name="api-v1-users-id-roles-role-put"></a>
+### Add Role For User
+```
+PUT /api/v1/users/{id}/roles/{role}
+```
+
+
+#### Description
+add role to user by uri config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**role**  <br>*required*|role|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
 |---|---|
-|**bio**  <br>*optional*|string|
-|**config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**is_default**  <br>*optional*|boolean|
-|**jobs**  <br>*optional*|< [model.Job](#model-job) > array|
-|**name**  <br>*optional*|string|
-|**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
-|**security_group_id**  <br>*optional*|integer|
-|**updated_at**  <br>*optional*|string|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
 
 
-<a name="model-config"></a>
-### model.Config
+#### Consumes
 
-|Name|Schema|
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Users
+
+
+<a name="api-v1-users-id-roles-role-delete"></a>
+### Delete Role For User
+```
+DELETE /api/v1/users/{id}/roles/{role}
+```
+
+
+#### Description
+delete role by uri config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**role**  <br>*required*|role|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
 |---|---|
-|**bio**  <br>*optional*|string|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**name**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
-|**user_id**  <br>*optional*|integer|
-|**value**  <br>*optional*|string|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
 
 
-<a name="model-jsonmap"></a>
-### model.JSONMap
-*Type* : object
+#### Consumes
 
+* `application/json`
 
-<a name="model-job"></a>
-### model.Job
 
-|Name|Schema|
-|---|---|
-|**args**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**bio**  <br>*optional*|string|
-|**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**result**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
-|**status**  <br>*optional*|string|
-|**task_id**  <br>*optional*|string|
-|**type**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
-|**user_id**  <br>*optional*|integer|
+#### Produces
 
+* `application/json`
 
-<a name="model-oauth"></a>
-### model.Oauth
 
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**client_id**  <br>*optional*|string|
-|**client_secret**  <br>*optional*|string|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**name**  <br>*optional*|string|
-|**redirect_url**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
+#### Tags
 
-
-<a name="model-scheduler"></a>
-### model.Scheduler
-
-|Name|Schema|
-|---|---|
-|**created_at**  <br>*optional*|string|
-|**host_name**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**idc**  <br>*optional*|string|
-|**ip**  <br>*optional*|string|
-|**location**  <br>*optional*|string|
-|**net_config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**port**  <br>*optional*|integer|
-|**schedulerClusterID**  <br>*optional*|integer|
-|**status**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
-|**vips**  <br>*optional*|string|
-
-
-<a name="model-schedulercluster"></a>
-### model.SchedulerCluster
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
-|**client_config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**is_default**  <br>*optional*|boolean|
-|**jobs**  <br>*optional*|< [model.Job](#model-job) > array|
-|**name**  <br>*optional*|string|
-|**scopes**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
-|**security_group_id**  <br>*optional*|integer|
-|**updated_at**  <br>*optional*|string|
-
-
-<a name="model-securitygroup"></a>
-### model.SecurityGroup
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**created_at**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**name**  <br>*optional*|string|
-|**security_rules**  <br>*optional*|< [model.SecurityRule](#model-securityrule) > array|
-|**updated_at**  <br>*optional*|string|
-
-
-<a name="model-securityrule"></a>
-### model.SecurityRule
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**created_at**  <br>*optional*|string|
-|**domain**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**name**  <br>*optional*|string|
-|**proxy_domain**  <br>*optional*|string|
-|**security_groups**  <br>*optional*|< [model.SecurityGroup](#model-securitygroup) > array|
-|**updated_at**  <br>*optional*|string|
-
-
-<a name="model-user"></a>
-### model.User
-
-|Name|Schema|
-|---|---|
-|**avatar**  <br>*optional*|string|
-|**bio**  <br>*optional*|string|
-|**created_at**  <br>*optional*|string|
-|**email**  <br>*optional*|string|
-|**id**  <br>*optional*|integer|
-|**location**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
-|**phone**  <br>*optional*|string|
-|**state**  <br>*optional*|string|
-|**updated_at**  <br>*optional*|string|
-
-
-<a name="rbac-permission"></a>
-### rbac.Permission
-
-|Name|Schema|
-|---|---|
-|**action**  <br>*required*|string|
-|**object**  <br>*required*|string|
-
-
-<a name="types-addpermissionforrolerequest"></a>
-### types.AddPermissionForRoleRequest
-
-|Name|Schema|
-|---|---|
-|**action**  <br>*required*|string|
-|**object**  <br>*required*|string|
-
-
-<a name="types-cdnclusterconfig"></a>
-### types.CDNClusterConfig
-
-|Name|Schema|
-|---|---|
-|**load_limit**  <br>*optional*|integer|
-|**net_topology**  <br>*optional*|string|
-
-
-<a name="types-createcdnclusterrequest"></a>
-### types.CreateCDNClusterRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**config**  <br>*required*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
-|**name**  <br>*required*|string|
-
-
-<a name="types-createcdnrequest"></a>
-### types.CreateCDNRequest
-
-|Name|Schema|
-|---|---|
-|**cdn_cluster_id**  <br>*required*|integer|
-|**download_port**  <br>*required*|integer|
-|**host_name**  <br>*required*|string|
-|**idc**  <br>*required*|string|
-|**ip**  <br>*required*|string|
-|**location**  <br>*optional*|string|
-|**port**  <br>*required*|integer|
-
-
-<a name="types-createconfigrequest"></a>
-### types.CreateConfigRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**name**  <br>*required*|string|
-|**user_id**  <br>*required*|integer|
-|**value**  <br>*required*|string|
-
-
-<a name="types-createjobrequest"></a>
-### types.CreateJobRequest
-
-|Name|Schema|
-|---|---|
-|**args**  <br>*optional*|object|
-|**bio**  <br>*optional*|string|
-|**cdn_cluster_ids**  <br>*optional*|< integer > array|
-|**result**  <br>*optional*|object|
-|**scheduler_cluster_ids**  <br>*optional*|< integer > array|
-|**type**  <br>*required*|string|
-|**user_id**  <br>*optional*|integer|
-
-
-<a name="types-createoauthrequest"></a>
-### types.CreateOauthRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**client_id**  <br>*required*|string|
-|**client_secret**  <br>*required*|string|
-|**name**  <br>*required*|string|
-|**redirect_url**  <br>*optional*|string|
-
-
-<a name="types-createrolerequest"></a>
-### types.CreateRoleRequest
-
-|Name|Schema|
-|---|---|
-|**permissions**  <br>*required*|< [rbac.Permission](#rbac-permission) > array|
-|**role**  <br>*required*|string|
-
-
-<a name="types-createschedulerclusterrequest"></a>
-### types.CreateSchedulerClusterRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**cdn_cluster_id**  <br>*optional*|integer|
-|**client_config**  <br>*required*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
-|**config**  <br>*required*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
-|**is_default**  <br>*optional*|boolean|
-|**name**  <br>*required*|string|
-|**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-
-
-<a name="types-createschedulerrequest"></a>
-### types.CreateSchedulerRequest
-
-|Name|Schema|
-|---|---|
-|**host_name**  <br>*required*|string|
-|**idc**  <br>*required*|string|
-|**ip**  <br>*required*|string|
-|**location**  <br>*optional*|string|
-|**net_config**  <br>*optional*|object|
-|**port**  <br>*required*|integer|
-|**scheduler_cluster_id**  <br>*required*|integer|
-|**vips**  <br>*optional*|string|
-
-
-<a name="types-createsecuritygrouprequest"></a>
-### types.CreateSecurityGroupRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**name**  <br>*required*|string|
-
-
-<a name="types-createsecurityrulerequest"></a>
-### types.CreateSecurityRuleRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**domain**  <br>*required*|string|
-|**name**  <br>*required*|string|
-|**proxy_domain**  <br>*optional*|string|
-
-
-<a name="types-createv1preheatrequest"></a>
-### types.CreateV1PreheatRequest
-
-|Name|Schema|
-|---|---|
-|**filter**  <br>*optional*|string|
-|**headers**  <br>*optional*|< string, string > map|
-|**type**  <br>*required*|string|
-|**url**  <br>*required*|string|
-
-
-<a name="types-createv1preheatresponse"></a>
-### types.CreateV1PreheatResponse
-
-|Name|Schema|
-|---|---|
-|**id**  <br>*optional*|string|
-
-
-<a name="types-deletepermissionforrolerequest"></a>
-### types.DeletePermissionForRoleRequest
-
-|Name|Schema|
-|---|---|
-|**action**  <br>*required*|string|
-|**object**  <br>*required*|string|
-
-
-<a name="types-getv1preheatresponse"></a>
-### types.GetV1PreheatResponse
-
-|Name|Schema|
-|---|---|
-|**finishTime**  <br>*optional*|string|
-|**id**  <br>*optional*|string|
-|**startTime**  <br>*optional*|string|
-|**status**  <br>*optional*|string|
-
-
-<a name="types-resetpasswordrequest"></a>
-### types.ResetPasswordRequest
-
-|Name|Schema|
-|---|---|
-|**new_password**  <br>*required*|string|
-|**old_password**  <br>*required*|string|
-
-
-<a name="types-schedulerclusterclientconfig"></a>
-### types.SchedulerClusterClientConfig
-
-|Name|Schema|
-|---|---|
-|**load_limit**  <br>*optional*|integer|
-
-
-<a name="types-schedulerclusterconfig"></a>
-### types.SchedulerClusterConfig
-*Type* : object
-
-
-<a name="types-schedulerclusterscopes"></a>
-### types.SchedulerClusterScopes
-*Type* : object
-
-
-<a name="types-signuprequest"></a>
-### types.SignUpRequest
-
-|Name|Schema|
-|---|---|
-|**avatar**  <br>*optional*|string|
-|**bio**  <br>*optional*|string|
-|**email**  <br>*required*|string|
-|**location**  <br>*optional*|string|
-|**name**  <br>*required*|string|
-|**password**  <br>*required*|string|
-|**phone**  <br>*optional*|string|
-
-
-<a name="types-updatecdnclusterrequest"></a>
-### types.UpdateCDNClusterRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**config**  <br>*optional*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
-|**name**  <br>*optional*|string|
-
-
-<a name="types-updatecdnrequest"></a>
-### types.UpdateCDNRequest
-
-|Name|Schema|
-|---|---|
-|**cdn_cluster_id**  <br>*optional*|integer|
-|**download_port**  <br>*optional*|integer|
-|**idc**  <br>*optional*|string|
-|**ip**  <br>*optional*|string|
-|**location**  <br>*optional*|string|
-|**port**  <br>*optional*|integer|
-
-
-<a name="types-updateconfigrequest"></a>
-### types.UpdateConfigRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
-|**user_id**  <br>*optional*|integer|
-|**value**  <br>*optional*|string|
-
-
-<a name="types-updatejobrequest"></a>
-### types.UpdateJobRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**user_id**  <br>*optional*|integer|
-
-
-<a name="types-updateoauthrequest"></a>
-### types.UpdateOauthRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**client_id**  <br>*optional*|string|
-|**client_secret**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
-|**redirect_url**  <br>*optional*|string|
-
-
-<a name="types-updateschedulerclusterrequest"></a>
-### types.UpdateSchedulerClusterRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**cdn_cluster_id**  <br>*optional*|integer|
-|**client_config**  <br>*optional*|[types.SchedulerClusterClientConfig](#types-schedulerclusterclientconfig)|
-|**config**  <br>*optional*|[types.SchedulerClusterConfig](#types-schedulerclusterconfig)|
-|**is_default**  <br>*optional*|boolean|
-|**name**  <br>*optional*|string|
-|**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-
-
-<a name="types-updateschedulerrequest"></a>
-### types.UpdateSchedulerRequest
-
-|Name|Schema|
-|---|---|
-|**idc**  <br>*optional*|string|
-|**ip**  <br>*optional*|string|
-|**location**  <br>*optional*|string|
-|**net_config**  <br>*optional*|object|
-|**port**  <br>*optional*|integer|
-|**scheduler_cluster_id**  <br>*optional*|integer|
-|**scheduler_id**  <br>*optional*|integer|
-|**vips**  <br>*optional*|string|
-
-
-<a name="types-updatesecuritygrouprequest"></a>
-### types.UpdateSecurityGroupRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
-
-
-<a name="types-updatesecurityrulerequest"></a>
-### types.UpdateSecurityRuleRequest
-
-|Name|Schema|
-|---|---|
-|**bio**  <br>*optional*|string|
-|**domain**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
-|**proxy_domain**  <br>*optional*|string|
-
-
+* Users
 
 
 
