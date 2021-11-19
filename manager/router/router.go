@@ -42,9 +42,7 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-var (
-	GinLogFileName = "gin.log"
-)
+var GinLogFileName = "gin.log"
 
 func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
@@ -146,6 +144,18 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	s.PATCH(":id", h.UpdateScheduler)
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
+
+	// Application
+	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
+	cs.POST("", h.CreateApplication)
+	cs.DELETE(":id", h.DestroyApplication)
+	cs.PATCH(":id", h.UpdateApplication)
+	cs.GET(":id", h.GetApplication)
+	cs.GET("", h.GetApplications)
+	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToApplication)
+	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
+	cs.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToApplication)
+	cs.DELETE(":id/cdn-clusters/:cdn_cluster_id", h.DeleteCDNClusterToApplication)
 
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
