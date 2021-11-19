@@ -2337,6 +2337,268 @@ Add Scheduler to SecurityGroup
 * SecurityGroup
 
 
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-put"></a>
+### Add SecurityRule to SecurityGroup
+```
+PUT /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### Description
+Add SecurityRule to SecurityGroup
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**security_rule_id**  <br>*required*|security rule id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityGroup
+
+
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-delete"></a>
+### Destroy SecurityRule to SecurityGroup
+```
+DELETE /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### Description
+Destroy SecurityRule to SecurityGroup
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**security_rule_id**  <br>*required*|security rule id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityGroup
+
+
+<a name="api-v1-security-rules-post"></a>
+### Create SecurityRule
+```
+POST /api/v1/security-rules
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**SecurityRule**  <br>*required*|SecurityRule|[types.CreateSecurityRuleRequest](#types-createsecurityrulerequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-get"></a>
+### Get SecurityRules
+```
+GET /api/v1/security-rules
+```
+
+
+#### Description
+Get SecurityRules
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.SecurityRule](#model-securityrule) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-get"></a>
+### Get SecurityRule
+```
+GET /api/v1/security-rules/{id}
+```
+
+
+#### Description
+Get SecurityRule by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-patch"></a>
+### Update SecurityRule
+```
+PATCH /api/v1/security-rules/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**SecurityRule**  <br>*required*|SecurityRule|[types.UpdateSecurityRuleRequest](#types-updatesecurityrulerequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
 <a name="api-v1-securitygroups-id-delete"></a>
 ### Destroy SecurityGroup
 ```
@@ -2378,6 +2640,49 @@ Destroy by id
 #### Tags
 
 * SecurityGroup
+
+
+<a name="api-v1-securityrules-id-delete"></a>
+### Destroy SecurityRule
+```
+DELETE /api/v1/securityRules/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
 
 
 <a name="api-v1-user-signin-name-get"></a>
@@ -2889,10 +3194,24 @@ Get User by id
 |---|---|
 |**bio**  <br>*optional*|string|
 |**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
+|**name**  <br>*optional*|string|
+|**security_rules**  <br>*optional*|< [model.SecurityRule](#model-securityrule) > array|
+|**updated_at**  <br>*optional*|string|
+
+
+<a name="model-securityrule"></a>
+### model.SecurityRule
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
 |**domain**  <br>*optional*|string|
 |**id**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
 |**proxy_domain**  <br>*optional*|string|
+|**security_groups**  <br>*optional*|< [model.SecurityGroup](#model-securitygroup) > array|
 |**updated_at**  <br>*optional*|string|
 
 
@@ -2948,7 +3267,6 @@ Get User by id
 |**bio**  <br>*optional*|string|
 |**config**  <br>*required*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*required*|string|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-createcdnrequest"></a>
@@ -3023,7 +3341,6 @@ Get User by id
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*required*|string|
 |**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-createschedulerrequest"></a>
@@ -3043,6 +3360,15 @@ Get User by id
 
 <a name="types-createsecuritygrouprequest"></a>
 ### types.CreateSecurityGroupRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**name**  <br>*required*|string|
+
+
+<a name="types-createsecurityrulerequest"></a>
+### types.CreateSecurityRuleRequest
 
 |Name|Schema|
 |---|---|
@@ -3140,7 +3466,6 @@ Get User by id
 |**bio**  <br>*optional*|string|
 |**config**  <br>*optional*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
 |**name**  <br>*optional*|string|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-updatecdnrequest"></a>
@@ -3200,7 +3525,6 @@ Get User by id
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
 |**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-updateschedulerrequest"></a>
@@ -3220,6 +3544,15 @@ Get User by id
 
 <a name="types-updatesecuritygrouprequest"></a>
 ### types.UpdateSecurityGroupRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**name**  <br>*optional*|string|
+
+
+<a name="types-updatesecurityrulerequest"></a>
+### types.UpdateSecurityRuleRequest
 
 |Name|Schema|
 |---|---|

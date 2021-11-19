@@ -62,51 +62,6 @@ func (s *rest) CreateSchedulerCluster(ctx context.Context, json types.CreateSche
 	return &schedulerCluster, nil
 }
 
-func (s *rest) CreateSchedulerClusterWithSecurityGroupDomain(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
-		return s.CreateSchedulerCluster(ctx, json)
-	}
-
-	config, err := structutils.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	clientConfig, err := structutils.StructToMap(json.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	scopes, err := structutils.StructToMap(json.Scopes)
-	if err != nil {
-		return nil, err
-	}
-
-	schedulerCluster := model.SchedulerCluster{
-		Name:         json.Name,
-		BIO:          json.BIO,
-		Config:       config,
-		ClientConfig: clientConfig,
-		Scopes:       scopes,
-		IsDefault:    json.IsDefault,
-	}
-
-	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
-		return nil, err
-	}
-
-	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
-			return nil, err
-		}
-	}
-
-	return &schedulerCluster, nil
-}
-
 func (s *rest) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Error; err != nil {
@@ -145,51 +100,6 @@ func (s *rest) UpdateSchedulerCluster(ctx context.Context, id uint, json types.U
 		Scopes:       scopes,
 		IsDefault:    json.IsDefault,
 	}).Error; err != nil {
-		return nil, err
-	}
-
-	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
-			return nil, err
-		}
-	}
-
-	return &schedulerCluster, nil
-}
-
-func (s *rest) UpdateSchedulerClusterWithSecurityGroupDomain(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
-		return s.UpdateSchedulerCluster(ctx, id, json)
-	}
-
-	config, err := structutils.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	clientConfig, err := structutils.StructToMap(json.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	scopes, err := structutils.StructToMap(json.Scopes)
-	if err != nil {
-		return nil, err
-	}
-
-	schedulerCluster := model.SchedulerCluster{
-		Name:         json.Name,
-		BIO:          json.BIO,
-		Config:       config,
-		ClientConfig: clientConfig,
-		Scopes:       scopes,
-		IsDefault:    json.IsDefault,
-	}
-
-	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return nil, err
 	}
 

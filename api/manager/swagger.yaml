@@ -186,6 +186,23 @@ definitions:
         type: string
       created_at:
         type: string
+      id:
+        type: integer
+      name:
+        type: string
+      security_rules:
+        items:
+          $ref: '#/definitions/model.SecurityRule'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  model.SecurityRule:
+    properties:
+      bio:
+        type: string
+      created_at:
+        type: string
       domain:
         type: string
       id:
@@ -194,6 +211,10 @@ definitions:
         type: string
       proxy_domain:
         type: string
+      security_groups:
+        items:
+          $ref: '#/definitions/model.SecurityGroup'
+        type: array
       updated_at:
         type: string
     type: object
@@ -254,8 +275,6 @@ definitions:
       config:
         $ref: '#/definitions/types.CDNClusterConfig'
       name:
-        type: string
-      security_group_domain:
         type: string
     required:
     - config
@@ -370,8 +389,6 @@ definitions:
         type: string
       scopes:
         $ref: '#/definitions/types.SchedulerClusterScopes'
-      security_group_domain:
-        type: string
     required:
     - client_config
     - config
@@ -404,6 +421,15 @@ definitions:
     - scheduler_cluster_id
     type: object
   types.CreateSecurityGroupRequest:
+    properties:
+      bio:
+        type: string
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  types.CreateSecurityRuleRequest:
     properties:
       bio:
         type: string
@@ -507,8 +533,6 @@ definitions:
         $ref: '#/definitions/types.CDNClusterConfig'
       name:
         type: string
-      security_group_domain:
-        type: string
     type: object
   types.UpdateCDNRequest:
     properties:
@@ -572,8 +596,6 @@ definitions:
         type: string
       scopes:
         $ref: '#/definitions/types.SchedulerClusterScopes'
-      security_group_domain:
-        type: string
     type: object
   types.UpdateSchedulerRequest:
     properties:
@@ -596,6 +618,13 @@ definitions:
         type: string
     type: object
   types.UpdateSecurityGroupRequest:
+    properties:
+      bio:
+        type: string
+      name:
+        type: string
+    type: object
+  types.UpdateSecurityRuleRequest:
     properties:
       bio:
         type: string
@@ -2161,6 +2190,189 @@ paths:
       summary: Add Scheduler to SecurityGroup
       tags:
       - SecurityGroup
+  /security-groups/{id}/security-rules/{security_rule_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy SecurityRule to SecurityGroup
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: security rule id
+        in: path
+        name: security_rule_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SecurityRule to SecurityGroup
+      tags:
+      - SecurityGroup
+    put:
+      consumes:
+      - application/json
+      description: Add SecurityRule to SecurityGroup
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: security rule id
+        in: path
+        name: security_rule_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add SecurityRule to SecurityGroup
+      tags:
+      - SecurityGroup
+  /security-rules:
+    get:
+      consumes:
+      - application/json
+      description: Get SecurityRules
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SecurityRule'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SecurityRules
+      tags:
+      - SecurityRule
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: SecurityRule
+        in: body
+        name: SecurityRule
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSecurityRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityRule'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create SecurityRule
+      tags:
+      - SecurityRule
+  /security-rules/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get SecurityRule by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityRule'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SecurityRule
+      tags:
+      - SecurityRule
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SecurityRule
+        in: body
+        name: SecurityRule
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSecurityRuleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SecurityRule'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update SecurityRule
+      tags:
+      - SecurityRule
   /securityGroups/{id}:
     delete:
       consumes:
@@ -2186,6 +2398,31 @@ paths:
       summary: Destroy SecurityGroup
       tags:
       - SecurityGroup
+  /securityRules/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SecurityRule
+      tags:
+      - SecurityRule
   /user/signin/{name}:
     get:
       consumes:

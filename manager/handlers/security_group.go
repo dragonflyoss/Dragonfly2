@@ -225,3 +225,59 @@ func (h *Handlers) AddCDNClusterToSecurityGroup(ctx *gin.Context) {
 
 	ctx.Status(http.StatusOK)
 }
+
+// @Summary Add SecurityRule to SecurityGroup
+// @Description Add SecurityRule to SecurityGroup
+// @Tags SecurityGroup
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param security_rule_id path string true "security rule id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /security-groups/{id}/security-rules/{security_rule_id} [put]
+func (h *Handlers) AddSecurityRuleToSecurityGroup(ctx *gin.Context) {
+	var params types.AddSecurityRuleToSecurityGroupParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddSecurityRuleToSecurityGroup(ctx.Request.Context(), params.ID, params.SecurityRuleID)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
+// @Summary Destroy SecurityRule to SecurityGroup
+// @Description Destroy SecurityRule to SecurityGroup
+// @Tags SecurityGroup
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param security_rule_id path string true "security rule id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /security-groups/{id}/security-rules/{security_rule_id} [delete]
+func (h *Handlers) DestroySecurityRuleToSecurityGroup(ctx *gin.Context) {
+	var params types.AddSecurityRuleToSecurityGroupParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.DestroySecurityRuleToSecurityGroup(ctx.Request.Context(), params.ID, params.SecurityRuleID)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
