@@ -366,7 +366,7 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 
 func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	var pbListSchedulersResponse manager.ListSchedulersResponse
-	cacheKey := cache.MakeSchedulersCacheKey(req.HostName)
+	cacheKey := cache.MakeSchedulersCacheKey(req.HostName, req.Ip)
 
 	// Cache Hit
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
@@ -377,18 +377,14 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
-	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "status = ?", "active").Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// Search optimal scheduler cluster
 	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req)
 	if !ok {
-		if err := s.db.WithContext(ctx).Find(&schedulerCluster, &model.SchedulerCluster{
-			IsDefault: true,
-		}).Error; err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
+		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
 
 	schedulers := []model.Scheduler{}

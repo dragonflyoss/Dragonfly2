@@ -60,7 +60,7 @@ type Server struct {
 	managerClient managerclient.Client
 
 	// Dynamic config
-	dynConfig config.DynconfigInterface
+	dynconfig config.DynconfigInterface
 
 	// Async job
 	job job.Job
@@ -99,7 +99,6 @@ func New(cfg *config.Config) (*Server, error) {
 	if s.managerClient != nil && cfg.DynConfig.Type == dynconfig.ManagerSourceType {
 		options = append(options,
 			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg.Manager.SchedulerClusterID)),
-			dynconfig.WithCachePath(config.DefaultDynconfigCachePath),
 			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 		)
 	}
@@ -107,7 +106,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.dynConfig = dynConfig
+	s.dynconfig = dynConfig
 
 	// Initialize GC
 	s.gc = gc.New(gc.WithLogger(logger.GcLogger))
@@ -153,7 +152,7 @@ func New(cfg *config.Config) (*Server, error) {
 func (s *Server) Serve() error {
 	// Serve dynConfig
 	go func() {
-		if err := s.dynConfig.Serve(); err != nil {
+		if err := s.dynconfig.Serve(); err != nil {
 			logger.Fatalf("dynconfig start failed %v", err)
 		}
 		logger.Info("dynconfig start successfully")
@@ -223,7 +222,9 @@ func (s *Server) Serve() error {
 
 func (s *Server) Stop() {
 	// Stop dynamic server
-	s.dynConfig.Stop()
+	if err := s.dynconfig.Stop(); err != nil {
+		logger.Errorf("dynconfig client closed failed %s", err)
+	}
 	logger.Info("dynconfig client closed")
 
 	// Stop manager client

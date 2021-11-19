@@ -60,7 +60,7 @@ func (d *dynconfigManager) get() (interface{}, error) {
 	// Cache has expired
 	// Reload and ignore client request error
 	if err := d.load(); err != nil {
-		logger.Warn("reload failed", err)
+		logger.Warn("reload failed ", err)
 	}
 
 	dynconfig, ok := d.cache.Get(defaultCacheKey)
