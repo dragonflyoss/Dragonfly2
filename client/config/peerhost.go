@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/url"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,6 +36,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -93,11 +95,11 @@ func (p *DaemonOption) Load(path string) error {
 
 func (p *DaemonOption) Convert() error {
 	// AdvertiseIP
-	ip := net.ParseIP(p.Host.AdvertiseIP)
+	ip := net.ParseIP(string(p.Host.AdvertiseIP))
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.IPv4
+		p.Host.AdvertiseIP = Attribute(iputils.IPv4)
 	} else {
-		p.Host.AdvertiseIP = ip.String()
+		p.Host.AdvertiseIP = Attribute(ip.String())
 	}
 
 	// ScheduleTimeout should not great then AliveTime
@@ -147,20 +149,20 @@ type ManagerOption struct {
 }
 
 type HostOption struct {
-	// SecurityDomain is the security domain
-	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
-	// IDC for scheduler
-	IDC string `mapstructure:"idc" yaml:"idc"`
-	// Peerhost net topology for scheduler
-	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
+	// SecurityDomain is the security domain
+	SecurityDomain Attribute `mapstructure:"securityDomain" yaml:"securityDomain"`
+	// Location for schedule
+	Location Attribute `mapstructure:"location" yaml:"location"`
+	// IDC for schedule
+	IDC Attribute `mapstructure:"idc" yaml:"idc"`
+	// The NetTopology for schedule
+	NetTopology Attribute `mapstructure:"netTopology" yaml:"netTopology"`
 	// The listen ip for all tcp services of daemon
-	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
+	ListenIP Attribute `mapstructure:"listenIP" yaml:"listenIP"`
 	// The ip report to scheduler, normal same with listen ip
-	AdvertiseIP string `mapstructure:"advertiseIP" yaml:"advertiseIP"`
+	AdvertiseIP Attribute `mapstructure:"advertiseIP" yaml:"advertiseIP"`
 }
 
 type DownloadOption struct {
@@ -730,4 +732,135 @@ type WhiteList struct {
 type BasicAuth struct {
 	Username string `json:"username" yaml:"username"`
 	Password string `json:"password" yaml:"password"`
+}
+
+// Attribute allows get value from command or just a raw string
+type Attribute string
+
+func (t *Attribute) UnmarshalJSON(b []byte) error {
+	var v interface{}
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	return t.unmarshal(v)
+}
+
+func (t *Attribute) UnmarshalYAML(node *yaml.Node) error {
+	var v interface{}
+	switch node.Kind {
+	case yaml.MappingNode:
+		var m = make(map[string]interface{})
+		for i := 0; i < len(node.Content); i += 2 {
+			var (
+				key   string
+				value interface{}
+			)
+			if err := node.Content[i].Decode(&key); err != nil {
+				return err
+			}
+			if err := node.Content[i+1].Decode(&value); err != nil {
+				return err
+			}
+			m[key] = value
+		}
+		v = m
+	case yaml.ScalarNode:
+		var i string
+		if err := node.Decode(&i); err != nil {
+			return err
+		}
+		v = i
+	default:
+		return errors.New("invalid format")
+	}
+	return t.unmarshal(v)
+}
+
+func (t *Attribute) unmarshal(v interface{}) error {
+	switch value := v.(type) {
+	case string:
+		*t = Attribute(value)
+		return nil
+	case map[string]interface{}:
+		var (
+			command string
+			regx    string
+			retry   = 1
+			defaulz = "unknown"
+		)
+		if s, ok := value["command"]; ok {
+			switch cmd := s.(type) {
+			case string:
+				command = cmd
+			default:
+				return errors.New("invalid command format")
+			}
+		} else {
+			return errors.New("empty command")
+		}
+		if e, ok := value["regx"]; ok {
+			switch reg := e.(type) {
+			case string:
+				regx = reg
+			default:
+				return errors.New("invalid regx format")
+			}
+		}
+		if e, ok := value["retry"]; ok {
+			switch r := e.(type) {
+			case int:
+				retry = r
+			case int64:
+				retry = int(r)
+			default:
+				return errors.New("invalid retry format")
+			}
+			if retry <= 0 {
+				retry = 1
+			}
+		}
+		if e, ok := value["default"]; ok {
+			switch r := e.(type) {
+			case string:
+				defaulz = r
+			default:
+				return errors.New("invalid default format")
+			}
+		}
+		var (
+			result []byte
+			err    error
+			r      *regexp.Regexp
+		)
+
+		if regx != "" {
+			r, err = regexp.Compile(regx)
+			if err != nil {
+				err = fmt.Errorf("complie regx %s error: %s", regx, err)
+				logger.Errorf(err.Error())
+				return err
+			}
+		}
+		for i := 0; i <= retry; i++ {
+			result, err = exec.Command("/bin/sh", "-c", command).CombinedOutput()
+			logger.Debugf("exec command %q output: %q", command, result)
+			if err != nil {
+				logger.Errorf("exec command error: %s", err)
+				*t = Attribute(defaulz)
+				continue
+			}
+			// no regx or regx match, break
+			if r == nil || r.MatchString(string(result)) {
+				*t = Attribute(strings.TrimSpace(string(result)))
+				break
+			}
+			err = fmt.Errorf("exec command output %s not match regx %s", string(result), regx)
+			logger.Errorf(err.Error())
+			*t = Attribute(defaulz)
+			continue
+		}
+		return err
+	default:
+		return errors.New("invalid attribute")
+	}
 }

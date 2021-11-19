@@ -49,6 +49,15 @@ jaeger: ""
 
 # 用于注册到调度器的 daemon 信息
 host:
+  # host 中的所有属性均支持两种格式
+  # idc: idc0 # 静态信息
+  # 或者动态执行命令获取
+  # 当元数据中心不启用的时候，使用这种方式获取 host 信息
+  idc:
+    command: echo idc1
+    regx: idc[\d]+
+    retry: 1
+    default: idc0
   # 服务监听地址
   listenIP: 0.0.0.0
   # 访问 IP 地址
@@ -56,8 +65,6 @@ host:
   advertiseIP: 0.0.0.0
   # 地理信息, 通过 "|" 符号分隔
   location: ""
-  # 机房信息
-  idc: ""
   # 安全域信息，不同安全域之间网络隔离
   securityDomain: ""
   # 网络拓扑结构，通过 "|" 符号分隔

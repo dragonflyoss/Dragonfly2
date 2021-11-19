@@ -171,7 +171,7 @@ type managerClient struct {
 	hostOption HostOption
 }
 
-// New the manager client used by dynconfig
+// NewManagerClient creates a manager client used by dynconfig
 func NewManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
 	return &managerClient{
 		Client:     client,
@@ -183,12 +183,12 @@ func (mc *managerClient) Get() (interface{}, error) {
 	schedulers, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_CLIENT_SOURCE,
 		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.ListenIP,
+		Ip:         string(mc.hostOption.ListenIP),
 		HostInfo: map[string]string{
-			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
-			searcher.ConditionIDC:            mc.hostOption.IDC,
-			searcher.ConditionNetTopology:    mc.hostOption.NetTopology,
-			searcher.ConditionLocation:       mc.hostOption.Location,
+			searcher.ConditionSecurityDomain: string(mc.hostOption.SecurityDomain),
+			searcher.ConditionIDC:            string(mc.hostOption.IDC),
+			searcher.ConditionNetTopology:    string(mc.hostOption.NetTopology),
+			searcher.ConditionLocation:       string(mc.hostOption.Location),
 		},
 	})
 	if err != nil {

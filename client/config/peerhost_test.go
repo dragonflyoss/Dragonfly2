@@ -368,3 +368,95 @@ func TestPeerHostOption_Load(t *testing.T) {
 
 	assert.EqualValues(peerHostOption, peerHostOptionYAML)
 }
+
+func Test_AttributeGetter(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		name    string
+		config  string
+		value   string
+		isError bool
+	}{
+		{
+			name: "string attribute ok",
+			config: `
+attr: "a1"
+`,
+			value: "a1",
+		},
+		{
+			name: "command attribute ok - 1",
+			config: `
+attr:
+  command: |-
+    echo a2
+  regx: a[\d]+
+`,
+			value: "a2",
+		},
+		{
+			name: "command attribute ok - 2",
+			config: `
+attr:
+  command: |-
+    attr=a2
+    if [ "$attr" = "" ]; then
+      exit 1
+    fi
+    printf $attr
+  regx: a[\d]+
+`,
+			value: "a2",
+		},
+		{
+			name: "command attribute ok - 3",
+			config: `
+attr:
+  command: |-
+    echo a2 | grep 3
+  regx: a[\d]+
+  retry: 3
+  default: "3"
+`,
+			value:   "3",
+			isError: true,
+		},
+		{
+			name: "command attribute exec error",
+			config: `
+attr:
+  command: |-
+    exit 1
+  regx: a[\d]+
+  retry: 1
+`,
+			isError: true,
+		},
+		{
+			name: "command attribute regx error",
+			config: `
+attr:
+  command: |-
+    echo aa
+  regx: a[\d]+
+  retry: 1
+`,
+			isError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			data := struct {
+				Attr Attribute `yaml:"attr"`
+			}{}
+			err := yaml.Unmarshal([]byte(tc.config), &data)
+			if tc.isError {
+				assert.NotNil(err)
+			} else {
+				assert.Equal(string(data.Attr), tc.value)
+				assert.Nil(err)
+			}
+		})
+	}
+}

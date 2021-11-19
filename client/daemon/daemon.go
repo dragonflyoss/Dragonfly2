@@ -92,14 +92,14 @@ type clientDaemon struct {
 func New(opt *config.DaemonOption) (Daemon, error) {
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
-		Ip:             opt.Host.AdvertiseIP,
+		Ip:             string(opt.Host.AdvertiseIP),
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
 		HostName:       opt.Host.Hostname,
-		SecurityDomain: opt.Host.SecurityDomain,
-		Location:       opt.Host.Location,
-		Idc:            opt.Host.IDC,
-		NetTopology:    opt.Host.NetTopology,
+		SecurityDomain: string(opt.Host.SecurityDomain),
+		Location:       string(opt.Host.Location),
+		Idc:            string(opt.Host.IDC),
+		NetTopology:    string(opt.Host.NetTopology),
 	}
 
 	var addrs []dfnet.NetAddr

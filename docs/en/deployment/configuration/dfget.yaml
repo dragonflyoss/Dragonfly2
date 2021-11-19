@@ -41,7 +41,7 @@ scheduler:
     - type: tcp
       addr: 127.0.0.1:8002
 
-# when enable, pprof will be enabled
+# when enabled, pprof will be enabled
 verbose: true
 
 # telemetry config
@@ -50,6 +50,19 @@ jaeger: ""
 
 # current host info used for scheduler
 host:
+  # all attribute of host support two format
+  # idc: idc0 # static string
+  # or dynamic string from a shell command
+  # it's useful when cmdb is not enabled
+  idc:
+    command: |-
+      idc=$(echo idc1)
+      if [ "$?" -ne 0 ]; then
+        exit 1
+      fi
+    regx: idc[\d]+
+    retry: 3
+    default: idc0
   # tcp service listen address
   # port should be set by other options
   listenIP: 0.0.0.0
@@ -58,8 +71,6 @@ host:
   advertiseIP: 0.0.0.0
   # geographical location, separated by "|" characters
   location: ""
-  # idc deployed by daemon
-  idc: ""
   # security domain deployed by daemon, network isolation between different security domains
   securityDomain: ""
   # network topology, separated by "|" characters
