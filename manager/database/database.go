@@ -117,6 +117,7 @@ func migrate(db *gorm.DB) error {
 		&model.User{},
 		&model.Oauth{},
 		&model.Config{},
+		&model.Application{},
 	)
 }
 

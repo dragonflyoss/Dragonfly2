@@ -116,6 +116,16 @@ type REST interface {
 
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)
+
+	CreateApplication(context.Context, types.CreateApplicationRequest) (*model.Application, error)
+	DestroyApplication(context.Context, uint) error
+	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*model.Application, error)
+	GetApplication(context.Context, uint) (*model.Application, error)
+	GetApplications(context.Context, types.GetApplicationsQuery) (*[]model.Application, int64, error)
+	AddSchedulerClusterToApplication(context.Context, uint, uint) error
+	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
+	AddCDNClusterToApplication(context.Context, uint, uint) error
+	DeleteCDNClusterToApplication(context.Context, uint, uint) error
 }
 
 type rest struct {
