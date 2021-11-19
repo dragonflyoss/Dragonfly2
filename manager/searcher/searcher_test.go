@@ -64,7 +64,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -90,7 +90,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -99,7 +99,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -122,7 +122,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -131,7 +131,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -154,7 +154,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -163,7 +163,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -187,7 +187,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -196,7 +196,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -229,7 +229,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -238,7 +238,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -271,7 +271,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -280,7 +280,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -314,7 +314,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -323,7 +323,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
