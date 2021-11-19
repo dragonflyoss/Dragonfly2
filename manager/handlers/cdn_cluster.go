@@ -44,17 +44,6 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 		return
 	}
 
-	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.CreateCDNClusterWithSecurityGroupDomain(ctx.Request.Context(), json)
-		if err != nil {
-			ctx.Error(err) // nolint: errcheck
-			return
-		}
-
-		ctx.JSON(http.StatusOK, cdn)
-		return
-	}
-
 	cdnCluster, err := h.service.CreateCDNCluster(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
@@ -112,17 +101,6 @@ func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	var json types.UpdateCDNClusterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	if json.SecurityGroupDomain != "" {
-		cdn, err := h.service.UpdateCDNClusterWithSecurityGroupDomain(ctx.Request.Context(), params.ID, json)
-		if err != nil {
-			ctx.Error(err) // nolint: errcheck
-			return
-		}
-
-		ctx.JSON(http.StatusOK, cdn)
 		return
 	}
 

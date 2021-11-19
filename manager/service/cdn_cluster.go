@@ -56,33 +56,6 @@ func (s *rest) DestroyCDNCluster(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) CreateCDNClusterWithSecurityGroupDomain(ctx context.Context, json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
-		return s.CreateCDNCluster(ctx, json)
-	}
-
-	config, err := structutils.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	cdnCluster := model.CDNCluster{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: config,
-	}
-
-	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
-		return nil, err
-
-	}
-
-	return &cdnCluster, nil
-}
-
 func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
@@ -95,32 +68,6 @@ func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateC
 		BIO:    json.BIO,
 		Config: config,
 	}).Error; err != nil {
-		return nil, err
-	}
-
-	return &cdnCluster, nil
-}
-
-func (s *rest) UpdateCDNClusterWithSecurityGroupDomain(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
-	securityGroup := model.SecurityGroup{
-		Domain: json.SecurityGroupDomain,
-	}
-	if err := s.db.WithContext(ctx).First(&securityGroup).Error; err != nil {
-		return s.UpdateCDNCluster(ctx, id, json)
-	}
-
-	config, err := structutils.StructToMap(json.Config)
-	if err != nil {
-		return nil, err
-	}
-
-	cdnCluster := model.CDNCluster{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: config,
-	}
-
-	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
 		return nil, err
 	}
 

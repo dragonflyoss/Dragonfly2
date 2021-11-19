@@ -55,7 +55,17 @@ func TestSchedulerCluster(t *testing.T) {
 				{
 					Name: "foo",
 					SecurityGroup: model.SecurityGroup{
-						Domain: "domain-1",
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "domain-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
 					},
 				},
 				{
@@ -77,9 +87,21 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]interface{}{
 						"location": []string{"location-1"},
 					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
+					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{"location": "location-1"},
@@ -97,12 +119,56 @@ func TestSchedulerCluster(t *testing.T) {
 					Scopes: map[string]interface{}{
 						"idc": []string{"idc-1"},
 					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
+					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{"idc": "idc-1"},
+			expect: func(t *testing.T, data model.SchedulerCluster, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(data.Name, "foo")
+				assert.Equal(ok, true)
+			},
+		},
+		{
+			name: "match according to net topology condition",
+			schedulerClusters: []model.SchedulerCluster{
+				{
+					Name: "foo",
+					Scopes: map[string]interface{}{
+						"net_topology": []string{"net-topology-1"},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
+					},
+				},
+				{
+					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
+				},
+			},
+			conditions: map[string]string{"net_topology": "net-topology-1"},
 			expect: func(t *testing.T, data model.SchedulerCluster, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(data.Name, "foo")
@@ -118,9 +184,21 @@ func TestSchedulerCluster(t *testing.T) {
 						"location": []string{"location-1"},
 						"idc":      []string{"idc-1"},
 					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
+					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{
@@ -142,11 +220,27 @@ func TestSchedulerCluster(t *testing.T) {
 						"location": []string{"location-1"},
 					},
 					SecurityGroup: model.SecurityGroup{
-						Domain: "domain-1",
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "domain-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
 					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{
@@ -168,11 +262,27 @@ func TestSchedulerCluster(t *testing.T) {
 						"idc": []string{"idc-1"},
 					},
 					SecurityGroup: model.SecurityGroup{
-						Domain: "domain-1",
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "domain-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
 					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{
@@ -195,11 +305,27 @@ func TestSchedulerCluster(t *testing.T) {
 						"location": []string{"location-1"},
 					},
 					SecurityGroup: model.SecurityGroup{
-						Domain: "domain-1",
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "domain-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							Status:   "active",
+						},
 					},
 				},
 				{
 					Name: "bar",
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							Status:   "active",
+						},
+					},
 				},
 			},
 			conditions: map[string]string{
@@ -220,130 +346,6 @@ func TestSchedulerCluster(t *testing.T) {
 			searcher := New()
 			clusters, ok := searcher.FindSchedulerCluster(tc.schedulerClusters, tc.conditions)
 			tc.expect(t, clusters, ok)
-		})
-	}
-}
-
-func TestCalculateSchedulerClusterMean(t *testing.T) {
-	tests := []struct {
-		name       string
-		conditions map[string]string
-		rawScopes  map[string]interface{}
-		expect     func(t *testing.T, mean float64)
-	}{
-		{
-			name:       "conditions and rawScopes is empty",
-			conditions: map[string]string{},
-			rawScopes:  map[string]interface{}{},
-			expect: func(t *testing.T, mean float64) {
-				assert := assert.New(t)
-				assert.Equal(mean, float64(0))
-			},
-		},
-		{
-			name: "missed matches",
-			conditions: map[string]string{
-				"location": "location-1",
-			},
-			rawScopes: map[string]interface{}{
-				"idc": []string{"idc-1"},
-			},
-			expect: func(t *testing.T, mean float64) {
-				assert := assert.New(t)
-				assert.Equal(mean, float64(0))
-			},
-		},
-		{
-			name: "match according to location",
-			conditions: map[string]string{
-				"location": "location-1",
-			},
-			rawScopes: map[string]interface{}{
-				"location": []string{"location-1"},
-			},
-			expect: func(t *testing.T, mean float64) {
-				assert := assert.New(t)
-				assert.Equal(mean, float64(conditionLocationWeight))
-			},
-		},
-		{
-			name: "match according to idc",
-			conditions: map[string]string{
-				"idc": "idc-1",
-			},
-			rawScopes: map[string]interface{}{
-				"idc": []string{"idc-1"},
-			},
-			expect: func(t *testing.T, mean float64) {
-				assert := assert.New(t)
-				assert.Equal(mean, float64(conditionIDCWeight))
-			},
-		},
-		{
-			name: "match according to location and idc",
-			conditions: map[string]string{
-				"location": "location-1",
-				"idc":      "idc-1",
-			},
-			rawScopes: map[string]interface{}{
-				"location": []string{"location-1"},
-				"idc":      []string{"idc-1"},
-			},
-			expect: func(t *testing.T, mean float64) {
-				assert := assert.New(t)
-				assert.Equal(mean, float64(conditionLocationWeight+conditionIDCWeight))
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mean := calculateSchedulerClusterMean(tc.conditions, tc.rawScopes)
-			tc.expect(t, mean)
-		})
-	}
-}
-
-func TestCalculateConditionScore(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  string
-		scope  []string
-		expect func(t *testing.T, score float64)
-	}{
-		{
-			name:  "value is empty",
-			value: "",
-			scope: []string{"foo"},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0))
-			},
-		},
-		{
-			name:  "scope is empty",
-			value: "foo",
-			scope: []string{},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0))
-			},
-		},
-		{
-			name:  "match according to value",
-			value: "foo",
-			scope: []string{"foo"},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(1))
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			score := calculateConditionScore(tc.value, tc.scope)
-			tc.expect(t, score)
 		})
 	}
 }

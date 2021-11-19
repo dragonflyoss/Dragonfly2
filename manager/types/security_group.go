@@ -30,23 +30,23 @@ type AddCDNClusterToSecurityGroupParams struct {
 	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
 }
 
+type AddSecurityRuleToSecurityGroupParams struct {
+	ID             uint `uri:"id" binding:"required"`
+	SecurityRuleID uint `uri:"security_rule_id" binding:"required"`
+}
+
 type CreateSecurityGroupRequest struct {
-	Name        string `json:"name" binding:"required"`
-	BIO         string `json:"bio" binding:"omitempty"`
-	Domain      string `json:"domain" binding:"required"`
-	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
+	Name string `json:"name" binding:"required"`
+	BIO  string `json:"bio" binding:"omitempty"`
 }
 
 type UpdateSecurityGroupRequest struct {
-	Name        string `json:"name" binding:"omitempty"`
-	BIO         string `json:"bio" binding:"omitempty"`
-	Domain      string `json:"domain" binding:"omitempty"`
-	ProxyDomain string `json:"proxy_domain" binding:"omitempty"`
+	Name string `json:"name" binding:"omitempty"`
+	BIO  string `json:"bio" binding:"omitempty"`
 }
 
 type GetSecurityGroupsQuery struct {
+	Name    string `form:"name" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
-	Name    string `form:"name" binding:"omitempty"`
-	Domain  string `form:"domain" binding:"omitempty"`
 }

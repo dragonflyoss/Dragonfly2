@@ -60,10 +60,8 @@ type REST interface {
 	GetOauths(context.Context, types.GetOauthsQuery) (*[]model.Oauth, int64, error)
 
 	CreateCDNCluster(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
-	CreateCDNClusterWithSecurityGroupDomain(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(context.Context, uint) error
 	UpdateCDNCluster(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
-	UpdateCDNClusterWithSecurityGroupDomain(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
 	GetCDNCluster(context.Context, uint) (*model.CDNCluster, error)
 	GetCDNClusters(context.Context, types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error)
 	AddCDNToCDNCluster(context.Context, uint, uint) error
@@ -76,10 +74,8 @@ type REST interface {
 	GetCDNs(context.Context, types.GetCDNsQuery) (*[]model.CDN, int64, error)
 
 	CreateSchedulerCluster(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
-	CreateSchedulerClusterWithSecurityGroupDomain(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	DestroySchedulerCluster(context.Context, uint) error
 	UpdateSchedulerCluster(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
-	UpdateSchedulerClusterWithSecurityGroupDomain(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	GetSchedulerCluster(context.Context, uint) (*model.SchedulerCluster, error)
 	GetSchedulerClusters(context.Context, types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error)
 	AddSchedulerToSchedulerCluster(context.Context, uint, uint) error
@@ -90,6 +86,12 @@ type REST interface {
 	GetScheduler(context.Context, uint) (*model.Scheduler, error)
 	GetSchedulers(context.Context, types.GetSchedulersQuery) (*[]model.Scheduler, int64, error)
 
+	CreateSecurityRule(context.Context, types.CreateSecurityRuleRequest) (*model.SecurityRule, error)
+	DestroySecurityRule(context.Context, uint) error
+	UpdateSecurityRule(context.Context, uint, types.UpdateSecurityRuleRequest) (*model.SecurityRule, error)
+	GetSecurityRule(context.Context, uint) (*model.SecurityRule, error)
+	GetSecurityRules(context.Context, types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error)
+
 	CreateSecurityGroup(context.Context, types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(context.Context, uint) error
 	UpdateSecurityGroup(context.Context, uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
@@ -97,6 +99,8 @@ type REST interface {
 	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error)
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
+	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
+	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
 
 	CreateConfig(context.Context, types.CreateConfigRequest) (*model.Config, error)
 	DestroyConfig(context.Context, uint) error
