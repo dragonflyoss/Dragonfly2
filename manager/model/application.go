@@ -19,11 +19,12 @@ package model
 type Application struct {
 	Model
 	Name              string             `gorm:"column:name;type:varchar(256);index:uk_application_name,unique;not null;comment:name" json:"name"`
-	DownloadRateLimit string             `gorm:"column:download_rate_limit;type:varchar(1024);comment:download_rate_limit" json:"download_rate_limit"`
+	DownloadRateLimit uint               `gorm:"column:download_rate_limit;comment:download rate limit" json:"download_rate_limit"`
 	URL               string             `gorm:"column:url;not null;comment:url" json:"url"`
 	State             string             `gorm:"column:state;type:varchar(256);default:'enable';comment:state" json:"state"`
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	UserID            uint               `gorm:"comment:user id" json:"user_id"`
+	User              User               `json:"-"`
 	SchedulerClusters []SchedulerCluster `json:"-"`
 	CDNClusters       []CDNCluster       `json:"-"`
 }

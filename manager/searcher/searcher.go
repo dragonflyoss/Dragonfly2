@@ -21,7 +21,9 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
@@ -70,7 +72,7 @@ type Scopes struct {
 }
 
 type Searcher interface {
-	FindSchedulerCluster([]model.SchedulerCluster, map[string]string) (model.SchedulerCluster, bool)
+	FindSchedulerCluster([]model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, bool)
 }
 
 type searcher struct{}
@@ -84,7 +86,8 @@ func New() Searcher {
 	return s
 }
 
-func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, conditions map[string]string) (model.SchedulerCluster, bool) {
+func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
+	conditions := client.HostInfo
 	if len(schedulerClusters) <= 0 || len(conditions) <= 0 {
 		return model.SchedulerCluster{}, false
 	}
@@ -94,6 +97,10 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	// Then use clusters sets to score according to scopes.
 	var clusters []model.SchedulerCluster
 	securityDomain := conditions[conditionSecurityDomain]
+	if securityDomain == "" {
+		logger.Infof("client %s %s have empty security domain", client.HostName, client.Ip)
+	}
+
 	for _, schedulerCluster := range schedulerClusters {
 		if len(schedulerCluster.Schedulers) > 0 {
 			if securityDomain == "" {
