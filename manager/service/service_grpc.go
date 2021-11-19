@@ -382,7 +382,7 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	// Search optimal scheduler cluster
-	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req.HostInfo)
+	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req)
 	if !ok {
 		if err := s.db.WithContext(ctx).Find(&schedulerCluster, &model.SchedulerCluster{
 			IsDefault: true,
