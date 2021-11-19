@@ -12,15 +12,16 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // SeederClient is the client API for Seeder service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SeederClient interface {
-	// generate seeds and return to scheduler
+	// Generate seeds and return to scheduler
 	ObtainSeeds(ctx context.Context, in *SeedRequest, opts ...grpc.CallOption) (Seeder_ObtainSeedsClient, error)
-	// get piece tasks from cdn
+	// Get piece tasks from cdn
 	GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 }
 
@@ -33,7 +34,7 @@ func NewSeederClient(cc grpc.ClientConnInterface) SeederClient {
 }
 
 func (c *seederClient) ObtainSeeds(ctx context.Context, in *SeedRequest, opts ...grpc.CallOption) (Seeder_ObtainSeedsClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Seeder_serviceDesc.Streams[0], "/cdnsystem.Seeder/ObtainSeeds", opts...)
+	stream, err := c.cc.NewStream(ctx, &Seeder_ServiceDesc.Streams[0], "/cdnsystem.Seeder/ObtainSeeds", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +78,9 @@ func (c *seederClient) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequ
 // All implementations must embed UnimplementedSeederServer
 // for forward compatibility
 type SeederServer interface {
-	// generate seeds and return to scheduler
+	// Generate seeds and return to scheduler
 	ObtainSeeds(*SeedRequest, Seeder_ObtainSeedsServer) error
-	// get piece tasks from cdn
+	// Get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 	mustEmbedUnimplementedSeederServer()
 }
@@ -104,7 +105,7 @@ type UnsafeSeederServer interface {
 }
 
 func RegisterSeederServer(s grpc.ServiceRegistrar, srv SeederServer) {
-	s.RegisterService(&_Seeder_serviceDesc, srv)
+	s.RegisterService(&Seeder_ServiceDesc, srv)
 }
 
 func _Seeder_ObtainSeeds_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -146,7 +147,10 @@ func _Seeder_GetPieceTasks_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-var _Seeder_serviceDesc = grpc.ServiceDesc{
+// Seeder_ServiceDesc is the grpc.ServiceDesc for Seeder service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Seeder_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "cdnsystem.Seeder",
 	HandlerType: (*SeederServer)(nil),
 	Methods: []grpc.MethodDesc{

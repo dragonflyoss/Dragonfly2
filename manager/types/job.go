@@ -37,7 +37,7 @@ type JobParams struct {
 
 type GetJobsQuery struct {
 	Type    string `form:"type" binding:"omitempty"`
-	Status  string `form:"status" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
+	State   string `form:"state" binding:"omitempty,oneof=PENDING RECEIVED STARTED RETRY SUCCESS FAILURE"`
 	UserID  uint   `form:"user_id" binding:"omitempty"`
 	Page    int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`

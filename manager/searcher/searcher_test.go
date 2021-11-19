@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
 func TestSchedulerCluster(t *testing.T) {
@@ -64,7 +65,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -90,7 +91,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -99,7 +100,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -122,7 +123,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -131,7 +132,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -154,7 +155,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -163,7 +164,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -187,7 +188,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -196,7 +197,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -229,7 +230,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -238,7 +239,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -271,7 +272,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -280,7 +281,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -314,7 +315,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "foo",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -323,7 +324,7 @@ func TestSchedulerCluster(t *testing.T) {
 					Schedulers: []model.Scheduler{
 						{
 							HostName: "bar",
-							Status:   "active",
+							State:    "active",
 						},
 					},
 				},
@@ -344,7 +345,11 @@ func TestSchedulerCluster(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			searcher := New()
-			clusters, ok := searcher.FindSchedulerCluster(tc.schedulerClusters, tc.conditions)
+			clusters, ok := searcher.FindSchedulerCluster(tc.schedulerClusters, &manager.ListSchedulersRequest{
+				HostName: "foo",
+				Ip:       "127.0.0.1",
+				HostInfo: tc.conditions,
+			})
 			tc.expect(t, clusters, ok)
 		})
 	}

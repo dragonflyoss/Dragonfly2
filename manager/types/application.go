@@ -42,23 +42,25 @@ type DeleteCDNClusterToApplicationParams struct {
 
 type CreateApplicationRequest struct {
 	Name              string `json:"name" binding:"required"`
-	DownloadRateLimit string `json:"download_rate_limit" binding:"omitempty"`
-	URL               string `json:"url" binding:"omitempty"`
 	BIO               string `json:"bio" binding:"omitempty"`
-	UserID            uint   `json:"user_id" binding:"omitempty"`
-	State             string `json:"state" binding:"required,oneof=enable disable"`
+	URL               string `json:"url" binding:"omitempty"`
+	DownloadRateLimit uint   `json:"download_rate_limit" binding:"omitempty"`
+	State             string `json:"state" binding:"omitempty,oneof=enable disable"`
+	UserID            uint   `json:"user_id" binding:"required"`
 }
 
 type UpdateApplicationRequest struct {
-	Name              string `json:"name" binding:"required"`
-	DownloadRateLimit string `json:"download_rate_limit" binding:"required"`
-	URL               string `json:"url" binding:"required"`
-	State             string `json:"state" binding:"required,oneof=enable disable"`
+	Name              string `json:"name" binding:"omitempty"`
 	BIO               string `json:"bio" binding:"omitempty"`
-	UserID            uint   `json:"user_id" binding:"omitempty"`
+	URL               string `json:"url" binding:"omitempty"`
+	DownloadRateLimit uint   `json:"download_rate_limit" binding:"omitempty"`
+	State             string `json:"state" binding:"omitempty,oneof=enable disable"`
+	UserID            uint   `json:"user_id" binding:"required"`
 }
 
 type GetApplicationsQuery struct {
-	Page    int `form:"page" binding:"omitempty,gte=1"`
-	PerPage int `form:"per_page" binding:"omitempty,gte=1,lte=50"`
+	Name    string `form:"name" binding:"omitempty"`
+	State   string `form:"state" binding:"omitempty,oneof=enable disable"`
+	Page    int    `form:"page" binding:"omitempty,gte=1"`
+	PerPage int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
 }

@@ -26,8 +26,9 @@ type SchedulerCluster struct {
 	IsDefault       bool          `gorm:"column:is_default;not null;default:false;comment:default scheduler cluster" json:"is_default"`
 	CDNClusters     []CDNCluster  `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"cdn_clusters"`
 	Schedulers      []Scheduler   `json:"-"`
+	ApplicationID   uint          `gorm:"comment:application id" json:"application_id"`
+	Application     Application   `json:"-"`
 	SecurityGroupID uint          `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup   SecurityGroup `json:"-"`
 	Jobs            []Job         `gorm:"many2many:job_scheduler_cluster;" json:"jobs"`
-	ApplicationID   uint          `gorm:"comment:application id" json:"application_id"`
 }

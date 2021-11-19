@@ -89,7 +89,7 @@ func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*
 		IDC:                q.IDC,
 		Location:           q.Location,
 		IP:                 q.IP,
-		Status:             q.Status,
+		State:              q.State,
 		SchedulerClusterID: q.SchedulerClusterID,
 	}).Find(&schedulers).Count(&count).Error; err != nil {
 		return nil, 0, err

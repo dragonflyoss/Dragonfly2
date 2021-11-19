@@ -94,13 +94,13 @@ func (h *Handlers) DestroySecurityRule(ctx *gin.Context) {
 func (h *Handlers) UpdateSecurityRule(ctx *gin.Context) {
 	var params types.SecurityRuleParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	var json types.UpdateSecurityRuleRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 

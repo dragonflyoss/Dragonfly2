@@ -94,13 +94,13 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
 	var params types.CDNClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	var json types.UpdateCDNClusterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 

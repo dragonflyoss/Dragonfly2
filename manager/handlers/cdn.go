@@ -94,13 +94,13 @@ func (h *Handlers) DestroyCDN(ctx *gin.Context) {
 func (h *Handlers) UpdateCDN(ctx *gin.Context) {
 	var params types.CDNParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	var json types.UpdateCDNRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 

@@ -49,6 +49,6 @@ type GetSchedulersQuery struct {
 	IDC                string `form:"idc" binding:"omitempty"`
 	Location           string `form:"location" binding:"omitempty"`
 	IP                 string `form:"ip" binding:"omitempty"`
-	Status             string `form:"status" binding:"omitempty,oneof=active inactive"`
+	State              string `form:"state" binding:"omitempty,oneof=active inactive"`
 	SchedulerClusterID uint   `form:"scheduler_cluster_id" binding:"omitempty"`
 }

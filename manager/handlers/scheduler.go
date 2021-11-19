@@ -94,13 +94,13 @@ func (h *Handlers) DestroyScheduler(ctx *gin.Context) {
 func (h *Handlers) UpdateScheduler(ctx *gin.Context) {
 	var params types.SchedulerParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	var json types.UpdateSchedulerRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.Error(err) // nolint: errcheck
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 

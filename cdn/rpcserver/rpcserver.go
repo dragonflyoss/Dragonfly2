@@ -232,7 +232,7 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	pp := &base.PiecePacket{
 		TaskId:        req.TaskId,
-		DstPid:        fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN"),
+		DstPid:        req.DstPid,
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
 		PieceInfos:    pieceInfos,
 		TotalPiece:    task.PieceTotal,

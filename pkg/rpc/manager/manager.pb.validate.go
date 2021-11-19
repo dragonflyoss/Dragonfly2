@@ -211,7 +211,7 @@ func (m *CDN) Validate() error {
 
 	// no validation rules for DownloadPort
 
-	// no validation rules for Status
+	// no validation rules for State
 
 	// no validation rules for CdnClusterId
 
@@ -667,7 +667,7 @@ func (m *Scheduler) Validate() error {
 
 	// no validation rules for Port
 
-	// no validation rules for Status
+	// no validation rules for State
 
 	// no validation rules for SchedulerClusterId
 
