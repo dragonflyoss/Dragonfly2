@@ -11,6 +11,7 @@ export GO_SOURCE_EXCLUDES=( \
 
 GOOS=$(go env GOOS)
 GOARCH=$(go env GOARCH)
+CGO_ENABLED=${CGO_ENABLED:-0}
 export GOOS
 export GOARCH
-export CGO_ENABLED=0
+export CGO_ENABLED

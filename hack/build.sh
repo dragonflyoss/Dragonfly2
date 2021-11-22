@@ -15,6 +15,7 @@ BUILD_IMAGE=golang:1.16.6-alpine
 VERSION=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 
+CGO_ENABLED=${CGO_ENABLED:-0}
 GOPROXY=${GOPROXY:-}
 GOTAGS=${GOTAGS:-}
 GOGCFLAGS=${GOGCFLAGS:-}
@@ -75,7 +76,7 @@ build-docker() {
         -v "$(pwd)"/.cache:/.cache \
         -e GOOS="${GOOS}" \
         -e GOARCH="${GOARCH}" \
-        -e CGO_ENABLED=0 \
+        -e CGO_ENABLED="${CGO_ENABLED}" \
         -e GO111MODULE=on \
         -e GOPROXY="${GOPROXY}" \
         -e GOTAGS="${GOTAGS}" \

@@ -32,7 +32,7 @@ const (
 	// PluginInitFuncName indicates the function `DragonflyPluginInit` must be implemented in plugin
 	PluginInitFuncName = "DragonflyPluginInit"
 
-	// PluginMetaKeyType indicates the type of a plugin, currently support: resource
+	// PluginMetaKeyType indicates the type of plugin, currently support: resource
 	PluginMetaKeyType = "type"
 
 	// PluginMetaKeyName indicates the name of a plugin

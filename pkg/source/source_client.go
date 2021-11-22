@@ -229,6 +229,10 @@ func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
 	client, ok := m.clients[strings.ToLower(parsedURL.Scheme)]
 	m.RUnlock()
 	if !ok || client == nil {
+		client, err = m.loadSourcePlugin(strings.ToLower(parsedURL.Scheme))
+		if err == nil && client != nil {
+			return client, nil
+		}
 		return nil, errors.Errorf("can not find client for supporting url %s, clients:%v", rawURL, m.clients)
 	}
 	return client, nil
