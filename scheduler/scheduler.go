@@ -221,7 +221,7 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() {
-	// Stop dynamic server
+	// Stop dynconfig server
 	if err := s.dynconfig.Stop(); err != nil {
 		logger.Errorf("dynconfig client closed failed %s", err)
 	}

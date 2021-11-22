@@ -113,8 +113,14 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("empty schedulers and config server is not specified")
 	}
 
-	if p.Scheduler.Manager.Enable == true && (p.Scheduler.Manager.Addr == "" || p.Scheduler.Manager.RefreshInterval == 0) {
-		return errors.New("manager addresse and refresh interval is not specified")
+	if p.Scheduler.Manager.Enable {
+		if p.Scheduler.Manager.Addr == "" {
+			return errors.New("manager addr is not specified")
+		}
+
+		if p.Scheduler.Manager.RefreshInterval == 0 {
+			return errors.New("manager refreshInterval is not specified")
+		}
 	}
 
 	return nil
