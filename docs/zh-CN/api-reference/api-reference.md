@@ -25,6 +25,399 @@ Dragonfly Manager Server
 <a name="paths"></a>
 ## 路径
 
+<a name="api-v1-applications-post"></a>
+### Create Application
+```
+POST /api/v1/applications
+```
+
+
+#### 说明
+create by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Body**|**Application**  <br>*必填*|Application|[types.CreateApplicationRequest](#types-createapplicationrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-get"></a>
+### Get Applications
+```
+GET /api/v1/applications
+```
+
+
+#### 说明
+Get Applications
+
+
+#### 参数
+
+|类型|名称|说明|类型|默认值|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*必填*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*必填*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< [model.Application](#model-application) > array|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-get"></a>
+### Get Application
+```
+GET /api/v1/applications/{id}
+```
+
+
+#### 说明
+Get Application by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-delete"></a>
+### Destroy Application
+```
+DELETE /api/v1/applications/{id}
+```
+
+
+#### 说明
+Destroy by id
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-patch"></a>
+### Update Application
+```
+PATCH /api/v1/applications/{id}
+```
+
+
+#### 说明
+Update by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Body**|**Application**  <br>*必填*|Application|[types.UpdateApplicationRequest](#types-updateapplicationrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-put"></a>
+### Add CDN to Application
+```
+PUT /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### 说明
+Add CDN to Application
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*必填*|cdn cluster id|string|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-delete"></a>
+### Delete CDN to Application
+```
+DELETE /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### 说明
+Delete CDN to Application
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*必填*|cdn cluster id|string|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-put"></a>
+### Add Scheduler to Application
+```
+PUT /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### 说明
+Add Scheduler to Application
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*必填*|scheduler cluster id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-delete"></a>
+### Delete Scheduler to Application
+```
+DELETE /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### 说明
+Delete Scheduler to Application
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*必填*|scheduler cluster id|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**404**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Application
+
+
 <a name="api-v1-cdn-clusters-post"></a>
 ### Create CDNCluster
 ```
@@ -2848,171 +3241,6 @@ Get Users
 * CDN
 
 
-<a name="api-v1-users-id-reset_password-post"></a>
-### Reset Password For User
-```
-POST /api/v1/users/:id/reset_password
-```
-
-
-#### 说明
-reset password by json config
-
-
-#### 参数
-
-|类型|名称|说明|类型|
-|---|---|---|---|
-|**Body**|**User**  <br>*必填*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
-
-
-#### 响应
-
-|HTTP代码|类型|
-|---|---|
-|**200**|无内容|
-|**400**|无内容|
-|**500**|无内容|
-
-
-#### 消耗
-
-* `application/json`
-
-
-#### 生成
-
-* `application/json`
-
-
-#### 标签
-
-* User
-
-
-<a name="api-v1-users-id-roles-get"></a>
-### Get User Roles
-```
-GET /api/v1/users/:id/roles
-```
-
-
-#### 说明
-get roles by json config
-
-
-#### 参数
-
-|类型|名称|说明|类型|
-|---|---|---|---|
-|**Path**|**id**  <br>*必填*|id|string|
-
-
-#### 响应
-
-|HTTP代码|说明|类型|
-|---|---|---|
-|**200**|OK|< string > array|
-|**400**||无内容|
-|**500**||无内容|
-
-
-#### 生成
-
-* `application/json`
-
-
-#### 标签
-
-* User
-
-
-<a name="api-v1-users-id-roles-role-put"></a>
-### Add Role For User
-```
-PUT /api/v1/users/:id/roles/:role
-```
-
-
-#### 说明
-add role to user by uri config
-
-
-#### 参数
-
-|类型|名称|说明|类型|
-|---|---|---|---|
-|**Path**|**id**  <br>*必填*|id|string|
-|**Path**|**role**  <br>*必填*|role|string|
-
-
-#### 响应
-
-|HTTP代码|类型|
-|---|---|
-|**200**|无内容|
-|**400**|无内容|
-|**500**|无内容|
-
-
-#### 消耗
-
-* `application/json`
-
-
-#### 生成
-
-* `application/json`
-
-
-#### 标签
-
-* Users
-
-
-<a name="api-v1-users-id-roles-role-delete"></a>
-### Delete Role For User
-```
-DELETE /api/v1/users/:id/roles/:role
-```
-
-
-#### 说明
-delete role by uri config
-
-
-#### 参数
-
-|类型|名称|说明|类型|
-|---|---|---|---|
-|**Path**|**id**  <br>*必填*|id|string|
-|**Path**|**role**  <br>*必填*|role|string|
-
-
-#### 响应
-
-|HTTP代码|类型|
-|---|---|
-|**200**|无内容|
-|**400**|无内容|
-|**500**|无内容|
-
-
-#### 消耗
-
-* `application/json`
-
-
-#### 生成
-
-* `application/json`
-
-
-#### 标签
-
-* Users
-
-
 <a name="api-v1-users-id-get"></a>
 ### Get User
 ```
@@ -3056,10 +3284,191 @@ Get User by id
 * User
 
 
+<a name="api-v1-users-id-reset_password-post"></a>
+### Reset Password For User
+```
+POST /api/v1/users/{id}/reset_password
+```
+
+
+#### 说明
+reset password by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Body**|**User**  <br>*必填*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* User
+
+
+<a name="api-v1-users-id-roles-get"></a>
+### Get User Roles
+```
+GET /api/v1/users/{id}/roles
+```
+
+
+#### 说明
+get roles by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|< string > array|
+|**400**||无内容|
+|**500**||无内容|
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* User
+
+
+<a name="api-v1-users-id-roles-role-put"></a>
+### Add Role For User
+```
+PUT /api/v1/users/{id}/roles/{role}
+```
+
+
+#### 说明
+add role to user by uri config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**role**  <br>*必填*|role|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Users
+
+
+<a name="api-v1-users-id-roles-role-delete"></a>
+### Delete Role For User
+```
+DELETE /api/v1/users/{id}/roles/{role}
+```
+
+
+#### 说明
+delete role by uri config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Path**|**role**  <br>*必填*|role|string|
+
+
+#### 响应
+
+|HTTP代码|类型|
+|---|---|
+|**200**|无内容|
+|**400**|无内容|
+|**500**|无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* Users
+
+
 
 
 <a name="definitions"></a>
 ## 定义
+
+<a name="model-application"></a>
+### model.Application
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**created_at**  <br>*可选*|string|
+|**download_rate_limit**  <br>*可选*|integer|
+|**id**  <br>*可选*|integer|
+|**name**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
+|**updated_at**  <br>*可选*|string|
+|**url**  <br>*可选*|string|
+|**user_id**  <br>*可选*|integer|
+
 
 <a name="model-cdn"></a>
 ### model.CDN
@@ -3075,7 +3484,7 @@ Get User by id
 |**ip**  <br>*可选*|string|
 |**location**  <br>*可选*|string|
 |**port**  <br>*可选*|integer|
-|**status**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
 
 
@@ -3084,6 +3493,7 @@ Get User by id
 
 |名称|类型|
 |---|---|
+|**application_id**  <br>*可选*|integer|
 |**bio**  <br>*可选*|string|
 |**config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
 |**created_at**  <br>*可选*|string|
@@ -3127,7 +3537,7 @@ Get User by id
 |**id**  <br>*可选*|integer|
 |**result**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
 |**scheduler_clusters**  <br>*可选*|< [model.SchedulerCluster](#model-schedulercluster) > array|
-|**status**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
 |**task_id**  <br>*可选*|string|
 |**type**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
@@ -3163,7 +3573,7 @@ Get User by id
 |**net_config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
 |**port**  <br>*可选*|integer|
 |**schedulerClusterID**  <br>*可选*|integer|
-|**status**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
 |**vips**  <br>*可选*|string|
 
@@ -3173,6 +3583,7 @@ Get User by id
 
 |名称|类型|
 |---|---|
+|**application_id**  <br>*可选*|integer|
 |**bio**  <br>*可选*|string|
 |**cdn_clusters**  <br>*可选*|< [model.CDNCluster](#model-cdncluster) > array|
 |**client_config**  <br>*可选*|[model.JSONMap](#model-jsonmap)|
@@ -3257,6 +3668,19 @@ Get User by id
 |---|---|
 |**load_limit**  <br>*可选*|integer|
 |**net_topology**  <br>*可选*|string|
+
+
+<a name="types-createapplicationrequest"></a>
+### types.CreateApplicationRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**download_rate_limit**  <br>*可选*|integer|
+|**name**  <br>*必填*|string|
+|**state**  <br>*可选*|string|
+|**url**  <br>*可选*|string|
+|**user_id**  <br>*必填*|integer|
 
 
 <a name="types-createcdnclusterrequest"></a>
@@ -3414,7 +3838,7 @@ Get User by id
 |**finishTime**  <br>*可选*|string|
 |**id**  <br>*可选*|string|
 |**startTime**  <br>*可选*|string|
-|**status**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
 
 
 <a name="types-resetpasswordrequest"></a>
@@ -3456,6 +3880,19 @@ Get User by id
 |**name**  <br>*必填*|string|
 |**password**  <br>*必填*|string|
 |**phone**  <br>*可选*|string|
+
+
+<a name="types-updateapplicationrequest"></a>
+### types.UpdateApplicationRequest
+
+|名称|类型|
+|---|---|
+|**bio**  <br>*可选*|string|
+|**download_rate_limit**  <br>*可选*|integer|
+|**name**  <br>*可选*|string|
+|**state**  <br>*可选*|string|
+|**url**  <br>*可选*|string|
+|**user_id**  <br>*必填*|integer|
 
 
 <a name="types-updatecdnclusterrequest"></a>

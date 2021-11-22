@@ -1,5 +1,26 @@
 basePath: /api/v1
 definitions:
+  model.Application:
+    properties:
+      bio:
+        type: string
+      created_at:
+        type: string
+      download_rate_limit:
+        type: integer
+      id:
+        type: integer
+      name:
+        type: string
+      state:
+        type: string
+      updated_at:
+        type: string
+      url:
+        type: string
+      user_id:
+        type: integer
+    type: object
   model.CDN:
     properties:
       cdnclusterID:
@@ -20,13 +41,15 @@ definitions:
         type: string
       port:
         type: integer
-      status:
+      state:
         type: string
       updated_at:
         type: string
     type: object
   model.CDNCluster:
     properties:
+      application_id:
+        type: integer
       bio:
         type: string
       config:
@@ -92,7 +115,7 @@ definitions:
         items:
           $ref: '#/definitions/model.SchedulerCluster'
         type: array
-      status:
+      state:
         type: string
       task_id:
         type: string
@@ -142,7 +165,7 @@ definitions:
         type: integer
       schedulerClusterID:
         type: integer
-      status:
+      state:
         type: string
       updated_at:
         type: string
@@ -151,6 +174,8 @@ definitions:
     type: object
   model.SchedulerCluster:
     properties:
+      application_id:
+        type: integer
       bio:
         type: string
       cdn_clusters:
@@ -267,6 +292,24 @@ definitions:
         type: integer
       net_topology:
         type: string
+    type: object
+  types.CreateApplicationRequest:
+    properties:
+      bio:
+        type: string
+      download_rate_limit:
+        type: integer
+      name:
+        type: string
+      state:
+        type: string
+      url:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - name
+    - user_id
     type: object
   types.CreateCDNClusterRequest:
     properties:
@@ -482,7 +525,7 @@ definitions:
         type: string
       startTime:
         type: string
-      status:
+      state:
         type: string
     type: object
   types.ResetPasswordRequest:
@@ -524,6 +567,23 @@ definitions:
     - email
     - name
     - password
+    type: object
+  types.UpdateApplicationRequest:
+    properties:
+      bio:
+        type: string
+      download_rate_limit:
+        type: integer
+      name:
+        type: string
+      state:
+        type: string
+      url:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - user_id
     type: object
   types.UpdateCDNClusterRequest:
     properties:
@@ -645,6 +705,272 @@ info:
   title: Dragonfly Manager
   version: 1.0.0
 paths:
+  /applications:
+    get:
+      consumes:
+      - application/json
+      description: Get Applications
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Application'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Applications
+      tags:
+      - Application
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: Application
+        in: body
+        name: Application
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Application'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Application
+      tags:
+      - Application
+  /applications/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Application
+      tags:
+      - Application
+    get:
+      consumes:
+      - application/json
+      description: Get Application by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Application'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Application
+      tags:
+      - Application
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Application
+        in: body
+        name: Application
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateApplicationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Application'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Application
+      tags:
+      - Application
+  /applications/{id}/cdn-clusters/{cdn_cluster_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete CDN to Application
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: cdn cluster id
+        in: path
+        name: cdn_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Delete CDN to Application
+      tags:
+      - Application
+    put:
+      consumes:
+      - application/json
+      description: Add CDN to Application
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: cdn cluster id
+        in: path
+        name: cdn_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add CDN to Application
+      tags:
+      - Application
+  /applications/{id}/scheduler-clusters/{scheduler_cluster_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete Scheduler to Application
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler cluster id
+        in: path
+        name: scheduler_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Delete Scheduler to Application
+      tags:
+      - Application
+    put:
+      consumes:
+      - application/json
+      description: Add Scheduler to Application
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler cluster id
+        in: path
+        name: scheduler_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Scheduler to Application
+      tags:
+      - Application
   /cdn-clusters:
     get:
       consumes:
@@ -2538,7 +2864,34 @@ paths:
       summary: Get Users
       tags:
       - CDN
-  /users/:id/reset_password:
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get User by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get User
+      tags:
+      - User
+  /users/{id}/reset_password:
     post:
       consumes:
       - application/json
@@ -2562,7 +2915,7 @@ paths:
       summary: Reset Password For User
       tags:
       - User
-  /users/:id/roles:
+  /users/{id}/roles:
     get:
       description: get roles by json config
       parameters:
@@ -2587,7 +2940,7 @@ paths:
       summary: Get User Roles
       tags:
       - User
-  /users/:id/roles/:role:
+  /users/{id}/roles/{role}:
     delete:
       consumes:
       - application/json
@@ -2642,31 +2995,4 @@ paths:
       summary: Add Role For User
       tags:
       - Users
-  /users/{id}:
-    get:
-      consumes:
-      - application/json
-      description: Get User by id
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.User'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Get User
-      tags:
-      - User
 swagger: "2.0"
