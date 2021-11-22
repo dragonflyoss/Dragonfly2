@@ -31,9 +31,10 @@ func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNCluster
 	}
 
 	cdnCluster := model.CDNCluster{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: config,
+		Name:      json.Name,
+		BIO:       json.BIO,
+		Config:    config,
+		IsDefault: json.IsDefault,
 	}
 
 	if err := s.db.WithContext(ctx).Create(&cdnCluster).Error; err != nil {
@@ -64,9 +65,10 @@ func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateC
 
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Updates(model.CDNCluster{
-		Name:   json.Name,
-		BIO:    json.BIO,
-		Config: config,
+		Name:      json.Name,
+		BIO:       json.BIO,
+		Config:    config,
+		IsDefault: json.IsDefault,
 	}).Error; err != nil {
 		return nil, err
 	}

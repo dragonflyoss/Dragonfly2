@@ -28,17 +28,17 @@ import (
 )
 
 const (
-	// Condition IDC key
-	conditionIDC = "idc"
+	// Condition security domain key
+	ConditionSecurityDomain = "security_domain"
 
-	// Condition location key
-	conditionLocation = "location"
+	// Condition IDC key
+	ConditionIDC = "idc"
 
 	// Condition netTopology key
-	conditionNetTopology = "net_topology"
+	ConditionNetTopology = "net_topology"
 
-	// Condition security domain key
-	conditionSecurityDomain = "security_domain"
+	// Condition location key
+	ConditionLocation = "location"
 )
 
 const (
@@ -96,7 +96,7 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	// If the security domain condition does not exist, it will match all scheduler security domains.
 	// Then use clusters sets to score according to scopes.
 	var clusters []model.SchedulerCluster
-	securityDomain := conditions[conditionSecurityDomain]
+	securityDomain := conditions[ConditionSecurityDomain]
 	if securityDomain == "" {
 		logger.Infof("client %s %s have empty security domain", client.HostName, client.Ip)
 	}
@@ -146,9 +146,9 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon
 func evaluate(conditions map[string]string, scopes Scopes) float64 {
-	return idcAffinityWeight*calculateIDCAffinityScore(conditions[conditionIDC], scopes.IDC) +
-		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[conditionLocation], scopes.Location) +
-		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[conditionNetTopology], scopes.NetTopology)
+	return idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
+		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
+		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionNetTopology], scopes.NetTopology)
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better

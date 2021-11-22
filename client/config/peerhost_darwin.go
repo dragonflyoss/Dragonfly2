@@ -44,6 +44,10 @@ var peerHostConfig = DaemonOption{
 	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
+		Manager: ManagerOption{
+			Enable:          false,
+			RefreshInterval: 5 * time.Minute,
+		},
 		NetAddrs: []dfnet.NetAddr{
 			{
 				Type: dfnet.TCP,
@@ -53,6 +57,7 @@ var peerHostConfig = DaemonOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
+		Hostname:       iputils.HostName,
 		ListenIP:       net.IPv4zero.String(),
 		AdvertiseIP:    iputils.HostIP,
 		SecurityDomain: "",

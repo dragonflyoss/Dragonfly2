@@ -100,6 +100,11 @@ func (p *DaemonOption) Convert() error {
 		p.Host.AdvertiseIP = ip.String()
 	}
 
+	// ScheduleTimeout should not great then AliveTime
+	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
+		p.Scheduler.ScheduleTimeout.Duration = p.AliveTime.Duration - time.Second
+	}
+
 	return nil
 }
 
@@ -107,22 +112,38 @@ func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
 		return errors.New("empty schedulers and config server is not specified")
 	}
-	// ScheduleTimeout should not great then AliveTime
-	if p.AliveTime.Duration > 0 && p.Scheduler.ScheduleTimeout.Duration > p.AliveTime.Duration {
-		p.Scheduler.ScheduleTimeout.Duration = p.AliveTime.Duration - time.Second
+
+	if p.Scheduler.Manager.Enable {
+		if p.Scheduler.Manager.Addr == "" {
+			return errors.New("manager addr is not specified")
+		}
+
+		if p.Scheduler.Manager.RefreshInterval == 0 {
+			return errors.New("manager refreshInterval is not specified")
+		}
 	}
+
 	return nil
 }
 
 type SchedulerOption struct {
+	// Manager is to get the scheduler configuration remotely
+	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
-
 	// ScheduleTimeout is request timeout.
 	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
-
 	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
+}
+
+type ManagerOption struct {
+	// Enable get configuration from manager
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// Addr is manager addresse
+	Addr string `mapstructure:"addr" yaml:"addr"`
+	// RefreshInterval is the refresh interval
+	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
 }
 
 type HostOption struct {
@@ -134,6 +155,8 @@ type HostOption struct {
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+	// Hostname is daemon host name
+	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 	// The listen ip for all tcp services of daemon
 	ListenIP string `mapstructure:"listenIP" yaml:"listenIP"`
 	// The ip report to scheduler, normal same with listen ip

@@ -3945,6 +3945,9 @@ var doc = `{
                 "config": {
                     "$ref": "#/definitions/types.CDNClusterConfig"
                 },
+                "is_default": {
+                    "type": "boolean"
+                },
                 "name": {
                     "type": "string"
                 }
@@ -4347,6 +4350,9 @@ var doc = `{
                 },
                 "config": {
                     "$ref": "#/definitions/types.CDNClusterConfig"
+                },
+                "is_default": {
+                    "type": "boolean"
                 },
                 "name": {
                     "type": "string"

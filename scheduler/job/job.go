@@ -186,7 +186,7 @@ func (t *job) preheat(ctx context.Context, req string) error {
 		}
 
 		if piece.Done == true {
-			plogger.Info("preheat successed")
+			plogger.Info("preheat succeeded")
 			return nil
 		}
 	}
