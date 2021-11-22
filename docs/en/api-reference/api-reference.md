@@ -3690,6 +3690,7 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*required*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
+|**is_default**  <br>*optional*|boolean|
 |**name**  <br>*required*|string|
 
 
@@ -3902,6 +3903,7 @@ delete role by uri config
 |---|---|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*optional*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
+|**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
 
 
