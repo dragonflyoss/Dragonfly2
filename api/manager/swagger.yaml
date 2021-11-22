@@ -317,6 +317,8 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/types.CDNClusterConfig'
+      is_default:
+        type: boolean
       name:
         type: string
     required:
@@ -591,6 +593,8 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/types.CDNClusterConfig'
+      is_default:
+        type: boolean
       name:
         type: string
     type: object

@@ -24,6 +24,13 @@ keepStorage: true
 # 尽量使用同一个地区的调度器.
 # daemon 将会根据 task id 来进行一致性 hash 来选择所有配置的调度器
 scheduler:
+  manager:
+    # 通过 manager 接口动态获取 scheduler 列表
+    enable: false
+    # manager 服务地址
+    addr: 127.0.0.1:65003
+    # scheduler 列表刷新时间
+    refreshInterval: 5m
   # 调度超时
   scheduleTimeout: 30s
   # 是否禁用回源，禁用回源后，在调度失败时不在 daemon 回源，直接返错
@@ -47,11 +54,16 @@ host:
   # 访问 IP 地址
   # 其他 daemon 可以通过这个 IP 地址连接过来
   advertiseIP: 0.0.0.0
-  # 地理信息和网络地址
+  # 地理信息, 通过 "|" 符号分隔
   location: ""
+  # 机房信息
   idc: ""
+  # 安全域信息，不同安全域之间网络隔离
   securityDomain: ""
+  # 网络拓扑结构，通过 "|" 符号分隔
   netTopology: ""
+  # 主机名称
+  # hostname: ""
 
 # 下载服务选项
 download:

@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"runtime"
 	"sync"
 	"time"
@@ -49,9 +50,10 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 type Daemon interface {
@@ -80,9 +82,11 @@ type clientDaemon struct {
 
 	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
-}
 
-var _ Daemon = (*clientDaemon)(nil)
+	dynconfig       config.Dynconfig
+	schedulerAddrs  []dfnet.NetAddr
+	schedulerClient schedulerclient.SchedulerClient
+}
 
 func New(opt *config.DaemonOption) (Daemon, error) {
 	host := &scheduler.PeerHost{
@@ -90,18 +94,46 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
-		HostName:       iputils.HostName,
+		HostName:       opt.Host.Hostname,
 		SecurityDomain: opt.Host.SecurityDomain,
 		Location:       opt.Host.Location,
 		Idc:            opt.Host.IDC,
 		NetTopology:    opt.Host.NetTopology,
 	}
 
+	var addrs []dfnet.NetAddr
+	var dynconfig config.Dynconfig
+	if opt.Scheduler.Manager.Enable == true {
+		// New manager client
+		managerClient, err := managerclient.New(opt.Scheduler.Manager.Addr)
+		if err != nil {
+			return nil, err
+		}
+
+		// New dynconfig client
+		if dynconfig, err = config.NewDynconfig(
+			config.NewManagerClient(managerClient, opt.Host),
+			opt.Scheduler.Manager.RefreshInterval,
+		); err != nil {
+			return nil, err
+		}
+
+		// Get schedulers from manager
+		schedulers, err := dynconfig.GetSchedulers()
+		if err != nil {
+			return nil, err
+		}
+
+		addrs = schedulersToNetAddrs(schedulers)
+	} else {
+		addrs = opt.Scheduler.NetAddrs
+	}
+
 	var opts []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	}
-	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs, opts...)
+	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
@@ -186,6 +218,9 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
+		dynconfig:       dynconfig,
+		schedulerAddrs:  addrs,
+		schedulerClient: sched,
 	}, nil
 }
 
@@ -431,6 +466,22 @@ func (cd *clientDaemon) Serve() error {
 		})
 	}
 
+	// serve dynconfig service
+	if cd.dynconfig != nil {
+		// dynconfig register client daemon
+		cd.dynconfig.Register(cd)
+
+		// servce dynconfig
+		g.Go(func() error {
+			if err := cd.dynconfig.Serve(); err != nil {
+				logger.Errorf("dynconfig start failed %v", err)
+				return err
+			}
+			logger.Info("dynconfig start successfully")
+			return nil
+		})
+	}
+
 	werr := g.Wait()
 	cd.Stop()
 	return werr
@@ -455,7 +506,38 @@ func (cd *clientDaemon) Stop() {
 			logger.Infof("keep storage disabled")
 			cd.StorageManager.CleanUp()
 		}
+
+		if cd.dynconfig != nil {
+			if err := cd.dynconfig.Stop(); err != nil {
+				logger.Errorf("dynconfig client closed failed %s", err)
+			}
+			logger.Info("dynconfig client closed")
+		}
 	})
+}
+
+func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
+	addrs := schedulersToNetAddrs(data.Schedulers)
+	if reflect.DeepEqual(cd.schedulerAddrs, addrs) {
+		return
+	}
+
+	// Update scheduler client addresses
+	cd.schedulerClient.UpdateState(addrs)
+	cd.schedulerAddrs = addrs
+}
+
+// schedulersToNetAddrs coverts []*manager.Scheduler to []dfnet.NetAddr.
+func schedulersToNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
+	for _, scheduler := range schedulers {
+		netAddrs = append(netAddrs, dfnet.NetAddr{
+			Type: dfnet.TCP,
+			Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
+		})
+	}
+
+	return netAddrs
 }
 
 func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {

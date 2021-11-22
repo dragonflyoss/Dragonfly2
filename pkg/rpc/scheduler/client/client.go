@@ -59,6 +59,8 @@ type SchedulerClient interface {
 
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
+	UpdateState(addrs []dfnet.NetAddr)
+
 	Close() error
 }
 

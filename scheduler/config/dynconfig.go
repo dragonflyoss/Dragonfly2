@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	DefaultDynconfigCachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
+	cachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
 )
 
 var (
@@ -105,7 +105,7 @@ type DynconfigInterface interface {
 	Serve() error
 
 	// Stop the dynconfig listening service.
-	Stop()
+	Stop() error
 }
 
 type Observer interface {
@@ -130,6 +130,7 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 		sourceType: sourceType,
 	}
 
+	options = append(options, dc.WithCachePath(cachePath))
 	client, err := dc.New(sourceType, options...)
 	if err != nil {
 		return nil, err
@@ -310,8 +311,13 @@ func (d *dynconfig) watch() {
 	}
 }
 
-func (d *dynconfig) Stop() {
+func (d *dynconfig) Stop() error {
 	close(d.done)
+	if err := os.Remove(cachePath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type managerClient struct {

@@ -4,12 +4,17 @@ dataDir: /tmp/dragonfly/dfdaemon/
 workHome: /tmp/dragonfly/dfdaemon/
 keepStorage: false
 scheduler:
+  manager:
+    enable: false
+    addr: "127.0.0.1:65003"
+    refreshInterval: 5m
   netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002
   scheduleTimeout: 0
 
 host:
+  hostname: d7y.io
   listenIP: 0.0.0.0
   advertiseIP: 0.0.0.0
   location: 0.0.0.0

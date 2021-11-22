@@ -228,6 +228,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
 		KeepStorage: false,
 		Scheduler: SchedulerOption{
+			Manager: ManagerOption{
+				Enable:          false,
+				Addr:            "127.0.0.1:65003",
+				RefreshInterval: 5 * time.Minute,
+			},
 			NetAddrs: []dfnet.NetAddr{
 				{
 					Type: dfnet.TCP,
@@ -239,6 +244,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		Host: HostOption{
+			Hostname:       "d7y.io",
 			SecurityDomain: "d7y.io",
 			Location:       "0.0.0.0",
 			IDC:            "d7y",

@@ -23,6 +23,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -48,6 +49,9 @@ func (d *dummySchedulerClient) LeaveTask(ctx context.Context, target *scheduler.
 
 func (d *dummySchedulerClient) Close() error {
 	return nil
+}
+
+func (d *dummySchedulerClient) UpdateState(addrs []dfnet.NetAddr) {
 }
 
 type dummyPeerPacketStream struct {

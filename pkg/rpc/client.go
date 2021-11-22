@@ -436,4 +436,6 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	defer conn.rwMutex.Unlock()
 	conn.serverNodes = addrs
 	conn.hashRing = hashring.New(addresses)
+
+	logger.GrpcLogger.Infof("update grpc client addresses %v", addresses)
 }

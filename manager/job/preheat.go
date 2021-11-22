@@ -160,7 +160,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job successed, group uuid: %s， urls:%s", group.GroupUUID, urls)
+	logger.Infof("create preheat group job succeeded, group uuid: %s， urls: %s", group.GroupUUID, urls)
 	return &internaljob.GroupJobState{
 		GroupUUID: group.GroupUUID,
 		State:     machineryv1tasks.StatePending,

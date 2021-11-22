@@ -44,7 +44,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			name:   "get dynconfig success",
 			expire: 10 * time.Second,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -73,7 +73,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			name:   "client failed to return for the second time",
 			expire: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -114,7 +114,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 
 			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
 				dc.WithManagerClient(NewManagerClient(mockManagerClient, uint(1))),
-				dc.WithCachePath(DefaultDynconfigCachePath),
+				dc.WithCachePath(cachePath),
 				dc.WithExpireTime(tc.expire),
 			}...)
 			if err != nil {
