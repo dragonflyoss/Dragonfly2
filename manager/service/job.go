@@ -44,7 +44,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 			scheduler := model.Scheduler{}
 			if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 				SchedulerClusterID: schedulerCluster.ID,
-				Status:             model.SchedulerStatusActive,
+				State:              model.SchedulerStateActive,
 			}).Error; err != nil {
 				return nil, err
 			}
@@ -59,7 +59,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 			scheduler := model.Scheduler{}
 			if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 				SchedulerClusterID: schedulerCluster.ID,
-				Status:             model.SchedulerStatusActive,
+				State:              model.SchedulerStateActive,
 			}).Error; err != nil {
 				continue
 			}
@@ -82,7 +82,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
 		Type:              json.Type,
-		Status:            groupJobState.State,
+		State:             groupJobState.State,
 		Args:              args,
 		UserID:            json.UserID,
 		SchedulerClusters: schedulerClusters,
@@ -108,13 +108,13 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 		}
 
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
-			Status: groupJob.State,
+			State: groupJob.State,
 		}).Error; err != nil {
 			logger.Errorf("polling job %d and task %s store failed: %v", id, taskID, err)
 			return nil, true, err
 		}
 
-		switch job.Status {
+		switch job.State {
 		case machineryv1tasks.StateSuccess:
 			logger.Infof("polling job %d and task %s is finally successful", id, taskID)
 			return nil, true, nil
@@ -122,17 +122,17 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 			logger.Errorf("polling job %d and task %s is finally failed", id, taskID)
 			return nil, true, nil
 		default:
-			return nil, false, fmt.Errorf("polling job %d and task %s status is %s", id, taskID, job.Status)
+			return nil, false, fmt.Errorf("polling job %d and task %s status is %s", id, taskID, job.State)
 		}
 	}, 5, 10, 120, nil); err != nil {
 		logger.Errorf("polling job %d and task %s failed %s", id, taskID, err)
 	}
 
 	// Polling timeout and failed
-	if job.Status != machineryv1tasks.StateSuccess && job.Status != machineryv1tasks.StateFailure {
+	if job.State != machineryv1tasks.StateSuccess && job.State != machineryv1tasks.StateFailure {
 		job := model.Job{}
 		if err := s.db.WithContext(ctx).First(&job, id).Updates(model.Job{
-			Status: machineryv1tasks.StateFailure,
+			State: machineryv1tasks.StateFailure,
 		}).Error; err != nil {
 			logger.Errorf("polling job %d and task %s store failed: %v", id, taskID, err)
 		}
@@ -179,7 +179,7 @@ func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job,
 	var jobs []model.Job
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
 		Type:   q.Type,
-		Status: q.Status,
+		State:  q.State,
 		UserID: q.UserID,
 	}).Find(&jobs).Count(&count).Error; err != nil {
 		return nil, 0, err

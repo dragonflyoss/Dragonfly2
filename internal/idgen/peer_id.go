@@ -24,7 +24,7 @@ import (
 )
 
 func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s-%s", PeerID(ip), "cdn")
+	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
 }
 
 func PeerID(ip string) string {

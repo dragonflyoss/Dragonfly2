@@ -223,7 +223,7 @@ func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 			Expect(err).NotTo(HaveOccurred())
 			err = json.Unmarshal(out, preheat)
 			Expect(err).NotTo(HaveOccurred())
-			switch preheat.Status {
+			switch preheat.State {
 			case machineryv1tasks.StateSuccess:
 				return true
 			case machineryv1tasks.StateFailure:
