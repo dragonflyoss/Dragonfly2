@@ -113,7 +113,10 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			tc.mock(mockManagerClient.EXPECT())
 
 			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
-				dc.WithManagerClient(NewManagerClient(mockManagerClient, uint(1))),
+				dc.WithManagerClient(NewManagerClient(mockManagerClient, &Config{
+					Manager: &ManagerConfig{SchedulerClusterID: uint(1)},
+					Server:  &ServerConfig{Host: "foo"},
+				})),
 				dc.WithCachePath(cachePath),
 				dc.WithExpireTime(tc.expire),
 			}...)

@@ -17,22 +17,13 @@
 package iputils
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsIPv4(t *testing.T) {
-	assert.True(t, IsIPv4("30.225.24.222"))
-	assert.False(t, IsIPv4("30.225.24.2222"))
-}
-
 func TestExternalIPv4(t *testing.T) {
 	ip, err := externalIPv4()
 	assert.Nil(t, err)
-
-	fmt.Println(ip)
-
 	assert.NotEmpty(t, ip)
 }
