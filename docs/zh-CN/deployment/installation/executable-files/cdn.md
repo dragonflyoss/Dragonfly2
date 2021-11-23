@@ -17,7 +17,7 @@ Nginx|0.8+
 ### 获取 CDN 可执行文件
 
 1. 下载 Dragonfly 项目的压缩包。您可以从 [github releases page](https://github.
-   com/dragonflyoss/Dragonfly2/releases) 下载一个已发布的最近版本
+   com/dragonflyoss/Dragonfly2/releases) 下载一个已发布的最新版本
    
 ```sh
 version=2.0.0

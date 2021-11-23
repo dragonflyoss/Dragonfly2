@@ -1,28 +1,30 @@
 # dfget
 
-`dfget` 是Dragonfly用以下载和上传文件的客户端。
+`dfget` 是Dragonfly中用来下载和上传文件的客户端。
 
-### Synopsis
+### 简介
 
-dfget 是 Dragonfly 的一个客户端，也是p2p网络中的一个peer。当用户发起文件下载请求时，
-dfget 将从其他peer下载文件。同时，它也能作为上传者，以支持其他peer对它已拥有对部分对下载。
+dfget 是 Dragonfly 中用来下载和上传文件的客户端，也是 p2p 网络中的一个 peer。当用户发起文件下载请求时，
+dfget 将从其他 peer 下载文件。同时，它也能作为上传者，让其他 peer 下载它已拥有的那部分文件。
 此外，dfget 还提供了一些高级功能，如网络带宽限制、加密传输等。
 
+
+### 用法
 ```
 dfget [flags]
 ```
 
-### Example
+### 例子
 
 ```
 dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/object"
 ```
 
-## Log configuration
+## 查看日志
 
-如果您想要在Terminal中查看日志，请使用 --console 将环境变量 console 设置为 true。
+如果您想要在 Terminal 中查看日志，请使用 --console 将环境变量 console 设置为 true。
 
-### Options
+### 可选参数
 
 ```
       --alivetime duration           alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
@@ -61,11 +63,11 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 # dfget daemon
 
-## Log configuration
+## 查看日志
 
 如果您想要在Terminal中查看日志，请使用 --console 将环境变量 console 设置为 true。
 
-### Options
+### 可选参数
 
 ```
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
