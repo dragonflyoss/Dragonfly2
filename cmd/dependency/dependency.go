@@ -85,6 +85,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 		// Add common cmds only on root cmd
 		cmd.AddCommand(VersionCmd)
 		cmd.AddCommand(newDocCommand(cmd.Name()))
+		cmd.AddCommand(PluginCmd)
 	}
 }
 

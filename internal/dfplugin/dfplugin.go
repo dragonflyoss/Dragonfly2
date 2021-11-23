@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path"
 	"plugin"
+	"regexp"
 
 	"d7y.io/dragonfly/v2/internal/dfpath"
 )
@@ -38,6 +39,8 @@ const (
 	// PluginMetaKeyName indicates the name of a plugin
 	PluginMetaKeyName = "name"
 )
+
+var PluginFormatExpr = regexp.MustCompile("d7y-(resource|manager|scheduler)-plugin-([a-z0-9]+).so")
 
 type PluginType string
 
