@@ -51,6 +51,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
 )
@@ -103,7 +104,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 				pprofPort, _ = freeport.GetFreePort()
 			}
 
-			debugAddr := fmt.Sprintf("%s:%d", iputils.HostIP, pprofPort)
+			debugAddr := fmt.Sprintf("%s:%d", iputils.IPv4, pprofPort)
 			viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugAddr),
@@ -242,7 +243,7 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.ServiceNameKey.String(otelOption.ServiceName),
-			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", iputils.HostName, iputils.HostIP)),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", hostutils.FQDNHostname, iputils.IPv4)),
 			semconv.ServiceNamespaceKey.String("dragonfly"),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)

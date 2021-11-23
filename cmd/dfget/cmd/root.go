@@ -84,7 +84,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
 		fmt.Printf("dfget version: %s\n", version.GitVersion)
-		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.HostIP)
+		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.IPv4)
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file

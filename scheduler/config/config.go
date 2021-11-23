@@ -25,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -62,8 +63,8 @@ func New() *Config {
 			},
 		},
 		Server: &ServerConfig{
-			IP:   iputils.HostIP,
-			Host: iputils.HostName,
+			IP:   iputils.IPv4,
+			Host: hostutils.FQDNHostname,
 			Port: 8002,
 		},
 		DynConfig: &DynConfig{

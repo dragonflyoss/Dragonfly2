@@ -69,7 +69,7 @@ func TestCDNPeerID(t *testing.T) {
 		expect func(t *testing.T, d interface{})
 	}{
 		{
-			name: "generate id with ipv4",
+			name: "generate CDNPeerID with ipv4",
 			ip:   "127.0.0.1",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -77,7 +77,7 @@ func TestCDNPeerID(t *testing.T) {
 			},
 		},
 		{
-			name: "generate id with ipv6",
+			name: "generate CDNPeerID with ipv6",
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
@@ -85,7 +85,7 @@ func TestCDNPeerID(t *testing.T) {
 			},
 		},
 		{
-			name: "generate id with empty string",
+			name: "generate CDNPeerID with empty string",
 			ip:   "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)

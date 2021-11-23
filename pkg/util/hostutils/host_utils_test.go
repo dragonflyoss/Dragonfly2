@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package idgen
+package hostutils
 
 import (
-	"github.com/google/uuid"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func UUIDString() string {
-	return uuid.New().String()
+func TestHostname(t *testing.T) {
+	hostname := hostname()
+	assert.NotEmpty(t, hostname)
+}
+
+func TestFQDNHostname(t *testing.T) {
+	fqdn := fqdnHostname()
+	assert.NotEmpty(t, fqdn)
 }

@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/RichardKnop/machinery v1.10.6
+	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible

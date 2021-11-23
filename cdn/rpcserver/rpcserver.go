@@ -38,7 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
@@ -140,7 +140,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:   peerID,
-			HostUuid: idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
+			HostUuid: idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
@@ -165,7 +165,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	psc <- &cdnsystem.PieceSeed{
 		PeerId:          peerID,
-		HostUuid:        idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
+		HostUuid:        idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 		Done:            true,
 		ContentLength:   task.SourceFileLength,
 		TotalPieceCount: task.PieceTotal,

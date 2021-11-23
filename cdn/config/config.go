@@ -131,7 +131,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		GCMetaInterval:          DefaultGCMetaInterval,
 		TaskExpireTime:          DefaultTaskExpireTime,
 		StorageMode:             DefaultStorageMode,
-		AdvertiseIP:             iputils.HostIP,
+		AdvertiseIP:             iputils.IPv4,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
 				Interval: DefaultKeepAliveInterval,

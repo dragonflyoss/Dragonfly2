@@ -29,7 +29,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
@@ -322,21 +321,21 @@ func (d *dynconfig) Stop() error {
 
 type managerClient struct {
 	managerclient.Client
-	SchedulerClusterID uint
+	config *Config
 }
 
-func NewManagerClient(client managerclient.Client, schedulerClusterID uint) dc.ManagerClient {
+func NewManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
 	return &managerClient{
-		Client:             client,
-		SchedulerClusterID: schedulerClusterID,
+		Client: client,
+		config: cfg,
 	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
 	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
-		HostName:           iputils.HostName,
+		HostName:           mc.config.Server.Host,
 		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
-		SchedulerClusterId: uint64(mc.SchedulerClusterID),
+		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
 	if err != nil {
 		return nil, err

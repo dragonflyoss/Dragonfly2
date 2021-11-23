@@ -24,23 +24,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-var HostIP string
-var HostName string
+var IPv4 string
 
 func init() {
 	ip, err := externalIPv4()
-	if ip == "" {
+	if err != nil {
 		panic(err)
-	} else {
-		HostIP = ip
 	}
 
-	name, err := os.Hostname()
-	if name == "" {
-		panic(err)
-	} else {
-		HostName = name
-	}
+	IPv4 = ip
 }
 
 // IsIPv4 returns whether the ip is a valid IPv4 Address.
@@ -83,6 +75,7 @@ func externalIPv4() (string, error) {
 }
 
 // ipAddrs returns all the valid IPs available.
+// refer to https://github.com/dragonflyoss/Dragonfly2/pull/652
 func ipAddrs() ([]net.IP, error) {
 	// use prefer ip possible
 	var prefer []net.IP
