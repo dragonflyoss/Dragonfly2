@@ -17,6 +17,7 @@
 package dependency
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -42,11 +43,16 @@ var PluginCmd = &cobra.Command{
 func ListAvailablePlugins() {
 	fmt.Fprintf(os.Stderr, "search plugin in %s\n", dfpath.PluginsDir)
 	files, err := ioutil.ReadDir(dfpath.PluginsDir)
+	if os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "no plugin found\n")
+		return
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read plugin dir %s error: %s\n", dfpath.PluginsDir, err)
 		return
 	}
 	for _, file := range files {
+		var attr []byte
 		fileName := file.Name()
 		if file.IsDir() {
 			fmt.Fprintf(os.Stderr, "not support directory: %s\n", fileName)
@@ -60,9 +66,14 @@ func ListAvailablePlugins() {
 		typ, name := subs[1], subs[2]
 		switch typ {
 		case string(dfplugin.PluginTypeResource), string(dfplugin.PluginTypeScheduler), string(dfplugin.PluginTypeManager):
-			_, _, err = dfplugin.Load(dfplugin.PluginType(typ), name, map[string]string{})
+			_, data, err := dfplugin.Load(dfplugin.PluginType(typ), name, map[string]string{})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "not valid plugin binary format %s: %q\n", fileName, err)
+				continue
+			}
+			attr, err = json.Marshal(data)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "marshal attribute for %s error: %q\n", fileName, err)
 				continue
 			}
 		default:
@@ -70,6 +81,6 @@ func ListAvailablePlugins() {
 			continue
 		}
 
-		fmt.Printf("%s: %s %s\n", fileName, typ, name)
+		fmt.Printf("%s plugin %s, location: %s, attribute: %s\n", typ, name, fileName, string(attr))
 	}
 }
