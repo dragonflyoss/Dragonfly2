@@ -95,7 +95,7 @@ func (p *DaemonOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.HostIP
+		p.Host.AdvertiseIP = iputils.IPv4
 	} else {
 		p.Host.AdvertiseIP = ip.String()
 	}

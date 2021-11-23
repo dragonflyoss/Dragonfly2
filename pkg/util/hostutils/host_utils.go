@@ -14,12 +14,38 @@
  * limitations under the License.
  */
 
-package idgen
+package hostutils
 
 import (
-	"github.com/google/uuid"
+	"os"
+
+	"github.com/Showmax/go-fqdn"
 )
 
-func UUIDString() string {
-	return uuid.New().String()
+var Hostname string
+var FQDNHostname string
+
+func init() {
+	Hostname = hostname()
+	FQDNHostname = fqdnHostname()
+}
+
+// Get kernel hostname
+func hostname() string {
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return name
+}
+
+// Get FQDN hostname
+func fqdnHostname() string {
+	fqdn, err := fqdn.FqdnHostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return fqdn
 }

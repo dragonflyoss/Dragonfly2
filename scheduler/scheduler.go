@@ -31,7 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -98,7 +97,7 @@ func New(cfg *config.Config) (*Server, error) {
 	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
 	if s.managerClient != nil && cfg.DynConfig.Type == dynconfig.ManagerSourceType {
 		options = append(options,
-			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg.Manager.SchedulerClusterID)),
+			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg)),
 			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 		)
 	}
@@ -140,7 +139,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
-		s.job, err = job.New(context.Background(), cfg.Job, cfg.Manager.SchedulerClusterID, iputils.HostName, s.service)
+		s.job, err = job.New(context.Background(), cfg.Job, cfg.Manager.SchedulerClusterID, cfg.Server.Host, s.service)
 		if err != nil {
 			return nil, err
 		}

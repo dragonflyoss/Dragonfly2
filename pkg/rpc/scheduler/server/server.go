@@ -26,6 +26,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
@@ -67,8 +68,8 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskReq
 		zap.Bool("Success", isSuccess),
 		zap.String("URL", req.Url),
 		zap.String("TaskID", resp.TaskId),
-		zap.String("SchedulerIP", iputils.HostIP),
-		zap.String("SchedulerHostName", iputils.HostName),
+		zap.String("SchedulerIP", iputils.IPv4),
+		zap.String("SchedulerHostname", hostutils.FQDNHostname),
 		zap.Any("Peer", req.PeerHost),
 	)
 
@@ -99,8 +100,8 @@ func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult)
 		zap.String("PeerIP", req.SrcIp),
 		zap.String("SecurityDomain", req.SecurityDomain),
 		zap.String("IDC", req.Idc),
-		zap.String("SchedulerIP", iputils.HostIP),
-		zap.String("SchedulerHostName", iputils.HostName),
+		zap.String("SchedulerIP", iputils.IPv4),
+		zap.String("SchedulerHostname", hostutils.FQDNHostname),
 		zap.Int64("ContentLength", req.ContentLength),
 		zap.Int64("Traffic", req.Traffic),
 		zap.Uint32("Cost", req.Cost),

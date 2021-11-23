@@ -17,9 +17,13 @@
 package idgen
 
 import (
-	"github.com/google/uuid"
+	"fmt"
 )
 
-func UUIDString() string {
-	return uuid.New().String()
+func HostID(hostname string, port int32) string {
+	return fmt.Sprintf("%s-%d", hostname, port)
+}
+
+func CDNHostID(hostname string, port int32) string {
+	return fmt.Sprintf("%s_CDN", HostID(hostname, port))
 }

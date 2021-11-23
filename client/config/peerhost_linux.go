@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -57,9 +58,9 @@ var peerHostConfig = DaemonOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
-		Hostname:       iputils.HostName,
+		Hostname:       hostutils.Hostname,
 		ListenIP:       "0.0.0.0",
-		AdvertiseIP:    iputils.HostIP,
+		AdvertiseIP:    iputils.IPv4,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
