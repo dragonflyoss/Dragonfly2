@@ -67,7 +67,6 @@ func externalIPv4() (string, error) {
 	}
 
 	if len(values) > 0 {
-		sort.Strings(values)
 		return values[0], nil
 	}
 
@@ -95,7 +94,8 @@ func ipAddrs() ([]net.IP, error) {
 		return nil, err
 	}
 
-	var ipAddrs []net.IP
+	var preferAddrs []net.IP
+	var normalAddrs []net.IP
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
 			continue // interface down
@@ -127,12 +127,19 @@ func ipAddrs() ([]net.IP, error) {
 				}
 			}
 			if isPrefer {
-				ipAddrs = append([]net.IP{ip}, ipAddrs...)
+				preferAddrs = append(preferAddrs, ip)
 			} else {
-				ipAddrs = append(ipAddrs, ip)
+				normalAddrs = append(normalAddrs, ip)
 			}
 		}
 	}
+	sortIP(preferAddrs)
+	sortIP(normalAddrs)
+	return append(preferAddrs, normalAddrs...), nil
+}
 
-	return ipAddrs, nil
+func sortIP(addrs []net.IP) {
+	sort.Slice(addrs, func(i, j int) bool {
+		return addrs[i].String() < addrs[j].String()
+	})
 }
