@@ -17,6 +17,7 @@
 package iputils
 
 import (
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,4 +27,17 @@ func TestExternalIPv4(t *testing.T) {
 	ip, err := externalIPv4()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, ip)
+}
+
+func Test_sortIP(t *testing.T) {
+	var addrs = []net.IP{[]byte("2.3.4.5"), []byte("1.2.3.4"), []byte("3.4.5.6")}
+	sortIP(addrs)
+	assert.EqualValues(t, addrs, []net.IP{[]byte("1.2.3.4"), []byte("2.3.4.5"), []byte("3.4.5.6")})
+
+	var normalAddrs = []net.IP{[]byte("2.3.4.5"), []byte("1.2.3.4"), []byte("3.4.5.6")}
+	var preferAddrs = []net.IP{[]byte("5.3.4.5"), []byte("4.2.3.4"), []byte("6.4.5.6")}
+	sortIP(preferAddrs)
+	sortIP(normalAddrs)
+	assert.EqualValues(t, append(preferAddrs, normalAddrs...), []net.IP{[]byte("4.2.3.4"), []byte("5.3.4.5"), []byte("6.4.5.6"), []byte("1.2.3.4"),
+		[]byte("2.3.4.5"), []byte("3.4.5.6")})
 }
