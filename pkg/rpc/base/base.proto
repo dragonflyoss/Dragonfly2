@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package base;
 
+import "validate/validate.proto";
+
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
 
 enum Code{
@@ -57,21 +59,21 @@ message UrlMeta{
 
 message HostLoad{
   // cpu usage
-  float cpu_ratio = 1;
+  float cpu_ratio = 1 [(validate.rules).float = {gte: 0, lte: 1}];
   // memory usage
-  float mem_ratio = 2;
+  float mem_ratio = 2 [(validate.rules).float = {gte: 0, lte: 1}];
   // disk space usage
-  float disk_ratio = 3;
+  float disk_ratio = 3 [(validate.rules).float = {gte: 0, lte: 1}];
 }
 
 message PieceTaskRequest{
-  string task_id = 1;
-  string src_pid = 2;
-  string dst_pid = 3;
+  string task_id = 1 [(validate.rules).string = {pattern:"/\\S/"}];
+  string src_pid = 2 [(validate.rules).string = {pattern:"/\\S/"}];
+  string dst_pid = 3 [(validate.rules).string = {pattern:"/\\S/"}];
   // piece number
-  int32 start_num = 4;
+  int32 start_num = 4 [(validate.rules).int32 = {gte: 0}];
   // expected piece count
-  int32 limit = 5;
+  int32 limit = 5 [(validate.rules).int32 = {gte: 0}];
 }
 
 message PieceInfo{

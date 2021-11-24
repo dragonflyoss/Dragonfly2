@@ -17,8 +17,10 @@
 package unit
 
 import (
+	"regexp"
 	"testing"
 
+	"github.com/bmizerany/assert"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -161,4 +163,11 @@ size: 1Mix
 		}
 		assert.Equal(tc.size, data.Size.ToNumber())
 	}
+}
+
+func TestUnmarshal(t *testing.T) {
+	p := regexp.MustCompile("/\\S*/")
+	assert.Equal(t, p.MatchString("ddd"), false)
+	//assert.Equal(t, p.MatchString(""), false)
+	//assert.Equal(t, p.MatchString("  "), false)
 }
