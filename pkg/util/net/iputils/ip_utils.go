@@ -77,7 +77,7 @@ func externalIPv4() (string, error) {
 // refer to https://github.com/dragonflyoss/Dragonfly2/pull/652
 func ipAddrs() ([]net.IP, error) {
 	// use prefer ip possible
-	var prefer []net.IP
+	var prefers []net.IP
 	host, err := os.Hostname()
 	if err == nil {
 		addrs, _ := net.LookupIP(host)
@@ -85,7 +85,7 @@ func ipAddrs() ([]net.IP, error) {
 			if addr == nil || addr.IsLoopback() || addr.IsLinkLocalUnicast() {
 				continue
 			}
-			prefer = append(prefer, addr)
+			prefers = append(prefers, addr)
 		}
 	}
 
@@ -121,8 +121,8 @@ func ipAddrs() ([]net.IP, error) {
 				continue
 			}
 			var isPrefer bool
-			for _, a := range prefer {
-				if a.Equal(ip) {
+			for _, preferAddr := range prefers {
+				if preferAddr.Equal(ip) {
 					isPrefer = true
 				}
 			}
