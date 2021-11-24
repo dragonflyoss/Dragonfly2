@@ -67,13 +67,13 @@ message HostLoad{
 }
 
 message PieceTaskRequest{
-  string task_id = 1 [(validate.rules).string = {pattern:"/\\S/"}];
-  string src_pid = 2 [(validate.rules).string = {pattern:"/\\S/"}];
-  string dst_pid = 3 [(validate.rules).string = {pattern:"/\\S/"}];
+  string task_id = 1 [(validate.rules).string.pattern = "^[\\S]+$"];
+  string src_pid = 2 [(validate.rules).string.pattern = "^[\\S]+$"];
+  string dst_pid = 3 [(validate.rules).string.pattern = "^[\\S]+$"];
   // piece number
-  int32 start_num = 4 [(validate.rules).int32 = {gte: 0}];
+  int32 start_num = 4 [(validate.rules).int32.gte = 0];
   // expected piece count
-  int32 limit = 5 [(validate.rules).int32 = {gte: 0}];
+  int32 limit = 5 [(validate.rules).int32.gte = 1];
 }
 
 message PieceInfo{

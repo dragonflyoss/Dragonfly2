@@ -18,21 +18,22 @@ syntax = "proto3";
 
 package cdnsystem;
 
-import "validator.proto";
 import "pkg/rpc/base/base.proto";
+import "validate/validate.proto";
+
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem";
 
 message SeedRequest{
-  string task_id = 1;
-  string url = 2;
-  base.UrlMeta url_meta = 3;
+  string task_id = 1 [(validate.rules).string.pattern = "^[\\S]+$"];
+  string url = 2 [(validate.rules).string.uri = true];
+  base.UrlMeta url_meta = 3 [(validate.rules).any.required = true];
 }
 
 // keep piece meta and data separately
 // check piece md5, md5s sign and total content length
 message PieceSeed{
   // peer id for cdn node, need suffix with _CDN
-  string peer_id = 2 [(validator.field).string_not_empty=true];
+  string peer_id = 2;
   // cdn node host uuid
   string host_uuid = 3;
   base.PieceInfo piece_info = 4;

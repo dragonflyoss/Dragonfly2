@@ -39,7 +39,6 @@ import (
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -63,9 +62,6 @@ func New(cfg *config.Config, taskMgr supervisor.SeedTaskMgr, opts ...grpc.Server
 }
 
 func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRequest, error) {
-	if err := checkSeedRequestParams(req); err != nil {
-		return nil, err
-	}
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
@@ -90,17 +86,6 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 		TaskID: req.TaskId,
 		Filter: strings.Split(req.UrlMeta.Filter, "&"),
 	}, nil
-}
-
-// checkSeedRequestParams check the params of SeedRequest.
-func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
-	if !urlutils.IsValidURL(req.Url) {
-		return errors.Errorf("resource url: %s is invalid", req.Url)
-	}
-	if stringutils.IsBlank(req.TaskId) {
-		return errors.New("taskId is empty")
-	}
-	return nil
 }
 
 func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
@@ -187,11 +172,6 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		}
 	}()
 	logger.Infof("get piece tasks: %+v", req)
-	if err := checkPieceTasksRequestParams(req); err != nil {
-		err = dferrors.Newf(dfcodes.BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
-		span.RecordError(err)
-		return nil, err
-	}
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
@@ -241,20 +221,4 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	span.SetAttributes(config.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil
-}
-
-func checkPieceTasksRequestParams(req *base.PieceTaskRequest) error {
-	if stringutils.IsBlank(req.TaskId) {
-		return errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is nil")
-	}
-	if stringutils.IsBlank(req.SrcPid) {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "src peer id is nil")
-	}
-	if req.StartNum < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid starNum %d", req.StartNum)
-	}
-	if req.Limit < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid limit %d", req.Limit)
-	}
-	return nil
 }

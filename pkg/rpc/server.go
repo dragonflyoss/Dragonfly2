@@ -22,6 +22,7 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -46,11 +47,13 @@ var DefaultServerOptions = []grpc.ServerOption{
 		streamServerInterceptor,
 		grpc_prometheus.StreamServerInterceptor,
 		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.StreamServerInterceptor(),
 	)),
 	grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 		unaryServerInterceptor,
 		grpc_prometheus.UnaryServerInterceptor,
 		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.UnaryServerInterceptor(),
 	)),
 }
 

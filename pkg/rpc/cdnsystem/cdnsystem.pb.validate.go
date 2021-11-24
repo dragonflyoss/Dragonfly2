@@ -55,37 +55,51 @@ func (m *SeedRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
-
-	// no validation rules for Url
-
-	if all {
-		switch v := interface{}(m.GetUrlMeta()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, SeedRequestValidationError{
-					field:  "UrlMeta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, SeedRequestValidationError{
-					field:  "UrlMeta",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
+	if !_SeedRequest_TaskId_Pattern.MatchString(m.GetTaskId()) {
+		err := SeedRequestValidationError{
+			field:  "TaskId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
 		}
-	} else if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return SeedRequestValidationError{
-				field:  "UrlMeta",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+		if !all {
+			return err
 		}
+		errors = append(errors, err)
+	}
+
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		err = SeedRequestValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
+		err := SeedRequestValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetUrlMeta() == nil {
+		err := SeedRequestValidationError{
+			field:  "UrlMeta",
+			reason: "value is required",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if a := m.GetUrlMeta(); a != nil {
+
 	}
 
 	if len(errors) > 0 {
@@ -163,6 +177,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SeedRequestValidationError{}
+
+var _SeedRequest_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PieceSeed with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

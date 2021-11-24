@@ -398,7 +398,7 @@ func (m *PieceTaskRequest) validate(all bool) error {
 	if !_PieceTaskRequest_TaskId_Pattern.MatchString(m.GetTaskId()) {
 		err := PieceTaskRequestValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"/\\\\S/\"",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
 		}
 		if !all {
 			return err
@@ -409,7 +409,7 @@ func (m *PieceTaskRequest) validate(all bool) error {
 	if !_PieceTaskRequest_SrcPid_Pattern.MatchString(m.GetSrcPid()) {
 		err := PieceTaskRequestValidationError{
 			field:  "SrcPid",
-			reason: "value does not match regex pattern \"/\\\\S/\"",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
 		}
 		if !all {
 			return err
@@ -420,7 +420,7 @@ func (m *PieceTaskRequest) validate(all bool) error {
 	if !_PieceTaskRequest_DstPid_Pattern.MatchString(m.GetDstPid()) {
 		err := PieceTaskRequestValidationError{
 			field:  "DstPid",
-			reason: "value does not match regex pattern \"/\\\\S/\"",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
 		}
 		if !all {
 			return err
@@ -439,10 +439,10 @@ func (m *PieceTaskRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetLimit() < 0 {
+	if m.GetLimit() < 1 {
 		err := PieceTaskRequestValidationError{
 			field:  "Limit",
-			reason: "value must be greater than or equal to 0",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err
@@ -527,11 +527,11 @@ var _ interface {
 	ErrorName() string
 } = PieceTaskRequestValidationError{}
 
-var _PieceTaskRequest_TaskId_Pattern = regexp.MustCompile("/\\S/")
+var _PieceTaskRequest_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
 
-var _PieceTaskRequest_SrcPid_Pattern = regexp.MustCompile("/\\S/")
+var _PieceTaskRequest_SrcPid_Pattern = regexp.MustCompile("^[\\S]+$")
 
-var _PieceTaskRequest_DstPid_Pattern = regexp.MustCompile("/\\S/")
+var _PieceTaskRequest_DstPid_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PieceInfo with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
