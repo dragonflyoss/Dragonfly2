@@ -19,17 +19,18 @@ syntax = "proto3";
 package scheduler;
 
 import "pkg/rpc/base/base.proto";
+import "validate/validate.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
-  string url = 1;
+  string url = 1 [(validate.rules).string.uri = true];
   // url meta info
   base.UrlMeta url_meta = 2;
   // peer's id and must be global uniqueness
-  string peer_id = 3;
+  string peer_id = 3 [(validate.rules).string.pattern = "^[\\S]+$"];
   // peer host info
   PeerHost peer_host = 4;
   // current host load
@@ -63,32 +64,32 @@ message SinglePiece{
 
 message PeerHost{
   // each time the daemon starts, it will generate a different uuid
-  string uuid = 1;
+  string uuid = 1 [(validate.rules).string.uuid = true];
   // peer host ip
-  string ip = 2;
+  string ip = 2 [(validate.rules).string.ip = true];
   // rpc service port for peer
-  int32 rpc_port = 3;
+  int32 rpc_port = 3 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // piece downloading port for peer
-  int32 down_port = 4;
+  int32 down_port = 4 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // peer host name
-  string host_name = 5;
+  string host_name = 5 [(validate.rules).string.hostname = true];
   // security isolation domain for network
-  string security_domain = 6;
+  string security_domain = 6 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
   // location path: area|country|province|city|...
-  string location = 7;
+  string location = 7 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
   // idc where the peer host is located
-  string idc = 8;
+  string idc = 8 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
   // network device path: switch|router|...
-  string net_topology = 9;
+  string net_topology = 9 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
 }
 
 message PieceResult{
   // task id
-  string task_id = 1;
+  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
   // source peer id
-  string src_pid = 2;
+  string src_pid = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
   // dest peer id
-  string dst_pid = 3;
+  string dst_pid = 3 [(validate.rules).string = {pattern:"^[\\S]+$"}];
   // piece info
   base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
@@ -98,7 +99,7 @@ message PieceResult{
   // whether the piece downloading is successfully
   bool success = 7;
   // result code
-  base.Code code = 8;
+  base.Code code = 8 [(validate.rules).enum = {defined_only:true}];
   // current host resource usage
   base.HostLoad host_load = 9;
   // currently completed piece count
@@ -129,12 +130,12 @@ message PeerPacket{
 }
 
 message PeerResult{
-  string task_id = 1;
-  string peer_id = 2;
-  string src_ip = 3;
-  string security_domain = 4;
-  string idc = 5;
-  string url = 6;
+  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string peer_id = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string src_ip = 3 [(validate.rules).string = {ip:true}];
+  string security_domain = 4 [(validate.rules).string = {pattern:"^[\\S]+$", ignore_empty:true}];
+  string idc = 5 [(validate.rules).string = {pattern:"^[\\S]+$", ignore_empty:true}];
+  string url = 6 [(validate.rules).string = {uri:true}];
   // total content length(byte)
   int64 content_length = 7;
   // total network traffic(byte)
@@ -149,8 +150,8 @@ message PeerResult{
 }
 
 message PeerTarget{
-  string task_id = 1;
-  string peer_id = 2;
+  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string peer_id = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
 }
 
 // Scheduler System RPC Service
