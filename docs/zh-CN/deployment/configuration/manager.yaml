@@ -32,6 +32,7 @@ database:
     host: dragonfly
     port: 6379
     db: 0
+
 # 缓存配置
 # cache:
 #   # redis 缓存配置
@@ -44,3 +45,8 @@ database:
 #     size: 10000
 #     # ttl 配置
 #     ttl: 30s
+
+# 开启数据收集服务
+# metrics:
+#  # 数据服务地址
+#  addr: ":8000"
