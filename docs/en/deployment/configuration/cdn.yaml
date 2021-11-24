@@ -55,6 +55,11 @@ base:
     location:
     idc:
 
+  # enable prometheus metrics
+  # metrics:
+  #  # metrics service address
+  #  addr: ":8000"
+
 plugins:
   storagedriver:
     - name: disk

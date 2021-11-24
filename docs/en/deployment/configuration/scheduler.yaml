@@ -97,11 +97,11 @@ job:
     # backendDB
     backendDB: ""
 
-# Whether to disable CDN
+# whether to disable CDN
 # default: false
 disableCDN: false
 
-# Console shows log on console
+# console shows log on console
 # default: false
 console: false
 
@@ -120,3 +120,8 @@ jaeger: ""
 # service name used in tracer
 # default: dragonfly-scheduler
 service-name: dragonfly-scheduler
+
+# enable prometheus metrics
+# metrics:
+#  # metrics service address
+#  addr: ":8000"
