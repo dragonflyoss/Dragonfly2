@@ -49,6 +49,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -84,7 +85,7 @@ type clientDaemon struct {
 	PieceManager    peer.PieceManager
 
 	dynconfig       config.Dynconfig
-	schedulerAddrs  []dfnet.NetAddr
+	schedulers      []*manager.Scheduler
 	schedulerClient schedulerclient.SchedulerClient
 }
 
@@ -102,6 +103,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	}
 
 	var addrs []dfnet.NetAddr
+	var schedulers []*manager.Scheduler
 	var dynconfig config.Dynconfig
 	if opt.Scheduler.Manager.Enable == true {
 		// New manager client
@@ -119,12 +121,11 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		}
 
 		// Get schedulers from manager
-		schedulers, err := dynconfig.GetSchedulers()
-		if err != nil {
+		if schedulers, err = dynconfig.GetSchedulers(); err != nil {
 			return nil, err
 		}
 
-		addrs = schedulersToNetAddrs(schedulers)
+		addrs = schedulersToAvailableNetAddrs(schedulers)
 	} else {
 		addrs = opt.Scheduler.NetAddrs
 	}
@@ -219,7 +220,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
-		schedulerAddrs:  addrs,
+		schedulers:      schedulers,
 		schedulerClient: sched,
 	}, nil
 }
@@ -517,24 +518,45 @@ func (cd *clientDaemon) Stop() {
 }
 
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
-	addrs := schedulersToNetAddrs(data.Schedulers)
-	if reflect.DeepEqual(cd.schedulerAddrs, addrs) {
+	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
 		return
 	}
 
+	// Get the available scheduler addresses and use ip first
+	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
+
 	// Update scheduler client addresses
 	cd.schedulerClient.UpdateState(addrs)
-	cd.schedulerAddrs = addrs
+	cd.schedulers = data.Schedulers
 }
 
-// schedulersToNetAddrs coverts []*manager.Scheduler to []dfnet.NetAddr.
-func schedulersToNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+// schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
+func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
-		netAddrs = append(netAddrs, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
-		})
+		// Check whether the ip can be reached
+		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
+		if err := ipReachable.Check(); err != nil {
+			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
+		} else {
+			netAddrs = append(netAddrs, dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
+			})
+
+			continue
+		}
+
+		// Check whether the host can be reached
+		hostReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port)})
+		if err := hostReachable.Check(); err != nil {
+			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
+		} else {
+			netAddrs = append(netAddrs, dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
+			})
+		}
 	}
 
 	return netAddrs
