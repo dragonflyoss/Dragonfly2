@@ -34,6 +34,7 @@ database:
     host: dragonfly
     port: 6379
     db: 0
+
 # manager server cache
 # cache:
 #   # redis cache configure
@@ -46,3 +47,8 @@ database:
 #     size: 10000
 #     # cache ttl configure
 #     ttl: 30s
+
+# enable prometheus metrics
+# metrics:
+#  # metrics service address
+#  addr: ":8000"

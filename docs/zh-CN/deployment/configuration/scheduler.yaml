@@ -123,3 +123,8 @@ jaeger: ""
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn
 service-name: dragonfly-scheduler
+
+# 开启数据收集服务
+# metrics:
+#  # 数据服务地址
+#  addr: ":8000"
