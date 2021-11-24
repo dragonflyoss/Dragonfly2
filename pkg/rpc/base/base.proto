@@ -46,7 +46,7 @@ message GrpcDfError {
 // UrlMeta describes url meta info.
 message UrlMeta{
   // digest checks integrity of url content, for example md5:xxx or sha256:yyy
-  string digest = 1;
+  string digest = 1 [(validate.rules).string = {pattern: "^(md5)|(sha256):[A-Fa-f0-9]+", ignore_empty:true}];
   // url tag identifies different task for same url, conflict with digest
   string tag = 2;
   // content range for url

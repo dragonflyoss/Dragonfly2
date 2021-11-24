@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -37,7 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
@@ -61,15 +59,11 @@ func New(cfg *config.Config, taskMgr supervisor.SeedTaskMgr, opts ...grpc.Server
 	return svr.Server, nil
 }
 
-func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRequest, error) {
+func constructRegisterRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Digest) {
-			digest := digestutils.Parse(meta.Digest)
-			if _, ok := digestutils.Algorithms[digest[0]]; !ok {
-				return nil, errors.Errorf("unsupported digest algorithm")
-			}
 			header["digest"] = meta.Digest
 		}
 		if !stringutils.IsBlank(meta.Range) {
@@ -85,7 +79,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 		Digest: header["digest"],
 		TaskID: req.TaskId,
 		Filter: strings.Split(req.UrlMeta.Filter, "&"),
-	}, nil
+	}
 }
 
 func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
@@ -103,12 +97,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		}
 		logger.Infof("seeds task %s result success: %t", req.TaskId, err == nil)
 	}()
-	registerRequest, err := constructRegisterRequest(req)
-	if err != nil {
-		err = dferrors.Newf(dfcodes.BadRequest, "bad seed request for task(%s): %v", req.TaskId, err)
-		span.RecordError(err)
-		return err
-	}
+	registerRequest := constructRegisterRequest(req)
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 	if err != nil {
