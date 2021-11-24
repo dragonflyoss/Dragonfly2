@@ -34,7 +34,7 @@ var (
 	cachePath = filepath.Join(dfpath.DefaultCacheDir, "daemon_dynconfig")
 
 	// Watch dynconfig interval
-	watchInterval = 5 * time.Second
+	watchInterval = 10 * time.Second
 )
 
 type DynconfigData struct {
