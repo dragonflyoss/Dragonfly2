@@ -24,10 +24,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/list"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
@@ -72,7 +72,7 @@ func (e reScheduleParentEvent) apply(s *state) {
 	rsPeer.times = rsPeer.times + 1
 	peer := rsPeer.peer
 	if peer.Task.IsFail() {
-		if err := peer.CloseChannelWithError(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed")); err != nil {
+		if err := peer.CloseChannelWithError(dferrors.New(base.Code_SchedTaskStatusError, "schedule task status failed")); err != nil {
 			logger.WithTaskAndPeerID(peer.Task.ID, peer.ID).Warnf("close peer channel failed: %v", err)
 		}
 		return
@@ -88,7 +88,7 @@ func (e reScheduleParentEvent) apply(s *state) {
 	parent, candidates, hasParent := s.sched.ScheduleParent(peer, blankParents)
 	if !hasParent {
 		if peer.Task.CanBackToSource() && !peer.Task.ContainsBackToSourcePeer(peer.ID) {
-			if peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", peer.ID)) == nil {
+			if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source", peer.ID)) == nil {
 				peer.Task.AddBackToSourcePeer(peer.ID)
 			}
 			return
@@ -134,7 +134,7 @@ func (e startReportPieceResultEvent) apply(s *state) {
 	if !hasParent {
 		if e.peer.Task.CanBackToSource() && !e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 			span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-			if e.peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source", e.peer.ID)) == nil {
+			if e.peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source", e.peer.ID)) == nil {
 				e.peer.Task.AddBackToSourcePeer(e.peer.ID)
 			}
 			logger.WithTaskAndPeerID(e.peer.Task.ID,
@@ -226,11 +226,11 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		return
 	}
 	switch e.pr.Code {
-	case dfcodes.ClientWaitPieceReady:
+	case base.Code_ClientWaitPieceReady:
 		return
-	case dfcodes.PeerTaskNotFound:
+	case base.Code_PeerTaskNotFound:
 		s.peerManager.Delete(e.pr.DstPid)
-	case dfcodes.CdnTaskNotFound, dfcodes.CdnError, dfcodes.CdnTaskDownloadFail:
+	case base.Code_CdnTaskNotFound, base.Code_CdnError, base.Code_CdnTaskDownloadFail:
 		s.peerManager.Delete(e.pr.DstPid)
 		go func() {
 			if _, err := s.cdn.StartSeedTask(e.ctx, e.peer.Task); err != nil {
@@ -370,7 +370,7 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 		ParallelCount: 1,
 		MainPeer:      mainPeer,
 		StealPeers:    stealPeers,
-		Code:          dfcodes.Success,
+		Code:          base.Code_Success,
 	}
 	logger.Debugf("send peerPacket %+v to peer %s", peerPacket, peer.ID)
 	return peerPacket
@@ -386,7 +386,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 
 			if task.CanBackToSource() {
 				if !task.ContainsBackToSourcePeer(peer.ID) {
-					if peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)) == nil {
+					if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)) == nil {
 						task.AddBackToSourcePeer(peer.ID)
 					}
 				}
@@ -403,7 +403,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 				return true
 			}
 
-			if err := peer.CloseChannelWithError(dferrors.New(dfcodes.SchedTaskStatusError, "schedule task status failed")); err != nil {
+			if err := peer.CloseChannelWithError(dferrors.New(base.Code_SchedTaskStatusError, "schedule task status failed")); err != nil {
 				peer.Log().Warnf("close peer conn channel failed: %v", err)
 			}
 			return true

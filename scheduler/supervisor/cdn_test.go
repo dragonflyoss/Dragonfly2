@@ -31,7 +31,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -108,7 +107,7 @@ func TestCDN_Initial(t *testing.T) {
 				ctl := gomock.NewController(t)
 				defer ctl.Finish()
 
-				err := dferrors.New(dfcodes.CdnTaskRegistryFail, "mockError")
+				err := dferrors.New(base.Code_CdnTaskRegistryFail, "mockError")
 				mockCDNDynmaicClient := mocks.NewMockCDNDynmaicClient(ctl)
 				mockPeerManager := mocks.NewMockPeerManager(ctl)
 				mockHostManager := mocks.NewMockHostManager(ctl)
@@ -130,7 +129,7 @@ func TestCDN_Initial(t *testing.T) {
 				ctl := gomock.NewController(t)
 				defer ctl.Finish()
 
-				err := dferrors.New(dfcodes.CdnTaskDownloadFail, "mockError")
+				err := dferrors.New(base.Code_CdnTaskDownloadFail, "mockError")
 				mockCDNDynmaicClient := mocks.NewMockCDNDynmaicClient(ctl)
 				mockPeerManager := mocks.NewMockPeerManager(ctl)
 				mockHostManager := mocks.NewMockHostManager(ctl)
@@ -276,7 +275,7 @@ func TestCDN_Initial(t *testing.T) {
 				mockHostManager := mocks.NewMockHostManager(ctl)
 				mockCDNDynmaicClient.EXPECT().ObtainSeeds(gomock.Any(), gomock.Any()).Return(mockPieceSeedStream, nil).AnyTimes()
 
-				err := dferrors.New(dfcodes.CdnTaskRegistryFail, "mockError")
+				err := dferrors.New(base.Code_CdnTaskRegistryFail, "mockError")
 				streamRet := []gomonkey.OutputCell{
 					{Values: gomonkey.Params{nil, err}},
 				}
@@ -301,7 +300,7 @@ func TestCDN_Initial(t *testing.T) {
 				mockHostManager := mocks.NewMockHostManager(ctl)
 				mockCDNDynmaicClient.EXPECT().ObtainSeeds(gomock.Any(), gomock.Any()).Return(mockPieceSeedStream, nil).AnyTimes()
 
-				err := dferrors.New(dfcodes.CdnTaskDownloadFail, "mockError")
+				err := dferrors.New(base.Code_CdnTaskDownloadFail, "mockError")
 				streamRet := []gomonkey.OutputCell{
 					{Values: gomonkey.Params{nil, err}},
 				}
