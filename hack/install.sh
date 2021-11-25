@@ -32,7 +32,7 @@ install() {
 }
 
 install-cdn() {
-    local installCdnDir="${INSTALL_HOME}/${INSTALL_CDN_PATH}"
+    local installCdnDir="${INSTALL_HOME}/${INSTALL_BIN_PATH}"
     echo "install: ${installCdnDir}"
     createDir "${installCdnDir}"
 
