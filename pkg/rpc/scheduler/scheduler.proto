@@ -89,7 +89,7 @@ message PieceResult{
   // source peer id
   string src_pid = 2 [(validate.rules).string.min_len = 1];
   // dest peer id
-  string dst_pid = 3 [(validate.rules).string.min_len = 1];
+  string dst_pid = 3;
   // piece info
   base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
