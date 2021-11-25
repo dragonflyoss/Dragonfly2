@@ -47,7 +47,7 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 
 	user, err := h.service.GetUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *Handlers) GetUsers(ctx *gin.Context) {
 	h.setPaginationDefault(&query.Page, &query.PerPage)
 	users, count, err := h.service.GetUsers(ctx.Request.Context(), query)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -103,7 +103,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 
 	user, err := h.service.SignUp(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -119,7 +119,7 @@ func (h *Handlers) SignUp(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /users/:id/reset_password [post]
+// @Router /users/{id}/reset_password [post]
 func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	var params types.UserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -134,7 +134,7 @@ func (h *Handlers) ResetPassword(ctx *gin.Context) {
 	}
 
 	if err := h.service.ResetPassword(ctx.Request.Context(), params.ID, json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -161,7 +161,7 @@ func (h *Handlers) OauthSignin(ctx *gin.Context) {
 
 	authURL, err := h.service.OauthSignin(ctx.Request.Context(), params.Name)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -194,7 +194,7 @@ func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Contex
 
 		user, err := h.service.OauthSigninCallback(ctx.Request.Context(), params.Name, query.Code)
 		if err != nil {
-			ctx.Error(err)
+			ctx.Error(err) // nolint: errcheck
 			return
 		}
 
@@ -211,7 +211,7 @@ func (h *Handlers) OauthSigninCallback(j *jwt.GinJWTMiddleware) func(*gin.Contex
 // @Success 200 {object} []string
 // @Failure 400
 // @Failure 500
-// @Router /users/:id/roles [get]
+// @Router /users/{id}/roles [get]
 func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 	var params types.UserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -221,7 +221,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 
 	roles, err := h.service.GetRolesForUser(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -238,7 +238,7 @@ func (h *Handlers) GetRolesForUser(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /users/:id/roles/:role [put]
+// @Router /users/{id}/roles/{role} [put]
 func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 	var params types.AddRoleForUserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -247,7 +247,7 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.AddRoleForUser(ctx.Request.Context(), params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusConflict)
@@ -267,7 +267,7 @@ func (h *Handlers) AddRoleToUser(ctx *gin.Context) {
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router /users/:id/roles/:role [delete]
+// @Router /users/{id}/roles/{role} [delete]
 func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	var params types.DeleteRoleForUserParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
@@ -276,7 +276,7 @@ func (h *Handlers) DeleteRoleForUser(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.DeleteRoleForUser(ctx.Request.Context(), params); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusNotFound)

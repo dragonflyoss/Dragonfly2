@@ -66,7 +66,7 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster.SecurityGroup").First(&cdn, &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("CDNCluster").First(&cdn, &model.CDN{
 		HostName:     req.HostName,
 		CDNClusterID: uint(req.CdnClusterId),
 	}).Error; err != nil {
@@ -86,20 +86,13 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 		Ip:           cdn.IP,
 		Port:         cdn.Port,
 		DownloadPort: cdn.DownloadPort,
-		Status:       cdn.Status,
+		State:        cdn.State,
 		CdnClusterId: uint64(cdn.CDNClusterID),
 		CdnCluster: &manager.CDNCluster{
 			Id:     uint64(cdn.CDNCluster.ID),
 			Name:   cdn.CDNCluster.Name,
 			Bio:    cdn.CDNCluster.BIO,
 			Config: config,
-			SecurityGroup: &manager.SecurityGroup{
-				Id:          uint64(cdn.CDNCluster.SecurityGroup.ID),
-				Name:        cdn.CDNCluster.SecurityGroup.Name,
-				Bio:         cdn.CDNCluster.SecurityGroup.BIO,
-				Domain:      cdn.CDNCluster.SecurityGroup.Domain,
-				ProxyDomain: cdn.CDNCluster.SecurityGroup.ProxyDomain,
-			},
 		},
 	}
 
@@ -138,7 +131,7 @@ func (s *GRPC) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 		Port:         cdn.Port,
 		DownloadPort: cdn.DownloadPort,
 		CdnClusterId: uint64(cdn.CDNClusterID),
-		Status:       cdn.Status,
+		State:        cdn.State,
 	}, nil
 }
 
@@ -180,7 +173,7 @@ func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 		Port:         cdn.Port,
 		DownloadPort: cdn.DownloadPort,
 		CdnClusterId: uint64(cdn.CDNClusterID),
-		Status:       cdn.Status,
+		State:        cdn.State,
 	}, nil
 }
 
@@ -197,8 +190,8 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
-	if err := s.db.WithContext(ctx).Preload("SchedulerCluster.SecurityGroup").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
-		Status: model.CDNStatusActive,
+	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
+		State: model.CDNStateActive,
 	}).First(&scheduler, &model.Scheduler{
 		HostName:           req.HostName,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
@@ -244,7 +237,7 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 					Bio:    cdnCluster.BIO,
 					Config: cdnClusterConfig,
 				},
-				Status: cdn.Status,
+				State: cdn.State,
 			})
 		}
 	}
@@ -258,7 +251,7 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 		NetConfig:          schedulerNetConfig,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
-		Status:             scheduler.Status,
+		State:              scheduler.State,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 		SchedulerCluster: &manager.SchedulerCluster{
 			Id:           uint64(scheduler.SchedulerCluster.ID),
@@ -266,13 +259,6 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 			Bio:          scheduler.SchedulerCluster.BIO,
 			Config:       schedulerClusterConfig,
 			ClientConfig: schedulerClusterClientConfig,
-			SecurityGroup: &manager.SecurityGroup{
-				Id:          uint64(scheduler.SchedulerCluster.SecurityGroup.ID),
-				Name:        scheduler.SchedulerCluster.SecurityGroup.Name,
-				Bio:         scheduler.SchedulerCluster.SecurityGroup.BIO,
-				Domain:      scheduler.SchedulerCluster.SecurityGroup.Domain,
-				ProxyDomain: scheduler.SchedulerCluster.SecurityGroup.ProxyDomain,
-			},
 		},
 		Cdns: pbCDNs,
 	}
@@ -321,7 +307,7 @@ func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateScheduler
 		NetConfig:          req.NetConfig,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
-		Status:             scheduler.Status,
+		State:              scheduler.State,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 	}, nil
 }
@@ -374,13 +360,13 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
-		Status:             scheduler.Status,
+		State:              scheduler.State,
 	}, nil
 }
 
 func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	var pbListSchedulersResponse manager.ListSchedulersResponse
-	cacheKey := cache.MakeSchedulersCacheKey(req.HostName)
+	cacheKey := cache.MakeSchedulersCacheKey(req.HostName, req.Ip)
 
 	// Cache Hit
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
@@ -391,23 +377,19 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
-	if err := s.db.WithContext(ctx).Preload("SecurityGroup").Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
 	// Search optimal scheduler cluster
-	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req.HostInfo)
+	schedulerCluster, ok := s.searcher.FindSchedulerCluster(schedulerClusters, req)
 	if !ok {
-		if err := s.db.WithContext(ctx).Find(&schedulerCluster, &model.SchedulerCluster{
-			IsDefault: true,
-		}).Error; err != nil {
-			return nil, status.Error(codes.Unknown, err.Error())
-		}
+		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
 
 	schedulers := []model.Scheduler{}
 	if err := s.db.WithContext(ctx).Find(&schedulers, &model.Scheduler{
-		Status:             model.SchedulerStatusActive,
+		State:              model.SchedulerStateActive,
 		SchedulerClusterID: schedulerCluster.ID,
 	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
@@ -429,7 +411,7 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 			Ip:                 scheduler.IP,
 			Port:               scheduler.Port,
 			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
-			Status:             scheduler.Status,
+			State:              scheduler.State,
 		})
 	}
 
@@ -463,7 +445,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 			HostName:           hostName,
 			SchedulerClusterID: clusterID,
 		}).Updates(model.Scheduler{
-			Status: model.SchedulerStatusActive,
+			State: model.SchedulerStateActive,
 		}).Error; err != nil {
 			return status.Error(codes.Unknown, err.Error())
 		}
@@ -483,7 +465,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 			HostName:     hostName,
 			CDNClusterID: clusterID,
 		}).Updates(model.CDN{
-			Status: model.CDNStatusActive,
+			State: model.CDNStateActive,
 		}).Error; err != nil {
 			return status.Error(codes.Unknown, err.Error())
 		}
@@ -506,7 +488,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 					HostName:           hostName,
 					SchedulerClusterID: clusterID,
 				}).Updates(model.Scheduler{
-					Status: model.SchedulerStatusInactive,
+					State: model.SchedulerStateInactive,
 				}).Error; err != nil {
 					return status.Error(codes.Unknown, err.Error())
 				}
@@ -526,7 +508,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 					HostName:     hostName,
 					CDNClusterID: clusterID,
 				}).Updates(model.CDN{
-					Status: model.CDNStatusInactive,
+					State: model.CDNStateInactive,
 				}).Error; err != nil {
 					return status.Error(codes.Unknown, err.Error())
 				}

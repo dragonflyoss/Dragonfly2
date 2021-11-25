@@ -59,14 +59,16 @@ func MoveFile(src, dst string) error {
 		return errors.Errorf("move %s to %s: src is not a regular file", src, dst)
 	}
 
-	var err error
-	if err = os.Rename(src, dst); err != nil {
-		if _, err = CopyFile(src, dst); err == nil {
-			fileutils.DeleteFile(src)
+	if err := os.Rename(src, dst); err != nil {
+		if _, err := CopyFile(src, dst); err != nil {
+			return errors.Wrapf(err, "failed to copy %s to %s", src, dst)
+		}
+		if err := fileutils.DeleteFile(src); err != nil {
+			return errors.Wrapf(err, "failed to delete %s", src)
 		}
 	}
 
-	return errors.Wrapf(err, "failed to move %s to %s", src, dst)
+	return nil
 }
 
 // CleanFile cleans content of the file.

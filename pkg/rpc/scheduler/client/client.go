@@ -58,6 +58,8 @@ type SchedulerClient interface {
 
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
+	UpdateState(addrs []dfnet.NetAddr)
+
 	Close() error
 }
 
@@ -147,8 +149,7 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
 	// trigger scheduling
-	pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
-	return pps, err
+	return pps, pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {

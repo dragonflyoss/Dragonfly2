@@ -73,20 +73,23 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 	return pps, nil
 }
 
-func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
+func (pps *peerPacketStream) Send(pr *scheduler.PieceResult) error {
 	pps.lastPieceResult = pr
-	err = pps.stream.Send(pr)
+
+	if err := pps.stream.Send(pr); err != nil {
+		if err := pps.closeSend(); err != nil {
+			return err
+		}
+		return err
+	}
 
 	if pr.PieceInfo.PieceNum == common.EndOfPiece {
-		pps.closeSend()
-		return
+		if err := pps.closeSend(); err != nil {
+			return err
+		}
 	}
 
-	if err != nil {
-		pps.closeSend()
-	}
-
-	return
+	return nil
 }
 
 func (pps *peerPacketStream) closeSend() error {

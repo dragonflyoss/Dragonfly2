@@ -181,4 +181,5 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 			resolver.UpdateAddrs(addrs)
 		}
 	}
+
 }

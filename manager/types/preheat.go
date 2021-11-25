@@ -29,7 +29,7 @@ type CreateV1PreheatResponse struct {
 
 type GetV1PreheatResponse struct {
 	ID         string `json:"id"`
-	Status     string `json:"status"`
+	State      string `json:"state"`
 	StartTime  string `json:"startTime,omitempty"`
 	FinishTime string `json:"finishTime,omitempty"`
 }

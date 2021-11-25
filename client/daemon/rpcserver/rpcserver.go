@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -137,7 +138,7 @@ func (m *server) Download(ctx context.Context,
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,
 			UrlMeta:  req.UrlMeta,
-			PeerId:   clientutil.GenPeerID(m.peerHost),
+			PeerId:   idgen.PeerID(m.peerHost.Ip),
 			PeerHost: m.peerHost,
 		},
 		Output:            req.Output,

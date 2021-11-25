@@ -42,9 +42,7 @@ const (
 	OtelServiceName         = "dragonfly-manager"
 )
 
-var (
-	GinLogFileName = "gin.log"
-)
+var GinLogFileName = "gin.log"
 
 func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
@@ -147,6 +145,18 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
 
+	// Application
+	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
+	cs.POST("", h.CreateApplication)
+	cs.DELETE(":id", h.DestroyApplication)
+	cs.PATCH(":id", h.UpdateApplication)
+	cs.GET(":id", h.GetApplication)
+	cs.GET("", h.GetApplications)
+	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToApplication)
+	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
+	cs.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToApplication)
+	cs.DELETE(":id/cdn-clusters/:cdn_cluster_id", h.DeleteCDNClusterToApplication)
+
 	// CDN Cluster
 	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
 	cc.POST("", h.CreateCDNCluster)
@@ -165,6 +175,14 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	c.GET(":id", h.GetCDN)
 	c.GET("", h.GetCDNs)
 
+	// Security Rule
+	sr := apiv1.Group("/security-rules", jwt.MiddlewareFunc(), rbac)
+	sr.POST("", h.CreateSecurityRule)
+	sr.DELETE(":id", h.DestroySecurityRule)
+	sr.PATCH(":id", h.UpdateSecurityRule)
+	sr.GET(":id", h.GetSecurityRule)
+	sr.GET("", h.GetSecurityRules)
+
 	// Security Group
 	sg := apiv1.Group("/security-groups", jwt.MiddlewareFunc(), rbac)
 	sg.POST("", h.CreateSecurityGroup)
@@ -174,6 +192,8 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
+	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
+	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 
 	// Config
 	config := apiv1.Group("/configs")

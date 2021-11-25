@@ -51,16 +51,19 @@ func (s *PluginsTestSuite) TestPluginBuilder() {
 	manager := NewManager()
 
 	var testFunc = func(pt PluginType, name string, b Builder, result bool) {
-		manager.AddBuilder(pt, name, b)
-		obj, _ := manager.GetBuilder(pt, name)
-		if result {
-			s.NotNil(obj)
+		err := manager.AddBuilder(pt, name, b)
+		if !result {
+			s.Require().NotNil(err)
+		}
+		obj, ok := manager.GetBuilder(pt, name)
+		if ok {
+			s.Require().NotNil(obj)
 			objVal := reflect.ValueOf(obj)
 			bVal := reflect.ValueOf(b)
-			s.Equal(objVal.Pointer(), bVal.Pointer())
+			s.Require().Equal(objVal.Pointer(), bVal.Pointer())
 			manager.DeleteBuilder(pt, name)
 		} else {
-			s.Nil(obj)
+			s.Require().Nil(obj)
 		}
 	}
 
@@ -76,14 +79,17 @@ func (s *PluginsTestSuite) TestManagerPlugin() {
 	manager := NewManager()
 
 	var testFunc = func(p Plugin, result bool) {
-		manager.AddPlugin(p)
-		obj, _ := manager.GetPlugin(p.Type(), p.Name())
-		if result {
-			s.NotNil(obj)
-			s.Equal(obj, p)
+		err := manager.AddPlugin(p)
+		if !result {
+			s.Require().NotNil(err)
+		}
+		obj, ok := manager.GetPlugin(p.Type(), p.Name())
+		if ok {
+			s.Require().NotNil(obj)
+			s.Require().Equal(obj, p)
 			manager.DeletePlugin(p.Type(), p.Name())
 		} else {
-			s.Nil(obj)
+			s.Require().Nil(obj)
 		}
 	}
 
@@ -128,16 +134,19 @@ func (s *PluginsTestSuite) TestRepositoryIml() {
 
 	repo := NewRepository()
 	for _, v := range cases {
-		repo.Add(v.pt, v.name, v.data)
-		data, _ := repo.Get(v.pt, v.name)
-		if v.addResult {
-			s.NotNil(data)
-			s.Equal(data, v.data)
+		err := repo.Add(v.pt, v.name, v.data)
+		if !v.addResult {
+			s.Require().NotNil(err)
+		}
+		data, ok := repo.Get(v.pt, v.name)
+		if ok {
+			s.Require().NotNil(data)
+			s.Require().Equal(data, v.data)
 			repo.Delete(v.pt, v.name)
 			data, _ = repo.Get(v.pt, v.name)
-			s.Nil(data)
+			s.Require().Nil(data)
 		} else {
-			s.Nil(data)
+			s.Require().Nil(data)
 		}
 	}
 }
@@ -159,7 +168,7 @@ func (s *PluginsTestSuite) TestValidate() {
 		)
 	}
 	for _, v := range cases {
-		s.Equal(validate(v.pt, v.name), v.expected)
+		s.Require().Equal(validate(v.pt, v.name), v.expected)
 	}
 }
 

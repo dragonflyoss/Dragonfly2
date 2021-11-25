@@ -36,14 +36,19 @@ database:
     db: 0
 
 # manager server cache
-cache:
-  # redis cache configure
-  redis:
-    # cache ttl configure unit[nanosecond]
-    ttl: 30000000000
-  # local cache configure
-  local:
-    # lfu cache size
-    size: 10000
-    # cache ttl configure unit[nanosecond]
-    ttl: 30000000000
+# cache:
+#   # redis cache configure
+#   redis:
+#     # cache ttl configure
+#     ttl: 30s
+#   # local cache configure
+#   local:
+#     # lfu cache size
+#     size: 10000
+#     # cache ttl configure
+#     ttl: 30s
+
+# enable prometheus metrics
+# metrics:
+#  # metrics service address
+#  addr: ":8000"

@@ -72,6 +72,6 @@ func MakeSchedulerCacheKey(hostname string, clusterID uint) string {
 	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
-func MakeSchedulersCacheKey(hostname string) string {
-	return MakeCacheKey(SchedulersNamespace, hostname)
+func MakeSchedulersCacheKey(hostname, ip string) string {
+	return MakeCacheKey(SchedulersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
 }

@@ -2,17 +2,11 @@
 
 # scheduler 调度策略配置
 scheduler:
-  # abtest 是否开启ab测试
-  # default: false
-  abtest: false
-  # aevaluator 指定当开启AB测试时，后缀为 _A 的 taskID 使用的 evaluator 计算方法
-  # 只有当开启了 AB 测试的情况下该配置才生效
-  # default: ""
-  aevaluator: ""
-  # bevaluator 指定当开启AB测试时，后缀为 _B 的 taskID 使用的 evaluator 计算方法
-  # 只有当开启了 AB 测试的情况下该配置才生效
-  # default: ""
-  bevaluator: ""
+  # algorithm 使用不同调度算法配置，当前默认支持 "default" 和 "ml" 两种类型
+  # "default" 为基于规则的调度算法, "ml" 为基于机器学习的调度算法
+  # 也支持用户 plugin 扩展的方式，值为 "plugin"
+  # 并且在 dragonfly 工作目录 plugins 中添加编译好的 `d7y-scheduler-plugin-evaluator.so` 文件
+  algorithm: default
   # workerNum 执行调度任务处理的 goroutine 数量
   # default: 默认机器可用的 CPU 数量
   workerNum: 12
@@ -129,3 +123,8 @@ jaeger: ""
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn
 service-name: dragonfly-scheduler
+
+# 开启数据收集服务
+# metrics:
+#  # 数据服务地址
+#  addr: ":8000"

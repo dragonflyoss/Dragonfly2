@@ -14,17 +14,38 @@
  * limitations under the License.
  */
 
-package clientutil
+package hostutils
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/pborman/uuid"
-
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/Showmax/go-fqdn"
 )
 
-func GenPeerID(peerHost *scheduler.PeerHost) string {
-	return fmt.Sprintf("%s-%d-%s", peerHost.Ip, os.Getpid(), uuid.New())
+var Hostname string
+var FQDNHostname string
+
+func init() {
+	Hostname = hostname()
+	FQDNHostname = fqdnHostname()
+}
+
+// Get kernel hostname
+func hostname() string {
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return name
+}
+
+// Get FQDN hostname
+func fqdnHostname() string {
+	fqdn, err := fqdn.FqdnHostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return fqdn
 }

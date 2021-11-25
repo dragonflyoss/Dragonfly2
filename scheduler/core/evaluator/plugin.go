@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-package cdnutil
+package evaluator
 
 import (
-	"fmt"
-	"testing"
+	"errors"
 
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/internal/dfplugin"
 )
 
-func TestGenCdnPeerID(t *testing.T) {
-	var taskID = "123456"
-	if got, want := GenCDNPeerID(taskID), fmt.Sprint(iputils.HostName, "-", taskID, "_CDN"); got != want {
-		t.Errorf("GenCdnPeerID() = %v, want %v", got, want)
+const (
+	pluginName = "evaluator"
+)
+
+func LoadPlugin() (Evaluator, error) {
+	client, _, err := dfplugin.Load(dfplugin.PluginTypeScheduler, pluginName, map[string]string{})
+	if err != nil {
+		return nil, err
 	}
+
+	if rc, ok := client.(Evaluator); ok {
+		return rc, err
+	}
+	return nil, errors.New("invalid client, not a ResourceClient")
 }

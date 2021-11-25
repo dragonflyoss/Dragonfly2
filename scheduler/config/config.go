@@ -25,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -43,9 +44,7 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
-			ABTest:               false,
-			AEvaluator:           "",
-			BEvaluator:           "",
+			Algorithm:            "default",
 			WorkerNum:            runtime.GOMAXPROCS(0),
 			BackSourceCount:      3,
 			AccessWindow:         3 * time.Minute,
@@ -64,8 +63,8 @@ func New() *Config {
 			},
 		},
 		Server: &ServerConfig{
-			IP:   iputils.HostIP,
-			Host: iputils.HostName,
+			IP:   iputils.IPv4,
+			Host: hostutils.FQDNHostname,
 			Port: 8002,
 		},
 		DynConfig: &DynConfig{
@@ -179,9 +178,7 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	ABTest          bool   `yaml:"abtest" mapstructure:"abtest"`
-	AEvaluator      string `yaml:"aevaluator" mapstructure:"aevaluator"`
-	BEvaluator      string `yaml:"bevaluator" mapstructure:"bevaluator"`
+	Algorithm       string `yaml:"algorithm" mapstructure:"algorithm"`
 	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
 	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	// AccessWindow should less than CDN task expireTime

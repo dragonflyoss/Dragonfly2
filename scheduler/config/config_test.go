@@ -39,10 +39,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			CDNDirPath: "tmp",
 		},
 		Scheduler: &SchedulerConfig{
-			ABTest:     true,
-			AEvaluator: "a-evaluator",
-			BEvaluator: "b-evaluator",
-			WorkerNum:  8,
+			Algorithm: "default",
+			WorkerNum: 8,
 		},
 		Server: &ServerConfig{
 			IP:   "127.0.0.1",
@@ -81,8 +79,13 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	schedulerConfigYAML := &Config{}
 	contentYAML, _ := ioutil.ReadFile("./testdata/scheduler.yaml")
 	var dataYAML map[string]interface{}
-	yaml.Unmarshal(contentYAML, &dataYAML)
-	mapstructure.Decode(dataYAML, &schedulerConfigYAML)
+	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
+		t.Fatal(err)
+	}
 	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
 }
 

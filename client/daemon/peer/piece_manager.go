@@ -360,7 +360,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			// last piece, piece size maybe 0
 			if n < int64(size) {
 				contentLength = int64(pieceNum*pieceSize) + n
-				pm.storageManager.UpdateTask(ctx,
+				if err := pm.storageManager.UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
 						PeerTaskMetaData: storage.PeerTaskMetaData{
 							PeerID: pt.GetPeerID(),
@@ -368,7 +368,9 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 						},
 						ContentLength:  contentLength,
 						GenPieceDigest: true,
-					})
+					}); err != nil {
+					log.Errorf("update task failed %s", err)
+				}
 				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
@@ -397,8 +399,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		}
 	}
 	pt.SetTotalPieces(maxPieceNum)
-	pt.SetContentLength(contentLength)
-	pm.storageManager.UpdateTask(ctx,
+	if err := pt.SetContentLength(contentLength); err != nil {
+		log.Errorf("set content length failed %s", err)
+	}
+
+	if err := pm.storageManager.UpdateTask(ctx,
 		&storage.UpdateTaskRequest{
 			PeerTaskMetaData: storage.PeerTaskMetaData{
 				PeerID: pt.GetPeerID(),
@@ -407,7 +412,9 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			ContentLength:  contentLength,
 			TotalPieces:    maxPieceNum,
 			GenPieceDigest: true,
-		})
+		}); err != nil {
+		log.Errorf("update task failed %s", err)
+	}
 	log.Infof("download from source ok")
 	return nil
 }

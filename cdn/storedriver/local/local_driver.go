@@ -43,8 +43,13 @@ const (
 var fileLocker = synclock.NewLockerPool()
 
 func init() {
-	storedriver.Register(DiskDriverName, NewStorageDriver)
-	storedriver.Register(MemoryDriverName, NewStorageDriver)
+	if err := storedriver.Register(DiskDriverName, NewStorageDriver); err != nil {
+		logger.CoreLogger.Error(err)
+	}
+
+	if err := storedriver.Register(MemoryDriverName, NewStorageDriver); err != nil {
+		logger.CoreLogger.Error(err)
+	}
 }
 
 // driver is one of the implementations of storage Driver using local file system.

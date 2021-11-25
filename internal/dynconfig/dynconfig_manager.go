@@ -20,6 +20,7 @@ import (
 	"errors"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/cache"
 )
 
@@ -58,7 +59,9 @@ func (d *dynconfigManager) get() (interface{}, error) {
 
 	// Cache has expired
 	// Reload and ignore client request error
-	d.load()
+	if err := d.load(); err != nil {
+		logger.Warn("reload failed ", err)
+	}
 
 	dynconfig, ok := d.cache.Get(defaultCacheKey)
 	if !ok {

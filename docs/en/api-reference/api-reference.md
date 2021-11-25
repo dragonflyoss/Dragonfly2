@@ -25,6 +25,399 @@ Dragonfly Manager Server
 <a name="paths"></a>
 ## Paths
 
+<a name="api-v1-applications-post"></a>
+### Create Application
+```
+POST /api/v1/applications
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**Application**  <br>*required*|Application|[types.CreateApplicationRequest](#types-createapplicationrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-get"></a>
+### Get Applications
+```
+GET /api/v1/applications
+```
+
+
+#### Description
+Get Applications
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.Application](#model-application) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-get"></a>
+### Get Application
+```
+GET /api/v1/applications/{id}
+```
+
+
+#### Description
+Get Application by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-delete"></a>
+### Destroy Application
+```
+DELETE /api/v1/applications/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-patch"></a>
+### Update Application
+```
+PATCH /api/v1/applications/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**Application**  <br>*required*|Application|[types.UpdateApplicationRequest](#types-updateapplicationrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.Application](#model-application)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-put"></a>
+### Add CDN to Application
+```
+PUT /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### Description
+Add CDN to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*required*|cdn cluster id|string|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-cdn-clusters-cdn_cluster_id-delete"></a>
+### Delete CDN to Application
+```
+DELETE /api/v1/applications/{id}/cdn-clusters/{cdn_cluster_id}
+```
+
+
+#### Description
+Delete CDN to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**cdn_cluster_id**  <br>*required*|cdn cluster id|string|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-put"></a>
+### Add Scheduler to Application
+```
+PUT /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### Description
+Add Scheduler to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*required*|scheduler cluster id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
+<a name="api-v1-applications-id-scheduler-clusters-scheduler_cluster_id-delete"></a>
+### Delete Scheduler to Application
+```
+DELETE /api/v1/applications/{id}/scheduler-clusters/{scheduler_cluster_id}
+```
+
+
+#### Description
+Delete Scheduler to Application
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**scheduler_cluster_id**  <br>*required*|scheduler cluster id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Application
+
+
 <a name="api-v1-cdn-clusters-post"></a>
 ### Create CDNCluster
 ```
@@ -2337,6 +2730,268 @@ Add Scheduler to SecurityGroup
 * SecurityGroup
 
 
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-put"></a>
+### Add SecurityRule to SecurityGroup
+```
+PUT /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### Description
+Add SecurityRule to SecurityGroup
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**security_rule_id**  <br>*required*|security rule id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityGroup
+
+
+<a name="api-v1-security-groups-id-security-rules-security_rule_id-delete"></a>
+### Destroy SecurityRule to SecurityGroup
+```
+DELETE /api/v1/security-groups/{id}/security-rules/{security_rule_id}
+```
+
+
+#### Description
+Destroy SecurityRule to SecurityGroup
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**security_rule_id**  <br>*required*|security rule id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityGroup
+
+
+<a name="api-v1-security-rules-post"></a>
+### Create SecurityRule
+```
+POST /api/v1/security-rules
+```
+
+
+#### Description
+create by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**SecurityRule**  <br>*required*|SecurityRule|[types.CreateSecurityRuleRequest](#types-createsecurityrulerequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-get"></a>
+### Get SecurityRules
+```
+GET /api/v1/security-rules
+```
+
+
+#### Description
+Get SecurityRules
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|Default|
+|---|---|---|---|---|
+|**Query**|**page**  <br>*required*|current page|integer|`0`|
+|**Query**|**per_page**  <br>*required*|return max item count, default 10, max 50|integer|`10`|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< [model.SecurityRule](#model-securityrule) > array|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-get"></a>
+### Get SecurityRule
+```
+GET /api/v1/security-rules/{id}
+```
+
+
+#### Description
+Get SecurityRule by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
+<a name="api-v1-security-rules-id-patch"></a>
+### Update SecurityRule
+```
+PATCH /api/v1/security-rules/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**SecurityRule**  <br>*required*|SecurityRule|[types.UpdateSecurityRuleRequest](#types-updatesecurityrulerequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.SecurityRule](#model-securityrule)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
+
+
 <a name="api-v1-securitygroups-id-delete"></a>
 ### Destroy SecurityGroup
 ```
@@ -2378,6 +3033,49 @@ Destroy by id
 #### Tags
 
 * SecurityGroup
+
+
+<a name="api-v1-securityrules-id-delete"></a>
+### Destroy SecurityRule
+```
+DELETE /api/v1/securityRules/{id}
+```
+
+
+#### Description
+Destroy by id
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**404**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* SecurityRule
 
 
 <a name="api-v1-user-signin-name-get"></a>
@@ -2543,171 +3241,6 @@ Get Users
 * CDN
 
 
-<a name="api-v1-users-id-reset_password-post"></a>
-### Reset Password For User
-```
-POST /api/v1/users/:id/reset_password
-```
-
-
-#### Description
-reset password by json config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Body**|**User**  <br>*required*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* User
-
-
-<a name="api-v1-users-id-roles-get"></a>
-### Get User Roles
-```
-GET /api/v1/users/:id/roles
-```
-
-
-#### Description
-get roles by json config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-
-
-#### Responses
-
-|HTTP Code|Description|Schema|
-|---|---|---|
-|**200**|OK|< string > array|
-|**400**||No Content|
-|**500**||No Content|
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* User
-
-
-<a name="api-v1-users-id-roles-role-put"></a>
-### Add Role For User
-```
-PUT /api/v1/users/:id/roles/:role
-```
-
-
-#### Description
-add role to user by uri config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-|**Path**|**role**  <br>*required*|role|string|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* Users
-
-
-<a name="api-v1-users-id-roles-role-delete"></a>
-### Delete Role For User
-```
-DELETE /api/v1/users/:id/roles/:role
-```
-
-
-#### Description
-delete role by uri config
-
-
-#### Parameters
-
-|Type|Name|Description|Schema|
-|---|---|---|---|
-|**Path**|**id**  <br>*required*|id|string|
-|**Path**|**role**  <br>*required*|role|string|
-
-
-#### Responses
-
-|HTTP Code|Schema|
-|---|---|
-|**200**|No Content|
-|**400**|No Content|
-|**500**|No Content|
-
-
-#### Consumes
-
-* `application/json`
-
-
-#### Produces
-
-* `application/json`
-
-
-#### Tags
-
-* Users
-
-
 <a name="api-v1-users-id-get"></a>
 ### Get User
 ```
@@ -2751,10 +3284,191 @@ Get User by id
 * User
 
 
+<a name="api-v1-users-id-reset_password-post"></a>
+### Reset Password For User
+```
+POST /api/v1/users/{id}/reset_password
+```
+
+
+#### Description
+reset password by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Body**|**User**  <br>*required*|User|[types.ResetPasswordRequest](#types-resetpasswordrequest)|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
+<a name="api-v1-users-id-roles-get"></a>
+### Get User Roles
+```
+GET /api/v1/users/{id}/roles
+```
+
+
+#### Description
+get roles by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|< string > array|
+|**400**||No Content|
+|**500**||No Content|
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
+<a name="api-v1-users-id-roles-role-put"></a>
+### Add Role For User
+```
+PUT /api/v1/users/{id}/roles/{role}
+```
+
+
+#### Description
+add role to user by uri config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**role**  <br>*required*|role|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Users
+
+
+<a name="api-v1-users-id-roles-role-delete"></a>
+### Delete Role For User
+```
+DELETE /api/v1/users/{id}/roles/{role}
+```
+
+
+#### Description
+delete role by uri config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Path**|**role**  <br>*required*|role|string|
+
+
+#### Responses
+
+|HTTP Code|Schema|
+|---|---|
+|**200**|No Content|
+|**400**|No Content|
+|**500**|No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* Users
+
+
 
 
 <a name="definitions"></a>
 ## Definitions
+
+<a name="model-application"></a>
+### model.Application
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
+|**download_rate_limit**  <br>*optional*|integer|
+|**id**  <br>*optional*|integer|
+|**name**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
+|**updated_at**  <br>*optional*|string|
+|**url**  <br>*optional*|string|
+|**user_id**  <br>*optional*|integer|
+
 
 <a name="model-cdn"></a>
 ### model.CDN
@@ -2770,7 +3484,7 @@ Get User by id
 |**ip**  <br>*optional*|string|
 |**location**  <br>*optional*|string|
 |**port**  <br>*optional*|integer|
-|**status**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
 |**updated_at**  <br>*optional*|string|
 
 
@@ -2779,6 +3493,7 @@ Get User by id
 
 |Name|Schema|
 |---|---|
+|**application_id**  <br>*optional*|integer|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
 |**created_at**  <br>*optional*|string|
@@ -2822,7 +3537,7 @@ Get User by id
 |**id**  <br>*optional*|integer|
 |**result**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
 |**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
-|**status**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
 |**task_id**  <br>*optional*|string|
 |**type**  <br>*optional*|string|
 |**updated_at**  <br>*optional*|string|
@@ -2858,7 +3573,7 @@ Get User by id
 |**net_config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
 |**port**  <br>*optional*|integer|
 |**schedulerClusterID**  <br>*optional*|integer|
-|**status**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
 |**updated_at**  <br>*optional*|string|
 |**vips**  <br>*optional*|string|
 
@@ -2868,6 +3583,7 @@ Get User by id
 
 |Name|Schema|
 |---|---|
+|**application_id**  <br>*optional*|integer|
 |**bio**  <br>*optional*|string|
 |**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
 |**client_config**  <br>*optional*|[model.JSONMap](#model-jsonmap)|
@@ -2889,10 +3605,24 @@ Get User by id
 |---|---|
 |**bio**  <br>*optional*|string|
 |**created_at**  <br>*optional*|string|
+|**id**  <br>*optional*|integer|
+|**name**  <br>*optional*|string|
+|**security_rules**  <br>*optional*|< [model.SecurityRule](#model-securityrule) > array|
+|**updated_at**  <br>*optional*|string|
+
+
+<a name="model-securityrule"></a>
+### model.SecurityRule
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**created_at**  <br>*optional*|string|
 |**domain**  <br>*optional*|string|
 |**id**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
 |**proxy_domain**  <br>*optional*|string|
+|**security_groups**  <br>*optional*|< [model.SecurityGroup](#model-securitygroup) > array|
 |**updated_at**  <br>*optional*|string|
 
 
@@ -2940,6 +3670,19 @@ Get User by id
 |**net_topology**  <br>*optional*|string|
 
 
+<a name="types-createapplicationrequest"></a>
+### types.CreateApplicationRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**download_rate_limit**  <br>*optional*|integer|
+|**name**  <br>*required*|string|
+|**state**  <br>*optional*|string|
+|**url**  <br>*optional*|string|
+|**user_id**  <br>*required*|integer|
+
+
 <a name="types-createcdnclusterrequest"></a>
 ### types.CreateCDNClusterRequest
 
@@ -2947,8 +3690,8 @@ Get User by id
 |---|---|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*required*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
+|**is_default**  <br>*optional*|boolean|
 |**name**  <br>*required*|string|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-createcdnrequest"></a>
@@ -3023,7 +3766,6 @@ Get User by id
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*required*|string|
 |**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-createschedulerrequest"></a>
@@ -3043,6 +3785,15 @@ Get User by id
 
 <a name="types-createsecuritygrouprequest"></a>
 ### types.CreateSecurityGroupRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**name**  <br>*required*|string|
+
+
+<a name="types-createsecurityrulerequest"></a>
+### types.CreateSecurityRuleRequest
 
 |Name|Schema|
 |---|---|
@@ -3088,7 +3839,7 @@ Get User by id
 |**finishTime**  <br>*optional*|string|
 |**id**  <br>*optional*|string|
 |**startTime**  <br>*optional*|string|
-|**status**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
 
 
 <a name="types-resetpasswordrequest"></a>
@@ -3132,6 +3883,19 @@ Get User by id
 |**phone**  <br>*optional*|string|
 
 
+<a name="types-updateapplicationrequest"></a>
+### types.UpdateApplicationRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**download_rate_limit**  <br>*optional*|integer|
+|**name**  <br>*optional*|string|
+|**state**  <br>*optional*|string|
+|**url**  <br>*optional*|string|
+|**user_id**  <br>*required*|integer|
+
+
 <a name="types-updatecdnclusterrequest"></a>
 ### types.UpdateCDNClusterRequest
 
@@ -3139,8 +3903,8 @@ Get User by id
 |---|---|
 |**bio**  <br>*optional*|string|
 |**config**  <br>*optional*|[types.CDNClusterConfig](#types-cdnclusterconfig)|
+|**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-updatecdnrequest"></a>
@@ -3200,7 +3964,6 @@ Get User by id
 |**is_default**  <br>*optional*|boolean|
 |**name**  <br>*optional*|string|
 |**scopes**  <br>*optional*|[types.SchedulerClusterScopes](#types-schedulerclusterscopes)|
-|**security_group_domain**  <br>*optional*|string|
 
 
 <a name="types-updateschedulerrequest"></a>
@@ -3220,6 +3983,15 @@ Get User by id
 
 <a name="types-updatesecuritygrouprequest"></a>
 ### types.UpdateSecurityGroupRequest
+
+|Name|Schema|
+|---|---|
+|**bio**  <br>*optional*|string|
+|**name**  <br>*optional*|string|
+
+
+<a name="types-updatesecurityrulerequest"></a>
+### types.UpdateSecurityRuleRequest
 
 |Name|Schema|
 |---|---|
