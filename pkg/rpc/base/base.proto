@@ -124,7 +124,7 @@ message PieceInfo{
   int32 piece_num = 1 [(validate.rules).int32 = {lte:0}];
   uint64 range_start = 2 [(validate.rules).uint64 = {lte:0}];
   int32 range_size = 3 [(validate.rules).int32 = {lte:0}];
-  string piece_md5 = 4 [(validate.rules).string.min_len = 1];
+  string piece_md5 = 4 ;
   uint64 piece_offset = 5 [(validate.rules).uint64 = {lte:0}];
   base.PieceStyle piece_style = 6 [(validate.rules).enum = {defined_only:true}];
 }

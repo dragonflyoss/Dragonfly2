@@ -612,16 +612,7 @@ func (m *PieceInfo) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetPieceMd5()) < 1 {
-		err := PieceInfoValidationError{
-			field:  "PieceMd5",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for PieceMd5
 
 	if m.GetPieceOffset() > 0 {
 		err := PieceInfoValidationError{
