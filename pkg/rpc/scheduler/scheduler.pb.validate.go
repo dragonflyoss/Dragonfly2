@@ -43,6 +43,9 @@ var (
 	_ = base.Code(0)
 )
 
+// define the regex for a UUID once up-front
+var _scheduler_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on PeerTaskRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -65,7 +68,26 @@ func (m *PeerTaskRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Url
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		err = PeerTaskRequestValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
+		err := PeerTaskRequestValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetUrlMeta()).(type) {
@@ -96,7 +118,16 @@ func (m *PeerTaskRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for PeerId
+	if !_PeerTaskRequest_PeerId_Pattern.MatchString(m.GetPeerId()) {
+		err := PeerTaskRequestValidationError{
+			field:  "PeerId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetPeerHost()).(type) {
@@ -234,6 +265,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PeerTaskRequestValidationError{}
+
+var _PeerTaskRequest_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on RegisterResult with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -529,27 +562,164 @@ func (m *PeerHost) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Uuid
+	if err := m._validateUuid(m.GetUuid()); err != nil {
+		err = PeerHostValidationError{
+			field:  "Uuid",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Ip
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		err := PeerHostValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for RpcPort
+	if val := m.GetRpcPort(); val < 1024 || val >= 65535 {
+		err := PeerHostValidationError{
+			field:  "RpcPort",
+			reason: "value must be inside range [1024, 65535)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DownPort
+	if val := m.GetDownPort(); val < 1024 || val >= 65535 {
+		err := PeerHostValidationError{
+			field:  "DownPort",
+			reason: "value must be inside range [1024, 65535)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for HostName
+	if err := m._validateHostname(m.GetHostName()); err != nil {
+		err = PeerHostValidationError{
+			field:  "HostName",
+			reason: "value must be a valid hostname",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SecurityDomain
+	if m.GetSecurityDomain() != "" {
 
-	// no validation rules for Location
+		if !_PeerHost_SecurityDomain_Pattern.MatchString(m.GetSecurityDomain()) {
+			err := PeerHostValidationError{
+				field:  "SecurityDomain",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
-	// no validation rules for Idc
+	}
 
-	// no validation rules for NetTopology
+	if m.GetLocation() != "" {
+
+		if !_PeerHost_Location_Pattern.MatchString(m.GetLocation()) {
+			err := PeerHostValidationError{
+				field:  "Location",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetIdc() != "" {
+
+		if !_PeerHost_Idc_Pattern.MatchString(m.GetIdc()) {
+			err := PeerHostValidationError{
+				field:  "Idc",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if m.GetNetTopology() != "" {
+
+		if !_PeerHost_NetTopology_Pattern.MatchString(m.GetNetTopology()) {
+			err := PeerHostValidationError{
+				field:  "NetTopology",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	if len(errors) > 0 {
 		return PeerHostMultiError(errors)
 	}
+	return nil
+}
+
+func (m *PeerHost) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *PeerHost) _validateUuid(uuid string) error {
+	if matched := _scheduler_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
 	return nil
 }
 
@@ -623,6 +793,14 @@ var _ interface {
 	ErrorName() string
 } = PeerHostValidationError{}
 
+var _PeerHost_SecurityDomain_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerHost_Location_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerHost_Idc_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerHost_NetTopology_Pattern = regexp.MustCompile("^[\\S]+$")
+
 // Validate checks the field values on PieceResult with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -645,11 +823,38 @@ func (m *PieceResult) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if !_PieceResult_TaskId_Pattern.MatchString(m.GetTaskId()) {
+		err := PieceResultValidationError{
+			field:  "TaskId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SrcPid
+	if !_PieceResult_SrcPid_Pattern.MatchString(m.GetSrcPid()) {
+		err := PieceResultValidationError{
+			field:  "SrcPid",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DstPid
+	if !_PieceResult_DstPid_Pattern.MatchString(m.GetDstPid()) {
+		err := PieceResultValidationError{
+			field:  "DstPid",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetPieceInfo()).(type) {
@@ -686,7 +891,16 @@ func (m *PieceResult) validate(all bool) error {
 
 	// no validation rules for Success
 
-	// no validation rules for Code
+	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
+		err := PieceResultValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetHostLoad()).(type) {
@@ -794,6 +1008,12 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PieceResultValidationError{}
+
+var _PieceResult_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PieceResult_SrcPid_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PieceResult_DstPid_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PeerPacket with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -986,17 +1206,89 @@ func (m *PeerResult) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if !_PeerResult_TaskId_Pattern.MatchString(m.GetTaskId()) {
+		err := PeerResultValidationError{
+			field:  "TaskId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PeerId
+	if !_PeerResult_PeerId_Pattern.MatchString(m.GetPeerId()) {
+		err := PeerResultValidationError{
+			field:  "PeerId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SrcIp
+	if ip := net.ParseIP(m.GetSrcIp()); ip == nil {
+		err := PeerResultValidationError{
+			field:  "SrcIp",
+			reason: "value must be a valid IP address",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SecurityDomain
+	if m.GetSecurityDomain() != "" {
 
-	// no validation rules for Idc
+		if !_PeerResult_SecurityDomain_Pattern.MatchString(m.GetSecurityDomain()) {
+			err := PeerResultValidationError{
+				field:  "SecurityDomain",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
 
-	// no validation rules for Url
+	}
+
+	if m.GetIdc() != "" {
+
+		if !_PeerResult_Idc_Pattern.MatchString(m.GetIdc()) {
+			err := PeerResultValidationError{
+				field:  "Idc",
+				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		err = PeerResultValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
+		err := PeerResultValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for ContentLength
 
@@ -1086,6 +1378,14 @@ var _ interface {
 	ErrorName() string
 } = PeerResultValidationError{}
 
+var _PeerResult_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerResult_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerResult_SecurityDomain_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerResult_Idc_Pattern = regexp.MustCompile("^[\\S]+$")
+
 // Validate checks the field values on PeerTarget with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1108,9 +1408,27 @@ func (m *PeerTarget) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if !_PeerTarget_TaskId_Pattern.MatchString(m.GetTaskId()) {
+		err := PeerTargetValidationError{
+			field:  "TaskId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PeerId
+	if !_PeerTarget_PeerId_Pattern.MatchString(m.GetPeerId()) {
+		err := PeerTargetValidationError{
+			field:  "PeerId",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PeerTargetMultiError(errors)
@@ -1187,6 +1505,10 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PeerTargetValidationError{}
+
+var _PeerTarget_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
+
+var _PeerTarget_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PeerPacket_DestPeer with the rules
 // defined in the proto definition for this message. If any rules are

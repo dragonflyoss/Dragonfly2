@@ -156,7 +156,20 @@ func (m *UrlMeta) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Digest
+	if m.GetDigest() != "" {
+
+		if !_UrlMeta_Digest_Pattern.MatchString(m.GetDigest()) {
+			err := UrlMetaValidationError{
+				field:  "Digest",
+				reason: "value does not match regex pattern \"^(md5)|(sha256):[A-Fa-f0-9]+\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Tag
 
@@ -241,6 +254,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UrlMetaValidationError{}
+
+var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+")
 
 // Validate checks the field values on HostLoad with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -555,17 +570,71 @@ func (m *PieceInfo) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for PieceNum
+	if m.GetPieceNum() > 0 {
+		err := PieceInfoValidationError{
+			field:  "PieceNum",
+			reason: "value must be less than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for RangeStart
+	if m.GetRangeStart() > 0 {
+		err := PieceInfoValidationError{
+			field:  "RangeStart",
+			reason: "value must be less than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for RangeSize
+	if m.GetRangeSize() > 0 {
+		err := PieceInfoValidationError{
+			field:  "RangeSize",
+			reason: "value must be less than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PieceMd5
+	if !_PieceInfo_PieceMd5_Pattern.MatchString(m.GetPieceMd5()) {
+		err := PieceInfoValidationError{
+			field:  "PieceMd5",
+			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PieceOffset
+	if m.GetPieceOffset() > 0 {
+		err := PieceInfoValidationError{
+			field:  "PieceOffset",
+			reason: "value must be less than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PieceStyle
+	if _, ok := PieceStyle_name[int32(m.GetPieceStyle())]; !ok {
+		err := PieceInfoValidationError{
+			field:  "PieceStyle",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PieceInfoMultiError(errors)
@@ -642,6 +711,8 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PieceInfoValidationError{}
+
+var _PieceInfo_PieceMd5_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PiecePacket with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

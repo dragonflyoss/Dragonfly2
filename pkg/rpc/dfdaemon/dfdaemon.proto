@@ -20,14 +20,15 @@ package dfdaemon;
 
 import "pkg/rpc/base/base.proto";
 import "google/protobuf/empty.proto";
+import "validate/validate.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon";
 
 message DownRequest{
   // identify one downloading, the framework will fill it automatically
-  string uuid = 1;
+  string uuid = 1 [(validate.rules).string.uuid = true];
   // download file from the url, not only for http
-  string url = 2;
+  string url = 2 [(validate.rules).string.uri = true];
   // pieces will be written to output path directly,
   // at the same time, dfdaemon workspace also makes soft link to the output
   string output = 3;
@@ -38,7 +39,7 @@ message DownRequest{
   bool disable_back_source = 6;
   base.UrlMeta url_meta = 7;
   // p2p/cdn/source
-  string pattern = 8;
+  string pattern = 8 [(validate.rules).string = {in:["p2p", "cdn", "source"]}];
   // call system
   string callsystem = 9;
   // user id

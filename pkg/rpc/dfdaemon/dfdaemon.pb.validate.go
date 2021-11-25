@@ -33,6 +33,9 @@ var (
 	_ = anypb.Any{}
 )
 
+// define the regex for a UUID once up-front
+var _dfdaemon_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on DownRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -55,9 +58,38 @@ func (m *DownRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Uuid
+	if err := m._validateUuid(m.GetUuid()); err != nil {
+		err = DownRequestValidationError{
+			field:  "Uuid",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Url
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		err = DownRequestValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
+		err := DownRequestValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Output
 
@@ -96,7 +128,16 @@ func (m *DownRequest) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Pattern
+	if _, ok := _DownRequest_Pattern_InLookup[m.GetPattern()]; !ok {
+		err := DownRequestValidationError{
+			field:  "Pattern",
+			reason: "value must be in list [p2p cdn source]",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Callsystem
 
@@ -107,6 +148,14 @@ func (m *DownRequest) validate(all bool) error {
 	if len(errors) > 0 {
 		return DownRequestMultiError(errors)
 	}
+	return nil
+}
+
+func (m *DownRequest) _validateUuid(uuid string) error {
+	if matched := _dfdaemon_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
 	return nil
 }
 
@@ -179,6 +228,12 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DownRequestValidationError{}
+
+var _DownRequest_Pattern_InLookup = map[string]struct{}{
+	"p2p":    {},
+	"cdn":    {},
+	"source": {},
+}
 
 // Validate checks the field values on DownResult with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
