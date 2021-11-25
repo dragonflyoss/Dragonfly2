@@ -785,16 +785,7 @@ func (m *PieceResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
-		err := PieceResultValidationError{
-			field:  "DstPid",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for DstPid
 
 	if all {
 		switch v := interface{}(m.GetPieceInfo()).(type) {
