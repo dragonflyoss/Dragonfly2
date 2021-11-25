@@ -74,7 +74,7 @@ spec:
         - |
           cp /etc/dragonfly/nginx.conf /etc/nginx/nginx.conf
           nginx
-          exec /opt/dragonfly/df-cdn/cdn
+          exec /opt/dragonfly/bin/cdn
         image: dragonflyoss/cdn
         imagePullPolicy: "Always"
         ports:
