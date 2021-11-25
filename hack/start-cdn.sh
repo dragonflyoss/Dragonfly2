@@ -6,4 +6,4 @@ set -o pipefail
 
 nginx
 
-/opt/dragonfly/df-cdn/cdn "$@"
+/opt/dragonfly/bin/cdn "$@"

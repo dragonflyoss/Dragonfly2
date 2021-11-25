@@ -17,7 +17,7 @@ FROM nginx:1.19-alpine
 
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/start-cdn.sh /root/start.sh
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/cdn-nginx.conf /etc/nginx/nginx.conf
-COPY --from=builder /opt/dragonfly/df-cdn/cdn /opt/dragonfly/df-cdn/cdn
+COPY --from=builder /opt/dragonfly/bin/cdn /opt/dragonfly/bin/cdn
 
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
