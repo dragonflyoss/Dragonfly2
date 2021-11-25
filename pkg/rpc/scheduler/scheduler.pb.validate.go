@@ -619,65 +619,13 @@ func (m *PeerHost) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetSecurityDomain() != "" {
+	// no validation rules for SecurityDomain
 
-		if !_PeerHost_SecurityDomain_Pattern.MatchString(m.GetSecurityDomain()) {
-			err := PeerHostValidationError{
-				field:  "SecurityDomain",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
+	// no validation rules for Location
 
-	}
+	// no validation rules for Idc
 
-	if m.GetLocation() != "" {
-
-		if !_PeerHost_Location_Pattern.MatchString(m.GetLocation()) {
-			err := PeerHostValidationError{
-				field:  "Location",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.GetIdc() != "" {
-
-		if !_PeerHost_Idc_Pattern.MatchString(m.GetIdc()) {
-			err := PeerHostValidationError{
-				field:  "Idc",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.GetNetTopology() != "" {
-
-		if !_PeerHost_NetTopology_Pattern.MatchString(m.GetNetTopology()) {
-			err := PeerHostValidationError{
-				field:  "NetTopology",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
+	// no validation rules for NetTopology
 
 	if len(errors) > 0 {
 		return PeerHostMultiError(errors)
@@ -793,14 +741,6 @@ var _ interface {
 	ErrorName() string
 } = PeerHostValidationError{}
 
-var _PeerHost_SecurityDomain_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerHost_Location_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerHost_Idc_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerHost_NetTopology_Pattern = regexp.MustCompile("^[\\S]+$")
-
 // Validate checks the field values on PieceResult with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -823,10 +763,10 @@ func (m *PieceResult) validate(all bool) error {
 
 	var errors []error
 
-	if !_PieceResult_TaskId_Pattern.MatchString(m.GetTaskId()) {
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		err := PieceResultValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -834,10 +774,10 @@ func (m *PieceResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PieceResult_SrcPid_Pattern.MatchString(m.GetSrcPid()) {
+	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
 		err := PieceResultValidationError{
 			field:  "SrcPid",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -845,10 +785,10 @@ func (m *PieceResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PieceResult_DstPid_Pattern.MatchString(m.GetDstPid()) {
+	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
 		err := PieceResultValidationError{
 			field:  "DstPid",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -1008,12 +948,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PieceResultValidationError{}
-
-var _PieceResult_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PieceResult_SrcPid_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PieceResult_DstPid_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PeerPacket with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -1206,10 +1140,10 @@ func (m *PeerResult) validate(all bool) error {
 
 	var errors []error
 
-	if !_PeerResult_TaskId_Pattern.MatchString(m.GetTaskId()) {
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		err := PeerResultValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -1217,10 +1151,10 @@ func (m *PeerResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PeerResult_PeerId_Pattern.MatchString(m.GetPeerId()) {
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
 		err := PeerResultValidationError{
 			field:  "PeerId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -1239,35 +1173,9 @@ func (m *PeerResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetSecurityDomain() != "" {
+	// no validation rules for SecurityDomain
 
-		if !_PeerResult_SecurityDomain_Pattern.MatchString(m.GetSecurityDomain()) {
-			err := PeerResultValidationError{
-				field:  "SecurityDomain",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
-
-	if m.GetIdc() != "" {
-
-		if !_PeerResult_Idc_Pattern.MatchString(m.GetIdc()) {
-			err := PeerResultValidationError{
-				field:  "Idc",
-				reason: "value does not match regex pattern \"^[\\\\S]+$\"",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-	}
+	// no validation rules for Idc
 
 	if uri, err := url.Parse(m.GetUrl()); err != nil {
 		err = PeerResultValidationError{
@@ -1298,7 +1206,16 @@ func (m *PeerResult) validate(all bool) error {
 
 	// no validation rules for Success
 
-	// no validation rules for Code
+	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
+		err := PeerResultValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for TotalPieceCount
 
@@ -1378,14 +1295,6 @@ var _ interface {
 	ErrorName() string
 } = PeerResultValidationError{}
 
-var _PeerResult_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerResult_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerResult_SecurityDomain_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerResult_Idc_Pattern = regexp.MustCompile("^[\\S]+$")
-
 // Validate checks the field values on PeerTarget with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -1408,10 +1317,10 @@ func (m *PeerTarget) validate(all bool) error {
 
 	var errors []error
 
-	if !_PeerTarget_TaskId_Pattern.MatchString(m.GetTaskId()) {
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		err := PeerTargetValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -1419,10 +1328,10 @@ func (m *PeerTarget) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PeerTarget_PeerId_Pattern.MatchString(m.GetPeerId()) {
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
 		err := PeerTargetValidationError{
 			field:  "PeerId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -1505,10 +1414,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PeerTargetValidationError{}
-
-var _PeerTarget_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PeerTarget_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PeerPacket_DestPeer with the rules
 // defined in the proto definition for this message. If any rules are
