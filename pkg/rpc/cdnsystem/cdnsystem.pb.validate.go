@@ -55,10 +55,10 @@ func (m *SeedRequest) validate(all bool) error {
 
 	var errors []error
 
-	if !_SeedRequest_TaskId_Pattern.MatchString(m.GetTaskId()) {
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		err := SeedRequestValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -87,19 +87,33 @@ func (m *SeedRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetUrlMeta() == nil {
-		err := SeedRequestValidationError{
-			field:  "UrlMeta",
-			reason: "value is required",
+	if all {
+		switch v := interface{}(m.GetUrlMeta()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SeedRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SeedRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
 		}
-		if !all {
-			return err
+	} else if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SeedRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
 		}
-		errors = append(errors, err)
-	}
-
-	if a := m.GetUrlMeta(); a != nil {
-
 	}
 
 	if len(errors) > 0 {
@@ -177,8 +191,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SeedRequestValidationError{}
-
-var _SeedRequest_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PieceSeed with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

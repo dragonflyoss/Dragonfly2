@@ -173,7 +173,20 @@ func (m *UrlMeta) validate(all bool) error {
 
 	// no validation rules for Tag
 
-	// no validation rules for Range
+	if m.GetRange() != "" {
+
+		if !_UrlMeta_Range_Pattern.MatchString(m.GetRange()) {
+			err := UrlMetaValidationError{
+				field:  "Range",
+				reason: "value does not match regex pattern \"^[0-9]+\\\\-^[0-9]+\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Filter
 
@@ -256,6 +269,8 @@ var _ interface {
 } = UrlMetaValidationError{}
 
 var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+")
+
+var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+\\-^[0-9]+")
 
 // Validate checks the field values on HostLoad with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -410,10 +425,10 @@ func (m *PieceTaskRequest) validate(all bool) error {
 
 	var errors []error
 
-	if !_PieceTaskRequest_TaskId_Pattern.MatchString(m.GetTaskId()) {
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		err := PieceTaskRequestValidationError{
 			field:  "TaskId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -421,10 +436,10 @@ func (m *PieceTaskRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PieceTaskRequest_SrcPid_Pattern.MatchString(m.GetSrcPid()) {
+	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
 		err := PieceTaskRequestValidationError{
 			field:  "SrcPid",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -432,10 +447,10 @@ func (m *PieceTaskRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PieceTaskRequest_DstPid_Pattern.MatchString(m.GetDstPid()) {
+	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
 		err := PieceTaskRequestValidationError{
 			field:  "DstPid",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -542,12 +557,6 @@ var _ interface {
 	ErrorName() string
 } = PieceTaskRequestValidationError{}
 
-var _PieceTaskRequest_TaskId_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PieceTaskRequest_SrcPid_Pattern = regexp.MustCompile("^[\\S]+$")
-
-var _PieceTaskRequest_DstPid_Pattern = regexp.MustCompile("^[\\S]+$")
-
 // Validate checks the field values on PieceInfo with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -603,10 +612,10 @@ func (m *PieceInfo) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if !_PieceInfo_PieceMd5_Pattern.MatchString(m.GetPieceMd5()) {
+	if utf8.RuneCountInString(m.GetPieceMd5()) < 1 {
 		err := PieceInfoValidationError{
 			field:  "PieceMd5",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -711,8 +720,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = PieceInfoValidationError{}
-
-var _PieceInfo_PieceMd5_Pattern = regexp.MustCompile("^[\\S]+$")
 
 // Validate checks the field values on PiecePacket with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

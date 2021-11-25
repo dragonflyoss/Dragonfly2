@@ -74,22 +74,22 @@ message PeerHost{
   // peer host name
   string host_name = 5 [(validate.rules).string.hostname = true];
   // security isolation domain for network
-  string security_domain = 6 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
+  string security_domain = 6;
   // location path: area|country|province|city|...
-  string location = 7 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
+  string location = 7;
   // idc where the peer host is located
-  string idc = 8 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
+  string idc = 8;
   // network device path: switch|router|...
-  string net_topology = 9 [(validate.rules).string = {pattern:"^[\\S]+$",ignore_empty : true}];
+  string net_topology = 9;
 }
 
 message PieceResult{
   // task id
-  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string task_id = 1 [(validate.rules).string.min_len = 1];
   // source peer id
-  string src_pid = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string src_pid = 2 [(validate.rules).string.min_len = 1];
   // dest peer id
-  string dst_pid = 3 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string dst_pid = 3 [(validate.rules).string.min_len = 1];
   // piece info
   base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
@@ -130,11 +130,11 @@ message PeerPacket{
 }
 
 message PeerResult{
-  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
-  string peer_id = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
   string src_ip = 3 [(validate.rules).string = {ip:true}];
-  string security_domain = 4 [(validate.rules).string = {pattern:"^[\\S]+$", ignore_empty:true}];
-  string idc = 5 [(validate.rules).string = {pattern:"^[\\S]+$", ignore_empty:true}];
+  string security_domain = 4;
+  string idc = 5;
   string url = 6 [(validate.rules).string = {uri:true}];
   // total content length(byte)
   int64 content_length = 7;
@@ -145,13 +145,13 @@ message PeerResult{
   // whether peer downloading file is successfully
   bool success = 10;
   // result code
-  base.Code code = 11;
+  base.Code code = 11 [(validate.rules).enum = {defined_only:true}];
   int32 total_piece_count = 12;
 }
 
 message PeerTarget{
-  string task_id = 1 [(validate.rules).string = {pattern:"^[\\S]+$"}];
-  string peer_id = 2 [(validate.rules).string = {pattern:"^[\\S]+$"}];
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
 }
 
 // Scheduler System RPC Service
