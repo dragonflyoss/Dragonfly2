@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
@@ -199,7 +198,7 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 		var client scheduler.SchedulerClient
 		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
 		if err != nil {
-			code = dfcodes.ServerUnavailable
+			code = base.Code_ServerUnavailable
 			return nil, err
 		}
 		return client.ReportPeerResult(ctx, pr, opts...)

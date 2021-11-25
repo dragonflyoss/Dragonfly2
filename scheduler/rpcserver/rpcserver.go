@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -69,7 +68,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
 	if task.IsFail() {
-		err = dferrors.New(dfcodes.SchedTaskStatusError, "task status is fail")
+		err = dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
 		logger.Errorf("task %s status is fail", task.ID)
 		span.RecordError(err)
 		return
@@ -125,7 +124,7 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		if err == io.EOF {
 			return nil
 		}
-		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
+		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
 		span.RecordError(err)
 		return err
 	}
@@ -133,20 +132,20 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 
 	peer, ok := s.service.GetPeer(pieceResult.SrcPid)
 	if !ok {
-		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 		span.RecordError(err)
 		return err
 	}
 
 	if peer.Task.IsFail() {
-		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
+		err = dferrors.Newf(base.Code_SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
 		span.RecordError(err)
 		return err
 	}
 
 	conn, ok := peer.BindNewConn(stream)
 	if !ok {
-		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer can not bind conn")
+		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "peer can not bind conn")
 		span.RecordError(err)
 		return err
 	}
@@ -186,7 +185,7 @@ func (s *server) ReportPeerResult(ctx context.Context, result *scheduler.PeerRes
 	peer, ok := s.service.GetPeer(result.PeerId)
 	if !ok {
 		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
-		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", result.PeerId)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", result.PeerId)
 		span.RecordError(err)
 		return err
 	}

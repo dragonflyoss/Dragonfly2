@@ -24,6 +24,50 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
 
 enum Code{
   X_UNSPECIFIED = 0;
+  // success code 200-299
+  Success = 200;
+  // framework can not find server node
+  ServerUnavailable = 500;
+
+  // common response error 1000-1999
+  // client can be migrated to another scheduler/CDN
+  ResourceLacked = 1000;
+  BadRequest = 1400;
+  PeerTaskNotFound = 1404;
+  UnknownError = 1500;
+  RequestTimeOut = 1504;
+
+  // client response error 4000-4999
+  ClientError = 4000;
+  ClientPieceRequestFail = 4001; // get piece task from other peer error
+  ClientScheduleTimeout = 4002; // wait scheduler response timeout
+  ClientContextCanceled = 4003;
+  ClientWaitPieceReady = 4004; // when target peer downloads from source slowly, should wait
+  ClientPieceDownloadFail = 4005;
+  ClientRequestLimitFail = 4006;
+
+  // scheduler response error 5000-5999
+  SchedError = 5000;
+  SchedNeedBackSource = 5001; // client should try to download from source
+  SchedPeerGone = 5002; // client should disconnect from scheduler
+  SchedPeerNotFound = 5004; // peer not found in scheduler
+  SchedPeerPieceResultReportFail = 5005; // report piece
+  SchedTaskStatusError = 5006; // task status is fail
+
+  // cdnsystem response error 6000-6999
+  CdnError = 6000;
+  CdnTaskRegistryFail = 6001;
+  CdnTaskDownloadFail = 6002;
+  CdnTaskNotFound = 6404;
+
+  // manager response error 7000-7999
+  ManagerError = 7000;
+  InvalidResourceType = 7001;
+  ManagerHostError = 7002;
+  ManagerStoreError = 7003;
+  ManagerConfigError = 7004;
+  ManagerStoreNotFound = 7005;
+  SchedulerNodesNotFound = 7006;
 }
 
 enum PieceStyle{
