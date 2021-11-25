@@ -31,6 +31,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
@@ -79,7 +80,7 @@ func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 
 func convertServerError(err error) error {
 	if status.Code(err) == codes.InvalidArgument {
-		err = dferrors.New(dfcodes.BadRequest, err.Error())
+		err = dferrors.New(base.Code_BadRequest, err.Error())
 	}
 	if v, ok := err.(*dferrors.DfError); ok {
 		logger.GrpcLogger.Errorf(v.Message)
