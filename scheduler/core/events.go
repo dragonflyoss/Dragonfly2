@@ -230,7 +230,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 		return
 	case base.Code_PeerTaskNotFound:
 		s.peerManager.Delete(e.pr.DstPid)
-	case base.Code_CdnTaskNotFound, base.Code_CdnError, base.Code_CdnTaskDownloadFail:
+	case base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		s.peerManager.Delete(e.pr.DstPid)
 		go func() {
 			if _, err := s.cdn.StartSeedTask(e.ctx, e.peer.Task); err != nil {
