@@ -22,7 +22,7 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 ## 查看日志
 
-如果您想要在 Terminal 中查看日志，请使用 --console 将环境变量 console 设置为 true。
+如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
 
 ### 可选参数
 
@@ -65,7 +65,7 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 ## 查看日志
 
-如果您想要在Terminal中查看日志，请使用 --console 将环境变量 console 设置为 true。
+如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
 
 ### 可选参数
 
