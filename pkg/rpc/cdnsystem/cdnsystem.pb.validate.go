@@ -214,9 +214,27 @@ func (m *PieceSeed) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for PeerId
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
+		err := PieceSeedValidationError{
+			field:  "PeerId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for HostUuid
+	if utf8.RuneCountInString(m.GetHostUuid()) < 1 {
+		err := PieceSeedValidationError{
+			field:  "HostUuid",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetPieceInfo()).(type) {

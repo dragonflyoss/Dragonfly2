@@ -55,7 +55,16 @@ func (m *GrpcDfError) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Code
+	if _, ok := Code_name[int32(m.GetCode())]; !ok {
+		err := GrpcDfErrorValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Message
 
@@ -458,16 +467,7 @@ func (m *PieceTaskRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	if m.GetStartNum() < 0 {
-		err := PieceTaskRequestValidationError{
-			field:  "StartNum",
-			reason: "value must be greater than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for StartNum
 
 	if m.GetLimit() < 1 {
 		err := PieceTaskRequestValidationError{
@@ -579,51 +579,28 @@ func (m *PieceInfo) validate(all bool) error {
 
 	var errors []error
 
-	if m.GetPieceNum() > 0 {
-		err := PieceInfoValidationError{
-			field:  "PieceNum",
-			reason: "value must be less than or equal to 0",
+	// no validation rules for PieceNum
+
+	// no validation rules for RangeStart
+
+	// no validation rules for RangeSize
+
+	if m.GetPieceMd5() != "" {
+
+		if !_PieceInfo_PieceMd5_Pattern.MatchString(m.GetPieceMd5()) {
+			err := PieceInfoValidationError{
+				field:  "PieceMd5",
+				reason: "value does not match regex pattern \"([a-f\\\\d]{32}|[A-F\\\\d]{32}|[a-f\\\\d]{16}|[A-F\\\\d]{16})\"",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
-	if m.GetRangeStart() > 0 {
-		err := PieceInfoValidationError{
-			field:  "RangeStart",
-			reason: "value must be less than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if m.GetRangeSize() > 0 {
-		err := PieceInfoValidationError{
-			field:  "RangeSize",
-			reason: "value must be less than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for PieceMd5
-
-	if m.GetPieceOffset() > 0 {
-		err := PieceInfoValidationError{
-			field:  "PieceOffset",
-			reason: "value must be less than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for PieceOffset
 
 	if _, ok := PieceStyle_name[int32(m.GetPieceStyle())]; !ok {
 		err := PieceInfoValidationError{
@@ -712,6 +689,8 @@ var _ interface {
 	ErrorName() string
 } = PieceInfoValidationError{}
 
+var _PieceInfo_PieceMd5_Pattern = regexp.MustCompile("([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})")
+
 // Validate checks the field values on PiecePacket with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -734,11 +713,38 @@ func (m *PiecePacket) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		err := PiecePacketValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DstPid
+	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
+		err := PiecePacketValidationError{
+			field:  "DstPid",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DstAddr
+	if utf8.RuneCountInString(m.GetDstAddr()) < 1 {
+		err := PiecePacketValidationError{
+			field:  "DstAddr",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	for idx, item := range m.GetPieceInfos() {
 		_, _ = idx, item
@@ -774,11 +780,38 @@ func (m *PiecePacket) validate(all bool) error {
 
 	}
 
-	// no validation rules for TotalPiece
+	if m.GetTotalPiece() < 0 {
+		err := PiecePacketValidationError{
+			field:  "TotalPiece",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ContentLength
+	if m.GetContentLength() < 0 {
+		err := PiecePacketValidationError{
+			field:  "ContentLength",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PieceMd5Sign
+	if utf8.RuneCountInString(m.GetPieceMd5Sign()) < 1 {
+		err := PiecePacketValidationError{
+			field:  "PieceMd5Sign",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PiecePacketMultiError(errors)

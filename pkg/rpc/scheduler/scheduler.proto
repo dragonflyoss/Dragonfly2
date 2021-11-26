@@ -30,7 +30,7 @@ message PeerTaskRequest{
   // url meta info
   base.UrlMeta url_meta = 2;
   // peer's id and must be global uniqueness
-  string peer_id = 3 [(validate.rules).string.pattern = "^[\\S]+$"];
+  string peer_id = 3 [(validate.rules).string.min_len = 1];
   // peer host info
   PeerHost peer_host = 4;
   // current host load
@@ -41,9 +41,9 @@ message PeerTaskRequest{
 
 message RegisterResult{
   // task id
-  string task_id = 2;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
   // file content length scope for the url
-  base.SizeScope size_scope = 3;
+  base.SizeScope size_scope = 3 [(validate.rules).enum.defined_only = true];
   // download the only piece directly for small or tiny file
   oneof direct_piece{
     // for small file
@@ -55,9 +55,9 @@ message RegisterResult{
 
 message SinglePiece{
   // destination peer id
-  string dst_pid = 1;
+  string dst_pid = 1 [(validate.rules).string.min_len = 1];
   // download address(ip:port)
-  string dst_addr = 2;
+  string dst_addr = 2 [(validate.rules).string.min_len = 1];
   // one piece info
   base.PieceInfo piece_info = 3;
 }
@@ -103,50 +103,50 @@ message PieceResult{
   // current host resource usage
   base.HostLoad host_load = 9;
   // currently completed piece count
-  int32 finished_count = 10;
+  uint32 finished_count = 10;
 }
 
 message PeerPacket{
 
   message DestPeer{
     // dest ip
-    string ip = 1;
+    string ip = 1 [(validate.rules).string.ip = true];
     // rpc service port for dest peer
-    int32 rpc_port = 2;
+    int32 rpc_port = 2 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
     // dest peer id
-    string peer_id = 3;
+    string peer_id = 3 [(validate.rules).string.min_len = 1];
   }
 
-  string task_id = 2;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
   // source peer id
-  string src_pid = 3;
+  string src_pid = 3 [(validate.rules).string.min_len = 1];
 
   // concurrent downloading count from main peer
-  int32 parallel_count = 4;
+  int32 parallel_count = 4 [(validate.rules).int32.gte = 1];
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;
   // result code
-  base.Code code = 7;
+  base.Code code = 7 [(validate.rules).enum.defined_only = true];
 }
 
 message PeerResult{
   string task_id = 1 [(validate.rules).string.min_len = 1];
   string peer_id = 2 [(validate.rules).string.min_len = 1];
-  string src_ip = 3 [(validate.rules).string = {ip:true}];
+  string src_ip = 3 [(validate.rules).string.ip = true];
   string security_domain = 4;
   string idc = 5;
-  string url = 6 [(validate.rules).string = {uri:true}];
+  string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
-  int64 content_length = 7;
+  uint64 content_length = 7;
   // total network traffic(byte)
-  int64 traffic = 8;
+  uint64 traffic = 8;
   // total time(millisecond) consumed
   uint32 cost = 9;
   // whether peer downloading file is successfully
   bool success = 10;
   // result code
   base.Code code = 11 [(validate.rules).enum = {defined_only:true}];
-  int32 total_piece_count = 12;
+  uint32 total_piece_count = 12;
 }
 
 message PeerTarget{

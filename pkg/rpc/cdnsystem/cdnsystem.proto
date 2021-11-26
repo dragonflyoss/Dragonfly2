@@ -26,24 +26,24 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem";
 message SeedRequest{
   string task_id = 1 [(validate.rules).string.min_len = 1];
   string url = 2 [(validate.rules).string.uri = true];
-  base.UrlMeta url_meta = 3 ;
+  base.UrlMeta url_meta = 3;
 }
 
 // keep piece meta and data separately
 // check piece md5, md5s sign and total content length
 message PieceSeed{
   // peer id for cdn node, need suffix with _CDN
-  string peer_id = 2;
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
   // cdn node host uuid
-  string host_uuid = 3;
+  string host_uuid = 3 [(validate.rules).string.min_len = 1];
   base.PieceInfo piece_info = 4;
 
   // whether or not all seeds are downloaded
   bool done = 5;
   // content total length for the url
-  int64 content_length = 6;
+  uint64 content_length = 6;
   // total piece count
-  int32 total_piece_count = 7;
+  uint32 total_piece_count = 7;
 }
 
 // CDN System RPC Service

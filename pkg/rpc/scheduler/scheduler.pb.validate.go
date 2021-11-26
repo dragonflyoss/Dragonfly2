@@ -118,10 +118,10 @@ func (m *PeerTaskRequest) validate(all bool) error {
 		}
 	}
 
-	if !_PeerTaskRequest_PeerId_Pattern.MatchString(m.GetPeerId()) {
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
 		err := PeerTaskRequestValidationError{
 			field:  "PeerId",
-			reason: "value does not match regex pattern \"^[\\\\S]+$\"",
+			reason: "value length must be at least 1 runes",
 		}
 		if !all {
 			return err
@@ -266,8 +266,6 @@ var _ interface {
 	ErrorName() string
 } = PeerTaskRequestValidationError{}
 
-var _PeerTaskRequest_PeerId_Pattern = regexp.MustCompile("^[\\S]+$")
-
 // Validate checks the field values on RegisterResult with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -290,9 +288,27 @@ func (m *RegisterResult) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		err := RegisterResultValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SizeScope
+	if _, ok := base.SizeScope_name[int32(m.GetSizeScope())]; !ok {
+		err := RegisterResultValidationError{
+			field:  "SizeScope",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	switch m.DirectPiece.(type) {
 
@@ -431,9 +447,27 @@ func (m *SinglePiece) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for DstPid
+	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
+		err := SinglePieceValidationError{
+			field:  "DstPid",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for DstAddr
+	if utf8.RuneCountInString(m.GetDstAddr()) < 1 {
+		err := SinglePieceValidationError{
+			field:  "DstAddr",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetPieceInfo()).(type) {
@@ -962,11 +996,38 @@ func (m *PeerPacket) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		err := PeerPacketValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for SrcPid
+	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
+		err := PeerPacketValidationError{
+			field:  "SrcPid",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for ParallelCount
+	if m.GetParallelCount() < 1 {
+		err := PeerPacketValidationError{
+			field:  "ParallelCount",
+			reason: "value must be greater than or equal to 1",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if all {
 		switch v := interface{}(m.GetMainPeer()).(type) {
@@ -1031,7 +1092,16 @@ func (m *PeerPacket) validate(all bool) error {
 
 	}
 
-	// no validation rules for Code
+	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
+		err := PeerPacketValidationError{
+			field:  "Code",
+			reason: "value must be one of the defined enum values",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PeerPacketMultiError(errors)
@@ -1428,11 +1498,38 @@ func (m *PeerPacket_DestPeer) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Ip
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		err := PeerPacket_DestPeerValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for RpcPort
+	if val := m.GetRpcPort(); val < 1024 || val >= 65535 {
+		err := PeerPacket_DestPeerValidationError{
+			field:  "RpcPort",
+			reason: "value must be inside range [1024, 65535)",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PeerId
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
+		err := PeerPacket_DestPeerValidationError{
+			field:  "PeerId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PeerPacket_DestPeerMultiError(errors)

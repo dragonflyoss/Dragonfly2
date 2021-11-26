@@ -31,11 +31,11 @@ message DownRequest{
   string url = 2 [(validate.rules).string.uri = true];
   // pieces will be written to output path directly,
   // at the same time, dfdaemon workspace also makes soft link to the output
-  string output = 3;
+  string output = 3 [(validate.rules).string.min_len = 1];
   // timeout duration
-  int64 timeout = 4;
+  uint64 timeout = 4;
   // rate limit in bytes per second
-  double limit = 5;
+  double limit = 5 [(validate.rules).double.gte = 0];
   bool disable_back_source = 6;
   base.UrlMeta url_meta = 7;
   // p2p/cdn/source
@@ -49,8 +49,8 @@ message DownRequest{
 }
 
 message DownResult{
-  string task_id = 2;
-  string peer_id = 3;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
+  string peer_id = 3 [(validate.rules).string.min_len = 1];
   uint64 completed_length = 4;
   bool done = 5;
 }

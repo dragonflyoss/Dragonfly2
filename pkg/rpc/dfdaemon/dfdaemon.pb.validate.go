@@ -91,11 +91,29 @@ func (m *DownRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Output
+	if utf8.RuneCountInString(m.GetOutput()) < 1 {
+		err := DownRequestValidationError{
+			field:  "Output",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Timeout
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := DownRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for DisableBackSource
 
@@ -257,9 +275,27 @@ func (m *DownResult) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for TaskId
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		err := DownResultValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for PeerId
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
+		err := DownResultValidationError{
+			field:  "PeerId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for CompletedLength
 
