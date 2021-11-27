@@ -116,12 +116,13 @@ message PieceTaskRequest{
   string dst_pid = 3 [(validate.rules).string.min_len = 1];
   // piece number
   uint32 start_num = 4;
-  // expected piece count
-  uint32 limit = 5 [(validate.rules).uint32.gte = 1];
+  // expected piece count, limit = 0 represent request pieces as many shards as possible
+  uint32 limit = 5;
 }
 
 message PieceInfo{
-  uint32 piece_num = 1;
+  // -1 as start flag
+  int32 piece_num = 1;
   uint64 range_start = 2;
   uint32 range_size = 3;
   string piece_md5 = 4 [(validate.rules).string = {pattern:"([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})", ignore_empty:true}];
@@ -135,9 +136,10 @@ message PiecePacket{
   // ip:port
   string dst_addr = 4 [(validate.rules).string.min_len = 1];
   repeated PieceInfo piece_infos = 5;
-  // total piece count for url
-  int32 total_piece = 6 [(validate.rules).int32.gte = 0];
-  int64 content_length = 7 [(validate.rules).int64.gte = 0];
+  // total piece count for url, total_piece represent total piece is unknown
+  int32 total_piece = 6;
+  // content_length < 0 represent content length is unknown
+  int64 content_length = 7;
   // sha256 code of all piece md5
-  string piece_md5_sign = 8 [(validate.rules).string.min_len = 1];
+  string piece_md5_sign = 8;
 }

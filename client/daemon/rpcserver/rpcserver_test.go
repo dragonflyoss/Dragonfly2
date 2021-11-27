@@ -130,16 +130,16 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	var maxPieceNum int32 = 10
+	var maxPieceNum uint32 = 10
 	mockStorageManger := mock_storage.NewMockManager(ctrl)
 	mockStorageManger.EXPECT().GetPieces(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var (
 			pieces    []*base.PieceInfo
-			pieceSize = int32(1024)
+			pieceSize = uint32(1024)
 		)
 		for i := req.StartNum; i < req.Limit+req.StartNum && i < maxPieceNum; i++ {
 			pieces = append(pieces, &base.PieceInfo{
-				PieceNum:    i,
+				PieceNum:    int32(i),
 				RangeStart:  uint64(i * pieceSize),
 				RangeSize:   pieceSize,
 				PieceMd5:    "",

@@ -45,7 +45,7 @@ type pieceManager struct {
 	*rate.Limiter
 	storageManager   storage.TaskStorageDriver
 	pieceDownloader  PieceDownloader
-	computePieceSize func(contentLength int64) int32
+	computePieceSize func(contentLength int64) uint32
 
 	calculateDigest bool
 }
@@ -148,7 +148,9 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	end = time.Now().UnixNano()
 	span.RecordError(err)
 	span.End()
-	pt.AddTraffic(n)
+	if n > 0 {
+		pt.AddTraffic(uint64(n))
+	}
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
 			request.piece.PieceNum, n, err)
@@ -211,7 +213,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
-	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize int32) (int64, error) {
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32) (int64, error) {
 	var (
 		success bool
 		start   = time.Now().UnixNano()
@@ -280,11 +282,13 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 			},
 			Reader: reader,
 		})
-	if n != int64(size) {
-		size = int32(n)
+	if n != int64(size) && n > 0 {
+		size = uint32(n)
 	}
 	end = time.Now().UnixNano()
-	pt.AddTraffic(n)
+	if n > 0 {
+		pt.AddTraffic(uint64(n))
+	}
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
 		return n, err
@@ -358,7 +362,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			}
 			// last piece, piece size maybe 0
 			if n < int64(size) {
-				contentLength = int64(pieceNum*pieceSize) + n
+				contentLength = int64(pieceNum)*int64(pieceSize) + n
 				if err := pm.storageManager.UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
 						PeerTaskMetaData: storage.PeerTaskMetaData{
@@ -383,7 +387,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		offset := uint64(pieceNum) * uint64(pieceSize)
 		// calculate piece size for last piece
 		if contentLength > 0 && int64(offset)+int64(size) > contentLength {
-			size = int32(contentLength - int64(offset))
+			size = uint32(contentLength - int64(offset))
 		}
 
 		log.Debugf("download piece %d", pieceNum)
@@ -397,7 +401,9 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			return storage.ErrShortRead
 		}
 	}
-	pt.SetTotalPieces(maxPieceNum)
+	if maxPieceNum > 0 {
+		pt.SetTotalPieces(maxPieceNum)
+	}
 	if err := pt.SetContentLength(contentLength); err != nil {
 		log.Errorf("set content length failed %s", err)
 	}

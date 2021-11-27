@@ -469,16 +469,7 @@ func (m *PieceTaskRequest) validate(all bool) error {
 
 	// no validation rules for StartNum
 
-	if m.GetLimit() < 1 {
-		err := PieceTaskRequestValidationError{
-			field:  "Limit",
-			reason: "value must be greater than or equal to 1",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for Limit
 
 	if len(errors) > 0 {
 		return PieceTaskRequestMultiError(errors)
@@ -780,38 +771,11 @@ func (m *PiecePacket) validate(all bool) error {
 
 	}
 
-	if m.GetTotalPiece() < 0 {
-		err := PiecePacketValidationError{
-			field:  "TotalPiece",
-			reason: "value must be greater than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for TotalPiece
 
-	if m.GetContentLength() < 0 {
-		err := PiecePacketValidationError{
-			field:  "ContentLength",
-			reason: "value must be greater than or equal to 0",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for ContentLength
 
-	if utf8.RuneCountInString(m.GetPieceMd5Sign()) < 1 {
-		err := PiecePacketValidationError{
-			field:  "PieceMd5Sign",
-			reason: "value length must be at least 1 runes",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for PieceMd5Sign
 
 	if len(errors) > 0 {
 		return PiecePacketMultiError(errors)

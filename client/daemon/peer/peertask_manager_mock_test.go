@@ -123,7 +123,7 @@ func (m *MockTask) EXPECT() *MockTaskMockRecorder {
 }
 
 // AddTraffic mocks base method.
-func (m *MockTask) AddTraffic(arg0 int64) {
+func (m *MockTask) AddTraffic(arg0 uint64) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AddTraffic", arg0)
 }
@@ -219,10 +219,10 @@ func (mr *MockTaskMockRecorder) GetTotalPieces() *gomock.Call {
 }
 
 // GetTraffic mocks base method.
-func (m *MockTask) GetTraffic() int64 {
+func (m *MockTask) GetTraffic() uint64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTraffic")
-	ret0, _ := ret[0].(int64)
+	ret0, _ := ret[0].(uint64)
 	return ret0
 }
 

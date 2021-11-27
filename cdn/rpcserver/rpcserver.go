@@ -115,7 +115,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			PeerId:   peerID,
 			HostUuid: idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
-				PieceNum:    piece.PieceNum,
+				PieceNum:    int32(piece.PieceNum),
 				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
@@ -183,11 +183,11 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		return nil, err
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
-	var count int32 = 0
+	var count uint32 = 0
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit == 0) {
 			p := &base.PieceInfo{
-				PieceNum:    piece.PieceNum,
+				PieceNum:    int32(piece.PieceNum),
 				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,

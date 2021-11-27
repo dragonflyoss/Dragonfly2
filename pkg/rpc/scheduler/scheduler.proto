@@ -102,8 +102,8 @@ message PieceResult{
   base.Code code = 8 [(validate.rules).enum = {defined_only:true}];
   // current host resource usage
   base.HostLoad host_load = 9;
-  // currently completed piece count
-  uint32 finished_count = 10;
+  // currently completed piece count, -1 represent download failed
+  int32 finished_count = 10;
 }
 
 message PeerPacket{
@@ -137,7 +137,7 @@ message PeerResult{
   string idc = 5;
   string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
-  uint64 content_length = 7;
+  int64 content_length = 7;
   // total network traffic(byte)
   uint64 traffic = 8;
   // total time(millisecond) consumed
@@ -146,7 +146,8 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11 [(validate.rules).enum = {defined_only:true}];
-  uint32 total_piece_count = 12;
+  // -1 represent task is running or download failed
+  int32 total_piece_count = 12;
 }
 
 message PeerTarget{

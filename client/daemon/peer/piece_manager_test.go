@@ -75,7 +75,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 	testCases := []struct {
 		name              string
-		pieceSize         int32
+		pieceSize         uint32
 		withContentLength bool
 		checkDigest       bool
 	}{
@@ -105,22 +105,22 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		},
 		{
 			name:              "one pieces with content length case 1",
-			pieceSize:         int32(len(testBytes)),
+			pieceSize:         uint32(len(testBytes)),
 			withContentLength: true,
 		},
 		{
 			name:              "one pieces without content length case 1",
-			pieceSize:         int32(len(testBytes)),
+			pieceSize:         uint32(len(testBytes)),
 			withContentLength: false,
 		},
 		{
 			name:              "one pieces with content length case 2",
-			pieceSize:         int32(len(testBytes)) + 1,
+			pieceSize:         uint32(len(testBytes)) + 1,
 			withContentLength: true,
 		},
 		{
 			name:              "one pieces without content length case 2",
-			pieceSize:         int32(len(testBytes)) + 1,
+			pieceSize:         uint32(len(testBytes)) + 1,
 			withContentLength: false,
 		},
 	}
@@ -180,7 +180,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			pm, err := NewPieceManager(storageManager, pieceDownloadTimeout)
 			assert.Nil(err)
-			pm.(*pieceManager).computePieceSize = func(length int64) int32 {
+			pm.(*pieceManager).computePieceSize = func(length int64) uint32 {
 				return tc.pieceSize
 			}
 

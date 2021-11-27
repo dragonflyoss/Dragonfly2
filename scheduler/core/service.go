@@ -226,7 +226,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 		var options []supervisor.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
 			options = []supervisor.HostOption{
-				supervisor.WithTotalUploadLoad(int32(clientConfig.LoadLimit)),
+				supervisor.WithTotalUploadLoad(clientConfig.LoadLimit),
 			}
 		}
 

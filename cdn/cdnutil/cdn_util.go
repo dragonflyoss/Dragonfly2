@@ -24,7 +24,7 @@ import (
 //
 // If the fileLength<=0, which means failed to get fileLength
 // and then use the DefaultPieceSize.
-func ComputePieceSize(length int64) int32 {
+func ComputePieceSize(length int64) uint32 {
 	if length <= 0 || length <= 200*1024*1024 {
 		return config.DefaultPieceSize
 	}
@@ -34,5 +34,5 @@ func ComputePieceSize(length int64) int32 {
 	if mpSize > config.DefaultPieceSizeLimit {
 		return config.DefaultPieceSizeLimit
 	}
-	return int32(mpSize)
+	return uint32(mpSize)
 }

@@ -40,10 +40,10 @@ message PieceSeed{
 
   // whether or not all seeds are downloaded
   bool done = 5;
-  // content total length for the url
-  uint64 content_length = 6;
-  // total piece count
-  uint32 total_piece_count = 7;
+  // content total length for the url, content_length < 0 represent content length is unknown
+  int64 content_length = 6;
+  // total piece count, -1 represents task is downloading or failed
+  int32 total_piece_count = 7;
 }
 
 // CDN System RPC Service
