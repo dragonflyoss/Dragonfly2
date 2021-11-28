@@ -593,16 +593,7 @@ func (m *PieceInfo) validate(all bool) error {
 
 	// no validation rules for PieceOffset
 
-	if _, ok := PieceStyle_name[int32(m.GetPieceStyle())]; !ok {
-		err := PieceInfoValidationError{
-			field:  "PieceStyle",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
+	// no validation rules for PieceStyle
 
 	if len(errors) > 0 {
 		return PieceInfoMultiError(errors)
