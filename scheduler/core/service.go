@@ -28,10 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -171,7 +171,7 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			peer := rsPeer.peer
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
-				if peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
+				if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
 					peer.ID)) == nil {
 					peer.Task.AddBackToSourcePeer(peer.ID)
 				}
@@ -327,7 +327,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 			pr:   pieceResult,
 		})
 		return nil
-	} else if pieceResult.Code != dfcodes.Success {
+	} else if pieceResult.Code != base.Code_Success {
 		s.worker.send(peerDownloadPieceFailEvent{
 			ctx:  ctx,
 			peer: peer,

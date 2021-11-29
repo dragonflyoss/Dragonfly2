@@ -32,7 +32,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/retry"
@@ -245,9 +244,9 @@ loop:
 			if pt.success {
 				return
 			}
-			pt.failedCode = dfcodes.UnknownError
+			pt.failedCode = base.Code_UnknownError
 			if de, ok := err.(*dferrors.DfError); ok {
-				if de.Code == dfcodes.SchedNeedBackSource {
+				if de.Code == base.Code_SchedNeedBackSource {
 					pt.needBackSource = true
 					close(pt.peerPacketReady)
 					return
@@ -266,7 +265,7 @@ loop:
 		}
 
 		logger.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
-		if peerPacket.Code != dfcodes.Success {
+		if peerPacket.Code != base.Code_Success {
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
 			if pt.isExitPeerPacketCode(peerPacket) {
 				pt.cancel()
@@ -316,21 +315,21 @@ loop:
 
 func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
 	switch pp.Code {
-	case dfcodes.ResourceLacked, dfcodes.BadRequest, dfcodes.PeerTaskNotFound, dfcodes.UnknownError, dfcodes.RequestTimeOut:
+	case base.Code_ResourceLacked, base.Code_BadRequest, base.Code_PeerTaskNotFound, base.Code_UnknownError, base.Code_RequestTimeOut:
 		// 1xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
-	case dfcodes.SchedError:
+	case base.Code_SchedError:
 		// 5xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
-	case dfcodes.SchedPeerGone:
+	case base.Code_SchedPeerGone:
 		pt.failedReason = reasonPeerGoneFromScheduler
-		pt.failedCode = dfcodes.SchedPeerGone
+		pt.failedCode = base.Code_SchedPeerGone
 		return true
-	case dfcodes.CdnError, dfcodes.CdnTaskRegistryFail, dfcodes.CdnTaskDownloadFail:
+	case base.Code_CDNError, base.Code_CDNTaskRegistryFail, base.Code_CDNTaskDownloadFail:
 		// 6xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
@@ -351,7 +350,7 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 	pt.SetPieceMd5Sign(pt.singlePiece.PieceInfo.PieceMd5)
 	if err := pt.callback.Init(pt); err != nil {
 		pt.failedReason = err.Error()
-		pt.failedCode = dfcodes.ClientError
+		pt.failedCode = base.Code_ClientError
 		cleanUnfinishedFunc()
 		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
@@ -414,7 +413,7 @@ loop:
 			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					pt.failedCode = base.Code_ClientContextCanceled
 					if err := pt.callback.Fail(pt, pt.failedCode, pt.ctx.Err().Error()); err != nil {
 						pt.Errorf("peer task callback failed %s", err)
 					}
@@ -501,7 +500,7 @@ func (pt *peerTask) init(piecePacket *base.PiecePacket, pieceBufferSize int32) (
 	if err := pt.callback.Init(pt); err != nil {
 		pt.span.RecordError(err)
 		pt.failedReason = err.Error()
-		pt.failedCode = dfcodes.ClientError
+		pt.failedCode = base.Code_ClientError
 		return nil, false
 	}
 	pc := pt.peerPacket.Load().(*scheduler.PeerPacket).ParallelCount
@@ -529,8 +528,8 @@ func (pt *peerTask) waitFirstPeerPacket() (done bool, backSource bool) {
 				time.Now().Sub(pt.callback.GetStartTime()).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 			return true, false
 		}
-		// when scheduler says dfcodes.SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
-		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
+		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
+		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source")
 		pt.needBackSource = true
 		pt.backSource()
@@ -538,7 +537,7 @@ func (pt *peerTask) waitFirstPeerPacket() (done bool, backSource bool) {
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonScheduleTimeout
-			pt.failedCode = dfcodes.ClientScheduleTimeout
+			pt.failedCode = base.Code_ClientScheduleTimeout
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
@@ -564,7 +563,7 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 		if !pt.success {
 			if pt.failedCode == failedCodeNotSet {
 				pt.failedReason = reasonContextCanceled
-				pt.failedCode = dfcodes.ClientContextCanceled
+				pt.failedCode = base.Code_ClientContextCanceled
 			}
 		}
 	case _, ok := <-pt.peerPacketReady:
@@ -574,8 +573,8 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 			// research from piece 0
 			return pt.getNextPieceNum(0), true
 		}
-		// when scheduler says dfcodes.SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
-		pt.Infof("start download from source due to dfcodes.SchedNeedBackSource")
+		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
+		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source ")
 		pt.needBackSource = true
 		// TODO optimize back source when already downloaded some pieces
@@ -583,7 +582,7 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
 			pt.failedReason = reasonReScheduleTimeout
-			pt.failedCode = dfcodes.ClientScheduleTimeout
+			pt.failedCode = base.Code_ClientScheduleTimeout
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
@@ -620,7 +619,7 @@ func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceReque
 			if !pt.success {
 				if pt.failedCode == failedCodeNotSet {
 					pt.failedReason = reasonContextCanceled
-					pt.failedCode = dfcodes.ClientContextCanceled
+					pt.failedCode = base.Code_ClientContextCanceled
 				}
 			}
 		}
@@ -673,7 +672,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 							DstPid:        request.DstPid,
 							PieceInfo:     request.piece,
 							Success:       false,
-							Code:          dfcodes.ClientRequestLimitFail,
+							Code:          base.Code_ClientRequestLimitFail,
 							HostLoad:      nil,
 							FinishedCount: 0, // update by peer task
 						},
@@ -683,7 +682,7 @@ func (pt *peerTask) downloadPieceWorker(id int32, pti Task, requests chan *Downl
 					}
 
 					pt.failedReason = err.Error()
-					pt.failedCode = dfcodes.ClientRequestLimitFail
+					pt.failedCode = base.Code_ClientRequestLimitFail
 					pt.cancel()
 					span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 					span.End()
@@ -749,7 +748,7 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()
 
-	// when cdn returns dfcodes.CdnTaskNotFound, report it to scheduler and wait cdn download it.
+	// when cdn returns base.Code_CDNTaskNotFound, report it to scheduler and wait cdn download it.
 retry:
 	pt.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := pt.getPieceTasks(span, curPeerPacket, peer, request)
@@ -774,7 +773,7 @@ retry:
 			return nil, err
 		}
 	}
-	code := dfcodes.ClientPieceRequestFail
+	code := base.Code_ClientPieceRequestFail
 	// not grpc error
 	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
 		pt.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
@@ -796,8 +795,8 @@ retry:
 		pt.Errorf("send piece result error: %s, code to send: %d", err, code)
 	}
 
-	if code == dfcodes.CdnTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
-		span.AddEvent("retry for CdnTaskNotFound")
+	if code == base.Code_CDNTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
+		span.AddEvent("retry for CDNTaskNotFound")
 		goto retry
 	}
 	return nil, err
@@ -832,13 +831,13 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 				DstPid:        peer.PeerId,
 				PieceInfo:     &base.PieceInfo{},
 				Success:       false,
-				Code:          dfcodes.ClientWaitPieceReady,
+				Code:          base.Code_ClientWaitPieceReady,
 				HostLoad:      nil,
 				FinishedCount: pt.readyPieces.Settled(),
 			})
 			if er != nil {
 				span.RecordError(er)
-				pt.Errorf("send piece result with dfcodes.ClientWaitPieceReady error: %s", er)
+				pt.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", er)
 			}
 			// fast way to exit retry
 			lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)

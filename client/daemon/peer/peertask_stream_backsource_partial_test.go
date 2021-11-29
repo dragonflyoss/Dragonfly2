@@ -40,7 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -129,11 +128,11 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			if schedPeerPacket {
 				// send back source after piece 0 is done
 				wg.Wait()
-				return nil, dferrors.New(dfcodes.SchedNeedBackSource, "")
+				return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 			}
 			schedPeerPacket = true
 			return &scheduler.PeerPacket{
-				Code:          dfcodes.Success,
+				Code:          base.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,

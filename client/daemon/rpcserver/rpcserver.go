@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -88,7 +87,7 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 	m.Keep()
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
-		code := dfcodes.UnknownError
+		code := base.Code_UnknownError
 		if err != storage.ErrTaskNotFound {
 			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
@@ -96,7 +95,7 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		}
 		// dst peer is not running
 		if !m.peerTaskManager.IsPeerTaskRunning(request.DstPid) {
-			code = dfcodes.PeerTaskNotFound
+			code = base.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
@@ -151,7 +150,7 @@ func (m *server) Download(ctx context.Context,
 
 	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
 	if err != nil {
-		return dferrors.New(dfcodes.UnknownError, fmt.Sprintf("%s", err))
+		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
 		results <- &dfdaemongrpc.DownResult{
@@ -176,7 +175,7 @@ func (m *server) Download(ctx context.Context,
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				log.Errorf(err.Error())
-				return dferrors.New(dfcodes.UnknownError, err.Error())
+				return dferrors.New(base.Code_UnknownError, err.Error())
 			}
 			if !p.State.Success {
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)

@@ -24,7 +24,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -112,7 +111,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		TotalPieceCount: pt.GetTotalPieces(),
 		Cost:            uint32(cost),
 		Success:         true,
-		Code:            dfcodes.Success,
+		Code:            base.Code_Success,
 	})
 	if err != nil {
 		peerResultSpan.RecordError(err)

@@ -22,7 +22,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
@@ -53,11 +52,11 @@ func NewResWithErr(ptr interface{}, err error) interface{} {
 	var code base.Code
 	switch st.Code() {
 	case codes.DeadlineExceeded:
-		code = dfcodes.RequestTimeOut
+		code = base.Code_RequestTimeOut
 	case codes.OK:
-		code = dfcodes.Success
+		code = base.Code_Success
 	default:
-		code = dfcodes.UnknownError
+		code = base.Code_UnknownError
 	}
 	return NewResWithCodeAndMsg(ptr, code, st.Message())
 }

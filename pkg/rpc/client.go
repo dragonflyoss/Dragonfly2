@@ -30,10 +30,10 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 const (
@@ -372,7 +372,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	}
 	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
-		if e.Code != dfcodes.ResourceLacked {
+		if e.Code != base.Code_ResourceLacked {
 			return "", cause
 		}
 	}

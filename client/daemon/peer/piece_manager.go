@@ -28,7 +28,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -171,7 +170,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *b
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       true,
-				Code:          dfcodes.Success,
+				Code:          base.Code_Success,
 				HostLoad:      nil,                // TODO(jim): update host load
 				FinishedCount: piece.PieceNum + 1, // update by peer task
 				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
@@ -195,7 +194,7 @@ func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       false,
-				Code:          dfcodes.ClientPieceDownloadFail,
+				Code:          base.Code_ClientPieceDownloadFail,
 				HostLoad:      nil,
 				FinishedCount: 0, // update by peer task
 			},

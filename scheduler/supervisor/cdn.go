@@ -31,11 +31,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -110,9 +110,9 @@ func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 		if cdnErr, ok := err.(*dferrors.DfError); ok {
 			logger.Errorf("failed to obtain cdn seed: %v", cdnErr)
 			switch cdnErr.Code {
-			case dfcodes.CdnTaskRegistryFail:
+			case base.Code_CDNTaskRegistryFail:
 				return nil, errors.Wrap(ErrCDNRegisterFail, "obtain seeds")
-			case dfcodes.CdnTaskDownloadFail:
+			case base.Code_CDNTaskDownloadFail:
 				return nil, errors.Wrapf(ErrCDNDownloadFail, "obtain seeds")
 			default:
 				return nil, errors.Wrapf(ErrCDNUnknown, "obtain seeds")
@@ -145,9 +145,9 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 			logger.Errorf("task %s add piece err %v", task.ID, err)
 			if recvErr, ok := err.(*dferrors.DfError); ok {
 				switch recvErr.Code {
-				case dfcodes.CdnTaskRegistryFail:
+				case base.Code_CDNTaskRegistryFail:
 					return nil, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
-				case dfcodes.CdnTaskDownloadFail:
+				case base.Code_CDNTaskDownloadFail:
 					return nil, errors.Wrapf(ErrCDNDownloadFail, "receive piece")
 				default:
 					return nil, errors.Wrapf(ErrCDNUnknown, "recive piece")
