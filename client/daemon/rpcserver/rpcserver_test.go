@@ -25,8 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
@@ -36,12 +34,14 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
+	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 func TestMain(m *testing.M) {
