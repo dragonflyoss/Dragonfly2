@@ -329,7 +329,7 @@ func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
 		pt.failedReason = reasonPeerGoneFromScheduler
 		pt.failedCode = base.Code_SchedPeerGone
 		return true
-	case base.Code_CdnError, base.Code_CdnTaskRegistryFail, base.Code_CdnTaskDownloadFail:
+	case base.Code_CDNError, base.Code_CDNTaskRegistryFail, base.Code_CDNTaskDownloadFail:
 		// 6xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
@@ -748,7 +748,7 @@ func (pt *peerTask) preparePieceTasksByPeer(curPeerPacket *scheduler.PeerPacket,
 	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()
 
-	// when cdn returns base.Code_CdnTaskNotFound, report it to scheduler and wait cdn download it.
+	// when cdn returns base.Code_CDNTaskNotFound, report it to scheduler and wait cdn download it.
 retry:
 	pt.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := pt.getPieceTasks(span, curPeerPacket, peer, request)
@@ -795,7 +795,7 @@ retry:
 		pt.Errorf("send piece result error: %s, code to send: %d", err, code)
 	}
 
-	if code == base.Code_CdnTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
+	if code == base.Code_CDNTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
 		span.AddEvent("retry for CdnTaskNotFound")
 		goto retry
 	}
@@ -871,7 +871,7 @@ func (pt *peerTask) getNextPieceNum(cur int32) int32 {
 	i := cur
 	for ; pt.requestedPieces.IsSet(i); i++ {
 	}
-	if pt.totalPiece > 0 && i >= int32(pt.totalPiece) {
+	if pt.totalPiece > 0 && i >= pt.totalPiece {
 		// double check, re-search not success or not requested pieces
 		for i = int32(0); pt.requestedPieces.IsSet(i); i++ {
 		}

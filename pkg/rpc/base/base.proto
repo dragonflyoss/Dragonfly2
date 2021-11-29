@@ -55,19 +55,13 @@ enum Code{
   SchedTaskStatusError = 5006; // task status is fail
 
   // cdnsystem response error 6000-6999
-  CdnError = 6000;
-  CdnTaskRegistryFail = 6001;
-  CdnTaskDownloadFail = 6002;
-  CdnTaskNotFound = 6404;
+  CDNError = 6000;
+  CDNTaskRegistryFail = 6001;
+  CDNTaskDownloadFail = 6002;
+  CDNTaskNotFound = 6404;
 
   // manager response error 7000-7999
-  ManagerError = 7000;
   InvalidResourceType = 7001;
-  ManagerHostError = 7002;
-  ManagerStoreError = 7003;
-  ManagerConfigError = 7004;
-  ManagerStoreNotFound = 7005;
-  SchedulerNodesNotFound = 7006;
 }
 
 enum PieceStyle{

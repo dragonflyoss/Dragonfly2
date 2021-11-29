@@ -105,7 +105,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			span.RecordError(err)
 			return err
 		}
-		err = dferrors.Newf(base.Code_CdnTaskRegistryFail, "failed to register seed task(%s): %v", req.TaskId, err)
+		err = dferrors.Newf(base.Code_CDNTaskRegistryFail, "failed to register seed task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return err
 	}
@@ -127,12 +127,12 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
-		err = dferrors.Newf(base.Code_CdnError, "failed to get task(%s): %v", req.TaskId, err)
+		err = dferrors.Newf(base.Code_CDNError, "failed to get task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return err
 	}
 	if !task.IsSuccess() {
-		err = dferrors.Newf(base.Code_CdnTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
+		err = dferrors.Newf(base.Code_CDNTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, task.CdnStatus)
 		span.RecordError(err)
 		return err
 	}
@@ -163,22 +163,22 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
-			err = dferrors.Newf(base.Code_CdnTaskNotFound, "failed to get task(%s) from cdn: %v", req.TaskId, err)
+			err = dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s) from cdn: %v", req.TaskId, err)
 			span.RecordError(err)
 			return nil, err
 		}
-		err = dferrors.Newf(base.Code_CdnError, "failed to get task(%s) from cdn: %v", req.TaskId, err)
+		err = dferrors.Newf(base.Code_CDNError, "failed to get task(%s) from cdn: %v", req.TaskId, err)
 		span.RecordError(err)
 		return nil, err
 	}
 	if task.IsError() {
-		err = dferrors.Newf(base.Code_CdnTaskDownloadFail, "fail to download task(%s), cdnStatus: %s", task.TaskID, task.CdnStatus)
+		err = dferrors.Newf(base.Code_CDNTaskDownloadFail, "fail to download task(%s), cdnStatus: %s", task.TaskID, task.CdnStatus)
 		span.RecordError(err)
 		return nil, err
 	}
 	pieces, err := css.taskMgr.GetPieces(ctx, req.TaskId)
 	if err != nil {
-		err = dferrors.Newf(base.Code_CdnError, "failed to get pieces of task(%s) from cdn: %v", task.TaskID, err)
+		err = dferrors.Newf(base.Code_CDNError, "failed to get pieces of task(%s) from cdn: %v", task.TaskID, err)
 		span.RecordError(err)
 		return nil, err
 	}

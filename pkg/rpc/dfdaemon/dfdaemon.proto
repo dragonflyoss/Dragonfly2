@@ -38,8 +38,8 @@ message DownRequest{
   double limit = 5 [(validate.rules).double.gte = 0];
   bool disable_back_source = 6;
   base.UrlMeta url_meta = 7;
-  // p2p/cdn/source
-  string pattern = 8 [(validate.rules).string = {in:["p2p", "cdn", "source"]}];
+  // p2p/cdn/source, default is p2p
+  string pattern = 8 [(validate.rules).string = {in:["p2p", "cdn", "source"], ignore_empty:true}];
   // call system
   string callsystem = 9;
   // user id
