@@ -4251,7 +4251,7 @@ var doc = `{
                 "startTime": {
                     "type": "string"
                 },
-                "state": {
+                "status": {
                     "type": "string"
                 }
             }
