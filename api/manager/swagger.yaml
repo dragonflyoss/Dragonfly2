@@ -527,7 +527,7 @@ definitions:
         type: string
       startTime:
         type: string
-      state:
+      status:
         type: string
     type: object
   types.ResetPasswordRequest:

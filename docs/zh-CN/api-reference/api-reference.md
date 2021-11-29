@@ -3839,7 +3839,7 @@ delete role by uri config
 |**finishTime**  <br>*可选*|string|
 |**id**  <br>*可选*|string|
 |**startTime**  <br>*可选*|string|
-|**state**  <br>*可选*|string|
+|**status**  <br>*可选*|string|
 
 
 <a name="types-resetpasswordrequest"></a>
