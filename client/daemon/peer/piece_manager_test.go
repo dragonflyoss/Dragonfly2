@@ -143,7 +143,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func() string {
 					return taskID
 				})
-			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 int64) {})
+			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 uint64) {})
 			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any()).AnyTimes().DoAndReturn(
 				func(result *pieceTaskResult) error {
 					return nil

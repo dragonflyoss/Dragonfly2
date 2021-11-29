@@ -25,6 +25,9 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"github.com/distribution/distribution/v3/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -100,11 +103,15 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	})
 	assert.Nil(err, "grpc dial should be ok")
 	request := &dfdaemongrpc.DownRequest{
-		Url:    "http://localhost/test",
-		Output: "./testdata/file1",
+		Uuid:              uuid.Generate().String(),
+		Url:               "http://localhost/test",
+		Output:            "./testdata/file1",
+		DisableBackSource: false,
 		UrlMeta: &base.UrlMeta{
 			Tag: "unit test",
 		},
+		Pattern:    "p2p",
+		Callsystem: "",
 	}
 	down, err := client.Download(context.Background(), request)
 	assert.Nil(err, "client download grpc call should be ok")
@@ -191,6 +198,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}{
 		{
 			request: &base.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+				SrcPid:   idgen.PeerID(iputils.IPv4),
+				DstPid:   idgen.PeerID(iputils.IPv4),
 				StartNum: 0,
 				Limit:    1,
 			},
@@ -199,6 +209,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		},
 		{
 			request: &base.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+				SrcPid:   idgen.PeerID(iputils.IPv4),
+				DstPid:   idgen.PeerID(iputils.IPv4),
 				StartNum: 0,
 				Limit:    4,
 			},
@@ -207,6 +220,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		},
 		{
 			request: &base.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+				SrcPid:   idgen.PeerID(iputils.IPv4),
+				DstPid:   idgen.PeerID(iputils.IPv4),
 				StartNum: 8,
 				Limit:    1,
 			},
@@ -215,6 +231,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		},
 		{
 			request: &base.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+				SrcPid:   idgen.PeerID(iputils.IPv4),
+				DstPid:   idgen.PeerID(iputils.IPv4),
 				StartNum: 8,
 				Limit:    4,
 			},
