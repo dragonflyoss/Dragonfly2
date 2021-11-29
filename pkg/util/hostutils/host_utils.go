@@ -44,9 +44,7 @@ func hostname() string {
 func fqdnHostname() string {
 	fqdn, err := fqdn.FqdnHostname()
 	if err != nil {
-		//panic(err)
-		name, _ := os.Hostname()
-		return name
+		panic(err)
 	}
 
 	return fqdn
