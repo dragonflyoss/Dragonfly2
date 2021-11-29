@@ -17,11 +17,11 @@ COPY ./manager/console /build
 RUN npm run build
 
 FROM ${BASE_IMAGE}
-WORKDIR /opt/dragonfly/bin
+WORKDIR /opt/dragonfly
 ENV PATH=/opt/dragonfly/bin:$PATH
 RUN mkdir -p /opt/dragonfly/bin/manager/console \
     && echo "hosts: files dns" > /etc/nsswitch.conf
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
-COPY --from=console-builder /build/dist /opt/dragonfly/bin/manager/console/dist
+COPY --from=console-builder /build/dist /opt/dragonfly/manager/console/dist
 EXPOSE 8080 65003
 ENTRYPOINT ["/opt/dragonfly/bin/server"]
