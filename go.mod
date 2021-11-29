@@ -10,7 +10,6 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.5-0.20210827121450-79689222c755
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869
 	github.com/casbin/casbin/v2 v2.34.1
 	github.com/casbin/gorm-adapter/v3 v3.3.2
 	github.com/colinmarc/hdfs/v2 v2.2.0

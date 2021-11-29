@@ -102,7 +102,16 @@ func (m *DownRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Timeout
+	if m.GetTimeout() < 0 {
+		err := DownRequestValidationError{
+			field:  "Timeout",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetLimit() < 0 {
 		err := DownRequestValidationError{
@@ -146,15 +155,19 @@ func (m *DownRequest) validate(all bool) error {
 		}
 	}
 
-	if _, ok := _DownRequest_Pattern_InLookup[m.GetPattern()]; !ok {
-		err := DownRequestValidationError{
-			field:  "Pattern",
-			reason: "value must be in list [p2p cdn source]",
+	if m.GetPattern() != "" {
+
+		if _, ok := _DownRequest_Pattern_InLookup[m.GetPattern()]; !ok {
+			err := DownRequestValidationError{
+				field:  "Pattern",
+				reason: "value must be in list [p2p cdn source]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
+
 	}
 
 	// no validation rules for Callsystem
@@ -297,7 +310,16 @@ func (m *DownResult) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for CompletedLength
+	if m.GetCompletedLength() < 0 {
+		err := DownResultValidationError{
+			field:  "CompletedLength",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Done
 

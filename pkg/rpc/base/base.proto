@@ -109,18 +109,18 @@ message PieceTaskRequest{
   string src_pid = 2 [(validate.rules).string.min_len = 1];
   string dst_pid = 3 [(validate.rules).string.min_len = 1];
   // piece number
-  uint32 start_num = 4;
+  uint32 start_num = 4 [(validate.rules).uint32.gte = 0];
   // expected piece count, limit = 0 represent request pieces as many shards as possible
-  uint32 limit = 5;
+  uint32 limit = 5 [(validate.rules).uint32.gte = 0];
 }
 
 message PieceInfo{
   // -1 as start flag
   int32 piece_num = 1;
-  uint64 range_start = 2;
-  uint32 range_size = 3;
+  uint64 range_start = 2 [(validate.rules).uint64.gte = 0];
+  uint32 range_size = 3 [(validate.rules).uint32.gte = 0];
   string piece_md5 = 4 [(validate.rules).string = {pattern:"([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})", ignore_empty:true}];
-  uint64 piece_offset = 5;
+  uint64 piece_offset = 5 [(validate.rules).uint64.gte = 0];
   base.PieceStyle piece_style = 6;
 }
 

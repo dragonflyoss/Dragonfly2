@@ -467,9 +467,27 @@ func (m *PieceTaskRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for StartNum
+	if m.GetStartNum() < 0 {
+		err := PieceTaskRequestValidationError{
+			field:  "StartNum",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Limit
+	if m.GetLimit() < 0 {
+		err := PieceTaskRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if len(errors) > 0 {
 		return PieceTaskRequestMultiError(errors)
@@ -572,9 +590,27 @@ func (m *PieceInfo) validate(all bool) error {
 
 	// no validation rules for PieceNum
 
-	// no validation rules for RangeStart
+	if m.GetRangeStart() < 0 {
+		err := PieceInfoValidationError{
+			field:  "RangeStart",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for RangeSize
+	if m.GetRangeSize() < 0 {
+		err := PieceInfoValidationError{
+			field:  "RangeSize",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	if m.GetPieceMd5() != "" {
 
@@ -591,7 +627,16 @@ func (m *PieceInfo) validate(all bool) error {
 
 	}
 
-	// no validation rules for PieceOffset
+	if m.GetPieceOffset() < 0 {
+		err := PieceInfoValidationError{
+			field:  "PieceOffset",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for PieceStyle
 

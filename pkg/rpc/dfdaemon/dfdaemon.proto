@@ -33,7 +33,7 @@ message DownRequest{
   // at the same time, dfdaemon workspace also makes soft link to the output
   string output = 3 [(validate.rules).string.min_len = 1];
   // timeout duration
-  uint64 timeout = 4;
+  uint64 timeout = 4 [(validate.rules).uint64.gte = 0];
   // rate limit in bytes per second
   double limit = 5 [(validate.rules).double.gte = 0];
   bool disable_back_source = 6;
@@ -51,7 +51,7 @@ message DownRequest{
 message DownResult{
   string task_id = 2 [(validate.rules).string.min_len = 1];
   string peer_id = 3 [(validate.rules).string.min_len = 1];
-  uint64 completed_length = 4;
+  uint64 completed_length = 4 [(validate.rules).uint64.gte = 0];
   bool done = 5;
 }
 
