@@ -115,7 +115,7 @@ message PieceTaskRequest{
 }
 
 message PieceInfo{
-  // -1 as start flag
+  // piece_num < 0 represent start report piece flag
   int32 piece_num = 1;
   uint64 range_start = 2 [(validate.rules).uint64.gte = 0];
   uint32 range_size = 3 [(validate.rules).uint32.gte = 0];
