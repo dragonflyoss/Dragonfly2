@@ -3452,6 +3452,12 @@
                 "bio": {
                     "type": "string"
                 },
+                "cdn_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CDNCluster"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3464,6 +3470,12 @@
                 "name": {
                     "type": "string"
                 },
+                "scheduler_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
                 "state": {
                     "type": "string"
                 },
@@ -3472,6 +3484,9 @@
                 },
                 "url": {
                     "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/model.User"
                 },
                 "user_id": {
                     "type": "integer"

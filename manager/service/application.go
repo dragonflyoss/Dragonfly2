@@ -33,7 +33,7 @@ func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicati
 		State:             json.State,
 	}
 
-	if err := s.db.WithContext(ctx).Create(&application).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").Create(&application).Error; err != nil {
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
 
 func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
 	application := model.Application{}
-	if err := s.db.WithContext(ctx).First(&application, id).Updates(model.Application{
+	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Updates(model.Application{
 		Name:              json.Name,
 		DownloadRateLimit: json.DownloadRateLimit,
 		URL:               json.URL,
@@ -71,7 +71,7 @@ func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.Update
 
 func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
 	application := model.Application{}
-	if err := s.db.WithContext(ctx).Preload("SchedulerClusters").First(&application, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -81,7 +81,7 @@ func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application,
 func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
 	var count int64
 	applications := []model.Application{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SchedulerClusters").Find(&applications).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

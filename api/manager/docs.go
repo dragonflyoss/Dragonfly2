@@ -3466,6 +3466,12 @@ var doc = `{
                 "bio": {
                     "type": "string"
                 },
+                "cdn_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.CDNCluster"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3478,6 +3484,12 @@ var doc = `{
                 "name": {
                     "type": "string"
                 },
+                "scheduler_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
                 "state": {
                     "type": "string"
                 },
@@ -3486,6 +3498,9 @@ var doc = `{
                 },
                 "url": {
                     "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/model.User"
                 },
                 "user_id": {
                     "type": "integer"
