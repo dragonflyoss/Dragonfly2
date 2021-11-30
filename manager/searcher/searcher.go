@@ -135,7 +135,7 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 				continue
 			}
 
-			score := evaluate(conditions, scopes)
+			score := Evaluate(conditions, scopes)
 			if score > maxScore {
 				maxScore = score
 				result = cluster
@@ -146,7 +146,7 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon
-func evaluate(conditions map[string]string, scopes Scopes) float64 {
+func Evaluate(conditions map[string]string, scopes Scopes) float64 {
 	return idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionNetTopology], scopes.NetTopology)
