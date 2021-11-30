@@ -17,6 +17,7 @@
 package searcher
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -345,7 +346,7 @@ func TestSchedulerCluster(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			searcher := New()
-			clusters, ok := searcher.FindSchedulerCluster(tc.schedulerClusters, &manager.ListSchedulersRequest{
+			clusters, ok := searcher.FindSchedulerCluster(context.Background(), tc.schedulerClusters, &manager.ListSchedulersRequest{
 				HostName: "foo",
 				Ip:       "127.0.0.1",
 				HostInfo: tc.conditions,
