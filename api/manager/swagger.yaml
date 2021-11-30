@@ -4,6 +4,10 @@ definitions:
     properties:
       bio:
         type: string
+      cdn_clusters:
+        items:
+          $ref: '#/definitions/model.CDNCluster'
+        type: array
       created_at:
         type: string
       download_rate_limit:
@@ -12,12 +16,18 @@ definitions:
         type: integer
       name:
         type: string
+      scheduler_clusters:
+        items:
+          $ref: '#/definitions/model.SchedulerCluster'
+        type: array
       state:
         type: string
       updated_at:
         type: string
       url:
         type: string
+      user:
+        $ref: '#/definitions/model.User'
       user_id:
         type: integer
     type: object

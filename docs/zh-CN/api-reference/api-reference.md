@@ -3460,13 +3460,16 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
+|**cdn_clusters**  <br>*可选*|< [model.CDNCluster](#model-cdncluster) > array|
 |**created_at**  <br>*可选*|string|
 |**download_rate_limit**  <br>*可选*|integer|
 |**id**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
+|**scheduler_clusters**  <br>*可选*|< [model.SchedulerCluster](#model-schedulercluster) > array|
 |**state**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
 |**url**  <br>*可选*|string|
+|**user**  <br>*可选*|[model.User](#model-user)|
 |**user_id**  <br>*可选*|integer|
 
 
