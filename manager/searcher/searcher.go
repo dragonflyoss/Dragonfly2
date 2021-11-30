@@ -17,6 +17,7 @@
 package searcher
 
 import (
+	"context"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -72,7 +73,7 @@ type Scopes struct {
 }
 
 type Searcher interface {
-	FindSchedulerCluster([]model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, bool)
+	FindSchedulerCluster(context.Context, []model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, bool)
 }
 
 type searcher struct{}
@@ -86,7 +87,7 @@ func New() Searcher {
 	return s
 }
 
-func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
+func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
 	conditions := client.HostInfo
 	if len(schedulerClusters) <= 0 || len(conditions) <= 0 {
 		return model.SchedulerCluster{}, false
