@@ -183,7 +183,7 @@ func (mc *managerClient) Get() (interface{}, error) {
 	schedulers, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_CLIENT_SOURCE,
 		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.ListenIP,
+		Ip:         mc.hostOption.AdvertiseIP,
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
 			searcher.ConditionIDC:            mc.hostOption.IDC,
