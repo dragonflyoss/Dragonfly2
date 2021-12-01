@@ -113,10 +113,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		}
 
 		// New dynconfig client
-		if dynconfig, err = config.NewDynconfig(
-			config.NewManagerClient(managerClient, opt.Host),
-			opt.Scheduler.Manager.RefreshInterval,
-		); err != nil {
+		if dynconfig, err = config.NewDynconfig(managerClient, opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
 			return nil, err
 		}
 

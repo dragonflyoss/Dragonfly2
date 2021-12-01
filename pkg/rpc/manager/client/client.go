@@ -97,12 +97,11 @@ func New(target string) (Client, error) {
 func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
-		if err := ipReachable.Check(); err != nil {
-			logger.Warnf("%s address can not reachable", netAddr.Addr)
-			continue
+		if err := ipReachable.Check(); err == nil {
+			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
+			return New(netAddr.Addr)
 		}
-		logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-		return New(netAddr.Addr)
+		logger.Warnf("%s address can not reachable", netAddr.Addr)
 	}
 
 	return nil, errors.New("can not find available addresses")
