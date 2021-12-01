@@ -25,6 +25,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gofrs/flock"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/dfget"
 	"d7y.io/dragonfly/v2/cmd/dependency"
@@ -38,11 +44,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
-	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -83,7 +84,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
 		fmt.Printf("dfget version: %s\n", version.GitVersion)
-		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.HostIP)
+		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.IPv4)
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file
@@ -199,8 +200,15 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 	}
 
 	lock := flock.New(dfpath.DfgetLockPath)
-	lock.Lock()
-	defer lock.Unlock()
+	if err := lock.Lock(); err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		if err := lock.Unlock(); err != nil {
+			logger.Errorf("flock unlock failed %s", err)
+		}
+	}()
 
 	// 2.Check with lock
 	if daemonClient.CheckHealth(context.Background(), target) == nil {

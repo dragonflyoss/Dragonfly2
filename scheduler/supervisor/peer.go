@@ -22,12 +22,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"github.com/pkg/errors"
-	"go.uber.org/atomic"
 )
 
 const (
@@ -115,7 +116,7 @@ func (m *peerManager) Delete(id string) {
 
 func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 	var peers []*Peer
-	m.peers.Range(func(key, value interface{}) bool {
+	m.peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)
 		if peer.Task.ID == taskID {
 			peers = append(peers, peer)
@@ -151,7 +152,7 @@ func (m *peerManager) RunGC() error {
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
-			if peer.Task.GetPeers().Size() == 0 {
+			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
 			}
@@ -367,50 +368,40 @@ func (peer *Peer) GetPieceCosts() []int {
 	return peer.pieceCosts
 }
 
-func (peer *Peer) GetPieceAverageCost() (int, bool) {
-	costs := peer.GetPieceCosts()
-	if len(costs) < 1 {
-		return 0, false
-	}
+func (peer *Peer) SetPieceCosts(costs ...int) {
+	peer.lock.Lock()
+	defer peer.lock.Unlock()
 
-	totalCost := 0
-	for _, cost := range costs {
-		totalCost += cost
-	}
-
-	return totalCost / len(costs), true
+	peer.pieceCosts = append(peer.pieceCosts, costs...)
 }
 
 func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
 	if finishedCount > peer.TotalPieceCount.Load() {
 		peer.TotalPieceCount.Store(finishedCount)
-
-		peer.lock.Lock()
-		peer.pieceCosts = append(peer.pieceCosts, cost)
-		if len(peer.pieceCosts) > 20 {
-			peer.pieceCosts = peer.pieceCosts[len(peer.pieceCosts)-20:]
-		}
-		peer.lock.Unlock()
-
+		peer.SetPieceCosts(cost)
 		peer.Task.UpdatePeer(peer)
 		return
 	}
 }
 
-func (peer *Peer) GetSortKeys() (key1, key2 int) {
+func (peer *Peer) SortedValue() int {
 	peer.lock.RLock()
 	defer peer.lock.RUnlock()
 
-	key1 = int(peer.TotalPieceCount.Load())
-	key2 = peer.getFreeLoad()
-	return
+	pieceCount := peer.TotalPieceCount.Load()
+	freeLoad := peer.getFreeLoad()
+	if peer.Host.IsCDN {
+		// if peer's host is CDN, peer has the lowest priority among all peers with the same number of pieces
+		return int(pieceCount * HostMaxLoad)
+	}
+	return int(pieceCount*HostMaxLoad + freeLoad)
 }
 
-func (peer *Peer) getFreeLoad() int {
+func (peer *Peer) getFreeLoad() int32 {
 	if peer.Host == nil {
 		return 0
 	}
-	return int(peer.Host.GetFreeUploadLoad())
+	return peer.Host.GetFreeUploadLoad()
 }
 
 func (peer *Peer) SetStatus(status PeerStatus) {

@@ -20,14 +20,14 @@ import (
 	"context"
 	"time"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
 const (
@@ -138,7 +138,10 @@ retry:
 				SourceType: keepalive.SourceType,
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
-				stream.CloseAndRecv()
+				if _, err := stream.CloseAndRecv(); err != nil {
+					logger.Errorf("hostname %s cluster id %s close and recv stream failed", keepalive.HostName, keepalive.ClusterId, err)
+				}
+
 				cancel()
 				goto retry
 			}

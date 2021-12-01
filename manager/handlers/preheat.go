@@ -19,10 +19,11 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/gin-gonic/gin"
 )
 
 // @Summary Create V1 Preheat
@@ -45,7 +46,7 @@ func (h *Handlers) CreateV1Preheat(ctx *gin.Context) {
 
 	preheat, err := h.service.CreateV1Preheat(ctx.Request.Context(), json)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -72,7 +73,7 @@ func (h *Handlers) GetV1Preheat(ctx *gin.Context) {
 
 	preheat, err := h.service.GetV1Preheat(ctx.Request.Context(), params.ID)
 	if err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 

@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"runtime"
 	"sync"
 	"time"
@@ -48,10 +49,12 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 type Daemon interface {
@@ -80,9 +83,11 @@ type clientDaemon struct {
 
 	PeerTaskManager peer.TaskManager
 	PieceManager    peer.PieceManager
-}
 
-var _ Daemon = (*clientDaemon)(nil)
+	dynconfig       config.Dynconfig
+	schedulers      []*manager.Scheduler
+	schedulerClient schedulerclient.SchedulerClient
+}
 
 func New(opt *config.DaemonOption) (Daemon, error) {
 	host := &scheduler.PeerHost{
@@ -90,18 +95,46 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
-		HostName:       iputils.HostName,
+		HostName:       opt.Host.Hostname,
 		SecurityDomain: opt.Host.SecurityDomain,
 		Location:       opt.Host.Location,
 		Idc:            opt.Host.IDC,
 		NetTopology:    opt.Host.NetTopology,
 	}
 
+	var addrs []dfnet.NetAddr
+	var schedulers []*manager.Scheduler
+	var dynconfig config.Dynconfig
+	if opt.Scheduler.Manager.Enable == true {
+		// New manager client
+		managerClient, err := managerclient.New(opt.Scheduler.Manager.Addr)
+		if err != nil {
+			return nil, err
+		}
+
+		// New dynconfig client
+		if dynconfig, err = config.NewDynconfig(
+			config.NewManagerClient(managerClient, opt.Host),
+			opt.Scheduler.Manager.RefreshInterval,
+		); err != nil {
+			return nil, err
+		}
+
+		// Get schedulers from manager
+		if schedulers, err = dynconfig.GetSchedulers(); err != nil {
+			return nil, err
+		}
+
+		addrs = schedulersToAvailableNetAddrs(schedulers)
+	} else {
+		addrs = opt.Scheduler.NetAddrs
+	}
+
 	var opts []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	}
-	sched, err := schedulerclient.GetClientByAddr(opt.Scheduler.NetAddrs, opts...)
+	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
@@ -134,7 +167,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest)
 	if err != nil {
 		return nil, err
 	}
@@ -186,6 +219,9 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		UploadManager:   uploadManager,
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
+		dynconfig:       dynconfig,
+		schedulers:      schedulers,
+		schedulerClient: sched,
 	}, nil
 }
 
@@ -431,6 +467,22 @@ func (cd *clientDaemon) Serve() error {
 		})
 	}
 
+	// serve dynconfig service
+	if cd.dynconfig != nil {
+		// dynconfig register client daemon
+		cd.dynconfig.Register(cd)
+
+		// servce dynconfig
+		g.Go(func() error {
+			if err := cd.dynconfig.Serve(); err != nil {
+				logger.Errorf("dynconfig start failed %v", err)
+				return err
+			}
+			logger.Info("dynconfig start successfully")
+			return nil
+		})
+	}
+
 	werr := g.Wait()
 	cd.Stop()
 	return werr
@@ -441,17 +493,73 @@ func (cd *clientDaemon) Stop() {
 		close(cd.done)
 		cd.GCManager.Stop()
 		cd.RPCManager.Stop()
-		cd.UploadManager.Stop()
+		if err := cd.UploadManager.Stop(); err != nil {
+			logger.Errorf("upload manager stop failed %s", err)
+		}
 
 		if cd.ProxyManager.IsEnabled() {
-			cd.ProxyManager.Stop()
+			if err := cd.ProxyManager.Stop(); err != nil {
+				logger.Errorf("proxy manager stop failed %s", err)
+			}
 		}
 
 		if !cd.Option.KeepStorage {
 			logger.Infof("keep storage disabled")
 			cd.StorageManager.CleanUp()
 		}
+
+		if cd.dynconfig != nil {
+			if err := cd.dynconfig.Stop(); err != nil {
+				logger.Errorf("dynconfig client closed failed %s", err)
+			}
+			logger.Info("dynconfig client closed")
+		}
 	})
+}
+
+func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
+	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
+		return
+	}
+
+	// Get the available scheduler addresses and use ip first
+	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
+
+	// Update scheduler client addresses
+	cd.schedulerClient.UpdateState(addrs)
+	cd.schedulers = data.Schedulers
+}
+
+// schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
+func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
+	for _, scheduler := range schedulers {
+		// Check whether the ip can be reached
+		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
+		if err := ipReachable.Check(); err != nil {
+			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
+		} else {
+			netAddrs = append(netAddrs, dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
+			})
+
+			continue
+		}
+
+		// Check whether the host can be reached
+		hostReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port)})
+		if err := hostReachable.Check(); err != nil {
+			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
+		} else {
+			netAddrs = append(netAddrs, dfnet.NetAddr{
+				Type: dfnet.TCP,
+				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
+			})
+		}
+	}
+
+	return netAddrs
 }
 
 func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {

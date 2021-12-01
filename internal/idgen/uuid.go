@@ -17,15 +17,9 @@
 package idgen
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 )
 
 func UUIDString() string {
 	return uuid.New().String()
-}
-
-func CDN(cdnHostname string, serverPort int32) string {
-	return fmt.Sprintf("%s-%d_CDN", cdnHostname, serverPort)
 }

@@ -3,17 +3,13 @@
 
 # scheduler policy configuration
 scheduler:
-  # abtest whether to open ab test
-  # default: false
-  abtest: false
-  # aevaluator specify which evaluator is used when taskID suffix with _A
-  # only take effect when abtest is true
-  # default: ""
-  aevaluator: ""
-  # bevaluator specify which evaluator is used when taskID suffix with _B
-  # only take effect when abtest is true
-  # default: ""
-  bevaluator: ""
+  # algorithm configuration to use different scheduling algorithms,
+  # default configuration supports "default" and "ml"
+  # "default" is the rule-based scheduling algorithm, "ml" is the machine learning scheduling algorithm
+  # It also supports user plugin extension, the algorithm value is "plugin",
+  # and the compiled `d7y-scheduler-plugin-evaluator.so` file is added to
+  # the dragonfly working directory plugins
+  algorithm: default
   # workerNum is the number of goroutines that perform scheduling tasks
   # default:
   workerNum: 12
@@ -101,11 +97,11 @@ job:
     # backendDB
     backendDB: ""
 
-# Whether to disable CDN
+# whether to disable CDN
 # default: false
 disableCDN: false
 
-# Console shows log on console
+# console shows log on console
 # default: false
 console: false
 
@@ -124,3 +120,8 @@ jaeger: ""
 # service name used in tracer
 # default: dragonfly-scheduler
 service-name: dragonfly-scheduler
+
+# enable prometheus metrics
+# metrics:
+#  # metrics service address
+#  addr: ":8000"

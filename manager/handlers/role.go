@@ -19,10 +19,11 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/gin-gonic/gin"
 )
 
 // @Summary Create Role
@@ -43,7 +44,7 @@ func (h *Handlers) CreateRole(ctx *gin.Context) {
 	}
 
 	if err := h.service.CreateRole(ctx.Request.Context(), json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
@@ -68,7 +69,7 @@ func (h *Handlers) DestroyRole(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.DestroyRole(ctx.Request.Context(), params.Role); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusNotFound)
@@ -137,7 +138,7 @@ func (h *Handlers) AddPermissionForRole(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.AddPermissionForRole(ctx.Request.Context(), params.Role, json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusConflict)
@@ -172,7 +173,7 @@ func (h *Handlers) DeletePermissionForRole(ctx *gin.Context) {
 	}
 
 	if ok, err := h.service.DeletePermissionForRole(ctx.Request.Context(), params.Role, json); err != nil {
-		ctx.Error(err)
+		ctx.Error(err) // nolint: errcheck
 		return
 	} else if !ok {
 		ctx.Status(http.StatusNotFound)

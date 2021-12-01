@@ -21,6 +21,10 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
+
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -28,10 +32,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 )
 
 // SeederServer  refer to cdnsystem.SeederServer
@@ -135,8 +137,8 @@ func StatSeedStart(taskID, url string) {
 	logger.StatSeedLogger.Info("Start Seed",
 		zap.String("TaskID", taskID),
 		zap.String("URL", url),
-		zap.String("SeederIp", iputils.HostIP),
-		zap.String("SeederHostName", iputils.HostName))
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname))
 }
 
 func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
@@ -146,8 +148,8 @@ func StatSeedFinish(taskID, url string, success bool, err error, startAt, finish
 		zap.Bool("Success", success),
 		zap.String("TaskID", taskID),
 		zap.String("URL", url),
-		zap.String("SeederIp", iputils.HostIP),
-		zap.String("SeederHostName", iputils.HostName),
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname),
 		zap.Time("StartAt", startAt),
 		zap.Time("FinishAt", finishAt),
 		zap.Int64("Traffic", traffic),

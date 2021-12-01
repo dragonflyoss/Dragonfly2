@@ -21,8 +21,14 @@ package supervisor
 import (
 	"sync"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"go.uber.org/atomic"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
+const (
+	// When using the manager configuration parameter, limit the maximum load number to 5000
+	HostMaxLoad = 5 * 1000
 )
 
 type HostManager interface {
@@ -166,14 +172,6 @@ func (h *Host) GetPeersLen() int {
 	})
 
 	return length
-}
-
-func (h *Host) GetUploadLoadPercent() float64 {
-	if h.TotalUploadLoad <= 0 {
-		return 1.0
-	}
-
-	return float64(h.CurrentUploadLoad.Load()) / float64(h.TotalUploadLoad)
 }
 
 func (h *Host) GetFreeUploadLoad() int32 {

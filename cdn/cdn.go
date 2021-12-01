@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-// Package cdnsystem cdn server
 package cdn
 
 import (
@@ -23,6 +22,10 @@ import (
 	"net/http"
 	"runtime"
 	"time"
+
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/metrics"
@@ -37,10 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -126,7 +127,7 @@ func New(cfg *config.Config) (*Server, error) {
 		// Register to manager
 		if _, err := s.managerClient.UpdateCDN(&manager.UpdateCDNRequest{
 			SourceType:   manager.SourceType_CDN_SOURCE,
-			HostName:     iputils.HostName,
+			HostName:     hostutils.FQDNHostname,
 			Ip:           s.config.AdvertiseIP,
 			Port:         int32(s.config.ListenPort),
 			DownloadPort: int32(s.config.DownloadPort),
@@ -167,7 +168,7 @@ func (s *Server) Serve() error {
 		go func() {
 			logger.Info("start keepalive to manager")
 			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
-				HostName:   iputils.HostName,
+				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,
 				ClusterId:  uint64(s.config.Manager.CDNClusterID),
 			})
@@ -175,7 +176,11 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(iputils.HostIP, s.config.ListenPort, s.config.ListenPort)
+	var listen = iputils.IPv4
+	if s.config.AdvertiseIP != "" {
+		listen = s.config.AdvertiseIP
+	}
+	lis, _, err := rpc.ListenWithPortRange(listen, s.config.ListenPort, s.config.ListenPort)
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %+v", err)
 	}

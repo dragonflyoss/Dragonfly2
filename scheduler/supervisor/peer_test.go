@@ -20,13 +20,17 @@ import (
 	"strconv"
 	"testing"
 
-	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"d7y.io/dragonfly/v2/scheduler/supervisor/mocks"
-
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/supervisor/mocks"
+)
+
+const (
+	HostMaxLoad = 5 * 1000
 )
 
 func TestPeer_New(t *testing.T) {
@@ -185,73 +189,6 @@ func TestPeer_Tree(t *testing.T) {
 				peers = append(peers, peer)
 			}
 			tc.expect(t, peers, tc.number, tc.answer)
-		})
-	}
-}
-
-func TestPeer_Cost(t *testing.T) {
-	tests := []struct {
-		name          string
-		finishedCount []int32
-		cost          []int
-		expect        func(t *testing.T, peer *supervisor.Peer, cost []int)
-	}{
-		{
-			name:          "normal workflow",
-			finishedCount: []int32{2, 3, 4},
-			cost:          []int{3, 4, 5},
-			expect: func(t *testing.T, peer *supervisor.Peer, cost []int) {
-				assert := assert.New(t)
-
-				costFetch := peer.GetPieceCosts()
-				assert.ElementsMatch(costFetch, cost)
-
-				average, success := peer.GetPieceAverageCost()
-				assert.True(success)
-				assert.Equal(4, average)
-				finishedCountFetch, loadFetch := peer.GetSortKeys()
-				assert.Equal(4, finishedCountFetch)
-				assert.Equal(100, loadFetch)
-			},
-		},
-		{
-			name:          "no workflow will be neglected",
-			finishedCount: []int32{},
-			cost:          []int{},
-			expect: func(t *testing.T, peer *supervisor.Peer, cost []int) {
-				assert := assert.New(t)
-
-				average, success := peer.GetPieceAverageCost()
-				assert.False(success)
-				assert.Equal(0, average)
-			},
-		},
-		{
-			name: "long workflow will be clipped",
-			finishedCount: []int32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-				11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22},
-			cost: []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-				11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22},
-			expect: func(t *testing.T, peer *supervisor.Peer, cost []int) {
-				assert := assert.New(t)
-
-				costFetch := peer.GetPieceCosts()
-				assert.ElementsMatch(costFetch, cost[2:])
-
-				average, success := peer.GetPieceAverageCost()
-				assert.True(success)
-				assert.Equal(12, average)
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			task := mockATask("task")
-			peer := mockAPeer("peer", task)
-			for i := 0; i < len(tc.finishedCount); i++ {
-				peer.UpdateProgress(tc.finishedCount[i], tc.cost[i])
-			}
-			tc.expect(t, peer, tc.cost)
 		})
 	}
 }

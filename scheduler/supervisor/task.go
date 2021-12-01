@@ -21,12 +21,13 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/list"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/structure/sortedlist"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"go.uber.org/atomic"
 )
 
 const (
@@ -108,7 +109,7 @@ func (m *taskManager) RunGC() error {
 			task.SetStatus(TaskStatusZombie)
 		}
 
-		if task.GetPeers().Size() == 0 {
+		if task.GetPeers().Len() == 0 {
 			task.Log().Info("peers is empty, task status become waiting")
 			task.SetStatus(TaskStatusWaiting)
 		}
@@ -177,8 +178,8 @@ type Task struct {
 	lastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
-	// peers is peer list
-	peers *sortedlist.SortedList
+	// peers is peer sorted unique list
+	peers list.SortedUniqueList
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -204,7 +205,7 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		lastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             sortedlist.NewSortedList(),
+		peers:             list.NewSortedUniqueList(),
 		logger:            logger.WithTaskID(id),
 	}
 
@@ -262,30 +263,18 @@ func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	err := task.peers.UpdateOrAdd(peer)
-	if err != nil {
-		task.logger.Errorf("add peer %s failed: %v", peer.ID, err)
-	}
-	task.logger.Debugf("peer %s has been added, current total peer count is %d", peer.ID, task.peers.Size())
+	task.peers.Insert(peer)
 }
 
 func (task *Task) UpdatePeer(peer *Peer) {
-	err := task.peers.Update(peer)
-	if err != nil {
-		task.logger.Errorf("update peer %s failed: %v", peer.ID, err)
-	}
-	task.logger.Debugf("peer %s has been updated, current total peer count is %d", peer.ID, task.peers.Size())
+	task.peers.Insert(peer)
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	err := task.peers.Delete(peer)
-	if err != nil {
-		task.logger.Errorf("delete peer %s failed: %v", peer.ID, err)
-	}
-	task.logger.Debugf("peer %s has been deleted, current total peer count is %d", peer.ID, task.peers.Size())
+	task.peers.Remove(peer)
 }
 
-func (task *Task) GetPeers() *sortedlist.SortedList {
+func (task *Task) GetPeers() list.SortedUniqueList {
 	return task.peers
 }
 
@@ -342,45 +331,46 @@ func (task *Task) GetBackToSourcePeers() []string {
 	return task.backToSourcePeers
 }
 
-func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, false, pickFn)
-}
+func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) []*Peer {
+	var peers []*Peer
 
-func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	return task.pick(limit, true, pickFn)
-}
-
-func (task *Task) pick(limit int, reverse bool, pickFn func(peer *Peer) bool) (pickedPeers []*Peer) {
-	if pickFn == nil {
-		return
-	}
-
-	if !reverse {
-		task.GetPeers().Range(func(data sortedlist.Item) bool {
-			if len(pickedPeers) >= limit {
-				return false
-			}
-			peer := data.(*Peer)
-			if pickFn(peer) {
-				pickedPeers = append(pickedPeers, peer)
-			}
-			return true
-		})
-		return
-	}
-
-	task.GetPeers().RangeReverse(func(data sortedlist.Item) bool {
-		if len(pickedPeers) >= limit {
+	task.GetPeers().Range(func(item list.Item) bool {
+		if len(peers) >= limit {
 			return false
 		}
-		peer := data.(*Peer)
+		peer, ok := item.(*Peer)
+		if !ok {
+			return true
+		}
+
 		if pickFn(peer) {
-			pickedPeers = append(pickedPeers, peer)
+			peers = append(peers, peer)
 		}
 		return true
 	})
 
-	return
+	return peers
+}
+
+func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) []*Peer {
+	var peers []*Peer
+
+	task.GetPeers().ReverseRange(func(item list.Item) bool {
+		if len(peers) >= limit {
+			return false
+		}
+		peer, ok := item.(*Peer)
+		if !ok {
+			return true
+		}
+
+		if pickFn(peer) {
+			peers = append(peers, peer)
+		}
+		return true
+	})
+
+	return peers
 }
 
 func (task *Task) Log() *logger.SugaredLoggerOnWith {

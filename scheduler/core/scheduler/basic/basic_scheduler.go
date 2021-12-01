@@ -19,13 +19,13 @@ package basic
 import (
 	"sort"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
-	"d7y.io/dragonfly/v2/scheduler/core/evaluator/basic"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
-	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const name = "basic"
@@ -44,15 +44,11 @@ func newBasicSchedulerBuilder() scheduler.Builder {
 	}
 }
 
-var _ scheduler.Builder = (*basicSchedulerBuilder)(nil)
-
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
 	logger.Debugf("start create basic scheduler...")
-	evalFactory := evaluator.NewEvaluatorFactory(cfg)
-	evalFactory.Register("default", basic.NewEvaluator(cfg))
-	evalFactory.RegisterGetEvaluatorFunc(0, func(taskID string) (string, bool) { return "default", true })
+	evaluator := evaluator.New(cfg.Algorithm)
 	sched := &Scheduler{
-		evaluator:   evalFactory,
+		evaluator:   evaluator,
 		peerManager: opts.PeerManager,
 		cfg:         cfg,
 	}
@@ -82,8 +78,9 @@ func (s *Scheduler) ScheduleChildren(peer *supervisor.Peer, blankChildren sets.S
 	}
 	evalResult := make(map[float64][]*supervisor.Peer)
 	var evalScore []float64
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	for _, child := range candidateChildren {
-		score := s.evaluator.Evaluate(peer, child)
+		score := s.evaluator.Evaluate(peer, child, taskTotalPieceCount)
 		evalResult[score] = append(evalResult[score], child)
 		evalScore = append(evalScore, score)
 	}
@@ -118,8 +115,9 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 	}
 	evalResult := make(map[float64][]*supervisor.Peer)
 	var evalScore []float64
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	for _, parent := range candidateParents {
-		score := s.evaluator.Evaluate(parent, peer)
+		score := s.evaluator.Evaluate(parent, peer, taskTotalPieceCount)
 		peer.Log().Debugf("evaluate score candidate %s is %f", parent.ID, score)
 		evalResult[score] = append(evalResult[score], parent)
 		evalScore = append(evalScore, score)
@@ -141,7 +139,7 @@ func (s *Scheduler) ScheduleParent(peer *supervisor.Peer, blankParents sets.Stri
 func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, blankChildren sets.String) (candidateChildren []*supervisor.Peer) {
 	peer.Log().Debug("start schedule children flow")
 	defer peer.Log().Debugf("finish schedule children flow, select num %d candidate children, "+
-		"current task tree node count %d, back source peers: %v", len(candidateChildren), peer.Task.GetPeers().Size(), peer.Task.GetBackToSourcePeers())
+		"current task tree node count %d, back source peers: %v", len(candidateChildren), peer.Task.GetPeers().Len(), peer.Task.GetBackToSourcePeers())
 	candidateChildren = peer.Task.Pick(limit, func(candidateNode *supervisor.Peer) bool {
 		if candidateNode == nil {
 			peer.Log().Debugf("******candidate child peer is not selected because it is nil******")
@@ -214,7 +212,7 @@ func (s *Scheduler) selectCandidateChildren(peer *supervisor.Peer, limit int, bl
 func (s *Scheduler) selectCandidateParents(peer *supervisor.Peer, limit int, blankParents sets.String) (candidateParents []*supervisor.Peer) {
 	peer.Log().Debug("start schedule parent flow")
 	defer peer.Log().Debugf("finish schedule parent flow, select num %d candidates parents, "+
-		"current task tree node count %d, back source peers: %v", len(candidateParents), peer.Task.GetPeers().Size(), peer.Task.GetBackToSourcePeers())
+		"current task tree node count %d, back source peers: %v", len(candidateParents), peer.Task.GetPeers().Len(), peer.Task.GetBackToSourcePeers())
 	if !peer.Task.CanSchedule() {
 		peer.Log().Debugf("++++++peer can not be scheduled because task cannot be scheduled at this time，waiting task status become seeding. "+
 			"it current status is %s++++++", peer.Task.GetStatus())

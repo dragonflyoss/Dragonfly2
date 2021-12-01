@@ -24,23 +24,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-var HostIP string
-var HostName string
+var IPv4 string
 
 func init() {
 	ip, err := externalIPv4()
-	if ip == "" {
+	if err != nil {
 		panic(err)
-	} else {
-		HostIP = ip
 	}
 
-	name, err := os.Hostname()
-	if name == "" {
-		panic(err)
-	} else {
-		HostName = name
-	}
+	IPv4 = ip
 }
 
 // IsIPv4 returns whether the ip is a valid IPv4 Address.
@@ -75,7 +67,6 @@ func externalIPv4() (string, error) {
 	}
 
 	if len(values) > 0 {
-		sort.Strings(values)
 		return values[0], nil
 	}
 
@@ -83,9 +74,10 @@ func externalIPv4() (string, error) {
 }
 
 // ipAddrs returns all the valid IPs available.
+// refer to https://github.com/dragonflyoss/Dragonfly2/pull/652
 func ipAddrs() ([]net.IP, error) {
 	// use prefer ip possible
-	var prefer []net.IP
+	var prefers []net.IP
 	host, err := os.Hostname()
 	if err == nil {
 		addrs, _ := net.LookupIP(host)
@@ -93,7 +85,7 @@ func ipAddrs() ([]net.IP, error) {
 			if addr == nil || addr.IsLoopback() || addr.IsLinkLocalUnicast() {
 				continue
 			}
-			prefer = append(prefer, addr)
+			prefers = append(prefers, addr)
 		}
 	}
 
@@ -102,7 +94,8 @@ func ipAddrs() ([]net.IP, error) {
 		return nil, err
 	}
 
-	var ipAddrs []net.IP
+	var preferAddrs []net.IP
+	var normalAddrs []net.IP
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
 			continue // interface down
@@ -128,18 +121,25 @@ func ipAddrs() ([]net.IP, error) {
 				continue
 			}
 			var isPrefer bool
-			for _, a := range prefer {
-				if a.Equal(ip) {
+			for _, preferAddr := range prefers {
+				if preferAddr.Equal(ip) {
 					isPrefer = true
 				}
 			}
 			if isPrefer {
-				ipAddrs = append([]net.IP{ip}, ipAddrs...)
+				preferAddrs = append(preferAddrs, ip)
 			} else {
-				ipAddrs = append(ipAddrs, ip)
+				normalAddrs = append(normalAddrs, ip)
 			}
 		}
 	}
+	sortIP(preferAddrs)
+	sortIP(normalAddrs)
+	return append(preferAddrs, normalAddrs...), nil
+}
 
-	return ipAddrs, nil
+func sortIP(addrs []net.IP) {
+	sort.Slice(addrs, func(i, j int) bool {
+		return addrs[i].String() < addrs[j].String()
+	})
 }

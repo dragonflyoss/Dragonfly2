@@ -62,6 +62,11 @@ base:
     # IDC(Internet Data Center)，互联网数据中心
     idc: ""
 
+  # 开启数据收集服务
+  # metrics:
+  #  # 数据服务地址
+  #  addr: ":8000"
+
 plugins:
   storagedriver:
     - name: disk

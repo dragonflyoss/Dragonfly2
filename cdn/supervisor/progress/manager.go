@@ -26,6 +26,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/types"
@@ -33,8 +36,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var _ supervisor.SeedProgressMgr = (*Manager)(nil)

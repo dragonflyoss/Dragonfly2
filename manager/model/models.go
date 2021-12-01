@@ -42,13 +42,24 @@ func Paginate(page, perPage int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-type JSONMap map[string]interface{}
+type (
+	JSONMap map[string]interface{}
+	Array   []string
+)
 
 func (m JSONMap) Value() (driver.Value, error) {
 	if m == nil {
 		return nil, nil
 	}
 	ba, err := m.MarshalJSON()
+	return string(ba), err
+}
+
+func (a Array) Value() (driver.Value, error) {
+	if a == nil {
+		return nil, nil
+	}
+	ba, err := a.MarshalJSON()
 	return string(ba), err
 }
 
@@ -68,11 +79,35 @@ func (m *JSONMap) Scan(val interface{}) error {
 	return err
 }
 
+func (a *Array) Scan(val interface{}) error {
+	var ba []byte
+	switch v := val.(type) {
+	case []byte:
+		ba = v
+	case string:
+		ba = []byte(v)
+	default:
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", val))
+	}
+	t := []string{}
+	err := json.Unmarshal(ba, &t)
+	*a = Array(t)
+	return err
+}
+
 func (m JSONMap) MarshalJSON() ([]byte, error) {
 	if m == nil {
 		return []byte("null"), nil
 	}
 	t := (map[string]interface{})(m)
+	return json.Marshal(t)
+}
+
+func (a Array) MarshalJSON() ([]byte, error) {
+	if a == nil {
+		return []byte("null"), nil
+	}
+	t := ([]string)(a)
 	return json.Marshal(t)
 }
 
@@ -83,10 +118,25 @@ func (m *JSONMap) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+func (a *Array) UnmarshalJSON(b []byte) error {
+	t := []string{}
+	err := json.Unmarshal(b, &t)
+	*a = Array(t)
+	return err
+}
+
 func (m JSONMap) GormDataType() string {
 	return "jsonmap"
 }
 
 func (JSONMap) GormDBDataType(db *gorm.DB, field *schema.Field) string {
+	return "text"
+}
+
+func (Array) GormDataType() string {
+	return "array"
+}
+
+func (Array) GormDBDataType(db *gorm.DB, field *schema.Field) string {
 	return "text"
 }

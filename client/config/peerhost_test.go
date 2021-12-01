@@ -22,13 +22,12 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"gopkg.in/yaml.v3"
-
 	testifyassert "github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 func Test_AllUnmarshalYAML(t *testing.T) {
@@ -229,6 +228,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
 		KeepStorage: false,
 		Scheduler: SchedulerOption{
+			Manager: ManagerOption{
+				Enable:          false,
+				Addr:            "127.0.0.1:65003",
+				RefreshInterval: 5 * time.Minute,
+			},
 			NetAddrs: []dfnet.NetAddr{
 				{
 					Type: dfnet.TCP,
@@ -240,6 +244,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		Host: HostOption{
+			Hostname:       "d7y.io",
 			SecurityDomain: "d7y.io",
 			Location:       "0.0.0.0",
 			IDC:            "d7y",

@@ -27,6 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -44,6 +45,10 @@ var peerHostConfig = DaemonOption{
 	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
+		Manager: ManagerOption{
+			Enable:          false,
+			RefreshInterval: 5 * time.Minute,
+		},
 		NetAddrs: []dfnet.NetAddr{
 			{
 				Type: dfnet.TCP,
@@ -53,8 +58,9 @@ var peerHostConfig = DaemonOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
+		Hostname:       hostutils.Hostname,
 		ListenIP:       net.IPv4zero.String(),
-		AdvertiseIP:    iputils.HostIP,
+		AdvertiseIP:    iputils.IPv4,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

@@ -12,6 +12,7 @@ D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
 IMAGES_DIR="build/images"
 BASE_IMAGE=${BASE_IMAGE:-alpine:3.12}
 
+CGO_ENABLED=${CGO_ENABLED:-0}
 GOPROXY=${GOPROXY:-`go env GOPROXY`}
 GOTAGS=${GOTAGS:-}
 GOGCFLAGS=${GOGCFLAGS:-}
@@ -26,6 +27,7 @@ fi
 docker-build() {
     name=$1
     docker build \
+      --build-arg CGO_ENABLED="${CGO_ENABLED}" \
       --build-arg GOPROXY="${GOPROXY}" \
       --build-arg GOTAGS="${GOTAGS}" \
       --build-arg GOGCFLAGS="${GOGCFLAGS}" \

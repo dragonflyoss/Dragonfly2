@@ -14,36 +14,20 @@
  * limitations under the License.
  */
 
-package sortedlist
+package hostutils
 
-type empty struct{}
+import (
+	"testing"
 
-type bucket struct {
-	count   int
-	buckets []map[Item]empty
+	"github.com/stretchr/testify/assert"
+)
+
+func TestHostname(t *testing.T) {
+	hostname := hostname()
+	assert.NotEmpty(t, hostname)
 }
 
-func (b *bucket) Size() int {
-	return b.count
-}
-
-func (b *bucket) Add(key int, data Item) {
-	for key >= len(b.buckets) {
-		b.buckets = append(b.buckets, make(map[Item]empty))
-	}
-	b.buckets[key][data] = empty{}
-	b.count++
-	return
-}
-
-func (b *bucket) Delete(key int, data Item) {
-	for key >= len(b.buckets) {
-		b.buckets = append(b.buckets, make(map[Item]empty))
-	}
-	_, ok := b.buckets[key][data]
-	if ok {
-		delete(b.buckets[key], data)
-		b.count--
-	}
-	return
+func TestFQDNHostname(t *testing.T) {
+	fqdn := fqdnHostname()
+	assert.NotEmpty(t, fqdn)
 }

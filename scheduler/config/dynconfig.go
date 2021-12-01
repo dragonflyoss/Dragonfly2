@@ -29,11 +29,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
-	DefaultDynconfigCachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
+	cachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
 )
 
 var (
@@ -105,7 +104,7 @@ type DynconfigInterface interface {
 	Serve() error
 
 	// Stop the dynconfig listening service.
-	Stop()
+	Stop() error
 }
 
 type Observer interface {
@@ -130,6 +129,7 @@ func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Opt
 		sourceType: sourceType,
 	}
 
+	options = append(options, dc.WithCachePath(cachePath))
 	client, err := dc.New(sourceType, options...)
 	if err != nil {
 		return nil, err
@@ -301,34 +301,41 @@ func (d *dynconfig) watch() {
 	for {
 		select {
 		case <-tick.C:
-			d.Notify()
+			if err := d.Notify(); err != nil {
+				logger.Error("dynconfig notify failed", err)
+			}
 		case <-d.done:
 			return
 		}
 	}
 }
 
-func (d *dynconfig) Stop() {
+func (d *dynconfig) Stop() error {
 	close(d.done)
+	if err := os.Remove(cachePath); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type managerClient struct {
 	managerclient.Client
-	SchedulerClusterID uint
+	config *Config
 }
 
-func NewManagerClient(client managerclient.Client, schedulerClusterID uint) dc.ManagerClient {
+func NewManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
 	return &managerClient{
-		Client:             client,
-		SchedulerClusterID: schedulerClusterID,
+		Client: client,
+		config: cfg,
 	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
 	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
-		HostName:           iputils.HostName,
+		HostName:           mc.config.Server.Host,
 		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
-		SchedulerClusterId: uint64(mc.SchedulerClusterID),
+		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
 	if err != nil {
 		return nil, err

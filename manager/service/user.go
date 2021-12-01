@@ -20,15 +20,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/VividCortex/mysqlerr"
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/bcrypt"
 
 	manageroauth "d7y.io/dragonfly/v2/manager/auth/oauth"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/VividCortex/mysqlerr"
-	"github.com/go-sql-driver/mysql"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (s *rest) GetUser(ctx context.Context, id uint) (*model.User, error) {
@@ -133,7 +133,7 @@ func (s *rest) OauthSignin(ctx context.Context, name string) (string, error) {
 		return "", err
 	}
 
-	return o.AuthCodeURL(), nil
+	return o.AuthCodeURL()
 }
 
 func (s *rest) OauthSigninCallback(ctx context.Context, name, code string) (*model.User, error) {

@@ -21,7 +21,11 @@ import (
 	"fmt"
 	"strings"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -34,13 +38,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
 )
 
 var tracer = otel.Tracer("cdn-server")
@@ -136,11 +136,11 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	peerID := cdnutil.GenCDNPeerID(req.TaskId)
+	peerID := idgen.CDNPeerID(css.cfg.AdvertiseIP)
 	for piece := range pieceChan {
 		psc <- &cdnsystem.PieceSeed{
 			PeerId:   peerID,
-			HostUuid: idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
+			HostUuid: idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
 				PieceNum:    piece.PieceNum,
 				RangeStart:  piece.PieceRange.StartIndex,
@@ -165,7 +165,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	psc <- &cdnsystem.PieceSeed{
 		PeerId:          peerID,
-		HostUuid:        idgen.CDN(iputils.HostName, int32(css.cfg.ListenPort)),
+		HostUuid:        idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 		Done:            true,
 		ContentLength:   task.SourceFileLength,
 		TotalPieceCount: task.PieceTotal,
@@ -232,7 +232,7 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	pp := &base.PiecePacket{
 		TaskId:        req.TaskId,
-		DstPid:        fmt.Sprintf("%s-%s_%s", iputils.HostName, req.TaskId, "CDN"),
+		DstPid:        req.DstPid,
 		DstAddr:       fmt.Sprintf("%s:%d", css.cfg.AdvertiseIP, css.cfg.DownloadPort),
 		PieceInfos:    pieceInfos,
 		TotalPiece:    task.PieceTotal,

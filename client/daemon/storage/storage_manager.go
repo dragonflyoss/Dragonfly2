@@ -60,6 +60,10 @@ type TaskStorageDriver interface {
 
 	// Store stores task data to the target path
 	Store(ctx context.Context, req *StoreRequest) error
+
+	ValidateDigest(req *PeerTaskMetaData) error
+
+	IsInvalid(req *PeerTaskMetaData) (bool, error)
 }
 
 // Reclaimer stands storage reclaimer
@@ -87,8 +91,11 @@ type Manager interface {
 }
 
 var (
-	ErrTaskNotFound  = errors.New("task not found")
-	ErrPieceNotFound = errors.New("piece not found")
+	ErrTaskNotFound     = errors.New("task not found")
+	ErrPieceNotFound    = errors.New("piece not found")
+	ErrPieceCountNotSet = errors.New("total piece count not set")
+	ErrDigestNotSet     = errors.New("piece digest not set")
+	ErrInvalidDigest    = errors.New("invalid digest")
 )
 
 const (
@@ -296,6 +303,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 			TaskMeta:      map[string]string{},
 			ContentLength: req.ContentLength,
 			TotalPieces:   req.TotalPieces,
+			PieceMd5Sign:  req.PieceMd5Sign,
 			PeerID:        req.PeerID,
 			Pieces:        map[int32]PieceMetaData{},
 		},
@@ -389,6 +397,9 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 		return nil
 	}
 	for _, t := range ts {
+		if t.invalid.Load() {
+			continue
+		}
 		// touch it before marking reclaim
 		t.touch()
 		// already marked, skip
@@ -428,6 +439,30 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 		remain = append(remain, t)
 	}
 	s.indexTask2PeerTask[taskID] = remain
+}
+
+func (s *storageManager) ValidateDigest(req *PeerTaskMetaData) error {
+	t, ok := s.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).ValidateDigest(req)
+}
+
+func (s *storageManager) IsInvalid(req *PeerTaskMetaData) (bool, error) {
+	t, ok := s.LoadTask(
+		PeerTaskMetaData{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return false, ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).IsInvalid(req)
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
@@ -483,8 +518,8 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					Warnf("load task from disk error: %s", err0)
 				continue
 			}
-			logger.Debugf("load task %s/%s from disk, metadata %s",
-				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath)
+			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %s, expire time: %s",
+				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, t.lastAccess, t.expireTime)
 			s.tasks.Store(PeerTaskMetaData{
 				PeerID: peerID,
 				TaskID: taskID,
@@ -589,7 +624,6 @@ func (s *storageManager) TryGC() (bool, error) {
 	for _, key := range s.markedReclaimTasks {
 		t, ok := s.tasks.Load(key)
 		if !ok {
-			logger.Warnf("task %s/%s marked, but not found", key.TaskID, key.PeerID)
 			continue
 		}
 		task := t.(*localTaskStore)
@@ -607,7 +641,13 @@ func (s *storageManager) TryGC() (bool, error) {
 			continue
 		}
 		logger.Infof("task %s/%s reclaimed", key.TaskID, key.PeerID)
-
+		// remove reclaimed task in markedTasks
+		for i, k := range markedTasks {
+			if k.TaskID == key.TaskID && k.PeerID == key.PeerID {
+				markedTasks = append(markedTasks[:i], markedTasks[i+1:]...)
+				break
+			}
+		}
 		span.End()
 	}
 	logger.Infof("marked %d task(s), reclaimed %d task(s)", len(markedTasks), len(s.markedReclaimTasks))

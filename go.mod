@@ -3,11 +3,10 @@ module d7y.io/dragonfly/v2
 go 1.15
 
 require (
-	github.com/HuKeping/rbtree v0.0.0-20210106022122-8ad34838eb2b
 	github.com/RichardKnop/machinery v1.10.6
+	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/agiledragon/gomonkey v2.0.2+incompatible
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.5-0.20210827121450-79689222c755
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
@@ -49,7 +48,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.14.0
 	github.com/opencontainers/go-digest v1.0.0
-	github.com/pborman/uuid v1.2.1
+	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
@@ -79,7 +78,6 @@ require (
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	golang.org/x/tools v0.1.4 // indirect
-	gonum.org/v1/gonum v0.9.3
 	google.golang.org/api v0.39.0
 	google.golang.org/grpc v1.39.0
 	google.golang.org/protobuf v1.26.0

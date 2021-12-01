@@ -17,8 +17,8 @@
 package model
 
 const (
-	SchedulerStatusActive   = "active"
-	SchedulerStatusInactive = "inactive"
+	SchedulerStateActive   = "active"
+	SchedulerStateInactive = "inactive"
 )
 
 type Scheduler struct {
@@ -30,7 +30,7 @@ type Scheduler struct {
 	NetConfig          JSONMap          `gorm:"column:net_config;comment:network configuration" json:"net_config"`
 	IP                 string           `gorm:"column:ip;type:varchar(256);not null;comment:ip address" json:"ip"`
 	Port               int32            `gorm:"column:port;not null;comment:grpc service listening port" json:"port"`
-	Status             string           `gorm:"column:status;type:varchar(256);default:'inactive';comment:service status" json:"status"`
+	State              string           `gorm:"column:state;type:varchar(256);default:'inactive';comment:service state" json:"state"`
 	SchedulerClusterID uint             `gorm:"index:uk_scheduler,unique;not null;comment:scheduler cluster id"`
 	SchedulerCluster   SchedulerCluster `json:"-"`
 }

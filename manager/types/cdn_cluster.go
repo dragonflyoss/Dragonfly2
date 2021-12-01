@@ -31,17 +31,17 @@ type AddSchedulerClusterToCDNClusterParams struct {
 }
 
 type CreateCDNClusterRequest struct {
-	Name                string            `json:"name" binding:"required"`
-	BIO                 string            `json:"bio" binding:"omitempty"`
-	Config              *CDNClusterConfig `json:"config" binding:"required"`
-	SecurityGroupDomain string            `json:"security_group_domain" binding:"omitempty"`
+	Name      string            `json:"name" binding:"required"`
+	BIO       string            `json:"bio" binding:"omitempty"`
+	Config    *CDNClusterConfig `json:"config" binding:"required"`
+	IsDefault bool              `json:"is_default" binding:"omitempty"`
 }
 
 type UpdateCDNClusterRequest struct {
-	Name                string            `json:"name" binding:"omitempty"`
-	BIO                 string            `json:"bio" binding:"omitempty"`
-	Config              *CDNClusterConfig `json:"config" binding:"omitempty"`
-	SecurityGroupDomain string            `json:"security_group_domain" binding:"omitempty"`
+	Name      string            `json:"name" binding:"omitempty"`
+	BIO       string            `json:"bio" binding:"omitempty"`
+	Config    *CDNClusterConfig `json:"config" binding:"omitempty"`
+	IsDefault bool              `json:"is_default" binding:"omitempty"`
 }
 
 type GetCDNClustersQuery struct {
@@ -51,6 +51,6 @@ type GetCDNClustersQuery struct {
 }
 
 type CDNClusterConfig struct {
-	LoadLimit   uint   `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1"`
+	LoadLimit   uint   `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
 	NetTopology string `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
 }

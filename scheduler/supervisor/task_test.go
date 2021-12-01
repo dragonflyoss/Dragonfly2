@@ -20,13 +20,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 	"d7y.io/dragonfly/v2/scheduler/supervisor/mocks"
-	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestTask_New(t *testing.T) {
@@ -317,14 +318,6 @@ func TestTask_Pick(t *testing.T) {
 			pick: func(peer *supervisor.Peer) bool {
 				return false
 			},
-			reverse: false,
-			limit:   100,
-			answer:  []string{},
-		},
-		{
-			name:    "invalid pickFn",
-			number:  10,
-			pick:    (func(peer *supervisor.Peer) bool)(nil),
 			reverse: false,
 			limit:   100,
 			answer:  []string{},

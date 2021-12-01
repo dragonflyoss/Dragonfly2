@@ -18,6 +18,7 @@ package job
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -27,17 +28,18 @@ import (
 	"strings"
 	"time"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/distribution/distribution/v3"
+	"github.com/distribution/distribution/v3/manifest/schema2"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/distribution/distribution/v3"
-	"github.com/distribution/distribution/v3/manifest/schema2"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("sender")
@@ -47,6 +49,10 @@ type PreheatType string
 const (
 	PreheatImageType PreheatType = "image"
 	PreheatFileType  PreheatType = "file"
+)
+
+const (
+	timeout = 1 * time.Minute
 )
 
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
@@ -154,7 +160,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job successed, group uuid: %s， urls:%s", group.GroupUUID, urls)
+	logger.Infof("create preheat group job succeeded, group uuid: %s， urls: %s", group.GroupUUID, urls)
 	return &internaljob.GroupJobState{
 		GroupUUID: group.GroupUUID,
 		State:     machineryv1tasks.StatePending,
@@ -174,7 +180,11 @@ func (p *preheat) getLayers(ctx context.Context, url string, filter string, head
 
 	if resp.StatusCode/100 != 2 {
 		if resp.StatusCode == http.StatusUnauthorized {
-			token := getAuthToken(ctx, resp.Header)
+			token, err := getAuthToken(ctx, resp.Header)
+			if err != nil {
+				return nil, err
+			}
+
 			bearer := "Bearer " + token
 			header.Add("Authorization", bearer)
 
@@ -204,7 +214,14 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	req.Header = header
 	req.Header.Add("Accept", schema2.MediaTypeManifest)
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -240,33 +257,46 @@ func (p *preheat) parseLayers(resp *http.Response, url, filter string, header ht
 	return layers, nil
 }
 
-func getAuthToken(ctx context.Context, header http.Header) (token string) {
+func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
 	authURL := authURL(header.Values("WWW-Authenticate"))
 	if len(authURL) == 0 {
-		return
+		return "", errors.New("authURL is empty")
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
 	if err != nil {
-		return
+		return "", err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
-		return
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
 	var result map[string]interface{}
-	json.Unmarshal(body, &result)
-	if result["token"] != nil {
-		token = fmt.Sprintf("%v", result["token"])
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
 	}
-	return
+
+	if result["token"] == nil {
+		return "", errors.New("token is empty")
+	}
+
+	token := fmt.Sprintf("%v", result["token"])
+	return token, nil
+
 }
 
 func authURL(wwwAuth []string) string {

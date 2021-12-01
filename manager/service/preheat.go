@@ -20,28 +20,28 @@ import (
 	"context"
 	"strconv"
 
+	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 )
 
 const (
-	// V1PreheatingStatusPending is the preheating is waiting for starting
-	V1PreheatingStatusPending = "WAITING"
+	// V1PreheatingStatePending is the preheating is waiting for starting
+	V1PreheatingStatePending = "WAITING"
 
-	// V1PreheatingStatusRunning is the preheating is running
-	V1PreheatingStatusRunning = "RUNNING"
+	// V1PreheatingStateRunning is the preheating is running
+	V1PreheatingStateRunning = "RUNNING"
 
-	// V1PreheatingStatusSuccess is the preheating is success
-	V1PreheatingStatusSuccess = "SUCCESS"
+	// V1PreheatingStateSuccess is the preheating is success
+	V1PreheatingStateSuccess = "SUCCESS"
 
-	// V1PreheatingStatusFail is the preheating is failed
-	V1PreheatingStatusFail = "FAIL"
+	// V1PreheatingStateFail is the preheating is failed
+	V1PreheatingStateFail = "FAIL"
 )
 
 func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
@@ -76,23 +76,23 @@ func (s *rest) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1Preh
 
 	return &types.GetV1PreheatResponse{
 		ID:         strconv.FormatUint(uint64(job.ID), 10),
-		Status:     convertStatus(job.Status),
+		State:      convertState(job.State),
 		StartTime:  job.CreatedAt.String(),
 		FinishTime: job.UpdatedAt.String(),
 	}, nil
 }
 
-func convertStatus(status string) string {
-	switch status {
+func convertState(state string) string {
+	switch state {
 	case machineryv1tasks.StatePending, machineryv1tasks.StateReceived, machineryv1tasks.StateRetry:
-		return V1PreheatingStatusPending
+		return V1PreheatingStatePending
 	case machineryv1tasks.StateStarted:
-		return V1PreheatingStatusRunning
+		return V1PreheatingStateRunning
 	case machineryv1tasks.StateSuccess:
-		return V1PreheatingStatusSuccess
+		return V1PreheatingStateSuccess
 	case machineryv1tasks.StateFailure:
-		return V1PreheatingStatusFail
+		return V1PreheatingStateFail
 	}
 
-	return V1PreheatingStatusFail
+	return V1PreheatingStateFail
 }

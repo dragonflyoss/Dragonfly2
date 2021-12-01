@@ -22,12 +22,13 @@ import (
 	"testing"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
 func TestDynconfigGet_ManagerSourceType(t *testing.T) {
@@ -43,7 +44,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			name:   "get dynconfig success",
 			expire: 10 * time.Second,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -72,7 +73,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			name:   "client failed to return for the second time",
 			expire: 10 * time.Millisecond,
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(DefaultDynconfigCachePath); err != nil {
+				if err := os.Remove(cachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -112,8 +113,11 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			tc.mock(mockManagerClient.EXPECT())
 
 			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
-				dc.WithManagerClient(NewManagerClient(mockManagerClient, uint(1))),
-				dc.WithCachePath(DefaultDynconfigCachePath),
+				dc.WithManagerClient(NewManagerClient(mockManagerClient, &Config{
+					Manager: &ManagerConfig{SchedulerClusterID: uint(1)},
+					Server:  &ServerConfig{Host: "foo"},
+				})),
+				dc.WithCachePath(cachePath),
 				dc.WithExpireTime(tc.expire),
 			}...)
 			if err != nil {
