@@ -28,8 +28,10 @@ scheduler:
   manager:
     # get scheduler list dynamically from manager
     enable: false
-    # manager service address
-    addr: 127.0.0.1:65003
+    # manager service addresses
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
     # scheduler list refresh interval
     refreshInterval: 5m
   # schedule timeout

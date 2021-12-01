@@ -28,7 +28,9 @@ scheduler:
     # 通过 manager 接口动态获取 scheduler 列表
     enable: false
     # manager 服务地址
-    addr: 127.0.0.1:65003
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
     # scheduler 列表刷新时间
     refreshInterval: 5m
   # 调度超时
