@@ -3460,13 +3460,16 @@ delete role by uri config
 |Name|Schema|
 |---|---|
 |**bio**  <br>*optional*|string|
+|**cdn_clusters**  <br>*optional*|< [model.CDNCluster](#model-cdncluster) > array|
 |**created_at**  <br>*optional*|string|
 |**download_rate_limit**  <br>*optional*|integer|
 |**id**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
+|**scheduler_clusters**  <br>*optional*|< [model.SchedulerCluster](#model-schedulercluster) > array|
 |**state**  <br>*optional*|string|
 |**updated_at**  <br>*optional*|string|
 |**url**  <br>*optional*|string|
+|**user**  <br>*optional*|[model.User](#model-user)|
 |**user_id**  <br>*optional*|integer|
 
 
@@ -3839,7 +3842,7 @@ delete role by uri config
 |**finishTime**  <br>*optional*|string|
 |**id**  <br>*optional*|string|
 |**startTime**  <br>*optional*|string|
-|**state**  <br>*optional*|string|
+|**status**  <br>*optional*|string|
 
 
 <a name="types-resetpasswordrequest"></a>

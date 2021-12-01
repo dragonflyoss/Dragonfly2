@@ -401,12 +401,6 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			return storage.ErrShortRead
 		}
 	}
-	if maxPieceNum > 0 {
-		pt.SetTotalPieces(maxPieceNum)
-	}
-	if err := pt.SetContentLength(contentLength); err != nil {
-		log.Errorf("set content length failed %s", err)
-	}
 
 	if err := pm.storageManager.UpdateTask(ctx,
 		&storage.UpdateTaskRequest{
@@ -420,6 +414,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		}); err != nil {
 		log.Errorf("update task failed %s", err)
 	}
+	if err := pt.SetContentLength(contentLength); err != nil {
+		log.Errorf("set content length failed %s", err)
+	}
+
 	log.Infof("download from source ok")
 	return nil
 }

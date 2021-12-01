@@ -75,10 +75,10 @@ type dynconfig struct {
 	done      chan bool
 }
 
-func NewDynconfig(managerClient internaldynconfig.ManagerClient, expire time.Duration) (Dynconfig, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
 	client, err := internaldynconfig.New(
 		internaldynconfig.ManagerSourceType,
-		internaldynconfig.WithManagerClient(managerClient),
+		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),
 		internaldynconfig.WithExpireTime(expire),
 		internaldynconfig.WithCachePath(cachePath),
 	)
@@ -172,7 +172,7 @@ type managerClient struct {
 }
 
 // New the manager client used by dynconfig
-func NewManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
+func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
 	return &managerClient{
 		Client:     client,
 		hostOption: hostOption,
@@ -183,7 +183,7 @@ func (mc *managerClient) Get() (interface{}, error) {
 	schedulers, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_CLIENT_SOURCE,
 		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.ListenIP,
+		Ip:         mc.hostOption.AdvertiseIP,
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
 			searcher.ConditionIDC:            mc.hostOption.IDC,

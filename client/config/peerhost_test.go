@@ -229,8 +229,13 @@ func TestPeerHostOption_Load(t *testing.T) {
 		KeepStorage: false,
 		Scheduler: SchedulerOption{
 			Manager: ManagerOption{
-				Enable:          false,
-				Addr:            "127.0.0.1:65003",
+				Enable: false,
+				NetAddrs: []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:65003",
+					},
+				},
 				RefreshInterval: 5 * time.Minute,
 			},
 			NetAddrs: []dfnet.NetAddr{

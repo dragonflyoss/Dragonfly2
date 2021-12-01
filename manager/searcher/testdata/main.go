@@ -17,6 +17,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -40,8 +41,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	cluster, ok := s.FindSchedulerCluster([]model.SchedulerCluster{}, &manager.ListSchedulersRequest{})
-	if !ok {
+	cluster, err := s.FindSchedulerCluster(context.Background(), []model.SchedulerCluster{}, &manager.ListSchedulersRequest{})
+	if err != nil {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)
 	}

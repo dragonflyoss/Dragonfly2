@@ -17,14 +17,16 @@
 package main
 
 import (
+	"context"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
 type searcher struct{}
 
-func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
-	return model.SchedulerCluster{Name: "foo"}, true
+func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, error) {
+	return model.SchedulerCluster{Name: "foo"}, nil
 }
 
 func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {

@@ -76,7 +76,7 @@ func (s *rest) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1Preh
 
 	return &types.GetV1PreheatResponse{
 		ID:         strconv.FormatUint(uint64(job.ID), 10),
-		State:      convertState(job.State),
+		Status:     convertState(job.State),
 		StartTime:  job.CreatedAt.String(),
 		FinishTime: job.UpdatedAt.String(),
 	}, nil
