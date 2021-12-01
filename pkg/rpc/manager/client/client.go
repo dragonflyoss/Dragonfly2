@@ -101,7 +101,6 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 			logger.Warnf("%s address can not reachable", netAddr.Addr)
 			continue
 		}
-
 		logger.Infof("use %s address for manager grpc client", netAddr.Addr)
 		return New(netAddr.Addr)
 	}
