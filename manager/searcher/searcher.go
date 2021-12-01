@@ -81,9 +81,11 @@ type searcher struct{}
 func New() Searcher {
 	s, err := LoadPlugin()
 	if err != nil {
+		logger.Info("use default searcher")
 		return &searcher{}
 	}
 
+	logger.Info("use searcher plugin")
 	return s
 }
 
@@ -99,7 +101,7 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 	var clusters []model.SchedulerCluster
 	securityDomain := conditions[ConditionSecurityDomain]
 	if securityDomain == "" {
-		logger.Infof("client %s %s have empty security domain", client.HostName, client.Ip)
+		logger.Infof("dfdaemon %s %s have empty security domain", client.HostName, client.Ip)
 	}
 
 	for _, schedulerCluster := range schedulerClusters {
