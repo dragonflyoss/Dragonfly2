@@ -8,15 +8,15 @@
 
 下表列出了一些容器的运行时、版本和文档。
 
+<!-- markdownlint-disable -->
 | Runtime | Version | Document | CRI Support | Pull Command |
 | --- | --- | --- | --- | --- |
-<!-- markdownlint-disable -->
 | Containerd<sup>*</sup> | v1.1.0+ | [Link](runtime-integration/containerd/mirror.md) | Yes | crictl pull docker.io/library/alpine:latest |
 | Containerd without CRI | < v1.1.0 | [Link](runtime-integration/containerd/proxy.md) | No | ctr image pull docker.io/library/alpine |
 | CRI-O | All | [Link](runtime-integration/cri-o.md) | Yes | crictl pull docker.io/library/alpine:latest |
 <!-- markdownlint-restore -->
 
-**:推荐使用`containerd`*
+**: 推荐使用`containerd`*
 
 ## Helm Chart 运行时配置
 
