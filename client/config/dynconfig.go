@@ -75,10 +75,10 @@ type dynconfig struct {
 	done      chan bool
 }
 
-func NewDynconfig(managerClient internaldynconfig.ManagerClient, expire time.Duration) (Dynconfig, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
 	client, err := internaldynconfig.New(
 		internaldynconfig.ManagerSourceType,
-		internaldynconfig.WithManagerClient(managerClient),
+		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),
 		internaldynconfig.WithExpireTime(expire),
 		internaldynconfig.WithCachePath(cachePath),
 	)
@@ -172,7 +172,7 @@ type managerClient struct {
 }
 
 // New the manager client used by dynconfig
-func NewManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
+func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
 	return &managerClient{
 		Client:     client,
 		hostOption: hostOption,

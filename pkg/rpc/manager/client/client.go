@@ -18,6 +18,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -27,6 +28,8 @@ import (
 	"google.golang.org/grpc/backoff"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
@@ -89,6 +92,19 @@ func New(target string) (Client, error) {
 		ManagerClient: manager.NewManagerClient(conn),
 		conn:          conn,
 	}, nil
+}
+
+func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
+	for _, netAddr := range netAddrs {
+		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
+		if err := ipReachable.Check(); err == nil {
+			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
+			return New(netAddr.Addr)
+		}
+		logger.Warnf("%s address can not reachable", netAddr.Addr)
+	}
+
+	return nil, errors.New("can not find available addresses")
 }
 
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {

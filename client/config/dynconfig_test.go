@@ -109,7 +109,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
-			_, err := NewDynconfig(NewManagerClient(mockManagerClient, tc.hostOption), tc.expire)
+			_, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
 			tc.expect(t, err)
 			tc.cleanFileCache(t)
 		})
@@ -283,7 +283,7 @@ func TestDynconfigGet(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(NewManagerClient(mockManagerClient, tc.hostOption), tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -462,7 +462,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(NewManagerClient(mockManagerClient, tc.hostOption), tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}

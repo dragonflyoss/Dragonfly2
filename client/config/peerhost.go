@@ -114,7 +114,7 @@ func (p *DaemonOption) Validate() error {
 	}
 
 	if p.Scheduler.Manager.Enable {
-		if p.Scheduler.Manager.Addr == "" {
+		if len(p.Scheduler.NetAddrs) == 0 {
 			return errors.New("manager addr is not specified")
 		}
 
@@ -140,8 +140,8 @@ type SchedulerOption struct {
 type ManagerOption struct {
 	// Enable get configuration from manager
 	Enable bool `mapstructure:"enable" yaml:"enable"`
-	// Addr is manager addresse
-	Addr string `mapstructure:"addr" yaml:"addr"`
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// RefreshInterval is the refresh interval
 	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
 }
