@@ -6,7 +6,9 @@ keepStorage: false
 scheduler:
   manager:
     enable: false
-    addr: "127.0.0.1:65003"
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
     refreshInterval: 5m
   netAddrs:
     - type: tcp

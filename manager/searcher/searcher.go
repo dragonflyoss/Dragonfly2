@@ -18,6 +18,8 @@ package searcher
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -73,7 +75,7 @@ type Scopes struct {
 }
 
 type Searcher interface {
-	FindSchedulerCluster(context.Context, []model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, bool)
+	FindSchedulerCluster(context.Context, []model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, error)
 }
 
 type searcher struct{}
@@ -89,10 +91,14 @@ func New() Searcher {
 	return s
 }
 
-func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
+func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, error) {
 	conditions := client.HostInfo
-	if len(schedulerClusters) <= 0 || len(conditions) <= 0 {
-		return model.SchedulerCluster{}, false
+	if len(conditions) <= 0 {
+		return model.SchedulerCluster{}, errors.New("empty conditions")
+	}
+
+	if len(schedulerClusters) <= 0 {
+		return model.SchedulerCluster{}, errors.New("empty scheduler clusters")
 	}
 
 	// If there are security domain conditions, match clusters of the same security domain.
@@ -121,10 +127,10 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 	switch len(clusters) {
 	case 0:
 		// If the security domain does not match, there is no cluster available
-		return model.SchedulerCluster{}, false
+		return model.SchedulerCluster{}, fmt.Errorf("security domain %s does not match", securityDomain)
 	case 1:
 		// If only one cluster matches the security domain, return the cluster directly
-		return clusters[0], true
+		return clusters[0], nil
 	default:
 		// If there are multiple clusters matching the security domain,
 		// select the schuelder cluster with a higher score
@@ -143,7 +149,7 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 				result = cluster
 			}
 		}
-		return result, true
+		return result, nil
 	}
 }
 

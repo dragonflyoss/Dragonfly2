@@ -107,7 +107,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	var dynconfig config.Dynconfig
 	if opt.Scheduler.Manager.Enable == true {
 		// New manager client
-		managerClient, err := managerclient.New(opt.Scheduler.Manager.Addr)
+		managerClient, err := managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
