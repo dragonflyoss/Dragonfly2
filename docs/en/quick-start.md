@@ -18,7 +18,7 @@ This table describes some container runtimes version and documents.
 | CRI-O | All | [Link](runtime-integration/cri-o.md) | Yes | crictl pull docker.io/library/alpine:latest |
 <!-- markdownlint-restore -->
 
-**:`containerd` is recommended*
+**: `containerd` is recommended*
 
 ## Runtime Configuration Guide for Dragonfly Helm Chart
 
