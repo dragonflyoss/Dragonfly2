@@ -70,8 +70,8 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		span.SetAttributes(config.AttributeIfReuseTask.Bool(true))
 		existTask := v.(*types.SeedTask)
 		if !isSameTask(existTask, newTask) {
-			span.RecordError(fmt.Errorf("newTask: %+v, existTask: %+v", newTask, existTask))
-			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask: %+v, existTask: %+v", newTask, existTask)}
+			span.RecordError(fmt.Errorf("newTask: %#v, existTask: %#v", newTask, existTask))
+			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask: %#v, existTask: %#v", newTask, existTask)}
 		}
 		task = existTask
 		logger.Debugf("get exist task for taskID: %s", taskID)
@@ -125,7 +125,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		return nil, err
 	}
 
-	logger.Debugf("success add task: %+v into taskStore", task)
+	logger.Debugf("success add task: %#v into taskStore", task)
 	return task, nil
 }
 

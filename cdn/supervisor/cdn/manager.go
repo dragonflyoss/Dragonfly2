@@ -110,7 +110,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 		return seedTask, errors.Wrapf(err, "failed to detect cache")
 	}
 	span.SetAttributes(config.AttributeCacheResult.String(detectResult.String()))
-	task.Log().Debugf("detects cache result: %+v", detectResult)
+	task.Log().Debugf("detects cache result: %#v", detectResult)
 	// second: report detect result
 	err = cm.cdnReporter.reportCache(ctx, task.TaskID, detectResult)
 	if err != nil {
@@ -176,7 +176,7 @@ func (cm *Manager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, downloadMetadata *downloadMetadata) (bool, error) {
-	task.Log().Debugf("handle cdn result, downloadMetaData: %+v", downloadMetadata)
+	task.Log().Debugf("handle cdn result, downloadMetaData: %#v", downloadMetadata)
 	var isSuccess = true
 	var errorMsg string
 	// check md5
@@ -219,7 +219,7 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, do
 		return false, errors.New(errorMsg)
 	}
 
-	task.Log().Infof("success to get task, downloadMetadata: %+v realDigest: %s", downloadMetadata, sourceDigest)
+	task.Log().Infof("success to get task, downloadMetadata: %#v realDigest: %s", downloadMetadata, sourceDigest)
 
 	return true, nil
 }
