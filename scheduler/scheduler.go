@@ -185,7 +185,7 @@ func (s *Server) Serve() error {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metrics server closed unexpect: %+v", err)
+				logger.Fatalf("metrics server closed unexpect: %v", err)
 			}
 		}()
 	}
@@ -205,14 +205,14 @@ func (s *Server) Serve() error {
 	// Generate GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.IP, s.config.Server.Port, s.config.Server.Port)
 	if err != nil {
-		logger.Fatalf("net listener failed to start: %+v", err)
+		logger.Fatalf("net listener failed to start: %v", err)
 	}
 	defer lis.Close()
 
 	// Started GRPC server
 	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
 	if err := s.grpcServer.Serve(lis); err != nil {
-		logger.Errorf("stoped grpc server: %+v", err)
+		logger.Errorf("stoped grpc server: %v", err)
 		return err
 	}
 
@@ -222,14 +222,14 @@ func (s *Server) Serve() error {
 func (s *Server) Stop() {
 	// Stop dynconfig server
 	if err := s.dynconfig.Stop(); err != nil {
-		logger.Errorf("dynconfig client closed failed %s", err)
+		logger.Errorf("dynconfig client closed failed %v", err)
 	}
 	logger.Info("dynconfig client closed")
 
 	// Stop manager client
 	if s.managerClient != nil {
 		if err := s.managerClient.Close(); err != nil {
-			logger.Errorf("manager client failed to stop: %+v", err)
+			logger.Errorf("manager client failed to stop: %v", err)
 		}
 		logger.Info("manager client closed")
 	}
@@ -245,7 +245,7 @@ func (s *Server) Stop() {
 	// Stop metrics server
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metrics server failed to stop: %+v", err)
+			logger.Errorf("metrics server failed to stop: %v", err)
 		}
 		logger.Info("metrics server closed under request")
 	}

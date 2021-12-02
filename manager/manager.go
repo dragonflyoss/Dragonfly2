@@ -127,7 +127,7 @@ func (s *Server) Serve() error {
 			if err == http.ErrServerClosed {
 				return
 			}
-			logger.Fatalf("rest server closed unexpect: %+v", err)
+			logger.Fatalf("rest server closed unexpect: %v", err)
 		}
 	}()
 
@@ -139,7 +139,7 @@ func (s *Server) Serve() error {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metrics server closed unexpect: %+v", err)
+				logger.Fatalf("metrics server closed unexpect: %v", err)
 			}
 		}()
 	}
@@ -147,7 +147,7 @@ func (s *Server) Serve() error {
 	// Generate GRPC listener
 	lis, _, err := rpc.ListenWithPortRange(s.config.Server.GRPC.Listen, s.config.Server.GRPC.PortRange.Start, s.config.Server.GRPC.PortRange.End)
 	if err != nil {
-		logger.Fatalf("net listener failed to start: %+v", err)
+		logger.Fatalf("net listener failed to start: %v", err)
 	}
 	defer lis.Close()
 

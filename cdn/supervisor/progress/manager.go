@@ -104,7 +104,7 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	ele := chanList.PushBack(ch)
 	go func(seedCh chan *types.SeedPiece, ele *list.Element) {
 		for _, pieceMetaRecord := range pieceMetaDataRecords {
-			logger.Debugf("seed piece meta record %+v", pieceMetaRecord)
+			logger.Debugf("seed piece meta record %#v", pieceMetaRecord)
 			select {
 			case seedCh <- pieceMetaRecord:
 			case <-time.After(pm.timeout):
@@ -123,7 +123,7 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *type
 	span := trace.SpanFromContext(ctx)
 	recordBytes, _ := json.Marshal(record)
 	span.AddEvent(config.EventPublishPiece, trace.WithAttributes(config.AttributeSeedPiece.String(string(recordBytes))))
-	logger.Debugf("seed piece meta record %+v", record)
+	logger.Debugf("seed piece meta record %#v", record)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	err := pm.setPieceMetaRecord(taskID, record)
@@ -155,7 +155,7 @@ func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.S
 	span := trace.SpanFromContext(ctx)
 	taskBytes, _ := json.Marshal(task)
 	span.AddEvent(config.EventPublishTask, trace.WithAttributes(config.AttributeSeedTask.String(string(taskBytes))))
-	logger.Debugf("publish task record %+v", task)
+	logger.Debugf("publish task record %#v", task)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
