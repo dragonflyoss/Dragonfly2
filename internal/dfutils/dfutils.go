@@ -16,8 +16,12 @@
 
 package dfutils
 
-import (
-	"d7y.io/dragonfly/v2/cdn/config"
+const (
+	// DefaultPieceSize 4M
+	DefaultPieceSize = 4 * 1024 * 1024
+
+	// DefaultPieceSizeLimit 15M
+	DefaultPieceSizeLimit = 15 * 1024 * 1024
 )
 
 // ComputePieceSize computes the piece size with specified fileLength.
@@ -26,13 +30,13 @@ import (
 // and then use the DefaultPieceSize.
 func ComputePieceSize(length int64) uint32 {
 	if length <= 0 || length <= 200*1024*1024 {
-		return config.DefaultPieceSize
+		return DefaultPieceSize
 	}
 
 	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + config.DefaultPieceSize
-	if mpSize > config.DefaultPieceSizeLimit {
-		return config.DefaultPieceSizeLimit
+	mpSize := (gapCount-2)*1024*1024 + DefaultPieceSize
+	if mpSize > DefaultPieceSizeLimit {
+		return DefaultPieceSizeLimit
 	}
 	return uint32(mpSize)
 }

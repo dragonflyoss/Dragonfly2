@@ -18,8 +18,6 @@ package dfutils
 
 import (
 	"testing"
-
-	"d7y.io/dragonfly/v2/cdn/config"
 )
 
 func TestComputePieceSize(t *testing.T) {
@@ -36,31 +34,31 @@ func TestComputePieceSize(t *testing.T) {
 			args: args{
 				length: 200 * 1024 * 1024,
 			},
-			want: config.DefaultPieceSize,
+			want: DefaultPieceSize,
 		}, {
 			name: "length smaller than 200M and get default piece size",
 			args: args{
 				length: 100 * 1024 * 1024,
 			},
-			want: config.DefaultPieceSize,
+			want: DefaultPieceSize,
 		}, {
 			name: "length greater than 200M",
 			args: args{
 				length: 205 * 1024 * 1024,
 			},
-			want: config.DefaultPieceSize,
+			want: DefaultPieceSize,
 		}, {
 			name: "length greater than 300M",
 			args: args{
 				length: 310 * 1024 * 1024,
 			},
-			want: config.DefaultPieceSize + 1*1024*1024,
+			want: DefaultPieceSize + 1*1024*1024,
 		}, {
 			name: "length reach piece size limit",
 			args: args{
 				length: 3100 * 1024 * 1024,
 			},
-			want: config.DefaultPieceSizeLimit,
+			want: DefaultPieceSizeLimit,
 		},
 	}
 	for _, tt := range tests {
