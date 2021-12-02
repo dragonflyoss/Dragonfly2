@@ -68,7 +68,7 @@ func (m *hostManager) Delete(key string) {
 
 type HostOption func(rt *Host) *Host
 
-func WithTotalUploadLoad(load int32) HostOption {
+func WithTotalUploadLoad(load uint32) HostOption {
 	return func(h *Host) *Host {
 		h.TotalUploadLoad = load
 		return h
@@ -106,9 +106,9 @@ type Host struct {
 	// Example: switch|router|...
 	NetTopology string
 	// TODO TotalUploadLoad currentUploadLoad decided by real time client report host info
-	TotalUploadLoad int32
+	TotalUploadLoad uint32
 	// CurrentUploadLoad is current upload load number
-	CurrentUploadLoad atomic.Int32
+	CurrentUploadLoad atomic.Uint32
 	// peers info map
 	peers *sync.Map
 	// host logger
@@ -175,7 +175,7 @@ func (h *Host) GetPeersLen() int {
 }
 
 func (h *Host) GetFreeUploadLoad() int32 {
-	return h.TotalUploadLoad - h.CurrentUploadLoad.Load()
+	return int32(h.TotalUploadLoad - h.CurrentUploadLoad.Load())
 }
 
 func (h *Host) Log() *logger.SugaredLoggerOnWith {

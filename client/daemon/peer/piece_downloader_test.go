@@ -51,7 +51,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		taskID          string
 		pieceRange      string
 		rangeStart      uint64
-		rangeSize       int32
+		rangeSize       uint32
 		targetPieceData []byte
 	}{
 		{
@@ -96,7 +96,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 			taskID:          "task-2",
 			pieceRange:      fmt.Sprintf("bytes=512-%d", len(testData)-1),
 			rangeStart:      512,
-			rangeSize:       int32(len(testData) - 512),
+			rangeSize:       uint32(len(testData) - 512),
 			targetPieceData: testData[512:],
 		},
 		{

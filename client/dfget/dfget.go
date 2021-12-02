@@ -200,7 +200,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
-		Timeout:           int64(cfg.Timeout),
+		Timeout:           uint64(cfg.Timeout),
 		Limit:             float64(cfg.RateLimit),
 		DisableBackSource: cfg.DisableBackSource,
 		UrlMeta: &base.UrlMeta{

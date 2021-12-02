@@ -19,17 +19,18 @@ syntax = "proto3";
 package scheduler;
 
 import "pkg/rpc/base/base.proto";
+import "validate/validate.proto";
 import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
-  string url = 1;
+  string url = 1 [(validate.rules).string.uri = true];
   // url meta info
   base.UrlMeta url_meta = 2;
   // peer's id and must be global uniqueness
-  string peer_id = 3;
+  string peer_id = 3 [(validate.rules).string.min_len = 1];
   // peer host info
   PeerHost peer_host = 4;
   // current host load
@@ -40,9 +41,9 @@ message PeerTaskRequest{
 
 message RegisterResult{
   // task id
-  string task_id = 2;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
   // file content length scope for the url
-  base.SizeScope size_scope = 3;
+  base.SizeScope size_scope = 3 [(validate.rules).enum.defined_only = true];
   // download the only piece directly for small or tiny file
   oneof direct_piece{
     // for small file
@@ -54,24 +55,24 @@ message RegisterResult{
 
 message SinglePiece{
   // destination peer id
-  string dst_pid = 1;
+  string dst_pid = 1 [(validate.rules).string.min_len = 1];
   // download address(ip:port)
-  string dst_addr = 2;
+  string dst_addr = 2 [(validate.rules).string.min_len = 1];
   // one piece info
   base.PieceInfo piece_info = 3;
 }
 
 message PeerHost{
   // each time the daemon starts, it will generate a different uuid
-  string uuid = 1;
+  string uuid = 1 [(validate.rules).string.uuid = true];
   // peer host ip
-  string ip = 2;
+  string ip = 2 [(validate.rules).string.ip = true];
   // rpc service port for peer
-  int32 rpc_port = 3;
+  int32 rpc_port = 3 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // piece downloading port for peer
-  int32 down_port = 4;
+  int32 down_port = 4 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // peer host name
-  string host_name = 5;
+  string host_name = 5 [(validate.rules).string.hostname = true];
   // security isolation domain for network
   string security_domain = 6;
   // location path: area|country|province|city|...
@@ -84,9 +85,9 @@ message PeerHost{
 
 message PieceResult{
   // task id
-  string task_id = 1;
+  string task_id = 1 [(validate.rules).string.min_len = 1];
   // source peer id
-  string src_pid = 2;
+  string src_pid = 2 [(validate.rules).string.min_len = 1];
   // dest peer id
   string dst_pid = 3;
   // piece info
@@ -98,10 +99,10 @@ message PieceResult{
   // whether the piece downloading is successfully
   bool success = 7;
   // result code
-  base.Code code = 8;
+  base.Code code = 8 [(validate.rules).enum = {defined_only:true}];
   // current host resource usage
   base.HostLoad host_load = 9;
-  // currently completed piece count
+  // currently completed piece count, -1 represent download failed
   int32 finished_count = 10;
 }
 
@@ -109,48 +110,49 @@ message PeerPacket{
 
   message DestPeer{
     // dest ip
-    string ip = 1;
+    string ip = 1 [(validate.rules).string.ip = true];
     // rpc service port for dest peer
-    int32 rpc_port = 2;
+    int32 rpc_port = 2 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
     // dest peer id
-    string peer_id = 3;
+    string peer_id = 3 [(validate.rules).string.min_len = 1];
   }
 
-  string task_id = 2;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
   // source peer id
-  string src_pid = 3;
+  string src_pid = 3 [(validate.rules).string.min_len = 1];
 
   // concurrent downloading count from main peer
-  int32 parallel_count = 4;
+  int32 parallel_count = 4 [(validate.rules).int32.gte = 1];
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;
   // result code
-  base.Code code = 7;
+  base.Code code = 7 [(validate.rules).enum.defined_only = true];
 }
 
 message PeerResult{
-  string task_id = 1;
-  string peer_id = 2;
-  string src_ip = 3;
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
+  string src_ip = 3 [(validate.rules).string.ip = true];
   string security_domain = 4;
   string idc = 5;
-  string url = 6;
+  string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
   int64 content_length = 7;
   // total network traffic(byte)
-  int64 traffic = 8;
+  uint64 traffic = 8;
   // total time(millisecond) consumed
   uint32 cost = 9;
   // whether peer downloading file is successfully
   bool success = 10;
   // result code
-  base.Code code = 11;
+  base.Code code = 11 [(validate.rules).enum = {defined_only:true}];
+  // -1 represent task is running or download failed
   int32 total_piece_count = 12;
 }
 
 message PeerTarget{
-  string task_id = 1;
-  string peer_id = 2;
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
 }
 
 // Scheduler System RPC Service

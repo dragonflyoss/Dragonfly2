@@ -19,12 +19,13 @@ syntax = "proto3";
 package cdnsystem;
 
 import "pkg/rpc/base/base.proto";
+import "validate/validate.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem";
 
 message SeedRequest{
-  string task_id = 1;
-  string url = 2;
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string url = 2 [(validate.rules).string.uri = true];
   base.UrlMeta url_meta = 3;
 }
 
@@ -32,16 +33,16 @@ message SeedRequest{
 // check piece md5, md5s sign and total content length
 message PieceSeed{
   // peer id for cdn node, need suffix with _CDN
-  string peer_id = 2;
+  string peer_id = 2 [(validate.rules).string.min_len = 1];
   // cdn node host uuid
-  string host_uuid = 3;
+  string host_uuid = 3 [(validate.rules).string.min_len = 1];
   base.PieceInfo piece_info = 4;
 
   // whether or not all seeds are downloaded
   bool done = 5;
-  // content total length for the url
+  // content total length for the url, content_length < 0 represent content length is unknown
   int64 content_length = 6;
-  // total piece count
+  // total piece count, -1 represents task is downloading or failed
   int32 total_piece_count = 7;
 }
 

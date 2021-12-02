@@ -33,27 +33,119 @@ var (
 	_ = anypb.Any{}
 )
 
+// define the regex for a UUID once up-front
+var _dfdaemon_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
 // Validate checks the field values on DownRequest with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *DownRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DownRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DownRequestMultiError, or
+// nil if none found.
+func (m *DownRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DownRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	// no validation rules for Uuid
+	var errors []error
 
-	// no validation rules for Url
+	if err := m._validateUuid(m.GetUuid()); err != nil {
+		err = DownRequestValidationError{
+			field:  "Uuid",
+			reason: "value must be a valid UUID",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Output
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		err = DownRequestValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	} else if !uri.IsAbs() {
+		err := DownRequestValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Timeout
+	if utf8.RuneCountInString(m.GetOutput()) < 1 {
+		err := DownRequestValidationError{
+			field:  "Output",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for Limit
+	if m.GetTimeout() < 0 {
+		err := DownRequestValidationError{
+			field:  "Timeout",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetLimit() < 0 {
+		err := DownRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for DisableBackSource
 
-	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetUrlMeta()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, DownRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, DownRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return DownRequestValidationError{
 				field:  "UrlMeta",
@@ -63,7 +155,20 @@ func (m *DownRequest) Validate() error {
 		}
 	}
 
-	// no validation rules for Pattern
+	if m.GetPattern() != "" {
+
+		if _, ok := _DownRequest_Pattern_InLookup[m.GetPattern()]; !ok {
+			err := DownRequestValidationError{
+				field:  "Pattern",
+				reason: "value must be in list [p2p cdn source]",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
 
 	// no validation rules for Callsystem
 
@@ -71,8 +176,35 @@ func (m *DownRequest) Validate() error {
 
 	// no validation rules for Gid
 
+	if len(errors) > 0 {
+		return DownRequestMultiError(errors)
+	}
 	return nil
 }
+
+func (m *DownRequest) _validateUuid(uuid string) error {
+	if matched := _dfdaemon_uuidPattern.MatchString(uuid); !matched {
+		return errors.New("invalid uuid format")
+	}
+
+	return nil
+}
+
+// DownRequestMultiError is an error wrapping multiple validation errors
+// returned by DownRequest.ValidateAll() if the designated constraints aren't met.
+type DownRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DownRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DownRequestMultiError) AllErrors() []error { return m }
 
 // DownRequestValidationError is the validation error returned by
 // DownRequest.Validate if the designated constraints aren't met.
@@ -128,23 +260,90 @@ var _ interface {
 	ErrorName() string
 } = DownRequestValidationError{}
 
+var _DownRequest_Pattern_InLookup = map[string]struct{}{
+	"p2p":    {},
+	"cdn":    {},
+	"source": {},
+}
+
 // Validate checks the field values on DownResult with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *DownResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DownResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DownResultMultiError, or
+// nil if none found.
+func (m *DownResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DownResult) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
-	// no validation rules for TaskId
+	var errors []error
 
-	// no validation rules for PeerId
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		err := DownResultValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
-	// no validation rules for CompletedLength
+	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
+		err := DownResultValidationError{
+			field:  "PeerId",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetCompletedLength() < 0 {
+		err := DownResultValidationError{
+			field:  "CompletedLength",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
 
 	// no validation rules for Done
 
+	if len(errors) > 0 {
+		return DownResultMultiError(errors)
+	}
 	return nil
 }
+
+// DownResultMultiError is an error wrapping multiple validation errors
+// returned by DownResult.ValidateAll() if the designated constraints aren't met.
+type DownResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DownResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DownResultMultiError) AllErrors() []error { return m }
 
 // DownResultValidationError is the validation error returned by
 // DownResult.Validate if the designated constraints aren't met.

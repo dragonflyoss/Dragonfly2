@@ -55,7 +55,7 @@ import (
 type componentsOption struct {
 	taskID             string
 	contentLength      int64
-	pieceSize          int32
+	pieceSize          uint32
 	pieceParallelCount int32
 	peerPacketDelay    []time.Duration
 }
@@ -67,18 +67,18 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
-		for i := int32(0); i < request.Limit; i++ {
+		for i := uint32(0); i < request.Limit; i++ {
 			start := opt.pieceSize * (request.StartNum + i)
 			if int64(start)+1 > opt.contentLength {
 				break
 			}
 			size := opt.pieceSize
 			if int64(start+opt.pieceSize) > opt.contentLength {
-				size = int32(opt.contentLength) - start
+				size = uint32(opt.contentLength) - start
 			}
 			tasks = append(tasks,
 				&base.PieceInfo{
-					PieceNum:    request.StartNum + i,
+					PieceNum:    int32(request.StartNum + i),
 					RangeStart:  uint64(start),
 					RangeSize:   size,
 					PieceMd5:    "",
@@ -191,7 +191,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -274,7 +274,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -353,7 +353,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			peerPacketDelay:    []time.Duration{time.Second},
 		})

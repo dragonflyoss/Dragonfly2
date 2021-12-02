@@ -18,6 +18,8 @@ syntax = "proto3";
 
 package base;
 
+import "validate/validate.proto";
+
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/base";
 
 enum Code{
@@ -75,18 +77,18 @@ enum SizeScope{
   TINY = 2;
 }
 message GrpcDfError {
-  Code code = 1;
+  Code code = 1 [(validate.rules).enum.defined_only = true];
   string message = 2;
 }
 
 // UrlMeta describes url meta info.
 message UrlMeta{
   // digest checks integrity of url content, for example md5:xxx or sha256:yyy
-  string digest = 1;
+  string digest = 1 [(validate.rules).string = {pattern: "^(md5)|(sha256):[A-Fa-f0-9]+", ignore_empty:true}];
   // url tag identifies different task for same url, conflict with digest
   string tag = 2;
   // content range for url
-  string range = 3;
+  string range = 3 [(validate.rules).string = {pattern: "^[0-9]+\\-^[0-9]+", ignore_empty:true}];
   // filter url used to generate task id
   string filter = 4;
   // other url header infos
@@ -95,40 +97,42 @@ message UrlMeta{
 
 message HostLoad{
   // cpu usage
-  float cpu_ratio = 1;
+  float cpu_ratio = 1 [(validate.rules).float = {gte: 0, lte: 1}];
   // memory usage
-  float mem_ratio = 2;
+  float mem_ratio = 2 [(validate.rules).float = {gte: 0, lte: 1}];
   // disk space usage
-  float disk_ratio = 3;
+  float disk_ratio = 3 [(validate.rules).float = {gte: 0, lte: 1}];
 }
 
 message PieceTaskRequest{
-  string task_id = 1;
-  string src_pid = 2;
-  string dst_pid = 3;
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  string src_pid = 2 [(validate.rules).string.min_len = 1];
+  string dst_pid = 3 [(validate.rules).string.min_len = 1];
   // piece number
-  int32 start_num = 4;
-  // expected piece count
-  int32 limit = 5;
+  uint32 start_num = 4 [(validate.rules).uint32.gte = 0];
+  // expected piece count, limit = 0 represent request pieces as many shards as possible
+  uint32 limit = 5 [(validate.rules).uint32.gte = 0];
 }
 
 message PieceInfo{
+  // piece_num < 0 represent start report piece flag
   int32 piece_num = 1;
-  uint64 range_start = 2;
-  int32 range_size = 3;
-  string piece_md5 = 4;
-  uint64 piece_offset = 5;
+  uint64 range_start = 2 [(validate.rules).uint64.gte = 0];
+  uint32 range_size = 3 [(validate.rules).uint32.gte = 0];
+  string piece_md5 = 4 [(validate.rules).string = {pattern:"([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})", ignore_empty:true}];
+  uint64 piece_offset = 5 [(validate.rules).uint64.gte = 0];
   base.PieceStyle piece_style = 6;
 }
 
 message PiecePacket{
-  string task_id = 2;
-  string dst_pid = 3;
+  string task_id = 2 [(validate.rules).string.min_len = 1];
+  string dst_pid = 3 [(validate.rules).string.min_len = 1];
   // ip:port
-  string dst_addr = 4;
+  string dst_addr = 4 [(validate.rules).string.min_len = 1];
   repeated PieceInfo piece_infos = 5;
-  // total piece count for url
+  // total piece count for url, total_piece represent total piece is unknown
   int32 total_piece = 6;
+  // content_length < 0 represent content length is unknown
   int64 content_length = 7;
   // sha256 code of all piece md5
   string piece_md5_sign = 8;

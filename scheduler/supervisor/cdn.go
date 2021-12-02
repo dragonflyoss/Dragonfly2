@@ -313,7 +313,7 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 		if config, ok := cdn.GetCDNClusterConfig(); ok {
 			options = []HostOption{
 				WithNetTopology(config.NetTopology),
-				WithTotalUploadLoad(int32(config.LoadLimit)),
+				WithTotalUploadLoad(config.LoadLimit),
 			}
 		}
 

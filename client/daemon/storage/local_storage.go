@@ -160,7 +160,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	}
 	if req.GenPieceDigest {
 		var pieceDigests []string
-		for i := int32(0); i < t.TotalPieces; i++ {
+		for i := int32(0); i < int32(t.TotalPieces); i++ {
 			pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 		}
 
@@ -184,7 +184,7 @@ func (t *localTaskStore) ValidateDigest(*PeerTaskMetaData) error {
 	}
 
 	var pieceDigests []string
-	for i := int32(0); i < t.TotalPieces; i++ {
+	for i := int32(0); i < int32(t.TotalPieces); i++ {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
@@ -324,16 +324,16 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	t.RLock()
 	defer t.RUnlock()
 	t.touch()
-	if t.TotalPieces > 0 && req.StartNum >= t.TotalPieces {
+	if t.TotalPieces > 0 && int32(req.StartNum) >= t.TotalPieces {
 		t.Errorf("invalid start num: %d", req.StartNum)
 		return nil, dferrors.ErrInvalidArgument
 	}
-	for i := int32(0); i < req.Limit; i++ {
-		if piece, ok := t.Pieces[req.StartNum+i]; ok {
+	for i := int32(0); i < int32(req.Limit); i++ {
+		if piece, ok := t.Pieces[int32(req.StartNum)+i]; ok {
 			pieces = append(pieces, &base.PieceInfo{
 				PieceNum:    piece.Num,
 				RangeStart:  uint64(piece.Range.Start),
-				RangeSize:   int32(piece.Range.Length),
+				RangeSize:   uint32(piece.Range.Length),
 				PieceMd5:    piece.Md5,
 				PieceOffset: piece.Offset,
 				PieceStyle:  piece.Style,

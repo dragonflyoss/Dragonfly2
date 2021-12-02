@@ -67,7 +67,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -184,7 +184,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()

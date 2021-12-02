@@ -71,8 +71,8 @@ type Task interface {
 	// SetContentLength will be called after download completed, when download from source without content length
 	SetContentLength(int64) error
 	SetCallback(TaskCallback)
-	AddTraffic(int64)
-	GetTraffic() int64
+	AddTraffic(uint64)
+	GetTraffic() uint64
 	SetPieceMd5Sign(string)
 	GetPieceMd5Sign() string
 }

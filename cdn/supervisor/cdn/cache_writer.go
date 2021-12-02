@@ -167,8 +167,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, routi
 				start := uint64(p.pieceNum) * uint64(p.pieceSize)
 				end := start + uint64(pieceLen) - 1
 				pieceRecord := &storage.PieceMetaRecord{
-					PieceNum: p.pieceNum,
-					PieceLen: int32(pieceLen),
+					PieceNum: uint32(p.pieceNum),
+					PieceLen: uint32(pieceLen),
 					Md5:      digestutils.ToHashString(pieceMd5),
 					Range: &rangeutils.Range{
 						StartIndex: start,

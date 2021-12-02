@@ -119,7 +119,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 	// calculate piece size and update the PieceSize and PieceTotal
 	if task.PieceSize <= 0 {
 		pieceSize := cdnutil.ComputePieceSize(task.SourceFileLength)
-		task.PieceSize = pieceSize
+		task.PieceSize = int32(pieceSize)
 	}
 	if err := tm.taskStore.Add(task.TaskID, task); err != nil {
 		return nil, err

@@ -103,7 +103,7 @@ func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult)
 		zap.String("SchedulerIP", iputils.IPv4),
 		zap.String("SchedulerHostname", hostutils.FQDNHostname),
 		zap.Int64("ContentLength", req.ContentLength),
-		zap.Int64("Traffic", req.Traffic),
+		zap.Uint64("Traffic", req.Traffic),
 		zap.Uint32("Cost", req.Cost),
 		zap.Int32("Code", int32(req.Code)),
 	)

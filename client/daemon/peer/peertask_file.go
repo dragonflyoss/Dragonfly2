@@ -200,7 +200,7 @@ func newFilePeerTask(ctx context.Context,
 			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
-			usedTraffic:         atomic.NewInt64(0),
+			usedTraffic:         atomic.NewUint64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
 	}
