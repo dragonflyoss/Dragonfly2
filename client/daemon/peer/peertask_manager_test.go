@@ -35,13 +35,13 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
+	"d7y.io/dragonfly/v2/internal/dfutils"
 	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -367,7 +367,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  NewMockPieceDownloader(ctrl),
-			computePieceSize: cdnutil.ComputePieceSize,
+			computePieceSize: dfutils.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: sched,
