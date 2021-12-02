@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cdnutil
+package dfutils
 
 import (
 	"d7y.io/dragonfly/v2/cdn/config"
@@ -22,7 +22,7 @@ import (
 
 // ComputePieceSize computes the piece size with specified fileLength.
 //
-// If the fileLength<=0, which means failed to get fileLength
+// If the fileLength<0, which means failed to get fileLength
 // and then use the DefaultPieceSize.
 func ComputePieceSize(length int64) uint32 {
 	if length <= 0 || length <= 200*1024*1024 {
