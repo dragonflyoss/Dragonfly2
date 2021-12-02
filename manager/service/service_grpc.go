@@ -384,13 +384,13 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	// Search optimal scheduler cluster
-	log.Infof("list scheduler clusters %+v with hostInfo %+v", schedulerClusters, req.HostInfo)
+	log.Infof("list scheduler clusters %#v with hostInfo %#v", schedulerClusters, req.HostInfo)
 	schedulerCluster, err := s.searcher.FindSchedulerCluster(ctx, schedulerClusters, req)
 	if err != nil {
 		log.Errorf("can not matching scheduler cluster %v", err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
-	log.Infof("find matching scheduler cluster %v", schedulerCluster)
+	log.Infof("find matching scheduler cluster %#v", schedulerCluster)
 
 	schedulers := []model.Scheduler{}
 	if err := s.db.WithContext(ctx).Find(&schedulers, &model.Scheduler{

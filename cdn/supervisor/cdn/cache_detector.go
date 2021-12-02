@@ -52,7 +52,7 @@ type cacheResult struct {
 }
 
 func (s *cacheResult) String() string {
-	return fmt.Sprintf("{breakNum: %d, pieceMetaRecords: %+v, fileMetaData: %+v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData)
+	return fmt.Sprintf("{breakNum: %d, pieceMetaRecords: %#v, fileMetaData: %#v}", s.breakPoint, s.pieceMetaRecords, s.fileMetaData)
 }
 
 // newCacheDetector create a new cache detector

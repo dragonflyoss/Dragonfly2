@@ -209,7 +209,7 @@ func (s *SchedulerService) Stop() {
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
 	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
 	if !hasParent || parent == nil {
-		return nil, errors.Errorf("no parent peer available for peer %v", peer.ID)
+		return nil, errors.Errorf("no parent peer available for peer %s", peer.ID)
 	}
 	return parent, nil
 }
@@ -297,7 +297,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			if ok = s.worker.send(peerDownloadSuccessEvent{cdnPeer, nil}); !ok {
 				logger.Error("send taskSeed success event failed, eventLoop is shutdown")
 			}
-			logger.Infof("successfully obtain seeds from cdn, task: %+v", task)
+			logger.Infof("successfully obtain seeds from cdn, task: %#v", task)
 		}
 	}()
 

@@ -79,12 +79,12 @@ func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest)
 	task, err := tm.addOrUpdateTask(ctx, req)
 	if err != nil {
 		span.RecordError(err)
-		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req: %+v: %v", req, err)
+		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req: %#v: %v", req, err)
 		return nil, err
 	}
 	taskBytes, _ := json.Marshal(task)
 	span.SetAttributes(config.AttributeTaskInfo.String(string(taskBytes)))
-	task.Log().Debugf("success get task info: %+v", task)
+	task.Log().Debugf("success get task info: %#v", task)
 
 	// update accessTime for taskId
 	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
@@ -148,7 +148,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 		if err != nil {
 			task.Log().Errorf("failed to update task: %v", err)
 		}
-		task.Log().Infof("successfully update task cdn updatedTask: %+v", updatedTask)
+		task.Log().Infof("successfully update task cdn updatedTask: %#v", updatedTask)
 	}()
 	return nil
 }
@@ -169,7 +169,7 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 	if info, ok := v.(*types.SeedTask); ok {
 		return info, nil
 	}
-	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %+v", v)
+	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %#v", v)
 }
 
 func (tm Manager) Get(taskID string) (*types.SeedTask, error) {

@@ -63,7 +63,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
 	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 	defer span.End()
-	logger.Debugf("register peer task, req: %+v", request)
+	logger.Debugf("register peer task, req: %#v", request)
 	resp = new(scheduler.RegisterResult)
 	if verifyErr := validateParams(request); verifyErr != nil {
 		err = dferrors.Newf(base.Code_BadRequest, "bad request param: %v", verifyErr)

@@ -372,7 +372,7 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 		StealPeers:    stealPeers,
 		Code:          base.Code_Success,
 	}
-	logger.Debugf("send peerPacket %+v to peer %s", peerPacket, peer.ID)
+	logger.Debugf("send peerPacket %#v to peer %s", peerPacket, peer.ID)
 	return peerPacket
 }
 

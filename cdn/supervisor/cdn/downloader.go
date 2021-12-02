@@ -43,7 +43,7 @@ func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectRes
 			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
 		}
 	}
-	task.Log().Infof("start download url %s at range: %d-%d: with header: %+v", task.URL, detectResult.breakPoint,
+	task.Log().Infof("start download url %s at range: %d-%d: with header: %#v", task.URL, detectResult.breakPoint,
 		task.SourceFileLength, task.Header)
 	reader, responseHeader, err := source.DownloadWithResponseHeader(ctx, task.URL, headers)
 	// update Expire info
