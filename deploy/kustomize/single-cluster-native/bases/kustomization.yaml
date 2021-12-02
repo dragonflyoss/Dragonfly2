@@ -9,6 +9,15 @@ resources:
 - scheduler/configmap.yaml
 - scheduler/service.yaml
 - scheduler/statefulset.yaml
+- manager/deployment.yaml
+- manager/service.yaml
+- thirdparty/mysql/service.yaml
+- thirdparty/mysql/seviceaccount.yaml
+- thirdparty/mysql/statefulset.yaml
+- thirdparty/redis/service.yaml
+- thirdparty/redis/seviceaccount.yaml
+- thirdparty/redis/statefulset.yaml
+
 generatorOptions:
   disableNameSuffixHash: true
   labels:
@@ -24,6 +33,38 @@ configMapGenerator:
   files:
   - cdn/nginx.conf
   - cdn/cdn.yaml
+- name: manager
+  files:
+  - manager/manager.yaml
+- name: mysql
+  files:
+  - thirdparty/mysql/my.cnf
+- name: redis-scripts
+  files:
+  - thirdparty/redis/redis-scripts/start-master.sh
+  - thirdparty/redis/redis-scripts/start-slave.sh
+- name: redis
+  files:
+  - thirdparty/redis/master.conf
+  - thirdparty/redis/replica.conf
+  - thirdparty/redis/redis.conf
+- name: redis-health
+  files:
+  - thirdparty/redis/redis-health/ping_readiness_local.sh
+  - thirdparty/redis/redis-health/ping_liveness_local.sh
+  - thirdparty/redis/redis-health/ping_readiness_master.sh
+  - thirdparty/redis/redis-health/ping_liveness_master.sh
+  - thirdparty/redis/redis-health/ping_readiness_local_and_master.sh
+  - thirdparty/redis/redis-health/ping_liveness_local_and_master.sh
+
+secretGenerator:
+- name: mysql
+  literals:
+  - mysql-root-password=dragonfly-root
+  - mysql-password=dragonfly
+- name: redis
+  literals:
+  - redis-password=dragonfly
 images:
 - name: dragonflyoss/cdn
   newTag: v0.1.0-beta
@@ -33,3 +74,11 @@ images:
   newTag: v0.1.0-beta
 - name: bitnami/kubectl
   newTag: "1.20"
+- name: dragonflyoss/manager
+  newTag: "v2.0.1"
+- name: busybox
+  newTag: "latest"
+- name: bitnami/mysql
+  newTag: "8.0.22-debian-10-r23"
+- name: bitnami/redis
+  newTag: 6.0.9-debian-10-r13

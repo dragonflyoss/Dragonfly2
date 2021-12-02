@@ -11,3 +11,13 @@ worker:
 
 dynconfig:
   cdnDirPath: /opt/dragonfly/scheduler-cdn
+manager:
+  addr: manager.svc.cluster:65003
+  schedulerClusterID: 1
+  keepAlive:
+    interval: 5s
+job:
+  redis:
+    password: dragonfly
+    host: redis-master.svc.cluster
+    port: 6379

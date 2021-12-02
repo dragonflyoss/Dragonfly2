@@ -1,0 +1,229 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-master
+spec:
+  selector:
+    matchLabels:
+      app: redis
+      role: master
+  serviceName: redis-headless
+  template:
+    metadata:
+      labels:
+        app: redis
+        chart: redis-12.1.0
+        role: master
+    spec:
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: redis
+      containers:
+        - name: redis
+          image: bitnami/redis
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          command:
+            - /bin/bash
+            - -c
+            - /opt/bitnami/scripts/start-scripts/start-master.sh
+          env:
+            - name: REDIS_REPLICATION_MODE
+              value: master
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: redis-password
+            - name: REDIS_TLS_ENABLED
+              value: "no"
+            - name: REDIS_PORT
+              value: "6379"
+          ports:
+            - name: redis
+              containerPort: 6379
+          livenessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            # One second longer than command timeout should prevent generation of zombie processes.
+            timeoutSeconds: 6
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/ping_liveness_local.sh 5
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/ping_readiness_local.sh 1
+          volumeMounts:
+            - name: start-scripts
+              mountPath: /opt/bitnami/scripts/start-scripts
+            - name: health
+              mountPath: /health
+            - name: redis-data
+              mountPath: /data
+            - name: config
+              mountPath: /opt/bitnami/redis/mounted-etc
+            - name: redis-tmp-conf
+              mountPath: /opt/bitnami/redis/etc/
+      volumes:
+        - name: start-scripts
+          configMap:
+            name: redis-scripts
+            defaultMode: 0755
+        - name: health
+          configMap:
+            name: redis-health
+            defaultMode: 0755
+        - name: config
+          configMap:
+            name: redis
+        - name: redis-tmp-conf
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: redis
+          component: master
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+        
+        selector:
+  updateStrategy:
+    type: RollingUpdate
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-slave
+spec:
+  replicas: 2
+  serviceName: redis-headless
+  selector:
+    matchLabels:
+      app: redis
+      role: slave
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: slave
+    spec:
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: redis
+      containers:
+        - name: redis
+          image: bitnami/redis
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          command:
+            - /bin/bash
+            - -c
+            - /opt/bitnami/scripts/start-scripts/start-slave.sh
+          env:
+            - name: REDIS_REPLICATION_MODE
+              value: slave
+            - name: REDIS_MASTER_HOST
+              value: redis-master-0.redis-headless.default.svc.cluster.local
+            - name: REDIS_MASTER_PORT_NUMBER
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: redis-password
+            - name: REDIS_MASTER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis
+                  key: redis-password
+            - name: REDIS_TLS_ENABLED
+              value: "no"
+            - name: REDIS_PORT
+              value: "6379"
+          ports:
+            - name: redis
+              containerPort: 6379
+          livenessProbe:
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 6
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/ping_liveness_local_and_master.sh 5
+          readinessProbe:
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 11
+            successThreshold: 1
+            failureThreshold: 5
+            exec:
+              command:
+                - sh
+                - -c
+                - /health/ping_readiness_local_and_master.sh 10
+          resources:
+            null
+          volumeMounts:
+            - name: start-scripts
+              mountPath: /opt/bitnami/scripts/start-scripts
+            - name: health
+              mountPath: /health
+            - name: redis-data
+              mountPath: /data
+            - name: config
+              mountPath: /opt/bitnami/redis/mounted-etc
+            - name: redis-tmp-conf
+              mountPath: /opt/bitnami/redis/etc
+      volumes:
+        - name: start-scripts
+          configMap:
+            name: redis-scripts
+            defaultMode: 0755
+        - name: health
+          configMap:
+            name: redis-health
+            defaultMode: 0755
+        - name: config
+          configMap:
+            name: redis
+        - name: redis-tmp-conf
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: redis
+          component: slave
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+  updateStrategy:
+    type: RollingUpdate

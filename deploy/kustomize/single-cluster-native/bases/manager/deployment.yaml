@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manager
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: manager
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: manager
+    spec:
+      initContainers:
+      - name: wait-for-redis
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nslookup redis-master.default.svc.cluster.local && nc -vz redis-master.default.svc.cluster.local 6379; do echo waiting for redis; sleep 2; done;']
+      - name: wait-for-mysql
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ['sh', '-c', 'until nslookup mysql.default.svc.cluster.local && nc -vz mysql.default.svc.cluster.local 3306; do echo waiting for mysql; sleep 2; done;']
+      containers:
+      - name: manager
+        image: dragonflyoss/manager
+        imagePullPolicy: "IfNotPresent"
+        resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "0"
+              memory: "0"
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 65003
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: "/etc/dragonfly"
+        - mountPath: /var/log/dragonfly/manager
+          name: logs
+        readinessProbe:
+          httpGet:
+            path: /healthy
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /healthy
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+      volumes:
+      - name: config
+        configMap:
+          name: dragonfly-manager
+          items:
+          - key: manager.yaml
+            path: manager.yaml
+      - emptyDir: {}
+        name: logs

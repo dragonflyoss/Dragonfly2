@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels: 
+      app.kubernetes.io/name: mysql
+      app.kubernetes.io/instance: mysql
+      app.kubernetes.io/component: primary
+  serviceName: mysql
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql
+        app.kubernetes.io/instance: mysql
+        app.kubernetes.io/component: primary
+    spec:
+      serviceAccountName: mysql
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: mysql
+                    app.kubernetes.io/instance: mysql
+                    app.kubernetes.io/component: primary
+                namespaces:
+                  - default
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+      securityContext:
+        fsGroup: 1001
+      containers:
+        - name: mysql
+          image: bitnami/mysql
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql
+                  key: mysql-root-password
+            - name: MYSQL_USER
+              value: "dragonfly"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql
+                  key: mysql-password
+            - name: MYSQL_DATABASE
+              value: "manager"
+          ports:
+            - name: mysql
+              containerPort: 3306
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  password_aux="${MYSQL_ROOT_PASSWORD:-}"
+                  if [[ -f "${MYSQL_ROOT_PASSWORD_FILE:-}" ]]; then
+                      password_aux=$(cat "$MYSQL_ROOT_PASSWORD_FILE")
+                  fi
+                  mysqladmin status -uroot -p"${password_aux}"
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+            exec:
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  password_aux="${MYSQL_ROOT_PASSWORD:-}"
+                  if [[ -f "${MYSQL_ROOT_PASSWORD_FILE:-}" ]]; then
+                      password_aux=$(cat "$MYSQL_ROOT_PASSWORD_FILE")
+                  fi
+                  mysqladmin status -uroot -p"${password_aux}"
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/mysql
+            - name: config
+              mountPath: /opt/bitnami/mysql/conf/my.cnf
+              subPath: my.cnf
+      volumes:
+        - name: config
+          configMap:
+            name: mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels: 
+          app.kubernetes.io/name: mysql
+          app.kubernetes.io/instance: mysql
+          app.kubernetes.io/component: primary
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"

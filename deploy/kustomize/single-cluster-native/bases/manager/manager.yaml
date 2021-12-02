@@ -1,0 +1,19 @@
+server:
+  rest:
+    addr: :8080
+  grpc:
+    port:
+      start: 65003
+      end: 65003
+database:
+  mysql:
+    user: dragonfly
+    password: dragonfly
+    host: mysql.default.svc.cluster.local
+    port: 3306
+    dbname: manager
+    migrate: true
+  redis:
+    password: dragonfly
+    host: redis-master.default.svc.cluster.local
+    port: 6379

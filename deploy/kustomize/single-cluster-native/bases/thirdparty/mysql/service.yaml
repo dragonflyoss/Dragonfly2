@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  type: ClusterIP
+  ports:
+    - name: mysql
+      port: 3306
+      protocol: TCP
+      targetPort: mysql
+  selector: 
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/instance: mysql
+    app.kubernetes.io/component: primary

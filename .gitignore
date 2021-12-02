@@ -21,9 +21,6 @@ target/
 scheduler/test/misc
 .chglog
 
-# mysql
-mysql
-
 # vscode
 .vscode/*
 !.vscode/settings.json
