@@ -25,11 +25,11 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/types"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dfutils"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
@@ -118,7 +118,7 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 
 	// calculate piece size and update the PieceSize and PieceTotal
 	if task.PieceSize <= 0 {
-		pieceSize := cdnutil.ComputePieceSize(task.SourceFileLength)
+		pieceSize := dfutils.ComputePieceSize(task.SourceFileLength)
 		task.PieceSize = int32(pieceSize)
 	}
 	if err := tm.taskStore.Add(task.TaskID, task); err != nil {
