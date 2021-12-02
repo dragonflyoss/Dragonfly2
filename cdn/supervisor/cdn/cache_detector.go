@@ -185,7 +185,7 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 	var breakPoint uint64 = 0
 	pieceMetaRecords := make([]*storage.PieceMetaRecord, 0, len(tempRecords))
 	for index := range tempRecords {
-		if int32(index) != tempRecords[index].PieceNum {
+		if uint32(index) != tempRecords[index].PieceNum {
 			break
 		}
 		// read content
