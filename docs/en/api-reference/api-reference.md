@@ -3869,7 +3869,12 @@ delete role by uri config
 
 <a name="types-schedulerclusterscopes"></a>
 ### types.SchedulerClusterScopes
-*Type* : object
+
+|Name|Schema|
+|---|---|
+|**idc**  <br>*optional*|string|
+|**location**  <br>*optional*|string|
+|**net_topology**  <br>*optional*|string|
 
 
 <a name="types-signuprequest"></a>

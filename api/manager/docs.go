@@ -4298,7 +4298,18 @@ var doc = `{
             "type": "object"
         },
         "types.SchedulerClusterScopes": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+                "idc": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_topology": {
+                    "type": "string"
+                }
+            }
         },
         "types.SignUpRequest": {
             "type": "object",

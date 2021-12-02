@@ -558,6 +558,13 @@ definitions:
   types.SchedulerClusterConfig:
     type: object
   types.SchedulerClusterScopes:
+    properties:
+      idc:
+        type: string
+      location:
+        type: string
+      net_topology:
+        type: string
     type: object
   types.SignUpRequest:
     properties:
