@@ -74,7 +74,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		if request.StartNum == 0 {
 			tasks = append(tasks,
 				&base.PieceInfo{
-					PieceNum:    request.StartNum,
+					PieceNum:    int32(request.StartNum),
 					RangeStart:  uint64(0),
 					RangeSize:   opt.pieceSize,
 					PieceMd5:    digestutils.Md5Bytes(testBytes[0:opt.pieceSize]),
@@ -197,7 +197,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -228,8 +228,8 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		calculateDigest: true,
 		storageManager:  storageManager,
 		pieceDownloader: downloader,
-		computePieceSize: func(contentLength int64) int32 {
-			return int32(pieceSize)
+		computePieceSize: func(contentLength int64) uint32 {
+			return uint32(pieceSize)
 		},
 	}
 	ptm := &peerTaskManager{

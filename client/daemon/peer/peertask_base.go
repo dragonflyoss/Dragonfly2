@@ -89,7 +89,7 @@ type peerTask struct {
 	md5             string
 	contentLength   *atomic.Int64
 	completedLength *atomic.Int64
-	usedTraffic     *atomic.Int64
+	usedTraffic     *atomic.Uint64
 
 	//sizeScope   base.SizeScope
 	singlePiece *scheduler.SinglePiece
@@ -162,11 +162,11 @@ func (pt *peerTask) SetContentLength(i int64) error {
 	return pt.setContentLengthFunc(i)
 }
 
-func (pt *peerTask) AddTraffic(n int64) {
+func (pt *peerTask) AddTraffic(n uint64) {
 	pt.usedTraffic.Add(n)
 }
 
-func (pt *peerTask) GetTraffic() int64 {
+func (pt *peerTask) GetTraffic() uint64 {
 	return pt.usedTraffic.Load()
 }
 
@@ -393,11 +393,11 @@ func (pt *peerTask) pullPiecesFromPeers(cleanUnfinishedFunc func()) {
 	var (
 		num            int32
 		ok             bool
-		limit          int32
+		limit          uint32
 		initialized    bool
 		pieceRequestCh chan *DownloadPieceRequest
 		// keep same size with pt.failedPieceCh for avoiding dead-lock
-		pieceBufferSize = int32(config.DefaultPieceChanSize)
+		pieceBufferSize = uint32(config.DefaultPieceChanSize)
 	)
 	limit = pieceBufferSize
 loop:
@@ -437,7 +437,7 @@ loop:
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskID,
 				SrcPid:   pt.peerID,
-				StartNum: num,
+				StartNum: uint32(num),
 				Limit:    limit,
 			})
 
@@ -492,7 +492,7 @@ loop:
 	}
 }
 
-func (pt *peerTask) init(piecePacket *base.PiecePacket, pieceBufferSize int32) (chan *DownloadPieceRequest, bool) {
+func (pt *peerTask) init(piecePacket *base.PiecePacket, pieceBufferSize uint32) (chan *DownloadPieceRequest, bool) {
 	pt.contentLength.Store(piecePacket.ContentLength)
 	if pt.contentLength.Load() > 0 {
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(pt.contentLength.Load()))
@@ -796,7 +796,7 @@ retry:
 	}
 
 	if code == base.Code_CDNTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
-		span.AddEvent("retry for CDNTaskNotFound")
+		span.AddEvent("retry for CdnTaskNotFound")
 		goto retry
 	}
 	return nil, err
@@ -875,7 +875,7 @@ func (pt *peerTask) getNextPieceNum(cur int32) int32 {
 		// double check, re-search not success or not requested pieces
 		for i = int32(0); pt.requestedPieces.IsSet(i); i++ {
 		}
-		if pt.totalPiece > 0 && i >= pt.totalPiece {
+		if pt.totalPiece > 0 && i >= int32(pt.totalPiece) {
 			return -1
 		}
 	}

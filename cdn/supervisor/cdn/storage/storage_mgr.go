@@ -97,8 +97,8 @@ type FileMetaData struct {
 
 // PieceMetaRecord meta data of piece
 type PieceMetaRecord struct {
-	PieceNum    int32             `json:"pieceNum"`    // piece Num start from 0
-	PieceLen    int32             `json:"pieceLen"`    // 存储到存储介质的真实长度
+	PieceNum    uint32            `json:"pieceNum"`    // piece Num start from 0
+	PieceLen    uint32            `json:"pieceLen"`    // 存储到存储介质的真实长度
 	Md5         string            `json:"md5"`         // for transported piece content，不是origin source 的 md5，是真是存储到存储介质后的md5（为了读取数据文件时方便校验完整性）
 	Range       *rangeutils.Range `json:"range"`       // 下载存储到磁盘的range，不是origin source的range.提供给客户端发送下载请求,for transported piece content
 	OriginRange *rangeutils.Range `json:"originRange"` //  piece's real offset in the file
@@ -141,8 +141,8 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 		return nil, errors.Wrapf(err, "invalid pieceStyle: %s", fields[5])
 	}
 	return &PieceMetaRecord{
-		PieceNum:    int32(pieceNum),
-		PieceLen:    int32(pieceLen),
+		PieceNum:    uint32(pieceNum),
+		PieceLen:    uint32(pieceLen),
 		Md5:         md5,
 		Range:       pieceRange,
 		OriginRange: originRange,

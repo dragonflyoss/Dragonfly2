@@ -31,8 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -65,12 +63,6 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 	defer span.End()
 	logger.Debugf("register peer task, req: %+v", request)
 	resp = new(scheduler.RegisterResult)
-	if verifyErr := validateParams(request); verifyErr != nil {
-		err = dferrors.Newf(base.Code_BadRequest, "bad request param: %v", verifyErr)
-		logger.Errorf("register request: %v", err)
-		span.RecordError(err)
-		return
-	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
@@ -213,18 +205,6 @@ func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (e
 		return
 	}
 	return s.service.HandleLeaveTask(ctx, peer)
-}
-
-// validateParams validates the params of scheduler.PeerTaskRequest.
-func validateParams(req *scheduler.PeerTaskRequest) error {
-	if !urlutils.IsValidURL(req.Url) {
-		return fmt.Errorf("invalid url: %s", req.Url)
-	}
-
-	if stringutils.IsEmpty(req.PeerId) {
-		return fmt.Errorf("empty peerID")
-	}
-	return nil
 }
 
 func getTaskSizeScope(task *supervisor.Task) base.SizeScope {

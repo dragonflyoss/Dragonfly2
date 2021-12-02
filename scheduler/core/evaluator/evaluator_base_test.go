@@ -43,8 +43,8 @@ type factor struct {
 	idc                string
 	location           string
 	netTopology        string
-	totalUploadLoad    int32
-	currentUploadLoad  int32
+	totalUploadLoad    uint32
+	currentUploadLoad  uint32
 	finishedPieceCount int32
 	hostUUID           string
 	taskPieceCount     int32

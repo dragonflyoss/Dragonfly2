@@ -416,7 +416,7 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 				TaskID: taskID,
 			},
 			ContentLength: t.ContentLength,
-			TotalPieces:   t.TotalPieces,
+			TotalPieces:   int32(t.TotalPieces),
 		}
 	}
 	return nil

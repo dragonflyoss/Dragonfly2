@@ -51,7 +51,7 @@ func (p *filePeerTaskCallback) Init(pt Task) error {
 				Destination: p.req.Output,
 			},
 			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
+			TotalPieces:   int32(pt.GetTotalPieces()),
 			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
@@ -69,7 +69,7 @@ func (p *filePeerTaskCallback) Update(pt Task) error {
 				TaskID: pt.GetTaskID(),
 			},
 			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
+			TotalPieces:   int32(pt.GetTotalPieces()),
 			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
@@ -90,7 +90,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 				Destination: p.req.Output,
 			},
 			MetadataOnly: false,
-			TotalPieces:  pt.GetTotalPieces(),
+			TotalPieces:  int32(pt.GetTotalPieces()),
 		})
 	if e != nil {
 		return e

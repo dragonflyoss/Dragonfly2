@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -36,9 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
@@ -61,18 +58,11 @@ func New(cfg *config.Config, taskMgr supervisor.SeedTaskMgr, opts ...grpc.Server
 	return svr.Server, nil
 }
 
-func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRequest, error) {
-	if err := checkSeedRequestParams(req); err != nil {
-		return nil, err
-	}
+func constructRegisterRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
 	meta := req.UrlMeta
 	header := make(map[string]string)
 	if meta != nil {
 		if !stringutils.IsBlank(meta.Digest) {
-			digest := digestutils.Parse(meta.Digest)
-			if _, ok := digestutils.Algorithms[digest[0]]; !ok {
-				return nil, errors.Errorf("unsupported digest algorithm")
-			}
 			header["digest"] = meta.Digest
 		}
 		if !stringutils.IsBlank(meta.Range) {
@@ -88,18 +78,7 @@ func constructRegisterRequest(req *cdnsystem.SeedRequest) (*types.TaskRegisterRe
 		Digest: header["digest"],
 		TaskID: req.TaskId,
 		Filter: strings.Split(req.UrlMeta.Filter, "&"),
-	}, nil
-}
-
-// checkSeedRequestParams check the params of SeedRequest.
-func checkSeedRequestParams(req *cdnsystem.SeedRequest) error {
-	if !urlutils.IsValidURL(req.Url) {
-		return errors.Errorf("resource url: %s is invalid", req.Url)
 	}
-	if stringutils.IsBlank(req.TaskId) {
-		return errors.New("taskId is empty")
-	}
-	return nil
 }
 
 func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
@@ -117,12 +96,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		}
 		logger.Infof("seeds task %s result success: %t", req.TaskId, err == nil)
 	}()
-	registerRequest, err := constructRegisterRequest(req)
-	if err != nil {
-		err = dferrors.Newf(base.Code_BadRequest, "bad seed request for task(%s): %v", req.TaskId, err)
-		span.RecordError(err)
-		return err
-	}
+	registerRequest := constructRegisterRequest(req)
 	// register task
 	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 	if err != nil {
@@ -141,7 +115,7 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			PeerId:   peerID,
 			HostUuid: idgen.CDNHostID(hostutils.FQDNHostname, int32(css.cfg.ListenPort)),
 			PieceInfo: &base.PieceInfo{
-				PieceNum:    piece.PieceNum,
+				PieceNum:    int32(piece.PieceNum),
 				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
@@ -186,11 +160,6 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		}
 	}()
 	logger.Infof("get piece tasks: %+v", req)
-	if err := checkPieceTasksRequestParams(req); err != nil {
-		err = dferrors.Newf(base.Code_BadRequest, "failed to validate seed request for task(%s): %v", req.TaskId, err)
-		span.RecordError(err)
-		return nil, err
-	}
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
@@ -214,11 +183,11 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		return nil, err
 	}
 	pieceInfos := make([]*base.PieceInfo, 0)
-	var count int32 = 0
+	var count uint32 = 0
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit == 0) {
 			p := &base.PieceInfo{
-				PieceNum:    piece.PieceNum,
+				PieceNum:    int32(piece.PieceNum),
 				RangeStart:  piece.PieceRange.StartIndex,
 				RangeSize:   piece.PieceLen,
 				PieceMd5:    piece.PieceMd5,
@@ -240,20 +209,4 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	span.SetAttributes(config.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil
-}
-
-func checkPieceTasksRequestParams(req *base.PieceTaskRequest) error {
-	if stringutils.IsBlank(req.TaskId) {
-		return errors.Wrap(cdnerrors.ErrInvalidValue, "taskId is nil")
-	}
-	if stringutils.IsBlank(req.SrcPid) {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "src peer id is nil")
-	}
-	if req.StartNum < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid starNum %d", req.StartNum)
-	}
-	if req.Limit < 0 {
-		return errors.Wrapf(cdnerrors.ErrInvalidValue, "invalid limit %d", req.Limit)
-	}
-	return nil
 }
