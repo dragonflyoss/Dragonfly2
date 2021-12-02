@@ -1,6 +1,8 @@
 # Dragonfly 文档
 
-Dragonfly 文档介绍了 Dragonfly 各方面的信息。如果您对 Dragonfly 感兴趣，请阅读 repo 的 README.md 。更进一步地，如果您是 Dragonfly 的用户，请阅读`/docs` 中的内容；如果您想成为 Dragonfly 的开发者，请阅读[开发者指南](developer-guide/developer-guide.md)。
+Dragonfly 文档介绍了 Dragonfly 各方面的信息。如果您对 Dragonfly 感兴趣，请阅读 repo 的 README.md 。
+更进一步地，如果您是 Dragonfly 的用户，请阅读`/docs` 中的内容；
+如果您想成为 Dragonfly 的开发者，请阅读[开发者指南](developer-guide/developer-guide.md)。
 
 文档文件组织如下：
 

@@ -4,29 +4,29 @@
 
 `dfget` 是Dragonfly中用来下载和上传文件的客户端。
 
-### 简介
+### dfget 简介
 
 dfget 是 Dragonfly 中用来下载和上传文件的客户端，也是 p2p 网络中的一个 peer。当用户发起文件下载请求时，
 dfget 将从其他 peer 下载文件。同时，它也能作为上传者，让其他 peer 下载它已拥有的那部分文件。
 此外，dfget 还提供了一些高级功能，如网络带宽限制、加密传输等。
 
-### 用法
+### dfget 用法
 
 ```text
 dfget [flags]
 ```
 
-### 例子
+### dfget 用法案例
 
 ```text
 dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/object"
 ```
 
-### 查看日志
+### 查看 dfget 日志
 
 如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
 
-### 可选参数
+### dfget 的可选参数
 
 <!-- markdownlint-disable -->
 ```text
@@ -66,11 +66,11 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 ## dfget daemon
 
-### 查看日志
+### 查看 daemon 日志
 
 如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
 
-### 可选参数
+### daemon 的可选参数
 
 <!-- markdownlint-disable -->
 ```text
