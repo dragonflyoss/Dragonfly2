@@ -1,6 +1,6 @@
-ARG BASE_IMAGE=alpine:3.12
+ARG BASE_IMAGE=alpine:3.14
 
-FROM golang:1.16.6-alpine as builder
+FROM golang:1.17.3-alpine3.14 as builder
 
 WORKDIR /go/src/d7y.io/dragonfly/v2
 
