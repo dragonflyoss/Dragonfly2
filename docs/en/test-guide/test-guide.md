@@ -12,7 +12,7 @@ Unit tests is in the project directory.
 make test
 ```
 
-### Runing uint tests with coverage reports
+### Running uint tests with coverage reports
 
 ```bash
 make test-coverage
@@ -28,7 +28,7 @@ E2E tests is in `test/e2e` path.
 make e2e-test
 ```
 
-### Runing E2E tests with coverage reports
+### Running E2E tests with coverage reports
 
 ```bash
 make e2e-test-coverage
