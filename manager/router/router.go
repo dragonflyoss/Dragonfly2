@@ -121,10 +121,10 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	pm.GET("", h.GetPermissions(r))
 
 	// Oauth
-	oa := apiv1.Group("/oauth", jwt.MiddlewareFunc(), rbac)
-	oa.POST("", h.CreateOauth)
-	oa.DELETE(":id", h.DestroyOauth)
-	oa.PATCH(":id", h.UpdateOauth)
+	oa := apiv1.Group("/oauth")
+	oa.POST("", h.CreateOauth, jwt.MiddlewareFunc(), rbac)
+	oa.DELETE(":id", h.DestroyOauth, jwt.MiddlewareFunc(), rbac)
+	oa.PATCH(":id", h.UpdateOauth, jwt.MiddlewareFunc(), rbac)
 	oa.GET(":id", h.GetOauth)
 	oa.GET("", h.GetOauths)
 
