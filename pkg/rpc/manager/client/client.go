@@ -155,7 +155,7 @@ retry:
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
 				if _, err := stream.CloseAndRecv(); err != nil {
-					logger.Errorf("hostname %s cluster id %s close and recv stream failed", keepalive.HostName, keepalive.ClusterId, err)
+					logger.Errorf("hostname %s cluster id %v close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
 				}
 
 				cancel()
