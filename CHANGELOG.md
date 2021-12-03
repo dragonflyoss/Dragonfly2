@@ -1,6 +1,26 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+
+<a name="v2.0.1"></a>
+## [v2.0.1] - 2021-12-03
+### Docs
+- keep alive ([#868](https://github.com/dragonflyoss/Dragonfly2/issues/868))
+
+### Feat
+- update v2.0.0
+- update version v2.0.0
+
+
+<a name="v2.0.1-rc.10"></a>
+## [v2.0.1-rc.10] - 2021-12-03
+### Feat
+- add oauth timeout ([#867](https://github.com/dragonflyoss/Dragonfly2/issues/867))
+- support customize transport in daemon ([#866](https://github.com/dragonflyoss/Dragonfly2/issues/866))
+
+
+<a name="v2.0.1-rc.9"></a>
+## [v2.0.1-rc.9] - 2021-12-03
 ### Chore
 - upgrade to golang 1.17 and alpine 3.14 ([#861](https://github.com/dragonflyoss/Dragonfly2/issues/861))
 
@@ -8,6 +28,7 @@
 - **zh-CN:** refactor machine translation ([#783](https://github.com/dragonflyoss/Dragonfly2/issues/783))
 
 ### Feat
+- console ([#865](https://github.com/dragonflyoss/Dragonfly2/issues/865))
 - move dfnet to internal ([#862](https://github.com/dragonflyoss/Dragonfly2/issues/862))
 - remove ifaceutils pkg ([#860](https://github.com/dragonflyoss/Dragonfly2/issues/860))
 - move syncmap pkg([#859](https://github.com/dragonflyoss/Dragonfly2/issues/859))
@@ -633,7 +654,10 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.8...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1...HEAD
+[v2.0.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.10...v2.0.1
+[v2.0.1-rc.10]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.9...v2.0.1-rc.10
+[v2.0.1-rc.9]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.8...v2.0.1-rc.9
 [v2.0.1-rc.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.7...v2.0.1-rc.8
 [v2.0.1-rc.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.6...v2.0.1-rc.7
 [v2.0.1-rc.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.5...v2.0.1-rc.6
