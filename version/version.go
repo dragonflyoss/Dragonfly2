@@ -21,7 +21,7 @@ import "fmt"
 var (
 	Major      = "2"
 	Minor      = "0"
-	GitVersion = "v2.0.0"
+	GitVersion = "v2.0.1"
 	GitCommit  = "unknown"
 	Platform   = osArch
 	BuildTime  = "unknown"

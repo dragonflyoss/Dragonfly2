@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   dfdaemon:
-    image: dragonflyoss/dfdaemon:v2.0.0-alpha
+    image: dragonflyoss/dfdaemon:v2.0.1
     depends_on:
     - scheduler
     - cdn
@@ -12,7 +12,7 @@ services:
     - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml
 
   scheduler:
-    image: dragonflyoss/scheduler:v2.0.0-alpha
+    image: dragonflyoss/scheduler:v2.0.1
     depends_on:
     - cdn
     container_name: scheduler
@@ -23,7 +23,7 @@ services:
     - ./config/cdn.json:/opt/dragonfly/scheduler-cdn/cdn.json
 
   cdn:
-    image: dragonflyoss/cdn:v2.0.0-alpha
+    image: dragonflyoss/cdn:v2.0.1
     container_name: cdn
     network_mode: host
     volumes:
