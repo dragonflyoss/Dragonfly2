@@ -2,14 +2,14 @@ name: Compatibility E2E Test
 
 on:
   push:
-    branches: [main, release-*]
+    branches: [ main, release-* ]
     paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
   pull_request:
-    branches: [main, release-*]
+    branches: [ main, release-* ]
     paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
 
 env:
-  GO_VERSION: 1.15
+  GO_VERSION: 1.17
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
@@ -38,9 +38,10 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go mod vendor
-          go get github.com/onsi/ginkgo/ginkgo
+          go mod download github.com/go-task/slim-sprig
+          go install github.com/onsi/ginkgo/ginkgo
           mkdir -p /tmp/artifact
+          go mod vendor
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0

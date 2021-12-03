@@ -47,7 +47,8 @@ install-ginkgo() {
   if which ginkgo >/dev/null ; then
       print_step_info "ginkgo has been installed"
   else
-      go get github.com/onsi/ginkgo/ginkgo
+      go mod download github.com/go-task/slim-sprig
+      go install github.com/onsi/ginkgo/ginkgo
   fi
 }
 
