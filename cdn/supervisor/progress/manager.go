@@ -34,8 +34,8 @@ import (
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/syncmap"
 )
 
 var _ supervisor.SeedProgressMgr = (*Manager)(nil)
