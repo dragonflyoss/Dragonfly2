@@ -20,6 +20,8 @@ import (
 	"context"
 	"io"
 	"math"
+	"net"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -76,10 +78,40 @@ func WithCalculateDigest(enable bool) func(*pieceManager) {
 	}
 }
 
-// WithLimiter sets upload rate limiter, the burst size must big than piece size
+// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
 func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	return func(manager *pieceManager) {
 		manager.Limiter = limiter
+	}
+}
+
+func WithTransportOption(opt *config.TransportOption) func(*pieceManager) {
+	return func(manager *pieceManager) {
+		if opt == nil {
+			return
+		}
+		if opt.IdleConnTimeout > 0 {
+			defaultTransport.(*http.Transport).IdleConnTimeout = opt.IdleConnTimeout
+		}
+		if opt.DialTimeout > 0 && opt.KeepAlive > 0 {
+			defaultTransport.(*http.Transport).DialContext = (&net.Dialer{
+				Timeout:   opt.DialTimeout,
+				KeepAlive: opt.KeepAlive,
+				DualStack: true,
+			}).DialContext
+		}
+		if opt.MaxIdleConns > 0 {
+			defaultTransport.(*http.Transport).MaxIdleConns = opt.MaxIdleConns
+		}
+		if opt.ExpectContinueTimeout > 0 {
+			defaultTransport.(*http.Transport).ExpectContinueTimeout = opt.ExpectContinueTimeout
+		}
+		if opt.ResponseHeaderTimeout > 0 {
+			defaultTransport.(*http.Transport).ResponseHeaderTimeout = opt.ResponseHeaderTimeout
+		}
+		if opt.TLSHandshakeTimeout > 0 {
+			defaultTransport.(*http.Transport).TLSHandshakeTimeout = opt.TLSHandshakeTimeout
+		}
 	}
 }
 
