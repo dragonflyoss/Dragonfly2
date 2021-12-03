@@ -158,7 +158,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	pieceManager, err := peer.NewPieceManager(storageManager,
 		opt.Download.PieceDownloadTimeout,
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
 	)
 	if err != nil {
 		return nil, err

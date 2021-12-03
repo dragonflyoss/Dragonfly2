@@ -170,6 +170,17 @@ type DownloadOption struct {
 	DownloadGRPC         ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
 	PeerGRPC             ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
+	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
+}
+
+type TransportOption struct {
+	DialTimeout           time.Duration `mapstructure:"dialTimeout" yaml:"dialTimeout"`
+	KeepAlive             time.Duration `mapstructure:"keepAlive" yaml:"keepAlive"`
+	MaxIdleConns          int           `mapstructure:"maxIdleConns" yaml:"maxIdleConns"`
+	IdleConnTimeout       time.Duration `mapstructure:"idleConnTimeout" yaml:"idleConnTimeout"`
+	ResponseHeaderTimeout time.Duration `mapstructure:"responseHeaderTimeout" yaml:"responseHeaderTimeout"`
+	TLSHandshakeTimeout   time.Duration `mapstructure:"tlsHandshakeTimeout" yaml:"tlsHandshakeTimeout"`
+	ExpectContinueTimeout time.Duration `mapstructure:"expectContinueTimeout" yaml:"expectContinueTimeout"`
 }
 
 type ProxyOption struct {

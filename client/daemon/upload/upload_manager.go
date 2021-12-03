@@ -64,7 +64,7 @@ func NewUploadManager(s storage.Manager, opts ...func(*uploadManager)) (Manager,
 	return u, nil
 }
 
-// WithLimiter sets upload rate limiter, the burst size must big than piece size
+// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
 func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	return func(manager *uploadManager) {
 		manager.Limiter = limiter

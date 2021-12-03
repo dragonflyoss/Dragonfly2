@@ -79,6 +79,22 @@ download:
   perPeerRateLimit: 100Mi
   # download piece timeout
   pieceDownloadTimeout: 30s
+  # golang transport option
+  transportOption:
+    # dial timeout
+    dialTimeout: 2s
+    # keep alive
+    keepAlive: true
+    # same with http.Transport.MaxIdleConns
+    maxIdleConns: 100
+    # same with http.Transport.IdleConnTimeout
+    idleConnTimeout: 90s
+    # same with http.Transport.ResponseHeaderTimeout
+    responseHeaderTimeout: 2s
+    # same with http.Transport.TLSHandshakeTimeout
+    tlsHandshakeTimeout: 1s
+    # same with http.Transport.ExpectContinueTimeout
+    expectContinueTimeout: 2s
   # download grpc option
   downloadGRPC:
     # security option
