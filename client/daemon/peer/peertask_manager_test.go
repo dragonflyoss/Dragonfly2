@@ -41,8 +41,8 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
-	"d7y.io/dragonfly/v2/internal/dfutils"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -367,7 +367,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  NewMockPieceDownloader(ctrl),
-			computePieceSize: dfutils.ComputePieceSize,
+			computePieceSize: util.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: sched,

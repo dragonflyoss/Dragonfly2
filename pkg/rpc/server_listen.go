@@ -23,7 +23,7 @@ import (
 	"syscall"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 // Listen wraps net.Listen with dfnet.NetAddr

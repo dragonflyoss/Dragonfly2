@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dfutils
+package util
 
 const (
 	// DefaultPieceSize 4M
