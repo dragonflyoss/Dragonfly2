@@ -112,6 +112,8 @@ func WithTransportOption(opt *config.TransportOption) func(*pieceManager) {
 		if opt.TLSHandshakeTimeout > 0 {
 			defaultTransport.(*http.Transport).TLSHandshakeTimeout = opt.TLSHandshakeTimeout
 		}
+
+		logger.Infof("default transport: %#v", defaultTransport)
 	}
 }
 
