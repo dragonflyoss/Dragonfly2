@@ -1,46 +1,33 @@
 <a name="unreleased"></a>
 ## [Unreleased]
 
+### Feat
+- update helm charts ([#870](https://github.com/dragonflyoss/Dragonfly2/issues/870))
+- update version to v2.0.1 ([#869](https://github.com/dragonflyoss/Dragonfly2/issues/869))
+
 
 <a name="v2.0.1"></a>
 ## [v2.0.1] - 2021-12-03
-### Docs
-- keep alive ([#868](https://github.com/dragonflyoss/Dragonfly2/issues/868))
-
-### Feat
-- update v2.0.0
-- update version v2.0.0
-
-
-<a name="v2.0.1-rc.10"></a>
-## [v2.0.1-rc.10] - 2021-12-03
-### Feat
-- add oauth timeout ([#867](https://github.com/dragonflyoss/Dragonfly2/issues/867))
-- support customize transport in daemon ([#866](https://github.com/dragonflyoss/Dragonfly2/issues/866))
-
-
-<a name="v2.0.1-rc.9"></a>
-## [v2.0.1-rc.9] - 2021-12-03
 ### Chore
 - upgrade to golang 1.17 and alpine 3.14 ([#861](https://github.com/dragonflyoss/Dragonfly2/issues/861))
 
 ### Docs
+- keep alive ([#868](https://github.com/dragonflyoss/Dragonfly2/issues/868))
 - **zh-CN:** refactor machine translation ([#783](https://github.com/dragonflyoss/Dragonfly2/issues/783))
 
 ### Feat
+- update v2.0.0
+- add oauth timeout ([#867](https://github.com/dragonflyoss/Dragonfly2/issues/867))
+- support customize transport in daemon ([#866](https://github.com/dragonflyoss/Dragonfly2/issues/866))
 - console ([#865](https://github.com/dragonflyoss/Dragonfly2/issues/865))
+- update version v2.0.0
 - move dfnet to internal ([#862](https://github.com/dragonflyoss/Dragonfly2/issues/862))
 - remove ifaceutils pkg ([#860](https://github.com/dragonflyoss/Dragonfly2/issues/860))
 - move syncmap pkg([#859](https://github.com/dragonflyoss/Dragonfly2/issues/859))
+- oauth interface auth ([#857](https://github.com/dragonflyoss/Dragonfly2/issues/857))
 
 ### Fix
 - error log ([#863](https://github.com/dragonflyoss/Dragonfly2/issues/863))
-
-
-<a name="v2.0.1-rc.8"></a>
-## [v2.0.1-rc.8] - 2021-12-03
-### Feat
-- oauth interface auth ([#857](https://github.com/dragonflyoss/Dragonfly2/issues/857))
 
 
 <a name="v2.0.1-rc.7"></a>
@@ -655,10 +642,7 @@
 
 
 [Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1...HEAD
-[v2.0.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.10...v2.0.1
-[v2.0.1-rc.10]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.9...v2.0.1-rc.10
-[v2.0.1-rc.9]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.8...v2.0.1-rc.9
-[v2.0.1-rc.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.7...v2.0.1-rc.8
+[v2.0.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.7...v2.0.1
 [v2.0.1-rc.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.6...v2.0.1-rc.7
 [v2.0.1-rc.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.5...v2.0.1-rc.6
 [v2.0.1-rc.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1-rc.4...v2.0.1-rc.5
