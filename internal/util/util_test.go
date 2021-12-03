@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dfutils
+package util
 
 import (
 	"testing"
