@@ -84,7 +84,7 @@ download:
     # dial timeout
     dialTimeout: 2s
     # keep alive
-    keepAlive: true
+    keepAlive: 30s
     # same with http.Transport.MaxIdleConns
     maxIdleConns: 100
     # same with http.Transport.IdleConnTimeout
