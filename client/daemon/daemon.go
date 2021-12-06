@@ -515,7 +515,9 @@ func (cd *clientDaemon) Stop() {
 }
 
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
+	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
+		logger.Infof("scheduler addresses deep equal: %v", ips)
 		return
 	}
 
@@ -525,6 +527,18 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	// Update scheduler client addresses
 	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
+
+	logger.Infof("scheduler addresses have been updated: %v", ips)
+}
+
+// getSchedulerIPs get ips by schedulers.
+func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
+	ips := []string{}
+	for _, scheduler := range schedulers {
+		ips = append(ips, scheduler.Ip)
+	}
+
+	return ips
 }
 
 // schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
