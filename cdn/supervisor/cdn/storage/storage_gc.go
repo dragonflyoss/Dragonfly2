@@ -111,7 +111,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 			return nil
 		}
 
-		metaData, err := cleaner.storageMgr.ReadFileMetaData(taskID)
+		metaData, err := cleaner.storageMgr.ReadFileMetadata(taskID)
 		if err != nil || metaData == nil {
 			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			gcTaskIDs = append(gcTaskIDs, taskID)
@@ -138,7 +138,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	return gcTaskIDs, nil
 }
 
-func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData *FileMetaData) error {
+func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData *FileMetadata) error {
 	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
 
 	if metaData.Interval > 0 &&

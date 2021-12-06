@@ -17,7 +17,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -40,15 +39,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx := context.Background()
-
-	l, err := client.GetContentLength(ctx, "", nil, nil)
+	request, err := source.NewRequest("")
+	l, err := client.GetContentLength(request)
 	if err != nil {
 		fmt.Printf("get content length error: %s\n", err)
 		os.Exit(1)
 	}
 
-	rc, err := client.Download(ctx, "", nil, nil)
+	request, err = source.NewRequest("")
+	rc, err := client.Download(request)
 	if err != nil {
 		fmt.Printf("download error: %s\n", err)
 		os.Exit(1)

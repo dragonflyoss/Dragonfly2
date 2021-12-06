@@ -14,36 +14,29 @@
  * limitations under the License.
  */
 
-package hostutils
+package source
 
 import (
-	"os"
+	"fmt"
+
+	"github.com/golang/mock/gomock"
 )
 
-var Hostname string
-var FQDNHostname string
-
-func init() {
-	Hostname = hostname()
-	FQDNHostname = fqdnHostname()
+// RequestEq for gomock
+func RequestEq(url string) gomock.Matcher {
+	return requestMatcher{url}
 }
 
-// Get kernel hostname
-func hostname() string {
-	name, err := os.Hostname()
-	if err != nil {
-		panic(err)
-	}
-
-	return name
+type requestMatcher struct {
+	url string
 }
 
-// Get FQDN hostname
-func fqdnHostname() string {
-	//fqdn, err := fqdn.FqdnHostname()
-	//if err != nil {
-	//	panic(err)
-	//}
+// Matches returns whether x is a match.
+func (req requestMatcher) Matches(x interface{}) bool {
+	return x.(*Request).URL.String() == req.url
+}
 
-	return hostname()
+// String describes what the matcher matches.
+func (req requestMatcher) String() string {
+	return fmt.Sprintf("is equal to %v (%T)", req.url, req.url)
 }

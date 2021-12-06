@@ -29,7 +29,7 @@ import (
 type SeedTaskMgr interface {
 
 	// Register register seed task
-	Register(context.Context, *types.TaskRegisterRequest) (pieceCh <-chan *types.SeedPiece, err error)
+	Register(context.Context, *types.SeedTask) (pieceCh <-chan *types.SeedPiece, err error)
 
 	// Get get task Info with specified taskId.
 	Get(string) (*types.SeedTask, error)

@@ -16,27 +16,31 @@
 
 package source
 
-// RequestHeader request header
-type RequestHeader map[string]string
-
-func (h RequestHeader) Get(key string) string {
-	if h == nil {
-		return ""
-	}
-	return h[key]
-}
-
-// ResponseHeader response header
-type ResponseHeader map[string]string
-
-func (h ResponseHeader) Get(key string) string {
-	if h == nil {
-		return ""
-	}
-	return h[key]
-}
-
-const (
-	LastModified = "Last-Modified"
-	ETag         = "ETag"
+import (
+	"fmt"
+	"testing"
 )
+
+func TestHeader_Clone(t *testing.T) {
+	tests := []struct {
+		name string
+		h    Header
+		want Header
+	}{
+		{
+			name: "",
+			h: Header{
+				"aaa": []string{"ddd"}, "fff": []string{"cccc"},
+			},
+			want: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			xx := tt.h.Clone()
+			xx["aaa"] = []string{"bbbb"}
+			fmt.Println(xx["aaa"])
+			fmt.Println(tt.h["aaa"])
+		})
+	}
+}

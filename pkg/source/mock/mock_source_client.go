@@ -5,12 +5,10 @@
 package mock
 
 import (
-	context "context"
 	io "io"
 	reflect "reflect"
 
 	source "d7y.io/dragonfly/v2/pkg/source"
-	rangeutils "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -38,92 +36,92 @@ func (m *MockResourceClient) EXPECT() *MockResourceClientMockRecorder {
 }
 
 // Download mocks base method.
-func (m *MockResourceClient) Download(arg0 context.Context, arg1 string, arg2 source.RequestHeader, arg3 *rangeutils.Range) (io.ReadCloser, error) {
+func (m *MockResourceClient) Download(arg0 *source.Request) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Download", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "Download", arg0)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockResourceClientMockRecorder) Download(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) Download(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockResourceClient)(nil).Download), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockResourceClient)(nil).Download), arg0)
 }
 
-// DownloadWithResponseHeader mocks base method.
-func (m *MockResourceClient) DownloadWithResponseHeader(arg0 context.Context, arg1 string, arg2 source.RequestHeader, arg3 *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
+// DownloadWithExpireInfo mocks base method.
+func (m *MockResourceClient) DownloadWithExpireInfo(arg0 *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadWithResponseHeader", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "DownloadWithExpireInfo", arg0)
 	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(source.ResponseHeader)
+	ret1, _ := ret[1].(*source.ExpireInfo)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// DownloadWithResponseHeader indicates an expected call of DownloadWithResponseHeader.
-func (mr *MockResourceClientMockRecorder) DownloadWithResponseHeader(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+// DownloadWithExpireInfo indicates an expected call of DownloadWithExpireInfo.
+func (mr *MockResourceClientMockRecorder) DownloadWithExpireInfo(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadWithResponseHeader", reflect.TypeOf((*MockResourceClient)(nil).DownloadWithResponseHeader), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadWithExpireInfo", reflect.TypeOf((*MockResourceClient)(nil).DownloadWithExpireInfo), arg0)
 }
 
 // GetContentLength mocks base method.
-func (m *MockResourceClient) GetContentLength(arg0 context.Context, arg1 string, arg2 source.RequestHeader, arg3 *rangeutils.Range) (int64, error) {
+func (m *MockResourceClient) GetContentLength(arg0 *source.Request) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContentLength", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "GetContentLength", arg0)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetContentLength indicates an expected call of GetContentLength.
-func (mr *MockResourceClientMockRecorder) GetContentLength(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) GetContentLength(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContentLength", reflect.TypeOf((*MockResourceClient)(nil).GetContentLength), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContentLength", reflect.TypeOf((*MockResourceClient)(nil).GetContentLength), arg0)
 }
 
 // GetLastModifiedMillis mocks base method.
-func (m *MockResourceClient) GetLastModifiedMillis(arg0 context.Context, arg1 string, arg2 source.RequestHeader) (int64, error) {
+func (m *MockResourceClient) GetLastModifiedMillis(arg0 *source.Request) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastModifiedMillis", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "GetLastModifiedMillis", arg0)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLastModifiedMillis indicates an expected call of GetLastModifiedMillis.
-func (mr *MockResourceClientMockRecorder) GetLastModifiedMillis(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) GetLastModifiedMillis(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastModifiedMillis", reflect.TypeOf((*MockResourceClient)(nil).GetLastModifiedMillis), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastModifiedMillis", reflect.TypeOf((*MockResourceClient)(nil).GetLastModifiedMillis), arg0)
 }
 
 // IsExpired mocks base method.
-func (m *MockResourceClient) IsExpired(arg0 context.Context, arg1 string, arg2 source.RequestHeader, arg3 map[string]string) (bool, error) {
+func (m *MockResourceClient) IsExpired(arg0 *source.Request, arg1 *source.ExpireInfo) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsExpired", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "IsExpired", arg0, arg1)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsExpired indicates an expected call of IsExpired.
-func (mr *MockResourceClientMockRecorder) IsExpired(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) IsExpired(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsExpired", reflect.TypeOf((*MockResourceClient)(nil).IsExpired), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsExpired", reflect.TypeOf((*MockResourceClient)(nil).IsExpired), arg0, arg1)
 }
 
 // IsSupportRange mocks base method.
-func (m *MockResourceClient) IsSupportRange(arg0 context.Context, arg1 string, arg2 source.RequestHeader) (bool, error) {
+func (m *MockResourceClient) IsSupportRange(arg0 *source.Request) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsSupportRange", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "IsSupportRange", arg0)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // IsSupportRange indicates an expected call of IsSupportRange.
-func (mr *MockResourceClientMockRecorder) IsSupportRange(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockResourceClientMockRecorder) IsSupportRange(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSupportRange", reflect.TypeOf((*MockResourceClient)(nil).IsSupportRange), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSupportRange", reflect.TypeOf((*MockResourceClient)(nil).IsSupportRange), arg0)
 }

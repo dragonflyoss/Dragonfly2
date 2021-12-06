@@ -339,7 +339,9 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		taskID = "task-0"
 	)
 
-	source.Register("http", httpprotocol.NewHTTPSourceClient())
+	source.UnRegister("http")
+	assert.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+	defer source.UnRegister("http")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n, err := w.Write(testBytes)

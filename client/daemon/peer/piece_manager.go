@@ -164,11 +164,11 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	// 2. save to storage
 	var n int64
 	n, err = pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
-		PeerTaskMetaData: storage.PeerTaskMetaData{
+		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		},
-		PieceMetaData: storage.PieceMetaData{
+		PieceMetadata: storage.PieceMetadata{
 			Num:    request.piece.PieceNum,
 			Md5:    request.piece.PieceMd5,
 			Offset: request.piece.PieceOffset,
@@ -300,11 +300,11 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
-			PieceMetaData: storage.PieceMetaData{
+			PieceMetadata: storage.PieceMetadata{
 				Num: pieceNum,
 				// storage manager will get digest from DigestReader, keep empty here is ok
 				Md5:    "",
@@ -347,7 +347,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMeta.Header)
+	contentLengthRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	contentLength, err := source.GetContentLength(contentLengthRequest)
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
@@ -356,7 +360,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	} else {
 		err = pm.storageManager.UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
-				PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),
 					TaskID: pt.GetTaskID(),
 				},
@@ -368,7 +372,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, err := source.Download(ctx, request.Url, request.UrlMeta.Header)
+	downloadRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	body, err := source.Download(downloadRequest)
 	if err != nil {
 		return err
 	}
@@ -399,7 +407,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 				contentLength = int64(pieceNum)*int64(pieceSize) + n
 				if err := pm.storageManager.UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
-						PeerTaskMetaData: storage.PeerTaskMetaData{
+						PeerTaskMetadata: storage.PeerTaskMetadata{
 							PeerID: pt.GetPeerID(),
 							TaskID: pt.GetTaskID(),
 						},
@@ -438,7 +446,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 
 	if err := pm.storageManager.UpdateTask(ctx,
 		&storage.UpdateTaskRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},

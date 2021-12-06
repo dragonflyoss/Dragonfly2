@@ -106,12 +106,12 @@ func (s *diskStorageMgr) Initialize(taskMgr supervisor.SeedTaskMgr) {
 	s.cleaner, _ = storage.NewStorageCleaner(diskGcConfig, s.diskDriver, s, taskMgr)
 }
 
-func (s *diskStorageMgr) AppendPieceMetaData(taskID string, pieceRecord *storage.PieceMetaRecord) error {
-	return s.diskDriver.PutBytes(storage.GetAppendPieceMetaDataRaw(taskID), []byte(pieceRecord.String()+"\n"))
+func (s *diskStorageMgr) AppendPieceMetadata(taskID string, pieceRecord *storage.PieceMetaRecord) error {
+	return s.diskDriver.PutBytes(storage.GetAppendPieceMetadataRaw(taskID), []byte(pieceRecord.String()+"\n"))
 }
 
 func (s *diskStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.PieceMetaRecord, error) {
-	readBytes, err := s.diskDriver.GetBytes(storage.GetPieceMetaDataRaw(taskID))
+	readBytes, err := s.diskDriver.GetBytes(storage.GetPieceMetadataRaw(taskID))
 	if err != nil {
 		return nil, err
 	}
@@ -160,25 +160,25 @@ func (s *diskStorageMgr) WriteDownloadFile(taskID string, offset int64, len int6
 	return s.diskDriver.Put(raw, data)
 }
 
-func (s *diskStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData, error) {
-	bytes, err := s.diskDriver.GetBytes(storage.GetTaskMetaDataRaw(taskID))
+func (s *diskStorageMgr) ReadFileMetadata(taskID string) (*storage.FileMetadata, error) {
+	bytes, err := s.diskDriver.GetBytes(storage.GetTaskMetadataRaw(taskID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
-	metaData := &storage.FileMetaData{}
+	metaData := &storage.FileMetadata{}
 	if err := json.Unmarshal(bytes, metaData); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
 	return metaData, nil
 }
 
-func (s *diskStorageMgr) WriteFileMetaData(taskID string, metaData *storage.FileMetaData) error {
+func (s *diskStorageMgr) WriteFileMetadata(taskID string, metaData *storage.FileMetadata) error {
 	data, err := json.Marshal(metaData)
 	if err != nil {
 		return errors.Wrapf(err, "marshal metadata")
 	}
-	return s.diskDriver.PutBytes(storage.GetTaskMetaDataRaw(taskID), data)
+	return s.diskDriver.PutBytes(storage.GetTaskMetadataRaw(taskID), data)
 }
 
 func (s *diskStorageMgr) WritePieceMetaRecords(taskID string, records []*storage.PieceMetaRecord) error {
@@ -186,14 +186,14 @@ func (s *diskStorageMgr) WritePieceMetaRecords(taskID string, records []*storage
 	for i := range records {
 		recordStrs = append(recordStrs, records[i].String())
 	}
-	pieceRaw := storage.GetPieceMetaDataRaw(taskID)
+	pieceRaw := storage.GetPieceMetadataRaw(taskID)
 	pieceRaw.Trunc = true
 	pieceRaw.TruncSize = 0
 	return s.diskDriver.PutBytes(pieceRaw, []byte(strings.Join(recordStrs, "\n")))
 }
 
 func (s *diskStorageMgr) ReadPieceMetaBytes(taskID string) ([]byte, error) {
-	return s.diskDriver.GetBytes(storage.GetPieceMetaDataRaw(taskID))
+	return s.diskDriver.GetBytes(storage.GetPieceMetadataRaw(taskID))
 }
 
 func (s *diskStorageMgr) ReadDownloadFile(taskID string) (io.ReadCloser, error) {
@@ -214,10 +214,10 @@ func (s *diskStorageMgr) CreateUploadLink(taskID string) error {
 }
 
 func (s *diskStorageMgr) DeleteTask(taskID string) error {
-	if err := s.diskDriver.Remove(storage.GetTaskMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
+	if err := s.diskDriver.Remove(storage.GetTaskMetadataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
-	if err := s.diskDriver.Remove(storage.GetPieceMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
+	if err := s.diskDriver.Remove(storage.GetPieceMetadataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 		return err
 	}
 	if err := s.diskDriver.Remove(storage.GetDownloadRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {

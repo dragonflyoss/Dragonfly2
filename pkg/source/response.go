@@ -14,36 +14,14 @@
  * limitations under the License.
  */
 
-package hostutils
+package source
 
-import (
-	"os"
-)
+import "io"
 
-var Hostname string
-var FQDNHostname string
-
-func init() {
-	Hostname = hostname()
-	FQDNHostname = fqdnHostname()
-}
-
-// Get kernel hostname
-func hostname() string {
-	name, err := os.Hostname()
-	if err != nil {
-		panic(err)
-	}
-
-	return name
-}
-
-// Get FQDN hostname
-func fqdnHostname() string {
-	//fqdn, err := fqdn.FqdnHostname()
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	return hostname()
+type Response struct {
+	Status        string
+	StatusCode    int
+	Header        Header
+	Body          io.ReadCloser
+	ContentLength int64
 }
