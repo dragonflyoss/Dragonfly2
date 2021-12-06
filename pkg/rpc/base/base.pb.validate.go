@@ -170,7 +170,7 @@ func (m *UrlMeta) validate(all bool) error {
 		if !_UrlMeta_Digest_Pattern.MatchString(m.GetDigest()) {
 			err := UrlMetaValidationError{
 				field:  "Digest",
-				reason: "value does not match regex pattern \"^(md5)|(sha256):[A-Fa-f0-9]+\"",
+				reason: "value does not match regex pattern \"^(md5)|(sha256):[A-Fa-f0-9]+$\"",
 			}
 			if !all {
 				return err
@@ -187,7 +187,7 @@ func (m *UrlMeta) validate(all bool) error {
 		if !_UrlMeta_Range_Pattern.MatchString(m.GetRange()) {
 			err := UrlMetaValidationError{
 				field:  "Range",
-				reason: "value does not match regex pattern \"^[0-9]+\\\\-^[0-9]+\"",
+				reason: "value does not match regex pattern \"^[0-9]+-[0-9]+$\"",
 			}
 			if !all {
 				return err
@@ -277,9 +277,9 @@ var _ interface {
 	ErrorName() string
 } = UrlMetaValidationError{}
 
-var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+")
+var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+$")
 
-var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+\\-^[0-9]+")
+var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+-[0-9]+$")
 
 // Validate checks the field values on HostLoad with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
