@@ -52,7 +52,7 @@ const (
 
 const (
 	hdfsNotExistFileURL                 = "hdfs://127.0.0.1:9000/user/root/input/f3.txt"
-	hdfsNotExistFileContentLength int64 = -1
+	hdfsNotExistFileContentLength int64 = source.UnKnownSourceFileLen
 )
 
 var fakeHDFSClient = &hdfs.Client{}
@@ -148,18 +148,6 @@ func TestIsSupportRange_FileNotExist(t *testing.T) {
 	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
 }
 
-//
-func TestIsExpired_NoHeader(t *testing.T) {
-	// header not have Last-Modified
-	request, err := source.NewRequest(hdfsExistFileURL)
-	assert.Nil(t, err)
-	expired, err := sourceClient.IsExpired(request, &source.ExpireInfo{
-		LastModified: hdfsExistFileLastModified,
-		ETag:         "",
-	})
-	assert.Equal(t, true, expired)
-	assert.Nil(t, err)
-}
 func TestIsExpired_LastModifiedExpired(t *testing.T) {
 	lastModified, _ := time.Parse(source.LastModifiedLayout, hdfsExistFileLastModified)
 	var info os.FileInfo = fakeHDFSFileInfo{
