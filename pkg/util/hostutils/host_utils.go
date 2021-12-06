@@ -18,6 +18,8 @@ package hostutils
 
 import (
 	"os"
+
+	"github.com/Showmax/go-fqdn"
 )
 
 var Hostname string
@@ -40,10 +42,10 @@ func hostname() string {
 
 // Get FQDN hostname
 func fqdnHostname() string {
-	//fqdn, err := fqdn.FqdnHostname()
-	//if err != nil {
-	//	panic(err)
-	//}
+	fqdn, err := fqdn.FqdnHostname()
+	if err != nil {
+		panic(err)
+	}
 
-	return hostname()
+	return fqdn
 }
