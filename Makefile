@@ -242,6 +242,18 @@ kind-load-manager:
 	@./hack/kind-load.sh manager
 .PHONY: kind-load-manager
 
+# Run code lint
+lint: markdownlint
+	@echo "Begin to golangci-lint."
+	@golangci-lint run
+.PHONY: lint
+
+# Run markdown lint
+markdownlint:
+	@echo "Begin to markdownlint."
+	@./hack/markdownlint.sh
+.PHONY: markdownlint
+
 # Run go generate
 generate:
 	@go generate ${PKG_LIST}
@@ -295,6 +307,8 @@ help:
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make lint                           run code lint"
+	@echo "make markdownlint                   run markdown lint"
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"
