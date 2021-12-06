@@ -52,11 +52,14 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 	}
 	return &SeedTask{
 		TaskID:           taskID,
+		Header:           urlMeta.Header,
+		RequestDigest:    urlMeta.Digest,
 		URL:              rawURL,
 		TaskURL:          urlutils.FilterURLParam(rawURL, strings.Split(urlMeta.Filter, "&")),
 		SourceFileLength: source.UnKnownSourceFileLen,
 		CdnFileLength:    0,
 		PieceSize:        0,
+		Range:            urlMeta.Range,
 		CdnStatus:        TaskInfoCdnStatusWaiting,
 		logger:           logger.WithTaskID(taskID),
 	}

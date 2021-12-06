@@ -1,5 +1,4 @@
 //+build linux
-
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
