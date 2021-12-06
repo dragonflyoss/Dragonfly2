@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
-var DefaultHomeDir = filepath.Join(basic.HomeDir, ".dragonfly")
-var DefaultCacheDir = filepath.Join(DefaultHomeDir, "cache")
-var DefaultConfigDir = filepath.Join(DefaultHomeDir, "config")
-var DefaultLogDir = filepath.Join(DefaultHomeDir, "logs")
+var DefaultWorkHome = filepath.Join(basic.HomeDir, ".dragonfly")
+var DefaultCacheDir = filepath.Join(DefaultWorkHome, "cache")
+var DefaultConfigDir = filepath.Join(DefaultWorkHome, "config")
+var DefaultLogDir = filepath.Join(DefaultWorkHome, "logs")

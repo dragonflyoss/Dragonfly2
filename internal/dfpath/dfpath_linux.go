@@ -19,7 +19,7 @@
 
 package dfpath
 
-var DefaultHomeDir = "/usr/local/dragonfly"
+var DefaultWorkHome = "/usr/local/dragonfly"
 var DefaultCacheDir = "/var/cache/dragonfly"
 var DefaultConfigDir = "/etc/dragonfly"
 var DefaultLogDir = "/var/log/dragonfly"
