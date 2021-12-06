@@ -384,13 +384,13 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	// Search optimal scheduler cluster
-	log.Infof("list scheduler clusters %#v with hostInfo %#v", schedulerClusters, req.HostInfo)
+	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 	schedulerCluster, err := s.searcher.FindSchedulerCluster(ctx, schedulerClusters, req)
 	if err != nil {
 		log.Errorf("can not matching scheduler cluster %v", err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
-	log.Infof("find matching scheduler cluster %#v", schedulerCluster)
+	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
 
 	schedulers := []model.Scheduler{}
 	if err := s.db.WithContext(ctx).Find(&schedulers, &model.Scheduler{
@@ -536,4 +536,13 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 
 		logger.Debugf("%s type of %s send keepalive request in cluster %d", sourceType, hostName, clusterID)
 	}
+}
+
+func getSchedulerClusterNames(clusters []model.SchedulerCluster) []string {
+	names := []string{}
+	for _, cluster := range clusters {
+		names = append(names, cluster.Name)
+	}
+
+	return names
 }
