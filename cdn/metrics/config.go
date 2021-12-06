@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package types
+package metrics
 
-import "d7y.io/dragonfly/v2/pkg/util/rangeutils"
-
-type SeedPiece struct {
-	PieceStyle  PieceFormat       `json:"piece_style"` // 0: PlainUnspecified
-	PieceNum    uint32            `json:"piece_num"`
-	PieceMd5    string            `json:"piece_md_5"`
-	PieceRange  *rangeutils.Range `json:"piece_range"`
-	OriginRange *rangeutils.Range `json:"origin_range"`
-	PieceLen    uint32            `json:"piece_len"`
+type Config struct {
+	Net  string `yaml:"net" mapstructure:"net"`
+	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
-type PieceFormat int8
-
-const (
-	PlainUnspecified PieceFormat = 1
-)
+func (cfg Config) applyDefaults() Config {
+	if cfg.Net == "" {
+		cfg.Net = "tcp"
+	}
+	if cfg.Addr == "" {
+		cfg.Addr = ":8080"
+	}
+	return cfg
+}

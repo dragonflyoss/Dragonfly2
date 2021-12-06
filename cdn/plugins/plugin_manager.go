@@ -38,7 +38,7 @@ func NewRepository() Repository {
 
 // Manager manages all plugin builders and plugin instants.
 type Manager interface {
-	// GetBuilder adds a Builder object with the giving plugin type and name.
+	// AddBuilder adds a Builder object with the giving plugin type and name.
 	AddBuilder(pt PluginType, name string, b Builder) error
 
 	// GetBuilder returns a Builder object with the giving plugin type and name.

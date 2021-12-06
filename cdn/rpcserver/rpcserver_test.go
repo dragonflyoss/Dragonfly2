@@ -21,102 +21,95 @@ import (
 	"reflect"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/supervisor"
+	"github.com/stretchr/testify/suite"
+
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
 )
 
-func TestCdnSeedServer_GetPieceTasks(t *testing.T) {
-	type fields struct {
-		taskMgr supervisor.SeedTaskMgr
-		cfg     *config.Config
+func TestPluginsTestSuite(t *testing.T) {
+	suite.Run(t, new(RPCServerTestSuite))
+}
+
+type RPCServerTestSuite struct {
+	suite.Suite
+	*Server
+}
+
+func (s *RPCServerTestSuite) SetUpSuite() {
+	s.Server = &Server{
+		service: nil,
+		config:  Config{},
 	}
+}
+
+func (s *RPCServerTestSuite) TestCdnSeedServer_GetPieceTasks() {
 	type args struct {
 		ctx context.Context
 		req *base.PieceTaskRequest
 	}
 	tests := []struct {
 		name            string
-		fields          fields
 		args            args
 		wantPiecePacket *base.PiecePacket
 		wantErr         bool
 	}{
-		// TODO: Add test cases.
+		//{},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			css := &server{
-				taskMgr: tt.fields.taskMgr,
-				cfg:     tt.fields.cfg,
-			}
-			gotPiecePacket, err := css.GetPieceTasks(tt.args.ctx, tt.args.req)
+		s.Run(tt.name, func() {
+			gotPiecePacket, err := s.GetPieceTasks(tt.args.ctx, tt.args.req)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("GetPieceTasks() error = %v, wantErr %v", err, tt.wantErr)
+				//s.FailNowf("GetPieceTasks() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotPiecePacket, tt.wantPiecePacket) {
-				t.Errorf("GetPieceTasks() gotPiecePacket = %v, want %v", gotPiecePacket, tt.wantPiecePacket)
+				s.FailNowf("", "GetPieceTasks() gotPiecePacket = %v, want %v", gotPiecePacket, tt.wantPiecePacket)
 			}
 		})
 	}
 }
 
-func TestCdnSeedServer_ObtainSeeds(t *testing.T) {
-	type fields struct {
-		taskMgr supervisor.SeedTaskMgr
-		cfg     *config.Config
-	}
+func (s *RPCServerTestSuite) TestCdnSeedServer_ObtainSeeds() {
 	type args struct {
 		ctx context.Context
 		req *cdnsystem.SeedRequest
-		psc chan<- *cdnsystem.PieceSeed
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			css := &server{
-				taskMgr: tt.fields.taskMgr,
-				cfg:     tt.fields.cfg,
-			}
-			if err := css.ObtainSeeds(tt.args.ctx, tt.args.req, tt.args.psc); (err != nil) != tt.wantErr {
-				t.Errorf("ObtainSeeds() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestNewCdnSeedServer(t *testing.T) {
-	type args struct {
-		cfg     *config.Config
-		taskMgr supervisor.SeedTaskMgr
+		psc chan *cdnsystem.PieceSeed
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    *server
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		//{
+		//	name: "testObtain",
+		//	args: args{
+		//		ctx: context.Background(),
+		//		req: &cdnsystem.SeedRequest{
+		//			TaskId: uuid.Generate().String(),
+		//			Url:    "http://ant:sys@fileshare.glusterfs.svc.eu95.alipay.net/misc/d7y-test/blobs/sha256/16M",
+		//			UrlMeta: &base.UrlMeta{
+		//				Digest: "",
+		//				Tag:    "",
+		//				Range:  "",
+		//				Filter: "",
+		//				Header: nil,
+		//			},
+		//		},
+		//		psc: make(chan *cdnsystem.PieceSeed, 4),
+		//	},
+		//},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.cfg, tt.args.taskMgr)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewCdnSeedServer() error = %v, wantErr %v", err, tt.wantErr)
-				return
+		s.Run(tt.name, func() {
+			if err := s.ObtainSeeds(tt.args.ctx, tt.args.req, tt.args.psc); (err != nil) != tt.wantErr {
+				s.FailNowf("", "ObtainSeeds() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewCdnSeedServer() got = %v, want %v", got, tt.want)
-			}
+			//if !reflect.DeepEqual(got, tt.want) {
+			//	t.Errorf("NewCdnSeedServer() got = %v, want %v", got, tt.want)
+			//}
 		})
 	}
 }

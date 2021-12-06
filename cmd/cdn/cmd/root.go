@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	cfg *config.Config
+	cfg = config.New()
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -64,8 +64,6 @@ func Execute() {
 }
 
 func init() {
-	// Initialize default cdn system config
-	cfg = config.New()
 	// Initialize cobra
 	dependency.InitCobra(rootCmd, true, cfg)
 }
@@ -85,6 +83,6 @@ func runCdnSystem() error {
 		return err
 	}
 
-	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
+	dependency.SetupQuitSignalHandler(func() { logger.Fatalf("stop server failed: %v", svr.Stop()) })
 	return svr.Serve()
 }

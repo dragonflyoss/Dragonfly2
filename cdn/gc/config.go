@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package types
+package gc
 
-// TaskRegisterRequest
-type TaskRegisterRequest struct {
-	URL    string            `json:"rawURL,omitempty"`
-	TaskID string            `json:"taskId,omitempty"`
-	Digest string            `json:"digest,omitempty"`
-	Filter []string          `json:"filter,omitempty"`
-	Header map[string]string `json:"header,omitempty"`
+type Config struct {
+}
+
+func (config Config) applyDefaults() Config {
+	return config
 }

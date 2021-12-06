@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-// Package timeutils provides utilities supplementing the standard 'time' package.
+// Package structutils provides utilities supplementing the standard 'time' package.
 package structutils
 
 import (

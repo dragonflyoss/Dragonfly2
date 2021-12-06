@@ -21,18 +21,17 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"d7y.io/dragonfly/v2/cdn/constants"
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-// New creates an instant with default values.
+//New creates an instant with default values.
 func New() *Config {
 	return &Config{
 		BaseProperties: NewDefaultBaseProperties(),
@@ -44,8 +43,9 @@ func New() *Config {
 type Config struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
-
-	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	Metrics         metrics.Config
+	Storage         storage.Config
+	Plugins         map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
 func (c *Config) String() string {
@@ -55,64 +55,63 @@ func (c *Config) String() string {
 	return ""
 }
 
+func NewStorage(storageMode string) storage.Config {
+	if storageMode == "disk" {
+		return storage.Config{
+			GCInitialDelay: 0 * time.Second,
+			GCInterval:     15 * time.Second,
+			DriverConfigs: map[string]*storage.DriverConfig{
+				"disk": {
+					GCConfig: &storage.GCConfig{
+						YoungGCThreshold:  100 * unit.GB,
+						FullGCThreshold:   5 * unit.GB,
+						CleanRatio:        1,
+						IntervalThreshold: 2 * time.Hour,
+					}},
+			},
+		}
+	} else if storageMode == "hybrid" {
+		return storage.Config{
+			GCInitialDelay: 0 * time.Second,
+			GCInterval:     15 * time.Second,
+			DriverConfigs: map[string]*storage.DriverConfig{
+				"disk": {
+					GCConfig: &storage.GCConfig{
+						YoungGCThreshold:  100 * unit.GB,
+						FullGCThreshold:   5 * unit.GB,
+						CleanRatio:        1,
+						IntervalThreshold: 2 * time.Hour,
+					},
+				},
+				"memory": {
+					GCConfig: &storage.GCConfig{
+						YoungGCThreshold:  100 * unit.GB,
+						FullGCThreshold:   5 * unit.GB,
+						CleanRatio:        3,
+						IntervalThreshold: 2 * time.Hour,
+					},
+				},
+			},
+		}
+	}
+	return storage.Config{}
+}
+
 // NewDefaultPlugins creates plugin instants with default values.
 func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 	return map[plugins.PluginType][]*plugins.PluginProperties{
 		plugins.StorageDriverPlugin: {
 			{
-				Name:   local.DiskDriverName,
+				Name:   "disk",
 				Enable: true,
 				Config: &storedriver.Config{
 					BaseDir: DefaultDiskBaseDir,
 				},
 			}, {
-				Name:   local.MemoryDriverName,
+				Name:   "memory",
 				Enable: false,
 				Config: &storedriver.Config{
 					BaseDir: DefaultMemoryBaseDir,
-				},
-			},
-		}, plugins.StorageManagerPlugin: {
-			{
-				Name:   disk.StorageMode,
-				Enable: true,
-				Config: &storage.Config{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*storage.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &storage.GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							}},
-					},
-				},
-			}, {
-				Name:   hybrid.StorageMode,
-				Enable: false,
-				Config: &storage.Config{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*storage.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &storage.GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							},
-						},
-						local.MemoryDriverName: {
-							GCConfig: &storage.GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        3,
-								IntervalThreshold: 2 * time.Hour,
-							},
-						},
-					},
 				},
 			},
 		},
@@ -122,19 +121,19 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 // NewDefaultBaseProperties creates an base properties instant with default values.
 func NewDefaultBaseProperties() *BaseProperties {
 	return &BaseProperties{
-		ListenPort:              DefaultListenPort,
-		DownloadPort:            DefaultDownloadPort,
-		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
-		MaxBandwidth:            DefaultMaxBandwidth,
-		FailAccessInterval:      DefaultFailAccessInterval,
-		GCInitialDelay:          DefaultGCInitialDelay,
-		GCMetaInterval:          DefaultGCMetaInterval,
-		TaskExpireTime:          DefaultTaskExpireTime,
-		StorageMode:             DefaultStorageMode,
+		ListenPort:              constants.DefaultListenPort,
+		DownloadPort:            constants.DefaultDownloadPort,
+		SystemReservedBandwidth: constants.DefaultSystemReservedBandwidth,
+		MaxBandwidth:            constants.DefaultMaxBandwidth,
+		FailAccessInterval:      constants.DefaultFailAccessInterval,
+		GCInitialDelay:          constants.DefaultGCInitialDelay,
+		GCMetaInterval:          constants.DefaultGCMetaInterval,
+		TaskExpireTime:          constants.DefaultTaskExpireTime,
+		StorageMode:             constants.DefaultStorageMode,
 		AdvertiseIP:             iputils.IPv4,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
-				Interval: DefaultKeepAliveInterval,
+				Interval: constants.DefaultKeepAliveInterval,
 			},
 		},
 		Host: HostConfig{},
@@ -182,7 +181,7 @@ type BaseProperties struct {
 	// default: 3min
 	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
-	// StorageMode disk/hybrid/memory
+	// StorageMode disk/hybrid
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
 
 	// Manager configuration
@@ -190,9 +189,6 @@ type BaseProperties struct {
 
 	// Host configuration
 	Host HostConfig `yaml:"host" mapstructure:"host"`
-
-	// Metrics configuration
-	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ManagerConfig struct {
@@ -217,8 +213,4 @@ type HostConfig struct {
 
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
-}
-
-type RestConfig struct {
-	Addr string `yaml:"addr" mapstructure:"addr"`
 }

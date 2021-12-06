@@ -9,9 +9,8 @@ import (
 	reflect "reflect"
 
 	storedriver "d7y.io/dragonfly/v2/cdn/storedriver"
-	supervisor "d7y.io/dragonfly/v2/cdn/supervisor"
 	storage "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	types "d7y.io/dragonfly/v2/cdn/types"
+	task "d7y.io/dragonfly/v2/cdn/supervisor/task"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -66,18 +65,6 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
-// Initialize mocks base method.
-func (m *MockManager) Initialize(arg0 supervisor.SeedTaskMgr) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Initialize", arg0)
-}
-
-// Initialize indicates an expected call of Initialize.
-func (mr *MockManagerMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockManager)(nil).Initialize), arg0)
-}
-
 // ReadDownloadFile mocks base method.
 func (m *MockManager) ReadDownloadFile(arg0 string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
@@ -124,7 +111,7 @@ func (mr *MockManagerMockRecorder) ReadPieceMetaRecords(arg0 interface{}) *gomoc
 }
 
 // ResetRepo mocks base method.
-func (m *MockManager) ResetRepo(arg0 *types.SeedTask) error {
+func (m *MockManager) ResetRepo(arg0 *task.SeedTask) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResetRepo", arg0)
 	ret0, _ := ret[0].(error)
