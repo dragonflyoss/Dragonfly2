@@ -23,9 +23,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 
-	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -56,18 +54,12 @@ func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
-	metrics.DownloadCount.Inc()
-	metrics.ConcurrentDownloadGauge.Inc()
-	defer metrics.ConcurrentDownloadGauge.Dec()
+	//metrics.DownloadCount.Inc()
+	//metrics.ConcurrentDownloadGauge.Inc()
+	//defer metrics.ConcurrentDownloadGauge.Dec()
 
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
-
-	peerAddr := "unknown"
-	if pe, ok := peer.FromContext(ctx); ok {
-		peerAddr = pe.Addr.String()
-	}
-	logger.Infof("trigger obtain seed for taskID: %s, url: %s, from: %s", sr.TaskId, sr.Url, peerAddr)
 
 	errChan := make(chan error, 10)
 	psc := make(chan *cdnsystem.PieceSeed, 4)
@@ -88,9 +80,9 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 		err = nil
 	}
 
-	if err != nil {
-		metrics.DownloadFailureCount.Inc()
-	}
+	//if err != nil {
+	//	metrics.DownloadFailureCount.Inc()
+	//}
 	return
 }
 
@@ -142,7 +134,7 @@ func StatSeedStart(taskID, url string) {
 }
 
 func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
-	metrics.DownloadTraffic.Add(float64(traffic))
+	//metrics.DownloadTraffic.Add(float64(traffic))
 
 	logger.StatSeedLogger.Info("Finish Seed",
 		zap.Bool("Success", success),
