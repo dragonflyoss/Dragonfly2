@@ -22,6 +22,36 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
+type Dfpath interface {
+
+}
+
+type dfpath struct {
+	dataDir        string
+	pluginDir      string
+	cacheDir       string
+	configDir      string
+	homeDir        string
+	logDir         string
+	daemonSockPath string
+	daemonLockPath string
+	dfgetLockPath  string
+}
+
+func New(homedir string) Dfpath {
+	return &dfpath{
+		dataDir: 
+		pluginDir      
+		cacheDir       
+		configDir      
+		homeDir        
+		logDir         
+		daemonSockPath 
+		daemonLockPath 
+		dfgetLockPath  
+	}
+}
+
 var (
 	DefaultDataDir = filepath.Join(WorkHome, "data")
 	DaemonSockPath = filepath.Join(WorkHome, "daemon.sock")

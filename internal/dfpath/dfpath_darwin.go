@@ -1,3 +1,6 @@
+//go:build darwin
+// +build darwin
+
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -16,4 +19,13 @@
 
 package dfpath
 
-var DefaultCacheDir = "/var/cache/dragonfly"
+import (
+	"path/filepath"
+
+	"d7y.io/dragonfly/v2/pkg/basic"
+)
+
+var DefaultHomeDir = filepath.Join(basic.HomeDir, ".dragonfly")
+var DefaultCacheDir = filepath.Join(DefaultHomeDir, "cache")
+var DefaultConfigDir = filepath.Join(DefaultHomeDir, "config")
+var DefaultLogDir = filepath.Join(DefaultHomeDir, "logs")

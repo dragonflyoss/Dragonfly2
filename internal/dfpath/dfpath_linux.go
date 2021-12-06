@@ -1,3 +1,6 @@
+//go:build linux
+// +build linux
+
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -16,10 +19,7 @@
 
 package dfpath
 
-import (
-	"path/filepath"
-
-	"d7y.io/dragonfly/v2/pkg/basic"
-)
-
-var WorkHome = filepath.Join(basic.HomeDir, ".dragonfly")
+var DefaultHomeDir = "/usr/local/dragonfly"
+var DefaultCacheDir = "/var/cache/dragonfly"
+var DefaultConfigDir = "/etc/dragonfly"
+var DefaultLogDir = "/var/log/dragonfly"
