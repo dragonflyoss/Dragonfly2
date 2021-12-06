@@ -166,15 +166,15 @@ func (s *diskStorageMgr) ReadFileMetadata(taskID string) (*storage.FileMetadata,
 		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
-	metaData := &storage.FileMetadata{}
-	if err := json.Unmarshal(bytes, metaData); err != nil {
+	metadata := &storage.FileMetadata{}
+	if err := json.Unmarshal(bytes, metadata); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
-	return metaData, nil
+	return metadata, nil
 }
 
-func (s *diskStorageMgr) WriteFileMetadata(taskID string, metaData *storage.FileMetadata) error {
-	data, err := json.Marshal(metaData)
+func (s *diskStorageMgr) WriteFileMetadata(taskID string, metadata *storage.FileMetadata) error {
+	data, err := json.Marshal(metadata)
 	if err != nil {
 		return errors.Wrapf(err, "marshal metadata")
 	}

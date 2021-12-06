@@ -50,7 +50,7 @@ func newCacheDataManager(storeMgr storage.Manager) *cacheDataManager {
 func (mm *cacheDataManager) writeFileMetadataByTask(task *types.SeedTask) (*storage.FileMetadata, error) {
 	mm.cacheLocker.Lock(task.TaskID, false)
 	defer mm.cacheLocker.UnLock(task.TaskID, false)
-	metaData := &storage.FileMetadata{
+	metadata := &storage.FileMetadata{
 		TaskID:          task.TaskID,
 		TaskURL:         task.TaskURL,
 		PieceSize:       task.PieceSize,
@@ -60,11 +60,11 @@ func (mm *cacheDataManager) writeFileMetadataByTask(task *types.SeedTask) (*stor
 		TotalPieceCount: task.PieceTotal,
 	}
 
-	if err := mm.storage.WriteFileMetadata(task.TaskID, metaData); err != nil {
+	if err := mm.storage.WriteFileMetadata(task.TaskID, metadata); err != nil {
 		return nil, errors.Wrapf(err, "write task %s metadata file", task.TaskID)
 	}
 
-	return metaData, nil
+	return metadata, nil
 }
 
 // updateAccessTime update access and interval
@@ -103,7 +103,7 @@ func (mm *cacheDataManager) updateExpireInfo(taskID string, expireInfo map[strin
 	return mm.storage.WriteFileMetadata(taskID, originMetadata)
 }
 
-func (mm *cacheDataManager) updateStatusAndResult(taskID string, metaData *storage.FileMetadata) error {
+func (mm *cacheDataManager) updateStatusAndResult(taskID string, metadata *storage.FileMetadata) error {
 	mm.cacheLocker.Lock(taskID, false)
 	defer mm.cacheLocker.UnLock(taskID, false)
 
@@ -112,19 +112,19 @@ func (mm *cacheDataManager) updateStatusAndResult(taskID string, metaData *stora
 		return err
 	}
 
-	originMetadata.Finish = metaData.Finish
-	originMetadata.Success = metaData.Success
+	originMetadata.Finish = metadata.Finish
+	originMetadata.Success = metadata.Success
 	if originMetadata.Success {
-		originMetadata.CdnFileLength = metaData.CdnFileLength
-		originMetadata.SourceFileLen = metaData.SourceFileLen
-		if metaData.TotalPieceCount > 0 {
-			originMetadata.TotalPieceCount = metaData.TotalPieceCount
+		originMetadata.CdnFileLength = metadata.CdnFileLength
+		originMetadata.SourceFileLen = metadata.SourceFileLen
+		if metadata.TotalPieceCount > 0 {
+			originMetadata.TotalPieceCount = metadata.TotalPieceCount
 		}
-		if !stringutils.IsBlank(metaData.SourceRealDigest) {
-			originMetadata.SourceRealDigest = metaData.SourceRealDigest
+		if !stringutils.IsBlank(metadata.SourceRealDigest) {
+			originMetadata.SourceRealDigest = metadata.SourceRealDigest
 		}
-		if !stringutils.IsBlank(metaData.PieceMd5Sign) {
-			originMetadata.PieceMd5Sign = metaData.PieceMd5Sign
+		if !stringutils.IsBlank(metadata.PieceMd5Sign) {
+			originMetadata.PieceMd5Sign = metadata.PieceMd5Sign
 		}
 	}
 	return mm.storage.WriteFileMetadata(taskID, originMetadata)

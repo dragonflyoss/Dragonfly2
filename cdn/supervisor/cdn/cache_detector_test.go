@@ -355,7 +355,7 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 	type args struct {
 		taskID   string
-		metaData *storage.FileMetadata
+		metadata *storage.FileMetadata
 	}
 	tests := []struct {
 		name    string
@@ -367,7 +367,7 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 			name: "partial And SupportCacheTask",
 			args: args{
 				taskID:   partialSupportRangeCache.taskID,
-				metaData: partialSupportRangeCache.fileMeta,
+				metadata: partialSupportRangeCache.fileMeta,
 			},
 			want: &cacheResult{
 				breakPoint:       4000,
@@ -379,7 +379,7 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			got, err := suite.detector.detectByReadFile(tt.args.taskID, tt.args.metaData, md5.New())
+			got, err := suite.detector.detectByReadFile(tt.args.taskID, tt.args.metadata, md5.New())
 			suite.Equal(tt.want, got)
 			suite.Equal(tt.wantErr, err != nil)
 		})

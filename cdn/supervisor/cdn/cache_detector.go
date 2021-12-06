@@ -75,10 +75,10 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, 
 	result, err = cd.doDetect(ctx, task, fileDigest)
 	if err != nil {
 		task.Log().Infof("failed to detect cache, reset cache: %v", err)
-		metaData, err := cd.resetCache(task)
+		metadata, err := cd.resetCache(task)
 		if err == nil {
 			result = &cacheResult{
-				fileMetadata: metaData,
+				fileMetadata: metadata,
 			}
 			return result, nil
 		}
@@ -90,7 +90,7 @@ func (cd *cacheDetector) detectCache(ctx context.Context, task *types.SeedTask, 
 	return result, nil
 }
 
-// doDetect the actual detect action which detects file metaData and pieces metaData of specific task
+// doDetect the actual detect action which detects file metadata and pieces metadata of specific task
 func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fileDigest hash.Hash) (result *cacheResult, err error) {
 	span := trace.SpanFromContext(ctx)
 	fileMetadata, err := cd.cacheDataManager.readFileMetadata(task.TaskID)
@@ -240,27 +240,27 @@ func (cd *cacheDetector) resetCache(task *types.SeedTask) (*storage.FileMetadata
    helper functions
 */
 // checkSameFile check whether meta file is modified
-func checkSameFile(task *types.SeedTask, metaData *storage.FileMetadata) error {
-	if task == nil || metaData == nil {
-		return errors.Errorf("task or metaData is nil, task: %v, metaData: %v", task, metaData)
+func checkSameFile(task *types.SeedTask, metadata *storage.FileMetadata) error {
+	if task == nil || metadata == nil {
+		return errors.Errorf("task or metadata is nil, task: %v, metadata: %v", task, metadata)
 	}
 
-	if metaData.PieceSize != task.PieceSize {
-		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metaData.PieceSize,
+	if metadata.PieceSize != task.PieceSize {
+		return errors.Errorf("meta piece size(%d) is not equals with task piece size(%d)", metadata.PieceSize,
 			task.PieceSize)
 	}
 
-	if metaData.TaskID != task.TaskID {
-		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metaData.TaskID, task.TaskID)
+	if metadata.TaskID != task.TaskID {
+		return errors.Errorf("meta task TaskId(%s) is not equals with task TaskId(%s)", metadata.TaskID, task.TaskID)
 	}
 
-	if metaData.TaskURL != task.TaskURL {
-		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metaData.TaskURL, task.URL)
+	if metadata.TaskURL != task.TaskURL {
+		return errors.Errorf("meta task taskUrl(%s) is not equals with task taskUrl(%s)", metadata.TaskURL, task.URL)
 	}
-	if !stringutils.IsBlank(metaData.SourceRealDigest) && !stringutils.IsBlank(task.RequestDigest) &&
-		metaData.SourceRealDigest != task.RequestDigest {
+	if !stringutils.IsBlank(metadata.SourceRealDigest) && !stringutils.IsBlank(task.RequestDigest) &&
+		metadata.SourceRealDigest != task.RequestDigest {
 		return errors.Errorf("meta task source digest(%s) is not equals with task request digest(%s)",
-			metaData.SourceRealDigest, task.RequestDigest)
+			metadata.SourceRealDigest, task.RequestDigest)
 	}
 	return nil
 }

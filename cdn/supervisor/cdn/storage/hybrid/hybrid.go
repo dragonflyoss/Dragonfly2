@@ -241,19 +241,19 @@ func (h *hybridStorageMgr) ReadFileMetadata(taskID string) (*storage.FileMetadat
 		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
-	metaData := &storage.FileMetadata{}
-	if err := json.Unmarshal(readBytes, metaData); err != nil {
+	metadata := &storage.FileMetadata{}
+	if err := json.Unmarshal(readBytes, metadata); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
-	return metaData, nil
+	return metadata, nil
 }
 
 func (h *hybridStorageMgr) AppendPieceMetadata(taskID string, record *storage.PieceMetaRecord) error {
 	return h.diskDriver.PutBytes(storage.GetAppendPieceMetadataRaw(taskID), []byte(record.String()+"\n"))
 }
 
-func (h *hybridStorageMgr) WriteFileMetadata(taskID string, metaData *storage.FileMetadata) error {
-	data, err := json.Marshal(metaData)
+func (h *hybridStorageMgr) WriteFileMetadata(taskID string, metadata *storage.FileMetadata) error {
+	data, err := json.Marshal(metadata)
 	if err != nil {
 		return errors.Wrapf(err, "marshal metadata")
 	}
