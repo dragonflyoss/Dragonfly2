@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"github.com/agiledragon/gomonkey"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/pkg/errors"
@@ -34,6 +33,7 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 var sourceClient source.ResourceClient
