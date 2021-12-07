@@ -49,7 +49,8 @@ func TestNewRequest(t *testing.T) {
 		Header: testHeader}, got))
 
 	// test NewRequestWithContext
-	testContext, _ := context.WithTimeout(context.Background(), 3*time.Second)
+	testContext, cancelFunc := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancelFunc()
 	got, err = NewRequestWithContext(testContext, "http://www.dragonfly.io", testHeaderMap)
 	assert.Nil(err)
 	contextRequest := &Request{
