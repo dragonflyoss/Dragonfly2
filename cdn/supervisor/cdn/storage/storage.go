@@ -31,19 +31,18 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/supervisor"
-	"d7y.io/dragonfly/v2/cdn/types"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 type Manager interface {
-	Initialize(taskMgr supervisor.SeedTaskMgr)
+	Initialize(taskManager task.Manager)
 
 	// ResetRepo reset the storage of task
-	ResetRepo(*types.SeedTask) error
+	ResetRepo(*task.SeedTask) error
 
-	// StatDownloadFile stat download file info
+	// StatDownloadFile stat download file info, if task file is not exist on storage, return errTaskNotPersisted
 	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
 
 	// WriteDownloadFile write data to download file
@@ -83,23 +82,32 @@ type FileMetadata struct {
 	AccessTime       int64             `json:"accessTime"`
 	Interval         int64             `json:"interval"`
 	CdnFileLength    int64             `json:"cdnFileLength"`
+	Digest           string            `json:"digest"`
 	SourceRealDigest string            `json:"sourceRealDigest"`
-	PieceMd5Sign     string            `json:"pieceMd5Sign"`
+	Tag              string            `json:"tag"`
 	ExpireInfo       map[string]string `json:"expireInfo"`
 	Finish           bool              `json:"finish"`
 	Success          bool              `json:"success"`
 	TotalPieceCount  int32             `json:"totalPieceCount"`
-	//PieceMetadataSign string            `json:"pieceMetadataSign"`
+	PieceMd5Sign     string            `json:"pieceMd5Sign"`
+	Range            string            `json:"range"`
+	Filter           string            `json:"filter"`
 }
 
 // PieceMetaRecord meta data of piece
 type PieceMetaRecord struct {
-	PieceNum    uint32            `json:"pieceNum"`    // piece Num start from 0
-	PieceLen    uint32            `json:"pieceLen"`    // 存储到存储介质的真实长度
-	Md5         string            `json:"md5"`         // for transported piece content，不是origin source 的 md5，是真是存储到存储介质后的md5（为了读取数据文件时方便校验完整性）
-	Range       *rangeutils.Range `json:"range"`       // 下载存储到磁盘的range，不是origin source的range.提供给客户端发送下载请求,for transported piece content
-	OriginRange *rangeutils.Range `json:"originRange"` //  piece's real offset in the file
-	PieceStyle  types.PieceFormat `json:"pieceStyle"`  // 1: PlainUnspecified
+	// piece Num start from 0
+	PieceNum uint32 `json:"pieceNum"`
+	// 存储到存储介质的真实长度
+	PieceLen uint32 `json:"pieceLen"`
+	// for transported piece content，不是origin source 的 md5，是真是存储到存储介质后的md5（为了读取数据文件时方便校验完整性）
+	Md5 string `json:"md5"`
+	// 下载存储到磁盘的range，不是origin source的range.提供给客户端发送下载请求,for transported piece content
+	Range *rangeutils.Range `json:"range"`
+	//  piece's real offset in the file
+	OriginRange *rangeutils.Range `json:"originRange"`
+	// 0: PlainUnspecified
+	PieceStyle int32 `json:"pieceStyle"`
 }
 
 const fieldSeparator = ":"
@@ -116,11 +124,11 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 		}
 	}()
 	fields := strings.Split(value, fieldSeparator)
-	pieceNum, err := strconv.ParseInt(fields[0], 10, 32)
+	pieceNum, err := strconv.ParseUint(fields[0], 10, 32)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceNum: %s", fields[0])
 	}
-	pieceLen, err := strconv.ParseInt(fields[1], 10, 32)
+	pieceLen, err := strconv.ParseUint(fields[1], 10, 32)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceLen: %s", fields[1])
 	}
@@ -143,7 +151,7 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 		Md5:         md5,
 		Range:       pieceRange,
 		OriginRange: originRange,
-		PieceStyle:  types.PieceFormat(pieceStyle),
+		PieceStyle:  int32(pieceStyle),
 	}, nil
 }
 
@@ -162,7 +170,7 @@ func (m *managerPlugin) Name() string {
 	return m.name
 }
 
-func (m *managerPlugin) ResetRepo(task *types.SeedTask) error {
+func (m *managerPlugin) ResetRepo(task *task.SeedTask) error {
 	return m.instance.ResetRepo(task)
 }
 

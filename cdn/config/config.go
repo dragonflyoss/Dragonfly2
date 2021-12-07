@@ -21,6 +21,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
@@ -122,19 +123,19 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 // NewDefaultBaseProperties creates an base properties instant with default values.
 func NewDefaultBaseProperties() *BaseProperties {
 	return &BaseProperties{
-		ListenPort:              DefaultListenPort,
-		DownloadPort:            DefaultDownloadPort,
-		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
-		MaxBandwidth:            DefaultMaxBandwidth,
-		FailAccessInterval:      DefaultFailAccessInterval,
-		GCInitialDelay:          DefaultGCInitialDelay,
-		GCMetaInterval:          DefaultGCMetaInterval,
-		TaskExpireTime:          DefaultTaskExpireTime,
-		StorageMode:             DefaultStorageMode,
+		ListenPort:              constants.DefaultListenPort,
+		DownloadPort:            constants.DefaultDownloadPort,
+		SystemReservedBandwidth: constants.DefaultSystemReservedBandwidth,
+		MaxBandwidth:            constants.DefaultMaxBandwidth,
+		FailAccessInterval:      constants.DefaultFailAccessInterval,
+		GCInitialDelay:          constants.DefaultGCInitialDelay,
+		GCMetaInterval:          constants.DefaultGCMetaInterval,
+		TaskExpireTime:          constants.DefaultTaskExpireTime,
+		StorageMode:             constants.DefaultStorageMode,
 		AdvertiseIP:             iputils.IPv4,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
-				Interval: DefaultKeepAliveInterval,
+				Interval: constants.DefaultKeepAliveInterval,
 			},
 		},
 		Host: HostConfig{},

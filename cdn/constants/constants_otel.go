@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package config
+package constants
 
 import "go.opentelemetry.io/otel/attribute"
 

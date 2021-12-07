@@ -109,7 +109,7 @@ func (mr *MockDriverMockRecorder) GetFreeSpace() *gomock.Call {
 }
 
 // GetHomePath mocks base method.
-func (m *MockDriver) GetHomePath() string {
+func (m *MockDriver) GetBaseDir() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHomePath")
 	ret0, _ := ret[0].(string)
@@ -119,7 +119,7 @@ func (m *MockDriver) GetHomePath() string {
 // GetHomePath indicates an expected call of GetHomePath.
 func (mr *MockDriverMockRecorder) GetHomePath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHomePath", reflect.TypeOf((*MockDriver)(nil).GetHomePath))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHomePath", reflect.TypeOf((*MockDriver)(nil).GetBaseDir()))
 }
 
 // GetPath mocks base method.

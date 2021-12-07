@@ -42,7 +42,7 @@ type TaskManager interface {
 	Get(string) (*Task, bool)
 	// Delete task
 	Delete(string)
-	// Get or add task
+	// GetOrAdd or add task
 	GetOrAdd(*Task) (*Task, bool)
 }
 

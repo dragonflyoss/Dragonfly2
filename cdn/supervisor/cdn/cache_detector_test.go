@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	storageMock "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/mock"
-	"d7y.io/dragonfly/v2/cdn/types"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
@@ -57,8 +57,8 @@ func (suite *CacheDetectorTestSuite) SetupSuite() {
 	source.UnRegister("http")
 	suite.Require().Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	storageManager := storageMock.NewMockManager(ctrl)
-	cacheDataManager := newCacheDataManager(storageManager)
-	suite.detector = newCacheDetector(cacheDataManager)
+	cacheDataManager := newMetadataManager(storageManager)
+	suite.detector = newCacheDetector(cacheDataManager, storageManager)
 	storageManager.EXPECT().ReadFileMetadata(fullExpiredCache.taskID).Return(fullExpiredCache.fileMeta, nil).AnyTimes()
 	storageManager.EXPECT().ReadFileMetadata(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.fileMeta, nil).AnyTimes()
 	storageManager.EXPECT().ReadFileMetadata(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.fileMeta, nil).AnyTimes()
@@ -259,7 +259,7 @@ func newPartialFileMeta(taskID string, URL string) *storage.FileMetadata {
 
 func (suite *CacheDetectorTestSuite) TestDetectCache() {
 	type args struct {
-		task *types.SeedTask
+		task *task.SeedTask
 	}
 	tests := []struct {
 		name    string
@@ -270,9 +270,9 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 		{
 			name: "no cache",
 			args: args{
-				task: &types.SeedTask{
-					TaskID:  noCacheTask,
-					URL:     noExpiredAndSupportURL,
+				task: &task.SeedTask{
+					ID:      noCacheTask,
+					RawURL:  noExpiredAndSupportURL,
 					TaskURL: noExpiredAndSupportURL,
 				},
 			},
@@ -282,27 +282,27 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 		{
 			name: "partial cache and support range",
 			args: args{
-				task: &types.SeedTask{
-					TaskID:           partialAndSupportCacheTask,
-					URL:              noExpiredAndSupportURL,
+				task: &task.SeedTask{
+					ID:               partialAndSupportCacheTask,
+					RawURL:           noExpiredAndSupportURL,
 					TaskURL:          noExpiredAndSupportURL,
 					SourceFileLength: 9789,
 					PieceSize:        2000,
 				},
 			},
 			want: &cacheResult{
-				breakPoint:       4000,
-				pieceMetaRecords: partialPieceMetaRecords,
-				fileMetadata:     newPartialFileMeta(partialAndSupportCacheTask, noExpiredAndSupportURL),
+				BreakPoint:       4000,
+				PieceMetaRecords: partialPieceMetaRecords,
+				FileMetadata:     newPartialFileMeta(partialAndSupportCacheTask, noExpiredAndSupportURL),
 			},
 			wantErr: false,
 		},
 		{
 			name: "partial cache and not support range",
 			args: args{
-				task: &types.SeedTask{
-					TaskID:           partialAndNotSupportCacheTask,
-					URL:              noExpiredAndNotSupportURL,
+				task: &task.SeedTask{
+					ID:               partialAndNotSupportCacheTask,
+					RawURL:           noExpiredAndNotSupportURL,
 					TaskURL:          noExpiredAndNotSupportURL,
 					SourceFileLength: 9789,
 					PieceSize:        2000,
@@ -314,27 +314,27 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 		{
 			name: "full cache and not expire",
 			args: args{
-				task: &types.SeedTask{
-					TaskID:           fullCacheNotExpiredTask,
-					URL:              noExpiredAndNotSupportURL,
+				task: &task.SeedTask{
+					ID:               fullCacheNotExpiredTask,
+					RawURL:           noExpiredAndNotSupportURL,
 					TaskURL:          noExpiredAndNotSupportURL,
 					SourceFileLength: 9789,
 					PieceSize:        2000,
 				},
 			},
 			want: &cacheResult{
-				breakPoint:       -1,
-				pieceMetaRecords: fullPieceMetaRecords,
-				fileMetadata:     newCompletedFileMeta(fullCacheNotExpiredTask, noExpiredAndNotSupportURL, true),
+				BreakPoint:       -1,
+				PieceMetaRecords: fullPieceMetaRecords,
+				FileMetadata:     newCompletedFileMeta(fullCacheNotExpiredTask, noExpiredAndNotSupportURL, true),
 			},
 			wantErr: false,
 		},
 		{
 			name: "full cache and expired",
 			args: args{
-				task: &types.SeedTask{
-					TaskID:  fullCacheExpiredTask,
-					URL:     expiredAndSupportURL,
+				task: &task.SeedTask{
+					ID:      fullCacheExpiredTask,
+					RawURL:  expiredAndSupportURL,
 					TaskURL: expiredAndNotSupportURL,
 				},
 			},
@@ -370,9 +370,9 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 				metadata: partialSupportRangeCache.fileMeta,
 			},
 			want: &cacheResult{
-				breakPoint:       4000,
-				pieceMetaRecords: partialSupportRangeCache.pieces,
-				fileMetadata:     partialSupportRangeCache.fileMeta,
+				BreakPoint:       4000,
+				PieceMetaRecords: partialSupportRangeCache.pieces,
+				FileMetadata:     partialSupportRangeCache.fileMeta,
 			},
 			wantErr: false,
 		},
@@ -404,9 +404,9 @@ func (suite *CacheDetectorTestSuite) TestParseByReadMetaFile() {
 				fileMetadata: fullNoExpiredCache.fileMeta,
 			},
 			want: &cacheResult{
-				breakPoint:       -1,
-				pieceMetaRecords: fullNoExpiredCache.pieces,
-				fileMetadata:     fullNoExpiredCache.fileMeta,
+				BreakPoint:       -1,
+				PieceMetaRecords: fullNoExpiredCache.pieces,
+				FileMetadata:     fullNoExpiredCache.fileMeta,
 			},
 			wantErr: false,
 		},

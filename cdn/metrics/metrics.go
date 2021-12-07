@@ -17,16 +17,21 @@
 package metrics
 
 import (
+	"context"
+	"net"
 	"net/http"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"google.golang.org/grpc"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	rpc "d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/internal/constants"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 // Variables declared for metrics.
@@ -60,14 +65,49 @@ var (
 	})
 )
 
-func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {
-	grpc_prometheus.Register(grpcServer)
+type Server struct {
+	config     *config.RestConfig
+	httpServer *http.Server
+}
 
+func New(config *config.RestConfig, rpcServer *rpc.Server) (*Server, error) {
+	// scheduler config values
+	s, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal metrics server config")
+	}
+	logger.Infof("metrics server config: \n%s", s)
+	grpc_prometheus.Register(rpcServer.Server)
+
+	return &Server{
+		config:     config,
+		httpServer: &http.Server{},
+	}, nil
+}
+
+// Handler returns an http handler for the blob server.
+func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
+	return mux
+}
 
-	return &http.Server{
-		Addr:    cfg.Addr,
-		Handler: mux,
+// ListenAndServe is a blocking call which runs s.
+func (s *Server) ListenAndServe(h http.Handler) error {
+	l, err := net.Listen("tcp", s.config.Addr)
+	if err != nil {
+		return err
 	}
+	s.httpServer.Handler = h
+	logger.Infof("====starting metrics server at %s====", s.config.Addr)
+	err = s.httpServer.Serve(l)
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	defer logger.Infof("====stopped metrics server====")
+	return s.httpServer.Shutdown(ctx)
 }
