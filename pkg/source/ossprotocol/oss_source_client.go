@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
-const ossClient = "oss"
+const OSSClient = "oss"
 
 const (
 	endpoint        = "endpoint"
@@ -43,7 +43,7 @@ const (
 var _ source.ResourceClient = (*ossSourceClient)(nil)
 
 func init() {
-	if err := source.Register(ossClient, NewOSSSourceClient(), adaptor); err != nil {
+	if err := source.Register(OSSClient, NewOSSSourceClient(), adaptor); err != nil {
 		panic(err)
 	}
 }
@@ -65,11 +65,11 @@ func adaptor(request *source.Request) *source.Request {
 	return clonedRequest
 }
 
-func NewOSSSourceClient(opts ...OssSourceClientOption) source.ResourceClient {
+func NewOSSSourceClient(opts ...OSSSourceClientOption) source.ResourceClient {
 	return newOSSSourceClient(opts...)
 }
 
-func newOSSSourceClient(opts ...OssSourceClientOption) source.ResourceClient {
+func newOSSSourceClient(opts ...OSSSourceClientOption) source.ResourceClient {
 	sourceClient := &ossSourceClient{
 		clientMap: sync.Map{},
 		accessMap: sync.Map{},
@@ -80,7 +80,7 @@ func newOSSSourceClient(opts ...OssSourceClientOption) source.ResourceClient {
 	return sourceClient
 }
 
-type OssSourceClientOption func(p *ossSourceClient)
+type OSSSourceClientOption func(p *ossSourceClient)
 
 // ossSourceClient is an implementation of the interface of source.ResourceClient.
 type ossSourceClient struct {
