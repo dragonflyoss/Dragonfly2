@@ -123,7 +123,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 	defer span.End()
 
-	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetaData)
+	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetadata)
 	if err != nil {
 		log.Errorf("read all pieces error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
