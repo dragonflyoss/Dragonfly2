@@ -81,19 +81,19 @@ func (mr *MockResourceClientMockRecorder) GetContentLength(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContentLength", reflect.TypeOf((*MockResourceClient)(nil).GetContentLength), arg0)
 }
 
-// GetLastModifiedMillis mocks base method.
-func (m *MockResourceClient) GetLastModifiedMillis(arg0 *source.Request) (int64, error) {
+// GetLastModified mocks base method.
+func (m *MockResourceClient) GetLastModified(arg0 *source.Request) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLastModifiedMillis", arg0)
+	ret := m.ctrl.Call(m, "GetLastModified", arg0)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLastModifiedMillis indicates an expected call of GetLastModifiedMillis.
-func (mr *MockResourceClientMockRecorder) GetLastModifiedMillis(arg0 interface{}) *gomock.Call {
+// GetLastModified indicates an expected call of GetLastModified.
+func (mr *MockResourceClientMockRecorder) GetLastModified(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastModifiedMillis", reflect.TypeOf((*MockResourceClient)(nil).GetLastModifiedMillis), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastModified", reflect.TypeOf((*MockResourceClient)(nil).GetLastModified), arg0)
 }
 
 // IsExpired mocks base method.

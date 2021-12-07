@@ -176,7 +176,7 @@ func (osc *ossSourceClient) DownloadWithExpireInfo(request *source.Request) (io.
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "get oss Object: %s", request.URL.Path)
 	}
-	err = source.CheckRespCode(objectResult.Response.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+	err = source.CheckResponseCode(objectResult.Response.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		objectResult.Response.Body.Close()
 		return nil, nil, err
@@ -187,7 +187,7 @@ func (osc *ossSourceClient) DownloadWithExpireInfo(request *source.Request) (io.
 	}, nil
 }
 
-func (osc *ossSourceClient) GetLastModifiedMillis(request *source.Request) (int64, error) {
+func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
 		return -1, errors.Wrap(err, "get oss client")

@@ -182,7 +182,7 @@ func (h *hdfsSourceClient) DownloadWithExpireInfo(request *source.Request) (io.R
 	}, nil
 }
 
-func (h *hdfsSourceClient) GetLastModifiedMillis(request *source.Request) (int64, error) {
+func (h *hdfsSourceClient) GetLastModified(request *source.Request) (int64, error) {
 
 	hdfsClient, path, err := h.getHDFSClientAndPath(request.URL)
 	if err != nil {

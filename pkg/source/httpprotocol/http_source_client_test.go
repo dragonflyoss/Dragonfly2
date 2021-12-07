@@ -192,7 +192,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 			request:    notfoundRequest,
 			content:    "",
 			expireInfo: nil,
-			wantErr:    source.CheckRespCode(404, []int{200, 206}),
+			wantErr:    source.CheckResponseCode(404, []int{200, 206}),
 		}, {
 			name:       "error download",
 			request:    errorRequest,

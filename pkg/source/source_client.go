@@ -62,9 +62,9 @@ func (e UnexpectedStatusCodeError) Got() int {
 	return e.got
 }
 
-// CheckRespCode returns UnexpectedStatusError if the given response code is not
+// CheckResponseCode returns UnexpectedStatusError if the given response code is not
 // one of the allowed status codes; otherwise nil.
-func CheckRespCode(respCode int, allowed []int) error {
+func CheckResponseCode(respCode int, allowed []int) error {
 	for _, v := range allowed {
 		if respCode == v {
 			return nil
@@ -107,8 +107,8 @@ type ResourceClient interface {
 	// DownloadWithExpireInfo download from source with expireInfo
 	DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error)
 
-	// GetLastModifiedMillis gets last modified timestamp milliseconds of resource
-	GetLastModifiedMillis(request *Request) (int64, error)
+	// GetLastModified gets last modified timestamp milliseconds of resource
+	GetLastModified(request *Request) (int64, error)
 }
 
 type ClientManager interface {
@@ -211,8 +211,8 @@ func (c *clientWrapper) DownloadWithExpireInfo(request *Request) (io.ReadCloser,
 	return c.rc.DownloadWithExpireInfo(c.adapter(request))
 }
 
-func (c *clientWrapper) GetLastModifiedMillis(request *Request) (int64, error) {
-	return c.rc.GetLastModifiedMillis(c.adapter(request))
+func (c *clientWrapper) GetLastModified(request *Request) (int64, error) {
+	return c.rc.GetLastModified(c.adapter(request))
 }
 
 func GetContentLength(request *Request) (int64, error) {
@@ -257,7 +257,7 @@ func IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 	return client.IsExpired(request, info)
 }
 
-func GetLastModifiedMillis(request *Request) (int64, error) {
+func GetLastModified(request *Request) (int64, error) {
 	client, ok := _defaultManager.GetClient(request.URL.Scheme)
 	if !ok {
 		return -1, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
@@ -267,7 +267,7 @@ func GetLastModifiedMillis(request *Request) (int64, error) {
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
-	return client.GetLastModifiedMillis(request)
+	return client.GetLastModified(request)
 }
 
 func Download(request *Request) (io.ReadCloser, error) {

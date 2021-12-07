@@ -309,7 +309,7 @@ func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 	assert.Nil(t, expireInfo)
 }
 
-func TestGetLastModifiedMillis_FileExist(t *testing.T) {
+func TestGetLastModified_FileExist(t *testing.T) {
 	lastModified, _ := time.Parse(source.LastModifiedLayout, hdfsExistFileLastModified)
 	var info os.FileInfo = fakeHDFSFileInfo{
 		modtime: lastModified,
@@ -325,12 +325,12 @@ func TestGetLastModifiedMillis_FileExist(t *testing.T) {
 	request, err := source.NewRequest(hdfsExistFileURL)
 	assert.Nil(t, err)
 
-	lastModifiedMillis, err := sourceClient.GetLastModifiedMillis(request)
+	lastModifiedMillis, err := sourceClient.GetLastModified(request)
 	assert.Nil(t, err)
 	assert.Equal(t, hdfsExistFileLastModifiedMillis, lastModifiedMillis)
 }
 
-func TestGetLastModifiedMillis_FileNotExist(t *testing.T) {
+func TestGetLastModified_FileNotExist(t *testing.T) {
 	stubRet := []gomonkey.OutputCell{
 		{Values: gomonkey.Params{nil, errors.New("stat /user/root/input/f3.txt: file does not exist")}},
 	}
@@ -342,7 +342,7 @@ func TestGetLastModifiedMillis_FileNotExist(t *testing.T) {
 	request, err := source.NewRequest(hdfsNotExistFileURL)
 	assert.Nil(t, err)
 
-	lastModifiedMillis, err := sourceClient.GetLastModifiedMillis(request)
+	lastModifiedMillis, err := sourceClient.GetLastModified(request)
 	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
 	assert.Equal(t, hdfsNotExistFileContentLength, lastModifiedMillis)
 }

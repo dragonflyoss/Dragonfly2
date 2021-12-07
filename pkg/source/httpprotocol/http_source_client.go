@@ -130,7 +130,7 @@ func (client *httpSourceClient) GetContentLength(request *source.Request) (int64
 		return source.UnKnownSourceFileLen, err
 	}
 	defer resp.Body.Close()
-	err = source.CheckRespCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		return source.UnKnownSourceFileLen, err
 	}
@@ -175,7 +175,7 @@ func (client *httpSourceClient) Download(request *source.Request) (io.ReadCloser
 	if err != nil {
 		return nil, err
 	}
-	err = source.CheckRespCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		resp.Body.Close()
 		return nil, err
@@ -188,7 +188,7 @@ func (client *httpSourceClient) DownloadWithExpireInfo(request *source.Request) 
 	if err != nil {
 		return nil, nil, err
 	}
-	err = source.CheckRespCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		resp.Body.Close()
 		return nil, nil, err
@@ -199,13 +199,13 @@ func (client *httpSourceClient) DownloadWithExpireInfo(request *source.Request) 
 	}, nil
 }
 
-func (client *httpSourceClient) GetLastModifiedMillis(request *source.Request) (int64, error) {
+func (client *httpSourceClient) GetLastModified(request *source.Request) (int64, error) {
 	resp, err := client.doRequest(http.MethodGet, request)
 	if err != nil {
 		return -1, err
 	}
 	defer resp.Body.Close()
-	err = source.CheckRespCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		return -1, err
 	}

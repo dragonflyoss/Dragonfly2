@@ -51,7 +51,7 @@ func (c *client) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser,
 	return ioutil.NopCloser(bytes.NewBufferString(data)), nil, nil
 }
 
-func (c *client) GetLastModifiedMillis(request *source.Request) (int64, error) {
+func (c *client) GetLastModified(request *source.Request) (int64, error) {
 	panic("implement me")
 }
 

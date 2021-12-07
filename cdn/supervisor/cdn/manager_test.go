@@ -119,7 +119,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 				}, nil
 		},
 	).AnyTimes()
-	sourceClient.EXPECT().GetLastModifiedMillis(gomock.Any()).Return(
+	sourceClient.EXPECT().GetLastModified(gomock.Any()).Return(
 		timeutils.UnixMillis("Sun, 06 Jun 2021 12:52:30 GMT"), nil).AnyTimes()
 	sourceClient.EXPECT().GetContentLength(gomock.Any()).DoAndReturn(
 		func(request *source.Request) (int64, error) {
