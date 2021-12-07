@@ -26,20 +26,20 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
-	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
+	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
+	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 func TestCacheWriterSuite(t *testing.T) {

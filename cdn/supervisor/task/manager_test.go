@@ -21,12 +21,12 @@ import (
 	"os"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"github.com/golang/mock/gomock"
 	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"

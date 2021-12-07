@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"testing"
 
-	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
+	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
