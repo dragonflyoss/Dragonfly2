@@ -32,14 +32,22 @@ import (
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/syncmap"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 // Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
 var _ supervisor.SeedTaskMgr = (*Manager)(nil)
 var _ gc.Executor = (*Manager)(nil)
+
+var (
+	errURLUnreachable = errors.New("url is unreachable")
+	errTaskIDConflict = errors.New("taskID is conflict")
+)
 
 var tracer trace.Tracer
 
@@ -72,14 +80,14 @@ func NewManager(cfg *config.Config, cdnMgr supervisor.CDNMgr, progressMgr superv
 	return taskMgr, nil
 }
 
-func (tm *Manager) Register(ctx context.Context, req *types.TaskRegisterRequest) (pieceChan <-chan *types.SeedPiece, err error) {
+func (tm *Manager) Register(ctx context.Context, registerTask *types.SeedTask) (pieceChan <-chan *types.SeedPiece, err error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanTaskRegister)
 	defer span.End()
-	task, err := tm.addOrUpdateTask(ctx, req)
+	task, err := tm.AddOrUpdate(registerTask)
 	if err != nil {
 		span.RecordError(err)
-		logger.WithTaskID(req.TaskID).Infof("failed to add or update task with req: %#v: %v", req, err)
+		logger.WithTaskID(registerTask.TaskID).Infof("failed to add or update task with req: %#v: %v", registerTask, err)
 		return nil, err
 	}
 	taskBytes, _ := json.Marshal(task)
@@ -170,6 +178,72 @@ func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
 		return info, nil
 	}
 	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %#v", v)
+}
+
+func (tm *Manager) AddOrUpdate(registerTask *types.SeedTask) (seedTask *types.SeedTask, err error) {
+	defer func() {
+		if err != nil {
+			tm.accessTimeMap.Store(registerTask.TaskID, time.Now())
+		}
+	}()
+	synclock.Lock(registerTask.TaskID, true)
+	if unreachableTime, ok := tm.getTaskUnreachableTime(registerTask.TaskID); ok {
+		if time.Since(unreachableTime) < tm.cfg.FailAccessInterval {
+			synclock.UnLock(registerTask.TaskID, true)
+			// TODO 校验Header
+			return nil, errURLUnreachable
+		}
+		logger.Debugf("delete taskID: %s from unreachable url list", registerTask.TaskID)
+		tm.taskURLUnReachableStore.Delete(registerTask.TaskID)
+	}
+	actual, loaded := tm.taskStore.LoadOrStore(registerTask.TaskID, registerTask)
+	seedTask = actual.(*types.SeedTask)
+	if loaded && !IsSame(seedTask, registerTask) {
+		synclock.UnLock(registerTask.TaskID, true)
+		return nil, errors.Wrapf(errTaskIDConflict, "register task %#v is conflict with exist task %#v", registerTask, seedTask)
+	}
+	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
+		synclock.UnLock(registerTask.TaskID, true)
+		return seedTask, nil
+	}
+	synclock.UnLock(registerTask.TaskID, true)
+	synclock.Lock(registerTask.TaskID, false)
+	defer synclock.UnLock(registerTask.TaskID, false)
+	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
+		return seedTask, nil
+	}
+	// get sourceContentLength with req.Header
+	contentLengthRequest, err := source.NewRequestWithHeader(registerTask.URL, registerTask.Header)
+	if err != nil {
+		return nil, err
+	}
+	// add range info
+	if !stringutils.IsBlank(registerTask.Range) {
+		contentLengthRequest.Header.Add(source.Range, registerTask.Range)
+	}
+	sourceFileLength, err := source.GetContentLength(contentLengthRequest)
+	if err != nil {
+		registerTask.Log().Errorf("get url (%s) content length failed: %v", registerTask.URL, err)
+		if source.IsResourceNotReachableError(err) {
+			tm.taskURLUnReachableStore.Store(registerTask, time.Now())
+		}
+		return seedTask, err
+	}
+	seedTask.SourceFileLength = sourceFileLength
+	seedTask.Log().Debugf("success get file content length: %d", sourceFileLength)
+
+	// if success to get the information successfully with the req.Header then update the task.UrlMeta to registerTask.UrlMeta.
+	if registerTask.Header != nil {
+		seedTask.Header = registerTask.Header
+	}
+
+	// calculate piece size and update the PieceSize and PieceTotal
+	if registerTask.PieceSize <= 0 {
+		pieceSize := util.ComputePieceSize(registerTask.SourceFileLength)
+		seedTask.PieceSize = int32(pieceSize)
+		seedTask.Log().Debugf("piece size calculate result: %s", unit.ToBytes(int64(pieceSize)))
+	}
+	return seedTask, nil
 }
 
 func (tm Manager) Get(taskID string) (*types.SeedTask, error) {

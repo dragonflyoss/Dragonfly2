@@ -22,6 +22,7 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -30,12 +31,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	storageMock "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/mock"
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
@@ -53,56 +54,58 @@ type CacheDetectorTestSuite struct {
 func (suite *CacheDetectorTestSuite) SetupSuite() {
 	ctrl := gomock.NewController(suite.T())
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
-	storageMgr := storageMock.NewMockManager(ctrl)
-	cacheDataManager := newCacheDataManager(storageMgr)
+	source.UnRegister("http")
+	suite.Require().Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
+	storageManager := storageMock.NewMockManager(ctrl)
+	cacheDataManager := newCacheDataManager(storageManager)
 	suite.detector = newCacheDetector(cacheDataManager)
-	storageMgr.EXPECT().ReadFileMetaData(fullExpiredCache.taskID).Return(fullExpiredCache.fileMeta, nil).AnyTimes()
-	storageMgr.EXPECT().ReadFileMetaData(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.fileMeta, nil).AnyTimes()
-	storageMgr.EXPECT().ReadFileMetaData(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.fileMeta, nil).AnyTimes()
-	storageMgr.EXPECT().ReadFileMetaData(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.fileMeta, nil).AnyTimes()
-	storageMgr.EXPECT().ReadFileMetaData(noCache.taskID).Return(noCache.fileMeta, cdnerrors.ErrFileNotExist{}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(fullNoExpiredCache.taskID).DoAndReturn(
+	storageManager.EXPECT().ReadFileMetadata(fullExpiredCache.taskID).Return(fullExpiredCache.fileMeta, nil).AnyTimes()
+	storageManager.EXPECT().ReadFileMetadata(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.fileMeta, nil).AnyTimes()
+	storageManager.EXPECT().ReadFileMetadata(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.fileMeta, nil).AnyTimes()
+	storageManager.EXPECT().ReadFileMetadata(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.fileMeta, nil).AnyTimes()
+	storageManager.EXPECT().ReadFileMetadata(noCache.taskID).Return(noCache.fileMeta, os.ErrNotExist).AnyTimes()
+	storageManager.EXPECT().ReadDownloadFile(fullNoExpiredCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
 			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(partialNotSupportRangeCache.taskID).DoAndReturn(
+	storageManager.EXPECT().ReadDownloadFile(partialNotSupportRangeCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
 			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(partialSupportRangeCache.taskID).DoAndReturn(
+	storageManager.EXPECT().ReadDownloadFile(partialSupportRangeCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
 			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.pieces, nil).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.pieces, nil).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.pieces, nil).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
-	storageMgr.EXPECT().StatDownloadFile(fullNoExpiredCache.taskID).Return(&storedriver.StorageInfo{
+	storageManager.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, os.ErrNotExist).AnyTimes()
+	storageManager.EXPECT().ReadPieceMetaRecords(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.pieces, nil).AnyTimes()
+	storageManager.EXPECT().ReadPieceMetaRecords(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.pieces, nil).AnyTimes()
+	storageManager.EXPECT().ReadPieceMetaRecords(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.pieces, nil).AnyTimes()
+	storageManager.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, os.ErrNotExist).AnyTimes()
+	storageManager.EXPECT().StatDownloadFile(fullNoExpiredCache.taskID).Return(&storedriver.StorageInfo{
 		Path:       "",
 		Size:       9789,
 		CreateTime: time.Time{},
 		ModTime:    time.Time{},
 	}, nil).AnyTimes()
+	storageManager.EXPECT().StatDownloadFile(gomock.Not(fullNoExpiredCache.taskID)).Return(&storedriver.StorageInfo{}, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), expiredAndSupportURL, gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), expiredAndSupportURL, gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(expiredAndSupportURL), gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(expiredAndSupportURL)).Return(true, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), expiredAndNotSupportURL, gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), expiredAndNotSupportURL, gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(noExpiredAndSupportURL), gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(noExpiredAndSupportURL)).Return(true, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), noExpiredAndSupportURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), noExpiredAndSupportURL, gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(expiredAndNotSupportURL), gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(expiredAndNotSupportURL)).Return(false, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), noExpiredAndNotSupportURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), noExpiredAndNotSupportURL, gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(noExpiredAndNotSupportURL), gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(noExpiredAndNotSupportURL)).Return(false, nil).AnyTimes()
 }
 
 var noCacheTask, partialAndSupportCacheTask, partialAndNotSupportCacheTask, fullCacheExpiredTask, fullCacheNotExpiredTask = "noCache", "partialSupportCache",
@@ -114,7 +117,7 @@ var expiredAndSupportURL, expiredAndNotSupportURL, noExpiredAndSupportURL, noExp
 type mockData struct {
 	taskID   string
 	pieces   []*storage.PieceMetaRecord
-	fileMeta *storage.FileMetaData
+	fileMeta *storage.FileMetadata
 	reader   io.ReadCloser
 }
 
@@ -218,8 +221,8 @@ var fullPieceMetaRecords = append(partialPieceMetaRecords, &storage.PieceMetaRec
 	PieceStyle: 1,
 })
 
-func newCompletedFileMeta(taskID string, URL string, success bool) *storage.FileMetaData {
-	return &storage.FileMetaData{
+func newCompletedFileMeta(taskID string, URL string, success bool) *storage.FileMetadata {
+	return &storage.FileMetadata{
 		TaskID:           taskID,
 		TaskURL:          URL,
 		PieceSize:        2000,
@@ -236,8 +239,8 @@ func newCompletedFileMeta(taskID string, URL string, success bool) *storage.File
 	}
 }
 
-func newPartialFileMeta(taskID string, URL string) *storage.FileMetaData {
-	return &storage.FileMetaData{
+func newPartialFileMeta(taskID string, URL string) *storage.FileMetadata {
+	return &storage.FileMetadata{
 		TaskID:           taskID,
 		TaskURL:          URL,
 		PieceSize:        2000,
@@ -290,7 +293,7 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 			want: &cacheResult{
 				breakPoint:       4000,
 				pieceMetaRecords: partialPieceMetaRecords,
-				fileMetaData:     newPartialFileMeta(partialAndSupportCacheTask, noExpiredAndSupportURL),
+				fileMetadata:     newPartialFileMeta(partialAndSupportCacheTask, noExpiredAndSupportURL),
 			},
 			wantErr: false,
 		},
@@ -322,7 +325,7 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 			want: &cacheResult{
 				breakPoint:       -1,
 				pieceMetaRecords: fullPieceMetaRecords,
-				fileMetaData:     newCompletedFileMeta(fullCacheNotExpiredTask, noExpiredAndNotSupportURL, true),
+				fileMetadata:     newCompletedFileMeta(fullCacheNotExpiredTask, noExpiredAndNotSupportURL, true),
 			},
 			wantErr: false,
 		},
@@ -352,7 +355,7 @@ func (suite *CacheDetectorTestSuite) TestDetectCache() {
 func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 	type args struct {
 		taskID   string
-		metaData *storage.FileMetaData
+		metadata *storage.FileMetadata
 	}
 	tests := []struct {
 		name    string
@@ -364,19 +367,19 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 			name: "partial And SupportCacheTask",
 			args: args{
 				taskID:   partialSupportRangeCache.taskID,
-				metaData: partialSupportRangeCache.fileMeta,
+				metadata: partialSupportRangeCache.fileMeta,
 			},
 			want: &cacheResult{
 				breakPoint:       4000,
 				pieceMetaRecords: partialSupportRangeCache.pieces,
-				fileMetaData:     partialSupportRangeCache.fileMeta,
+				fileMetadata:     partialSupportRangeCache.fileMeta,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			got, err := suite.detector.parseByReadFile(tt.args.taskID, tt.args.metaData, md5.New())
+			got, err := suite.detector.detectByReadFile(tt.args.taskID, tt.args.metadata, md5.New())
 			suite.Equal(tt.want, got)
 			suite.Equal(tt.wantErr, err != nil)
 		})
@@ -386,7 +389,7 @@ func (suite *CacheDetectorTestSuite) TestParseByReadFile() {
 func (suite *CacheDetectorTestSuite) TestParseByReadMetaFile() {
 	type args struct {
 		taskID       string
-		fileMetaData *storage.FileMetaData
+		fileMetadata *storage.FileMetadata
 	}
 	tests := []struct {
 		name    string
@@ -398,19 +401,19 @@ func (suite *CacheDetectorTestSuite) TestParseByReadMetaFile() {
 			name: "parse full cache file meta",
 			args: args{
 				taskID:       fullNoExpiredCache.taskID,
-				fileMetaData: fullNoExpiredCache.fileMeta,
+				fileMetadata: fullNoExpiredCache.fileMeta,
 			},
 			want: &cacheResult{
 				breakPoint:       -1,
 				pieceMetaRecords: fullNoExpiredCache.pieces,
-				fileMetaData:     fullNoExpiredCache.fileMeta,
+				fileMetadata:     fullNoExpiredCache.fileMeta,
 			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			got, err := suite.detector.parseByReadMetaFile(tt.args.taskID, tt.args.fileMetaData)
+			got, err := suite.detector.detectByReadMetaFile(tt.args.taskID, tt.args.fileMetadata)
 			suite.Equal(tt.wantErr, err != nil)
 			suite.Equal(tt.want, got)
 		})

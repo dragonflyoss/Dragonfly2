@@ -17,7 +17,12 @@
 package types
 
 import (
+	"strings"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 )
 
 type SeedTask struct {
@@ -32,6 +37,7 @@ type SeedTask struct {
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
 	RequestDigest    string            `json:"requestDigest,omitempty"`
 	SourceRealDigest string            `json:"sourceRealDigest,omitempty"`
+	Range            string            `json:"range,omitempty"`
 	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
 	logger           *logger.SugaredLoggerOnWith
 }
@@ -40,15 +46,21 @@ const (
 	IllegalSourceFileLen = -100
 )
 
-func NewSeedTask(taskID string, header map[string]string, digest string, url string, taskURL string) *SeedTask {
+func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask {
+	if urlMeta == nil {
+		urlMeta = &base.UrlMeta{}
+	}
 	return &SeedTask{
 		TaskID:           taskID,
-		Header:           header,
-		RequestDigest:    digest,
-		URL:              url,
-		TaskURL:          taskURL,
+		Header:           urlMeta.Header,
+		RequestDigest:    urlMeta.Digest,
+		URL:              rawURL,
+		TaskURL:          urlutils.FilterURLParam(rawURL, strings.Split(urlMeta.Filter, "&")),
+		SourceFileLength: source.UnknownSourceFileLen,
+		CdnFileLength:    0,
+		PieceSize:        0,
+		Range:            urlMeta.Range,
 		CdnStatus:        TaskInfoCdnStatusWaiting,
-		SourceFileLength: IllegalSourceFileLen,
 		logger:           logger.WithTaskID(taskID),
 	}
 }

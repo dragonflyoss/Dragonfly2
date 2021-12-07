@@ -25,34 +25,55 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/maputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-const RangeHeaderName = "Range"
-
-func (cm *Manager) download(ctx context.Context, task *types.SeedTask, detectResult *cacheResult) (io.ReadCloser, error) {
-	headers := maputils.DeepCopy(task.Header)
-	if detectResult.breakPoint > 0 {
-		breakRange, err := rangeutils.GetBreakRange(detectResult.breakPoint, task.SourceFileLength)
+func (cm *Manager) download(ctx context.Context, task *types.SeedTask, breakPoint int64) (io.ReadCloser, error) {
+	var err error
+	breakRange := task.Range
+	if breakPoint > 0 {
+		// todo replace task.SourceFileLength with totalSourceFileLength to get BreakRange
+		breakRange, err = getBreakRange(breakPoint, task.Range, task.SourceFileLength)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to calculate the breakRange")
-		}
-		// check if Range in header? if Range already in Header, priority use this range
-		if _, ok := headers[RangeHeaderName]; !ok {
-			headers[RangeHeaderName] = fmt.Sprintf("bytes=%s", breakRange)
+			return nil, errors.Wrapf(err, "calculate the breakRange")
 		}
 	}
-	task.Log().Infof("start download url %s at range: %d-%d: with header: %#v", task.URL, detectResult.breakPoint,
-		task.SourceFileLength, task.Header)
-	reader, responseHeader, err := source.DownloadWithResponseHeader(ctx, task.URL, headers)
+	task.Log().Infof("start downloading URL %s at range %s with header %s", task.URL, breakRange, task.Header)
+	downloadRequest, err := source.NewRequestWithContext(ctx, task.URL, task.Header)
+	if err != nil {
+		return nil, errors.Wrap(err, "create download request")
+	}
+	if !stringutils.IsBlank(breakRange) {
+		downloadRequest.Header.Add(source.Range, breakRange)
+	}
+	body, expireInfo, err := source.DownloadWithExpireInfo(downloadRequest)
 	// update Expire info
 	if err == nil {
-		expireInfo := map[string]string{
-			source.LastModified: responseHeader.Get(source.LastModified),
-			source.ETag:         responseHeader.Get(source.ETag),
-		}
-		cm.updateExpireInfo(task.TaskID, expireInfo)
+		cm.updateExpireInfo(task.TaskID, map[string]string{
+			source.LastModified: expireInfo.LastModified,
+			source.ETag:         expireInfo.ETag,
+		})
 	}
-	return reader, err
+	return body, err
+}
+
+func getBreakRange(breakPoint int64, taskRange string, fileTotalLength int64) (string, error) {
+	if breakPoint <= 0 {
+		return "", errors.Errorf("breakPoint is non-positive: %d", breakPoint)
+	}
+	if fileTotalLength <= 0 {
+		return "", errors.Errorf("file length is non-positive: %d", fileTotalLength)
+	}
+	if stringutils.IsBlank(taskRange) {
+		return fmt.Sprintf("%d-%d", breakPoint, fileTotalLength-1), nil
+	}
+	requestRange, err := rangeutils.ParseRange(taskRange, uint64(fileTotalLength))
+	if err != nil {
+		return "", errors.Errorf("parse range failed, taskRange: %s, fileTotalLength: %d: %v", taskRange, fileTotalLength, err)
+	}
+	if breakPoint >= int64(requestRange.EndIndex-requestRange.StartIndex+1) {
+		return "", errors.Errorf("breakPoint %d is larger than or equal with length of download required %s", breakPoint, requestRange)
+	}
+	return fmt.Sprintf("%d-%d", requestRange.StartIndex+uint64(breakPoint), requestRange.EndIndex), nil
 }

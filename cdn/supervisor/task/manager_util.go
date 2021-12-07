@@ -17,116 +17,22 @@
 package task
 
 import (
-	"context"
-	"fmt"
-	"reflect"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
 	"d7y.io/dragonfly/v2/cdn/types"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/util"
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/synclock"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-// addOrUpdateTask add a new task or update exist task
-func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegisterRequest) (*types.SeedTask, error) {
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanAndOrUpdateTask)
-	defer span.End()
-	taskURL := request.URL
-	if request.Filter != nil {
-		taskURL = urlutils.FilterURLParam(request.URL, request.Filter)
+// getTaskUnreachableTime get unreachable time of task and convert it to time.Time type
+func (tm *Manager) getTaskUnreachableTime(taskID string) (time.Time, bool) {
+	unreachableTime, ok := tm.taskURLUnReachableStore.Load(taskID)
+	if !ok {
+		return time.Time{}, false
 	}
-	span.SetAttributes(config.AttributeTaskURL.String(taskURL))
-	taskID := request.TaskID
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
-	if key, err := tm.taskURLUnReachableStore.Get(taskID); err == nil {
-		if unReachableStartTime, ok := key.(time.Time); ok && time.Since(unReachableStartTime) < tm.cfg.FailAccessInterval {
-			existTask, err := tm.taskStore.Get(taskID)
-			if err != nil || reflect.DeepEqual(request.Header, existTask.(*types.SeedTask).Header) {
-				span.AddEvent(config.EventHitUnReachableURL)
-				return nil, errors.Wrapf(cdnerrors.ErrURLNotReachable{URL: request.URL}, "task hit unReachable cache and interval less than %d, "+
-					"url: %s", tm.cfg.FailAccessInterval, request.URL)
-			}
-		}
-		span.AddEvent(config.EventDeleteUnReachableTask)
-		tm.taskURLUnReachableStore.Delete(taskID)
-		logger.Debugf("delete taskID: %s from url unReachable store", taskID)
-	}
-
-	var task *types.SeedTask
-	newTask := types.NewSeedTask(taskID, request.Header, request.Digest, request.URL, taskURL)
-	// using the existing task if it already exists corresponding to taskID
-	if v, err := tm.taskStore.Get(taskID); err == nil {
-		span.SetAttributes(config.AttributeIfReuseTask.Bool(true))
-		existTask := v.(*types.SeedTask)
-		if !isSameTask(existTask, newTask) {
-			span.RecordError(fmt.Errorf("newTask: %#v, existTask: %#v", newTask, existTask))
-			return nil, cdnerrors.ErrTaskIDDuplicate{TaskID: taskID, Cause: fmt.Errorf("newTask: %#v, existTask: %#v", newTask, existTask)}
-		}
-		task = existTask
-		logger.Debugf("get exist task for taskID: %s", taskID)
-	} else {
-		span.SetAttributes(config.AttributeIfReuseTask.Bool(false))
-		logger.Debugf("get new task for taskID: %s", taskID)
-		task = newTask
-	}
-
-	if task.SourceFileLength != types.IllegalSourceFileLen {
-		return task, nil
-	}
-
-	// get sourceContentLength with req.Header
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
-	span.AddEvent(config.EventRequestSourceFileLength)
-	sourceFileLength, err := source.GetContentLength(ctx, task.URL, request.Header)
-	if err != nil {
-		task.Log().Errorf("failed to get url (%s) content length: %v", task.URL, err)
-		if cdnerrors.IsURLNotReachable(err) {
-			if err := tm.taskURLUnReachableStore.Add(taskID, time.Now()); err != nil {
-				task.Log().Errorf("failed to add url (%s) to unreachable store: %v", task.URL, err)
-			}
-			return nil, err
-		}
-	}
-	// if not support file length header request ,return -1
-	task.SourceFileLength = sourceFileLength
-	logger.WithTaskID(taskID).Debugf("get file content length: %d", sourceFileLength)
-	if task.SourceFileLength > 0 {
-		ok, err := tm.cdnMgr.TryFreeSpace(task.SourceFileLength)
-		if err != nil {
-			logger.Errorf("failed to try free space: %v", err)
-		} else if !ok {
-			return nil, cdnerrors.ErrResourcesLacked
-		}
-	}
-
-	// if success to get the information successfully with the req.Header then update the task.Header to req.Header.
-	if request.Header != nil {
-		task.Header = request.Header
-	}
-
-	// calculate piece size and update the PieceSize and PieceTotal
-	if task.PieceSize <= 0 {
-		pieceSize := util.ComputePieceSize(task.SourceFileLength)
-		task.PieceSize = int32(pieceSize)
-	}
-	if err := tm.taskStore.Add(task.TaskID, task); err != nil {
-		return nil, err
-	}
-
-	logger.Debugf("success add task: %#v into taskStore", task)
-	return task, nil
+	return unreachableTime.(time.Time), true
 }
 
 // updateTask
@@ -185,8 +91,8 @@ func (tm *Manager) updateTask(taskID string, updateTaskInfo *types.SeedTask) (*t
 	return task, nil
 }
 
-// isSameTask check whether the two task provided are the same
-func isSameTask(task1, task2 *types.SeedTask) bool {
+// IsSame check whether the two task provided are the same
+func IsSame(task1, task2 *types.SeedTask) bool {
 	if task1 == task2 {
 		return true
 	}

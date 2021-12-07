@@ -14,22 +14,14 @@
  * limitations under the License.
  */
 
-package storage
+package source
 
-import (
-	"os"
+import "io"
 
-	"github.com/pkg/errors"
-)
-
-const (
-	taskData     = "data"
-	taskMetadata = "metadata"
-
-	defaultFileMode      = os.FileMode(0644)
-	defaultDirectoryMode = os.FileMode(0755)
-)
-
-var (
-	ErrShortRead = errors.New("short read")
-)
+type Response struct {
+	Status        string
+	StatusCode    int
+	Header        Header
+	Body          io.ReadCloser
+	ContentLength int64
+}

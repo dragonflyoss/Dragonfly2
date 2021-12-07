@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -35,9 +37,9 @@ func (r Range) String() string {
 	return fmt.Sprintf("%d%s%d", r.StartIndex, separator, r.EndIndex)
 }
 
-// ParseRange parses Range according to range string.
+// GetRange parses Range according to range string.
 // rangeStr: "start-end"
-func ParseRange(rangeStr string) (r *Range, err error) {
+func GetRange(rangeStr string) (r *Range, err error) {
 	ranges := strings.Split(rangeStr, separator)
 	if len(ranges) != 2 {
 		return nil, fmt.Errorf("range value(%s) is illegal which should be like 0-45535", rangeStr)
@@ -62,52 +64,96 @@ func ParseRange(rangeStr string) (r *Range, err error) {
 	}, nil
 }
 
-// ParseRange parses Range according to range string.
-// rangeStr: "bytes=start-end"
-func ParseHTTPRange(rangeStr string) (r *Range, err error) {
-	prefix := "bytes="
-	if !strings.HasPrefix(rangeStr, prefix) || strings.Count(rangeStr, prefix) != 1 {
-		return nil, fmt.Errorf("rangeStr %s not start with bytes=", rangeStr)
-	}
-	rangeStr = strings.Replace(rangeStr, prefix, "", 1)
-	ranges := strings.Split(rangeStr, separator)
-	if len(ranges) != 2 {
-		return nil, fmt.Errorf("range value(%s) is illegal which should be like 0-45535", rangeStr)
+// ParseRange parses the start and the end from rangeStr and returns them.
+// length is file total length
+func ParseRange(rangeStr string, length uint64) (*Range, error) {
+	if strings.Count(rangeStr, "-") != 1 {
+		return nil, errors.Errorf("invalid range: %s, should be like 0-1023", rangeStr)
 	}
 
-	startIndex, err := strconv.ParseUint(ranges[0], 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("range(%s) start is not a non-negative number", rangeStr)
+	// -{endIndex}
+	if strings.HasPrefix(rangeStr, "-") {
+		rangeStruct, err := handlePrefixRange(rangeStr, length)
+		if err != nil {
+			return nil, err
+		}
+		return rangeStruct, nil
 	}
-	endIndex, err := strconv.ParseUint(ranges[1], 10, 64)
+
+	// {startIndex}-
+	if strings.HasSuffix(rangeStr, "-") {
+		rangeStruct, err := handleSuffixRange(rangeStr, length)
+		if err != nil {
+			return nil, err
+		}
+		return rangeStruct, nil
+	}
+
+	rangeStruct, err := handlePairRange(rangeStr, length)
 	if err != nil {
-		return nil, fmt.Errorf("range(%s) end is not a non-negative number", rangeStr)
+		return nil, err
+	}
+	return rangeStruct, nil
+}
+
+func handlePrefixRange(rangeStr string, length uint64) (*Range, error) {
+	downLength, err := strconv.ParseUint(strings.TrimPrefix(rangeStr, "-"), 10, 64)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse range: %s to int: %v", rangeStr, err)
+	}
+
+	if downLength > length {
+		return nil, errors.Errorf("range: %s, the downLength is larger than length", rangeStr)
+	}
+
+	return &Range{
+		StartIndex: length - downLength,
+		EndIndex:   length - 1,
+	}, nil
+}
+
+func handleSuffixRange(rangeStr string, length uint64) (*Range, error) {
+	startIndex, err := strconv.ParseUint(strings.TrimSuffix(rangeStr, "-"), 10, 64)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+	}
+
+	if startIndex > length {
+		return nil, errors.Errorf("range: %s, the startIndex is larger than length", rangeStr)
+	}
+
+	return &Range{
+		StartIndex: startIndex,
+		EndIndex:   length - 1,
+	}, nil
+}
+
+func handlePairRange(rangeStr string, length uint64) (*Range, error) {
+	rangePair := strings.Split(rangeStr, "-")
+
+	startIndex, err := strconv.ParseUint(rangePair[0], 10, 64)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+	}
+	if startIndex > length {
+		return nil, errors.Errorf("range: %s, the startIndex is larger than length", rangeStr)
+	}
+
+	endIndex, err := strconv.ParseUint(rangePair[1], 10, 64)
+	if err != nil {
+		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+	}
+	if endIndex >= length {
+		//attention
+		endIndex = length - 1
 	}
 
 	if endIndex < startIndex {
-		return nil, fmt.Errorf("range(%s) start is larger than end", rangeStr)
+		return nil, errors.Errorf("range: %s, the start is larger the end", rangeStr)
 	}
 
 	return &Range{
 		StartIndex: startIndex,
 		EndIndex:   endIndex,
-	}, nil
-}
-
-func GetBreakRange(breakPoint int64, sourceFileLength int64) (*Range, error) {
-	if breakPoint < 0 {
-		return nil, fmt.Errorf("breakPoint is illegal for value: %d", breakPoint)
-	}
-	if sourceFileLength < 0 {
-		return nil, fmt.Errorf("sourceFileLength is illegal for value: %d", sourceFileLength)
-	}
-	end := sourceFileLength - 1
-	if breakPoint > end {
-		return nil, fmt.Errorf("start: %d is larger than end: %d", breakPoint, end)
-
-	}
-	return &Range{
-		StartIndex: uint64(breakPoint),
-		EndIndex:   uint64(end),
 	}, nil
 }

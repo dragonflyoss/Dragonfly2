@@ -111,15 +111,15 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 			return nil
 		}
 
-		metaData, err := cleaner.storageMgr.ReadFileMetaData(taskID)
-		if err != nil || metaData == nil {
+		metadata, err := cleaner.storageMgr.ReadFileMetadata(taskID)
+		if err != nil || metadata == nil {
 			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
 		// put taskId into gapTasks or intervalTasks which will sort by some rules
-		if err := cleaner.sortInert(gapTasks, intervalTasks, metaData); err != nil {
-			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metaData(%#v): %v", metaData, err)
+		if err := cleaner.sortInert(gapTasks, intervalTasks, metadata); err != nil {
+			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metadata(%#v): %v", metadata, err)
 		}
 
 		return nil
@@ -138,12 +138,12 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	return gcTaskIDs, nil
 }
 
-func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData *FileMetaData) error {
-	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
+func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metadata *FileMetadata) error {
+	gap := timeutils.CurrentTimeMillis() - metadata.AccessTime
 
-	if metaData.Interval > 0 &&
-		gap <= metaData.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cleaner.storageMgr.StatDownloadFile(metaData.TaskID)
+	if metadata.Interval > 0 &&
+		gap <= metadata.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		info, err := cleaner.storageMgr.StatDownloadFile(metadata.TaskID)
 		if err != nil {
 			return err
 		}
@@ -153,7 +153,7 @@ func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData
 			v = make([]string, 0)
 		}
 		tasks := v.([]string)
-		tasks = append(tasks, metaData.TaskID)
+		tasks = append(tasks, metadata.TaskID)
 		intervalTasks.Put(info.Size, tasks)
 		return nil
 	}
@@ -163,7 +163,7 @@ func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData
 		v = make([]string, 0)
 	}
 	tasks := v.([]string)
-	tasks = append(tasks, metaData.TaskID)
+	tasks = append(tasks, metadata.TaskID)
 	gapTasks.Put(gap, tasks)
 	return nil
 }

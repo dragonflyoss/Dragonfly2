@@ -38,32 +38,18 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// AppendPieceMetaData mocks base method.
-func (m *MockManager) AppendPieceMetaData(arg0 string, arg1 *storage.PieceMetaRecord) error {
+// AppendPieceMetadata mocks base method.
+func (m *MockManager) AppendPieceMetadata(arg0 string, arg1 *storage.PieceMetaRecord) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AppendPieceMetaData", arg0, arg1)
+	ret := m.ctrl.Call(m, "AppendPieceMetadata", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// AppendPieceMetaData indicates an expected call of AppendPieceMetaData.
-func (mr *MockManagerMockRecorder) AppendPieceMetaData(arg0, arg1 interface{}) *gomock.Call {
+// AppendPieceMetadata indicates an expected call of AppendPieceMetadata.
+func (mr *MockManagerMockRecorder) AppendPieceMetadata(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendPieceMetaData", reflect.TypeOf((*MockManager)(nil).AppendPieceMetaData), arg0, arg1)
-}
-
-// CreateUploadLink mocks base method.
-func (m *MockManager) CreateUploadLink(arg0 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUploadLink", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateUploadLink indicates an expected call of CreateUploadLink.
-func (mr *MockManagerMockRecorder) CreateUploadLink(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUploadLink", reflect.TypeOf((*MockManager)(nil).CreateUploadLink), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AppendPieceMetadata", reflect.TypeOf((*MockManager)(nil).AppendPieceMetadata), arg0, arg1)
 }
 
 // DeleteTask mocks base method.
@@ -107,19 +93,19 @@ func (mr *MockManagerMockRecorder) ReadDownloadFile(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadDownloadFile", reflect.TypeOf((*MockManager)(nil).ReadDownloadFile), arg0)
 }
 
-// ReadFileMetaData mocks base method.
-func (m *MockManager) ReadFileMetaData(arg0 string) (*storage.FileMetaData, error) {
+// ReadFileMetadata mocks base method.
+func (m *MockManager) ReadFileMetadata(arg0 string) (*storage.FileMetadata, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadFileMetaData", arg0)
-	ret0, _ := ret[0].(*storage.FileMetaData)
+	ret := m.ctrl.Call(m, "ReadFileMetadata", arg0)
+	ret0, _ := ret[0].(*storage.FileMetadata)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReadFileMetaData indicates an expected call of ReadFileMetaData.
-func (mr *MockManagerMockRecorder) ReadFileMetaData(arg0 interface{}) *gomock.Call {
+// ReadFileMetadata indicates an expected call of ReadFileMetadata.
+func (mr *MockManagerMockRecorder) ReadFileMetadata(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadFileMetaData", reflect.TypeOf((*MockManager)(nil).ReadFileMetaData), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadFileMetadata", reflect.TypeOf((*MockManager)(nil).ReadFileMetadata), arg0)
 }
 
 // ReadPieceMetaRecords mocks base method.
@@ -195,18 +181,18 @@ func (mr *MockManagerMockRecorder) WriteDownloadFile(arg0, arg1, arg2, arg3 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteDownloadFile", reflect.TypeOf((*MockManager)(nil).WriteDownloadFile), arg0, arg1, arg2, arg3)
 }
 
-// WriteFileMetaData mocks base method.
-func (m *MockManager) WriteFileMetaData(arg0 string, arg1 *storage.FileMetaData) error {
+// WriteFileMetadata mocks base method.
+func (m *MockManager) WriteFileMetadata(arg0 string, arg1 *storage.FileMetadata) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteFileMetaData", arg0, arg1)
+	ret := m.ctrl.Call(m, "WriteFileMetadata", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// WriteFileMetaData indicates an expected call of WriteFileMetaData.
-func (mr *MockManagerMockRecorder) WriteFileMetaData(arg0, arg1 interface{}) *gomock.Call {
+// WriteFileMetadata indicates an expected call of WriteFileMetadata.
+func (mr *MockManagerMockRecorder) WriteFileMetadata(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteFileMetaData", reflect.TypeOf((*MockManager)(nil).WriteFileMetaData), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteFileMetadata", reflect.TypeOf((*MockManager)(nil).WriteFileMetadata), arg0, arg1)
 }
 
 // WritePieceMetaRecords mocks base method.

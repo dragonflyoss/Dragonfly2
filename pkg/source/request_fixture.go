@@ -14,22 +14,29 @@
  * limitations under the License.
  */
 
-package storage
+package source
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/golang/mock/gomock"
 )
 
-const (
-	taskData     = "data"
-	taskMetadata = "metadata"
+// RequestEq for gomock
+func RequestEq(url string) gomock.Matcher {
+	return requestMatcher{url}
+}
 
-	defaultFileMode      = os.FileMode(0644)
-	defaultDirectoryMode = os.FileMode(0755)
-)
+type requestMatcher struct {
+	url string
+}
 
-var (
-	ErrShortRead = errors.New("short read")
-)
+// Matches returns whether x is a match.
+func (req requestMatcher) Matches(x interface{}) bool {
+	return x.(*Request).URL.String() == req.url
+}
+
+// String describes what the matcher matches.
+func (req requestMatcher) String() string {
+	return fmt.Sprintf("is equal to %v (%T)", req.url, req.url)
+}
