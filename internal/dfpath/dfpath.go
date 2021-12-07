@@ -35,7 +35,7 @@ type Dfpath interface {
 	DfgetLockPath() string
 }
 
-// dfpath provides init project path function
+// Dfpath provides init project path function
 type dfpath struct {
 	workHome       string
 	cacheDir       string
@@ -47,7 +47,7 @@ type dfpath struct {
 	dfgetLockPath  string
 }
 
-// cache of the dfpath
+// Cache of the dfpath
 var cache struct {
 	sync.Once
 	d   *dfpath

@@ -18,6 +18,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -30,6 +31,8 @@ import (
 )
 
 func TestDynconfigNewDynconfig(t *testing.T) {
+	cacheDir := "."
+	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -109,7 +112,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
-			_, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
+			_, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
 			tc.expect(t, err)
 			tc.cleanFileCache(t)
 		})
@@ -117,6 +120,8 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 }
 
 func TestDynconfigGet(t *testing.T) {
+	cacheDir := "."
+	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -283,7 +288,7 @@ func TestDynconfigGet(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -296,6 +301,8 @@ func TestDynconfigGet(t *testing.T) {
 }
 
 func TestDynconfigGetSchedulers(t *testing.T) {
+	cacheDir := "."
+	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -462,7 +469,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, tc.hostOption, tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}

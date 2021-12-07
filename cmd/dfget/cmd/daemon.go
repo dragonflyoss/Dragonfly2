@@ -54,8 +54,8 @@ it supports container engine, wget and other downloading tools through proxy fun
 	SilenceUsage:       true,
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Initialize dfpath
-		d, err := initDfpath(cfg)
+		// Initialize daemon dfpath
+		d, err := initDaemonDfpath(cfg)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func init() {
 	}
 }
 
-func initDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
+func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 	options := []dfpath.Option{}
 	if cfg.WorkHome != "" {
 		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))

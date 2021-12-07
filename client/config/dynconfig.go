@@ -69,6 +69,7 @@ type dynconfig struct {
 	*internaldynconfig.Dynconfig
 	observers map[Observer]struct{}
 	done      chan bool
+	cachePath string
 }
 
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
@@ -86,6 +87,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOp
 	return &dynconfig{
 		observers: map[Observer]struct{}{},
 		done:      make(chan bool),
+		cachePath: cachePath,
 		Dynconfig: client,
 	}, nil
 }
@@ -156,7 +158,7 @@ func (d *dynconfig) watch() {
 
 func (d *dynconfig) Stop() error {
 	close(d.done)
-	if err := os.Remove(cachePath); err != nil {
+	if err := os.Remove(d.cachePath); err != nil {
 		return err
 	}
 

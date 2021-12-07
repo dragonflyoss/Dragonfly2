@@ -287,7 +287,7 @@ func DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error
 }
 
 // getSourceClient get a source client from source manager with specified schema.
-func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
+func (m *clientManager) getSourceClient(pluginDir, rawURL string) (ResourceClient, error) {
 	logger.Debugf("current clients: %#v", m.clients)
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
@@ -297,7 +297,7 @@ func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
 	client, ok := m.clients[strings.ToLower(parsedURL.Scheme)]
 	m.mu.RUnlock()
 	if !ok || client == nil {
-		client, err = m.loadSourcePlugin(strings.ToLower(parsedURL.Scheme))
+		client, err = m.loadSourcePlugin(pluginDir, strings.ToLower(parsedURL.Scheme))
 		if err == nil && client != nil {
 			return client, nil
 		}
@@ -306,7 +306,7 @@ func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
 	return client, nil
 }
 
-func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) {
+func (m *clientManager) loadSourcePlugin(dir, scheme string) (ResourceClient, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	// double check
@@ -315,7 +315,7 @@ func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) 
 		return client, nil
 	}
 
-	client, err := LoadPlugin(scheme)
+	client, err := LoadPlugin(dir, scheme)
 	if err != nil {
 		return nil, err
 	}

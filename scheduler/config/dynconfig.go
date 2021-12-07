@@ -112,21 +112,22 @@ type dynconfig struct {
 	observers  map[Observer]struct{}
 	done       chan bool
 	cdnDirPath string
+	cachePath  string
 	sourceType dc.SourceType
 }
 
 // TODO(Gaius) Rely on manager to delete cdnDirPath
 func NewDynconfig(sourceType dc.SourceType, cacheDir string, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
+	cachePath := filepath.Join(cacheDir, "scheduler_dynconfig")
 	d := &dynconfig{
 		observers:  map[Observer]struct{}{},
 		done:       make(chan bool),
 		cdnDirPath: cdnDirPath,
 		sourceType: sourceType,
+		cachePath:  cachePath,
 	}
 
-	cachePath := filepath.Join(cacheDir, "scheduler_dynconfig")
-	options = append(options, dc.WithCachePath(cachePath))
-	client, err := dc.New(sourceType, options...)
+	client, err := dc.New(sourceType, dc.WithCachePath(cachePath))
 	if err != nil {
 		return nil, err
 	}
@@ -308,7 +309,7 @@ func (d *dynconfig) watch() {
 
 func (d *dynconfig) Stop() error {
 	close(d.done)
-	if err := os.Remove(cachePath); err != nil {
+	if err := os.Remove(d.cachePath); err != nil {
 		return err
 	}
 

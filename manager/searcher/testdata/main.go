@@ -27,7 +27,7 @@ import (
 )
 
 func main() {
-	s, err := searcher.LoadPlugin(".")
+	s, err := searcher.LoadPlugin("./testdata")
 	if err != nil {
 		fmt.Printf("load plugin error: %s\n", err)
 		os.Exit(1)
