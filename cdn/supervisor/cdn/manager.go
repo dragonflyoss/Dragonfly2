@@ -129,7 +129,7 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	var downloadSpan trace.Span
 	ctx, downloadSpan = tracer.Start(ctx, config.SpanDownloadSource)
 	downloadSpan.End()
-	body, err := cm.download(ctx, task, detectResult)
+	body, err := cm.download(ctx, task, detectResult.breakPoint)
 	// download fail
 	if err != nil {
 		downloadSpan.RecordError(err)

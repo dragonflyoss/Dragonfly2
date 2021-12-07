@@ -347,7 +347,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMeta.Header)
+	contentLengthRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	contentLength, err := source.GetContentLength(contentLengthRequest)
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
@@ -368,7 +372,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, err := source.Download(ctx, request.Url, request.UrlMeta.Header)
+	downloadRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	body, err := source.Download(downloadRequest)
 	if err != nil {
 		return err
 	}
