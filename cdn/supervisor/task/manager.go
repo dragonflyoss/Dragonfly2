@@ -142,7 +142,7 @@ func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTas
 	}
 	// triggerCDN goroutine
 	go func() {
-		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(ctx, task)
+		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(context.Background(), task)
 		if err != nil {
 			task.Log().Errorf("trigger cdn get error: %v", err)
 		}
