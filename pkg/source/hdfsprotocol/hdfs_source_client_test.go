@@ -51,7 +51,7 @@ const (
 
 const (
 	hdfsNotExistFileURL                 = "hdfs://127.0.0.1:9000/user/root/input/f3.txt"
-	hdfsNotExistFileContentLength int64 = source.UnKnownSourceFileLen
+	hdfsNotExistFileContentLength int64 = source.UnknownSourceFileLen
 )
 
 var fakeHDFSClient = &hdfs.Client{}
