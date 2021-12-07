@@ -405,6 +405,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			// last piece, piece size maybe 0
 			if n < int64(size) {
 				contentLength = int64(pieceNum)*int64(pieceSize) + n
+				pt.SetTotalPieces(int32(math.Ceil(float64(contentLength) / float64(pieceSize))))
 				if err := pm.storageManager.UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
 						PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -416,7 +417,6 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 					}); err != nil {
 					log.Errorf("update task failed %s", err)
 				}
-				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
 		}
