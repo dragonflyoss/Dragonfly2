@@ -39,6 +39,7 @@ import (
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 const (
@@ -347,7 +348,7 @@ func (pt *peerTask) pullSinglePiece(cleanUnfinishedFunc func()) {
 
 	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
-	pt.SetPieceMd5Sign(pt.singlePiece.PieceInfo.PieceMd5)
+	pt.SetPieceMd5Sign(digestutils.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
 	if err := pt.callback.Init(pt); err != nil {
 		pt.failedReason = err.Error()
 		pt.failedCode = base.Code_ClientError
