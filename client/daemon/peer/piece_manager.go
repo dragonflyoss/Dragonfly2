@@ -355,7 +355,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
-	if contentLength == -1 {
+	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
 	} else {
 		err = pm.storageManager.UpdateTask(ctx,
@@ -391,7 +391,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	// 2. save to storage
 	pieceSize := pm.computePieceSize(contentLength)
 	// handle resource which content length is unknown
-	if contentLength == -1 {
+	if contentLength < 0 {
 		var n int64
 		for pieceNum := int32(0); ; pieceNum++ {
 			size := pieceSize

@@ -127,12 +127,12 @@ func WithHTTPClient(client *http.Client) HTTPSourceClientOption {
 func (client *httpSourceClient) GetContentLength(request *source.Request) (int64, error) {
 	resp, err := client.doRequest(http.MethodGet, request)
 	if err != nil {
-		return source.UnKnownSourceFileLen, err
+		return source.UnknownSourceFileLen, err
 	}
 	defer resp.Body.Close()
 	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
-		return source.UnKnownSourceFileLen, err
+		return source.UnknownSourceFileLen, err
 	}
 	return resp.ContentLength, nil
 }

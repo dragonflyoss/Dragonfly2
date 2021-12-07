@@ -92,19 +92,19 @@ type ossSourceClient struct {
 func (osc *ossSourceClient) GetContentLength(request *source.Request) (int64, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return source.UnKnownSourceFileLen, err
+		return source.UnknownSourceFileLen, err
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return source.UnKnownSourceFileLen, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return source.UnknownSourceFileLen, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
 	}
 	header, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {
-		return source.UnKnownSourceFileLen, errors.Wrapf(err, "get oss object %s meta", request.URL.Path)
+		return source.UnknownSourceFileLen, errors.Wrapf(err, "get oss object %s meta", request.URL.Path)
 	}
 	contentLen, err := strconv.ParseInt(header.Get(oss.HTTPHeaderContentLength), 10, 64)
 	if err != nil {
-		return source.UnKnownSourceFileLen, errors.Wrapf(err, "parse content-length str to int64")
+		return source.UnknownSourceFileLen, errors.Wrapf(err, "parse content-length str to int64")
 	}
 	return contentLen, nil
 }

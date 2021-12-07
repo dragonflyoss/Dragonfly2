@@ -82,14 +82,14 @@ func IsNoClientFoundError(err error) bool {
 }
 
 const (
-	UnKnownSourceFileLen = -2
+	UnknownSourceFileLen = -2
 )
 
 // ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
 
 	// GetContentLength get length of resource content
-	// return source.UnKnownSourceFileLen if response status is not StatusOK and StatusPartialContent
+	// return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(request *Request) (int64, error)
 
 	// IsSupportRange checks if resource supports breakpoint continuation
@@ -218,7 +218,7 @@ func (c *clientWrapper) GetLastModified(request *Request) (int64, error) {
 func GetContentLength(request *Request) (int64, error) {
 	client, ok := _defaultManager.GetClient(request.URL.Scheme)
 	if !ok {
-		return UnKnownSourceFileLen, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
+		return UnknownSourceFileLen, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
 		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)

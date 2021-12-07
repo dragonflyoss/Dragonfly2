@@ -56,7 +56,7 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 		RequestDigest:    urlMeta.Digest,
 		URL:              rawURL,
 		TaskURL:          urlutils.FilterURLParam(rawURL, strings.Split(urlMeta.Filter, "&")),
-		SourceFileLength: source.UnKnownSourceFileLen,
+		SourceFileLength: source.UnknownSourceFileLen,
 		CdnFileLength:    0,
 		PieceSize:        0,
 		Range:            urlMeta.Range,

@@ -202,14 +202,14 @@ func (tm *Manager) AddOrUpdate(registerTask *types.SeedTask) (seedTask *types.Se
 		synclock.UnLock(registerTask.TaskID, true)
 		return nil, errors.Wrapf(errTaskIDConflict, "register task %#v is conflict with exist task %#v", registerTask, seedTask)
 	}
-	if seedTask.SourceFileLength != source.UnKnownSourceFileLen {
+	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
 		synclock.UnLock(registerTask.TaskID, true)
 		return seedTask, nil
 	}
 	synclock.UnLock(registerTask.TaskID, true)
 	synclock.Lock(registerTask.TaskID, false)
 	defer synclock.UnLock(registerTask.TaskID, false)
-	if seedTask.SourceFileLength != source.UnKnownSourceFileLen {
+	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
 		return seedTask, nil
 	}
 	// get sourceContentLength with req.Header
