@@ -55,17 +55,17 @@ type Manager interface {
 	// CreateUploadLink create a upload link to download file
 	CreateUploadLink(taskID string) error
 
-	// ReadFileMetaData return meta data of download file
-	ReadFileMetaData(taskID string) (*FileMetaData, error)
+	// ReadFileMetadata return meta data of download file
+	ReadFileMetadata(taskID string) (*FileMetadata, error)
 
-	// WriteFileMetaData write file meta to storage
-	WriteFileMetaData(taskID string, meta *FileMetaData) error
+	// WriteFileMetadata write file meta to storage
+	WriteFileMetadata(taskID string, meta *FileMetadata) error
 
 	// WritePieceMetaRecords write piece meta records to storage
 	WritePieceMetaRecords(taskID string, metaRecords []*PieceMetaRecord) error
 
-	// AppendPieceMetaData append piece meta data to storage
-	AppendPieceMetaData(taskID string, metaRecord *PieceMetaRecord) error
+	// AppendPieceMetadata append piece meta data to storage
+	AppendPieceMetadata(taskID string, metaRecord *PieceMetaRecord) error
 
 	// ReadPieceMetaRecords read piece meta records from storage
 	ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error)
@@ -77,8 +77,8 @@ type Manager interface {
 	TryFreeSpace(fileLength int64) (bool, error)
 }
 
-// FileMetaData meta data of task
-type FileMetaData struct {
+// FileMetadata meta data of task
+type FileMetadata struct {
 	TaskID           string            `json:"taskId"`
 	TaskURL          string            `json:"taskUrl"`
 	PieceSize        int32             `json:"pieceSize"`
@@ -92,7 +92,7 @@ type FileMetaData struct {
 	Finish           bool              `json:"finish"`
 	Success          bool              `json:"success"`
 	TotalPieceCount  int32             `json:"totalPieceCount"`
-	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
+	//PieceMetadataSign string            `json:"pieceMetadataSign"`
 }
 
 // PieceMetaRecord meta data of piece
@@ -185,20 +185,20 @@ func (m *managerPlugin) CreateUploadLink(taskID string) error {
 	return m.instance.CreateUploadLink(taskID)
 }
 
-func (m *managerPlugin) ReadFileMetaData(taskID string) (*FileMetaData, error) {
-	return m.instance.ReadFileMetaData(taskID)
+func (m *managerPlugin) ReadFileMetadata(taskID string) (*FileMetadata, error) {
+	return m.instance.ReadFileMetadata(taskID)
 }
 
-func (m *managerPlugin) WriteFileMetaData(taskID string, data *FileMetaData) error {
-	return m.instance.WriteFileMetaData(taskID, data)
+func (m *managerPlugin) WriteFileMetadata(taskID string, data *FileMetadata) error {
+	return m.instance.WriteFileMetadata(taskID, data)
 }
 
 func (m *managerPlugin) WritePieceMetaRecords(taskID string, records []*PieceMetaRecord) error {
 	return m.instance.WritePieceMetaRecords(taskID, records)
 }
 
-func (m *managerPlugin) AppendPieceMetaData(taskID string, record *PieceMetaRecord) error {
-	return m.instance.AppendPieceMetaData(taskID, record)
+func (m *managerPlugin) AppendPieceMetadata(taskID string, record *PieceMetaRecord) error {
+	return m.instance.AppendPieceMetadata(taskID, record)
 }
 
 func (m *managerPlugin) ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error) {
