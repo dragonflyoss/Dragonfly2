@@ -80,11 +80,11 @@ type HDFSSourceClientOption func(p *hdfsSourceClient)
 func (h *hdfsSourceClient) GetContentLength(request *source.Request) (int64, error) {
 	hdfsClient, path, err := h.getHDFSClientAndPath(request.URL)
 	if err != nil {
-		return source.UnKnownSourceFileLen, err
+		return source.UnknownSourceFileLen, err
 	}
 	info, err := hdfsClient.Stat(path)
 	if err != nil {
-		return source.UnKnownSourceFileLen, err
+		return source.UnknownSourceFileLen, err
 	}
 	return info.Size(), nil
 }
