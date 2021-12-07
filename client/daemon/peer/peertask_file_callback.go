@@ -64,7 +64,7 @@ func (p *filePeerTaskCallback) Update(pt Task) error {
 	// update storage
 	err := p.ptm.storageManager.UpdateTask(p.pt.ctx,
 		&storage.UpdateTaskRequest{
-			PeerTaskMetadata: storage.PeerTaskMetadata{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
@@ -157,7 +157,7 @@ func (p *filePeerTaskCallback) ValidateDigest(pt Task) error {
 		return nil
 	}
 	err := p.ptm.storageManager.ValidateDigest(
-		&storage.PeerTaskMetadata{
+		&storage.PeerTaskMetaData{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		})

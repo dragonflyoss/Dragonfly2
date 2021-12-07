@@ -19,6 +19,7 @@ package rpcserver
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
@@ -35,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
+	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 var tracer = otel.Tracer("cdn-server")
@@ -56,6 +58,29 @@ func New(cfg *config.Config, taskMgr supervisor.SeedTaskMgr, opts ...grpc.Server
 	return svr.Server, nil
 }
 
+func constructRegisterRequest(req *cdnsystem.SeedRequest) *types.TaskRegisterRequest {
+	meta := req.UrlMeta
+	header := make(map[string]string)
+	if meta != nil {
+		if !stringutils.IsBlank(meta.Digest) {
+			header["digest"] = meta.Digest
+		}
+		if !stringutils.IsBlank(meta.Range) {
+			header["range"] = meta.Range
+		}
+		for k, v := range meta.Header {
+			header[k] = v
+		}
+	}
+	return &types.TaskRegisterRequest{
+		Header: header,
+		URL:    req.Url,
+		Digest: header["digest"],
+		TaskID: req.TaskId,
+		Filter: strings.Split(req.UrlMeta.Filter, "&"),
+	}
+}
+
 func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanObtainSeeds, trace.WithSpanKind(trace.SpanKindServer))
@@ -71,8 +96,9 @@ func (css *server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		}
 		logger.Infof("seeds task %s result success: %t", req.TaskId, err == nil)
 	}()
+	registerRequest := constructRegisterRequest(req)
 	// register task
-	pieceChan, err := css.taskMgr.Register(ctx, types.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
+	pieceChan, err := css.taskMgr.Register(ctx, registerRequest)
 	if err != nil {
 		if cdnerrors.IsResourcesLacked(err) {
 			err = dferrors.Newf(base.Code_ResourceLacked, "resources lacked for task(%s): %v", req.TaskId, err)

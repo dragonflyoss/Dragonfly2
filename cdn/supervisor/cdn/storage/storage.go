@@ -52,17 +52,20 @@ type Manager interface {
 	// ReadDownloadFile return reader of download file
 	ReadDownloadFile(taskID string) (io.ReadCloser, error)
 
-	// ReadFileMetadata return meta data of download file
-	ReadFileMetadata(taskID string) (*FileMetadata, error)
+	// CreateUploadLink create a upload link to download file
+	CreateUploadLink(taskID string) error
 
-	// WriteFileMetadata write file meta to storage
-	WriteFileMetadata(taskID string, meta *FileMetadata) error
+	// ReadFileMetaData return meta data of download file
+	ReadFileMetaData(taskID string) (*FileMetaData, error)
+
+	// WriteFileMetaData write file meta to storage
+	WriteFileMetaData(taskID string, meta *FileMetaData) error
 
 	// WritePieceMetaRecords write piece meta records to storage
 	WritePieceMetaRecords(taskID string, metaRecords []*PieceMetaRecord) error
 
-	// AppendPieceMetadata append piece meta data to storage
-	AppendPieceMetadata(taskID string, metaRecord *PieceMetaRecord) error
+	// AppendPieceMetaData append piece meta data to storage
+	AppendPieceMetaData(taskID string, metaRecord *PieceMetaRecord) error
 
 	// ReadPieceMetaRecords read piece meta records from storage
 	ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error)
@@ -74,10 +77,10 @@ type Manager interface {
 	TryFreeSpace(fileLength int64) (bool, error)
 }
 
-// FileMetadata meta data of task
-type FileMetadata struct {
-	TaskID           string            `json:"taskID"`
-	TaskURL          string            `json:"taskURL"`
+// FileMetaData meta data of task
+type FileMetaData struct {
+	TaskID           string            `json:"taskId"`
+	TaskURL          string            `json:"taskUrl"`
 	PieceSize        int32             `json:"pieceSize"`
 	SourceFileLen    int64             `json:"sourceFileLen"`
 	AccessTime       int64             `json:"accessTime"`
@@ -89,7 +92,7 @@ type FileMetadata struct {
 	Finish           bool              `json:"finish"`
 	Success          bool              `json:"success"`
 	TotalPieceCount  int32             `json:"totalPieceCount"`
-	//PieceMetadataSign string            `json:"pieceMetadataSign"`
+	//PieceMetaDataSign string            `json:"pieceMetaDataSign"`
 }
 
 // PieceMetaRecord meta data of piece
@@ -178,20 +181,24 @@ func (m *managerPlugin) ReadDownloadFile(taskID string) (io.ReadCloser, error) {
 	return m.instance.ReadDownloadFile(taskID)
 }
 
-func (m *managerPlugin) ReadFileMetadata(taskID string) (*FileMetadata, error) {
-	return m.instance.ReadFileMetadata(taskID)
+func (m *managerPlugin) CreateUploadLink(taskID string) error {
+	return m.instance.CreateUploadLink(taskID)
 }
 
-func (m *managerPlugin) WriteFileMetadata(taskID string, data *FileMetadata) error {
-	return m.instance.WriteFileMetadata(taskID, data)
+func (m *managerPlugin) ReadFileMetaData(taskID string) (*FileMetaData, error) {
+	return m.instance.ReadFileMetaData(taskID)
+}
+
+func (m *managerPlugin) WriteFileMetaData(taskID string, data *FileMetaData) error {
+	return m.instance.WriteFileMetaData(taskID, data)
 }
 
 func (m *managerPlugin) WritePieceMetaRecords(taskID string, records []*PieceMetaRecord) error {
 	return m.instance.WritePieceMetaRecords(taskID, records)
 }
 
-func (m *managerPlugin) AppendPieceMetadata(taskID string, record *PieceMetaRecord) error {
-	return m.instance.AppendPieceMetadata(taskID, record)
+func (m *managerPlugin) AppendPieceMetaData(taskID string, record *PieceMetaRecord) error {
+	return m.instance.AppendPieceMetaData(taskID, record)
 }
 
 func (m *managerPlugin) ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error) {

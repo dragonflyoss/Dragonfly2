@@ -119,8 +119,8 @@ func (cm *Manager) TriggerCDN(ctx context.Context, task *types.SeedTask) (seedTa
 	// full cache
 	if detectResult.breakPoint == -1 {
 		task.Log().Infof("cache full hit on local")
-		seedTask.UpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetadata.SourceRealDigest, detectResult.fileMetadata.PieceMd5Sign,
-			detectResult.fileMetadata.SourceFileLen, detectResult.fileMetadata.CdnFileLength)
+		seedTask.UpdateTaskInfo(types.TaskInfoCdnStatusSuccess, detectResult.fileMetaData.SourceRealDigest, detectResult.fileMetaData.PieceMd5Sign,
+			detectResult.fileMetaData.SourceFileLen, detectResult.fileMetaData.CdnFileLength)
 		return seedTask, nil
 	}
 	server.StatSeedStart(task.TaskID, task.URL)
@@ -176,7 +176,7 @@ func (cm *Manager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, downloadMetadata *downloadMetadata) (bool, error) {
-	task.Log().Debugf("handle cdn result, downloadMetadata: %#v", downloadMetadata)
+	task.Log().Debugf("handle cdn result, downloadMetaData: %#v", downloadMetadata)
 	var isSuccess = true
 	var errorMsg string
 	// check md5
@@ -203,7 +203,7 @@ func (cm *Manager) handleCDNResult(task *types.SeedTask, sourceDigest string, do
 	if !isSuccess {
 		cdnFileLength = 0
 	}
-	if err := cm.cacheDataManager.updateStatusAndResult(task.TaskID, &storage.FileMetadata{
+	if err := cm.cacheDataManager.updateStatusAndResult(task.TaskID, &storage.FileMetaData{
 		Finish:           true,
 		Success:          isSuccess,
 		SourceRealDigest: sourceDigest,

@@ -281,11 +281,11 @@ func (ptm *peerTaskManager) storeTinyPeerTask(ctx context.Context, tiny *TinyDat
 	}
 	n, err := ptm.storageManager.WritePiece(ctx,
 		&storage.WritePieceRequest{
-			PeerTaskMetadata: storage.PeerTaskMetadata{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
 				PeerID: tiny.PeerID,
 				TaskID: tiny.TaskID,
 			},
-			PieceMetadata: storage.PieceMetadata{
+			PieceMetaData: storage.PieceMetaData{
 				Num:    0,
 				Md5:    "",
 				Offset: 0,

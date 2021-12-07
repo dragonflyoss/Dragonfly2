@@ -24,7 +24,7 @@ import (
 
 const (
 	taskData     = "data"
-	taskMetadata = "metadata"
+	taskMetaData = "metadata"
 
 	defaultFileMode      = os.FileMode(0644)
 	defaultDirectoryMode = os.FileMode(0755)

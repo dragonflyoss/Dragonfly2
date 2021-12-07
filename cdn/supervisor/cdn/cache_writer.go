@@ -181,7 +181,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, wg *sync.WaitGroup, routi
 					PieceStyle: pieceStyle,
 				}
 				// write piece meta to storage
-				if err = cw.cacheDataManager.appendPieceMetadata(p.taskID, pieceRecord); err != nil {
+				if err = cw.cacheDataManager.appendPieceMetaData(p.taskID, pieceRecord); err != nil {
 					logger.Errorf("write piece meta file: %v", err)
 					continue
 				}

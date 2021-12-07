@@ -147,7 +147,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 				detectResult: &cacheResult{
 					breakPoint:       0,
 					pieceMetaRecords: nil,
-					fileMetadata:     nil,
+					fileMetaData:     nil,
 				},
 			},
 			result: &downloadMetadata{
@@ -169,7 +169,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 				detectResult: &cacheResult{
 					breakPoint:       0,
 					pieceMetaRecords: nil,
-					fileMetadata:     nil,
+					fileMetaData:     nil,
 				},
 			},
 			result: &downloadMetadata{

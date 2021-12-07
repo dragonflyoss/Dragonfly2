@@ -96,14 +96,14 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	if err != nil {
 		return nil, fmt.Errorf("get seed subscribers: %v", err)
 	}
-	pieceMetadataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
+	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
 	if err != nil {
 		return nil, fmt.Errorf("get piece meta records by taskID: %v", err)
 	}
 	ch := make(chan *types.SeedPiece, pm.buffer)
 	ele := chanList.PushBack(ch)
 	go func(seedCh chan *types.SeedPiece, ele *list.Element) {
-		for _, pieceMetaRecord := range pieceMetadataRecords {
+		for _, pieceMetaRecord := range pieceMetaDataRecords {
 			logger.Debugf("seed piece meta record %#v", pieceMetaRecord)
 			select {
 			case seedCh <- pieceMetaRecord:

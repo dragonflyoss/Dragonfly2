@@ -111,11 +111,11 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
 	reader, closer, err := um.StorageManager.ReadPiece(r.Context(),
 		&storage.ReadPieceRequest{
-			PeerTaskMetadata: storage.PeerTaskMetadata{
+			PeerTaskMetaData: storage.PeerTaskMetaData{
 				TaskID: task,
 				PeerID: peer,
 			},
-			PieceMetadata: storage.PieceMetadata{
+			PieceMetaData: storage.PieceMetaData{
 				Num:   -1,
 				Range: rg[0],
 			},
