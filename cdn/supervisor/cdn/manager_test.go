@@ -65,10 +65,12 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 		suite.Failf("failed to get storage mode %s", constants.DefaultStorageMode)
 	}
 	ctrl := gomock.NewController(suite.T())
-	progressManager := progressMock.NewMockManager(ctrl)
 	taskManager := taskMock.NewMockManager(ctrl)
+	progressManager := progressMock.NewMockManager(ctrl)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
+	progressManager.EXPECT().PublishTask(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(2)
+	progressManager.EXPECT().PublishTask(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(2)
 	suite.cm, _ = newManager(config.New(), storeMgr, progressManager, taskManager)
 }
 

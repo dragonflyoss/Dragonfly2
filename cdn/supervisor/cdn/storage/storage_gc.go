@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 
@@ -36,13 +37,13 @@ type Cleaner interface {
 }
 
 type cleaner struct {
-	cfg            *GCConfig
+	cfg            *config.GCConfig
 	driver         storedriver.Driver
 	taskManager    task.Manager
 	storageManager Manager
 }
 
-func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageManager Manager, taskManager task.Manager) (Cleaner, error) {
+func NewStorageCleaner(cfg *config.GCConfig, driver storedriver.Driver, storageManager Manager, taskManager task.Manager) (Cleaner, error) {
 	return &cleaner{
 		cfg:            cfg,
 		driver:         driver,

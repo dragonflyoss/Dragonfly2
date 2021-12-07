@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"github.com/pkg/errors"
@@ -54,7 +55,7 @@ func init() {
 }
 
 // NewStorageManager performs initialization for storage manager and return a storage Manager.
-func newStorageManager(cfg *storage.Config) (storage.Manager, error) {
+func newStorageManager(cfg *config.StorageConfig) (storage.Manager, error) {
 	if len(cfg.DriverConfigs) != 2 {
 		return nil, fmt.Errorf("disk storage manager should have two driver, cfg's driver number is wrong : %v", cfg)
 	}
@@ -95,7 +96,7 @@ func (h *hybridStorageManager) Initialize(taskManager task.Manager) {
 	logger.GcLogger.With("type", "hybrid").Info("success initialize hybrid cleaners")
 }
 
-func (h *hybridStorageManager) getDiskDefaultGcConfig() *storage.GCConfig {
+func (h *hybridStorageManager) getDiskDefaultGcConfig() *config.GCConfig {
 	totalSpace, err := h.diskDriver.GetTotalSpace()
 	if err != nil {
 		logger.GcLogger.With("type", "hybrid").Errorf("failed to get total space of disk: %v", err)
@@ -104,7 +105,7 @@ func (h *hybridStorageManager) getDiskDefaultGcConfig() *storage.GCConfig {
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &storage.GCConfig{
+	return &config.GCConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
@@ -112,7 +113,7 @@ func (h *hybridStorageManager) getDiskDefaultGcConfig() *storage.GCConfig {
 	}
 }
 
-func (h *hybridStorageManager) getMemoryDefaultGcConfig() *storage.GCConfig {
+func (h *hybridStorageManager) getMemoryDefaultGcConfig() *config.GCConfig {
 	// determine whether the shared cache can be used
 	diff := unit.Bytes(0)
 	totalSpace, err := h.memoryDriver.GetTotalSpace()
@@ -125,7 +126,7 @@ func (h *hybridStorageManager) getMemoryDefaultGcConfig() *storage.GCConfig {
 	if diff >= totalSpace {
 		h.hasShm = false
 	}
-	return &storage.GCConfig{
+	return &config.GCConfig{
 		YoungGCThreshold:  10*unit.GB + diff,
 		FullGCThreshold:   2*unit.GB + diff,
 		CleanRatio:        3,
@@ -134,7 +135,7 @@ func (h *hybridStorageManager) getMemoryDefaultGcConfig() *storage.GCConfig {
 }
 
 type hybridStorageManager struct {
-	cfg                 *storage.Config
+	cfg                 *config.StorageConfig
 	memoryDriver        storedriver.Driver
 	diskDriver          storedriver.Driver
 	diskDriverCleaner   storage.Cleaner

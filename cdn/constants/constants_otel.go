@@ -24,7 +24,6 @@ const (
 	AttributePiecePacketResult    = attribute.Key("d7y.piece.packet.result")
 	AttributeTaskID               = attribute.Key("d7y.task.id")
 	AttributeTaskStatus           = attribute.Key("d7y.task.status")
-	AttributeTaskURL              = attribute.Key("d7y.task.url")
 	AttributeTaskInfo             = attribute.Key("d7y.taskInfo")
 	AttributeIfReuseTask          = attribute.Key("d7y.task.already.exist")
 	AttributeSeedPiece            = attribute.Key("d7y.seed.piece")
@@ -48,7 +47,7 @@ const (
 )
 
 const (
-	EventHitUnReachableURL       = "hit-unReachableURL"
+	EventHitUnreachableURL       = "hit-unreachableURL"
 	EventRequestSourceFileLength = "request-source-file-length"
 	EventDeleteUnReachableTask   = "downloaded"
 	EventInitSeedProgress        = "init-seed-progress"

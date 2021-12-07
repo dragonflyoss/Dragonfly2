@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -211,7 +212,7 @@ func (m *managerPlugin) DeleteTask(taskID string) error {
 }
 
 // ManagerBuilder is a function that creates a new storage manager plugin instant with the giving conf.
-type ManagerBuilder func(cfg *Config) (Manager, error)
+type ManagerBuilder func(cfg *config.StorageConfig) (Manager, error)
 
 // Register defines an interface to register a storage manager with specified name.
 // All storage managers should call this function to register itself to the storage manager factory.
@@ -219,7 +220,7 @@ func Register(name string, builder ManagerBuilder) error {
 	name = strings.ToLower(name)
 	// plugin builder
 	var f = func(conf interface{}) (plugins.Plugin, error) {
-		cfg := &Config{}
+		cfg := &config.StorageConfig{}
 		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
 				switch to {
@@ -249,7 +250,7 @@ func Register(name string, builder ManagerBuilder) error {
 	return plugins.RegisterPluginBuilder(plugins.StorageManagerPlugin, name, f)
 }
 
-func newManagerPlugin(name string, builder ManagerBuilder, cfg *Config) (plugins.Plugin, error) {
+func newManagerPlugin(name string, builder ManagerBuilder, cfg *config.StorageConfig) (plugins.Plugin, error) {
 	if name == "" || builder == nil {
 		return nil, fmt.Errorf("storage manager plugin's name and builder cannot be nil")
 	}
@@ -272,24 +273,6 @@ func Get(name string) (Manager, bool) {
 		return nil, false
 	}
 	return v.(*managerPlugin).instance, true
-}
-
-type Config struct {
-	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
-	GCInterval     time.Duration            `yaml:"gcInterval"`
-	DriverConfigs  map[string]*DriverConfig `yaml:"driverConfigs"`
-}
-
-type DriverConfig struct {
-	GCConfig *GCConfig `yaml:"gcConfig"`
-}
-
-// GCConfig gc config
-type GCConfig struct {
-	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
-	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
-	CleanRatio        int           `yaml:"cleanRatio"`
-	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }
 
 const (

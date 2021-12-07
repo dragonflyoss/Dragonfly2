@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/config"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
@@ -53,7 +54,7 @@ func init() {
 	}
 }
 
-func newStorageManager(cfg *storage.Config) (storage.Manager, error) {
+func newStorageManager(cfg *config.StorageConfig) (storage.Manager, error) {
 	if len(cfg.DriverConfigs) != 1 {
 		return nil, fmt.Errorf("disk storage manager should have only one disk driver, cfg's driver number is wrong config: %v", cfg)
 	}
@@ -71,13 +72,13 @@ func newStorageManager(cfg *storage.Config) (storage.Manager, error) {
 }
 
 type diskStorageManager struct {
-	cfg         *storage.Config
+	cfg         *config.StorageConfig
 	diskDriver  storedriver.Driver
 	cleaner     storage.Cleaner
 	taskManager task.Manager
 }
 
-func (s *diskStorageManager) getDefaultGcConfig() *storage.GCConfig {
+func (s *diskStorageManager) getDefaultGcConfig() *config.GCConfig {
 	totalSpace, err := s.diskDriver.GetTotalSpace()
 	if err != nil {
 		logger.GcLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
@@ -86,7 +87,7 @@ func (s *diskStorageManager) getDefaultGcConfig() *storage.GCConfig {
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
 		yongGcThreshold = totalSpace / 4
 	}
-	return &storage.GCConfig{
+	return &config.GCConfig{
 		YoungGCThreshold:  yongGcThreshold,
 		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
