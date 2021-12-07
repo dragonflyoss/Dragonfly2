@@ -35,11 +35,11 @@ func getDownloadKey(taskID string) string {
 	return path.Join(getParentKey(taskID), taskID)
 }
 
-func getTaskMetaDataKey(taskID string) string {
+func getTaskMetadataKey(taskID string) string {
 	return path.Join(getParentKey(taskID), taskID+".meta")
 }
 
-func getPieceMetaDataKey(taskID string) string {
+func getPieceMetadataKey(taskID string) string {
 	return path.Join(getParentKey(taskID), taskID+".piece")
 }
 
@@ -61,25 +61,25 @@ func GetUploadRaw(taskID string) *storedriver.Raw {
 	}
 }
 
-func GetTaskMetaDataRaw(taskID string) *storedriver.Raw {
+func GetTaskMetadataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getTaskMetaDataKey(taskID),
+		Key:    getTaskMetadataKey(taskID),
 		Trunc:  true,
 	}
 }
 
-func GetPieceMetaDataRaw(taskID string) *storedriver.Raw {
+func GetPieceMetadataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getPieceMetaDataKey(taskID),
+		Key:    getPieceMetadataKey(taskID),
 	}
 }
 
-func GetAppendPieceMetaDataRaw(taskID string) *storedriver.Raw {
+func GetAppendPieceMetadataRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
-		Key:    getPieceMetaDataKey(taskID),
+		Key:    getPieceMetadataKey(taskID),
 		Append: true,
 	}
 }

@@ -30,18 +30,18 @@ type persistentMetadata struct {
 	ContentLength int64                   `json:"contentLength"`
 	TotalPieces   int32                   `json:"totalPieces"`
 	PeerID        string                  `json:"peerID"`
-	Pieces        map[int32]PieceMetaData `json:"pieces"`
+	Pieces        map[int32]PieceMetadata `json:"pieces"`
 	PieceMd5Sign  string                  `json:"pieceMd5Sign"`
 	DataFilePath  string                  `json:"dataFilePath"`
 	Done          bool                    `json:"done"`
 }
 
-type PeerTaskMetaData struct {
+type PeerTaskMetadata struct {
 	PeerID string `json:"peerID,omitempty"`
 	TaskID string `json:"taskID,omitempty"`
 }
 
-type PieceMetaData struct {
+type PieceMetadata struct {
 	Num    int32            `json:"num,omitempty"`
 	Md5    string           `json:"md5,omitempty"`
 	Offset uint64           `json:"offset,omitempty"`
@@ -63,8 +63,8 @@ type RegisterTaskRequest struct {
 }
 
 type WritePieceRequest struct {
-	PeerTaskMetaData
-	PieceMetaData
+	PeerTaskMetadata
+	PieceMetadata
 	UnknownLength bool
 	Reader        io.Reader
 }
@@ -77,12 +77,12 @@ type StoreRequest struct {
 }
 
 type ReadPieceRequest struct {
-	PeerTaskMetaData
-	PieceMetaData
+	PeerTaskMetadata
+	PieceMetadata
 }
 
 type UpdateTaskRequest struct {
-	PeerTaskMetaData
+	PeerTaskMetadata
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string

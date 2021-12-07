@@ -219,7 +219,7 @@ func (h *hybridStorageMgr) ReadDownloadFile(taskID string) (io.ReadCloser, error
 }
 
 func (h *hybridStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.PieceMetaRecord, error) {
-	readBytes, err := h.diskDriver.GetBytes(storage.GetPieceMetaDataRaw(taskID))
+	readBytes, err := h.diskDriver.GetBytes(storage.GetPieceMetadataRaw(taskID))
 	if err != nil {
 		return nil, err
 	}
@@ -235,29 +235,29 @@ func (h *hybridStorageMgr) ReadPieceMetaRecords(taskID string) ([]*storage.Piece
 	return result, nil
 }
 
-func (h *hybridStorageMgr) ReadFileMetaData(taskID string) (*storage.FileMetaData, error) {
-	readBytes, err := h.diskDriver.GetBytes(storage.GetTaskMetaDataRaw(taskID))
+func (h *hybridStorageMgr) ReadFileMetadata(taskID string) (*storage.FileMetadata, error) {
+	readBytes, err := h.diskDriver.GetBytes(storage.GetTaskMetadataRaw(taskID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "get metadata bytes")
 	}
 
-	metaData := &storage.FileMetaData{}
-	if err := json.Unmarshal(readBytes, metaData); err != nil {
+	metadata := &storage.FileMetadata{}
+	if err := json.Unmarshal(readBytes, metadata); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal metadata bytes")
 	}
-	return metaData, nil
+	return metadata, nil
 }
 
-func (h *hybridStorageMgr) AppendPieceMetaData(taskID string, record *storage.PieceMetaRecord) error {
-	return h.diskDriver.PutBytes(storage.GetAppendPieceMetaDataRaw(taskID), []byte(record.String()+"\n"))
+func (h *hybridStorageMgr) AppendPieceMetadata(taskID string, record *storage.PieceMetaRecord) error {
+	return h.diskDriver.PutBytes(storage.GetAppendPieceMetadataRaw(taskID), []byte(record.String()+"\n"))
 }
 
-func (h *hybridStorageMgr) WriteFileMetaData(taskID string, metaData *storage.FileMetaData) error {
-	data, err := json.Marshal(metaData)
+func (h *hybridStorageMgr) WriteFileMetadata(taskID string, metadata *storage.FileMetadata) error {
+	data, err := json.Marshal(metadata)
 	if err != nil {
 		return errors.Wrapf(err, "marshal metadata")
 	}
-	return h.diskDriver.PutBytes(storage.GetTaskMetaDataRaw(taskID), data)
+	return h.diskDriver.PutBytes(storage.GetTaskMetadataRaw(taskID), data)
 }
 
 func (h *hybridStorageMgr) WritePieceMetaRecords(taskID string, records []*storage.PieceMetaRecord) error {
@@ -265,7 +265,7 @@ func (h *hybridStorageMgr) WritePieceMetaRecords(taskID string, records []*stora
 	for i := range records {
 		recordStrings = append(recordStrings, records[i].String())
 	}
-	return h.diskDriver.PutBytes(storage.GetPieceMetaDataRaw(taskID), []byte(strings.Join(recordStrings, "\n")))
+	return h.diskDriver.PutBytes(storage.GetPieceMetadataRaw(taskID), []byte(strings.Join(recordStrings, "\n")))
 }
 
 func (h *hybridStorageMgr) CreateUploadLink(taskID string) error {
@@ -387,11 +387,11 @@ func (h *hybridStorageMgr) deleteTaskFiles(taskID string, deleteUploadPath bool,
 			return err
 		}
 		// deleteTaskFiles delete files associated with taskID
-		if err := h.diskDriver.Remove(storage.GetTaskMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
+		if err := h.diskDriver.Remove(storage.GetTaskMetadataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 		// delete piece meta data
-		if err := h.diskDriver.Remove(storage.GetPieceMetaDataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
+		if err := h.diskDriver.Remove(storage.GetPieceMetadataRaw(taskID)); err != nil && !cdnerrors.IsFileNotExist(err) {
 			return err
 		}
 	}

@@ -81,7 +81,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := s.LoadTask(PeerTaskMetaData{
+	ts, ok := s.LoadTask(PeerTaskMetadata{
 		PeerID: peerID,
 		TaskID: taskID,
 	})
@@ -114,10 +114,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	// random put all pieces
 	for _, p := range pieces {
 		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -140,10 +140,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
 	for _, p := range pieces {
 		rd, cl, err := ts.ReadPiece(context.Background(), &ReadPieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -254,7 +254,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := s.LoadTask(PeerTaskMetaData{
+	ts, ok := s.LoadTask(PeerTaskMetadata{
 		PeerID: peerID,
 		TaskID: taskID,
 	})
@@ -287,10 +287,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	// random put all pieces
 	for _, p := range pieces {
 		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -313,10 +313,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
 	for _, p := range pieces {
 		rd, cl, err := ts.ReadPiece(context.Background(), &ReadPieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),

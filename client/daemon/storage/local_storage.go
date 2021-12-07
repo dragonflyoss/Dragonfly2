@@ -126,11 +126,11 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		}
 	}
 	// when Md5 is empty, try to get md5 from reader, it's useful for back source
-	if req.PieceMetaData.Md5 == "" {
+	if req.PieceMetadata.Md5 == "" {
 		t.Warnf("piece md5 not found in metadata, read from reader")
 		if get, ok := req.Reader.(digestutils.DigestReader); ok {
-			req.PieceMetaData.Md5 = get.Digest()
-			t.Infof("read md5 from reader, value: %s", req.PieceMetaData.Md5)
+			req.PieceMetadata.Md5 = get.Digest()
+			t.Infof("read md5 from reader, value: %s", req.PieceMetadata.Md5)
 		} else {
 			t.Warnf("reader is not a DigestReader")
 		}
@@ -143,7 +143,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, ok := t.Pieces[req.Num]; ok {
 		return n, nil
 	}
-	t.Pieces[req.Num] = req.PieceMetaData
+	t.Pieces[req.Num] = req.PieceMetadata
 	return n, nil
 }
 
@@ -171,7 +171,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	return nil
 }
 
-func (t *localTaskStore) ValidateDigest(*PeerTaskMetaData) error {
+func (t *localTaskStore) ValidateDigest(*PeerTaskMetadata) error {
 	t.Lock()
 	defer t.Unlock()
 	if t.persistentMetadata.PieceMd5Sign == "" {
@@ -196,7 +196,7 @@ func (t *localTaskStore) ValidateDigest(*PeerTaskMetaData) error {
 	return nil
 }
 
-func (t *localTaskStore) IsInvalid(*PeerTaskMetaData) (bool, error) {
+func (t *localTaskStore) IsInvalid(*PeerTaskMetadata) (bool, error) {
 	return t.invalid.Load(), nil
 }
 
@@ -236,7 +236,7 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	return io.LimitReader(file, req.Range.Length), file, nil
 }
 
-func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetaData) (io.ReadCloser, error) {
+func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetadata) (io.ReadCloser, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to read all pieces")
 		return nil, ErrInvalidDigest
