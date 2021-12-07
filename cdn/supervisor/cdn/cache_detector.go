@@ -121,8 +121,8 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fil
 	}
 	// not expired
 	if fileMetadata.Finish {
-		// quickly detect the cache situation through the meta data
-		return cd.parseByReadMetaFile(task.TaskID, fileMetadata)
+		// quickly detect the cache situation through the metadata
+		return cd.detectByReadMetaFile(task.TaskID, fileMetadata)
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
@@ -138,11 +138,11 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fil
 	if !supportRange {
 		return nil, errors.Errorf("resource %s is not support range request", task.URL)
 	}
-	return cd.parseByReadFile(task.TaskID, fileMetadata, fileDigest)
+	return cd.detectByReadFile(task.TaskID, fileMetadata, fileDigest)
 }
 
 // parseByReadMetaFile detect cache by read meta and pieceMeta files of task
-func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetadata *storage.FileMetadata) (*cacheResult, error) {
+func (cd *cacheDetector) detectByReadMetaFile(taskID string, fileMetadata *storage.FileMetadata) (*cacheResult, error) {
 	if !fileMetadata.Success {
 		return nil, fmt.Errorf("success flag of taskID %s is false", taskID)
 	}
@@ -174,7 +174,7 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetadata *storag
 }
 
 // parseByReadFile detect cache by read pieceMeta and data files of task
-func (cd *cacheDetector) parseByReadFile(taskID string, metadata *storage.FileMetadata, fileDigest hash.Hash) (*cacheResult, error) {
+func (cd *cacheDetector) detectByReadFile(taskID string, metadata *storage.FileMetadata, fileDigest hash.Hash) (*cacheResult, error) {
 	reader, err := cd.cacheDataManager.readDownloadFile(taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read download data file")

@@ -52,9 +52,6 @@ type Manager interface {
 	// ReadDownloadFile return reader of download file
 	ReadDownloadFile(taskID string) (io.ReadCloser, error)
 
-	// CreateUploadLink create a upload link to download file
-	CreateUploadLink(taskID string) error
-
 	// ReadFileMetadata return meta data of download file
 	ReadFileMetadata(taskID string) (*FileMetadata, error)
 
@@ -79,8 +76,8 @@ type Manager interface {
 
 // FileMetadata meta data of task
 type FileMetadata struct {
-	TaskID           string            `json:"taskId"`
-	TaskURL          string            `json:"taskUrl"`
+	TaskID           string            `json:"taskID"`
+	TaskURL          string            `json:"taskURL"`
 	PieceSize        int32             `json:"pieceSize"`
 	SourceFileLen    int64             `json:"sourceFileLen"`
 	AccessTime       int64             `json:"accessTime"`
@@ -179,10 +176,6 @@ func (m *managerPlugin) WriteDownloadFile(taskID string, offset int64, len int64
 
 func (m *managerPlugin) ReadDownloadFile(taskID string) (io.ReadCloser, error) {
 	return m.instance.ReadDownloadFile(taskID)
-}
-
-func (m *managerPlugin) CreateUploadLink(taskID string) error {
-	return m.instance.CreateUploadLink(taskID)
 }
 
 func (m *managerPlugin) ReadFileMetadata(taskID string) (*FileMetadata, error) {
