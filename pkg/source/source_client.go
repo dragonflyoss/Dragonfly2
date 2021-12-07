@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -164,10 +163,53 @@ func (m *clientManager) UnRegister(scheme string) {
 }
 
 func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
+	logger.Debugf("current clients: %#v", m.clients)
 	m.mu.RLock()
-	defer m.mu.RUnlock()
-	client, ok := m.clients[strings.ToLower(scheme)]
-	return client, ok
+	scheme = strings.ToLower(scheme)
+	client, ok := m.clients[scheme]
+	if ok {
+		m.mu.RUnlock()
+		return client, true
+	}
+	m.mu.RUnlock()
+	m.mu.Lock()
+	// double check
+	client, ok = m.clients[scheme]
+	if ok {
+		m.mu.Unlock()
+		return client, true
+	}
+	client, err := m.loadSourcePlugin(scheme)
+	if err != nil {
+		logger.Errorf("failed to load source plugin for scheme %s: %v", scheme, err)
+		m.mu.Unlock()
+		return nil, false
+	}
+	m.clients[strings.ToLower(scheme)] = client
+	m.mu.Unlock()
+	return client, true
+}
+
+// getSourceClient get a source client from source manager with specified schema.
+func (m *clientManager) getSourceClient(scheme string) (ResourceClient, error) {
+
+}
+
+func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// double check
+	client, ok := m.clients[scheme]
+	if ok {
+		return client, nil
+	}
+
+	client, err := LoadPlugin(scheme)
+	if err != nil {
+		return nil, err
+	}
+	m.clients[scheme] = client
+	return client, nil
 }
 
 func Register(scheme string, resourceClient ResourceClient, adaptor requestAdapter, hooks ...Hook) error {
@@ -284,41 +326,4 @@ func DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error
 		return nil, nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	return client.DownloadWithExpireInfo(request)
-}
-
-// getSourceClient get a source client from source manager with specified schema.
-func (m *clientManager) getSourceClient(rawURL string) (ResourceClient, error) {
-	logger.Debugf("current clients: %#v", m.clients)
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, err
-	}
-	m.mu.RLock()
-	client, ok := m.clients[strings.ToLower(parsedURL.Scheme)]
-	m.mu.RUnlock()
-	if !ok || client == nil {
-		client, err = m.loadSourcePlugin(strings.ToLower(parsedURL.Scheme))
-		if err == nil && client != nil {
-			return client, nil
-		}
-		return nil, errors.Errorf("can not find client for supporting url %s, clients:%v", rawURL, m.clients)
-	}
-	return client, nil
-}
-
-func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	// double check
-	client, ok := m.clients[scheme]
-	if ok {
-		return client, nil
-	}
-
-	client, err := LoadPlugin(scheme)
-	if err != nil {
-		return nil, err
-	}
-	m.clients[scheme] = client
-	return client, nil
 }
