@@ -173,12 +173,6 @@ func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
 	}
 	m.mu.RUnlock()
 	m.mu.Lock()
-	// double check
-	client, ok = m.clients[scheme]
-	if ok {
-		m.mu.Unlock()
-		return client, true
-	}
 	client, err := m.loadSourcePlugin(scheme)
 	if err != nil {
 		logger.Errorf("failed to load source plugin for scheme %s: %v", scheme, err)
@@ -191,8 +185,6 @@ func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
 }
 
 func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
 	// double check
 	client, ok := m.clients[scheme]
 	if ok {
