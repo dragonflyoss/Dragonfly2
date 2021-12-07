@@ -190,11 +190,6 @@ func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
 	return client, true
 }
 
-// getSourceClient get a source client from source manager with specified schema.
-func (m *clientManager) getSourceClient(scheme string) (ResourceClient, error) {
-
-}
-
 func (m *clientManager) loadSourcePlugin(scheme string) (ResourceClient, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
