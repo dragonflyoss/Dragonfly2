@@ -16,27 +16,39 @@
 
 package util
 
+//TODO we should let following params make sense in future
 const (
-	// DefaultPieceSize 4M
-	DefaultPieceSize = 4 * 1024 * 1024
+	// PieceSizeUpperBound 16M
+	PieceSizeUpperBound = 1 << 24
 
-	// DefaultPieceSizeLimit 15M
-	DefaultPieceSizeLimit = 15 * 1024 * 1024
+	// PieceSizeLowerBound 4M
+	PieceSizeLowerBound = 1 << 22
+
+	// FileUpperBound 1G
+	FileUpperBound = 1 << 30
+
+	// FileLowerBound 256M
+	FileLowerBound = 1 << 28
 )
 
 // ComputePieceSize computes the piece size with specified fileLength.
 //
 // If the fileLength<0, which means failed to get fileLength
 // and then use the DefaultPieceSize.
+// so the pieceSize will increase as the file size increases as shown followed
+//  piece size (in MB) 16 ^            -----
+//                        |          /
+//                        |        /
+//                        |      /
+//                      4 |-----
+//                        |---------------------->
+//                        0     256   1024        file size (in MB)
 func ComputePieceSize(length int64) uint32 {
-	if length <= 0 || length <= 200*1024*1024 {
-		return DefaultPieceSize
+	if length <= FileLowerBound {
+		return PieceSizeLowerBound
 	}
-
-	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + DefaultPieceSize
-	if mpSize > DefaultPieceSizeLimit {
-		return DefaultPieceSizeLimit
+	if length >= FileUpperBound {
+		return PieceSizeUpperBound
 	}
-	return uint32(mpSize)
+	return uint32(length >> int64(6))
 }

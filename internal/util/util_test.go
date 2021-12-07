@@ -30,35 +30,41 @@ func TestComputePieceSize(t *testing.T) {
 		want uint32
 	}{
 		{
-			name: "length equal 200M and get default piece size",
+			name: "length is equal to 256M and get default piece size",
 			args: args{
-				length: 200 * 1024 * 1024,
+				length: 256 * 1024 * 1024,
 			},
-			want: DefaultPieceSize,
+			want: PieceSizeLowerBound,
 		}, {
-			name: "length smaller than 200M and get default piece size",
+			name: "length is smaller than 256M and get default piece size",
 			args: args{
-				length: 100 * 1024 * 1024,
+				length: 128 * 1024 * 1024,
 			},
-			want: DefaultPieceSize,
+			want: PieceSizeLowerBound,
 		}, {
-			name: "length greater than 200M",
+			name: "length is greater than 256M but smaller than 1G #1",
 			args: args{
-				length: 205 * 1024 * 1024,
+				length: (256 + 64) * 1024 * 1024,
 			},
-			want: DefaultPieceSize,
+			want: PieceSizeLowerBound + 1024*1024,
 		}, {
-			name: "length greater than 300M",
+			name: "length is greater than 256M but smaller than 1G #2",
 			args: args{
-				length: 310 * 1024 * 1024,
+				length: 512 * 1024 * 1024,
 			},
-			want: DefaultPieceSize + 1*1024*1024,
+			want: PieceSizeLowerBound * 2,
+		}, {
+			name: "length is equal to 1G",
+			args: args{
+				length: 1024 * 1024 * 1024,
+			},
+			want: PieceSizeUpperBound,
 		}, {
 			name: "length reach piece size limit",
 			args: args{
-				length: 3100 * 1024 * 1024,
+				length: 2056 * 1024 * 1024,
 			},
-			want: DefaultPieceSizeLimit,
+			want: PieceSizeUpperBound,
 		},
 	}
 	for _, tt := range tests {
