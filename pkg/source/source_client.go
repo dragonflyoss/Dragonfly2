@@ -185,7 +185,7 @@ func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
 		m.mu.Unlock()
 		return nil, false
 	}
-	m.clients[strings.ToLower(scheme)] = client
+	m.clients[scheme] = client
 	m.mu.Unlock()
 	return client, true
 }
