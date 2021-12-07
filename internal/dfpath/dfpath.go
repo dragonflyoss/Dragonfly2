@@ -18,6 +18,7 @@ package dfpath
 
 import (
 	"path/filepath"
+	"sync"
 
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
@@ -26,7 +27,6 @@ import (
 type Dfpath interface {
 	WorkHome() string
 	CacheDir() string
-	ConfigDir() string
 	LogDir() string
 	DataDir() string
 	PluginDir() string
@@ -39,13 +39,19 @@ type Dfpath interface {
 type dfpath struct {
 	workHome       string
 	cacheDir       string
-	configDir      string
 	logDir         string
 	dataDir        string
 	pluginDir      string
 	daemonSockPath string
 	daemonLockPath string
 	dfgetLockPath  string
+}
+
+// cache of the dfpath
+var cache struct {
+	sync.Once
+	d   *dfpath
+	err error
 }
 
 // Option is a functional option for configuring the dfpath
@@ -65,13 +71,6 @@ func WithCacheDir(dir string) Option {
 	}
 }
 
-// WithConfigDir set the config directory
-func WithConfigDir(dir string) Option {
-	return func(d *dfpath) {
-		d.configDir = dir
-	}
-}
-
 // WithLogDir set the log directory
 func WithLogDir(dir string) Option {
 	return func(d *dfpath) {
@@ -81,34 +80,39 @@ func WithLogDir(dir string) Option {
 
 // New returns a new dfpath interface
 func New(options ...Option) (Dfpath, error) {
-	d := &dfpath{
-		workHome:  DefaultWorkHome,
-		cacheDir:  DefaultCacheDir,
-		configDir: DefaultConfigDir,
-		logDir:    DefaultLogDir,
-	}
-
-	for _, opt := range options {
-		opt(d)
-	}
-
-	d.dataDir = filepath.Join(d.workHome, "data")
-	d.pluginDir = filepath.Join(d.workHome, "plugins")
-	d.daemonSockPath = filepath.Join(d.workHome, "daemon.sock")
-	d.daemonLockPath = filepath.Join(d.workHome, "daemon.lock")
-	d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
-
-	// Create directories
-	for _, dir := range []string{
-		d.workHome, d.cacheDir, d.configDir,
-		d.logDir, d.dataDir, d.pluginDir,
-	} {
-		if err := fileutils.MkdirAll(dir); err != nil {
-			return nil, err
+	cache.Do(func() {
+		d := &dfpath{
+			workHome: DefaultWorkHome,
+			cacheDir: DefaultCacheDir,
+			logDir:   DefaultLogDir,
 		}
+
+		for _, opt := range options {
+			opt(d)
+		}
+
+		d.dataDir = filepath.Join(d.workHome, "data")
+		d.pluginDir = filepath.Join(d.workHome, "plugins")
+		d.daemonSockPath = filepath.Join(d.workHome, "daemon.sock")
+		d.daemonLockPath = filepath.Join(d.workHome, "daemon.lock")
+		d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
+
+		// Create directories
+		for _, dir := range []string{d.workHome, d.cacheDir, d.logDir, d.dataDir, d.pluginDir} {
+			if err := fileutils.MkdirAll(dir); err != nil {
+				cache.err = err
+			}
+		}
+
+		cache.d = d
+	})
+
+	if cache.err != nil {
+		return nil, cache.err
 	}
 
-	return d, nil
+	d := *cache.d
+	return &d, nil
 }
 
 func (d *dfpath) WorkHome() string {
@@ -117,10 +121,6 @@ func (d *dfpath) WorkHome() string {
 
 func (d *dfpath) CacheDir() string {
 	return d.cacheDir
-}
-
-func (d *dfpath) ConfigDir() string {
-	return d.configDir
 }
 
 func (d *dfpath) LogDir() string {

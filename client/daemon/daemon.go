@@ -85,11 +85,12 @@ type clientDaemon struct {
 	PieceManager    peer.PieceManager
 
 	dynconfig       config.Dynconfig
+	dfpath          dfpath.Dfpath
 	schedulers      []*manager.Scheduler
 	schedulerClient schedulerclient.SchedulerClient
 }
 
-func New(opt *config.DaemonOption) (Daemon, error) {
+func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
 		Ip:             opt.Host.AdvertiseIP,
@@ -113,7 +114,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		}
 
 		// New dynconfig client
-		if dynconfig, err = config.NewDynconfig(managerClient, opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
+		if dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
 			return nil, err
 		}
 
@@ -137,7 +138,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	}
 
 	// Storage.Option.DataPath is same with Daemon DataDir
-	opt.Storage.DataPath = opt.DataDir
+	opt.Storage.DataPath = d.WorkHome()
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
 		/* gc callback */
 		func(request storage.CommonTaskRequest) {
@@ -217,6 +218,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
+		dfpath:          d,
 		schedulers:      schedulers,
 		schedulerClient: sched,
 	}, nil
@@ -320,7 +322,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
 	// TODO remove this field, and use directly dfpath.DaemonSockPath
-	cd.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")

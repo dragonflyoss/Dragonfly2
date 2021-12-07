@@ -54,7 +54,14 @@ it supports container engine, wget and other downloading tools through proxy fun
 	SilenceUsage:       true,
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logcore.InitDaemon(cfg.Console); err != nil {
+		// Initialize dfpath
+		d, err := initDfpath(cfg)
+		if err != nil {
+			return err
+		}
+
+		// Initialize logger
+		if err := logcore.InitDaemon(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client daemon logger")
 		}
 
@@ -68,7 +75,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 			return err
 		}
 
-		return runDaemon()
+		return runDaemon(d)
 	},
 }
 
@@ -89,10 +96,27 @@ func init() {
 	}
 }
 
-func runDaemon() error {
+func initDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
+	options := []dfpath.Option{}
+	if cfg.WorkHome != "" {
+		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
+	}
+
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
+	}
+
+	if cfg.LogDir != "" {
+		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	return dfpath.New(options...)
+}
+
+func runDaemon(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 
-	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: dfpath.DaemonSockPath}
+	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: d.DaemonSockPath()}
 	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
 	if err != nil {
 		return err
@@ -107,7 +131,7 @@ func runDaemon() error {
 	// 3. If lock fail, checking whether the daemon has been started. If true, return directly.
 	//    Otherwise, wait 50 ms and execute again from 1
 	// 4. Checking timeout about 5s
-	lock := flock.New(dfpath.DaemonLockPath)
+	lock := flock.New(d.DaemonLockPath())
 	timeout := time.After(5 * time.Second)
 	first := time.After(1 * time.Millisecond)
 	tick := time.NewTicker(50 * time.Millisecond)
@@ -146,7 +170,7 @@ func runDaemon() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := server.New(cfg)
+	svr, err := server.New(cfg, d)
 	if err != nil {
 		return err
 	}

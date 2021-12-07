@@ -32,6 +32,8 @@ import (
 )
 
 func TestDynconfigGet_ManagerSourceType(t *testing.T) {
+	cacheDir := "."
+	cachePath := filepath.Join(cacheDir, "scheduler_dynconfig")
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -112,12 +114,11 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := NewDynconfig(dc.ManagerSourceType, "", []dc.Option{
+			d, err := NewDynconfig(dc.ManagerSourceType, ".", "", []dc.Option{
 				dc.WithManagerClient(NewManagerClient(mockManagerClient, &Config{
 					Manager: &ManagerConfig{SchedulerClusterID: uint(1)},
 					Server:  &ServerConfig{Host: "foo"},
 				})),
-				dc.WithCachePath(cachePath),
 				dc.WithExpireTime(tc.expire),
 			}...)
 			if err != nil {
@@ -174,7 +175,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			d, err := NewDynconfig(dc.LocalSourceType, "", dc.WithLocalConfigPath(tc.configPath))
+			d, err := NewDynconfig(dc.LocalSourceType, "", "", dc.WithLocalConfigPath(tc.configPath))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -217,7 +218,7 @@ func TestDynconfigGetCDNFromDirPath(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 
-			d, err := NewDynconfig(dc.LocalSourceType, tc.cdnDirPath, dc.WithLocalConfigPath("./testdata/scheduler.yaml"))
+			d, err := NewDynconfig(dc.LocalSourceType, "", tc.cdnDirPath, dc.WithLocalConfigPath("./testdata/scheduler.yaml"))
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -17,23 +17,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
-func init() {
-	flag.StringVar(&dfpath.PluginsDir, "plugin-dir", ".", "")
-}
-
 func main() {
-	flag.Parse()
-
-	e, err := evaluator.LoadPlugin()
+	e, err := evaluator.LoadPlugin(".")
 	if err != nil {
 		fmt.Printf("load plugin error: %s\n", err)
 		os.Exit(1)

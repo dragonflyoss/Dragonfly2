@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/version"
@@ -45,7 +46,14 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logcore.InitManager(cfg.Console); err != nil {
+		// Initialize dfpath
+		d, err := initDfpath(cfg.Server)
+		if err != nil {
+			return err
+		}
+
+		// Initialize logger
+		if err := logcore.InitManager(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
 
@@ -54,7 +62,7 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 			return err
 		}
 
-		return runManager()
+		return runManager(d)
 	},
 }
 
@@ -75,7 +83,16 @@ func init() {
 	dependency.InitCobra(rootCmd, true, cfg)
 }
 
-func runManager() error {
+func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
+	options := []dfpath.Option{}
+	if cfg.LogDir != "" {
+		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	return dfpath.New(options...)
+}
+
+func runManager(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 	// manager config values
 	s, err := yaml.Marshal(cfg)
@@ -89,7 +106,7 @@ func runManager() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := manager.New(cfg)
+	svr, err := manager.New(cfg, d)
 	if err != nil {
 		return err
 	}

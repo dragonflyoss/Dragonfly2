@@ -22,7 +22,6 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -30,9 +29,6 @@ import (
 )
 
 var (
-	// Dynconfig configure the cache path
-	cachePath = filepath.Join(dfpath.DefaultCacheDir, "daemon_dynconfig")
-
 	// Watch dynconfig interval
 	watchInterval = 10 * time.Second
 )
@@ -75,7 +71,8 @@ type dynconfig struct {
 	done      chan bool
 }
 
-func NewDynconfig(rawManagerClient managerclient.Client, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
+	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
 	client, err := internaldynconfig.New(
 		internaldynconfig.ManagerSourceType,
 		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),

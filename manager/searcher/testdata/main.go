@@ -18,24 +18,16 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
-func init() {
-	flag.StringVar(&dfpath.PluginsDir, "plugin-dir", ".", "")
-}
-
 func main() {
-	flag.Parse()
-
-	s, err := searcher.LoadPlugin()
+	s, err := searcher.LoadPlugin(".")
 	if err != nil {
 		fmt.Printf("load plugin error: %s\n", err)
 		os.Exit(1)

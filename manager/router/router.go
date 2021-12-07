@@ -30,7 +30,6 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/handlers"
 	"d7y.io/dragonfly/v2/manager/middlewares"
@@ -44,7 +43,7 @@ const (
 
 var GinLogFileName = "gin.log"
 
-func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+func Init(cfg *config.Config, logDir string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -53,7 +52,7 @@ func Init(cfg *config.Config, service service.REST, enforcer *casbin.Enforcer) (
 	// Logging to a file
 	if !cfg.Console {
 		gin.DisableConsoleColor()
-		logDir := filepath.Join(dfpath.LogDir, "manager")
+		logDir := filepath.Join(logDir, "manager")
 		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
 		gin.DefaultWriter = io.MultiWriter(f)
 	}

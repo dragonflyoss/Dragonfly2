@@ -1,6 +1,5 @@
 aliveTime: 0s
 gcInterval: 1m0s
-dataDir: /tmp/dragonfly/dfdaemon/
 workHome: /tmp/dragonfly/dfdaemon/
 keepStorage: false
 scheduler:
