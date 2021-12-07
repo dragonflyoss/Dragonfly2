@@ -126,6 +126,15 @@ func (s *rest) AddSchedulerClusterToCDNCluster(ctx context.Context, id, schedule
 		return err
 	}
 
+	cdnClusters := []model.CDNCluster{}
+	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("CDNClusters").Find(&cdnClusters); err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Model(&schedulerCluster).Association("CDNClusters").Delete(cdnClusters); err != nil {
+		return err
+	}
+
 	if err := s.db.WithContext(ctx).Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 		return err
 	}
