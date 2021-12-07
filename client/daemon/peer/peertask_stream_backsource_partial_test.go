@@ -32,6 +32,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -48,9 +49,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
@@ -213,14 +214,15 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		})
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(t, source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any()).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 

@@ -22,6 +22,7 @@ import (
 	"hash"
 	"io"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -36,6 +37,7 @@ import (
 	storageMock "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/mock"
 	"d7y.io/dragonfly/v2/cdn/types"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
@@ -53,7 +55,8 @@ type CacheDetectorTestSuite struct {
 func (suite *CacheDetectorTestSuite) SetupSuite() {
 	ctrl := gomock.NewController(suite.T())
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	suite.Require().Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	storageMgr := storageMock.NewMockManager(ctrl)
 	cacheDataManager := newCacheDataManager(storageMgr)
 	suite.detector = newCacheDetector(cacheDataManager)
@@ -80,29 +83,30 @@ func (suite *CacheDetectorTestSuite) SetupSuite() {
 			suite.Nil(err)
 			return ioutil.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
-	storageMgr.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
+	storageMgr.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, os.ErrNotExist).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.pieces, nil).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(partialNotSupportRangeCache.taskID).Return(partialNotSupportRangeCache.pieces, nil).AnyTimes()
 	storageMgr.EXPECT().ReadPieceMetaRecords(partialSupportRangeCache.taskID).Return(partialSupportRangeCache.pieces, nil).AnyTimes()
-	storageMgr.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, cdnerrors.ErrFileNotExist{}).AnyTimes()
+	storageMgr.EXPECT().ReadPieceMetaRecords(noCache.taskID).Return(nil, os.ErrNotExist).AnyTimes()
 	storageMgr.EXPECT().StatDownloadFile(fullNoExpiredCache.taskID).Return(&storedriver.StorageInfo{
 		Path:       "",
 		Size:       9789,
 		CreateTime: time.Time{},
 		ModTime:    time.Time{},
 	}, nil).AnyTimes()
+	storageMgr.EXPECT().StatDownloadFile(gomock.Not(fullNoExpiredCache.taskID)).Return(&storedriver.StorageInfo{}, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), expiredAndSupportURL, gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), expiredAndSupportURL, gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(expiredAndSupportURL), gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(expiredAndSupportURL)).Return(true, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), expiredAndNotSupportURL, gomock.Any(), gomock.Any()).Return(true, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), expiredAndNotSupportURL, gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(noExpiredAndSupportURL), gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(noExpiredAndSupportURL)).Return(true, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), noExpiredAndSupportURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), noExpiredAndSupportURL, gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(expiredAndNotSupportURL), gomock.Any()).Return(true, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(expiredAndNotSupportURL)).Return(false, nil).AnyTimes()
 
-	sourceClient.EXPECT().IsExpired(gomock.Any(), noExpiredAndNotSupportURL, gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
-	sourceClient.EXPECT().IsSupportRange(gomock.Any(), noExpiredAndNotSupportURL, gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsExpired(source.RequestEq(noExpiredAndNotSupportURL), gomock.Any()).Return(false, nil).AnyTimes()
+	sourceClient.EXPECT().IsSupportRange(source.RequestEq(noExpiredAndNotSupportURL)).Return(false, nil).AnyTimes()
 }
 
 var noCacheTask, partialAndSupportCacheTask, partialAndNotSupportCacheTask, fullCacheExpiredTask, fullCacheNotExpiredTask = "noCache", "partialSupportCache",

@@ -31,17 +31,22 @@ import (
 
 	"github.com/go-http-utils/headers"
 	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
 
 func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	assert := testifyassert.New(t)
+	source.UnRegister("http")
+	require.Nil(t, source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+	defer source.UnRegister("http")
 	testData, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 	pieceDownloadTimeout := 30 * time.Second

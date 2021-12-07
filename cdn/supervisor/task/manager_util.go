@@ -85,11 +85,13 @@ func (tm *Manager) addOrUpdateTask(ctx context.Context, request *types.TaskRegis
 		return task, nil
 	}
 
+	lengthRequest, err := source.NewRequestWithContext(ctx, task.URL, request.Header)
+	if err != nil {
+		return nil, err
+	}
 	// get sourceContentLength with req.Header
-	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
-	defer cancel()
 	span.AddEvent(config.EventRequestSourceFileLength)
-	sourceFileLength, err := source.GetContentLength(ctx, task.URL, request.Header)
+	sourceFileLength, err := source.GetContentLength(lengthRequest)
 	if err != nil {
 		task.Log().Errorf("failed to get url (%s) content length: %v", task.URL, err)
 		if cdnerrors.IsURLNotReachable(err) {

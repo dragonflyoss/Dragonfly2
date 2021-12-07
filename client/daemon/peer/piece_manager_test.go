@@ -32,6 +32,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -48,7 +49,9 @@ import (
 func TestPieceManager_DownloadSource(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
-	source.Register("http", httpprotocol.NewHTTPSourceClient())
+	source.UnRegister("http")
+	require.Nil(t, source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+	defer source.UnRegister("http")
 	testBytes, err := ioutil.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 

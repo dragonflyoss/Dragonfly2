@@ -31,6 +31,7 @@ type SeedTask struct {
 	CdnStatus        string            `json:"cdnStatus,omitempty"`
 	PieceTotal       int32             `json:"pieceTotal,omitempty"`
 	RequestDigest    string            `json:"requestDigest,omitempty"`
+	Range            string            `json:"range"`
 	SourceRealDigest string            `json:"sourceRealDigest,omitempty"`
 	PieceMd5Sign     string            `json:"pieceMd5Sign,omitempty"`
 	logger           *logger.SugaredLoggerOnWith

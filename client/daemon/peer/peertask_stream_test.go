@@ -27,6 +27,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	testifyrequire "github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -35,12 +36,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
+	require := testifyrequire.New(t)
 	ctrl := gomock.NewController(t)
 
 	testBytes, err := ioutil.ReadFile(test.File)
@@ -78,15 +80,18 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			return rc, rc, nil
 		})
 
+	request, err := source.NewRequest(url)
+	assert.Nil(err, "create request")
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
@@ -147,6 +152,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 
 func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
+	require := testifyrequire.New(t)
 	ctrl := gomock.NewController(t)
 
 	testBytes, err := ioutil.ReadFile(test.File)
@@ -185,14 +191,17 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		})
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	request, err := source.NewRequest(url)
+	assert.Nil(err, "create reqeust")
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
+	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
 			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 

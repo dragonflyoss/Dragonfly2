@@ -63,6 +63,32 @@ func TestUnixMillis(t *testing.T) {
 	}
 }
 
+func TestUnixSeconds(t *testing.T) {
+	const Layout = "Mon, 02 Jan 2006 15:04:05 GMT"
+	sample, _ := time.Parse(Layout, "Mon, 02 Jan 2006 15:04:05 GMT")
+	type args struct {
+		timeString string
+	}
+	tests := []struct {
+		name string
+		args args
+		want int64
+	}{
+		{
+			name: "convert a string time to an int64 milliseconds",
+			args: args{"Mon, 02 Jan 2006 15:04:05 GMT"},
+			want: sample.Unix(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := UnixSeconds(tt.args.timeString); got != tt.want {
+				t.Errorf("UnixMillis() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMillisUnixTime(t *testing.T) {
 	const Layout = "2006-01-02 15:04:05"
 	sample, _ := time.ParseInLocation(Layout, "2021-01-02 12:04:05", time.Local)
@@ -85,6 +111,34 @@ func TestMillisUnixTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := MillisUnixTime(tt.args); got != tt.want {
+				t.Errorf("MillisUnixTime() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSecondsUnixTime(t *testing.T) {
+	const Layout = "2006-01-02 15:04:05"
+	sample, _ := time.ParseInLocation(Layout, "2021-01-02 12:04:05", time.Local)
+	tests := []struct {
+		name string
+		args int64
+		want time.Time
+	}{
+		{
+			name: "convert an int64 seconds to a unix time",
+			args: sample.Unix(),
+			want: sample.Local(),
+		},
+		{
+			name: "convert now",
+			args: time.Now().Unix(),
+			want: time.Unix(time.Now().Unix(), 0),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := SecondsUnixTime(tt.args); got != tt.want {
 				t.Errorf("MillisUnixTime() = %v, want %v", got, tt.want)
 			}
 		})

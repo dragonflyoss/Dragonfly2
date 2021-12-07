@@ -24,7 +24,6 @@ import (
 	"io"
 	"io/ioutil"
 	"sort"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -103,16 +102,22 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fil
 	if err := checkSameFile(task, fileMetaData); err != nil {
 		return nil, errors.Wrapf(err, "check same file")
 	}
-	ctx, expireCancel := context.WithTimeout(context.Background(), 4*time.Second)
-	defer expireCancel()
-	expired, err := source.IsExpired(ctx, task.URL, task.Header, fileMetaData.ExpireInfo)
+	checkExpiredRequest, err := source.NewRequestWithContext(ctx, task.URL, task.Header)
 	if err != nil {
-		// 如果获取失败，则认为没有过期，防止打爆源
-		task.Log().Errorf("failed to check if the task expired: %v", err)
+		return nil, errors.Wrapf(err, "create request")
 	}
-	task.Log().Debugf("task expired result: %t", expired)
+	expired, err := source.IsExpired(checkExpiredRequest, &source.ExpireInfo{
+		LastModified: fileMetaData.ExpireInfo[source.LastModified],
+		ETag:         fileMetaData.ExpireInfo[source.ETag],
+	})
+	if err != nil {
+		// If the check fails, the resource is regarded as not expired to prevent the source from being knocked down
+		task.Log().Warnf("failed to check whether the source is expired. To prevent the source from being suspended, "+
+			"assume that the source is not expired: %v", err)
+	}
+	task.Log().Debugf("task resource expired result: %t", expired)
 	if expired {
-		return nil, cdnerrors.ErrResourceExpired{URL: task.URL}
+		return nil, errors.Errorf("resource %s has expired", task.TaskURL)
 	}
 	// not expired
 	if fileMetaData.Finish {
@@ -121,14 +126,17 @@ func (cd *cacheDetector) doDetect(ctx context.Context, task *types.SeedTask, fil
 	}
 	// check if the resource supports range request. if so,
 	// detect the cache situation by reading piece meta and data file
-	ctx, rangeCancel := context.WithTimeout(context.Background(), 4*time.Second)
-	defer rangeCancel()
-	supportRange, err := source.IsSupportRange(ctx, task.URL, task.Header)
+	checkSupportRangeRequest, err := source.NewRequestWithContext(ctx, task.URL, task.Header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "check if url(%s) supports range request", task.URL)
+		return nil, errors.Wrapf(err, "create check support range request")
+	}
+	checkSupportRangeRequest.Header.Add(source.Range, "0-0")
+	supportRange, err := source.IsSupportRange(checkSupportRangeRequest)
+	if err != nil {
+		return nil, errors.Wrap(err, "check if support range")
 	}
 	if !supportRange {
-		return nil, cdnerrors.ErrResourceNotSupportRangeRequest{URL: task.URL}
+		return nil, errors.Errorf("resource %s is not support range request", task.URL)
 	}
 	return cd.parseByReadFile(task.TaskID, fileMetaData, fileDigest)
 }
@@ -169,12 +177,12 @@ func (cd *cacheDetector) parseByReadMetaFile(taskID string, fileMetaData *storag
 func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMetaData, fileDigest hash.Hash) (*cacheResult, error) {
 	reader, err := cd.cacheDataManager.readDownloadFile(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "read data file")
+		return nil, errors.Wrapf(err, "read download data file")
 	}
 	defer reader.Close()
 	tempRecords, err := cd.cacheDataManager.readPieceMetaRecords(taskID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "read piece meta file")
+		return nil, errors.Wrapf(err, "read piece meta records")
 	}
 
 	// sort piece meta records by pieceNum
@@ -188,7 +196,7 @@ func (cd *cacheDetector) parseByReadFile(taskID string, metaData *storage.FileMe
 		if uint32(index) != tempRecords[index].PieceNum {
 			break
 		}
-		// read content
+		// read content TODO concurrent by multi-goroutine
 		if err := checkPieceContent(reader, tempRecords[index], fileDigest); err != nil {
 			logger.WithTaskID(taskID).Errorf("read content of pieceNum %d failed: %v", tempRecords[index].PieceNum, err)
 			break

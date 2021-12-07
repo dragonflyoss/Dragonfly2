@@ -148,7 +148,11 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	defer os.Remove(target.Name())
 	defer target.Close()
 
-	if response, err = source.Download(ctx, cfg.URL, hdr); err != nil {
+	downloadRequest, err := source.NewRequestWithContext(ctx, cfg.URL, hdr)
+	if err != nil {
+		return err
+	}
+	if response, err = source.Download(downloadRequest); err != nil {
 		return err
 	}
 	defer response.Close()

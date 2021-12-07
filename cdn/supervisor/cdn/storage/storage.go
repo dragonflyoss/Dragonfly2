@@ -128,11 +128,11 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 		return nil, errors.Wrapf(err, "invalid pieceLen: %s", fields[1])
 	}
 	md5 := fields[2]
-	pieceRange, err := rangeutils.ParseRange(fields[3])
+	pieceRange, err := rangeutils.GetRange(fields[3])
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid piece range: %s", fields[3])
 	}
-	originRange, err := rangeutils.ParseRange(fields[4])
+	originRange, err := rangeutils.GetRange(fields[4])
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid origin range: %s", fields[4])
 	}
