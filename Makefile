@@ -62,6 +62,12 @@ docker-build-manager:
 	./hack/docker-build.sh manager
 .PHONY: docker-build-manager
 
+# Build testing tools image
+docker-build-testing-tools: build-dirs
+	@echo "Begin to testing tools image."
+	./test/tools/no-content-length/build.sh
+.PHONY: docker-build-testing-tools
+
 # Push cdn image
 docker-push-cdn: docker-build-cdn
 	@echo "Begin to push cdn docker image."
@@ -218,9 +224,9 @@ clean-e2e-test:
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
-kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
 	@echo "Kind load image done."
-.PHONY: docker-build
+.PHONY: kind-load
 
 # Run kind load docker-image cdn
 kind-load-cdn:
@@ -241,6 +247,11 @@ kind-load-dfdaemon:
 kind-load-manager:
 	@./hack/kind-load.sh manager
 .PHONY: kind-load-manager
+
+# Run kind load docker testing tools
+kind-load-testing-tools:
+	@./hack/kind-load.sh no-content-length
+.PHONY: kind-load-testing-tools
 
 # Run code lint
 lint: markdownlint
@@ -302,11 +313,12 @@ help:
 	@echo "make e2e-test                       run e2e tests"
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make clean-e2e-test                 clean e2e tests"
-	@echo "make kind-load-image                kind load docker image"
+	@echo "make kind-load                      kind load docker image"
 	@echo "make kind-load-cdn                  kind load cdn docker image"
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make kind-load-testing-tools        kind load testing tools docker image"
 	@echo "make lint                           run code lint"
 	@echo "make markdownlint                   run markdown lint"
 	@echo "make swag                           generate swagger api docs"

@@ -40,8 +40,11 @@ install-helm() {
 install-file-server() {
   kubectl apply -f ${FILE_SERVER_CONFIG_PATH}
   kubectl wait --namespace ${E2E_NAMESPACE} \
-  --for=condition=ready pod ${FILE_SERVER_NAME} \
-  --timeout=10m
+    --for=condition=ready pod ${FILE_SERVER_NAME} \
+    --timeout=10m
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod file-server-no-content-length-0 \
+    --timeout=10m
 }
 
 install-proxy-server() {
@@ -86,7 +89,7 @@ main() {
   install-kind
 
   print_step_info "start building docker images"
-  make docker-build
+  make docker-build docker-build-testing-tools
 
   print_step_info "start loading image for kind"
   make kind-load
