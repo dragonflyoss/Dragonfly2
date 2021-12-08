@@ -52,7 +52,7 @@ var _ = Describe("Preheat with manager", func() {
 
 				// get original file digest
 				out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
-				fmt.Println(string(out))
+				fmt.Println("original sha256sum" + string(out))
 				Expect(err).NotTo(HaveOccurred())
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
@@ -162,7 +162,7 @@ var _ = Describe("Preheat with manager", func() {
 
 			// get original file digest
 			out, err = e2eutil.DockerCommand("sha256sum", hostnameFilePath).CombinedOutput()
-			fmt.Println(string(out))
+			fmt.Println("original sha256sum" + string(out))
 			Expect(err).NotTo(HaveOccurred())
 			sha256sum1 := strings.Split(string(out), " ")[0]
 
@@ -259,7 +259,7 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 
 		// calculate digest of downloaded file
 		out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
-		fmt.Println(string(out))
+		fmt.Println("preheat sha256sum" + string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
 		fmt.Println(string(sha256sum2))
