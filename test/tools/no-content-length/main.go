@@ -30,7 +30,7 @@ import (
 var port = flag.Int("port", 80, "")
 
 func main() {
-	http.Handle("/", &fileHandler{dir: "static"})
+	http.Handle("/", &fileHandler{dir: "/static"})
 	fmt.Printf("listen on %d", *port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
@@ -51,6 +51,11 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filePath := path.Join(f.dir, upath)
+	if !strings.HasPrefix(filePath, f.dir) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(fmt.Sprintf("target is not in correct dir")))
+		return
+	}
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
