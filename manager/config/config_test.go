@@ -30,7 +30,9 @@ func TestManagerConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Server: &ServerConfig{
-			Name: "foo",
+			Name:       "foo",
+			LogDir:     "foo",
+			PublicPath: "foo",
 			GRPC: &TCPListenConfig{
 				Listen: "127.0.0.1",
 				PortRange: TCPListenPortRange{

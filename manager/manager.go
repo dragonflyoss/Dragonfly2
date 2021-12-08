@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
@@ -55,7 +56,7 @@ type Server struct {
 	metricsServer *http.Server
 }
 
-func New(cfg *config.Config) (*Server, error) {
+func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
 	// Initialize database
@@ -77,7 +78,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize searcher
-	searcher := searcher.New()
+	searcher := searcher.New(d.PluginDir())
 
 	// Initialize job
 	job, err := job.New(cfg)
@@ -87,7 +88,7 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.NewREST(db, cache, job, enforcer)
-	router, err := router.Init(cfg, restService, enforcer)
+	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
 	if err != nil {
 		return nil, err
 	}

@@ -22,8 +22,6 @@ import (
 	"path"
 	"plugin"
 	"regexp"
-
-	"d7y.io/dragonfly/v2/internal/dfpath"
 )
 
 const (
@@ -52,9 +50,9 @@ const (
 
 type PluginInitFunc func(option map[string]string) (plugin interface{}, meta map[string]string, err error)
 
-func Load(typ PluginType, name string, option map[string]string) (interface{}, map[string]string, error) {
+func Load(dir string, typ PluginType, name string, option map[string]string) (interface{}, map[string]string, error) {
 	soName := fmt.Sprintf(PluginFormat, string(typ), name)
-	p, err := plugin.Open(path.Join(dfpath.PluginsDir, soName))
+	p, err := plugin.Open(path.Join(dir, soName))
 	if err != nil {
 		return nil, nil, err
 	}

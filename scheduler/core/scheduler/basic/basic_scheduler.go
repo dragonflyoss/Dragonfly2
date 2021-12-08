@@ -46,7 +46,7 @@ func newBasicSchedulerBuilder() scheduler.Builder {
 
 func (builder *basicSchedulerBuilder) Build(cfg *config.SchedulerConfig, opts *scheduler.BuildOptions) (scheduler.Scheduler, error) {
 	logger.Debugf("start create basic scheduler...")
-	evaluator := evaluator.New(cfg.Algorithm)
+	evaluator := evaluator.New(cfg.Algorithm, opts.PluginDir)
 	sched := &Scheduler{
 		evaluator:   evaluator,
 		peerManager: opts.PeerManager,

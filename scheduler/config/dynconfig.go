@@ -24,7 +24,6 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -32,10 +31,7 @@ import (
 )
 
 var (
-	cachePath = filepath.Join(dfpath.DefaultCacheDir, "scheduler_dynconfig")
-)
-
-var (
+	cacheFileName = "scheduler_dynconfig"
 	watchInterval = 1 * time.Second
 )
 
@@ -117,16 +113,19 @@ type dynconfig struct {
 	observers  map[Observer]struct{}
 	done       chan bool
 	cdnDirPath string
+	cachePath  string
 	sourceType dc.SourceType
 }
 
 // TODO(Gaius) Rely on manager to delete cdnDirPath
-func NewDynconfig(sourceType dc.SourceType, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
+func NewDynconfig(sourceType dc.SourceType, cacheDir string, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
+	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers:  map[Observer]struct{}{},
 		done:       make(chan bool),
 		cdnDirPath: cdnDirPath,
 		sourceType: sourceType,
+		cachePath:  cachePath,
 	}
 
 	options = append(options, dc.WithCachePath(cachePath))
@@ -312,7 +311,7 @@ func (d *dynconfig) watch() {
 
 func (d *dynconfig) Stop() error {
 	close(d.done)
-	if err := os.Remove(cachePath); err != nil {
+	if err := os.Remove(d.cachePath); err != nil {
 		return err
 	}
 

@@ -192,9 +192,11 @@ type SchedulerConfig struct {
 }
 
 type ServerConfig struct {
-	IP   string `yaml:"ip" mapstructure:"ip"`
-	Host string `yaml:"host" mapstructure:"host"`
-	Port int    `yaml:"port" mapstructure:"port"`
+	IP       string `yaml:"ip" mapstructure:"ip"`
+	Host     string `yaml:"host" mapstructure:"host"`
+	Port     int    `yaml:"port" mapstructure:"port"`
+	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
+	LogDir   string `yaml:"logDir" mapstructure:"logDir"`
 }
 
 type GCConfig struct {

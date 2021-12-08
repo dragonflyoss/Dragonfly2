@@ -42,10 +42,10 @@ type Evaluator interface {
 	IsBadNode(peer *supervisor.Peer) bool
 }
 
-func New(algorithm string) Evaluator {
+func New(algorithm string, pluginDir string) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
-		if plugin, err := LoadPlugin(); err == nil {
+		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
 	// TODO Implement MLAlgorithm

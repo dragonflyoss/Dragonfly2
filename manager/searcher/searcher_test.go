@@ -27,6 +27,7 @@ import (
 )
 
 func TestSchedulerCluster(t *testing.T) {
+	pluginDir := "."
 	tests := []struct {
 		name              string
 		schedulerClusters []model.SchedulerCluster
@@ -374,7 +375,7 @@ func TestSchedulerCluster(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			searcher := New()
+			searcher := New(pluginDir)
 			clusters, ok := searcher.FindSchedulerCluster(context.Background(), tc.schedulerClusters, &manager.ListSchedulersRequest{
 				HostName: "foo",
 				Ip:       "127.0.0.1",

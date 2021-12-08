@@ -26,6 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/version"
@@ -45,8 +46,14 @@ generate and maintain a P2P network during the download process, and push suitab
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Initialize dfpath
+		d, err := initDfpath(cfg.Server)
+		if err != nil {
+			return err
+		}
+
 		// Initialize logger
-		if err := logcore.InitScheduler(cfg.Console); err != nil {
+		if err := logcore.InitScheduler(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
 
@@ -60,7 +67,7 @@ generate and maintain a P2P network during the download process, and push suitab
 			return err
 		}
 
-		return runScheduler()
+		return runScheduler(d)
 	},
 }
 
@@ -80,7 +87,20 @@ func init() {
 	dependency.InitCobra(rootCmd, true, cfg)
 }
 
-func runScheduler() error {
+func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
+	options := []dfpath.Option{}
+	if cfg.LogDir != "" {
+		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.CacheDir != "" {
+		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
+	}
+
+	return dfpath.New(options...)
+}
+
+func runScheduler(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 
 	// scheduler config values
@@ -91,7 +111,7 @@ func runScheduler() error {
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := scheduler.New(cfg)
+	svr, err := scheduler.New(cfg, d)
 	if err != nil {
 		return err
 	}

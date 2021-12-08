@@ -83,7 +83,7 @@ type SchedulerService struct {
 	metricsConfig *config.MetricsConfig
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
 	ops := &Options{}
 	for _, op := range options {
 		op(ops)
@@ -103,6 +103,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, metricsConfig *config.Metr
 
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
+		PluginDir:   pluginDir,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)

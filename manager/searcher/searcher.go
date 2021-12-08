@@ -80,8 +80,8 @@ type Searcher interface {
 
 type searcher struct{}
 
-func New() Searcher {
-	s, err := LoadPlugin()
+func New(pluginDir string) Searcher {
+	s, err := LoadPlugin(pluginDir)
 	if err != nil {
 		logger.Info("use default searcher")
 		return &searcher{}

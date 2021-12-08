@@ -26,6 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -68,7 +69,7 @@ type Server struct {
 	gc gc.GC
 }
 
-func New(cfg *config.Config) (*Server, error) {
+func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
 	// Initialize manager client
@@ -101,7 +102,7 @@ func New(cfg *config.Config) (*Server, error) {
 			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
 		)
 	}
-	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, cfg.DynConfig.CDNDirPath, options...)
+	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, d.CacheDir(), cfg.DynConfig.CDNDirPath, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +116,7 @@ func New(cfg *config.Config) (*Server, error) {
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
-	service, err := core.NewSchedulerService(cfg.Scheduler, cfg.Metrics, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
+	service, err := core.NewSchedulerService(cfg.Scheduler, d.PluginDir(), cfg.Metrics, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
 	if err != nil {
 		return nil, err
 	}

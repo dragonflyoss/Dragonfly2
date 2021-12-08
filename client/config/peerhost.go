@@ -50,8 +50,9 @@ type DaemonOption struct {
 	AliveTime  clientutil.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval clientutil.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 
-	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
+	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
+	LogDir      string `mapstructure:"logDir" yaml:"logDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`

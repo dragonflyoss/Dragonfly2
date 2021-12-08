@@ -14,6 +14,8 @@ server:
   ip: "127.0.0.1"
   host: "foo"
   port: 8002
+  cacheDir: "foo"
+  logDir: "foo"
 
 cdn:
   servers:

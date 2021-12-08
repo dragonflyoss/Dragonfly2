@@ -26,8 +26,8 @@ const (
 	pluginName = "evaluator"
 )
 
-func LoadPlugin() (Evaluator, error) {
-	client, _, err := dfplugin.Load(dfplugin.PluginTypeScheduler, pluginName, map[string]string{})
+func LoadPlugin(dir string) (Evaluator, error) {
+	client, _, err := dfplugin.Load(dir, dfplugin.PluginTypeScheduler, pluginName, map[string]string{})
 	if err != nil {
 		return nil, err
 	}

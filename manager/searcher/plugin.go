@@ -26,8 +26,8 @@ const (
 	pluginName = "searcher"
 )
 
-func LoadPlugin() (Searcher, error) {
-	client, _, err := dfplugin.Load(dfplugin.PluginTypeManager, pluginName, map[string]string{})
+func LoadPlugin(dir string) (Searcher, error) {
+	client, _, err := dfplugin.Load(dir, dfplugin.PluginTypeManager, pluginName, map[string]string{})
 	if err != nil {
 		return nil, err
 	}

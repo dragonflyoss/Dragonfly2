@@ -33,6 +33,7 @@ type Config struct {
 
 type ServerConfig struct {
 	Name       string           `yaml:"name" mapstructure:"name"`
+	LogDir     string           `yaml:"logDir" mapstructure:"logDir"`
 	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
 	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
