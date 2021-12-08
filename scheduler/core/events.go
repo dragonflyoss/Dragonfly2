@@ -34,6 +34,10 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
+const (
+	maxStealPeerLen = 10
+)
+
 type event interface {
 	hashKey() string
 	apply(s *state)
@@ -358,7 +362,11 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 		PeerId:  parent.ID,
 	}
 	var stealPeers []*schedulerRPC.PeerPacket_DestPeer
-	for _, candidate := range candidates {
+	for index, candidate := range candidates {
+		if index >= maxStealPeerLen {
+			break
+		}
+
 		stealPeers = append(stealPeers, &schedulerRPC.PeerPacket_DestPeer{
 			Ip:      candidate.Host.IP,
 			RpcPort: candidate.Host.RPCPort,
