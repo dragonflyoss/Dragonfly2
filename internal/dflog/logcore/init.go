@@ -18,17 +18,17 @@ package logcore
 
 import (
 	"path"
+	"path/filepath"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 )
 
-func InitManager(console bool) error {
+func InitManager(console bool, dir string) error {
 	if console {
 		return nil
 	}
 
-	logDir := path.Join(dfpath.LogDir, "manager")
+	logDir := filepath.Join(dir, "manager")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
@@ -57,12 +57,12 @@ func InitManager(console bool) error {
 	return nil
 }
 
-func InitScheduler(console bool) error {
+func InitScheduler(console bool, dir string) error {
 	if console {
 		return nil
 	}
 
-	logDir := path.Join(dfpath.LogDir, "scheduler")
+	logDir := filepath.Join(dir, "scheduler")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
@@ -97,12 +97,12 @@ func InitScheduler(console bool) error {
 	return nil
 }
 
-func InitCdnSystem(console bool) error {
+func InitCdnSystem(console bool, dir string) error {
 	if console {
 		return nil
 	}
 
-	logDir := path.Join(dfpath.LogDir, "cdn")
+	logDir := filepath.Join(dir, "cdn")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
@@ -148,12 +148,12 @@ func InitCdnSystem(console bool) error {
 	return nil
 }
 
-func InitDaemon(console bool) error {
+func InitDaemon(console bool, dir string) error {
 	if console {
 		return nil
 	}
 
-	logDir := path.Join(dfpath.LogDir, "daemon")
+	logDir := filepath.Join(dir, "daemon")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {
@@ -176,12 +176,12 @@ func InitDaemon(console bool) error {
 	return nil
 }
 
-func InitDfget(console bool) error {
+func InitDfget(console bool, dir string) error {
 	if console {
 		return nil
 	}
 
-	logDir := path.Join(dfpath.LogDir, "dfget")
+	logDir := filepath.Join(dir, "dfget")
 
 	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
 	if err != nil {

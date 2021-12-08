@@ -36,6 +36,7 @@ type Scheduler interface {
 type BuildOptions struct {
 	TaskManager supervisor.TaskManager
 	PeerManager supervisor.PeerManager
+	PluginDir   string
 }
 
 var (
