@@ -125,7 +125,8 @@ message ListSchedulersRequest {
 }
 
 message ListSchedulersResponse {
-  repeated Scheduler schedulers = 1;
+  SchedulerCluster scheduler_cluster = 1;
+  repeated Scheduler schedulers = 2;
 }
 
 message KeepAliveRequest {

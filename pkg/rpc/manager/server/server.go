@@ -18,6 +18,7 @@ package server
 
 import (
 	"context"
+	"strconv"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -28,6 +29,7 @@ import (
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
@@ -98,7 +100,19 @@ func (p *proxy) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedule
 }
 
 func (p *proxy) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
-	return p.server.ListSchedulers(ctx, req)
+	resp, err := p.server.ListSchedulers(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	metrics.SchedulerClusterUsageCount.WithLabelValues(
+		strconv.Itoa(int(resp.SchedulerCluster.Id)),
+		resp.SchedulerCluster.Name,
+		req.HostName,
+		req.Ip,
+	).Add(float64(1))
+
+	return resp, nil
 }
 
 func (p *proxy) KeepAlive(req manager.Manager_KeepAliveServer) error {

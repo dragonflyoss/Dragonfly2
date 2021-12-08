@@ -20,10 +20,23 @@ import (
 	"net/http"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 
+	"d7y.io/dragonfly/v2/internal/constants"
 	"d7y.io/dragonfly/v2/manager/config"
+)
+
+// Variables declared for metrics.
+var (
+	SchedulerClusterUsageCount = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.ManagerMetricsName,
+		Name:      "scheduler_cluster_usage_count",
+		Help:      "Counter of the number of scheduler cluster has been used",
+	}, []string{"scheduler_cluster_id", "scheduler_cluster_name", "dfdaemon_hostname", "dfdaemon_ip"})
 )
 
 func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {

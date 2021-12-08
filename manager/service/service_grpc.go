@@ -420,6 +420,11 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 		})
 	}
 
+	pbListSchedulersResponse.SchedulerCluster = &manager.SchedulerCluster{
+		Id:   uint64(schedulerCluster.ID),
+		Name: schedulerCluster.Name,
+	}
+
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
