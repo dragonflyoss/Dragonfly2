@@ -379,15 +379,7 @@ func (s *streamPeerTask) backSource() {
 	defer backSourceSpan.End()
 	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
-	reportPieceCtx, reportPieceSpan := tracer.Start(backSourceCtx, config.SpanReportPieceResult)
-	defer reportPieceSpan.End()
-	if peerPacketStream, err := s.schedulerClient.ReportPieceResult(reportPieceCtx, s.taskID, s.request); err != nil {
-		logger.Errorf("step 2: peer %s report piece failed: err", s.request.PeerId, err)
-	} else {
-		s.peerPacketStream = peerPacketStream
-	}
-	logger.Infof("step 2: start report peer %s back source piece result", s.request.PeerId)
-	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
+	err := s.pieceManager.DownloadSource(backSourceCtx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)
 		s.failedReason = err.Error()
