@@ -474,7 +474,7 @@ loop:
 
 		// update content length
 		if piecePacket.ContentLength > 0 {
-			pt.SetContentLength(piecePacket.ContentLength)
+			_ = pt.SetContentLength(piecePacket.ContentLength)
 			_ = pt.callback.Update(pt)
 			pt.Debugf("update content length: %d", pt.GetContentLength())
 		}
