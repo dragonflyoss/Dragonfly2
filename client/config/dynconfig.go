@@ -29,6 +29,9 @@ import (
 )
 
 var (
+	// Daemon cache file name
+	cacheFileName = "daemon_dynconfig"
+
 	// Watch dynconfig interval
 	watchInterval = 10 * time.Second
 )
@@ -73,7 +76,7 @@ type dynconfig struct {
 }
 
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
-	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
+	cachePath := filepath.Join(cacheDir, cacheFileName)
 	client, err := internaldynconfig.New(
 		internaldynconfig.ManagerSourceType,
 		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),

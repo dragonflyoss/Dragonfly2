@@ -31,6 +31,7 @@ import (
 )
 
 var (
+	cacheFileName = "scheduler_dynconfig"
 	watchInterval = 1 * time.Second
 )
 
@@ -118,7 +119,7 @@ type dynconfig struct {
 
 // TODO(Gaius) Rely on manager to delete cdnDirPath
 func NewDynconfig(sourceType dc.SourceType, cacheDir string, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
-	cachePath := filepath.Join(cacheDir, "scheduler_dynconfig")
+	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
 		observers:  map[Observer]struct{}{},
 		done:       make(chan bool),
@@ -127,7 +128,8 @@ func NewDynconfig(sourceType dc.SourceType, cacheDir string, cdnDirPath string, 
 		cachePath:  cachePath,
 	}
 
-	client, err := dc.New(sourceType, dc.WithCachePath(cachePath))
+	options = append(options, dc.WithCachePath(cachePath))
+	client, err := dc.New(sourceType, options...)
 	if err != nil {
 		return nil, err
 	}

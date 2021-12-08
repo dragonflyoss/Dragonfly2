@@ -17,6 +17,7 @@
 package config
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,8 +32,12 @@ import (
 )
 
 func TestDynconfigNewDynconfig(t *testing.T) {
-	cacheDir := "."
-	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
+	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -48,7 +53,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 				Hostname: "foo",
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -65,7 +70,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			expire:     10 * time.Millisecond,
 			hostOption: HostOption{},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -112,7 +117,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
-			_, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
+			_, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
 			tc.expect(t, err)
 			tc.cleanFileCache(t)
 		})
@@ -120,8 +125,12 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 }
 
 func TestDynconfigGet(t *testing.T) {
-	cacheDir := "."
-	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
+	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -147,7 +156,7 @@ func TestDynconfigGet(t *testing.T) {
 			},
 			sleep: func() {},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -186,7 +195,7 @@ func TestDynconfigGet(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -226,7 +235,7 @@ func TestDynconfigGet(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -262,7 +271,7 @@ func TestDynconfigGet(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -288,7 +297,7 @@ func TestDynconfigGet(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -301,8 +310,12 @@ func TestDynconfigGet(t *testing.T) {
 }
 
 func TestDynconfigGetSchedulers(t *testing.T) {
-	cacheDir := "."
-	cachePath := filepath.Join(cacheDir, "daemon_dynconfig")
+	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
 		expire         time.Duration
@@ -328,7 +341,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 			},
 			sleep: func() {},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -367,7 +380,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -407,7 +420,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -443,7 +456,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 				time.Sleep(100 * time.Millisecond)
 			},
 			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(cachePath); err != nil {
+				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -469,7 +482,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, cacheDir, tc.hostOption, tc.expire)
+			dynconfig, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
