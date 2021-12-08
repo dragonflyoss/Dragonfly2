@@ -96,7 +96,7 @@ var rootCmd = &cobra.Command{
 
 		//  do get file
 		var errInfo string
-		err = runDfget(d.DfgetLockPath(), dfgetConfig.DaemonSockPath)
+		err = runDfget(d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
 			errInfo = fmt.Sprintf("error: %v", err)
 		}
