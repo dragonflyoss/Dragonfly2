@@ -27,10 +27,10 @@ const (
 	pluginMetadataScheme = "scheme"
 )
 
-func LoadPlugin(scheme string) (ResourceClient, error) {
+func LoadPlugin(dir, scheme string) (ResourceClient, error) {
 	// TODO init option
 	logger.Debugf("try to load source plugin: %s", scheme)
-	client, meta, err := dfplugin.Load(dfplugin.PluginTypeResource, scheme, map[string]string{})
+	client, meta, err := dfplugin.Load(dir, dfplugin.PluginTypeResource, scheme, map[string]string{})
 	if err != nil {
 		logger.Errorf("load source plugin error: %s", err)
 		return nil, err

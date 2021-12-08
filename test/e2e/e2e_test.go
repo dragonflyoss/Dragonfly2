@@ -30,9 +30,10 @@ import (
 )
 
 const (
-	proxy              = "localhost:65001"
-	hostnameFilePath   = "/etc/hostname"
-	dragonflyNamespace = "dragonfly-system"
+	proxy                 = "localhost:65001"
+	hostnameFilePath      = "/etc/hostname"
+	dragonflyNamespace    = "dragonfly-system"
+	dragonflyE2ENamespace = "dragonfly-e2e"
 )
 
 const (
