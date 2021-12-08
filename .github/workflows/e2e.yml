@@ -45,7 +45,7 @@ jobs:
           config: ${{ env.KIND_CONFIG_PATH }}
 
       - name: Build images
-        run: make docker-build
+        run: make docker-build docker-build-testing-tools
 
       - name: Prepare kind environment
         run: make kind-load

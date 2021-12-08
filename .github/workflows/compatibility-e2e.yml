@@ -51,7 +51,7 @@ jobs:
 
       - name: Build images
         run: |
-          make docker-build
+          make docker-build docker-build-testing-tools
           docker pull dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
 
       - name: Prepare kind environment
