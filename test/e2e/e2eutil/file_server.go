@@ -40,3 +40,8 @@ func GetFileURL(filePath string) string {
 	baseURL := "http://file-server.dragonfly-e2e.svc/kind"
 	return fmt.Sprintf("%s%s", baseURL, filePath)
 }
+
+func GetNoContentLengthFileURL(filePath string) string {
+	baseURL := "http://file-server-no-content-length.dragonfly-e2e.svc/kind"
+	return fmt.Sprintf("%s%s", baseURL, filePath)
+}

@@ -48,11 +48,11 @@ var _ = Describe("Preheat with manager", func() {
 
 			for _, v := range e2eutil.GetFileList() {
 				url := e2eutil.GetFileURL(v)
-				fmt.Println("download url " + url)
+				fmt.Println("download url: " + url)
 
 				// get original file digest
 				out, err := e2eutil.DockerCommand("sha256sum", v).CombinedOutput()
-				fmt.Println(string(out))
+				fmt.Println("original sha256sum: " + string(out))
 				Expect(err).NotTo(HaveOccurred())
 				sha256sum1 := strings.Split(string(out), " ")[0]
 
@@ -92,7 +92,7 @@ var _ = Describe("Preheat with manager", func() {
 
 		It("preheat image should be ok", func() {
 			url := "https://registry-1.docker.io/v2/library/alpine/manifests/3.14"
-			fmt.Println("download image " + url)
+			fmt.Println("download image: " + url)
 
 			var (
 				cdnTaskIDs = []string{
@@ -145,7 +145,7 @@ var _ = Describe("Preheat with manager", func() {
 		It("concurrency 100 preheat should be ok", func() {
 			// generate the data file
 			url := e2eutil.GetFileURL(hostnameFilePath)
-			fmt.Println("download url " + url)
+			fmt.Println("download url: " + url)
 			dataFilePath := "post_data"
 			fd, err := os.Create(dataFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -162,7 +162,7 @@ var _ = Describe("Preheat with manager", func() {
 
 			// get original file digest
 			out, err = e2eutil.DockerCommand("sha256sum", hostnameFilePath).CombinedOutput()
-			fmt.Println(string(out))
+			fmt.Println("original sha256sum: " + string(out))
 			Expect(err).NotTo(HaveOccurred())
 			sha256sum1 := strings.Split(string(out), " ")[0]
 
@@ -259,10 +259,9 @@ func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
 
 		// calculate digest of downloaded file
 		out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
-		fmt.Println(string(out))
+		fmt.Println("preheat sha256sum: " + string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
-		fmt.Println(string(sha256sum2))
 		break
 	}
 	return sha256sum2
