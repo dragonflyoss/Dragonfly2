@@ -43,7 +43,7 @@ const (
 	hdfsExistFileURL                      = "hdfs://" + hdfsExistFileHost + hdfsExistFilePath
 	hdfsExistFileContentLength      int64 = 12
 	hdfsExistFileContent                  = "Hello World\n"
-	hdfsExistFileLastModifiedMillis int64 = 1625218150000
+	hdfsExistFileLastModifiedMillis int64 = 1136214245000
 	hdfsExistFileLastModified             = "Mon, 02 Jan 2006 15:04:05 GMT"
 	hdfsExistFileRangeStart         int64 = 3
 	hdfsExistFileRangeEnd           int64 = 10
@@ -52,6 +52,7 @@ const (
 const (
 	hdfsNotExistFileURL                 = "hdfs://127.0.0.1:9000/user/root/input/f3.txt"
 	hdfsNotExistFileContentLength int64 = source.UnknownSourceFileLen
+	hdfsNotExistLastModified      int64 = -1
 )
 
 var fakeHDFSClient = &hdfs.Client{}
@@ -344,7 +345,7 @@ func TestGetLastModified_FileNotExist(t *testing.T) {
 
 	lastModifiedMillis, err := sourceClient.GetLastModified(request)
 	assert.EqualError(t, err, "stat /user/root/input/f3.txt: file does not exist")
-	assert.Equal(t, hdfsNotExistFileContentLength, lastModifiedMillis)
+	assert.Equal(t, hdfsNotExistLastModified, lastModifiedMillis)
 }
 
 func TestNewHDFSSourceClient(t *testing.T) {
