@@ -472,6 +472,13 @@ loop:
 			pt.Debugf("update digest: %s", pt.md5)
 		}
 
+		// update content length
+		if piecePacket.ContentLength > 0 {
+			pt.SetContentLength(piecePacket.ContentLength)
+			_ = pt.callback.Update(pt)
+			pt.Debugf("update content length: %d", pt.GetContentLength())
+		}
+
 		// 3. dispatch piece request to all workers
 		pt.dispatchPieceRequest(pieceRequestCh, piecePacket)
 
