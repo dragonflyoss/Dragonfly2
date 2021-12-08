@@ -96,6 +96,15 @@ type ClientOption struct {
 	// ShowProgress shows progress bar, it's conflict with `--console`.
 	ShowProgress bool `yaml:"show-progress,omitempty" mapstructure:"show-progress,omitempty"`
 
+	// DaemonSockPath is dfget daemon socket path.
+	DaemonSockPath string `yaml:"daemonSockPath,omitempty" mapstructure:"daemonSockPath,omitempty"`
+
+	// LogDir is log directory of dfget.
+	LogDir string `yaml:"logDir,omitempty" mapstructure:"logDir,omitempty"`
+
+	// WorkHome is working directory of dfget.
+	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
+
 	RateLimit rate.Limit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
 
 	// Config file paths,

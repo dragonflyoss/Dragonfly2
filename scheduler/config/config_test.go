@@ -43,9 +43,11 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			WorkerNum: 8,
 		},
 		Server: &ServerConfig{
-			IP:   "127.0.0.1",
-			Host: "foo",
-			Port: 8002,
+			IP:       "127.0.0.1",
+			Host:     "foo",
+			Port:     8002,
+			CacheDir: "foo",
+			LogDir:   "foo",
 		},
 		Manager: &ManagerConfig{
 			Addr:               "127.0.0.1:65003",
