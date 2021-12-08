@@ -41,8 +41,8 @@ const (
 	hdfsExistFileHost                     = "127.0.0.1:9000"
 	hdfsExistFilePath                     = "/user/root/input/f1.txt"
 	hdfsExistFileURL                      = "hdfs://" + hdfsExistFileHost + hdfsExistFilePath
-	hdfsExistFileContentLength      int64 = 12
-	hdfsExistFileContent                  = "Hello World\n"
+	hdfsExistFileContentLength      int64 = 11
+	hdfsExistFileContent                  = "Hello World"
 	hdfsExistFileLastModifiedMillis int64 = 1136214245000
 	hdfsExistFileLastModified             = "Mon, 02 Jan 2006 15:04:05 GMT"
 	hdfsExistFileRangeStart         int64 = 3
