@@ -57,19 +57,19 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
-		w.Write([]byte(fmt.Sprintf("%s", err)))
+		_, _ = w.Write([]byte(fmt.Sprintf("%s", err)))
 		return
 	}
 	if fileInfo.IsDir() {
 		// todo list files
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("target is dir not file")))
+		_, _ = w.Write([]byte(fmt.Sprintf("target is dir not file")))
 		return
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(fmt.Sprintf("%s", err)))
+		_, _ = w.Write([]byte(fmt.Sprintf("%s", err)))
 		return
 	}
 	defer file.Close()
@@ -77,5 +77,5 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if f.enableContentLength {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	}
-	io.Copy(w, file)
+	_, _ = io.Copy(w, file)
 }

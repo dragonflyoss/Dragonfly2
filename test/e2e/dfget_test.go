@@ -68,7 +68,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 			var (
 				start time.Time
-				end time.Time
+				end   time.Time
 			)
 			// download file via dfget
 			start = time.Now()
