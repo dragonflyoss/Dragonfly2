@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strconv"
 
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
@@ -30,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -428,6 +430,11 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	}); err != nil {
 		log.Warnf("storage cache failed: %v", err)
 	}
+
+	// Scheduler cluster usage metrics
+	metrics.SchedulerClusterUsageCount.WithLabelValues(
+		strconv.Itoa(int(schedulerCluster.ID)), schedulerCluster.Name, req.HostName, req.Ip,
+	).Add(float64(1))
 
 	return &pbListSchedulersResponse, nil
 }
