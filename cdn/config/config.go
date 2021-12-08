@@ -185,6 +185,9 @@ type BaseProperties struct {
 	// StorageMode disk/hybrid/memory
 	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
 
+	// Log directory
+	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
 	// Manager configuration
 	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
 

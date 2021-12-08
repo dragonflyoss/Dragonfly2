@@ -118,13 +118,14 @@ type ClientManager interface {
 	UnRegister(scheme string)
 
 	// GetClient a source client by scheme
-	GetClient(scheme string) (ResourceClient, bool)
+	GetClient(scheme string, options ...Option) (ResourceClient, bool)
 }
 
 // clientManager implements the interface ClientManager
 type clientManager struct {
-	mu      sync.RWMutex
-	clients map[string]ResourceClient
+	mu        sync.RWMutex
+	clients   map[string]ResourceClient
+	pluginDir string
 }
 
 var _ ClientManager = (*clientManager)(nil)
@@ -134,6 +135,14 @@ var _defaultManager = NewManager()
 func NewManager() ClientManager {
 	return &clientManager{
 		clients: make(map[string]ResourceClient),
+	}
+}
+
+type Option func(c *clientManager)
+
+func WithPluginDir(dir string) Option {
+	return func(c *clientManager) {
+		c.pluginDir = dir
 	}
 }
 
@@ -162,7 +171,7 @@ func (m *clientManager) UnRegister(scheme string) {
 	delete(m.clients, strings.ToLower(scheme))
 }
 
-func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
+func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceClient, bool) {
 	logger.Debugf("current clients: %#v", m.clients)
 	m.mu.RLock()
 	scheme = strings.ToLower(scheme)
@@ -178,7 +187,12 @@ func (m *clientManager) GetClient(scheme string) (ResourceClient, bool) {
 		m.mu.Unlock()
 		return client, true
 	}
-	client, err := LoadPlugin(scheme)
+
+	for _, opt := range options {
+		opt(m)
+	}
+
+	client, err := LoadPlugin(m.pluginDir, scheme)
 	if err != nil {
 		logger.Errorf("failed to load source plugin for scheme %s: %v", scheme, err)
 		m.mu.Unlock()

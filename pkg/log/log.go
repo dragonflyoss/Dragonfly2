@@ -42,9 +42,17 @@ func SetupDaemon(logDir string, console bool) error {
 		return nil
 	}
 
-	if logDir == "" {
-		logDir = path.Join(dfpath.LogDir, "daemon")
+	var options []dfpath.Option
+	if logDir != "" {
+		options = append(options, dfpath.WithLogDir(logDir))
 	}
+
+	d, err := dfpath.New(options...)
+	if err != nil {
+		return err
+	}
+
+	logDir = path.Join(d.LogDir(), "daemon")
 
 	coreLogger, err := logcore.CreateLogger(path.Join(logDir, logcore.CoreLogFileName), false, false)
 	if err != nil {
