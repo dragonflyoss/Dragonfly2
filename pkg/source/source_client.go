@@ -157,7 +157,6 @@ func (m *clientManager) Register(scheme string, resourceClient ResourceClient, a
 }
 
 func (m *clientManager) doRegister(scheme string, resourceClient ResourceClient) {
-	logger.Debugf("register new client %#v for scheme: %s", resourceClient, scheme)
 	m.clients[strings.ToLower(scheme)] = resourceClient
 }
 
