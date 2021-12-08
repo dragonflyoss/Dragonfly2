@@ -67,6 +67,7 @@ var _ = BeforeSuite(func() {
 	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
+	fmt.Printf("raw dfget version: %s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
 	if mode == dfdaemonCompatibilityTestMode {
