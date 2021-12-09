@@ -139,7 +139,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (io.ReadCloser, err
 			hdfsFile.Close()
 			return nil, err
 		}
-		limitReadN = int64(requestRange.EndIndex - requestRange.StartIndex)
+		limitReadN = int64(requestRange.Length())
 	}
 
 	return newHdfsFileReaderClose(hdfsFile, limitReadN, hdfsFile), nil

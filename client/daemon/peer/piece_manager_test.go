@@ -33,6 +33,7 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -83,7 +84,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		checkDigest       bool
 	}{
 		{
-			name:              "multiple pieces with content length",
+			name:              "multiple pieces with content length, check digest",
 			pieceSize:         1024,
 			checkDigest:       true,
 			withContentLength: true,
@@ -95,7 +96,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			withContentLength: true,
 		},
 		{
-			name:              "multiple pieces without content length",
+			name:              "multiple pieces without content length, check digest",
 			pieceSize:         1024,
 			checkDigest:       true,
 			withContentLength: false,
@@ -131,12 +132,18 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			/********** prepare test start **********/
 			mockPeerTask := NewMockTask(ctrl)
+			var totalPieces = &atomic.Int32{}
 			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
 				})
 			mockPeerTask.EXPECT().SetTotalPieces(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int32) {
+					totalPieces.Store(arg0)
+				})
+			mockPeerTask.EXPECT().GetTotalPieces().AnyTimes().DoAndReturn(
+				func() int32 {
+					return totalPieces.Load()
 				})
 			mockPeerTask.EXPECT().GetPeerID().AnyTimes().DoAndReturn(
 				func() string {

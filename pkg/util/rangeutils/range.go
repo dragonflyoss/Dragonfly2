@@ -37,6 +37,10 @@ func (r Range) String() string {
 	return fmt.Sprintf("%d%s%d", r.StartIndex, separator, r.EndIndex)
 }
 
+func (r Range) Length() uint64 {
+	return r.EndIndex - r.StartIndex + 1
+}
+
 // GetRange parses Range according to range string.
 // rangeStr: "start-end"
 func GetRange(rangeStr string) (r *Range, err error) {
