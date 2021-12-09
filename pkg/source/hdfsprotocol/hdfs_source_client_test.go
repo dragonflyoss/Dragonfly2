@@ -1,4 +1,6 @@
-//+build linux
+//go:build linux
+// +build linux
+
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -25,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agiledragon/gomonkey"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -197,7 +199,7 @@ func TestIsExpired_LastModifiedNotExpired(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_Download_FileExist_ByRang(t *testing.T) {
+func Test_Download_FileExist_ByRange(t *testing.T) {
 	var reader *hdfs.FileReader = &hdfs.FileReader{}
 	patch := gomonkey.ApplyMethod(reflect.TypeOf(fakeHDFSClient), "Open", func(*hdfs.Client, string) (*hdfs.FileReader, error) {
 		return reader, nil
@@ -206,9 +208,8 @@ func Test_Download_FileExist_ByRang(t *testing.T) {
 		return 0 - hdfsExistFileContentLength, nil
 	})
 	patch.ApplyMethod(reflect.TypeOf(reader), "Read", func(_ *hdfs.FileReader, b []byte) (int, error) {
-		byets := []byte(hdfsExistFileContent)
-		copy(b, byets)
-		return int(hdfsExistFileContentLength), io.EOF
+		bytes := []byte(hdfsExistFileContent)
+		return copy(b, bytes), io.EOF
 	})
 	patch.ApplyMethodSeq(reflect.TypeOf(reader), "Stat", []gomonkey.OutputCell{
 		{
@@ -221,7 +222,7 @@ func Test_Download_FileExist_ByRang(t *testing.T) {
 	})
 	defer patch.Reset()
 
-	rang := &rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
+	rang := &rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength) - 1}
 	// exist file
 	request, err := source.NewRequestWithHeader(hdfsExistFileURL, map[string]string{
 		source.Range: rang.String(),
@@ -229,11 +230,10 @@ func Test_Download_FileExist_ByRang(t *testing.T) {
 	assert.Nil(t, err)
 
 	download, err := sourceClient.Download(request)
+	assert.Nil(t, err)
 	data, _ := ioutil.ReadAll(download)
 
 	assert.Equal(t, hdfsExistFileContent, string(data))
-	assert.Nil(t, err)
-
 }
 
 func TestDownload_FileNotExist(t *testing.T) {
