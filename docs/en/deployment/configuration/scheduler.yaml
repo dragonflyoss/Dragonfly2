@@ -53,6 +53,16 @@ server:
   # default: 8002
   port: 8002
 
+  # cacheDir is dynconfig cache storage directory
+  # in linux, default value is /var/cache/dragonfly
+  # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+  cacheDir: ""
+
+  # logDir is the log storage directory
+  # in linux, default value is /var/log/dragonfly
+  # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+  logDir: ""
+
 # dynamic data configuration
 dynConfig:
   # dynamic data source type
