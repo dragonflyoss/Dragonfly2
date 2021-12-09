@@ -78,6 +78,13 @@ func WithLogDir(dir string) Option {
 	}
 }
 
+// WithDataDir set download data directory
+func WithDataDir(dir string) Option {
+	return func(d *dfpath) {
+		d.dataDir = dir
+	}
+}
+
 // New returns a new dfpath interface
 func New(options ...Option) (Dfpath, error) {
 	cache.Do(func() {
@@ -85,13 +92,13 @@ func New(options ...Option) (Dfpath, error) {
 			workHome: DefaultWorkHome,
 			cacheDir: DefaultCacheDir,
 			logDir:   DefaultLogDir,
+			dataDir:  DefaultDataDir,
 		}
 
 		for _, opt := range options {
 			opt(d)
 		}
 
-		d.dataDir = filepath.Join(d.workHome, "data")
 		d.pluginDir = filepath.Join(d.workHome, "plugins")
 		d.daemonSockPath = filepath.Join(d.workHome, "daemon.sock")
 		d.daemonLockPath = filepath.Join(d.workHome, "daemon.lock")
