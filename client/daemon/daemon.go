@@ -138,7 +138,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	// Storage.Option.DataPath is same with Daemon DataDir
-	opt.Storage.DataPath = d.WorkHome()
+	opt.Storage.DataPath = d.DataDir()
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
 		/* gc callback */
 		func(request storage.CommonTaskRequest) {

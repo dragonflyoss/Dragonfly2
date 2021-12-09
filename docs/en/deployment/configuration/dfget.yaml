@@ -5,15 +5,20 @@ aliveTime: 0s
 # daemon gc task running interval
 gcInterval: 1m0s
 
-# daemon data directory
-# in linux, default value is $HOME/.dragonfly/dfget-daemon/
-# in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-dataDir: /var/lib/dragonfly
-
 # daemon work directory, daemon will change current working directory to this
-# in linux, default value is $HOME/.dragonfly/dfget-daemon/
-# in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-workHome: /var/lib/dragonfly
+# in linux, default value is /usr/local/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly
+workHome: ""
+
+# cacheDir is dynconfig cache storage directory
+# in linux, default value is /var/cache/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+cacheDir: ""
+
+# logDir is the log storage directory
+# in linux, default value is /var/log/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+logDir: ""
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
