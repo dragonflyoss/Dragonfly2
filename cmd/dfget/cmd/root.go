@@ -163,8 +163,6 @@ func init() {
 
 	flagSet.String("log-dir", dfgetConfig.LogDir, "Dfget log directory")
 
-	flagSet.String("daemon-sock-path", dfgetConfig.DaemonSockPath, "The socket path of dfget daemon")
-
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind dfget flags to viper"))

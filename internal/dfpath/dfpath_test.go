@@ -37,6 +37,7 @@ func TestNew(t *testing.T) {
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
 				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 		{
@@ -49,6 +50,7 @@ func TestNew(t *testing.T) {
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
 				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 		{
@@ -61,6 +63,7 @@ func TestNew(t *testing.T) {
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
 				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 		{
@@ -73,6 +76,7 @@ func TestNew(t *testing.T) {
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
 				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 	}

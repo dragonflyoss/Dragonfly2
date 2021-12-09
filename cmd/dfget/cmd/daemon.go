@@ -110,6 +110,10 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
+	if cfg.DataDir != "" {
+		options = append(options, dfpath.WithDataDir(cfg.DataDir))
+	}
+
 	return dfpath.New(options...)
 }
 

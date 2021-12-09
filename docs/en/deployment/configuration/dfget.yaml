@@ -20,6 +20,11 @@ cacheDir: ""
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
 logDir: ""
 
+# dataDir is the download data storage directory
+# in linux, default value is /var/lib/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/data
+dataDir: ""
+
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
 # default is false
