@@ -1,4 +1,6 @@
-//+build linux
+//go:build linux
+// +build linux
+
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -25,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/agiledragon/gomonkey"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -197,7 +199,7 @@ func TestIsExpired_LastModifiedNotExpired(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func Test_Download_FileExist_ByRang(t *testing.T) {
+func Test_Download_FileExist_ByRange(t *testing.T) {
 	var reader *hdfs.FileReader = &hdfs.FileReader{}
 	patch := gomonkey.ApplyMethod(reflect.TypeOf(fakeHDFSClient), "Open", func(*hdfs.Client, string) (*hdfs.FileReader, error) {
 		return reader, nil
