@@ -147,28 +147,36 @@ func WithPluginDir(dir string) Option {
 }
 
 func (m *clientManager) Register(scheme string, resourceClient ResourceClient, adaptor requestAdapter, hooks ...Hook) error {
+	scheme = strings.ToLower(scheme)
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if client, ok := m.clients[strings.ToLower(scheme)]; ok {
+	if client, ok := m.clients[scheme]; ok {
 		if client.(*clientWrapper).rc != resourceClient {
 			return errors.Errorf("client with scheme %s already exist, current client: %#v", scheme, client)
 		}
+		logger.Warnf("client with scheme %s already exist, no need register again", scheme)
+		return nil
 	}
-	m.clients[strings.ToLower(scheme)] = &clientWrapper{
+	m.doRegister(scheme, &clientWrapper{
 		adapter: adaptor,
 		hooks:   hooks,
 		rc:      resourceClient,
-	}
+	})
 	return nil
+}
+
+func (m *clientManager) doRegister(scheme string, resourceClient ResourceClient) {
+	m.clients[strings.ToLower(scheme)] = resourceClient
 }
 
 func (m *clientManager) UnRegister(scheme string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if client, ok := m.clients[strings.ToLower(scheme)]; ok {
+	scheme = strings.ToLower(scheme)
+	if client, ok := m.clients[scheme]; ok {
 		logger.Infof("remove client %#v for scheme %s", client, scheme)
 	}
-	delete(m.clients, strings.ToLower(scheme))
+	delete(m.clients, scheme)
 }
 
 func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceClient, bool) {
@@ -198,7 +206,7 @@ func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceCli
 		m.mu.Unlock()
 		return nil, false
 	}
-	m.clients[scheme] = client
+	m.doRegister(scheme, client)
 	m.mu.Unlock()
 	return client, true
 }
