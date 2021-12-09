@@ -21,7 +21,6 @@ package hdfsprotocol
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -231,7 +230,7 @@ func Test_Download_FileExist_ByRange(t *testing.T) {
 
 	download, err := sourceClient.Download(request)
 	assert.Nil(t, err)
-	data, _ := ioutil.ReadAll(download)
+	data, _ := io.ReadAll(download)
 
 	assert.Equal(t, hdfsExistFileContent, string(data))
 }
@@ -290,7 +289,7 @@ func Test_DownloadWithResponseHeader_FileExist_ByRange(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, hdfsExistFileLastModified, expireInfo.LastModified)
 
-	data, _ := ioutil.ReadAll(body)
+	data, _ := io.ReadAll(body)
 	assert.Equal(t, string(data), string([]byte(hdfsExistFileContent)[hdfsExistFileRangeStart:hdfsExistFileRangeEnd]))
 }
 

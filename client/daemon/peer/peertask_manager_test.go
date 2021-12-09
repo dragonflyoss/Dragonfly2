@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -152,7 +151,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
-	tempDir, _ := ioutil.TempDir("", "d7y-test-*")
+	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
@@ -169,7 +168,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -200,7 +199,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).Times(
 		int(math.Ceil(float64(len(testBytes)) / float64(pieceSize)))).DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -246,7 +245,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)
 
-	outputBytes, err := ioutil.ReadFile(output)
+	outputBytes, err := os.ReadFile(output)
 	assert.Nil(err, "load output file")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -256,7 +255,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -282,7 +281,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -315,7 +314,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	})
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := io.ReadAll(r)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -325,7 +324,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -388,7 +387,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 	})
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := io.ReadAll(r)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"sort"
 
 	"github.com/pkg/errors"
@@ -270,7 +269,7 @@ func checkPieceContent(reader io.Reader, pieceRecord *storage.PieceMetaRecord, f
 	// TODO Analyze the original data for the slice format to calculate fileMd5
 	pieceMd5 := md5.New()
 	tee := io.TeeReader(io.TeeReader(io.LimitReader(reader, int64(pieceRecord.PieceLen)), pieceMd5), fileDigest)
-	if n, err := io.Copy(ioutil.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {
+	if n, err := io.Copy(io.Discard, tee); n != int64(pieceRecord.PieceLen) || err != nil {
 		return errors.Wrap(err, "read piece content")
 	}
 	realPieceMd5 := digestutils.ToHashString(pieceMd5)

@@ -23,7 +23,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -53,7 +52,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	source.UnRegister("http")
 	require.Nil(t, source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -63,11 +62,10 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	)
 
 	pieceDownloadTimeout := 30 * time.Second
-	tempDir, _ := ioutil.TempDir("", "d7y-piece-manager-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: tempDir,
+			DataPath: t.TempDir(),
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},
@@ -219,7 +217,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				})
 			assert.Nil(err)
 
-			outputBytes, err := ioutil.ReadFile(output)
+			outputBytes, err := os.ReadFile(output)
 			assert.Nil(err, "load output file")
 			assert.Equal(testBytes, outputBytes, "output and desired output must match")
 		})

@@ -17,7 +17,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -79,7 +79,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	}
 
 	schedulerConfigYAML := &Config{}
-	contentYAML, _ := ioutil.ReadFile("./testdata/scheduler.yaml")
+	contentYAML, _ := os.ReadFile("./testdata/scheduler.yaml")
 	var dataYAML map[string]interface{}
 	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
 		t.Fatal(err)

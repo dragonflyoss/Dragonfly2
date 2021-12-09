@@ -21,11 +21,12 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -47,7 +48,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 	source.UnRegister("http")
 	require.Nil(t, source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	testData, err := ioutil.ReadFile(test.File)
+	testData, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 	pieceDownloadTimeout := 30 * time.Second
 
@@ -152,7 +153,7 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 			})
 			assert.Nil(err, "downloaded piece should success")
 
-			data, err := ioutil.ReadAll(r)
+			data, err := io.ReadAll(r)
 			assert.Nil(err, "read piece data should success")
 			c.Close()
 

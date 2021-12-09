@@ -19,7 +19,6 @@ package local
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -156,7 +155,7 @@ func (ds *driver) GetBytes(raw *storedriver.Raw) (data []byte, err error) {
 		return nil, err
 	}
 	if raw.Length == 0 {
-		data, err = ioutil.ReadAll(f)
+		data, err = io.ReadAll(f)
 	} else {
 		data = make([]byte, raw.Length)
 		_, err = f.Read(data)
