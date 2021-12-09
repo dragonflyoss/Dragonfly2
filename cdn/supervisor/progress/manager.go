@@ -127,8 +127,10 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *type
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
 	// update task access time
-	if _, err := pm.taskMgr.Get(taskID); err != nil {
-		return err
+	if pm.taskMgr != nil {
+		if _, err := pm.taskMgr.Get(taskID); err != nil {
+			return err
+		}
 	}
 	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
