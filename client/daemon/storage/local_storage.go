@@ -175,6 +175,7 @@ func (t *localTaskStore) ValidateDigest(*PeerTaskMetadata) error {
 	t.Lock()
 	defer t.Unlock()
 	if t.persistentMetadata.PieceMd5Sign == "" {
+		t.invalid.Store(true)
 		return ErrDigestNotSet
 	}
 	if t.TotalPieces <= 0 {
@@ -184,13 +185,14 @@ func (t *localTaskStore) ValidateDigest(*PeerTaskMetadata) error {
 	}
 
 	var pieceDigests []string
-	for i := int32(0); i < int32(t.TotalPieces); i++ {
+	for i := int32(0); i < t.TotalPieces; i++ {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
 	digest := digestutils.Sha256(pieceDigests...)
 	if digest != t.PieceMd5Sign {
 		t.Errorf("invalid digest, desired: %s, actual: %s", t.PieceMd5Sign, digest)
+		t.invalid.Store(true)
 		return ErrInvalidDigest
 	}
 	return nil
