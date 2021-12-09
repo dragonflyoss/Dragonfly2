@@ -414,6 +414,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 						},
 						ContentLength:  contentLength,
 						GenPieceDigest: true,
+						TotalPieces:    pt.GetTotalPieces(),
 					}); err != nil {
 					log.Errorf("update task failed %s", err)
 				}
