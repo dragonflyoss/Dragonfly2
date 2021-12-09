@@ -225,6 +225,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			Duration: 60000000000,
 		},
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
+		DataDir:     "/var/lib/dragonfly/",
+		LogDir:      "/var/log/dragonfly/",
+		CacheDir:    "/var/cache/dragonfly/",
 		KeepStorage: false,
 		Scheduler: SchedulerOption{
 			Manager: ManagerOption{

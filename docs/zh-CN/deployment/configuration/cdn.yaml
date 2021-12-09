@@ -47,6 +47,11 @@ base:
   # 默认值：disk
   storageMode: disk
 
+  # cdn 日志目录
+  # linux 上默认目录 /var/log/dragonfly
+  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
+  logDir: ""
+
   # CDN 连接的 manager，可以不指定。
   # 各项配置默认值如下。如果 addr 为空字符串，CDN将不会连接manager。
   manager:

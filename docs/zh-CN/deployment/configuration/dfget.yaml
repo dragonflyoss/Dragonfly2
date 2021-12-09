@@ -5,15 +5,25 @@ aliveTime: 0s
 # daemon gc 间隔
 gcInterval: 1m0s
 
-# daemon 数据目录
-# linux 上默认目录为 $HOME/.dragonfly/dfget-daemon/
-# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/dfdaemon/
-dataDir: /var/lib/dragonfly
-
 # daemon 工作目录
-# linux 上默认目录 $HOME/.dragonfly/dfget-daemon/
-# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/dfdaemon/
-workHome: /var/lib/dragonfly
+# linux 上默认目录 /usr/local/dragonfly
+# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly
+workHome: ""
+
+# daemon 动态配置缓存目录
+# linux 上默认目录 /var/cache/dragonfly
+# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
+cacheDir: ""
+
+# daemon 日志目录
+# linux 上默认目录 /var/log/dragonfly
+# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
+logDir: ""
+
+# daemon 数据目录
+# linux 上默认目录为 /var/lib/dragonfly
+# macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/data/
+dataDir: ""
 
 # 当 daemon 退出是, 是否保存缓存数据
 # 保留缓存数据在升级 daemon 的时候比较有用

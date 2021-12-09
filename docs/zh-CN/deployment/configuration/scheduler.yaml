@@ -55,6 +55,15 @@ server:
   # ListenPort is the ip and port scheduler server listens on.
   # default: 8002
   port:
+  # daemon 动态配置缓存目录
+  # linux 上默认目录 /var/cache/dragonfly
+  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
+  cacheDir: ""
+
+  # daemon 日志目录
+  # linux 上默认目录 /var/log/dragonfly
+  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
+  logDir: ""
 
 # 动态数据配置
 dynConfig:
@@ -123,7 +132,6 @@ jaeger: ""
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn
 service-name: dragonfly-scheduler
-
 # 开启数据收集服务
 # metrics:
 #  # 数据服务地址

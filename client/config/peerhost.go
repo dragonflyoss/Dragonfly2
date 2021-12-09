@@ -53,6 +53,7 @@ type DaemonOption struct {
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
 	LogDir      string `mapstructure:"logDir" yaml:"logDir"`
+	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
