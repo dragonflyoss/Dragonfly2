@@ -1,6 +1,9 @@
 aliveTime: 0s
 gcInterval: 1m0s
 workHome: /tmp/dragonfly/dfdaemon/
+dataDir: /var/lib/dragonfly/
+logDir: /var/log/dragonfly/
+cacheDir: /var/cache/dragonfly/
 keepStorage: false
 scheduler:
   manager:
