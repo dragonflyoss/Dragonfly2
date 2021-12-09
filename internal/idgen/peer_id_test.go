@@ -33,7 +33,7 @@ func TestPeerID(t *testing.T) {
 			ip:   "127.0.0.1",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 52)
+				assert.Regexp("127.0.0.1-.*-.*", d)
 			},
 		},
 		{
@@ -41,7 +41,7 @@ func TestPeerID(t *testing.T) {
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 82)
+				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*", d)
 			},
 		},
 		{
@@ -49,7 +49,7 @@ func TestPeerID(t *testing.T) {
 			ip:   "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 43)
+				assert.Regexp("-.*-.*", d)
 			},
 		},
 	}
@@ -73,7 +73,7 @@ func TestCDNPeerID(t *testing.T) {
 			ip:   "127.0.0.1",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 56)
+				assert.Regexp("127.0.0.1-.*-.*_CDN", d)
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestCDNPeerID(t *testing.T) {
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 86)
+				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*_CDN", d)
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func TestCDNPeerID(t *testing.T) {
 			ip:   "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Len(d, 47)
+				assert.Regexp("-.*-.*_CDN", d)
 			},
 		},
 	}
