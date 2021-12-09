@@ -21,7 +21,7 @@ cacheDir: ""
 logDir: ""
 
 # dataDir is the download data storage directory
-# in linux, default value is /var/bin/dragonfly
+# in linux, default value is /var/lib/dragonfly
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/data
 dataDir: ""
 
