@@ -24,46 +24,52 @@ import (
 
 func TestParseRange(t *testing.T) {
 	var cases = []struct {
-		rangeStr string
-		length   uint64
-		expected *Range
-		wantErr  bool
+		rangeStr     string
+		totalLength  uint64
+		targetLength uint64
+		expected     *Range
+		wantErr      bool
 	}{
 		{
-			rangeStr: "0-65575",
-			length:   65576,
+			rangeStr:     "0-65575",
+			totalLength:  65576,
+			targetLength: 65576,
 			expected: &Range{
 				StartIndex: 0,
 				EndIndex:   65575,
 			},
 			wantErr: false,
 		}, {
-			rangeStr: "2-2",
-			length:   65576,
+			rangeStr:     "2-2",
+			totalLength:  65576,
+			targetLength: 1,
 			expected: &Range{
 				StartIndex: 2,
 				EndIndex:   2,
 			},
 			wantErr: false,
 		}, {
-			rangeStr: "2-",
-			length:   65576,
+			rangeStr:     "2-",
+			totalLength:  65576,
+			targetLength: 65574,
 			expected: &Range{
 				StartIndex: 2,
 				EndIndex:   65575,
 			},
 			wantErr: false,
 		}, {
-			rangeStr: "-100",
-			length:   65576,
+			rangeStr:     "-100",
+			totalLength:  65576,
+			targetLength: 100,
 			expected: &Range{
 				StartIndex: 65476,
 				EndIndex:   65575,
 			},
 			wantErr: false,
 		}, {
-			rangeStr: "0-66575",
-			length:   65576,
+			rangeStr:     "0-66575",
+			totalLength:  65576,
+			targetLength: 65576,
 			expected: &Range{
 				StartIndex: 0,
 				EndIndex:   65575,
@@ -71,34 +77,39 @@ func TestParseRange(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			rangeStr: "0-65-575",
-			length:   65576,
-			expected: nil,
-			wantErr:  true,
+			rangeStr:    "0-65-575",
+			totalLength: 65576,
+			expected:    nil,
+			wantErr:     true,
 		},
 		{
-			rangeStr: "0-hello",
-			length:   65576,
-			expected: nil,
-			wantErr:  true,
+			rangeStr:    "0-hello",
+			totalLength: 65576,
+			expected:    nil,
+			wantErr:     true,
 		},
 		{
-			rangeStr: "65575-0",
-			length:   65576,
-			expected: nil,
-			wantErr:  true,
+			rangeStr:    "65575-0",
+			totalLength: 65576,
+			expected:    nil,
+			wantErr:     true,
 		},
 		{
-			rangeStr: "-1-8",
-			length:   65576,
-			expected: nil,
-			wantErr:  true,
+			rangeStr:    "-1-8",
+			totalLength: 65576,
+			expected:    nil,
+			wantErr:     true,
 		},
 	}
 
 	for _, v := range cases {
-		result, err := ParseRange(v.rangeStr, v.length)
-		assert.Equal(t, v.expected, result)
-		assert.Equal(t, v.wantErr, err != nil)
+		t.Run(v.rangeStr, func(t *testing.T) {
+			result, err := ParseRange(v.rangeStr, v.totalLength)
+			assert.Equal(t, v.expected, result)
+			assert.Equal(t, v.wantErr, err != nil)
+			if !v.wantErr {
+				assert.Equal(t, v.targetLength, result.Length())
+			}
+		})
 	}
 }
