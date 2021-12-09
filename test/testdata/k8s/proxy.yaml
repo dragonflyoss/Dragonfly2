@@ -8,7 +8,6 @@ data:
     aliveTime: 0s
     gcInterval: 1m0s
     keepStorage: false
-    dataDir: /root/.dragonfly/dfget-daemon/
     workDir: /root/.dragonfly/dfget-daemon/
     verbose: true
     pprof-port: 0

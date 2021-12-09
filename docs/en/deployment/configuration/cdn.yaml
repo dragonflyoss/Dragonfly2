@@ -43,6 +43,11 @@ base:
   # storageMode is the Mode of storage policy, [disk/hybrid]
   storageMode: disk
 
+  # logDir is the log storage directory
+  # in linux, default value is /var/log/dragonfly
+  # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+  logDir: ""
+
   # manager configuration
   manager:
     addr: ""
