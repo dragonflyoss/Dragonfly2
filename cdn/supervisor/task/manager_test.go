@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/golang/mock/gomock"
 	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
@@ -108,7 +109,13 @@ func Test_manager_AddOrUpdate(t *testing.T) {
 	source.UnRegister("https")
 	require.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
 	sourceClient.EXPECT().GetContentLength(source.RequestEq(testURL.String())).Return(int64(1024*1024*500+1000), nil).Times(1)
-	registerTask := NewSeedTask("dragonfly", testURL.String(), nil)
+	registerTask := NewSeedTask("dragonfly", testURL.String(), &base.UrlMeta{
+		Digest: "sha256:xxxxx",
+		Tag:    "dragonfly",
+		Range:  "0-3",
+		Filter: "",
+		Header: map[string]string{"key1": "value1"},
+	})
 	existTask, ok := tm.Exist("dragonfly")
 	require.Nil(existTask)
 	require.False(ok)
@@ -119,4 +126,6 @@ func Test_manager_AddOrUpdate(t *testing.T) {
 	require.True(ok)
 	require.EqualValues(registerTask, seedTask)
 	require.Equal(util.ComputePieceSize(int64(1024*1024*500+1000)), uint32(seedTask.PieceSize))
+	require.Equal(int64(1024*1024*500+1000), seedTask.SourceFileLength)
+	require.EqualValues(map[string]string{"key1": "value1"}, seedTask.Header)
 }

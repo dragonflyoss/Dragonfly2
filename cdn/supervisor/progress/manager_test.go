@@ -44,11 +44,11 @@ var (
 func (suite *ProgressManagerTestSuite) SetupSuite() {
 	ctrl := gomock.NewController(suite.T())
 	taskManager := taskMock.NewMockManager(ctrl)
-	taskManager.EXPECT().Get(existTaskID).Return(true)
-	taskManager.EXPECT().Get("")
+	//taskManager.EXPECT().Get(existTaskID).Return(true)
+	//taskManager.EXPECT().Get("")
 
-	taskManager.EXPECT().Update()
-	taskManager.EXPECT().UpdateProgress()
+	//taskManager.EXPECT().Update()
+	//taskManager.EXPECT().UpdateProgress()
 	manager, err := newManager(taskManager)
 	suite.Nil(err)
 	suite.manager = manager

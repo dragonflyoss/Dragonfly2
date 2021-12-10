@@ -21,6 +21,7 @@ package progress
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -80,9 +81,16 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 				logger.Debugf("subscriber %s starts watching task %s seed progress", clientAddr, taskID)
 				close(pieceChan)
 			}()
-			for i := range seedTask.Pieces {
-				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, i, taskID)
-				pieceChan <- seedTask.Pieces[i]
+			pieceNums := make([]uint32, 0, len(seedTask.Pieces))
+			for pieceNum := range seedTask.Pieces {
+				pieceNums = append(pieceNums, pieceNum)
+			}
+			sort.Slice(pieceNums, func(i, j int) bool {
+				return pieceNums[i] < pieceNums[j]
+			})
+			for _, pieceNum := range pieceNums {
+				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, pieceNum, taskID)
+				pieceChan <- seedTask.Pieces[pieceNum]
 			}
 		}(pieceChan)
 		return pieceChan, nil

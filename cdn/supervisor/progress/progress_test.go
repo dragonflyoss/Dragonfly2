@@ -17,299 +17,136 @@
 package progress
 
 import (
-	"container/list"
 	"context"
-	"reflect"
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"go.uber.org/atomic"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
-func Test_newProgressPublisher(t *testing.T) {
-	type args struct {
-		taskID string
-	}
-	tests := []struct {
-		name string
-		args args
-		want *publisher
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := newProgressPublisher(tt.args.taskID); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newProgressPublisher() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_newProgressSubscriber(t *testing.T) {
-	type args struct {
-		ctx        context.Context
-		clientAddr string
-		taskID     string
-		taskPieces map[uint32]*task.PieceInfo
-	}
-	tests := []struct {
-		name string
-		args args
-		want *subscriber
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := newProgressSubscriber(tt.args.ctx, tt.args.clientAddr, tt.args.taskID, tt.args.taskPieces); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("newProgressSubscriber() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_publisher_AddSubscriber(t *testing.T) {
-	type fields struct {
-		taskID      string
-		subscribers *list.List
-	}
-	type args struct {
-		sub *subscriber
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pub := &publisher{
-				taskID:      tt.fields.taskID,
-				subscribers: tt.fields.subscribers,
-			}
-		})
-	}
-}
-
 func Test_publisher_NotifySubscribers(t *testing.T) {
-	type fields struct {
-		taskID      string
-		subscribers *list.List
+	assert := assert.New(t)
+	publisher := newProgressPublisher("testTask")
+	notifyPieces := []*task.PieceInfo{
+		{
+			PieceNum: 0,
+			PieceMd5: "pieceMd51",
+			PieceRange: &rangeutils.Range{
+				StartIndex: 0,
+				EndIndex:   99,
+			},
+			OriginRange: &rangeutils.Range{
+				StartIndex: 0,
+				EndIndex:   99,
+			},
+			PieceLen:   100,
+			PieceStyle: 0,
+		}, {
+			PieceNum: 1,
+			PieceMd5: "pieceMd52",
+			PieceRange: &rangeutils.Range{
+				StartIndex: 100,
+				EndIndex:   199,
+			},
+			OriginRange: &rangeutils.Range{
+				StartIndex: 100,
+				EndIndex:   199,
+			},
+			PieceLen:   100,
+			PieceStyle: 0,
+		},
 	}
-	type args struct {
-		seedPiece *task.PieceInfo
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pub := &publisher{
-				taskID:      tt.fields.taskID,
-				subscribers: tt.fields.subscribers,
-			}
-		})
-	}
-}
+	wg := sync.WaitGroup{}
+	sub1 := newProgressSubscriber(context.Background(), "client1", "testTask", nil)
+	publisher.AddSubscriber(sub1)
 
-func Test_publisher_RemoveAllSubscribers(t *testing.T) {
-	type fields struct {
-		taskID      string
-		subscribers *list.List
+	sub2 := newProgressSubscriber(context.Background(), "client2", "testTask", nil)
+	publisher.AddSubscriber(sub2)
+	additionPieceInfo1 := &task.PieceInfo{
+		PieceNum:    100,
+		PieceMd5:    "xxxxx",
+		PieceRange:  &rangeutils.Range{},
+		OriginRange: &rangeutils.Range{},
+		PieceLen:    0,
+		PieceStyle:  0,
 	}
-	tests := []struct {
-		name   string
-		fields fields
-	}{
-		// TODO: Add test cases.
+	sub3 := newProgressSubscriber(context.Background(), "client3", "taskTask", map[uint32]*task.PieceInfo{
+		100: additionPieceInfo1,
+	})
+	additionPieceInfo2 := &task.PieceInfo{
+		PieceNum:    200,
+		PieceMd5:    "xxxxx",
+		PieceRange:  &rangeutils.Range{},
+		OriginRange: &rangeutils.Range{},
+		PieceLen:    0,
+		PieceStyle:  0,
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pub := &publisher{
-				taskID:      tt.fields.taskID,
-				subscribers: tt.fields.subscribers,
+	publisher.AddSubscriber(sub3)
+	sub4 := newProgressSubscriber(context.Background(), "client4", "taskTask", map[uint32]*task.PieceInfo{
+		100: additionPieceInfo1,
+		200: additionPieceInfo2,
+	})
+	publisher.AddSubscriber(sub4)
+	chan1 := sub1.Receiver()
+	chan2 := sub2.Receiver()
+	chan3 := sub3.Receiver()
+	chan4 := sub4.Receiver()
+	wg.Add(1)
+	go func(pieceChan <-chan *task.PieceInfo) {
+		defer wg.Done()
+		var pieceCount = 0
+		for info := range pieceChan {
+			pieceCount++
+			assert.EqualValues(notifyPieces[info.PieceNum], info)
+		}
+		assert.Equal(2, pieceCount)
+	}(chan1)
+	wg.Add(1)
+	go func(pieceChan <-chan *task.PieceInfo) {
+		defer wg.Done()
+		var pieceCount = 0
+		for info := range pieceChan {
+			pieceCount++
+			assert.EqualValues(notifyPieces[info.PieceNum], info)
+		}
+		assert.Equal(2, pieceCount)
+	}(chan2)
+	wg.Add(1)
+	go func(pieceChan <-chan *task.PieceInfo) {
+		defer wg.Done()
+		var pieceCount = 0
+		for info := range pieceChan {
+			pieceCount++
+			if info.PieceNum == 100 {
+				assert.EqualValues(additionPieceInfo1, info)
+			} else {
+				assert.EqualValues(notifyPieces[info.PieceNum], info)
 			}
-		})
-	}
-}
+		}
+	}(chan3)
+	wg.Add(1)
+	go func(pieceChan <-chan *task.PieceInfo) {
+		defer wg.Done()
+		var pieceCount = 0
+		for info := range pieceChan {
+			pieceCount++
+			if info.PieceNum == 100 {
+				assert.EqualValues(additionPieceInfo1, info)
+			} else if info.PieceNum == 200 {
+				assert.EqualValues(additionPieceInfo2, info)
+			} else {
+				assert.EqualValues(notifyPieces[info.PieceNum], info)
+			}
+		}
+		assert.Equal(4, pieceCount)
+	}(chan4)
 
-func Test_publisher_RemoveSubscriber(t *testing.T) {
-	type fields struct {
-		taskID      string
-		subscribers *list.List
+	for i := range notifyPieces {
+		publisher.NotifySubscribers(notifyPieces[i])
 	}
-	type args struct {
-		sub *subscriber
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			pub := &publisher{
-				taskID:      tt.fields.taskID,
-				subscribers: tt.fields.subscribers,
-			}
-		})
-	}
-}
-
-func Test_subscriber_Close(t *testing.T) {
-	type fields struct {
-		ctx       context.Context
-		scheduler string
-		taskID    string
-		done      chan struct{}
-		once      sync.Once
-		pieces    map[uint32]*task.PieceInfo
-		pieceChan chan *task.PieceInfo
-		cond      *sync.Cond
-		closed    *atomic.Bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sub := &subscriber{
-				ctx:       tt.fields.ctx,
-				scheduler: tt.fields.scheduler,
-				taskID:    tt.fields.taskID,
-				done:      tt.fields.done,
-				once:      tt.fields.once,
-				pieces:    tt.fields.pieces,
-				pieceChan: tt.fields.pieceChan,
-				cond:      tt.fields.cond,
-				closed:    tt.fields.closed,
-			}
-		})
-	}
-}
-
-func Test_subscriber_Notify(t *testing.T) {
-	type fields struct {
-		ctx       context.Context
-		scheduler string
-		taskID    string
-		done      chan struct{}
-		once      sync.Once
-		pieces    map[uint32]*task.PieceInfo
-		pieceChan chan *task.PieceInfo
-		cond      *sync.Cond
-		closed    *atomic.Bool
-	}
-	type args struct {
-		seedPiece *task.PieceInfo
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sub := &subscriber{
-				ctx:       tt.fields.ctx,
-				scheduler: tt.fields.scheduler,
-				taskID:    tt.fields.taskID,
-				done:      tt.fields.done,
-				once:      tt.fields.once,
-				pieces:    tt.fields.pieces,
-				pieceChan: tt.fields.pieceChan,
-				cond:      tt.fields.cond,
-				closed:    tt.fields.closed,
-			}
-		})
-	}
-}
-
-func Test_subscriber_Receiver(t *testing.T) {
-	type fields struct {
-		ctx       context.Context
-		scheduler string
-		taskID    string
-		done      chan struct{}
-		once      sync.Once
-		pieces    map[uint32]*task.PieceInfo
-		pieceChan chan *task.PieceInfo
-		cond      *sync.Cond
-		closed    *atomic.Bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   <-chan *task.PieceInfo
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sub := &subscriber{
-				ctx:       tt.fields.ctx,
-				scheduler: tt.fields.scheduler,
-				taskID:    tt.fields.taskID,
-				done:      tt.fields.done,
-				once:      tt.fields.once,
-				pieces:    tt.fields.pieces,
-				pieceChan: tt.fields.pieceChan,
-				cond:      tt.fields.cond,
-				closed:    tt.fields.closed,
-			}
-			if got := sub.Receiver(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Receiver() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_subscriber_readLoop(t *testing.T) {
-	type fields struct {
-		ctx       context.Context
-		scheduler string
-		taskID    string
-		done      chan struct{}
-		once      sync.Once
-		pieces    map[uint32]*task.PieceInfo
-		pieceChan chan *task.PieceInfo
-		cond      *sync.Cond
-		closed    *atomic.Bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			sub := &subscriber{
-				ctx:       tt.fields.ctx,
-				scheduler: tt.fields.scheduler,
-				taskID:    tt.fields.taskID,
-				done:      tt.fields.done,
-				once:      tt.fields.once,
-				pieces:    tt.fields.pieces,
-				pieceChan: tt.fields.pieceChan,
-				cond:      tt.fields.cond,
-				closed:    tt.fields.closed,
-			}
-		})
-	}
+	publisher.RemoveAllSubscribers()
+	wg.Wait()
 }

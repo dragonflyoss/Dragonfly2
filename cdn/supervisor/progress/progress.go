@@ -72,17 +72,26 @@ func (sub *subscriber) readLoop() {
 			if len(sub.pieces) == 0 {
 				return
 			}
+			logger.Debugf("sub has been closed, there are still has %d pieces waiting to be sent", len(sub.pieces))
+			sub.cond.L.Lock()
+			sub.sendPieces()
+			sub.cond.L.Unlock()
 		default:
 			sub.cond.L.Lock()
 			for len(sub.pieces) == 0 && !sub.closed.Load() {
 				sub.cond.Wait()
 			}
-			for i, info := range sub.pieces {
-				sub.pieceChan <- info
-				delete(sub.pieces, i)
-			}
+			sub.sendPieces()
 			sub.cond.L.Unlock()
 		}
+	}
+}
+
+func (sub *subscriber) sendPieces() {
+	for i, info := range sub.pieces {
+		logger.Debugf("subscriber %s send %d piece info of taskID %s", sub.scheduler, info.PieceNum, sub.taskID)
+		sub.pieceChan <- info
+		delete(sub.pieces, i)
 	}
 }
 
@@ -101,8 +110,8 @@ func (sub *subscriber) Receiver() <-chan *task.PieceInfo {
 func (sub *subscriber) Close() {
 	sub.once.Do(func() {
 		logger.Debugf("close subscriber %s from taskID %s", sub.scheduler, sub.taskID)
-		sub.cond.Signal()
 		sub.closed.CAS(false, true)
+		sub.cond.Signal()
 		close(sub.done)
 	})
 }
