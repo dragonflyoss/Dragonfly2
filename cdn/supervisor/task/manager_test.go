@@ -21,6 +21,7 @@ import (
 	"os"
 	"testing"
 
+	"d7y.io/dragonfly/v2/internal/util"
 	"github.com/golang/mock/gomock"
 	"github.com/jarcoal/httpmock"
 	"github.com/pkg/errors"
@@ -85,7 +86,6 @@ func Test_manager_Exist(t *testing.T) {
 	require.Nil(err)
 	source.UnRegister("https")
 	require.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
-
 	sourceClient.EXPECT().GetContentLength(source.RequestEq(testURL.String())).Return(int64(1024*1024*500+1000), nil).Times(1)
 	seedTask := NewSeedTask("taskID", testURL.String(), nil)
 	addedTask, err := tm.AddOrUpdate(seedTask)
@@ -95,4 +95,28 @@ func Test_manager_Exist(t *testing.T) {
 	require.EqualValues(addedTask, existTask)
 	require.EqualValues(1024*1024*500+1000, existTask.SourceFileLength)
 	require.EqualValues(1024*1024*7, existTask.PieceSize)
+}
+
+func Test_manager_AddOrUpdate(t *testing.T) {
+	tm, err := NewManager(config.New())
+	require := require.New(t)
+	require.Nil(err)
+	ctl := gomock.NewController(t)
+	sourceClient := sourcemock.NewMockResourceClient(ctl)
+	testURL, err := url.Parse("https://dragonfly.com")
+	require.Nil(err)
+	source.UnRegister("https")
+	require.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(testURL.String())).Return(int64(1024*1024*500+1000), nil).Times(1)
+	registerTask := NewSeedTask("dragonfly", testURL.String(), nil)
+	existTask, ok := tm.Exist("dragonfly")
+	require.Nil(existTask)
+	require.False(ok)
+	seedTask, err := tm.AddOrUpdate(registerTask)
+	require.Nil(err)
+	existTask, ok = tm.Exist("dragonfly")
+	require.NotNil(existTask)
+	require.True(ok)
+	require.EqualValues(registerTask, seedTask)
+	require.Equal(util.ComputePieceSize(int64(1024*1024*500+1000)), uint32(seedTask.PieceSize))
 }

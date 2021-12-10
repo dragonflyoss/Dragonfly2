@@ -26,7 +26,6 @@ import (
 
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/pkg/synclock"
 )
 
 func TestProgressManagerSuite(t *testing.T) {
@@ -38,20 +37,59 @@ type ProgressManagerTestSuite struct {
 	suite.Suite
 }
 
+var (
+	existTaskID = "existTaskID"
+)
+
 func (suite *ProgressManagerTestSuite) SetupSuite() {
 	ctrl := gomock.NewController(suite.T())
 	taskManager := taskMock.NewMockManager(ctrl)
+	taskManager.EXPECT().Get(existTaskID).Return(true)
+	taskManager.EXPECT().Get("")
+
+	taskManager.EXPECT().Update()
+	taskManager.EXPECT().UpdateProgress()
 	manager, err := newManager(taskManager)
 	suite.Nil(err)
 	suite.manager = manager
 }
 
-func (suite *ProgressManagerTestSuite) Test_manager_PublishPiece() {
-	type fields struct {
-		mu               *synclock.LockerPool
-		taskManager      task.Manager
-		seedTaskSubjects map[string]*publisher
+func (suite *ProgressManagerTestSuite) TestWatchSeedProgress() {
+	type args struct {
+		ctx    context.Context
+		taskID string
 	}
+	tests := []struct {
+		name    string
+		args    args
+		want    <-chan *task.PieceInfo
+		wantErr bool
+	}{
+		{
+			name: "",
+			args: args{
+				ctx:    nil,
+				taskID: "",
+			},
+			want:    nil,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			got, err := suite.manager.WatchSeedProgress(tt.args.ctx, "clientAddr", tt.args.taskID)
+			if (err != nil) != tt.wantErr {
+				suite.T().Errorf("WatchSeedProgress() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				suite.T().Errorf("WatchSeedProgress() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func (suite *ProgressManagerTestSuite) TestPublishPiece() {
 	type args struct {
 		ctx    context.Context
 		taskID string
@@ -59,11 +97,14 @@ func (suite *ProgressManagerTestSuite) Test_manager_PublishPiece() {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
-		//{}
+		{
+			name:    "",
+			args:    args{},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
@@ -74,12 +115,7 @@ func (suite *ProgressManagerTestSuite) Test_manager_PublishPiece() {
 	}
 }
 
-func (suite *ProgressManagerTestSuite) Test_manager_PublishTask() {
-	type fields struct {
-		mu               *synclock.LockerPool
-		taskManager      task.Manager
-		seedTaskSubjects map[string]*publisher
-	}
+func (suite *ProgressManagerTestSuite) TestPublishTask() {
 	type args struct {
 		ctx      context.Context
 		taskID   string
@@ -87,49 +123,23 @@ func (suite *ProgressManagerTestSuite) Test_manager_PublishTask() {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				ctx:      nil,
+				taskID:   "",
+				seedTask: nil,
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
 			if err := suite.manager.PublishTask(tt.args.ctx, tt.args.taskID, tt.args.seedTask); (err != nil) != tt.wantErr {
 				suite.T().Errorf("PublishTask() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func (suite *ProgressManagerTestSuite) Test_manager_WatchSeedProgress() {
-	type fields struct {
-		mu               *synclock.LockerPool
-		taskManager      task.Manager
-		seedTaskSubjects map[string]*publisher
-	}
-	type args struct {
-		ctx    context.Context
-		taskID string
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    <-chan *task.PieceInfo
-		wantErr bool
-	}{
-		//{},
-	}
-	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			got, err := suite.manager.WatchSeedProgress(tt.args.ctx, "", tt.args.taskID)
-			if (err != nil) != tt.wantErr {
-				suite.T().Errorf("WatchSeedProgress() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				suite.T().Errorf("WatchSeedProgress() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
