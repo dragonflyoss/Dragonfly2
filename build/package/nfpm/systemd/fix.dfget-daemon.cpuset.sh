@@ -1,5 +1,6 @@
 #!/bin/sh
 
+# fix cpu set not settled in old kernel
 mkdir -p /sys/fs/cgroup/cpuset,cpu,cpuacct/dragonfly.slice/dfget-daemon.service
 cat /sys/fs/cgroup/cpuset,cpu,cpuacct/cpuset.cpus > \
   /sys/fs/cgroup/cpuset,cpu,cpuacct/dragonfly.slice/cpuset.cpus
