@@ -19,7 +19,6 @@ package dependency
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -48,7 +47,7 @@ func ListAvailablePlugins() {
 	}
 
 	fmt.Fprintf(os.Stderr, "search plugin in %s\n", d.PluginDir())
-	files, err := ioutil.ReadDir(d.PluginDir())
+	files, err := os.ReadDir(d.PluginDir())
 	if os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "no plugin found\n")
 		return

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -40,7 +39,7 @@ func TestMain(m *testing.M) {
 func TestTransport_RoundTrip(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
-	testData, err := ioutil.ReadFile(test.File)
+	testData, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var url = "http://x/y"
@@ -48,7 +47,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 	peerTaskManager.EXPECT().StartStreamPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
 			assert.Equal(req.Url, url)
-			return ioutil.NopCloser(bytes.NewBuffer(testData)), nil, nil
+			return io.NopCloser(bytes.NewBuffer(testData)), nil, nil
 		},
 	)
 	rt, _ := New(
@@ -65,7 +64,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 		return
 	}
 	defer resp.Body.Close()
-	output, err := ioutil.ReadAll(resp.Body)
+	output, err := io.ReadAll(resp.Body)
 	assert.Nil(err)
 	if err != nil {
 		return

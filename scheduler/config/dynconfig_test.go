@@ -17,7 +17,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,10 +32,7 @@ import (
 )
 
 func TestDynconfigGet_ManagerSourceType(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
@@ -139,10 +135,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 }
 
 func TestDynconfigGet_LocalSourceType(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	tests := []struct {
 		name       string
@@ -197,10 +190,7 @@ func TestDynconfigGet_LocalSourceType(t *testing.T) {
 }
 
 func TestDynconfigGetCDNFromDirPath(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	tests := []struct {
 		name       string

@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
@@ -471,7 +470,7 @@ func TestCDN_Initial(t *testing.T) {
 
 				const testwords string = "dragonfly-scheduler-test"
 				res := &http.Response{
-					Body: ioutil.NopCloser(
+					Body: io.NopCloser(
 						bytes.NewBuffer([]byte(testwords))),
 				}
 				httpRet := []gomonkey.OutputCell{

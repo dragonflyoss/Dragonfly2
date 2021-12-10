@@ -18,7 +18,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -45,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	data, err := ioutil.ReadAll(rc)
+	data, err := io.ReadAll(rc)
 	if err != nil {
 		fmt.Printf("read error: %s\n", err)
 		os.Exit(1)
