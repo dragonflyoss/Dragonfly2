@@ -90,8 +90,8 @@ func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventWatchSeedProgress)
 	logger.Debugf("watch seed progress begin for taskID: %s", taskID)
-	pm.mu.Lock(taskID, true)
-	defer pm.mu.UnLock(taskID, true)
+	pm.mu.Lock(taskID, false)
+	defer pm.mu.UnLock(taskID, false)
 	chanList, err := pm.seedSubscribers.GetAsList(taskID)
 	if err != nil {
 		return nil, fmt.Errorf("get seed subscribers: %v", err)
