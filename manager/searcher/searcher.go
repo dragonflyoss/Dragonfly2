@@ -139,6 +139,7 @@ func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters [
 		for _, cluster := range clusters {
 			var scopes Scopes
 			if err := mapstructure.Decode(cluster.Scopes, &scopes); err != nil {
+				logger.Infof("cluster %s decode scopes failed: %v", cluster.Name, err)
 				// Scopes parse failed to skip this evaluation
 				continue
 			}
@@ -162,8 +163,22 @@ func Evaluate(conditions map[string]string, scopes Scopes) float64 {
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better
 func calculateIDCAffinityScore(dst, src string) float64 {
-	if dst != "" && src != "" && strings.Compare(dst, src) == 0 {
+	if dst == "" || src == "" {
+		return minScore
+	}
+
+	if strings.Compare(dst, src) == 0 {
 		return maxScore
+	}
+
+	// Dst has only one element, src has multiple elements separated by "|".
+	// When dst element matches one of the multiple elements of src,
+	// it gets the max score of idc.
+	srcElements := strings.Split(src, "|")
+	for _, srcElement := range srcElements {
+		if strings.Compare(dst, srcElement) == 0 {
+			return maxScore
+		}
 	}
 
 	return minScore
