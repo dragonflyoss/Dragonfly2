@@ -123,18 +123,21 @@ func NewDefaultBaseProperties() *BaseProperties {
 		DownloadPort:            constants.DefaultDownloadPort,
 		SystemReservedBandwidth: constants.DefaultSystemReservedBandwidth,
 		MaxBandwidth:            constants.DefaultMaxBandwidth,
+		AdvertiseIP:             iputils.IPv4,
 		FailAccessInterval:      constants.DefaultFailAccessInterval,
 		GCInitialDelay:          constants.DefaultGCInitialDelay,
 		GCMetaInterval:          constants.DefaultGCMetaInterval,
 		TaskExpireTime:          constants.DefaultTaskExpireTime,
 		StorageMode:             constants.DefaultStorageMode,
-		AdvertiseIP:             iputils.IPv4,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
 				Interval: constants.DefaultKeepAliveInterval,
 			},
 		},
 		Host: HostConfig{},
+		Metrics: &RestConfig{
+			Addr: ":8080",
+		},
 	}
 }
 

@@ -116,10 +116,13 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create gcServer")
 	}
 
-	// Initialize metrics server
-	metricsServer, err := metrics.New(cfg.Metrics, grpcServer)
-	if err != nil {
-		return nil, errors.Wrap(err, "create metricsServer")
+	var metricsServer *metrics.Server
+	if cfg.Metrics != nil && cfg.Metrics.Addr != "" {
+		// Initialize metrics server
+		metricsServer, err = metrics.New(cfg.Metrics, grpcServer)
+		if err != nil {
+			return nil, errors.Wrap(err, "create metricsServer")
+		}
 	}
 
 	// Initialize configServer
@@ -148,9 +151,11 @@ func (s *Server) Serve() error {
 	}()
 
 	go func() {
-		// Start metrics server
-		if err := s.metricsServer.ListenAndServe(s.metricsServer.Handler()); err != nil {
-			logger.Fatalf("start metrics server failed: %v", err)
+		if s.metricsServer != nil {
+			// Start metrics server
+			if err := s.metricsServer.ListenAndServe(s.metricsServer.Handler()); err != nil {
+				logger.Fatalf("start metrics server failed: %v", err)
+			}
 		}
 	}()
 
