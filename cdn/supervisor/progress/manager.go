@@ -126,6 +126,12 @@ func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *type
 	logger.Debugf("seed piece meta record %#v", record)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
+	// update task access time
+	if pm.taskMgr != nil {
+		if _, err := pm.taskMgr.Get(taskID); err != nil {
+			return err
+		}
+	}
 	err := pm.setPieceMetaRecord(taskID, record)
 	if err != nil {
 		return fmt.Errorf("set piece meta record: %v", err)
