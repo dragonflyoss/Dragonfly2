@@ -1,7 +1,10 @@
 name: dfget
 arch: amd64
 platform: linux
-version: ${VERSION}
+epoch: 2
+version: v${SEMVER}
+version_schema: semver
+release: ${VERSION_RELEASE}
 section: default
 priority: extra
 description: dfget is the client of Dragonfly used to download and upload files
@@ -45,6 +48,7 @@ contents:
     dst: /opt/dragonfly/fix.dfget-daemon.cpuset.sh
 
 scripts:
+  preinstall: /root/build/package/nfpm/dfget-preinstall.sh
   postinstall: /root/build/package/nfpm/dfget-postinstall.sh
   preremove: /root/build/package/nfpm/dfget-preremove.sh
   postremove: /root/build/package/nfpm/dfget-postremove.sh
