@@ -136,13 +136,15 @@ func (m *peerManager) RunGC() error {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.lastAccessAt.Load())
 
-		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN && peer.GetStatus() != PeerStatusZombie {
+		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
 			if !peer.IsConnected() {
 				peer.Log().Infof("peer is not connected")
 				peer.Leave()
 			}
-			peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
-			peer.SetStatus(PeerStatusZombie)
+			if peer.GetStatus() != PeerStatusZombie {
+				peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
+				peer.SetStatus(PeerStatusZombie)
+			}
 		}
 
 		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
