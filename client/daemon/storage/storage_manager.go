@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -466,7 +465,7 @@ func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
-	dirs, err := ioutil.ReadDir(s.storeOption.DataPath)
+	dirs, err := os.ReadDir(s.storeOption.DataPath)
 	if os.IsNotExist(err) {
 		return nil
 	}
@@ -479,7 +478,7 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	)
 	for _, dir := range dirs {
 		taskID := dir.Name()
-		peerDirs, err := ioutil.ReadDir(path.Join(s.storeOption.DataPath, taskID))
+		peerDirs, err := os.ReadDir(path.Join(s.storeOption.DataPath, taskID))
 		if err != nil {
 			continue
 		}
@@ -502,7 +501,7 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					Warnf("open task metadata error: %s", err)
 				continue
 			}
-			bytes, err0 := ioutil.ReadAll(t.metadataFile)
+			bytes, err0 := io.ReadAll(t.metadataFile)
 			if err0 != nil {
 				loadErrs = append(loadErrs, err0)
 				loadErrDirs = append(loadErrDirs, dataDir)

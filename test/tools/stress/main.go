@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -166,7 +165,7 @@ func process(ctx context.Context, wg *sync.WaitGroup, result chan *Result) {
 			continue
 		}
 		var msg string
-		n, err := io.Copy(ioutil.Discard, resp.Body)
+		n, err := io.Copy(io.Discard, resp.Body)
 		if err != nil {
 			msg = err.Error()
 			log.Printf("discard data error: %s", err)

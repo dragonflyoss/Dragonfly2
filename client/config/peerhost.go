@@ -22,9 +22,9 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -70,7 +70,7 @@ func NewDaemonConfig() *DaemonOption {
 }
 
 func (p *DaemonOption) Load(path string) error {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
 	}
@@ -206,7 +206,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 
 	switch value := v.(type) {
 	case string:
-		file, err := ioutil.ReadFile(value)
+		file, err := os.ReadFile(value)
 		if err != nil {
 			return err
 		}
@@ -232,7 +232,7 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 
-		file, err := ioutil.ReadFile(path)
+		file, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -445,7 +445,7 @@ func (f *FileString) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	file, err := ioutil.ReadFile(s)
+	file, err := os.ReadFile(s)
 	if err != nil {
 		return err
 	}
@@ -465,7 +465,7 @@ func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
 		return errors.New("invalid filestring")
 	}
 
-	file, err := ioutil.ReadFile(s)
+	file, err := os.ReadFile(s)
 	if err != nil {
 		return err
 	}
@@ -628,7 +628,7 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 
 	roots := x509.NewCertPool()
 	for _, f := range files {
-		cert, err := ioutil.ReadFile(f)
+		cert, err := os.ReadFile(f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "read cert file %s", f)
 		}

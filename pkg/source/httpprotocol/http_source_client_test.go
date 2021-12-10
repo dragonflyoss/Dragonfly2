@@ -19,7 +19,7 @@ package httpprotocol
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -208,7 +208,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 				suite.True(tt.wantErr.Error() == err.Error())
 				return
 			}
-			bytes, err := ioutil.ReadAll(reader)
+			bytes, err := io.ReadAll(reader)
 			suite.Nil(err)
 			suite.Equal(tt.content, string(bytes))
 			suite.Equal(tt.expireInfo, expireInfo)
@@ -325,7 +325,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDoRequest() {
 	suite.Nil(err)
 	res, err := suite.httpClient.doRequest(http.MethodGet, request)
 	suite.Nil(err)
-	bytes, err := ioutil.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	suite.Nil(err)
 	suite.EqualValues("ok", string(bytes))
 }

@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"sync"
@@ -71,7 +70,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
 		// discard data for back source
-		n, err := io.Copy(ioutil.Discard, io.LimitReader(req.Reader, req.Range.Length))
+		n, err := io.Copy(io.Discard, io.LimitReader(req.Reader, req.Range.Length))
 		if err != nil && err != io.EOF {
 			return n, err
 		}
@@ -394,7 +393,7 @@ func (t *localTaskStore) Reclaim() error {
 	t.Infof("purged task work directory: %s", t.dataDir)
 
 	taskDir := path.Dir(t.dataDir)
-	if dirs, err := ioutil.ReadDir(taskDir); err != nil {
+	if dirs, err := os.ReadDir(taskDir); err != nil {
 		t.Warnf("stat task directory %q error: %s", taskDir, err)
 	} else {
 		if len(dirs) == 0 {

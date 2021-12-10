@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -83,7 +82,7 @@ func NewPlugins(workHome string) map[plugins.PluginType][]*plugins.PluginPropert
 }
 
 func (suite *CacheWriterTestSuite) SetupSuite() {
-	suite.workHome, _ = ioutil.TempDir("/tmp", "cdn-CacheWriterDetectorTestSuite-")
+	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-CacheWriterDetectorTestSuite-")
 	suite.T().Log("workHome:", suite.workHome)
 	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
 	storeMgr, ok := storage.Get(config.DefaultStorageMode)
@@ -105,7 +104,7 @@ func (suite *CacheWriterTestSuite) TearDownSuite() {
 }
 
 func (suite *CacheWriterTestSuite) TestStartWriter() {
-	content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+	content, err := os.ReadFile("../../testdata/cdn/go.html")
 	suite.Nil(err)
 	contentLen := int64(len(content))
 	type args struct {

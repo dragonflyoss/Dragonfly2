@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -223,7 +222,7 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 }
 
 func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
-	files, err := ioutil.ReadDir(d.cdnDirPath)
+	files, err := os.ReadDir(d.cdnDirPath)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +235,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 		}
 
 		p := filepath.Join(d.cdnDirPath, file.Name())
-		if file.Mode()&os.ModeSymlink != 0 {
+		if file.Type()&os.ModeSymlink != 0 {
 			stat, err := os.Stat(p)
 			if err != nil {
 				logger.Errorf("stat %s error: %s", file.Name(), err)
@@ -247,7 +246,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 				continue
 			}
 		}
-		b, err := ioutil.ReadFile(p)
+		b, err := os.ReadFile(p)
 		if err != nil {
 			return nil, err
 		}

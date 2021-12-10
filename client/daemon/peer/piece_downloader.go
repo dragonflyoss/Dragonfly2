@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -101,7 +100,7 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, d *DownloadPieceReq
 		return nil, nil, err
 	}
 	if resp.StatusCode > 299 {
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
 		return nil, nil, fmt.Errorf("download piece failed with http code: %s", resp.Status)
 	}

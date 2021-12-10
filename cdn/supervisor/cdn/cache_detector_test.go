@@ -21,7 +21,6 @@ import (
 	"crypto/md5"
 	"hash"
 	"io"
-	"io/ioutil"
 	"os"
 	"sort"
 	"strings"
@@ -66,21 +65,21 @@ func (suite *CacheDetectorTestSuite) SetupSuite() {
 	storageManager.EXPECT().ReadFileMetadata(noCache.taskID).Return(noCache.fileMeta, os.ErrNotExist).AnyTimes()
 	storageManager.EXPECT().ReadDownloadFile(fullNoExpiredCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
-			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+			content, err := os.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
-			return ioutil.NopCloser(strings.NewReader(string(content))), nil
+			return io.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
 	storageManager.EXPECT().ReadDownloadFile(partialNotSupportRangeCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
-			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+			content, err := os.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
-			return ioutil.NopCloser(strings.NewReader(string(content))), nil
+			return io.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
 	storageManager.EXPECT().ReadDownloadFile(partialSupportRangeCache.taskID).DoAndReturn(
 		func(taskID string) (io.ReadCloser, error) {
-			content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+			content, err := os.ReadFile("../../testdata/cdn/go.html")
 			suite.Nil(err)
-			return ioutil.NopCloser(strings.NewReader(string(content))), nil
+			return io.NopCloser(strings.NewReader(string(content))), nil
 		}).AnyTimes()
 	storageManager.EXPECT().ReadDownloadFile(noCache.taskID).Return(nil, os.ErrNotExist).AnyTimes()
 	storageManager.EXPECT().ReadPieceMetaRecords(fullNoExpiredCache.taskID).Return(fullNoExpiredCache.pieces, nil).AnyTimes()
@@ -421,7 +420,7 @@ func (suite *CacheDetectorTestSuite) TestParseByReadMetaFile() {
 }
 
 func (suite *CacheDetectorTestSuite) TestCheckPieceContent() {
-	content, err := ioutil.ReadFile("../../testdata/cdn/go.html")
+	content, err := os.ReadFile("../../testdata/cdn/go.html")
 	suite.Nil(err)
 	type args struct {
 		reader       io.Reader

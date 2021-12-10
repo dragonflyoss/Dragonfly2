@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,7 +141,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	wLog.Info("try to download from source and ignore rate limit")
 	fmt.Println("try to download from source and ignore rate limit")
 
-	if target, err = ioutil.TempFile(filepath.Dir(cfg.Output), ".df_"); err != nil {
+	if target, err = os.CreateTemp(filepath.Dir(cfg.Output), ".df_"); err != nil {
 		return err
 	}
 	defer os.Remove(target.Name())

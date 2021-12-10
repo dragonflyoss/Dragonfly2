@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -46,14 +45,14 @@ func TestUploadManager_Serve(t *testing.T) {
 	defer ctrl.Finish()
 
 	assert := testifyassert.New(t)
-	testData, err := ioutil.ReadFile(test.File)
+	testData, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	mockStorageManager := mock_storage.NewMockManager(ctrl)
 	mockStorageManager.EXPECT().ReadPiece(gomock.Any(), gomock.Any()).AnyTimes().
 		DoAndReturn(func(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 			return bytes.NewBuffer(testData[req.Range.Start : req.Range.Start+req.Range.Length]),
-				ioutil.NopCloser(nil), nil
+				io.NopCloser(nil), nil
 		})
 
 	um, err := NewUploadManager(mockStorageManager, WithLimiter(rate.NewLimiter(16*1024, 16*1024)))
@@ -103,7 +102,7 @@ func TestUploadManager_Serve(t *testing.T) {
 		resp, err := http.DefaultClient.Do(req)
 		assert.Nil(err, "get piece data")
 
-		data, _ := ioutil.ReadAll(resp.Body)
+		data, _ := io.ReadAll(resp.Body)
 		resp.Body.Close()
 		assert.Equal(tt.targetPieceData, data)
 	}

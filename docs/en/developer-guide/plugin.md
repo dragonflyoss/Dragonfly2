@@ -55,7 +55,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -88,11 +87,11 @@ func (c *client) IsExpired(ctx context.Context, url string, header source.Reques
 }
 
 func (c *client) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewBufferString(data)), nil
+	return io.NopCloser(bytes.NewBufferString(data)), nil
 }
 
 func (c *client) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
-	return ioutil.NopCloser(bytes.NewBufferString(data)), map[string]string{}, nil
+	return io.NopCloser(bytes.NewBufferString(data)), map[string]string{}, nil
 }
 
 func (c *client) GetLastModifiedMillis(ctx context.Context, url string, header source.RequestHeader) (int64, error) {

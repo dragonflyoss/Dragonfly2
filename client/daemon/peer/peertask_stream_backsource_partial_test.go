@@ -21,10 +21,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"net"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -162,7 +162,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
-	tempDir, _ := ioutil.TempDir("", "d7y-test-*")
+	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
@@ -178,7 +178,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -206,7 +206,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -223,7 +223,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		})
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
 		func(request *source.Request) (io.ReadCloser, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
+			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	pm := &pieceManager{
@@ -269,7 +269,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(rc)
+	outputBytes, err := io.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
