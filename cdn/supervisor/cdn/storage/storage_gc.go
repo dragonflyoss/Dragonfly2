@@ -78,7 +78,7 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		}
 	}
 
-	logger.GcLogger.With("type", storagePattern).Debugf("start to exec gc with fullGC: %t", fullGC)
+	logger.GcLogger.With("type", storagePattern).Debugf("storage is insufficient, start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
