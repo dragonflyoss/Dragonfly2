@@ -77,6 +77,12 @@ func (tm *manager) getTask(taskID string) (*SeedTask, bool) {
 	return task.(*SeedTask), true
 }
 
+func (tm *manager) deleteTask(taskID string) {
+	tm.accessTimeMap.Delete(taskID)
+	tm.taskURLUnreachableStore.Delete(taskID)
+	tm.taskStore.Delete(taskID)
+}
+
 // getTaskAccessTime get access time of task and convert it to time.Time type
 func (tm *manager) getTaskAccessTime(taskID string) (time.Time, bool) {
 	access, ok := tm.accessTimeMap.Load(taskID)

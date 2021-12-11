@@ -223,9 +223,7 @@ func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
 func (tm *manager) Delete(taskID string) {
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
-	tm.accessTimeMap.Delete(taskID)
-	tm.taskURLUnreachableStore.Delete(taskID)
-	tm.taskStore.Delete(taskID)
+	tm.deleteTask(taskID)
 }
 
 const (
@@ -243,6 +241,8 @@ func (tm *manager) GC() error {
 	tm.accessTimeMap.Range(func(key, value interface{}) bool {
 		totalTaskNums++
 		taskID := key.(string)
+		synclock.Lock(taskID, false)
+		defer synclock.UnLock(taskID, false)
 		atime := value.(time.Time)
 		if time.Since(atime) < tm.config.TaskExpireTime {
 			return true
@@ -250,7 +250,7 @@ func (tm *manager) GC() error {
 
 		// gc task memory data
 		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
-		tm.Delete(taskID)
+		tm.deleteTask(taskID)
 		removedTaskCount++
 		return true
 	})
