@@ -31,6 +31,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -39,7 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
-const _disk = "disk"
+const _disk = local.DiskDriverName
 
 var (
 	_ gc.Executor     = (*diskStorageManager)(nil)
