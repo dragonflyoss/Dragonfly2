@@ -19,6 +19,7 @@ package progress
 import (
 	"container/list"
 	"context"
+	"sort"
 	"sync"
 
 	"go.uber.org/atomic"
@@ -88,10 +89,17 @@ func (sub *subscriber) readLoop() {
 }
 
 func (sub *subscriber) sendPieces() {
-	for i, info := range sub.pieces {
-		logger.Debugf("subscriber %s send %d piece info of taskID %s", sub.scheduler, info.PieceNum, sub.taskID)
-		sub.pieceChan <- info
-		delete(sub.pieces, i)
+	pieceNums := make([]uint32, 0, len(sub.pieces))
+	for pieceNum := range sub.pieces {
+		pieceNums = append(pieceNums, pieceNum)
+	}
+	sort.Slice(pieceNums, func(i, j int) bool {
+		return pieceNums[i] < pieceNums[j]
+	})
+	for _, pieceNum := range pieceNums {
+		logger.Debugf("subscriber %s send %d piece info of taskID %s", sub.scheduler, pieceNum, sub.taskID)
+		sub.pieceChan <- sub.pieces[pieceNum]
+		delete(sub.pieces, pieceNum)
 	}
 }
 

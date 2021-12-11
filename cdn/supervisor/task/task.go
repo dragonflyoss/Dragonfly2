@@ -121,6 +121,7 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 		Range:            urlMeta.Range,
 		Filter:           urlMeta.Filter,
 		Header:           urlMeta.Header,
+		Pieces:           make(map[uint32]*PieceInfo),
 		logger:           logger.WithTaskID(taskID),
 	}
 }
