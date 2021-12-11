@@ -43,7 +43,7 @@ func (server *Server) Serve() error {
 		// start a goroutine to gc
 		go func(name string, wrapper *ExecutorWrapper) {
 			defer server.wg.Done()
-			logger.Debugf("start the %s gc task， gc initialDelay: %s, gc initial interval: %s", name, wrapper.gcInitialDelay, wrapper.gcInterval)
+			logger.Debugf("start %s gc mission， gc initialDelay: %s, gc initial interval: %s", name, wrapper.gcInitialDelay, wrapper.gcInterval)
 			// delay executing GC after initialDelay
 			time.Sleep(wrapper.gcInitialDelay)
 			// execute the GC by fixed delay
@@ -93,4 +93,5 @@ func Register(name string, gcInitialDelay time.Duration, gcInterval time.Duratio
 		gcInterval:     gcInterval,
 		gcExecutor:     gcExecutor,
 	}
+	logger.Infof("register %s gc task, gcInitialDelay %s, gcInterval %s", name, gcInitialDelay, gcInterval)
 }

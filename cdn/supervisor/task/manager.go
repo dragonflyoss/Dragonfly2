@@ -233,7 +233,7 @@ const (
 )
 
 func (tm *manager) GC() error {
-	logger.Debugf("start the task meta gc job")
+	logger.Info("start the task meta gc job")
 	startTime := time.Now()
 
 	totalTaskNums := 0
@@ -259,7 +259,7 @@ func (tm *manager) GC() error {
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
 		logger.GcLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", removedTaskCount, timeDuring.Seconds())
 	}
-	logger.GcLogger.With("type", "meta").Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount,
+	logger.GcLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", removedTaskCount,
 		totalTaskNums-removedTaskCount)
 	return nil
 }

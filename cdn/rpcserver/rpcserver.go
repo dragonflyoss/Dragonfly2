@@ -186,7 +186,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		span.RecordError(err)
 		return nil, err
 	}
-	pieceInfos := make([]*base.PieceInfo, 0)
+	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
 	var count uint32 = 0
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {

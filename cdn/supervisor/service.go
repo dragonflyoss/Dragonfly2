@@ -123,7 +123,7 @@ func (service *cdnService) GetSeedPieces(taskID string) ([]*task.PieceInfo, erro
 	if err != nil {
 		return nil, err
 	}
-	pieces := make([]*task.PieceInfo, len(pieceMap))
+	pieces := make([]*task.PieceInfo, 0, len(pieceMap))
 	for i := range pieceMap {
 		pieces = append(pieces, pieceMap[i])
 	}
