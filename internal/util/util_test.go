@@ -59,6 +59,12 @@ func TestComputePieceSize(t *testing.T) {
 				length: 3100 * 1024 * 1024,
 			},
 			want: DefaultPieceSizeLimit,
+		}, {
+			name: "500M+ length",
+			args: args{
+				length: 552562021,
+			},
+			want: DefaultPieceSize + 3*1024*1024,
 		},
 	}
 	for _, tt := range tests {

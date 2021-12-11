@@ -28,6 +28,8 @@ const (
 	// which is a relative path.
 	DownloadHome = "download"
 
+	// UploadHome is the parent directory where the upload files are stored
+	// which is a relative path
 	UploadHome = "upload"
 )
 

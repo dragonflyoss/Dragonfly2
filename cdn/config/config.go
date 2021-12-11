@@ -21,12 +21,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -60,13 +57,13 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 	return map[plugins.PluginType][]*plugins.PluginProperties{
 		plugins.StorageDriverPlugin: {
 			{
-				Name:   local.DiskDriverName,
+				Name:   "disk",
 				Enable: true,
 				Config: &storedriver.Config{
 					BaseDir: DefaultDiskBaseDir,
 				},
 			}, {
-				Name:   local.MemoryDriverName,
+				Name:   "memory",
 				Enable: false,
 				Config: &storedriver.Config{
 					BaseDir: DefaultMemoryBaseDir,
@@ -74,14 +71,14 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 			},
 		}, plugins.StorageManagerPlugin: {
 			{
-				Name:   disk.StorageMode,
+				Name:   "disk",
 				Enable: true,
-				Config: &storage.Config{
+				Config: &StorageConfig{
 					GCInitialDelay: 0 * time.Second,
 					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*storage.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &storage.GCConfig{
+					DriverConfigs: map[string]*DriverConfig{
+						"disk": {
+							GCConfig: &GCConfig{
 								YoungGCThreshold:  100 * unit.GB,
 								FullGCThreshold:   5 * unit.GB,
 								CleanRatio:        1,
@@ -90,22 +87,22 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 					},
 				},
 			}, {
-				Name:   hybrid.StorageMode,
+				Name:   "hybrid",
 				Enable: false,
-				Config: &storage.Config{
+				Config: &StorageConfig{
 					GCInitialDelay: 0 * time.Second,
 					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*storage.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &storage.GCConfig{
+					DriverConfigs: map[string]*DriverConfig{
+						"disk": {
+							GCConfig: &GCConfig{
 								YoungGCThreshold:  100 * unit.GB,
 								FullGCThreshold:   5 * unit.GB,
 								CleanRatio:        1,
 								IntervalThreshold: 2 * time.Hour,
 							},
 						},
-						local.MemoryDriverName: {
-							GCConfig: &storage.GCConfig{
+						"memory": {
+							GCConfig: &GCConfig{
 								YoungGCThreshold:  100 * unit.GB,
 								FullGCThreshold:   5 * unit.GB,
 								CleanRatio:        3,
@@ -122,23 +119,44 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 // NewDefaultBaseProperties creates an base properties instant with default values.
 func NewDefaultBaseProperties() *BaseProperties {
 	return &BaseProperties{
-		ListenPort:              DefaultListenPort,
-		DownloadPort:            DefaultDownloadPort,
-		SystemReservedBandwidth: DefaultSystemReservedBandwidth,
-		MaxBandwidth:            DefaultMaxBandwidth,
-		FailAccessInterval:      DefaultFailAccessInterval,
-		GCInitialDelay:          DefaultGCInitialDelay,
-		GCMetaInterval:          DefaultGCMetaInterval,
-		TaskExpireTime:          DefaultTaskExpireTime,
-		StorageMode:             DefaultStorageMode,
+		ListenPort:              constants.DefaultListenPort,
+		DownloadPort:            constants.DefaultDownloadPort,
+		SystemReservedBandwidth: constants.DefaultSystemReservedBandwidth,
+		MaxBandwidth:            constants.DefaultMaxBandwidth,
 		AdvertiseIP:             iputils.IPv4,
+		FailAccessInterval:      constants.DefaultFailAccessInterval,
+		GCInitialDelay:          constants.DefaultGCInitialDelay,
+		GCMetaInterval:          constants.DefaultGCMetaInterval,
+		TaskExpireTime:          constants.DefaultTaskExpireTime,
+		StorageMode:             constants.DefaultStorageMode,
 		Manager: ManagerConfig{
 			KeepAlive: KeepAliveConfig{
-				Interval: DefaultKeepAliveInterval,
+				Interval: constants.DefaultKeepAliveInterval,
 			},
 		},
 		Host: HostConfig{},
+		Metrics: &RestConfig{
+			Addr: ":8080",
+		},
 	}
+}
+
+type StorageConfig struct {
+	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
+	GCInterval     time.Duration            `yaml:"gcInterval"`
+	DriverConfigs  map[string]*DriverConfig `yaml:"driverConfigs"`
+}
+
+type DriverConfig struct {
+	GCConfig *GCConfig `yaml:"gcConfig"`
+}
+
+// GCConfig gc config
+type GCConfig struct {
+	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
+	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
+	CleanRatio        int           `yaml:"cleanRatio"`
+	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
 }
 
 // BaseProperties contains all basic properties of cdn system.
