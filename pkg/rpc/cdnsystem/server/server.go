@@ -21,11 +21,11 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
