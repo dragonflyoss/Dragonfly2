@@ -18,7 +18,6 @@ package local
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,7 +44,7 @@ type LocalDriverTestSuite struct {
 }
 
 func (s *LocalDriverTestSuite) SetupSuite() {
-	s.workHome, _ = ioutil.TempDir("/tmp", "cdn-local-driver-repo")
+	s.workHome, _ = os.MkdirTemp("/tmp", "cdn-local-driver-repo")
 	pluginProps := map[plugins.PluginType][]*plugins.PluginProperties{
 		plugins.StorageDriverPlugin: {
 			&plugins.PluginProperties{
@@ -295,7 +294,7 @@ func (s *LocalDriverTestSuite) TestGetPut() {
 			r, err := s.Get(v.getRaw)
 			s.True(v.wantGetErr == (err != nil))
 			if err == nil {
-				result, err := ioutil.ReadAll(r)
+				result, err := io.ReadAll(r)
 				s.Nil(err)
 				s.Equal(v.expected, string(result))
 			}
@@ -385,7 +384,7 @@ func (s *LocalDriverTestSuite) TestAppendBytes() {
 			r, err := s.Get(v.getRaw)
 			s.True(v.getErrCheck(err))
 			if err == nil {
-				result, err := ioutil.ReadAll(r)
+				result, err := io.ReadAll(r)
 				s.Nil(err)
 				s.Equal(v.expected, string(result))
 			}
@@ -465,7 +464,7 @@ func (s *LocalDriverTestSuite) TestPutTrunc() {
 		s.Nil(err)
 
 		if err == nil {
-			result, err := ioutil.ReadAll(r)
+			result, err := io.ReadAll(r)
 			s.Nil(err)
 			s.Equal(string(result[:]), v.expectedData)
 		}

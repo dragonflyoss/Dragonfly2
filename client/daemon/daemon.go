@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -226,7 +225,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCredentials, error) {
 	// Load certificate of the CA who signed client's certificate
-	pemClientCA, err := ioutil.ReadFile(opt.CACert)
+	pemClientCA, err := os.ReadFile(opt.CACert)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +300,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	}
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
-		caCert, err := ioutil.ReadFile(opt.Security.CACert)
+		caCert, err := os.ReadFile(opt.Security.CACert)
 		if err != nil {
 			return nil, -1, err
 		}

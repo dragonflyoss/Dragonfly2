@@ -17,7 +17,6 @@
 package config
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,10 +31,7 @@ import (
 )
 
 func TestDynconfigNewDynconfig(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
@@ -125,10 +121,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 }
 
 func TestDynconfigGet(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
@@ -310,10 +303,7 @@ func TestDynconfigGet(t *testing.T) {
 }
 
 func TestDynconfigGetSchedulers(t *testing.T) {
-	mockCacheDir, err := ioutil.TempDir("", "dragonfly-test")
-	if err != nil {
-		t.Fatal(err)
-	}
+	mockCacheDir := t.TempDir()
 
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {

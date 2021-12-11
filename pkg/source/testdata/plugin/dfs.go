@@ -19,7 +19,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -44,11 +43,11 @@ func (c *client) IsExpired(request *source.Request, info *source.ExpireInfo) (bo
 }
 
 func (c *client) Download(request *source.Request) (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewBufferString(data)), nil
+	return io.NopCloser(bytes.NewBufferString(data)), nil
 }
 
 func (c *client) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-	return ioutil.NopCloser(bytes.NewBufferString(data)), nil, nil
+	return io.NopCloser(bytes.NewBufferString(data)), nil, nil
 }
 
 func (c *client) GetLastModified(request *source.Request) (int64, error) {

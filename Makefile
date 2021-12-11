@@ -14,12 +14,13 @@
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
-VERSION := "2.0.0"
+SEMVER := "2.0.1"
+VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
-DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
+DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
 
 all: help
 
@@ -159,10 +160,12 @@ build-rpm-dfget: build-linux-dfget
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
-	-e "VERSION=$(GIT_VERSION)" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
 # Build deb dfget
@@ -174,10 +177,12 @@ build-deb-dfget: build-linux-dfget
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
-	-e "VERSION=$(GIT_VERSION)" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfget
 
 # Generate dfget man page

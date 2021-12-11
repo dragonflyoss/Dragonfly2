@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -57,7 +56,7 @@ type CDNManagerTestSuite struct {
 }
 
 func (suite *CDNManagerTestSuite) SetupSuite() {
-	suite.workHome, _ = ioutil.TempDir("/tmp", "cdn-ManagerTestSuite-")
+	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-ManagerTestSuite-")
 	fmt.Printf("workHome: %s", suite.workHome)
 	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
 	storeMgr, ok := storage.Get(constants.DefaultStorageMode)
@@ -99,26 +98,26 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	sourceClient.EXPECT().IsExpired(gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
 		func(request *source.Request) (io.ReadCloser, error) {
-			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
+			content, _ := os.ReadFile("../../testdata/cdn/go.html")
 			if request.Header.Get(source.Range) != "" {
 				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))), nil
+				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))), nil
 			}
-			return ioutil.NopCloser(strings.NewReader(string(content))), nil
+			return io.NopCloser(strings.NewReader(string(content))), nil
 		},
 	).AnyTimes()
 	sourceClient.EXPECT().DownloadWithExpireInfo(gomock.Any()).DoAndReturn(
 		func(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-			content, _ := ioutil.ReadFile("../../testdata/cdn/go.html")
+			content, _ := os.ReadFile("../../testdata/cdn/go.html")
 			if request.Header.Get(source.Range) != "" {
 				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return ioutil.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
+				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
 					&source.ExpireInfo{
 						LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 						ETag:         "etag",
 					}, nil
 			}
-			return ioutil.NopCloser(strings.NewReader(string(content))),
+			return io.NopCloser(strings.NewReader(string(content))),
 				&source.ExpireInfo{
 					LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 					ETag:         "etag",

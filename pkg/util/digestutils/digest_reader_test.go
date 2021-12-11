@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -43,7 +43,7 @@ func TestNewDigestReader(t *testing.T) {
 
 	buf := bytes.NewBuffer(testBytes)
 	reader := NewDigestReader(logger.With("test", "test"), buf, digest)
-	data, err := ioutil.ReadAll(reader)
+	data, err := io.ReadAll(reader)
 
 	assert.Nil(err)
 	assert.Equal(testBytes, data)

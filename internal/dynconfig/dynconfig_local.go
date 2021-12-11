@@ -17,7 +17,7 @@
 package dynconfig
 
 import (
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -38,7 +38,7 @@ func newDynconfigLocal(path string) (*dynconfigLocal, error) {
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
 func (d *dynconfigLocal) Unmarshal(rawVal interface{}) error {
-	b, err := ioutil.ReadFile(d.filepath)
+	b, err := os.ReadFile(d.filepath)
 	if err != nil {
 		return err
 	}
