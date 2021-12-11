@@ -21,18 +21,30 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type Server struct {
-	done chan struct{}
-	wg   *sync.WaitGroup
+	config Config
+	done   chan struct{}
+	wg     *sync.WaitGroup
 }
 
-func New() (*Server, error) {
+func New(config Config) (*Server, error) {
+	config = config.applyDefaults()
+	// scheduler config values
+	s, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal gc server config")
+	}
+	logger.Infof("gc server config: \n%s", s)
 	return &Server{
-		done: make(chan struct{}),
-		wg:   new(sync.WaitGroup),
+		config: config,
+		done:   make(chan struct{}),
+		wg:     new(sync.WaitGroup),
 	}, nil
 }
 

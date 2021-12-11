@@ -23,22 +23,19 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
 	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
+	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
-	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 func TestCacheWriterSuite(t *testing.T) {
@@ -53,30 +50,12 @@ type CacheWriterTestSuite struct {
 
 func NewPlugins(workHome string) map[plugins.PluginType][]*plugins.PluginProperties {
 	return map[plugins.PluginType][]*plugins.PluginProperties{
-		plugins.StorageDriverPlugin: {
+		"storagedriver": {
 			{
 				Name:   local.DiskDriverName,
 				Enable: true,
 				Config: &storedriver.Config{
 					BaseDir: workHome,
-				},
-			},
-		}, plugins.StorageManagerPlugin: {
-			{
-				Name:   disk.StorageMode,
-				Enable: true,
-				Config: &config.StorageConfig{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*config.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &config.GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							}},
-					},
 				},
 			},
 		},
@@ -91,13 +70,18 @@ func (suite *CacheWriterTestSuite) SetupSuite() {
 	progressManager := progressMock.NewMockManager(ctrl)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	progressManager.EXPECT().PublishTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	storeManager, ok := storage.Get(constants.DefaultStorageMode)
-	if !ok {
-		suite.Failf("failed to get storage mode %s", constants.DefaultStorageMode)
-	}
-	metadataManager := newMetadataManager(storeManager)
+	taskManager := taskMock.NewMockManager(ctrl)
+	storageManager, err := storage.Get(constants.DefaultStorageMode).Build(storage.Config{
+		GCInitialDelay: 0,
+		GCInterval:     0,
+		DriverConfigs: map[string]*storage.DriverConfig{
+			"disk": {},
+		},
+	}, taskManager)
+	suite.Require().Nil(err)
+	metadataManager := newMetadataManager(storageManager)
 	cdnReporter := newReporter(progressManager)
-	suite.writer = newCacheWriter(cdnReporter, metadataManager, storeManager)
+	suite.writer = newCacheWriter(cdnReporter, metadataManager, storageManager)
 }
 
 func (suite *CacheWriterTestSuite) TearDownSuite() {

@@ -14,11 +14,19 @@
  * limitations under the License.
  */
 
-package storage
+package metrics
 
-func IsSupport(mode string) bool {
-	if mode == "disk" {
-		return true
+type Config struct {
+	Net  string `yaml:"net" mapstructure:"net"`
+	Addr string `yaml:"addr" mapstructure:"addr"`
+}
+
+func (cfg Config) applyDefaults() Config {
+	if cfg.Net == "" {
+		cfg.Net = "tcp"
 	}
-	return false
+	if cfg.Addr == "" {
+		cfg.Addr = ":8080"
+	}
+	return cfg
 }

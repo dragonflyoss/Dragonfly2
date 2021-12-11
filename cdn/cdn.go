@@ -71,7 +71,12 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize task manager
-	taskManager, err := task.NewManager(cfg)
+	taskManager, err := task.NewManager(task.Config{
+		GCInitialDelay:     cfg.GCInitialDelay,
+		GCMetaInterval:     cfg.GCMetaInterval,
+		TaskExpireTime:     cfg.TaskExpireTime,
+		FailAccessInterval: cfg.FailAccessInterval,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
@@ -83,14 +88,20 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize storage manager
-	storageManager, ok := storage.Get(cfg.StorageMode)
-	if !ok {
-		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
+	storageManagerBuilder := storage.Get(cfg.StorageMode)
+	if storageManagerBuilder == nil {
+		return nil, fmt.Errorf("can not find storage manager mode %s", cfg.StorageMode)
 	}
-	storageManager.Initialize(taskManager)
+	storageManager, err := storageManagerBuilder.Build(config.NewStorage(cfg.StorageMode), taskManager)
+	if err != nil {
+		return nil, errors.Wrapf(err, "create storage manager")
+	}
 
 	// Initialize CDN manager
-	cdnManager, err := cdn.NewManager(cfg, storageManager, progressManager, taskManager)
+	cdnManager, err := cdn.NewManager(cdn.Config{
+		SystemReservedBandwidth: cfg.SystemReservedBandwidth,
+		MaxBandwidth:            cfg.MaxBandwidth,
+	}, storageManager, progressManager, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
@@ -105,19 +116,23 @@ func New(cfg *config.Config) (*Server, error) {
 	if cfg.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(cfg, service, opts...)
+	grpcServer, err := rpcserver.New(rpcserver.Config{
+		AdvertiseIP:  cfg.AdvertiseIP,
+		ListenPort:   cfg.ListenPort,
+		DownloadPort: cfg.DownloadPort,
+	}, service, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
 	// Initialize gc server
-	gcServer, err := gc.New()
+	gcServer, err := gc.New(gc.Config{})
 	if err != nil {
 		return nil, errors.Wrap(err, "create gcServer")
 	}
 
 	var metricsServer *metrics.Server
-	if cfg.Metrics != nil && cfg.Metrics.Addr != "" {
+	if cfg.Metrics.Addr != "" {
 		// Initialize metrics server
 		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
 		if err != nil {
@@ -161,12 +176,13 @@ func (s *Server) Serve() error {
 
 	go func() {
 		if s.configServer != nil {
+			var rpcServerConfig = s.grpcServer.GetConfig()
 			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
 				SourceType:   manager.SourceType_CDN_SOURCE,
 				HostName:     hostutils.FQDNHostname,
-				Ip:           s.config.AdvertiseIP,
-				Port:         int32(s.config.ListenPort),
-				DownloadPort: int32(s.config.DownloadPort),
+				Ip:           rpcServerConfig.AdvertiseIP,
+				Port:         int32(rpcServerConfig.ListenPort),
+				DownloadPort: int32(rpcServerConfig.DownloadPort),
 				Idc:          s.config.Host.IDC,
 				Location:     s.config.Host.Location,
 				CdnClusterId: uint64(s.config.Manager.CDNClusterID),

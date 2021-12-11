@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package storage
+package gc
 
-func IsSupport(mode string) bool {
-	if mode == "disk" {
-		return true
-	}
-	return false
+type Config struct {
+}
+
+func (config Config) applyDefaults() Config {
+	return config
 }

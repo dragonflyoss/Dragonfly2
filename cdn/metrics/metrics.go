@@ -29,7 +29,6 @@ import (
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -66,11 +65,12 @@ var (
 )
 
 type Server struct {
-	config     *config.RestConfig
+	config     Config
 	httpServer *http.Server
 }
 
-func New(config *config.RestConfig, rpcServer *grpc.Server) (*Server, error) {
+func New(config Config, rpcServer *grpc.Server) (*Server, error) {
+	config = config.applyDefaults()
 	// scheduler config values
 	s, err := yaml.Marshal(config)
 	if err != nil {
@@ -94,7 +94,7 @@ func (s *Server) Handler() http.Handler {
 
 // ListenAndServe is a blocking call which runs s.
 func (s *Server) ListenAndServe(h http.Handler) error {
-	l, err := net.Listen("tcp", s.config.Addr)
+	l, err := net.Listen(s.config.Net, s.config.Addr)
 	if err != nil {
 		return err
 	}

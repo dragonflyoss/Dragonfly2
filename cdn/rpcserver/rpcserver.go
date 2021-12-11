@@ -22,12 +22,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
+	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
@@ -46,12 +47,19 @@ var tracer = otel.Tracer("cdn-server")
 
 type Server struct {
 	*grpc.Server
-	config  *config.Config
+	config  Config
 	service supervisor.CDNService
 }
 
 // New returns a new Manager Object.
-func New(config *config.Config, cdnService supervisor.CDNService, opts ...grpc.ServerOption) (*Server, error) {
+func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOption) (*Server, error) {
+	config = config.applyDefaults()
+	// scheduler config values
+	s, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal grpc server config")
+	}
+	logger.Infof("grpc server config: \n%s", s)
 	svr := &Server{
 		config:  config,
 		service: cdnService,
@@ -244,4 +252,8 @@ func (css *Server) Shutdown() error {
 	case <-stopped:
 	}
 	return nil
+}
+
+func (css *Server) GetConfig() Config {
+	return css.config
 }

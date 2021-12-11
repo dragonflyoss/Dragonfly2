@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -85,14 +85,21 @@ func IsTaskNotFound(err error) bool {
 
 // manager is an implementation of the interface of Manager.
 type manager struct {
-	config                  *config.Config
+	config                  Config
 	taskStore               sync.Map
 	accessTimeMap           sync.Map
 	taskURLUnreachableStore sync.Map
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(config *config.Config) (Manager, error) {
+func NewManager(config Config) (Manager, error) {
+	config = config.applyDefaults()
+	// scheduler config values
+	s, err := yaml.Marshal(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshal task manager config")
+	}
+	logger.Infof("task manager config: \n%s", s)
 
 	manager := &manager{
 		config: config,
