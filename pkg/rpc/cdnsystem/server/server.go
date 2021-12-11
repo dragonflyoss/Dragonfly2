@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
@@ -55,9 +56,9 @@ func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
-	//metrics.DownloadCount.Inc()
-	//metrics.ConcurrentDownloadGauge.Inc()
-	//defer metrics.ConcurrentDownloadGauge.Dec()
+	metrics.DownloadCount.Inc()
+	metrics.ConcurrentDownloadGauge.Inc()
+	defer metrics.ConcurrentDownloadGauge.Dec()
 
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
@@ -87,9 +88,9 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 		err = nil
 	}
 
-	//if err != nil {
-	//metrics.DownloadFailureCount.Inc()
-	//}
+	if err != nil {
+		metrics.DownloadFailureCount.Inc()
+	}
 	return
 }
 
@@ -141,7 +142,7 @@ func StatSeedStart(taskID, url string) {
 }
 
 func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
-	//metrics.DownloadTraffic.Add(float64(traffic))
+	metrics.DownloadTraffic.Add(float64(traffic))
 
 	logger.StatSeedLogger.Info("Finish Seed",
 		zap.Bool("Success", success),

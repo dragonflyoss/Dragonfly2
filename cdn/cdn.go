@@ -119,7 +119,7 @@ func New(cfg *config.Config) (*Server, error) {
 	var metricsServer *metrics.Server
 	if cfg.Metrics != nil && cfg.Metrics.Addr != "" {
 		// Initialize metrics server
-		metricsServer, err = metrics.New(cfg.Metrics, grpcServer)
+		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
 		if err != nil {
 			return nil, errors.Wrap(err, "create metricsServer")
 		}
