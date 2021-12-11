@@ -102,6 +102,6 @@ func runCdnSystem() error {
 		return err
 	}
 
-	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
+	dependency.SetupQuitSignalHandler(func() { logger.Fatalf("stop server failed: %v", svr.Stop()) })
 	return svr.Serve()
 }

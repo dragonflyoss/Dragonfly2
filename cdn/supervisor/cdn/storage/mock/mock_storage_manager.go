@@ -9,9 +9,8 @@ import (
 	reflect "reflect"
 
 	storedriver "d7y.io/dragonfly/v2/cdn/storedriver"
-	supervisor "d7y.io/dragonfly/v2/cdn/supervisor"
 	storage "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	types "d7y.io/dragonfly/v2/cdn/types"
+	task "d7y.io/dragonfly/v2/cdn/supervisor/task"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -67,7 +66,7 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 }
 
 // Initialize mocks base method.
-func (m *MockManager) Initialize(arg0 supervisor.SeedTaskMgr) {
+func (m *MockManager) Initialize(arg0 task.Manager) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Initialize", arg0)
 }
@@ -124,7 +123,7 @@ func (mr *MockManagerMockRecorder) ReadPieceMetaRecords(arg0 interface{}) *gomoc
 }
 
 // ResetRepo mocks base method.
-func (m *MockManager) ResetRepo(arg0 *types.SeedTask) error {
+func (m *MockManager) ResetRepo(arg0 *task.SeedTask) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResetRepo", arg0)
 	ret0, _ := ret[0].(error)

@@ -23,24 +23,24 @@ import (
 
 	"github.com/pkg/errors"
 
-	"d7y.io/dragonfly/v2/cdn/types"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-func (cm *Manager) download(ctx context.Context, task *types.SeedTask, breakPoint int64) (io.ReadCloser, error) {
+func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakPoint int64) (io.ReadCloser, error) {
 	var err error
-	breakRange := task.Range
+	breakRange := seedTask.Range
 	if breakPoint > 0 {
 		// todo replace task.SourceFileLength with totalSourceFileLength to get BreakRange
-		breakRange, err = getBreakRange(breakPoint, task.Range, task.SourceFileLength)
+		breakRange, err = getBreakRange(breakPoint, seedTask.Range, seedTask.SourceFileLength)
 		if err != nil {
 			return nil, errors.Wrapf(err, "calculate the breakRange")
 		}
 	}
-	task.Log().Infof("start downloading URL %s at range %s with header %s", task.URL, breakRange, task.Header)
-	downloadRequest, err := source.NewRequestWithContext(ctx, task.URL, task.Header)
+	seedTask.Log().Infof("start downloading URL %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
+	downloadRequest, err := source.NewRequestWithContext(ctx, seedTask.RawURL, seedTask.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "create download request")
 	}
@@ -50,7 +50,7 @@ func (cm *Manager) download(ctx context.Context, task *types.SeedTask, breakPoin
 	body, expireInfo, err := source.DownloadWithExpireInfo(downloadRequest)
 	// update Expire info
 	if err == nil {
-		cm.updateExpireInfo(task.TaskID, map[string]string{
+		cm.updateExpireInfo(seedTask.ID, map[string]string{
 			source.LastModified: expireInfo.LastModified,
 			source.ETag:         expireInfo.ETag,
 		})

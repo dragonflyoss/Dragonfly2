@@ -17,89 +17,115 @@
 package task
 
 import (
-	"context"
+	"net/url"
+	"os"
 	"testing"
 
 	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/suite"
+	"github.com/jarcoal/httpmock"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/supervisor/mock"
-	"d7y.io/dragonfly/v2/cdn/types"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 )
 
-func TestTaskManagerSuite(t *testing.T) {
-	suite.Run(t, new(TaskManagerTestSuite))
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
 }
 
-type TaskManagerTestSuite struct {
-	tm *Manager
-	suite.Suite
-}
-
-func (suite *TaskManagerTestSuite) TestRegister() {
-	dragonflyURL := "http://dragonfly.io.com?a=a&b=b&c=c"
-	ctrl := gomock.NewController(suite.T())
-	cdnMgr := mock.NewMockCDNMgr(ctrl)
-	progressMgr := mock.NewMockSeedProgressMgr(ctrl)
-	progressMgr.EXPECT().SetTaskMgr(gomock.Any()).Times(1)
-	tm, err := NewManager(config.New(), cdnMgr, progressMgr)
-	suite.Nil(err)
-	suite.NotNil(tm)
+func TestIsTaskNotFound(t *testing.T) {
 	type args struct {
-		ctx context.Context
-		req *types.TaskRegisterRequest
+		err error
 	}
 	tests := []struct {
-		name          string
-		args          args
-		wantPieceChan <-chan *types.SeedPiece
-		wantErr       bool
+		name string
+		args args
+		want bool
 	}{
 		{
-			name: "register_md5",
+			name: "wrap task not found error",
 			args: args{
-				ctx: context.Background(),
-				req: &types.TaskRegisterRequest{
-					URL:    dragonflyURL,
-					TaskID: idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "md5:f1e2488bba4d1267948d9e2f7008571c"}),
-					Digest: "md5:f1e2488bba4d1267948d9e2f7008571c",
-					Filter: []string{"a", "b"},
-					Header: nil,
-				},
+				err: errors.Wrap(errTaskNotFound, "wrap error"),
 			},
-			wantPieceChan: nil,
-			wantErr:       false,
-		},
-		{
-			name: "register_sha256",
+			want: true,
+		}, {
+			name: "wrap task two layers",
 			args: args{
-				ctx: context.Background(),
-				req: &types.TaskRegisterRequest{
-					URL:    dragonflyURL,
-					TaskID: idgen.TaskID(dragonflyURL, &base.UrlMeta{Filter: "a&b", Tag: "dragonfly", Digest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5"}),
-					Digest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
-					Filter: []string{"a", "b"},
-					Header: nil,
-				},
+				err: errors.Wrap(errors.Wrap(errTaskNotFound, "wrap error"), "wrap error again"),
 			},
-			wantPieceChan: nil,
-			wantErr:       false,
+			want: true,
+		}, {
+			name: "native err",
+			args: args{
+				err: errTaskNotFound,
+			},
+			want: true,
 		},
 	}
 	for _, tt := range tests {
-		suite.Run(tt.name, func() {
-			//gotPieceChan, err := tm.Register(tt.args.ctx, tt.args.req)
-			//
-			//if (err != nil) != tt.wantErr {
-			//	suite.T().Errorf("Register() error = %v, wantErr %v", err, tt.wantErr)
-			//	return
-			//}
-			//if !reflect.DeepEqual(gotPieceChan, tt.wantPieceChan) {
-			//	suite.T().Errorf("Register() gotPieceChan = %v, want %v", gotPieceChan, tt.wantPieceChan)
-			//}
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsTaskNotFound(tt.args.err); got != tt.want {
+				t.Errorf("IsTaskNotFound() = %v, want %v", got, tt.want)
+			}
 		})
 	}
+}
+
+func Test_manager_Exist(t *testing.T) {
+	httpmock.Activate()
+	tm, err := NewManager(config.New())
+	require := require.New(t)
+	require.Nil(err)
+	ctl := gomock.NewController(t)
+	sourceClient := sourcemock.NewMockResourceClient(ctl)
+	testURL, err := url.Parse("https://dragonfly.com")
+	require.Nil(err)
+	source.UnRegister("https")
+	require.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(testURL.String())).Return(int64(1024*1024*500+1000), nil).Times(1)
+	seedTask := NewSeedTask("taskID", testURL.String(), nil)
+	addedTask, err := tm.AddOrUpdate(seedTask)
+	require.Nil(err)
+	existTask, ok := tm.Exist("taskID")
+	require.True(ok)
+	require.EqualValues(addedTask, existTask)
+	require.EqualValues(1024*1024*500+1000, existTask.SourceFileLength)
+	require.EqualValues(1024*1024*7, existTask.PieceSize)
+}
+
+func Test_manager_AddOrUpdate(t *testing.T) {
+	tm, err := NewManager(config.New())
+	require := require.New(t)
+	require.Nil(err)
+	ctl := gomock.NewController(t)
+	sourceClient := sourcemock.NewMockResourceClient(ctl)
+	testURL, err := url.Parse("https://dragonfly.com")
+	require.Nil(err)
+	source.UnRegister("https")
+	require.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(testURL.String())).Return(int64(1024*1024*500+1000), nil).Times(1)
+	registerTask := NewSeedTask("dragonfly", testURL.String(), &base.UrlMeta{
+		Digest: "sha256:xxxxx",
+		Tag:    "dragonfly",
+		Range:  "0-3",
+		Filter: "",
+		Header: map[string]string{"key1": "value1"},
+	})
+	existTask, ok := tm.Exist("dragonfly")
+	require.Nil(existTask)
+	require.False(ok)
+	seedTask, err := tm.AddOrUpdate(registerTask)
+	require.Nil(err)
+	existTask, ok = tm.Exist("dragonfly")
+	require.NotNil(existTask)
+	require.True(ok)
+	require.EqualValues(registerTask, seedTask)
+	require.Equal(util.ComputePieceSize(int64(1024*1024*500+1000)), uint32(seedTask.PieceSize))
+	require.Equal(int64(1024*1024*500+1000), seedTask.SourceFileLength)
+	require.EqualValues(map[string]string{"key1": "value1"}, seedTask.Header)
 }

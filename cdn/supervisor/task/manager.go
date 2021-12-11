@@ -14,206 +14,128 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ../mocks/task/mock_task_manager.go -package task d7y.io/dragonfly/v2/cdn/supervisor/task Manager
+
 package task
 
 import (
-	"context"
-	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/cdn/config"
-	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
-	"d7y.io/dragonfly/v2/cdn/supervisor"
-	"d7y.io/dragonfly/v2/cdn/supervisor/gc"
-	"d7y.io/dragonfly/v2/cdn/types"
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/synclock"
-	"d7y.io/dragonfly/v2/pkg/syncmap"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-// Ensure that Manager implements the SeedTaskMgr and gcExecutor interfaces
-var _ supervisor.SeedTaskMgr = (*Manager)(nil)
-var _ gc.Executor = (*Manager)(nil)
+// Manager as an interface defines all operations against SeedTask.
+// A SeedTask will store some meta info about the taskFile, pieces and something else.
+// A seedTask corresponds to three files on the disk, which are identified by taskId, the data file meta file piece file
+type Manager interface {
+
+	// AddOrUpdate update existing task info for the key if present.
+	// Otherwise, it stores and returns the given value.
+	// The isUpdate result is true if the value was updated, false if added.
+	AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err error)
+
+	// Get returns the task info with specified taskID, or nil if no
+	// value is present.
+	// The ok result indicates whether value was found in the taskManager.
+	Get(taskID string) (seedTask *SeedTask, err error)
+
+	// Update the task info with specified taskID and updateTask
+	Update(taskID string, updateTask *SeedTask) (err error)
+
+	// UpdateProgress update the downloaded pieces belonging to the task
+	UpdateProgress(taskID string, piece *PieceInfo) (err error)
+
+	// GetProgress returns the downloaded pieces belonging to the task
+	GetProgress(taskID string) (map[uint32]*PieceInfo, error)
+
+	// Exist check task existence with specified taskID.
+	// returns the task info with specified taskID, or nil if no value is present.
+	// The ok result indicates whether value was found in the taskManager.
+	Exist(taskID string) (seedTask *SeedTask, ok bool)
+
+	// Delete a task with specified taskID.
+	Delete(taskID string)
+}
+
+// Ensure that manager implements the Manager and gc.Executor interfaces
+var (
+	_ Manager     = (*manager)(nil)
+	_ gc.Executor = (*manager)(nil)
+)
 
 var (
+	errTaskNotFound   = errors.New("task is not found")
 	errURLUnreachable = errors.New("url is unreachable")
 	errTaskIDConflict = errors.New("taskID is conflict")
 )
 
-var tracer trace.Tracer
-
-func init() {
-	tracer = otel.Tracer("cdn-task-manager")
+func IsTaskNotFound(err error) bool {
+	return errors.Is(err, errTaskNotFound)
 }
 
-// Manager is an implementation of the interface of TaskMgr.
-type Manager struct {
-	cfg                     *config.Config
-	taskStore               *syncmap.SyncMap
-	accessTimeMap           *syncmap.SyncMap
-	taskURLUnReachableStore *syncmap.SyncMap
-	cdnMgr                  supervisor.CDNMgr
-	progressMgr             supervisor.SeedProgressMgr
+// manager is an implementation of the interface of Manager.
+type manager struct {
+	config                  *config.Config
+	taskStore               sync.Map
+	accessTimeMap           sync.Map
+	taskURLUnreachableStore sync.Map
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg *config.Config, cdnMgr supervisor.CDNMgr, progressMgr supervisor.SeedProgressMgr) (*Manager, error) {
-	taskMgr := &Manager{
-		cfg:                     cfg,
-		taskStore:               syncmap.NewSyncMap(),
-		accessTimeMap:           syncmap.NewSyncMap(),
-		taskURLUnReachableStore: syncmap.NewSyncMap(),
-		cdnMgr:                  cdnMgr,
-		progressMgr:             progressMgr,
+func NewManager(config *config.Config) (Manager, error) {
+
+	manager := &manager{
+		config: config,
 	}
-	progressMgr.SetTaskMgr(taskMgr)
-	gc.Register("task", cfg.GCInitialDelay, cfg.GCMetaInterval, taskMgr)
-	return taskMgr, nil
+
+	gc.Register("task", config.GCInitialDelay, config.GCMetaInterval, manager)
+	return manager, nil
 }
 
-func (tm *Manager) Register(ctx context.Context, registerTask *types.SeedTask) (pieceChan <-chan *types.SeedPiece, err error) {
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanTaskRegister)
-	defer span.End()
-	task, err := tm.AddOrUpdate(registerTask)
-	if err != nil {
-		span.RecordError(err)
-		logger.WithTaskID(registerTask.TaskID).Infof("failed to add or update task with req: %#v: %v", registerTask, err)
-		return nil, err
-	}
-	taskBytes, _ := json.Marshal(task)
-	span.SetAttributes(config.AttributeTaskInfo.String(string(taskBytes)))
-	task.Log().Debugf("success get task info: %#v", task)
-
-	// update accessTime for taskId
-	if err := tm.accessTimeMap.Add(task.TaskID, time.Now()); err != nil {
-		task.Log().Warnf("failed to update accessTime: %v", err)
-	}
-
-	// trigger CDN
-	if err := tm.triggerCdnSyncAction(ctx, task); err != nil {
-		return nil, errors.Wrapf(err, "trigger cdn")
-	}
-	task.Log().Infof("successfully trigger cdn sync action")
-	// watch seed progress
-	return tm.progressMgr.WatchSeedProgress(ctx, task.TaskID)
-}
-
-// triggerCdnSyncAction
-func (tm *Manager) triggerCdnSyncAction(ctx context.Context, task *types.SeedTask) error {
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanTriggerCDNSyncAction)
-	defer span.End()
-	synclock.Lock(task.TaskID, true)
-	if !task.IsFrozen() {
-		span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
-		task.Log().Infof("seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
-		synclock.UnLock(task.TaskID, true)
-		return nil
-	}
-	synclock.UnLock(task.TaskID, true)
-
-	synclock.Lock(task.TaskID, false)
-	defer synclock.UnLock(task.TaskID, false)
-	// reconfirm
-	span.SetAttributes(config.AttributeTaskStatus.String(task.CdnStatus))
-	if !task.IsFrozen() {
-		task.Log().Infof("reconfirm find seedTask is running or has been downloaded successfully, status: %s", task.CdnStatus)
-		return nil
-	}
-	if task.IsWait() {
-		tm.progressMgr.InitSeedProgress(ctx, task.TaskID)
-		task.Log().Infof("successfully init seed progress for task")
-	}
-	updatedTask, err := tm.updateTask(task.TaskID, &types.SeedTask{
-		CdnStatus: types.TaskInfoCdnStatusRunning,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "update task")
-	}
-	// triggerCDN goroutine
-	go func() {
-		updateTaskInfo, err := tm.cdnMgr.TriggerCDN(context.Background(), task)
-		if err != nil {
-			task.Log().Errorf("trigger cdn get error: %v", err)
-		}
-		updatedTask, err = tm.updateTask(task.TaskID, updateTaskInfo)
-		go func() {
-			if err := tm.progressMgr.PublishTask(ctx, task.TaskID, updatedTask); err != nil {
-				task.Log().Errorf("failed to publish task: %v", err)
-			}
-
-		}()
-		if err != nil {
-			task.Log().Errorf("failed to update task: %v", err)
-		}
-		task.Log().Infof("successfully update task cdn updatedTask: %#v", updatedTask)
-	}()
-	return nil
-}
-
-func (tm *Manager) getTask(taskID string) (*types.SeedTask, error) {
-	if stringutils.IsBlank(taskID) {
-		return nil, errors.Wrap(cdnerrors.ErrInvalidValue, "taskID is empty")
-	}
-
-	v, err := tm.taskStore.Get(taskID)
-	if err != nil {
-		if errors.Cause(err) == dferrors.ErrDataNotFound {
-			return nil, errors.Wrapf(cdnerrors.ErrDataNotFound, "task not found")
-		}
-		return nil, err
-	}
-	// type assertion
-	if info, ok := v.(*types.SeedTask); ok {
-		return info, nil
-	}
-	return nil, errors.Wrapf(cdnerrors.ErrConvertFailed, "origin object: %#v", v)
-}
-
-func (tm *Manager) AddOrUpdate(registerTask *types.SeedTask) (seedTask *types.SeedTask, err error) {
+func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err error) {
 	defer func() {
 		if err != nil {
-			tm.accessTimeMap.Store(registerTask.TaskID, time.Now())
+			tm.accessTimeMap.Store(registerTask.ID, time.Now())
 		}
 	}()
-	synclock.Lock(registerTask.TaskID, true)
-	if unreachableTime, ok := tm.getTaskUnreachableTime(registerTask.TaskID); ok {
-		if time.Since(unreachableTime) < tm.cfg.FailAccessInterval {
-			synclock.UnLock(registerTask.TaskID, true)
+	synclock.Lock(registerTask.ID, true)
+	if unreachableTime, ok := tm.getTaskUnreachableTime(registerTask.ID); ok {
+		if time.Since(unreachableTime) < tm.config.FailAccessInterval {
+			synclock.UnLock(registerTask.ID, true)
 			// TODO 校验Header
 			return nil, errURLUnreachable
 		}
-		logger.Debugf("delete taskID: %s from unreachable url list", registerTask.TaskID)
-		tm.taskURLUnReachableStore.Delete(registerTask.TaskID)
+		logger.Debugf("delete taskID: %s from unreachable url list", registerTask.ID)
+		tm.taskURLUnreachableStore.Delete(registerTask.ID)
 	}
-	actual, loaded := tm.taskStore.LoadOrStore(registerTask.TaskID, registerTask)
-	seedTask = actual.(*types.SeedTask)
+	actual, loaded := tm.taskStore.LoadOrStore(registerTask.ID, registerTask)
+	seedTask = actual.(*SeedTask)
 	if loaded && !IsSame(seedTask, registerTask) {
-		synclock.UnLock(registerTask.TaskID, true)
+		synclock.UnLock(registerTask.ID, true)
 		return nil, errors.Wrapf(errTaskIDConflict, "register task %#v is conflict with exist task %#v", registerTask, seedTask)
 	}
 	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
-		synclock.UnLock(registerTask.TaskID, true)
+		synclock.UnLock(registerTask.ID, true)
 		return seedTask, nil
 	}
-	synclock.UnLock(registerTask.TaskID, true)
-	synclock.Lock(registerTask.TaskID, false)
-	defer synclock.UnLock(registerTask.TaskID, false)
+	synclock.UnLock(registerTask.ID, true)
+	synclock.Lock(registerTask.ID, false)
+	defer synclock.UnLock(registerTask.ID, false)
 	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
 		return seedTask, nil
 	}
 	// get sourceContentLength with req.Header
-	contentLengthRequest, err := source.NewRequestWithHeader(registerTask.URL, registerTask.Header)
+	contentLengthRequest, err := source.NewRequestWithHeader(registerTask.RawURL, registerTask.Header)
 	if err != nil {
 		return nil, err
 	}
@@ -223,9 +145,9 @@ func (tm *Manager) AddOrUpdate(registerTask *types.SeedTask) (seedTask *types.Se
 	}
 	sourceFileLength, err := source.GetContentLength(contentLengthRequest)
 	if err != nil {
-		registerTask.Log().Errorf("get url (%s) content length failed: %v", registerTask.URL, err)
+		registerTask.Log().Errorf("get url (%s) content length failed: %v", registerTask.RawURL, err)
 		if source.IsResourceNotReachableError(err) {
-			tm.taskURLUnReachableStore.Store(registerTask, time.Now())
+			tm.taskURLUnreachableStore.Store(registerTask, time.Now())
 		}
 		return seedTask, err
 	}
@@ -246,34 +168,62 @@ func (tm *Manager) AddOrUpdate(registerTask *types.SeedTask) (seedTask *types.Se
 	return seedTask, nil
 }
 
-func (tm Manager) Get(taskID string) (*types.SeedTask, error) {
-	task, err := tm.getTask(taskID)
-	// update accessTime for taskID
-	if err := tm.accessTimeMap.Add(taskID, time.Now()); err != nil {
-		logger.WithTaskID(taskID).Warnf("failed to update accessTime: %v", err)
+func (tm *manager) Get(taskID string) (*SeedTask, error) {
+	synclock.Lock(taskID, true)
+	defer synclock.UnLock(taskID, true)
+	// only update access when get task success
+	if task, ok := tm.getTask(taskID); ok {
+		tm.accessTimeMap.Store(taskID, time.Now())
+		return task, nil
 	}
-	return task, err
+	return nil, errTaskNotFound
 }
 
-func (tm Manager) Exist(taskID string) (*types.SeedTask, bool) {
-	task, err := tm.getTask(taskID)
-	return task, err == nil
-}
+func (tm *manager) Update(taskID string, taskInfo *SeedTask) error {
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
 
-func (tm Manager) Delete(taskID string) error {
-	tm.accessTimeMap.Delete(taskID)
-	tm.taskURLUnReachableStore.Delete(taskID)
-	tm.taskStore.Delete(taskID)
-	if err := tm.progressMgr.Clear(taskID); err != nil {
+	if err := tm.updateTask(taskID, taskInfo); err != nil {
 		return err
 	}
+	// only update access when update task success
+	tm.accessTimeMap.Store(taskID, time.Now())
 	return nil
 }
 
-func (tm *Manager) GetPieces(ctx context.Context, taskID string) (pieces []*types.SeedPiece, err error) {
-	synclock.Lock(taskID, true)
-	defer synclock.UnLock(taskID, true)
-	return tm.progressMgr.GetPieces(ctx, taskID)
+func (tm *manager) UpdateProgress(taskID string, info *PieceInfo) error {
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+
+	seedTask, ok := tm.getTask(taskID)
+	if !ok {
+		return errTaskNotFound
+	}
+	seedTask.Pieces[info.PieceNum] = info
+	// only update access when update task success
+	tm.accessTimeMap.Store(taskID, time.Now())
+	return nil
+}
+
+func (tm *manager) GetProgress(taskID string) (map[uint32]*PieceInfo, error) {
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+	seedTask, ok := tm.getTask(taskID)
+	if !ok {
+		return nil, errTaskNotFound
+	}
+	tm.accessTimeMap.Store(taskID, time.Now())
+	return seedTask.Pieces, nil
+}
+
+func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
+	return tm.getTask(taskID)
+}
+
+func (tm *manager) Delete(taskID string) {
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+	tm.deleteTask(taskID)
 }
 
 const (
@@ -282,38 +232,34 @@ const (
 	gcTasksTimeout = 2.0 * time.Second
 )
 
-func (tm *Manager) GC() error {
-	logger.Debugf("start the task meta gc job")
-	var removedTaskCount int
+func (tm *manager) GC() error {
+	logger.Info("start the task meta gc job")
 	startTime := time.Now()
-	// get all taskIDs and the corresponding accessTime
-	taskAccessMap := tm.accessTimeMap
 
-	// range all tasks and determine whether they are expired
-	taskIDs := taskAccessMap.ListKeyAsStringSlice()
-	totalTaskNums := len(taskIDs)
-	for _, taskID := range taskIDs {
-		atime, err := taskAccessMap.GetAsTime(taskID)
-		if err != nil {
-			logger.GcLogger.With("type", "meta").Errorf("gc tasks: failed to get access time taskID(%s): %v", taskID, err)
-			continue
+	totalTaskNums := 0
+	removedTaskCount := 0
+	tm.accessTimeMap.Range(func(key, value interface{}) bool {
+		totalTaskNums++
+		taskID := key.(string)
+		synclock.Lock(taskID, false)
+		defer synclock.UnLock(taskID, false)
+		atime := value.(time.Time)
+		if time.Since(atime) < tm.config.TaskExpireTime {
+			return true
 		}
-		if time.Since(atime) < tm.cfg.TaskExpireTime {
-			continue
-		}
+
 		// gc task memory data
 		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
-		if err := tm.Delete(taskID); err != nil {
-			logger.GcLogger.With("type", "meta").Infof("gc task: failed to delete task: %s", taskID)
-			continue
-		}
+		tm.deleteTask(taskID)
 		removedTaskCount++
-	}
+		return true
+	})
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
 		logger.GcLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", removedTaskCount, timeDuring.Seconds())
 	}
-	logger.GcLogger.With("type", "meta").Infof("gc tasks: successfully full gc task count(%d), remainder count(%d)", removedTaskCount, totalTaskNums-removedTaskCount)
+	logger.GcLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", removedTaskCount,
+		totalTaskNums-removedTaskCount)
 	return nil
 }
