@@ -21,15 +21,15 @@ import (
 	"sync"
 	"testing"
 
-	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
-	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestProgressManagerSuite(t *testing.T) {
@@ -112,7 +112,9 @@ func (suite *ProgressManagerTestSuite) SetupSuite() {
 	sourceClient.EXPECT().GetContentLength(source.RequestEq(testTask.RawURL)).Return(int64(1024*1024*500+1000), nil).Times(1)
 	taskManager, err := task.NewManager(config.New())
 	suite.Nil(err)
-	_, err = taskManager.AddOrUpdate(testTask)
+	seedTask, err := taskManager.AddOrUpdate(testTask)
+	suite.Nil(err)
+	suite.Equal(int64(1024*1024*500+1000), seedTask.SourceFileLength)
 	manager, err := newManager(taskManager)
 	suite.Nil(err)
 	suite.manager = manager
