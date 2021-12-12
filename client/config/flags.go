@@ -27,7 +27,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 // SchedulersValue implements the pflag.Value interface.

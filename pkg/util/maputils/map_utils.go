@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package maputils
+package gc
 
-// DeepCopy copies the src to dst and return a non-nil dst map.
-func DeepCopy(src map[string]string) map[string]string {
-	dst := make(map[string]string)
+type Config struct {
+}
 
-	for k, v := range src {
-		dst[k] = v
-	}
-	return dst
+func (config Config) applyDefaults() Config {
+	return config
 }

@@ -20,30 +20,32 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	testifyrequire "github.com/stretchr/testify/require"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
+	require := testifyrequire.New(t)
 	ctrl := gomock.NewController(t)
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -63,7 +65,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -71,23 +73,26 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
 			return rc, rc, nil
 		})
 
+	request, err := source.NewRequest(url)
+	assert.Nil(err, "create request")
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
+	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -98,7 +103,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: cdnutil.ComputePieceSize,
+			computePieceSize: util.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -120,8 +125,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			computePieceSize: func(contentLength int64) int32 {
-				return int32(pieceSize)
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
 			},
 		},
 		req,
@@ -140,16 +145,17 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(rc)
+	outputBytes, err := io.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
 
 func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
+	require := testifyrequire.New(t)
 	ctrl := gomock.NewController(t)
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -169,7 +175,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -177,7 +183,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -185,15 +191,18 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		})
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	request, err := source.NewRequest(url)
+	assert.Nil(err, "create reqeust")
+	sourceClient.EXPECT().GetContentLength(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return -1, nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
+	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -204,7 +213,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  downloader,
-			computePieceSize: cdnutil.ComputePieceSize,
+			computePieceSize: util.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -226,8 +235,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		&pieceManager{
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
-			computePieceSize: func(contentLength int64) int32 {
-				return int32(pieceSize)
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
 			},
 		},
 		req,
@@ -246,7 +255,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(rc)
+	outputBytes, err := io.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

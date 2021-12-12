@@ -28,9 +28,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -83,7 +83,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	pg := &FilePeerTaskProgress{
 		State: &ProgressState{
 			Success: true,
-			Code:    dfcodes.Success,
+			Code:    base.Code_Success,
 			Msg:     "Success",
 		},
 		TaskID:          taskID,
@@ -123,7 +123,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 	defer span.End()
 
-	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetaData)
+	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetadata)
 	if err != nil {
 		log.Errorf("read all pieces error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))

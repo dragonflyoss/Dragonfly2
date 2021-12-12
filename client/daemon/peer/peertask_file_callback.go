@@ -24,7 +24,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -52,7 +51,7 @@ func (p *filePeerTaskCallback) Init(pt Task) error {
 				Destination: p.req.Output,
 			},
 			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
+			TotalPieces:   int32(pt.GetTotalPieces()),
 			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
@@ -65,12 +64,12 @@ func (p *filePeerTaskCallback) Update(pt Task) error {
 	// update storage
 	err := p.ptm.storageManager.UpdateTask(p.pt.ctx,
 		&storage.UpdateTaskRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
 			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
+			TotalPieces:   int32(pt.GetTotalPieces()),
 			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
@@ -91,7 +90,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 				Destination: p.req.Output,
 			},
 			MetadataOnly: false,
-			TotalPieces:  pt.GetTotalPieces(),
+			TotalPieces:  int32(pt.GetTotalPieces()),
 		})
 	if e != nil {
 		return e
@@ -112,7 +111,7 @@ func (p *filePeerTaskCallback) Done(pt Task) error {
 		TotalPieceCount: pt.GetTotalPieces(),
 		Cost:            uint32(cost),
 		Success:         true,
-		Code:            dfcodes.Success,
+		Code:            base.Code_Success,
 	})
 	if err != nil {
 		peerResultSpan.RecordError(err)
@@ -158,7 +157,7 @@ func (p *filePeerTaskCallback) ValidateDigest(pt Task) error {
 		return nil
 	}
 	err := p.ptm.storageManager.ValidateDigest(
-		&storage.PeerTaskMetaData{
+		&storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		})

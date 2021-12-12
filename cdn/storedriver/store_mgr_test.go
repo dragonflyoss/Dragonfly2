@@ -93,7 +93,7 @@ func (m mockDriver) Exits(_ *Raw) bool {
 	panic("implement me")
 }
 
-func (m mockDriver) GetHomePath() string {
+func (m mockDriver) GetBaseDir() string {
 	panic("implement me")
 }
 

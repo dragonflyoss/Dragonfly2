@@ -1,12 +1,16 @@
 aliveTime: 0s
 gcInterval: 1m0s
-dataDir: /tmp/dragonfly/dfdaemon/
 workHome: /tmp/dragonfly/dfdaemon/
+dataDir: /var/lib/dragonfly/
+logDir: /var/log/dragonfly/
+cacheDir: /var/cache/dragonfly/
 keepStorage: false
 scheduler:
   manager:
     enable: false
-    addr: "127.0.0.1:65003"
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
     refreshInterval: 5m
   netAddrs:
     - type: tcp

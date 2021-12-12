@@ -21,7 +21,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -46,9 +45,9 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/idgen"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -85,11 +84,12 @@ type clientDaemon struct {
 	PieceManager    peer.PieceManager
 
 	dynconfig       config.Dynconfig
+	dfpath          dfpath.Dfpath
 	schedulers      []*manager.Scheduler
 	schedulerClient schedulerclient.SchedulerClient
 }
 
-func New(opt *config.DaemonOption) (Daemon, error) {
+func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
 		Ip:             opt.Host.AdvertiseIP,
@@ -107,16 +107,13 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	var dynconfig config.Dynconfig
 	if opt.Scheduler.Manager.Enable == true {
 		// New manager client
-		managerClient, err := managerclient.New(opt.Scheduler.Manager.Addr)
+		managerClient, err := managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
 
 		// New dynconfig client
-		if dynconfig, err = config.NewDynconfig(
-			config.NewManagerClient(managerClient, opt.Host),
-			opt.Scheduler.Manager.RefreshInterval,
-		); err != nil {
+		if dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
 			return nil, err
 		}
 
@@ -140,7 +137,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	}
 
 	// Storage.Option.DataPath is same with Daemon DataDir
-	opt.Storage.DataPath = opt.DataDir
+	opt.Storage.DataPath = d.DataDir()
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
 		/* gc callback */
 		func(request storage.CommonTaskRequest) {
@@ -161,7 +158,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 	pieceManager, err := peer.NewPieceManager(storageManager,
 		opt.Download.PieceDownloadTimeout,
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
 	)
 	if err != nil {
 		return nil, err
@@ -220,6 +217,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
+		dfpath:          d,
 		schedulers:      schedulers,
 		schedulerClient: sched,
 	}, nil
@@ -227,7 +225,7 @@ func New(opt *config.DaemonOption) (Daemon, error) {
 
 func loadGPRCTLSCredentials(opt config.SecurityOption) (credentials.TransportCredentials, error) {
 	// Load certificate of the CA who signed client's certificate
-	pemClientCA, err := ioutil.ReadFile(opt.CACert)
+	pemClientCA, err := os.ReadFile(opt.CACert)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +300,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	}
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
-		caCert, err := ioutil.ReadFile(opt.Security.CACert)
+		caCert, err := os.ReadFile(opt.Security.CACert)
 		if err != nil {
 			return nil, -1, err
 		}
@@ -323,7 +321,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
 	// TODO remove this field, and use directly dfpath.DaemonSockPath
-	cd.Option.Download.DownloadGRPC.UnixListen.Socket = dfpath.DaemonSockPath
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
@@ -518,7 +516,9 @@ func (cd *clientDaemon) Stop() {
 }
 
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
+	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
+		logger.Infof("scheduler addresses deep equal: %v", ips)
 		return
 	}
 
@@ -528,6 +528,18 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	// Update scheduler client addresses
 	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
+
+	logger.Infof("scheduler addresses have been updated: %v", ips)
+}
+
+// getSchedulerIPs get ips by schedulers.
+func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
+	ips := []string{}
+	for _, scheduler := range schedulers {
+		ips = append(ips, scheduler.Ip)
+	}
+
+	return ips
 }
 
 // schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.

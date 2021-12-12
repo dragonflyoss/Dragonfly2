@@ -23,7 +23,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -32,6 +31,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -48,8 +49,10 @@ import (
 func TestPieceManager_DownloadSource(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
-	source.Register("http", httpprotocol.NewHTTPSourceClient())
-	testBytes, err := ioutil.ReadFile(test.File)
+	source.UnRegister("http")
+	require.Nil(t, source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+	defer source.UnRegister("http")
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -59,11 +62,10 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	)
 
 	pieceDownloadTimeout := 30 * time.Second
-	tempDir, _ := ioutil.TempDir("", "d7y-piece-manager-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
-			DataPath: tempDir,
+			DataPath: t.TempDir(),
 			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},
@@ -75,12 +77,12 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 	testCases := []struct {
 		name              string
-		pieceSize         int32
+		pieceSize         uint32
 		withContentLength bool
 		checkDigest       bool
 	}{
 		{
-			name:              "multiple pieces with content length",
+			name:              "multiple pieces with content length, check digest",
 			pieceSize:         1024,
 			checkDigest:       true,
 			withContentLength: true,
@@ -92,7 +94,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			withContentLength: true,
 		},
 		{
-			name:              "multiple pieces without content length",
+			name:              "multiple pieces without content length, check digest",
 			pieceSize:         1024,
 			checkDigest:       true,
 			withContentLength: false,
@@ -105,22 +107,22 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		},
 		{
 			name:              "one pieces with content length case 1",
-			pieceSize:         int32(len(testBytes)),
+			pieceSize:         uint32(len(testBytes)),
 			withContentLength: true,
 		},
 		{
 			name:              "one pieces without content length case 1",
-			pieceSize:         int32(len(testBytes)),
+			pieceSize:         uint32(len(testBytes)),
 			withContentLength: false,
 		},
 		{
 			name:              "one pieces with content length case 2",
-			pieceSize:         int32(len(testBytes)) + 1,
+			pieceSize:         uint32(len(testBytes)) + 1,
 			withContentLength: true,
 		},
 		{
 			name:              "one pieces without content length case 2",
-			pieceSize:         int32(len(testBytes)) + 1,
+			pieceSize:         uint32(len(testBytes)) + 1,
 			withContentLength: false,
 		},
 	}
@@ -128,12 +130,18 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			/********** prepare test start **********/
 			mockPeerTask := NewMockTask(ctrl)
+			var totalPieces = &atomic.Int32{}
 			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
 				})
 			mockPeerTask.EXPECT().SetTotalPieces(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int32) {
+					totalPieces.Store(arg0)
+				})
+			mockPeerTask.EXPECT().GetTotalPieces().AnyTimes().DoAndReturn(
+				func() int32 {
+					return totalPieces.Load()
 				})
 			mockPeerTask.EXPECT().GetPeerID().AnyTimes().DoAndReturn(
 				func() string {
@@ -143,7 +151,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func() string {
 					return taskID
 				})
-			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 int64) {})
+			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 uint64) {})
 			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any()).AnyTimes().DoAndReturn(
 				func(result *pieceTaskResult) error {
 					return nil
@@ -180,7 +188,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			pm, err := NewPieceManager(storageManager, pieceDownloadTimeout)
 			assert.Nil(err)
-			pm.(*pieceManager).computePieceSize = func(length int64) int32 {
+			pm.(*pieceManager).computePieceSize = func(length int64) uint32 {
 				return tc.pieceSize
 			}
 
@@ -209,7 +217,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				})
 			assert.Nil(err)
 
-			outputBytes, err := ioutil.ReadFile(output)
+			outputBytes, err := os.ReadFile(output)
 			assert.Nil(err, "load output file")
 			assert.Equal(testBytes, outputBytes, "output and desired output must match")
 		})

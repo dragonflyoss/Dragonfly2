@@ -21,17 +21,15 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"reflect"
 	"testing"
 
-	"github.com/agiledragon/gomonkey"
+	"github.com/agiledragon/gomonkey/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -102,13 +100,13 @@ func TestCDN_Initial(t *testing.T) {
 		expect func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error)
 	}{
 		{
-			name:   "ObtainSeeds cause CdnTaskRegistryFail",
+			name:   "ObtainSeeds cause CDNTaskRegistryFail",
 			status: supervisor.TaskStatusWaiting,
 			mock: func(t *testing.T) (supervisor.CDNDynmaicClient, supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches) {
 				ctl := gomock.NewController(t)
 				defer ctl.Finish()
 
-				err := dferrors.New(dfcodes.CdnTaskRegistryFail, "mockError")
+				err := dferrors.New(base.Code_CDNTaskRegistryFail, "mockError")
 				mockCDNDynmaicClient := mocks.NewMockCDNDynmaicClient(ctl)
 				mockPeerManager := mocks.NewMockPeerManager(ctl)
 				mockHostManager := mocks.NewMockHostManager(ctl)
@@ -124,13 +122,13 @@ func TestCDN_Initial(t *testing.T) {
 			},
 		},
 		{
-			name:   "ObtainSeeds cause CdnTaskDownloadFail",
+			name:   "ObtainSeeds cause CDNTaskDownloadFail",
 			status: supervisor.TaskStatusWaiting,
 			mock: func(t *testing.T) (supervisor.CDNDynmaicClient, supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches) {
 				ctl := gomock.NewController(t)
 				defer ctl.Finish()
 
-				err := dferrors.New(dfcodes.CdnTaskDownloadFail, "mockError")
+				err := dferrors.New(base.Code_CDNTaskDownloadFail, "mockError")
 				mockCDNDynmaicClient := mocks.NewMockCDNDynmaicClient(ctl)
 				mockPeerManager := mocks.NewMockPeerManager(ctl)
 				mockHostManager := mocks.NewMockHostManager(ctl)
@@ -265,7 +263,7 @@ func TestCDN_Initial(t *testing.T) {
 			},
 		},
 		{
-			name:   "receivePiece cause CdnTaskRegistryFail",
+			name:   "receivePiece cause CDNTaskRegistryFail",
 			status: supervisor.TaskStatusWaiting,
 			mock: func(t *testing.T) (supervisor.CDNDynmaicClient, supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches) {
 				ctl := gomock.NewController(t)
@@ -276,7 +274,7 @@ func TestCDN_Initial(t *testing.T) {
 				mockHostManager := mocks.NewMockHostManager(ctl)
 				mockCDNDynmaicClient.EXPECT().ObtainSeeds(gomock.Any(), gomock.Any()).Return(mockPieceSeedStream, nil).AnyTimes()
 
-				err := dferrors.New(dfcodes.CdnTaskRegistryFail, "mockError")
+				err := dferrors.New(base.Code_CDNTaskRegistryFail, "mockError")
 				streamRet := []gomonkey.OutputCell{
 					{Values: gomonkey.Params{nil, err}},
 				}
@@ -290,7 +288,7 @@ func TestCDN_Initial(t *testing.T) {
 			},
 		},
 		{
-			name:   "receivePiece cause CdnTaskDownloadFail",
+			name:   "receivePiece cause CDNTaskDownloadFail",
 			status: supervisor.TaskStatusWaiting,
 			mock: func(t *testing.T) (supervisor.CDNDynmaicClient, supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches) {
 				ctl := gomock.NewController(t)
@@ -301,7 +299,7 @@ func TestCDN_Initial(t *testing.T) {
 				mockHostManager := mocks.NewMockHostManager(ctl)
 				mockCDNDynmaicClient.EXPECT().ObtainSeeds(gomock.Any(), gomock.Any()).Return(mockPieceSeedStream, nil).AnyTimes()
 
-				err := dferrors.New(dfcodes.CdnTaskDownloadFail, "mockError")
+				err := dferrors.New(base.Code_CDNTaskDownloadFail, "mockError")
 				streamRet := []gomonkey.OutputCell{
 					{Values: gomonkey.Params{nil, err}},
 				}
@@ -472,7 +470,7 @@ func TestCDN_Initial(t *testing.T) {
 
 				const testwords string = "dragonfly-scheduler-test"
 				res := &http.Response{
-					Body: ioutil.NopCloser(
+					Body: io.NopCloser(
 						bytes.NewBuffer([]byte(testwords))),
 				}
 				httpRet := []gomonkey.OutputCell{

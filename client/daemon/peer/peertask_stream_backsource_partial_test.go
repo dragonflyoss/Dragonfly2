@@ -21,10 +21,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"net"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -32,6 +32,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -40,18 +41,17 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
+	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	rangers "d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
@@ -75,7 +75,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		if request.StartNum == 0 {
 			tasks = append(tasks,
 				&base.PieceInfo{
-					PieceNum:    request.StartNum,
+					PieceNum:    int32(request.StartNum),
 					RangeStart:  uint64(0),
 					RangeSize:   opt.pieceSize,
 					PieceMd5:    digestutils.Md5Bytes(testBytes[0:opt.pieceSize]),
@@ -129,11 +129,11 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			if schedPeerPacket {
 				// send back source after piece 0 is done
 				wg.Wait()
-				return nil, dferrors.New(dfcodes.SchedNeedBackSource, "")
+				return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 			}
 			schedPeerPacket = true
 			return &scheduler.PeerPacket{
-				Code:          dfcodes.Success,
+				Code:          base.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,
@@ -162,7 +162,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
-	tempDir, _ := ioutil.TempDir("", "d7y-test-*")
+	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
@@ -178,7 +178,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -198,7 +198,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -206,7 +206,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -214,23 +214,24 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		})
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
-	source.Register("http", sourceClient)
+	source.UnRegister("http")
+	require.Nil(t, source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (int64, error) {
+	sourceClient.EXPECT().GetContentLength(gomock.Any()).DoAndReturn(
+		func(request *source.Request) (int64, error) {
 			return int64(len(testBytes)), nil
 		})
-	sourceClient.EXPECT().Download(gomock.Any(), url, source.RequestHeader{}, gomock.Any()).DoAndReturn(
-		func(ctx context.Context, url string, headers source.RequestHeader, rang *rangers.Range) (io.ReadCloser, error) {
-			return ioutil.NopCloser(bytes.NewBuffer(testBytes)), nil
+	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
+		func(request *source.Request) (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
 		})
 
 	pm := &pieceManager{
 		calculateDigest: true,
 		storageManager:  storageManager,
 		pieceDownloader: downloader,
-		computePieceSize: func(contentLength int64) int32 {
-			return int32(pieceSize)
+		computePieceSize: func(contentLength int64) uint32 {
+			return uint32(pieceSize)
 		},
 	}
 	ptm := &peerTaskManager{
@@ -268,7 +269,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(rc)
+	outputBytes, err := io.ReadAll(rc)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

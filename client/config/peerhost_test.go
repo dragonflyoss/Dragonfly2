@@ -26,7 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -224,13 +224,20 @@ func TestPeerHostOption_Load(t *testing.T) {
 		GCInterval: clientutil.Duration{
 			Duration: 60000000000,
 		},
-		DataDir:     "/tmp/dragonfly/dfdaemon/",
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
+		DataDir:     "/var/lib/dragonfly/",
+		LogDir:      "/var/log/dragonfly/",
+		CacheDir:    "/var/cache/dragonfly/",
 		KeepStorage: false,
 		Scheduler: SchedulerOption{
 			Manager: ManagerOption{
-				Enable:          false,
-				Addr:            "127.0.0.1:65003",
+				Enable: false,
+				NetAddrs: []dfnet.NetAddr{
+					{
+						Type: dfnet.TCP,
+						Addr: "127.0.0.1:65003",
+					},
+				},
 				RefreshInterval: 5 * time.Minute,
 			},
 			NetAddrs: []dfnet.NetAddr{

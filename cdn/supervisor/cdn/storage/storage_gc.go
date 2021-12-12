@@ -25,33 +25,37 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 
-	cdnerrors "d7y.io/dragonfly/v2/cdn/errors"
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/supervisor"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
-type Cleaner struct {
-	cfg        *GCConfig
-	driver     storedriver.Driver
-	taskMgr    supervisor.SeedTaskMgr
-	storageMgr Manager
+type Cleaner interface {
+	GC(storagePattern string, force bool) ([]string, error)
 }
 
-func NewStorageCleaner(cfg *GCConfig, driver storedriver.Driver, storageMgr Manager, taskMgr supervisor.SeedTaskMgr) (*Cleaner, error) {
-	return &Cleaner{
-		cfg:        cfg,
-		driver:     driver,
-		taskMgr:    taskMgr,
-		storageMgr: storageMgr,
+type cleaner struct {
+	cfg            *config.GCConfig
+	driver         storedriver.Driver
+	taskManager    task.Manager
+	storageManager Manager
+}
+
+func NewStorageCleaner(cfg *config.GCConfig, driver storedriver.Driver, storageManager Manager, taskManager task.Manager) (Cleaner, error) {
+	return &cleaner{
+		cfg:            cfg,
+		driver:         driver,
+		taskManager:    taskManager,
+		storageManager: storageManager,
 	}, nil
 }
 
-func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) {
+func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) {
 	freeSpace, err := cleaner.driver.GetFreeSpace()
 	if err != nil {
-		if cdnerrors.IsFileNotExist(err) {
+		if os.IsNotExist(err) {
 			err = cleaner.driver.CreateBaseDir()
 			if err != nil {
 				return nil, err
@@ -74,7 +78,7 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		}
 	}
 
-	logger.GcLogger.With("type", storagePattern).Debugf("start to exec gc with fullGC: %t", fullGC)
+	logger.GcLogger.With("type", storagePattern).Debugf("storage is insufficient, start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
@@ -100,8 +104,8 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		}
 		walkTaskIds[taskID] = true
 
-		// we should return directly when we success to get info which means it is being used
-		if _, exist := cleaner.taskMgr.Exist(taskID); exist {
+		// we should return directly when success to get info which means it is being used
+		if _, exist := cleaner.taskManager.Exist(taskID); exist {
 			return nil
 		}
 
@@ -111,15 +115,15 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 			return nil
 		}
 
-		metaData, err := cleaner.storageMgr.ReadFileMetaData(taskID)
-		if err != nil || metaData == nil {
+		metadata, err := cleaner.storageManager.ReadFileMetadata(taskID)
+		if err != nil || metadata == nil {
 			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
-		// put taskId into gapTasks or intervalTasks which will sort by some rules
-		if err := cleaner.sortInert(gapTasks, intervalTasks, metaData); err != nil {
-			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metaData(%+v): %v", metaData, err)
+		// put taskID into gapTasks or intervalTasks which will sort by some rules
+		if err := cleaner.sortInert(gapTasks, intervalTasks, metadata); err != nil {
+			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metadata(%#v): %v", metadata, err)
 		}
 
 		return nil
@@ -138,12 +142,12 @@ func (cleaner *Cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	return gcTaskIDs, nil
 }
 
-func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData *FileMetaData) error {
-	gap := timeutils.CurrentTimeMillis() - metaData.AccessTime
+func (cleaner *cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metadata *FileMetadata) error {
+	gap := timeutils.CurrentTimeMillis() - metadata.AccessTime
 
-	if metaData.Interval > 0 &&
-		gap <= metaData.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
-		info, err := cleaner.storageMgr.StatDownloadFile(metaData.TaskID)
+	if metadata.Interval > 0 &&
+		gap <= metadata.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		info, err := cleaner.storageManager.StatDownloadFile(metadata.TaskID)
 		if err != nil {
 			return err
 		}
@@ -153,7 +157,7 @@ func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData
 			v = make([]string, 0)
 		}
 		tasks := v.([]string)
-		tasks = append(tasks, metaData.TaskID)
+		tasks = append(tasks, metadata.TaskID)
 		intervalTasks.Put(info.Size, tasks)
 		return nil
 	}
@@ -163,12 +167,12 @@ func (cleaner *Cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metaData
 		v = make([]string, 0)
 	}
 	tasks := v.([]string)
-	tasks = append(tasks, metaData.TaskID)
+	tasks = append(tasks, metadata.TaskID)
 	gapTasks.Put(gap, tasks)
 	return nil
 }
 
-func (cleaner *Cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
+func (cleaner *cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []string {
 	var gcTasks = make([]string, 0)
 
 	for _, v := range gapTasks.Values() {

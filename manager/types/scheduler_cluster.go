@@ -55,8 +55,11 @@ type SchedulerClusterConfig struct {
 }
 
 type SchedulerClusterClientConfig struct {
-	LoadLimit uint `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
+	LoadLimit uint32 `yaml:"loadLimit" mapstructure:"loadLimit" json:"load_limit" binding:"omitempty,gte=1,lte=5000"`
 }
 
 type SchedulerClusterScopes struct {
+	IDC         string `yaml:"idc" mapstructure:"idc" json:"idc" binding:"omitempty"`
+	NetTopology string `yaml:"net_topology" mapstructure:"net_topology" json:"net_topology" binding:"omitempty"`
+	Location    string `yaml:"location" mapstructure:"location" json:"location" binding:"omitempty"`
 }

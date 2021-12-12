@@ -22,7 +22,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"path"
@@ -46,7 +45,7 @@ func TestMain(m *testing.M) {
 
 func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	assert := testifyassert.New(t)
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	dst := path.Join(test.DataDir, taskData+".copy")
@@ -81,7 +80,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := s.LoadTask(PeerTaskMetaData{
+	ts, ok := s.LoadTask(PeerTaskMetadata{
 		PeerID: peerID,
 		TaskID: taskID,
 	})
@@ -114,10 +113,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	// random put all pieces
 	for _, p := range pieces {
 		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -140,10 +139,10 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
 	for _, p := range pieces {
 		rd, cl, err := ts.ReadPiece(context.Background(), &ReadPieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -155,7 +154,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 			},
 		})
 		assert.Nil(err, "get piece should be ok")
-		data, err := ioutil.ReadAll(rd)
+		data, err := io.ReadAll(rd)
 		cl.Close()
 		assert.Nil(err, "read piece should be ok")
 		assert.Equal(p.end-p.start, len(data), "piece length should match")
@@ -177,7 +176,7 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 	meta := path.Join(test.DataDir, taskData+".meta")
 	// prepare test data
 	testData := []byte("test data")
-	err := ioutil.WriteFile(src, testData, defaultFileMode)
+	err := os.WriteFile(src, testData, defaultFileMode)
 	assert.Nil(err, "prepare test data")
 	defer os.Remove(src)
 	defer os.Remove(dst)
@@ -207,7 +206,7 @@ func TestLocalTaskStore_StoreTaskData_Simple(t *testing.T) {
 		},
 	})
 	assert.Nil(err, "store test data")
-	bs, err := ioutil.ReadFile(dst)
+	bs, err := os.ReadFile(dst)
 	assert.Nil(err, "read output test data")
 	assert.Equal(testData, bs, "data must match")
 }
@@ -218,7 +217,7 @@ func TestLocalTaskStore_ReloadPersistentTask_Simple(t *testing.T) {
 
 func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	assert := testifyassert.New(t)
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	dst := path.Join(test.DataDir, taskData+".copy")
@@ -254,7 +253,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 			ContentLength: int64(len(testBytes)),
 		})
 	assert.Nil(err, "create task storage")
-	ts, ok := s.LoadTask(PeerTaskMetaData{
+	ts, ok := s.LoadTask(PeerTaskMetadata{
 		PeerID: peerID,
 		TaskID: taskID,
 	})
@@ -287,10 +286,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	// random put all pieces
 	for _, p := range pieces {
 		_, err = ts.WritePiece(context.Background(), &WritePieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -313,10 +312,10 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 	rand.Shuffle(len(pieces), func(i, j int) { pieces[i], pieces[j] = pieces[j], pieces[i] })
 	for _, p := range pieces {
 		rd, cl, err := ts.ReadPiece(context.Background(), &ReadPieceRequest{
-			PeerTaskMetaData: PeerTaskMetaData{
+			PeerTaskMetadata: PeerTaskMetadata{
 				TaskID: taskID,
 			},
-			PieceMetaData: PieceMetaData{
+			PieceMetadata: PieceMetadata{
 				Num:    int32(p.index),
 				Md5:    "",
 				Offset: uint64(p.start),
@@ -328,7 +327,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 			},
 		})
 		assert.Nil(err, "get piece should be ok")
-		data, err := ioutil.ReadAll(rd)
+		data, err := io.ReadAll(rd)
 		cl.Close()
 		assert.Nil(err, "read piece should be ok")
 		assert.Equal(p.end-p.start, len(data), "piece length should match")

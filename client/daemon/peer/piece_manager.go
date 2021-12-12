@@ -20,16 +20,17 @@ import (
 	"context"
 	"io"
 	"math"
+	"net"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -46,7 +47,7 @@ type pieceManager struct {
 	*rate.Limiter
 	storageManager   storage.TaskStorageDriver
 	pieceDownloader  PieceDownloader
-	computePieceSize func(contentLength int64) int32
+	computePieceSize func(contentLength int64) uint32
 
 	calculateDigest bool
 }
@@ -56,7 +57,7 @@ var _ PieceManager = (*pieceManager)(nil)
 func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		storageManager:   s,
-		computePieceSize: cdnutil.ComputePieceSize,
+		computePieceSize: util.ComputePieceSize,
 		calculateDigest:  true,
 	}
 	for _, opt := range opts {
@@ -77,10 +78,42 @@ func WithCalculateDigest(enable bool) func(*pieceManager) {
 	}
 }
 
-// WithLimiter sets upload rate limiter, the burst size must big than piece size
+// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
 func WithLimiter(limiter *rate.Limiter) func(*pieceManager) {
 	return func(manager *pieceManager) {
 		manager.Limiter = limiter
+	}
+}
+
+func WithTransportOption(opt *config.TransportOption) func(*pieceManager) {
+	return func(manager *pieceManager) {
+		if opt == nil {
+			return
+		}
+		if opt.IdleConnTimeout > 0 {
+			defaultTransport.(*http.Transport).IdleConnTimeout = opt.IdleConnTimeout
+		}
+		if opt.DialTimeout > 0 && opt.KeepAlive > 0 {
+			defaultTransport.(*http.Transport).DialContext = (&net.Dialer{
+				Timeout:   opt.DialTimeout,
+				KeepAlive: opt.KeepAlive,
+				DualStack: true,
+			}).DialContext
+		}
+		if opt.MaxIdleConns > 0 {
+			defaultTransport.(*http.Transport).MaxIdleConns = opt.MaxIdleConns
+		}
+		if opt.ExpectContinueTimeout > 0 {
+			defaultTransport.(*http.Transport).ExpectContinueTimeout = opt.ExpectContinueTimeout
+		}
+		if opt.ResponseHeaderTimeout > 0 {
+			defaultTransport.(*http.Transport).ResponseHeaderTimeout = opt.ResponseHeaderTimeout
+		}
+		if opt.TLSHandshakeTimeout > 0 {
+			defaultTransport.(*http.Transport).TLSHandshakeTimeout = opt.TLSHandshakeTimeout
+		}
+
+		logger.Infof("default transport: %#v", defaultTransport)
 	}
 }
 
@@ -131,11 +164,11 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	// 2. save to storage
 	var n int64
 	n, err = pm.storageManager.WritePiece(ctx, &storage.WritePieceRequest{
-		PeerTaskMetaData: storage.PeerTaskMetaData{
+		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		},
-		PieceMetaData: storage.PieceMetaData{
+		PieceMetadata: storage.PieceMetadata{
 			Num:    request.piece.PieceNum,
 			Md5:    request.piece.PieceMd5,
 			Offset: request.piece.PieceOffset,
@@ -149,7 +182,9 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, pt Task, request *Dow
 	end = time.Now().UnixNano()
 	span.RecordError(err)
 	span.End()
-	pt.AddTraffic(n)
+	if n > 0 {
+		pt.AddTraffic(uint64(n))
+	}
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s",
 			request.piece.PieceNum, n, err)
@@ -171,7 +206,7 @@ func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *b
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       true,
-				Code:          dfcodes.Success,
+				Code:          base.Code_Success,
 				HostLoad:      nil,                // TODO(jim): update host load
 				FinishedCount: piece.PieceNum + 1, // update by peer task
 				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
@@ -195,7 +230,7 @@ func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base
 				BeginTime:     uint64(start),
 				EndTime:       uint64(end),
 				Success:       false,
-				Code:          dfcodes.ClientPieceDownloadFail,
+				Code:          base.Code_ClientPieceDownloadFail,
 				HostLoad:      nil,
 				FinishedCount: 0, // update by peer task
 			},
@@ -212,7 +247,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
-	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize int32) (int64, error) {
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32) (int64, error) {
 	var (
 		success bool
 		start   = time.Now().UnixNano()
@@ -265,11 +300,11 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
-			PieceMetaData: storage.PieceMetaData{
+			PieceMetadata: storage.PieceMetadata{
 				Num: pieceNum,
 				// storage manager will get digest from DigestReader, keep empty here is ok
 				Md5:    "",
@@ -281,11 +316,13 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 			},
 			Reader: reader,
 		})
-	if n != int64(size) {
-		size = int32(n)
+	if n != int64(size) && n > 0 {
+		size = uint32(n)
 	}
 	end = time.Now().UnixNano()
-	pt.AddTraffic(n)
+	if n > 0 {
+		pt.AddTraffic(uint64(n))
+	}
 	if err != nil {
 		pt.Log().Errorf("put piece to storage failed, piece num: %d, wrote: %d, error: %s", pieceNum, n, err)
 		return n, err
@@ -310,16 +347,20 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLength, err := source.GetContentLength(ctx, request.Url, request.UrlMeta.Header)
+	contentLengthRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	contentLength, err := source.GetContentLength(contentLengthRequest)
 	if err != nil {
 		log.Warnf("get content length error: %s for %s", err, request.Url)
 	}
-	if contentLength == -1 {
+	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
 	} else {
 		err = pm.storageManager.UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
-				PeerTaskMetaData: storage.PeerTaskMetaData{
+				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),
 					TaskID: pt.GetTaskID(),
 				},
@@ -331,7 +372,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log.Debugf("get content length: %d", contentLength)
 	// 1. download piece from source
-	body, err := source.Download(ctx, request.Url, request.UrlMeta.Header)
+	downloadRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+	if err != nil {
+		return err
+	}
+	body, err := source.Download(downloadRequest)
 	if err != nil {
 		return err
 	}
@@ -346,7 +391,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	// 2. save to storage
 	pieceSize := pm.computePieceSize(contentLength)
 	// handle resource which content length is unknown
-	if contentLength == -1 {
+	if contentLength < 0 {
 		var n int64
 		for pieceNum := int32(0); ; pieceNum++ {
 			size := pieceSize
@@ -359,19 +404,20 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			}
 			// last piece, piece size maybe 0
 			if n < int64(size) {
-				contentLength = int64(pieceNum*pieceSize) + n
+				contentLength = int64(pieceNum)*int64(pieceSize) + n
+				pt.SetTotalPieces(int32(math.Ceil(float64(contentLength) / float64(pieceSize))))
 				if err := pm.storageManager.UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
-						PeerTaskMetaData: storage.PeerTaskMetaData{
+						PeerTaskMetadata: storage.PeerTaskMetadata{
 							PeerID: pt.GetPeerID(),
 							TaskID: pt.GetTaskID(),
 						},
 						ContentLength:  contentLength,
 						GenPieceDigest: true,
+						TotalPieces:    pt.GetTotalPieces(),
 					}); err != nil {
 					log.Errorf("update task failed %s", err)
 				}
-				pt.SetTotalPieces(pieceNum + 1)
 				return pt.SetContentLength(contentLength)
 			}
 		}
@@ -384,7 +430,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		offset := uint64(pieceNum) * uint64(pieceSize)
 		// calculate piece size for last piece
 		if contentLength > 0 && int64(offset)+int64(size) > contentLength {
-			size = int32(contentLength - int64(offset))
+			size = uint32(contentLength - int64(offset))
 		}
 
 		log.Debugf("download piece %d", pieceNum)
@@ -398,14 +444,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 			return storage.ErrShortRead
 		}
 	}
-	pt.SetTotalPieces(maxPieceNum)
-	if err := pt.SetContentLength(contentLength); err != nil {
-		log.Errorf("set content length failed %s", err)
-	}
 
 	if err := pm.storageManager.UpdateTask(ctx,
 		&storage.UpdateTaskRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
@@ -415,6 +457,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		}); err != nil {
 		log.Errorf("update task failed %s", err)
 	}
+	if err := pt.SetContentLength(contentLength); err != nil {
+		log.Errorf("set content length failed %s", err)
+	}
+
 	log.Infof("download from source ok")
 	return nil
 }

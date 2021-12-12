@@ -22,13 +22,16 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
@@ -46,11 +49,13 @@ var DefaultServerOptions = []grpc.ServerOption{
 		streamServerInterceptor,
 		grpc_prometheus.StreamServerInterceptor,
 		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.StreamServerInterceptor(),
 	)),
 	grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 		unaryServerInterceptor,
 		grpc_prometheus.UnaryServerInterceptor,
 		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.UnaryServerInterceptor(),
 	)),
 }
 
@@ -60,7 +65,6 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 		err = convertServerError(err)
 		logger.GrpcLogger.Errorf("do stream server error: %v for method: %s", err, info.FullMethod)
 	}
-
 	return err
 }
 
@@ -75,6 +79,9 @@ func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.Una
 }
 
 func convertServerError(err error) error {
+	if status.Code(err) == codes.InvalidArgument {
+		err = dferrors.New(base.Code_BadRequest, err.Error())
+	}
 	if v, ok := err.(*dferrors.DfError); ok {
 		logger.GrpcLogger.Errorf(v.Message)
 		if s, e := status.Convert(err).WithDetails(common.NewGrpcDfError(v.Code, v.Message)); e == nil {

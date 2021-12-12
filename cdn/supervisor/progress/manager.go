@@ -14,225 +14,131 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ../mocks/progress/mock_progress_manager.go -package progress d7y.io/dragonfly/v2/cdn/supervisor/progress Manager
+
 package progress
 
 import (
-	"container/list"
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
-	"strconv"
-	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/supervisor"
-	"d7y.io/dragonfly/v2/cdn/types"
-	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/cdn/constants"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/structure/syncmap"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 )
 
-var _ supervisor.SeedProgressMgr = (*Manager)(nil)
+// Manager as an interface defines all operations about seed progress
+type Manager interface {
 
-type Manager struct {
-	seedSubscribers      *syncmap.SyncMap
-	taskPieceMetaRecords *syncmap.SyncMap
-	taskMgr              supervisor.SeedTaskMgr
-	mu                   *synclock.LockerPool
-	timeout              time.Duration
-	buffer               int
+	// WatchSeedProgress watch task seed progress
+	WatchSeedProgress(ctx context.Context, clientAddr string, taskID string) (<-chan *task.PieceInfo, error)
+
+	// PublishPiece publish piece seed
+	PublishPiece(ctx context.Context, taskID string, piece *task.PieceInfo) error
+
+	// PublishTask publish task seed
+	PublishTask(ctx context.Context, taskID string, task *task.SeedTask) error
 }
 
-func (pm *Manager) SetTaskMgr(taskMgr supervisor.SeedTaskMgr) {
-	pm.taskMgr = taskMgr
+var _ Manager = (*manager)(nil)
+
+type manager struct {
+	mu               *synclock.LockerPool
+	taskManager      task.Manager
+	seedTaskSubjects map[string]*publisher
 }
 
-func NewManager() (supervisor.SeedProgressMgr, error) {
-	return &Manager{
-		seedSubscribers:      syncmap.NewSyncMap(),
-		taskPieceMetaRecords: syncmap.NewSyncMap(),
-		mu:                   synclock.NewLockerPool(),
-		timeout:              3 * time.Second,
-		buffer:               4,
+func NewManager(taskManager task.Manager) (Manager, error) {
+	return newManager(taskManager)
+}
+
+func newManager(taskManager task.Manager) (*manager, error) {
+	return &manager{
+		mu:               synclock.NewLockerPool(),
+		taskManager:      taskManager,
+		seedTaskSubjects: make(map[string]*publisher),
 	}, nil
 }
 
-func (pm *Manager) InitSeedProgress(ctx context.Context, taskID string) {
-	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventInitSeedProgress)
-	pm.mu.Lock(taskID, true)
-	if _, ok := pm.seedSubscribers.Load(taskID); ok {
-		logger.WithTaskID(taskID).Debugf("the task seedSubscribers already exist")
-		if _, ok := pm.taskPieceMetaRecords.Load(taskID); ok {
-			logger.WithTaskID(taskID).Debugf("the task taskPieceMetaRecords already exist")
-			pm.mu.UnLock(taskID, true)
-			return
-		}
-	}
-	pm.mu.UnLock(taskID, true)
+func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, taskID string) (<-chan *task.PieceInfo, error) {
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
-	if _, loaded := pm.seedSubscribers.LoadOrStore(taskID, list.New()); loaded {
-		logger.WithTaskID(taskID).Info("the task seedSubscribers already exist")
-	}
-	if _, loaded := pm.taskPieceMetaRecords.LoadOrStore(taskID, syncmap.NewSyncMap()); loaded {
-		logger.WithTaskID(taskID).Info("the task taskPieceMetaRecords already exist")
-	}
-}
-
-func (pm *Manager) WatchSeedProgress(ctx context.Context, taskID string) (<-chan *types.SeedPiece, error) {
 	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventWatchSeedProgress)
-	logger.Debugf("watch seed progress begin for taskID: %s", taskID)
-	pm.mu.Lock(taskID, true)
-	defer pm.mu.UnLock(taskID, true)
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
+	span.AddEvent(constants.EventWatchSeedProgress)
+	seedTask, err := pm.taskManager.Get(taskID)
 	if err != nil {
-		return nil, fmt.Errorf("get seed subscribers: %v", err)
+		return nil, err
 	}
-	pieceMetaDataRecords, err := pm.getPieceMetaRecordsByTaskID(taskID)
-	if err != nil {
-		return nil, fmt.Errorf("get piece meta records by taskID: %v", err)
-	}
-	ch := make(chan *types.SeedPiece, pm.buffer)
-	ele := chanList.PushBack(ch)
-	go func(seedCh chan *types.SeedPiece, ele *list.Element) {
-		for _, pieceMetaRecord := range pieceMetaDataRecords {
-			logger.Debugf("seed piece meta record %+v", pieceMetaRecord)
-			select {
-			case seedCh <- pieceMetaRecord:
-			case <-time.After(pm.timeout):
+	if seedTask.IsDone() {
+		pieceChan := make(chan *task.PieceInfo)
+		go func(pieceChan chan *task.PieceInfo) {
+			defer func() {
+				logger.Debugf("subscriber %s starts watching task %s seed progress", clientAddr, taskID)
+				close(pieceChan)
+			}()
+			pieceNums := make([]uint32, 0, len(seedTask.Pieces))
+			for pieceNum := range seedTask.Pieces {
+				pieceNums = append(pieceNums, pieceNum)
 			}
-		}
-		if task, err := pm.taskMgr.Get(taskID); err == nil && task.IsDone() {
-			chanList.Remove(ele)
-			close(seedCh)
-		}
-	}(ch, ele)
-	return ch, nil
-}
-
-// PublishPiece publish seedPiece
-func (pm *Manager) PublishPiece(ctx context.Context, taskID string, record *types.SeedPiece) error {
-	span := trace.SpanFromContext(ctx)
-	recordBytes, _ := json.Marshal(record)
-	span.AddEvent(config.EventPublishPiece, trace.WithAttributes(config.AttributeSeedPiece.String(string(recordBytes))))
-	logger.Debugf("seed piece meta record %+v", record)
-	pm.mu.Lock(taskID, false)
-	defer pm.mu.UnLock(taskID, false)
-	err := pm.setPieceMetaRecord(taskID, record)
-	if err != nil {
-		return fmt.Errorf("set piece meta record: %v", err)
-	}
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil {
-		return fmt.Errorf("get seed subscribers: %v", err)
-	}
-	var wg sync.WaitGroup
-	for e := chanList.Front(); e != nil; e = e.Next() {
-		wg.Add(1)
-		sub := e.Value.(chan *types.SeedPiece)
-		go func(sub chan *types.SeedPiece, record *types.SeedPiece) {
-			defer wg.Done()
-			select {
-			case sub <- record:
-			case <-time.After(pm.timeout):
+			sort.Slice(pieceNums, func(i, j int) bool {
+				return pieceNums[i] < pieceNums[j]
+			})
+			for _, pieceNum := range pieceNums {
+				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, pieceNum, taskID)
+				pieceChan <- seedTask.Pieces[pieceNum]
 			}
-
-		}(sub, record)
+		}(pieceChan)
+		return pieceChan, nil
 	}
-	wg.Wait()
-	return nil
+	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
+	if !ok {
+		progressPublisher = newProgressPublisher(taskID)
+		pm.seedTaskSubjects[taskID] = progressPublisher
+	}
+	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, seedTask.Pieces)
+	progressPublisher.AddSubscriber(observer)
+	return observer.Receiver(), nil
 }
 
-func (pm *Manager) PublishTask(ctx context.Context, taskID string, task *types.SeedTask) error {
+func (pm *manager) PublishPiece(ctx context.Context, taskID string, record *task.PieceInfo) (err error) {
+	pm.mu.Lock(taskID, false)
+	defer pm.mu.UnLock(taskID, false)
 	span := trace.SpanFromContext(ctx)
-	taskBytes, _ := json.Marshal(task)
-	span.AddEvent(config.EventPublishTask, trace.WithAttributes(config.AttributeSeedTask.String(string(taskBytes))))
-	logger.Debugf("publish task record %+v", task)
+	jsonRecord, err := json.Marshal(record)
+	if err != nil {
+		return errors.Wrapf(err, "json marshal piece record: %#v", record)
+	}
+	span.AddEvent(constants.EventPublishPiece, trace.WithAttributes(constants.AttributeSeedPiece.String(string(jsonRecord))))
+	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonRecord)
+	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
+	if ok {
+		progressPublisher.NotifySubscribers(record)
+	}
+	return pm.taskManager.UpdateProgress(taskID, record)
+}
+
+func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *task.SeedTask) error {
+	jsonTask, err := json.Marshal(seedTask)
+	if err != nil {
+		return errors.Wrapf(err, "json marshal seedTask: %#v", seedTask)
+	}
+	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonTask)
 	pm.mu.Lock(taskID, false)
 	defer pm.mu.UnLock(taskID, false)
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil {
-		return fmt.Errorf("get seed subscribers: %v", err)
-	}
-	// unwatch
-	for e := chanList.Front(); e != nil; e = e.Next() {
-		chanList.Remove(e)
-		sub, ok := e.Value.(chan *types.SeedPiece)
-		if !ok {
-			logger.Warnf("failed to convert chan seedPiece, e.Value: %v", e.Value)
-			continue
-		}
-		close(sub)
-	}
-	return nil
-}
-
-func (pm *Manager) Clear(taskID string) error {
-	pm.mu.Lock(taskID, false)
-	defer pm.mu.UnLock(taskID, false)
-	chanList, err := pm.seedSubscribers.GetAsList(taskID)
-	if err != nil && errors.Cause(err) != dferrors.ErrDataNotFound {
-		return errors.Wrap(err, "get seed subscribers")
-	}
-	if chanList != nil {
-		for e := chanList.Front(); e != nil; e = e.Next() {
-			chanList.Remove(e)
-			sub, ok := e.Value.(chan *types.SeedPiece)
-			if !ok {
-				logger.Warnf("failed to convert chan seedPiece, e.Value: %v", e.Value)
-				continue
-			}
-			close(sub)
-		}
-		chanList = nil
-	}
-	err = pm.seedSubscribers.Remove(taskID)
-	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "clear seed subscribes")
-	}
-	err = pm.taskPieceMetaRecords.Remove(taskID)
-	if err != nil && dferrors.ErrDataNotFound != errors.Cause(err) {
-		return errors.Wrap(err, "clear piece meta records")
-	}
-	return nil
-}
-
-func (pm *Manager) GetPieces(ctx context.Context, taskID string) (records []*types.SeedPiece, err error) {
-	pm.mu.Lock(taskID, true)
-	defer pm.mu.UnLock(taskID, true)
-	return pm.getPieceMetaRecordsByTaskID(taskID)
-}
-
-// setPieceMetaRecord
-func (pm *Manager) setPieceMetaRecord(taskID string, record *types.SeedPiece) error {
-	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
-	if err != nil {
+	span := trace.SpanFromContext(ctx)
+	recordBytes, _ := json.Marshal(seedTask)
+	span.AddEvent(constants.EventPublishTask, trace.WithAttributes(constants.AttributeSeedTask.String(string(recordBytes))))
+	if err := pm.taskManager.Update(taskID, seedTask); err != nil {
 		return err
 	}
-	return pieceRecords.Add(strconv.Itoa(int(record.PieceNum)), record)
-}
-
-// getPieceMetaRecordsByTaskID
-func (pm *Manager) getPieceMetaRecordsByTaskID(taskID string) (records []*types.SeedPiece, err error) {
-	pieceRecords, err := pm.taskPieceMetaRecords.GetAsMap(taskID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get piece meta records")
+	if progressPublisher, ok := pm.seedTaskSubjects[taskID]; ok {
+		progressPublisher.RemoveAllSubscribers()
+		delete(pm.seedTaskSubjects, taskID)
 	}
-	pieceNums := pieceRecords.ListKeyAsIntSlice()
-	sort.Ints(pieceNums)
-	for i := 0; i < len(pieceNums); i++ {
-		v, _ := pieceRecords.Get(strconv.Itoa(pieceNums[i]))
-		if value, ok := v.(*types.SeedPiece); ok {
-			records = append(records, value)
-		}
-	}
-	return records, nil
+	return nil
 }

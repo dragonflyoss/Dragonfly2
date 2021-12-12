@@ -18,7 +18,6 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -49,7 +48,7 @@ func Test(t *testing.T) {
 }
 
 func (s *FileUtilsTestSuite) SetupSuite() {
-	s.workDir, _ = ioutil.TempDir(basic.TmpDir, "DF-FileUtilsTestSuite-")
+	s.workDir, _ = os.MkdirTemp(basic.TmpDir, "DF-FileUtilsTestSuite-")
 	s.username = basic.Username
 }
 
@@ -154,7 +153,7 @@ func (s *FileUtilsTestSuite) TestCopyFile() {
 	_, err = filerw.CopyFile(s.testFile, s.testFile+".new")
 	s.Require().Nil(err)
 
-	content, err := ioutil.ReadFile(s.testFile + ".new")
+	content, err := os.ReadFile(s.testFile + ".new")
 	s.Require().Nil(err)
 	s.Require().Equal("hello,world", string(content))
 }

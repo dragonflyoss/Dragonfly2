@@ -28,10 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/synclock"
@@ -83,7 +83,7 @@ type SchedulerService struct {
 	metricsConfig *config.MetricsConfig
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
 	ops := &Options{}
 	for _, op := range options {
 		op(ops)
@@ -103,6 +103,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, metricsConfig *config.Metr
 
 	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
 		PeerManager: peerManager,
+		PluginDir:   pluginDir,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)
@@ -171,7 +172,7 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			peer := rsPeer.peer
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
-				if peer.CloseChannelWithError(dferrors.Newf(dfcodes.SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
+				if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
 					peer.ID)) == nil {
 					peer.Task.AddBackToSourcePeer(peer.ID)
 				}
@@ -209,7 +210,7 @@ func (s *SchedulerService) Stop() {
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
 	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
 	if !hasParent || parent == nil {
-		return nil, errors.Errorf("no parent peer available for peer %v", peer.ID)
+		return nil, errors.Errorf("no parent peer available for peer %s", peer.ID)
 	}
 	return parent, nil
 }
@@ -226,7 +227,7 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 		var options []supervisor.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
 			options = []supervisor.HostOption{
-				supervisor.WithTotalUploadLoad(int32(clientConfig.LoadLimit)),
+				supervisor.WithTotalUploadLoad(clientConfig.LoadLimit),
 			}
 		}
 
@@ -297,7 +298,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 			if ok = s.worker.send(peerDownloadSuccessEvent{cdnPeer, nil}); !ok {
 				logger.Error("send taskSeed success event failed, eventLoop is shutdown")
 			}
-			logger.Infof("successfully obtain seeds from cdn, task: %+v", task)
+			logger.Infof("successfully obtain seeds from cdn, task: %#v", task)
 		}
 	}()
 
@@ -327,7 +328,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 			pr:   pieceResult,
 		})
 		return nil
-	} else if pieceResult.Code != dfcodes.Success {
+	} else if pieceResult.Code != base.Code_Success {
 		s.worker.send(peerDownloadPieceFailEvent{
 			ctx:  ctx,
 			peer: peer,

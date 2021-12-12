@@ -14,12 +14,13 @@
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
-VERSION := "2.0.0"
+SEMVER := "2.0.1"
+VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
-DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(GIT_COMMIT)"
+DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
 
 all: help
 
@@ -61,6 +62,12 @@ docker-build-manager:
 	@echo "Begin to use docker build manager image."
 	./hack/docker-build.sh manager
 .PHONY: docker-build-manager
+
+# Build testing tools image
+docker-build-testing-tools: build-dirs
+	@echo "Begin to testing tools image."
+	./test/tools/no-content-length/build.sh
+.PHONY: docker-build-testing-tools
 
 # Push cdn image
 docker-push-cdn: docker-build-cdn
@@ -153,10 +160,12 @@ build-rpm-dfget: build-linux-dfget
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
-	-e "VERSION=$(GIT_VERSION)" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
 # Build deb dfget
@@ -168,10 +177,12 @@ build-deb-dfget: build-linux-dfget
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
-	-e "VERSION=$(GIT_VERSION)" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
 		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfget
 
 # Generate dfget man page
@@ -218,9 +229,9 @@ clean-e2e-test:
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
-kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager
+kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
 	@echo "Kind load image done."
-.PHONY: docker-build
+.PHONY: kind-load
 
 # Run kind load docker-image cdn
 kind-load-cdn:
@@ -241,6 +252,23 @@ kind-load-dfdaemon:
 kind-load-manager:
 	@./hack/kind-load.sh manager
 .PHONY: kind-load-manager
+
+# Run kind load docker testing tools
+kind-load-testing-tools:
+	@./hack/kind-load.sh no-content-length
+.PHONY: kind-load-testing-tools
+
+# Run code lint
+lint: markdownlint
+	@echo "Begin to golangci-lint."
+	@golangci-lint run
+.PHONY: lint
+
+# Run markdown lint
+markdownlint:
+	@echo "Begin to markdownlint."
+	@./hack/markdownlint.sh
+.PHONY: markdownlint
 
 # Run go generate
 generate:
@@ -290,11 +318,14 @@ help:
 	@echo "make e2e-test                       run e2e tests"
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make clean-e2e-test                 clean e2e tests"
-	@echo "make kind-load-image                kind load docker image"
+	@echo "make kind-load                      kind load docker image"
 	@echo "make kind-load-cdn                  kind load cdn docker image"
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
+	@echo "make kind-load-testing-tools        kind load testing tools docker image"
+	@echo "make lint                           run code lint"
+	@echo "make markdownlint                   run markdown lint"
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"

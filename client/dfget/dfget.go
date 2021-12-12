@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -142,13 +141,17 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	wLog.Info("try to download from source and ignore rate limit")
 	fmt.Println("try to download from source and ignore rate limit")
 
-	if target, err = ioutil.TempFile(filepath.Dir(cfg.Output), ".df_"); err != nil {
+	if target, err = os.CreateTemp(filepath.Dir(cfg.Output), ".df_"); err != nil {
 		return err
 	}
 	defer os.Remove(target.Name())
 	defer target.Close()
 
-	if response, err = source.Download(ctx, cfg.URL, hdr); err != nil {
+	downloadRequest, err := source.NewRequestWithContext(ctx, cfg.URL, hdr)
+	if err != nil {
+		return err
+	}
+	if response, err = source.Download(downloadRequest); err != nil {
 		return err
 	}
 	defer response.Close()
@@ -200,7 +203,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
-		Timeout:           int64(cfg.Timeout),
+		Timeout:           uint64(cfg.Timeout),
 		Limit:             float64(cfg.RateLimit),
 		DisableBackSource: cfg.DisableBackSource,
 		UrlMeta: &base.UrlMeta{

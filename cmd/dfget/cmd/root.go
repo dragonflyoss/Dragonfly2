@@ -37,9 +37,9 @@ import (
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
@@ -68,7 +68,14 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		start := time.Now()
 
-		if err := logcore.InitDfget(dfgetConfig.Console); err != nil {
+		// Initialize daemon dfpath
+		d, err := initDfgetDfpath(dfgetConfig)
+		if err != nil {
+			return err
+		}
+
+		// Initialize logger
+		if err := logcore.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 
@@ -89,7 +96,7 @@ var rootCmd = &cobra.Command{
 
 		//  do get file
 		var errInfo string
-		err := runDfget()
+		err = runDfget(d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
 			errInfo = fmt.Sprintf("error: %v", err)
 		}
@@ -152,14 +159,31 @@ func init() {
 
 	flagSet.String("callsystem", dfgetConfig.CallSystem, "The caller name which is mainly used for statistics and access control")
 
+	flagSet.String("workhome", dfgetConfig.WorkHome, "Dfget working directory")
+
+	flagSet.String("log-dir", dfgetConfig.LogDir, "Dfget log directory")
+
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind dfget flags to viper"))
 	}
 }
 
+func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
+	options := []dfpath.Option{}
+	if cfg.WorkHome != "" {
+		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
+	}
+
+	if cfg.LogDir != "" {
+		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	return dfpath.New(options...)
+}
+
 // runDfget does some init operations and starts to download.
-func runDfget() error {
+func runDfget(dfgetLockPath, daemonSockPath string) error {
 	logger.Infof("Version:\n%s", version.Version())
 
 	// Dfget config values
@@ -176,7 +200,7 @@ func runDfget() error {
 
 	if dfgetConfig.Pattern != constants.SourcePattern {
 		logger.Info("start to check and spawn daemon")
-		if daemonClient, err = checkAndSpawnDaemon(); err != nil {
+		if daemonClient, err = checkAndSpawnDaemon(dfgetLockPath, daemonSockPath); err != nil {
 			logger.Errorf("check and spawn daemon error: %v", err)
 		} else {
 			logger.Info("check and spawn daemon success")
@@ -187,8 +211,8 @@ func runDfget() error {
 }
 
 // checkAndSpawnDaemon do checking at three checkpoints
-func checkAndSpawnDaemon() (client.DaemonClient, error) {
-	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: dfpath.DaemonSockPath}
+func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonClient, error) {
+	target := dfnet.NetAddr{Type: dfnet.UNIX, Addr: daemonSockPath}
 	daemonClient, err := client.GetClientByAddr([]dfnet.NetAddr{target})
 	if err != nil {
 		return nil, err
@@ -199,7 +223,7 @@ func checkAndSpawnDaemon() (client.DaemonClient, error) {
 		return daemonClient, nil
 	}
 
-	lock := flock.New(dfpath.DfgetLockPath)
+	lock := flock.New(dfgetLockPath)
 	if err := lock.Lock(); err != nil {
 		return nil, err
 	}

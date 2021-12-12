@@ -27,7 +27,6 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -193,7 +192,7 @@ func newFilePeerTask(ctx context.Context,
 			requestedPieces:     NewBitmap(),
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
-			failedCode:          dfcodes.UnknownError,
+			failedCode:          base.Code_UnknownError,
 			contentLength:       atomic.NewInt64(-1),
 			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
@@ -201,7 +200,7 @@ func newFilePeerTask(ctx context.Context,
 			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
-			usedTraffic:         atomic.NewInt64(0),
+			usedTraffic:         atomic.NewUint64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "filePeerTask"),
 		},
 	}
@@ -315,7 +314,7 @@ func (pt *filePeerTask) finish() error {
 
 		var (
 			success      = true
-			code         = dfcodes.Success
+			code         = base.Code_Success
 			message      = "Success"
 			progressDone bool
 		)
@@ -325,7 +324,7 @@ func (pt *filePeerTask) finish() error {
 			pt.Errorf("peer task done callback failed: %s", err)
 			pt.span.RecordError(err)
 			success = false
-			code = dfcodes.ClientError
+			code = base.Code_ClientError
 			message = err.Error()
 		}
 

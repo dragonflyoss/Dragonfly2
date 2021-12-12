@@ -18,7 +18,7 @@ package dfget
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/idgen"
@@ -43,7 +44,9 @@ func Test_downloadFromSource(t *testing.T) {
 	content := idgen.UUIDString()
 
 	sourceClient := sourcemock.NewMockResourceClient(gomock.NewController(t))
-	source.Register("http", sourceClient)
+	require.Nil(t, source.Register("http", sourceClient, func(request *source.Request) *source.Request {
+		return request
+	}))
 	defer source.UnRegister("http")
 
 	cfg := &config.DfgetConfig{
@@ -51,8 +54,9 @@ func Test_downloadFromSource(t *testing.T) {
 		Output: output,
 		Digest: strings.Join([]string{digestutils.Sha256Hash.String(), digestutils.Sha256(content)}, ":"),
 	}
-
-	sourceClient.EXPECT().Download(context.Background(), cfg.URL, nil, nil).Return(ioutil.NopCloser(strings.NewReader(content)), nil)
+	request, err := source.NewRequest(cfg.URL)
+	assert.Nil(t, err)
+	sourceClient.EXPECT().Download(request).Return(io.NopCloser(strings.NewReader(content)), nil)
 
 	err = downloadFromSource(context.Background(), cfg, nil)
 	assert.Nil(t, err)

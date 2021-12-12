@@ -5,15 +5,25 @@ aliveTime: 0s
 # daemon gc task running interval
 gcInterval: 1m0s
 
-# daemon data directory
-# in linux, default value is $HOME/.dragonfly/dfget-daemon/
-# in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-dataDir: /var/lib/dragonfly
-
 # daemon work directory, daemon will change current working directory to this
-# in linux, default value is $HOME/.dragonfly/dfget-daemon/
-# in macos(just for testing), default value is /Users/$USER/.dragonfly/dfdaemon/
-workHome: /var/lib/dragonfly
+# in linux, default value is /usr/local/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly
+workHome: ""
+
+# cacheDir is dynconfig cache storage directory
+# in linux, default value is /var/cache/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+cacheDir: ""
+
+# logDir is the log storage directory
+# in linux, default value is /var/log/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+logDir: ""
+
+# dataDir is the download data storage directory
+# in linux, default value is /var/lib/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/data
+dataDir: ""
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
@@ -28,8 +38,10 @@ scheduler:
   manager:
     # get scheduler list dynamically from manager
     enable: false
-    # manager service address
-    addr: 127.0.0.1:65003
+    # manager service addresses
+    netAddrs:
+      - type: tcp
+        addr: 127.0.0.1:65003
     # scheduler list refresh interval
     refreshInterval: 5m
   # schedule timeout
@@ -77,6 +89,22 @@ download:
   perPeerRateLimit: 100Mi
   # download piece timeout
   pieceDownloadTimeout: 30s
+  # golang transport option
+  transportOption:
+    # dial timeout
+    dialTimeout: 2s
+    # keep alive
+    keepAlive: 30s
+    # same with http.Transport.MaxIdleConns
+    maxIdleConns: 100
+    # same with http.Transport.IdleConnTimeout
+    idleConnTimeout: 90s
+    # same with http.Transport.ResponseHeaderTimeout
+    responseHeaderTimeout: 2s
+    # same with http.Transport.TLSHandshakeTimeout
+    tlsHandshakeTimeout: 1s
+    # same with http.Transport.ExpectContinueTimeout
+    expectContinueTimeout: 2s
   # download grpc option
   downloadGRPC:
     # security option

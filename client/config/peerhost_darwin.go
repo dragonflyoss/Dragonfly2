@@ -1,3 +1,4 @@
+//go:build darwin
 // +build darwin
 
 /*
@@ -25,22 +26,12 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-var (
-	PeerHostConfigPath = basic.HomeDir + "/.dragonfly/dfget-daemon.yaml"
-
-	peerHostWorkHome = basic.HomeDir + "/.dragonfly/dfdaemon/"
-	peerHostDataDir  = peerHostWorkHome
-)
-
 var peerHostConfig = DaemonOption{
-	DataDir:     peerHostDataDir,
-	WorkHome:    peerHostWorkHome,
 	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
 	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,

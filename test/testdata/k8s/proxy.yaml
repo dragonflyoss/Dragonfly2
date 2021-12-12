@@ -1,0 +1,131 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: proxy
+  namespace: dragonfly-e2e
+data:
+  dfget.yaml: |-
+    aliveTime: 0s
+    gcInterval: 1m0s
+    keepStorage: false
+    workDir: /root/.dragonfly/dfget-daemon/
+    verbose: true
+    pprof-port: 0
+    scheduler:
+      manager:
+        enable: true
+        netAddrs:
+        - type: tcp
+          addr: dragonfly-manager.dragonfly-system.svc.cluster.local:65003
+        refreshInterval: 5m
+      scheduleTimeout: 30s
+      disableAutoBackSource: true
+    host:
+      advertiseIP: 0.0.0.0
+      idc: ""
+      listenIP: 0.0.0.0
+      location: ""
+      netTopology: ""
+      securityDomain: ""
+    download:
+      calculateDigest: true
+      downloadGRPC:
+        security:
+          insecure: true
+        unixListen:
+          socket: /tmp/dfdamon.sock
+      peerGRPC:
+        security:
+          insecure: true
+        tcpListen:
+          listen: 0.0.0.0
+          port: 65000
+      perPeerRateLimit: 100Mi
+      totalRateLimit: 200Mi
+    upload:
+      rateLimit: 100Mi
+      security:
+        insecure: true
+      tcpListen:
+        listen: 0.0.0.0
+        port: 65002
+    storage:
+      diskGCThreshold: 50Gi
+      multiplex: true
+      strategy: io.d7y.storage.v2.simple
+      taskExpireTime: 6h
+    proxy:
+      defaultFilter: Expires&Signature
+      tcpListen:
+        listen: 0.0.0.0
+        port: 65001
+      security:
+        insecure: true
+      registryMirror:
+        dynamic: true
+        insecure: false
+        url: https://index.docker.io
+      proxies:
+        - regx: blobs/sha256.*
+        - regx: file-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxy
+  namespace: dragonfly-e2e
+spec:
+  selector:
+    app: dragonfly
+    component: proxy
+  type: ClusterIP
+  ports:
+  - name: proxy
+    port: 65001
+    protocol: TCP
+    targetPort: 65001
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: proxy
+  namespace: dragonfly-e2e
+spec:
+  serviceName: proxy
+  selector:
+    matchLabels:
+      app: dragonfly
+      component: proxy
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+        component: proxy
+    spec:
+      containers:
+      - name: proxy
+        image: d7yio/dfdaemon:latest
+        imagePullPolicy: "IfNotPresent"
+        ports:
+        - containerPort: 65001
+        volumeMounts:
+        - mountPath: /etc/dragonfly
+          name: config
+        - mountPath: /var/log/dragonfly/daemon
+          name: logs
+        - mountPath: /root/.dragonfly/dfget-daemon/
+          name: data
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: proxy
+        name: config
+      - emptyDir: {}
+        name: data
+      - emptyDir: {}
+        name: logs

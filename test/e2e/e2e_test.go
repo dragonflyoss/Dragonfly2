@@ -30,9 +30,10 @@ import (
 )
 
 const (
-	proxy              = "localhost:65001"
-	hostnameFilePath   = "/etc/hostname"
-	dragonflyNamespace = "dragonfly-system"
+	proxy                 = "localhost:65001"
+	hostnameFilePath      = "/etc/hostname"
+	dragonflyNamespace    = "dragonfly-system"
+	dragonflyE2ENamespace = "dragonfly-e2e"
 )
 
 const (
@@ -67,6 +68,7 @@ var _ = BeforeSuite(func() {
 	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
+	fmt.Printf("raw dfget version: %s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
 	if mode == dfdaemonCompatibilityTestMode {

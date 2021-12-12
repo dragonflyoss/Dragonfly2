@@ -21,7 +21,7 @@ import (
 
 	"google.golang.org/grpc/resolver"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 const (

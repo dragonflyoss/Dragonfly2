@@ -17,7 +17,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
@@ -30,7 +30,9 @@ func TestManagerConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Server: &ServerConfig{
-			Name: "foo",
+			Name:       "foo",
+			LogDir:     "foo",
+			PublicPath: "foo",
 			GRPC: &TCPListenConfig{
 				Listen: "127.0.0.1",
 				PortRange: TCPListenPortRange{
@@ -74,7 +76,7 @@ func TestManagerConfig_Load(t *testing.T) {
 	}
 
 	managerConfigYAML := &Config{}
-	contentYAML, _ := ioutil.ReadFile("./testdata/manager.yaml")
+	contentYAML, _ := os.ReadFile("./testdata/manager.yaml")
 	var dataYAML map[string]interface{}
 	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
 		t.Fatal(err)

@@ -9,7 +9,7 @@ on:
     paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
 
 env:
-  GO_VERSION: 1.15
+  GO_VERSION: 1.17
 
 jobs:
   test:
@@ -26,7 +26,12 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run Unit tests
-        run: sudo make test-coverage
+        run: |-
+          # switch to installed go
+          sudo ln -sf `which go` `sudo which go`
+          go version
+          sudo go version
+          sudo make test-coverage
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

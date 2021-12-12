@@ -24,7 +24,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -64,7 +63,7 @@ func (p *streamPeerTaskCallback) Update(pt Task) error {
 	// update storage
 	err := p.ptm.storageManager.UpdateTask(p.pt.ctx,
 		&storage.UpdateTaskRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
@@ -110,7 +109,7 @@ func (p *streamPeerTaskCallback) Done(pt Task) error {
 		TotalPieceCount: p.pt.totalPiece,
 		Cost:            uint32(cost),
 		Success:         true,
-		Code:            dfcodes.Success,
+		Code:            base.Code_Success,
 	})
 	if err != nil {
 		peerResultSpan.RecordError(err)
@@ -156,7 +155,7 @@ func (p *streamPeerTaskCallback) ValidateDigest(pt Task) error {
 		return nil
 	}
 	err := p.ptm.storageManager.ValidateDigest(
-		&storage.PeerTaskMetaData{
+		&storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
 		})

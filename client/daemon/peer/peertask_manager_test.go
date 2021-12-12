@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/http/httptest"
@@ -35,15 +34,14 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/cdn/cdnutil"
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -56,7 +54,7 @@ import (
 type componentsOption struct {
 	taskID             string
 	contentLength      int64
-	pieceSize          int32
+	pieceSize          uint32
 	pieceParallelCount int32
 	peerPacketDelay    []time.Duration
 }
@@ -68,18 +66,18 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
-		for i := int32(0); i < request.Limit; i++ {
+		for i := uint32(0); i < request.Limit; i++ {
 			start := opt.pieceSize * (request.StartNum + i)
 			if int64(start)+1 > opt.contentLength {
 				break
 			}
 			size := opt.pieceSize
 			if int64(start+opt.pieceSize) > opt.contentLength {
-				size = int32(opt.contentLength) - start
+				size = uint32(opt.contentLength) - start
 			}
 			tasks = append(tasks,
 				&base.PieceInfo{
-					PieceNum:    request.StartNum + i,
+					PieceNum:    int32(request.StartNum + i),
 					RangeStart:  uint64(start),
 					RangeSize:   size,
 					PieceMd5:    "",
@@ -124,7 +122,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				delayCount++
 			}
 			return &scheduler.PeerPacket{
-				Code:          dfcodes.Success,
+				Code:          base.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,
@@ -153,7 +151,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
-	tempDir, _ := ioutil.TempDir("", "d7y-test-*")
+	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
 	storageManager, _ := storage.NewStorageManager(
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
@@ -170,7 +168,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -192,7 +190,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -201,7 +199,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).Times(
 		int(math.Ceil(float64(len(testBytes)) / float64(pieceSize)))).DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -247,7 +245,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 	assert.NotNil(p)
 	assert.True(p.PeerTaskDone)
 
-	outputBytes, err := ioutil.ReadFile(output)
+	outputBytes, err := os.ReadFile(output)
 	assert.Nil(err, "load output file")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -257,7 +255,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -275,7 +273,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 		})
 	defer storageManager.CleanUp()
@@ -283,7 +281,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	downloader := NewMockPieceDownloader(ctrl)
 	downloader.EXPECT().DownloadPiece(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, task *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-			rc := ioutil.NopCloser(
+			rc := io.NopCloser(
 				bytes.NewBuffer(
 					testBytes[task.piece.RangeStart : task.piece.RangeStart+uint64(task.piece.RangeSize)],
 				))
@@ -316,7 +314,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	})
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := io.ReadAll(r)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }
@@ -326,7 +324,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	testBytes, err := ioutil.ReadFile(test.File)
+	testBytes, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
 	var (
@@ -340,7 +338,9 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		taskID = "task-0"
 	)
 
-	source.Register("http", httpprotocol.NewHTTPSourceClient())
+	source.UnRegister("http")
+	assert.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+	defer source.UnRegister("http")
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		n, err := w.Write(testBytes)
@@ -354,7 +354,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		componentsOption{
 			taskID:             taskID,
 			contentLength:      int64(mockContentLength),
-			pieceSize:          int32(pieceSize),
+			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			peerPacketDelay:    []time.Duration{time.Second},
 		})
@@ -368,7 +368,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,
 			pieceDownloader:  NewMockPieceDownloader(ctrl),
-			computePieceSize: cdnutil.ComputePieceSize,
+			computePieceSize: util.ComputePieceSize,
 		},
 		storageManager:  storageManager,
 		schedulerClient: sched,
@@ -387,7 +387,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 	})
 	assert.Nil(err, "start stream peer task")
 
-	outputBytes, err := ioutil.ReadAll(r)
+	outputBytes, err := io.ReadAll(r)
 	assert.Nil(err, "load read data")
 	assert.Equal(testBytes, outputBytes, "output and desired output must match")
 }

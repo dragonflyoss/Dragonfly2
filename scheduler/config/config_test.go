@@ -17,7 +17,7 @@
 package config
 
 import (
-	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -43,9 +43,11 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			WorkerNum: 8,
 		},
 		Server: &ServerConfig{
-			IP:   "127.0.0.1",
-			Host: "foo",
-			Port: 8002,
+			IP:       "127.0.0.1",
+			Host:     "foo",
+			Port:     8002,
+			CacheDir: "foo",
+			LogDir:   "foo",
 		},
 		Manager: &ManagerConfig{
 			Addr:               "127.0.0.1:65003",
@@ -77,7 +79,7 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	}
 
 	schedulerConfigYAML := &Config{}
-	contentYAML, _ := ioutil.ReadFile("./testdata/scheduler.yaml")
+	contentYAML, _ := os.ReadFile("./testdata/scheduler.yaml")
 	var dataYAML map[string]interface{}
 	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
 		t.Fatal(err)

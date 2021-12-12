@@ -19,33 +19,27 @@ package cdn
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"runtime"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
+	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	"d7y.io/dragonfly/v2/cdn/supervisor/gc"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-)
-
-const (
-	gracefulStopTimeout = 10 * time.Second
 )
 
 type Server struct {
@@ -53,177 +47,168 @@ type Server struct {
 	config *config.Config
 
 	// GRPC server
-	grpcServer *grpc.Server
+	grpcServer *rpcserver.Server
 
 	// Metrics server
-	metricsServer *http.Server
+	metricsServer *metrics.Server
 
 	// Manager client
-	managerClient managerclient.Client
+	configServer managerClient.Client
+
+	// gc Server
+	gcServer *gc.Server
 }
 
-// New creates a brand new server instance.
+// New creates a brand-new server instance.
 func New(cfg *config.Config) (*Server, error) {
-	s := &Server{config: cfg}
-
 	if ok := storage.IsSupport(cfg.StorageMode); !ok {
 		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
 	}
+
+	// Initialize plugins
 	if err := plugins.Initialize(cfg.Plugins); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "init plugins")
+	}
+
+	// Initialize task manager
+	taskManager, err := task.NewManager(cfg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "create task manager")
 	}
 
 	// Initialize progress manager
-	progressMgr, err := progress.NewManager()
+	progressManager, err := progress.NewManager(taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create progress manager")
 	}
 
 	// Initialize storage manager
-	storageMgr, ok := storage.Get(cfg.StorageMode)
+	storageManager, ok := storage.Get(cfg.StorageMode)
 	if !ok {
 		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
 	}
+	storageManager.Initialize(taskManager)
 
 	// Initialize CDN manager
-	cdnMgr, err := cdn.NewManager(cfg, storageMgr, progressMgr)
+	cdnManager, err := cdn.NewManager(cfg, storageManager, progressManager, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
 
-	// Initialize task manager
-	taskMgr, err := task.NewManager(cfg, cdnMgr, progressMgr)
+	// Initialize CDN service
+	service, err := supervisor.NewCDNService(taskManager, cdnManager, progressManager)
 	if err != nil {
-		return nil, errors.Wrapf(err, "create task manager")
+		return nil, errors.Wrapf(err, "create cdn service")
 	}
-
-	// Initialize storage manager
-	storageMgr.Initialize(taskMgr)
-
 	// Initialize storage manager
 	var opts []grpc.ServerOption
-	if s.config.Options.Telemetry.Jaeger != "" {
+	if cfg.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(cfg, taskMgr, opts...)
+	grpcServer, err := rpcserver.New(cfg, service, opts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "create seedServer")
-	}
-	s.grpcServer = grpcServer
-
-	// Initialize prometheus
-	if cfg.Metrics != nil {
-		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
+		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
-	// Initialize manager client
-	if cfg.Manager.Addr != "" {
-		managerClient, err := managerclient.New(cfg.Manager.Addr)
+	// Initialize gc server
+	gcServer, err := gc.New()
+	if err != nil {
+		return nil, errors.Wrap(err, "create gcServer")
+	}
+
+	var metricsServer *metrics.Server
+	if cfg.Metrics != nil && cfg.Metrics.Addr != "" {
+		// Initialize metrics server
+		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
 		if err != nil {
-			return nil, err
-		}
-		s.managerClient = managerClient
-
-		// Register to manager
-		if _, err := s.managerClient.UpdateCDN(&manager.UpdateCDNRequest{
-			SourceType:   manager.SourceType_CDN_SOURCE,
-			HostName:     hostutils.FQDNHostname,
-			Ip:           s.config.AdvertiseIP,
-			Port:         int32(s.config.ListenPort),
-			DownloadPort: int32(s.config.DownloadPort),
-			Idc:          s.config.Host.IDC,
-			Location:     s.config.Host.Location,
-			CdnClusterId: uint64(s.config.Manager.CDNClusterID),
-		}); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "create metricsServer")
 		}
 	}
 
-	return s, nil
+	// Initialize configServer
+	var configServer managerClient.Client
+	if cfg.Manager.Addr != "" {
+		configServer, err = managerClient.New(cfg.Manager.Addr)
+		if err != nil {
+			return nil, errors.Wrap(err, "create configServer")
+		}
+	}
+	return &Server{
+		config:        cfg,
+		grpcServer:    grpcServer,
+		metricsServer: metricsServer,
+		configServer:  configServer,
+		gcServer:      gcServer,
+	}, nil
 }
 
 func (s *Server) Serve() error {
-	// Start GC
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	if err := gc.StartGC(ctx); err != nil {
-		return err
-	}
+	go func() {
+		// Start GC
+		if err := s.gcServer.Serve(); err != nil {
+			logger.Fatalf("start gc task failed: %v", err)
+		}
+	}()
 
-	// Started metrics server
-	if s.metricsServer != nil {
-		go func() {
-			logger.Infof("started metrics server at %s", s.metricsServer.Addr)
-			if err := s.metricsServer.ListenAndServe(); err != nil {
-				if err == http.ErrServerClosed {
-					return
-				}
-				logger.Fatalf("metrics server closed unexpect: %+v", err)
+	go func() {
+		if s.metricsServer != nil {
+			// Start metrics server
+			if err := s.metricsServer.ListenAndServe(s.metricsServer.Handler()); err != nil {
+				logger.Fatalf("start metrics server failed: %v", err)
 			}
-		}()
-	}
+		}
+	}()
 
-	// Serve Keepalive
-	if s.managerClient != nil {
-		go func() {
-			logger.Info("start keepalive to manager")
-			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
+	go func() {
+		if s.configServer != nil {
+			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
+				SourceType:   manager.SourceType_CDN_SOURCE,
+				HostName:     hostutils.FQDNHostname,
+				Ip:           s.config.AdvertiseIP,
+				Port:         int32(s.config.ListenPort),
+				DownloadPort: int32(s.config.DownloadPort),
+				Idc:          s.config.Host.IDC,
+				Location:     s.config.Host.Location,
+				CdnClusterId: uint64(s.config.Manager.CDNClusterID),
+			})
+			if err != nil {
+				logger.Fatalf("update cdn instance failed: %v", err)
+			}
+			// Serve Keepalive
+			logger.Infof("====starting keepalive cdn instance %#v to manager %s====", CDNInstance)
+			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,
 				ClusterId:  uint64(s.config.Manager.CDNClusterID),
 			})
-		}()
-	}
-
-	// Generate GRPC listener
-	var listen = iputils.IPv4
-	if s.config.AdvertiseIP != "" {
-		listen = s.config.AdvertiseIP
-	}
-	lis, _, err := rpc.ListenWithPortRange(listen, s.config.ListenPort, s.config.ListenPort)
-	if err != nil {
-		logger.Fatalf("net listener failed to start: %+v", err)
-	}
-	defer lis.Close()
-
-	// Started GRPC server
-	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
-	if err := s.grpcServer.Serve(lis); err != nil {
-		logger.Errorf("stoped grpc server: %+v", err)
-		return err
-	}
-
-	return nil
-}
-
-func (s *Server) Stop() {
-	// Stop manager client
-	if s.managerClient != nil {
-		s.managerClient.Close()
-		logger.Info("manager client closed")
-	}
-
-	// Stop metrics server
-	if s.metricsServer != nil {
-		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metrics server failed to stop: %+v", err)
 		}
-		logger.Info("metrics server closed under request")
-	}
-
-	// Stop GRPC server
-	stopped := make(chan struct{})
-	go func() {
-		s.grpcServer.GracefulStop()
-		logger.Info("grpc server closed under request")
-		close(stopped)
 	}()
 
-	t := time.NewTimer(gracefulStopTimeout)
-	select {
-	case <-t.C:
-		s.grpcServer.Stop()
-	case <-stopped:
-		t.Stop()
+	// Start grpc server
+	return s.grpcServer.ListenAndServe()
+}
+
+func (s *Server) Stop() error {
+	g, ctx := errgroup.WithContext(context.Background())
+
+	g.Go(func() error {
+		return s.gcServer.Shutdown()
+	})
+
+	if s.configServer != nil {
+		// Stop manager client
+		g.Go(func() error {
+			return s.configServer.Close()
+		})
 	}
+	g.Go(func() error {
+		// Stop metrics server
+		return s.metricsServer.Shutdown(ctx)
+	})
+
+	g.Go(func() error {
+		// Stop grpc server
+		return s.grpcServer.Shutdown()
+	})
+	return g.Wait()
 }

@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -46,7 +47,14 @@ from remote source repeatedly.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := logcore.InitCdnSystem(cfg.Console); err != nil {
+		// Initialize dfpath
+		d, err := initDfpath(cfg.BaseProperties)
+		if err != nil {
+			return err
+		}
+
+		// Initialize logger
+		if err := logcore.InitCdnSystem(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init cdn system logger")
 		}
 
@@ -70,6 +78,15 @@ func init() {
 	dependency.InitCobra(rootCmd, true, cfg)
 }
 
+func initDfpath(cfg *config.BaseProperties) (dfpath.Dfpath, error) {
+	options := []dfpath.Option{}
+	if cfg.LogDir != "" {
+		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	return dfpath.New(options...)
+}
+
 func runCdnSystem() error {
 	logger.Infof("Version:\n%s", version.Version())
 	// cdn system config values
@@ -85,6 +102,6 @@ func runCdnSystem() error {
 		return err
 	}
 
-	dependency.SetupQuitSignalHandler(func() { svr.Stop() })
+	dependency.SetupQuitSignalHandler(func() { logger.Fatalf("stop server failed: %v", svr.Stop()) })
 	return svr.Serve()
 }

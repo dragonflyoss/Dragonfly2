@@ -22,7 +22,6 @@ import (
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -30,8 +29,8 @@ import (
 )
 
 var (
-	// Dynconfig configure the cache path
-	cachePath = filepath.Join(dfpath.DefaultCacheDir, "daemon_dynconfig")
+	// Daemon cache file name
+	cacheFileName = "daemon_dynconfig"
 
 	// Watch dynconfig interval
 	watchInterval = 10 * time.Second
@@ -73,12 +72,14 @@ type dynconfig struct {
 	*internaldynconfig.Dynconfig
 	observers map[Observer]struct{}
 	done      chan bool
+	cachePath string
 }
 
-func NewDynconfig(managerClient internaldynconfig.ManagerClient, expire time.Duration) (Dynconfig, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
+	cachePath := filepath.Join(cacheDir, cacheFileName)
 	client, err := internaldynconfig.New(
 		internaldynconfig.ManagerSourceType,
-		internaldynconfig.WithManagerClient(managerClient),
+		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),
 		internaldynconfig.WithExpireTime(expire),
 		internaldynconfig.WithCachePath(cachePath),
 	)
@@ -89,6 +90,7 @@ func NewDynconfig(managerClient internaldynconfig.ManagerClient, expire time.Dur
 	return &dynconfig{
 		observers: map[Observer]struct{}{},
 		done:      make(chan bool),
+		cachePath: cachePath,
 		Dynconfig: client,
 	}, nil
 }
@@ -159,7 +161,7 @@ func (d *dynconfig) watch() {
 
 func (d *dynconfig) Stop() error {
 	close(d.done)
-	if err := os.Remove(cachePath); err != nil {
+	if err := os.Remove(d.cachePath); err != nil {
 		return err
 	}
 
@@ -172,7 +174,7 @@ type managerClient struct {
 }
 
 // New the manager client used by dynconfig
-func NewManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
+func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
 	return &managerClient{
 		Client:     client,
 		hostOption: hostOption,
@@ -183,7 +185,7 @@ func (mc *managerClient) Get() (interface{}, error) {
 	schedulers, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_CLIENT_SOURCE,
 		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.ListenIP,
+		Ip:         mc.hostOption.AdvertiseIP,
 		HostInfo: map[string]string{
 			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
 			searcher.ConditionIDC:            mc.hostOption.IDC,

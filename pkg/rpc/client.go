@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 const (
@@ -181,5 +181,4 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 			resolver.UpdateAddrs(addrs)
 		}
 	}
-
 }

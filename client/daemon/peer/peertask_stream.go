@@ -30,7 +30,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -169,7 +168,7 @@ func newStreamPeerTask(ctx context.Context,
 			requestedPieces:     NewBitmap(),
 			failedPieceCh:       make(chan int32, config.DefaultPieceChanSize),
 			failedReason:        failedReasonNotSet,
-			failedCode:          dfcodes.UnknownError,
+			failedCode:          base.Code_UnknownError,
 			contentLength:       atomic.NewInt64(-1),
 			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
@@ -177,7 +176,7 @@ func newStreamPeerTask(ctx context.Context,
 			schedulerClient:     schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
-			usedTraffic:         atomic.NewInt64(0),
+			usedTraffic:         atomic.NewUint64(0),
 			SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "streamPeerTask"),
 		},
 	}
@@ -356,11 +355,11 @@ func (s *streamPeerTask) SetTotalPieces(i int32) {
 
 func (s *streamPeerTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
 	pr, pc, err := s.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
-		PeerTaskMetaData: storage.PeerTaskMetaData{
+		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: s.peerID,
 			TaskID: s.taskID,
 		},
-		PieceMetaData: storage.PieceMetaData{
+		PieceMetadata: storage.PieceMetadata{
 			Num: pieceNum,
 		},
 	})
@@ -380,15 +379,7 @@ func (s *streamPeerTask) backSource() {
 	defer backSourceSpan.End()
 	s.contentLength.Store(-1)
 	_ = s.callback.Init(s)
-	reportPieceCtx, reportPieceSpan := tracer.Start(backSourceCtx, config.SpanReportPieceResult)
-	defer reportPieceSpan.End()
-	if peerPacketStream, err := s.schedulerClient.ReportPieceResult(reportPieceCtx, s.taskID, s.request); err != nil {
-		logger.Errorf("step 2: peer %s report piece failed: err", s.request.PeerId, err)
-	} else {
-		s.peerPacketStream = peerPacketStream
-	}
-	logger.Infof("step 2: start report peer %s back source piece result", s.request.PeerId)
-	err := s.pieceManager.DownloadSource(s.ctx, s, s.request)
+	err := s.pieceManager.DownloadSource(backSourceCtx, s, s.request)
 	if err != nil {
 		s.Errorf("download from source error: %s", err)
 		s.failedReason = err.Error()

@@ -3460,13 +3460,16 @@ delete role by uri config
 |名称|类型|
 |---|---|
 |**bio**  <br>*可选*|string|
+|**cdn_clusters**  <br>*可选*|< [model.CDNCluster](#model-cdncluster) > array|
 |**created_at**  <br>*可选*|string|
 |**download_rate_limit**  <br>*可选*|integer|
 |**id**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
+|**scheduler_clusters**  <br>*可选*|< [model.SchedulerCluster](#model-schedulercluster) > array|
 |**state**  <br>*可选*|string|
 |**updated_at**  <br>*可选*|string|
 |**url**  <br>*可选*|string|
+|**user**  <br>*可选*|[model.User](#model-user)|
 |**user_id**  <br>*可选*|integer|
 
 
@@ -3839,7 +3842,7 @@ delete role by uri config
 |**finishTime**  <br>*可选*|string|
 |**id**  <br>*可选*|string|
 |**startTime**  <br>*可选*|string|
-|**state**  <br>*可选*|string|
+|**status**  <br>*可选*|string|
 
 
 <a name="types-resetpasswordrequest"></a>
@@ -3866,7 +3869,12 @@ delete role by uri config
 
 <a name="types-schedulerclusterscopes"></a>
 ### types.SchedulerClusterScopes
-*类型* : object
+
+|名称|类型|
+|---|---|
+|**idc**  <br>*可选*|string|
+|**location**  <br>*可选*|string|
+|**net_topology**  <br>*可选*|string|
 
 
 <a name="types-signuprequest"></a>

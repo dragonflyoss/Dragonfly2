@@ -17,6 +17,9 @@
 package searcher
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -72,24 +75,30 @@ type Scopes struct {
 }
 
 type Searcher interface {
-	FindSchedulerCluster([]model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, bool)
+	FindSchedulerCluster(context.Context, []model.SchedulerCluster, *manager.ListSchedulersRequest) (model.SchedulerCluster, error)
 }
 
 type searcher struct{}
 
-func New() Searcher {
-	s, err := LoadPlugin()
+func New(pluginDir string) Searcher {
+	s, err := LoadPlugin(pluginDir)
 	if err != nil {
+		logger.Info("use default searcher")
 		return &searcher{}
 	}
 
+	logger.Info("use searcher plugin")
 	return s
 }
 
-func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, bool) {
+func (s *searcher) FindSchedulerCluster(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) (model.SchedulerCluster, error) {
 	conditions := client.HostInfo
-	if len(schedulerClusters) <= 0 || len(conditions) <= 0 {
-		return model.SchedulerCluster{}, false
+	if len(conditions) <= 0 {
+		return model.SchedulerCluster{}, errors.New("empty conditions")
+	}
+
+	if len(schedulerClusters) <= 0 {
+		return model.SchedulerCluster{}, errors.New("empty scheduler clusters")
 	}
 
 	// If there are security domain conditions, match clusters of the same security domain.
@@ -98,7 +107,7 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	var clusters []model.SchedulerCluster
 	securityDomain := conditions[ConditionSecurityDomain]
 	if securityDomain == "" {
-		logger.Infof("client %s %s have empty security domain", client.HostName, client.Ip)
+		logger.Infof("dfdaemon %s %s have empty security domain", client.HostName, client.Ip)
 	}
 
 	for _, schedulerCluster := range schedulerClusters {
@@ -118,10 +127,10 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 	switch len(clusters) {
 	case 0:
 		// If the security domain does not match, there is no cluster available
-		return model.SchedulerCluster{}, false
+		return model.SchedulerCluster{}, fmt.Errorf("security domain %s does not match", securityDomain)
 	case 1:
 		// If only one cluster matches the security domain, return the cluster directly
-		return clusters[0], true
+		return clusters[0], nil
 	default:
 		// If there are multiple clusters matching the security domain,
 		// select the schuelder cluster with a higher score
@@ -130,22 +139,23 @@ func (s *searcher) FindSchedulerCluster(schedulerClusters []model.SchedulerClust
 		for _, cluster := range clusters {
 			var scopes Scopes
 			if err := mapstructure.Decode(cluster.Scopes, &scopes); err != nil {
+				logger.Infof("cluster %s decode scopes failed: %v", cluster.Name, err)
 				// Scopes parse failed to skip this evaluation
 				continue
 			}
 
-			score := evaluate(conditions, scopes)
+			score := Evaluate(conditions, scopes)
 			if score > maxScore {
 				maxScore = score
 				result = cluster
 			}
 		}
-		return result, true
+		return result, nil
 	}
 }
 
 // Evaluate the degree of matching between scheduler cluster and dfdaemon
-func evaluate(conditions map[string]string, scopes Scopes) float64 {
+func Evaluate(conditions map[string]string, scopes Scopes) float64 {
 	return idcAffinityWeight*calculateIDCAffinityScore(conditions[ConditionIDC], scopes.IDC) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionLocation], scopes.Location) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(conditions[ConditionNetTopology], scopes.NetTopology)
@@ -153,8 +163,22 @@ func evaluate(conditions map[string]string, scopes Scopes) float64 {
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better
 func calculateIDCAffinityScore(dst, src string) float64 {
-	if dst != "" && src != "" && strings.Compare(dst, src) == 0 {
+	if dst == "" || src == "" {
+		return minScore
+	}
+
+	if strings.Compare(dst, src) == 0 {
 		return maxScore
+	}
+
+	// Dst has only one element, src has multiple elements separated by "|".
+	// When dst element matches one of the multiple elements of src,
+	// it gets the max score of idc.
+	srcElements := strings.Split(src, "|")
+	for _, srcElement := range srcElements {
+		if strings.Compare(dst, srcElement) == 0 {
+			return maxScore
+		}
 	}
 
 	return minScore

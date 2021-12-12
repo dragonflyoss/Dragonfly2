@@ -64,7 +64,7 @@ func NewUploadManager(s storage.Manager, opts ...func(*uploadManager)) (Manager,
 	return u, nil
 }
 
-// WithLimiter sets upload rate limiter, the burst size must big than piece size
+// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
 func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	return func(manager *uploadManager) {
 		manager.Limiter = limiter
@@ -111,11 +111,11 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
 	reader, closer, err := um.StorageManager.ReadPiece(r.Context(),
 		&storage.ReadPieceRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				TaskID: task,
 				PeerID: peer,
 			},
-			PieceMetaData: storage.PieceMetaData{
+			PieceMetadata: storage.PieceMetadata{
 				Num:   -1,
 				Range: rg[0],
 			},

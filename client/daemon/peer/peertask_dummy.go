@@ -21,9 +21,9 @@ import (
 
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -58,7 +58,7 @@ type dummyPeerPacketStream struct {
 }
 
 func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
-	return nil, dferrors.New(dfcodes.SchedNeedBackSource, "")
+	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 }
 
 func (d *dummyPeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {

@@ -7,6 +7,7 @@ set -o pipefail
 KIND_CONFIG_PATH="test/testdata/kind/config.yaml"
 CHARTS_CONFIG_PATH="test/testdata/charts/config.yaml"
 FILE_SERVER_CONFIG_PATH="test/testdata/k8s/file-server.yaml"
+PROXY_SERVER_CONFIG_PATH="test/testdata/k8s/proxy.yaml"
 CHARTS_PATH="deploy/helm-charts/charts/dragonfly"
 NAMESPACE="dragonfly-system"
 E2E_NAMESPACE="dragonfly-e2e"
@@ -39,15 +40,32 @@ install-helm() {
 install-file-server() {
   kubectl apply -f ${FILE_SERVER_CONFIG_PATH}
   kubectl wait --namespace ${E2E_NAMESPACE} \
-  --for=condition=ready pod ${FILE_SERVER_NAME} \
-  --timeout=10m
+    --for=condition=ready pod ${FILE_SERVER_NAME} \
+    --timeout=10m
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod file-server-no-content-length-0 \
+    --timeout=10m
+}
+
+install-proxy-server() {
+  kubectl apply -f ${PROXY_SERVER_CONFIG_PATH}
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod proxy-0 \
+    --timeout=10m
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod proxy-1 \
+    --timeout=10m
+  kubectl wait --namespace ${E2E_NAMESPACE} \
+    --for=condition=ready pod proxy-2 \
+    --timeout=10m
 }
 
 install-ginkgo() {
   if which ginkgo >/dev/null ; then
       print_step_info "ginkgo has been installed"
   else
-      go get github.com/onsi/ginkgo/ginkgo
+      go mod download github.com/go-task/slim-sprig
+      go install github.com/onsi/ginkgo/ginkgo
   fi
 }
 
@@ -71,7 +89,7 @@ main() {
   install-kind
 
   print_step_info "start building docker images"
-  make docker-build
+  make docker-build docker-build-testing-tools
 
   print_step_info "start loading image for kind"
   make kind-load
@@ -81,6 +99,9 @@ main() {
 
   print_step_info "start install file server"
   install-file-server
+
+  print_step_info "start install proxy server"
+  install-proxy-server
 
   print_step_info "start install ginkgo"
   install-ginkgo

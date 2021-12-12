@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"sync"
 	"time"
@@ -71,8 +70,8 @@ type Task interface {
 	// SetContentLength will be called after download completed, when download from source without content length
 	SetContentLength(int64) error
 	SetCallback(TaskCallback)
-	AddTraffic(int64)
-	GetTraffic() int64
+	AddTraffic(uint64)
+	GetTraffic() uint64
 	SetPieceMd5Sign(string)
 	GetPieceMd5Sign() string
 }
@@ -228,7 +227,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 		ptm.storeTinyPeerTask(ctx, tiny)
 		logger.Infof("copied tasks data %d bytes to buffer", len(tiny.Content))
 		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-		return ioutil.NopCloser(bytes.NewBuffer(tiny.Content)), map[string]string{
+		return io.NopCloser(bytes.NewBuffer(tiny.Content)), map[string]string{
 			headers.ContentLength: fmt.Sprintf("%d", len(tiny.Content)),
 		}, nil
 	}
@@ -281,11 +280,11 @@ func (ptm *peerTaskManager) storeTinyPeerTask(ctx context.Context, tiny *TinyDat
 	}
 	n, err := ptm.storageManager.WritePiece(ctx,
 		&storage.WritePieceRequest{
-			PeerTaskMetaData: storage.PeerTaskMetaData{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: tiny.PeerID,
 				TaskID: tiny.TaskID,
 			},
-			PieceMetaData: storage.PieceMetaData{
+			PieceMetadata: storage.PieceMetadata{
 				Num:    0,
 				Md5:    "",
 				Offset: 0,

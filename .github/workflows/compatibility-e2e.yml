@@ -2,21 +2,22 @@ name: Compatibility E2E Test
 
 on:
   push:
-    branches: [main, release-*]
+    branches: [ main, release-* ]
     paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
   pull_request:
-    branches: [main, release-*]
+    branches: [ main, release-* ]
     paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
 
 env:
-  GO_VERSION: 1.15
+  GO_VERSION: 1.17
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
-  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.1-beta.5
+  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.1-rc.10
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
+  DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
   compatibility_e2e_tests:
@@ -38,9 +39,10 @@ jobs:
 
       - name: Get dependencies
         run: |
-          go mod vendor
-          go get github.com/onsi/ginkgo/ginkgo
+          go mod download github.com/go-task/slim-sprig
+          go install github.com/onsi/ginkgo/ginkgo
           mkdir -p /tmp/artifact
+          go mod vendor
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
@@ -50,7 +52,7 @@ jobs:
 
       - name: Build images
         run: |
-          make docker-build
+          make docker-build docker-build-testing-tools
           docker pull dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
 
       - name: Prepare kind environment
@@ -62,7 +64,12 @@ jobs:
         run: |
           helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.module }}.tag=${{ env.DRAGONFLY_STABLE_IMAGE_TAG }} --set ${{ matrix.module }}.image=dragonflyoss/${{ matrix.module }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
+          kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po file-server-no-content-length-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-1 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
+          kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run Compatibility E2E test
         env:

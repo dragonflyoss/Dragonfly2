@@ -112,6 +112,12 @@ func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"hostname", hostname, "ip", ip},
+	}
+}
+
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }

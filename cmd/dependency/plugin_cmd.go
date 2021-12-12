@@ -19,7 +19,6 @@ package dependency
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -41,14 +40,20 @@ var PluginCmd = &cobra.Command{
 }
 
 func ListAvailablePlugins() {
-	fmt.Fprintf(os.Stderr, "search plugin in %s\n", dfpath.PluginsDir)
-	files, err := ioutil.ReadDir(dfpath.PluginsDir)
+	d, err := dfpath.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to get plugin path: %q\n", err)
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "search plugin in %s\n", d.PluginDir())
+	files, err := os.ReadDir(d.PluginDir())
 	if os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "no plugin found\n")
 		return
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "read plugin dir %s error: %s\n", dfpath.PluginsDir, err)
+		fmt.Fprintf(os.Stderr, "read plugin dir %s error: %s\n", d.PluginDir(), err)
 		return
 	}
 	for _, file := range files {
@@ -66,7 +71,7 @@ func ListAvailablePlugins() {
 		typ, name := subs[1], subs[2]
 		switch typ {
 		case string(dfplugin.PluginTypeResource), string(dfplugin.PluginTypeScheduler), string(dfplugin.PluginTypeManager):
-			_, data, err := dfplugin.Load(dfplugin.PluginType(typ), name, map[string]string{})
+			_, data, err := dfplugin.Load(d.PluginDir(), dfplugin.PluginType(typ), name, map[string]string{})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "not valid plugin binary format %s: %q\n", fileName, err)
 				continue

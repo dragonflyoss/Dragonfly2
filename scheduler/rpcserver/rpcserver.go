@@ -25,15 +25,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dfcodes"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
@@ -64,20 +61,14 @@ func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTa
 	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
 	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 	defer span.End()
-	logger.Debugf("register peer task, req: %+v", request)
+	logger.Debugf("register peer task, req: %#v", request)
 	resp = new(scheduler.RegisterResult)
-	if verifyErr := validateParams(request); verifyErr != nil {
-		err = dferrors.Newf(dfcodes.BadRequest, "bad request param: %v", verifyErr)
-		logger.Errorf("register request: %v", err)
-		span.RecordError(err)
-		return
-	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
 	if task.IsFail() {
-		err = dferrors.New(dfcodes.SchedTaskStatusError, "task status is fail")
+		err = dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
 		logger.Errorf("task %s status is fail", task.ID)
 		span.RecordError(err)
 		return
@@ -133,7 +124,7 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		if err == io.EOF {
 			return nil
 		}
-		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
+		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
 		span.RecordError(err)
 		return err
 	}
@@ -141,20 +132,20 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 
 	peer, ok := s.service.GetPeer(pieceResult.SrcPid)
 	if !ok {
-		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
 		span.RecordError(err)
 		return err
 	}
 
 	if peer.Task.IsFail() {
-		err = dferrors.Newf(dfcodes.SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
+		err = dferrors.Newf(base.Code_SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
 		span.RecordError(err)
 		return err
 	}
 
 	conn, ok := peer.BindNewConn(stream)
 	if !ok {
-		err = dferrors.Newf(dfcodes.SchedPeerPieceResultReportFail, "peer can not bind conn")
+		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "peer can not bind conn")
 		span.RecordError(err)
 		return err
 	}
@@ -194,7 +185,7 @@ func (s *server) ReportPeerResult(ctx context.Context, result *scheduler.PeerRes
 	peer, ok := s.service.GetPeer(result.PeerId)
 	if !ok {
 		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
-		err = dferrors.Newf(dfcodes.SchedPeerNotFound, "peer %s not found", result.PeerId)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", result.PeerId)
 		span.RecordError(err)
 		return err
 	}
@@ -214,18 +205,6 @@ func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (e
 		return
 	}
 	return s.service.HandleLeaveTask(ctx, peer)
-}
-
-// validateParams validates the params of scheduler.PeerTaskRequest.
-func validateParams(req *scheduler.PeerTaskRequest) error {
-	if !urlutils.IsValidURL(req.Url) {
-		return fmt.Errorf("invalid url: %s", req.Url)
-	}
-
-	if stringutils.IsEmpty(req.PeerId) {
-		return fmt.Errorf("empty peerID")
-	}
-	return nil
 }
 
 func getTaskSizeScope(task *supervisor.Task) base.SizeScope {

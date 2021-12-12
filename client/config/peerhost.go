@@ -22,9 +22,9 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,7 +35,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/basic/dfnet"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -50,8 +50,10 @@ type DaemonOption struct {
 	AliveTime  clientutil.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval clientutil.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
 
-	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
+	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
+	LogDir      string `mapstructure:"logDir" yaml:"logDir"`
+	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
 	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
@@ -68,7 +70,7 @@ func NewDaemonConfig() *DaemonOption {
 }
 
 func (p *DaemonOption) Load(path string) error {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("unable to load peer host configuration from %q [%v]", path, err)
 	}
@@ -114,7 +116,7 @@ func (p *DaemonOption) Validate() error {
 	}
 
 	if p.Scheduler.Manager.Enable {
-		if p.Scheduler.Manager.Addr == "" {
+		if len(p.Scheduler.NetAddrs) == 0 {
 			return errors.New("manager addr is not specified")
 		}
 
@@ -140,8 +142,8 @@ type SchedulerOption struct {
 type ManagerOption struct {
 	// Enable get configuration from manager
 	Enable bool `mapstructure:"enable" yaml:"enable"`
-	// Addr is manager addresse
-	Addr string `mapstructure:"addr" yaml:"addr"`
+	// NetAddrs is manager addresses.
+	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// RefreshInterval is the refresh interval
 	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
 }
@@ -170,6 +172,17 @@ type DownloadOption struct {
 	DownloadGRPC         ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
 	PeerGRPC             ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
+	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
+}
+
+type TransportOption struct {
+	DialTimeout           time.Duration `mapstructure:"dialTimeout" yaml:"dialTimeout"`
+	KeepAlive             time.Duration `mapstructure:"keepAlive" yaml:"keepAlive"`
+	MaxIdleConns          int           `mapstructure:"maxIdleConns" yaml:"maxIdleConns"`
+	IdleConnTimeout       time.Duration `mapstructure:"idleConnTimeout" yaml:"idleConnTimeout"`
+	ResponseHeaderTimeout time.Duration `mapstructure:"responseHeaderTimeout" yaml:"responseHeaderTimeout"`
+	TLSHandshakeTimeout   time.Duration `mapstructure:"tlsHandshakeTimeout" yaml:"tlsHandshakeTimeout"`
+	ExpectContinueTimeout time.Duration `mapstructure:"expectContinueTimeout" yaml:"expectContinueTimeout"`
 }
 
 type ProxyOption struct {
@@ -193,7 +206,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 
 	switch value := v.(type) {
 	case string:
-		file, err := ioutil.ReadFile(value)
+		file, err := os.ReadFile(value)
 		if err != nil {
 			return err
 		}
@@ -219,7 +232,7 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 			return err
 		}
 
-		file, err := ioutil.ReadFile(path)
+		file, err := os.ReadFile(path)
 		if err != nil {
 			return err
 		}
@@ -432,7 +445,7 @@ func (f *FileString) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	file, err := ioutil.ReadFile(s)
+	file, err := os.ReadFile(s)
 	if err != nil {
 		return err
 	}
@@ -452,7 +465,7 @@ func (f *FileString) UnmarshalYAML(node *yaml.Node) error {
 		return errors.New("invalid filestring")
 	}
 
-	file, err := ioutil.ReadFile(s)
+	file, err := os.ReadFile(s)
 	if err != nil {
 		return err
 	}
@@ -615,7 +628,7 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 
 	roots := x509.NewCertPool()
 	for _, f := range files {
-		cert, err := ioutil.ReadFile(f)
+		cert, err := os.ReadFile(f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "read cert file %s", f)
 		}
