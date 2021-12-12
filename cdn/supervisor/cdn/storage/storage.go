@@ -34,7 +34,6 @@ import (
 var (
 	// managerMap is a map from name to storageManager builder.
 	managerMap = make(map[string]Builder)
-	configMap  = make(map[string]map[string]*DriverGCConfig)
 )
 
 var (
@@ -166,33 +165,29 @@ type Builder interface {
 	// Name returns the name of balancers built by this builder.
 	// It will be used to pick balancers (for example in service config).
 	Name() string
+	// Validate driver configs
+	Validate(map[string]*DriverConfig) []error
+	// DefaultDriverConfigs default driver config
+	DefaultDriverConfigs() map[string]*DriverConfig
 }
 
 // Register defines an interface to register a storage manager builder.
 // All storage managers should call this function to register its builder to the storage manager factory.
-func Register(builder Builder, driverGCConfigs map[string]*DriverGCConfig) {
+func Register(builder Builder) {
 	managerMap[strings.ToLower(builder.Name())] = builder
-	configMap[strings.ToLower(builder.Name())] = driverGCConfigs
 }
 
-// GetBuilder return a storage manager from manager with specified name.
-func GetBuilder(name string) Builder {
+// Get return a storage manager from manager with specified name.
+func Get(name string) Builder {
 	if b, ok := managerMap[strings.ToLower(name)]; ok {
 		return b
 	}
 	return nil
 }
 
-func GetConfig(name string) map[string]*DriverGCConfig {
-	if c, ok := configMap[strings.ToLower(name)]; ok {
-		return c
-	}
-	return nil
-}
-
 func NewManager(config Config, taskManager task.Manager) (Manager, error) {
 	// Initialize storage manager
-	storageManagerBuilder := GetBuilder(config.StorageMode)
+	storageManagerBuilder := Get(config.StorageMode)
 	if storageManagerBuilder == nil {
 		return nil, fmt.Errorf("can not find storage manager mode %s", config.StorageMode)
 	}

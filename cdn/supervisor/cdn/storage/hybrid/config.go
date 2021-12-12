@@ -17,29 +17,47 @@
 package hybrid
 
 import (
+	"fmt"
 	"time"
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-func getDefaultDriverGCConfigs(diskDriver storedriver.Driver, memoryDriver storedriver.Driver) (map[string]*storage.DriverGCConfig, error) {
-	diskGCConfig, err := getDiskGCConfig(diskDriver)
+func getDefaultDriverGCConfigs() map[string]*storage.DriverConfig {
+	diskDriver, err := local.NewStorageDriver(&storedriver.Config{BaseDir: storage.DefaultDiskBaseDir})
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	memoryGCConfig, err := getMemoryGCConfig(memoryDriver)
+	memoryDriver, err := local.NewStorageDriver(&storedriver.Config{BaseDir: storage.DefaultMemoryBaseDir})
 	if err != nil {
-		return nil, err
+		return nil
 	}
-	return map[string]*storage.DriverGCConfig{
-		"disk":   diskGCConfig,
-		"memory": memoryGCConfig,
-	}, nil
+	diskDriverConfig, err := getDiskDriverConfig(diskDriver)
+	if err != nil {
+		return nil
+	}
+	memoryDriverConfig, err := getMemoryDriverConfig(memoryDriver)
+	if err != nil {
+		return nil
+	}
+	return map[string]*storage.DriverConfig{
+		local.DiskDriverName:   diskDriverConfig,
+		local.MemoryDriverName: memoryDriverConfig,
+	}
 }
 
-func getDiskGCConfig(diskDriver storedriver.Driver) (*storage.DriverGCConfig, error) {
+func validateConfig(driverConfigs map[string]*storage.DriverConfig) []error {
+	var errs []error
+	if len(driverConfigs) != 2 || driverConfigs[local.DiskDriverName] == nil || driverConfigs[local.MemoryDriverName] == nil {
+		errs = append(errs, fmt.Errorf("hybrid storage manager should have both disk and memory driver, but is: %v", driverConfigs))
+	}
+	return errs
+}
+
+func getDiskDriverConfig(diskDriver storedriver.Driver) (*storage.DriverConfig, error) {
 	totalSpace, err := diskDriver.GetTotalSpace()
 	if err != nil {
 		return nil, err
@@ -48,15 +66,18 @@ func getDiskGCConfig(diskDriver storedriver.Driver) (*storage.DriverGCConfig, er
 	if totalSpace > 0 && totalSpace/4 < yongGCThreshold {
 		yongGCThreshold = totalSpace / 4
 	}
-	return &storage.DriverGCConfig{
-		YoungGCThreshold:  yongGCThreshold,
-		FullGCThreshold:   25 * unit.GB,
-		IntervalThreshold: 2 * time.Hour,
-		CleanRatio:        1,
+	return &storage.DriverConfig{
+		BaseDir: diskDriver.GetBaseDir(),
+		DriverGCConfig: &storage.DriverGCConfig{
+			YoungGCThreshold:  yongGCThreshold,
+			FullGCThreshold:   25 * unit.GB,
+			IntervalThreshold: 2 * time.Hour,
+			CleanRatio:        1,
+		},
 	}, nil
 }
 
-func getMemoryGCConfig(memoryDriver storedriver.Driver) (*storage.DriverGCConfig, error) {
+func getMemoryDriverConfig(memoryDriver storedriver.Driver) (*storage.DriverConfig, error) {
 	// determine whether the shared cache can be used
 	diff := unit.Bytes(0)
 	totalSpace, err := memoryDriver.GetTotalSpace()
@@ -66,10 +87,13 @@ func getMemoryGCConfig(memoryDriver storedriver.Driver) (*storage.DriverGCConfig
 	if totalSpace < 72*unit.GB {
 		diff = 72*unit.GB - totalSpace
 	}
-	return &storage.DriverGCConfig{
-		YoungGCThreshold:  10*unit.GB + diff,
-		FullGCThreshold:   2*unit.GB + diff,
-		CleanRatio:        3,
-		IntervalThreshold: 2 * time.Hour,
+	return &storage.DriverConfig{
+		BaseDir: memoryDriver.GetBaseDir(),
+		DriverGCConfig: &storage.DriverGCConfig{
+			YoungGCThreshold:  10*unit.GB + diff,
+			FullGCThreshold:   2*unit.GB + diff,
+			CleanRatio:        3,
+			IntervalThreshold: 2 * time.Hour,
+		},
 	}, nil
 }

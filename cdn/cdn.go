@@ -27,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
-	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
@@ -61,9 +60,9 @@ type Server struct {
 func New(config *config.Config) (*Server, error) {
 
 	// Initialize plugins
-	if err := plugins.Initialize(config.Plugins); err != nil {
-		return nil, errors.Wrapf(err, "init plugins")
-	}
+	//if err := plugins.Initialize(config.Plugins); err != nil {
+	//	return nil, errors.Wrapf(err, "init plugins")
+	//}
 
 	// Initialize task manager
 	taskManager, err := task.NewManager(config.Task)

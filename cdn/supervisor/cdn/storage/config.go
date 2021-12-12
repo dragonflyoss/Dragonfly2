@@ -18,17 +18,19 @@ package storage
 
 import (
 	"fmt"
+	"path/filepath"
 	"runtime"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 type Config struct {
-	StorageMode     string                     `yaml:"storageMode"`
-	GCInitialDelay  time.Duration              `yaml:"gcInitialDelay"`
-	GCInterval      time.Duration              `yaml:"gcInterval"`
-	DriverGCConfigs map[string]*DriverGCConfig `yaml:"driverGCConfigs"`
+	StorageMode    string                   `yaml:"storageMode"`
+	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
+	GCInterval     time.Duration            `yaml:"gcInterval"`
+	DriverConfigs  map[string]*DriverConfig `yaml:"driverGCConfigs"`
 }
 
 func DefaultConfig() Config {
@@ -46,8 +48,11 @@ func (c Config) applyDefault() Config {
 	if c.GCInterval == 0 {
 		c.GCInterval = DefaultInterval
 	}
-	if len(c.DriverGCConfigs) == 0 {
-		c.DriverGCConfigs = GetConfig(c.StorageMode)
+	if len(c.DriverConfigs) == 0 {
+		builder := Get(c.StorageMode)
+		if builder != nil {
+			c.DriverConfigs = builder.DefaultDriverConfigs()
+		}
 	}
 	return c
 }
@@ -57,24 +62,30 @@ func (c Config) Validate() []error {
 	if ok := IsSupport(c.StorageMode); !ok {
 		errors = append(errors, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, c.StorageMode))
 	}
-	if _, ok := managerMap[c.StorageMode]; !ok {
-		var storageModes []string
-		for s := range managerMap {
-			storageModes = append(storageModes, s)
-		}
-		errors = append(errors, fmt.Errorf("storage StorageMode must in [%s]. but is: %s", storageModes, c.StorageMode))
-	}
 	if c.GCInitialDelay < 0 {
 		errors = append(errors, fmt.Errorf("storage GCInitialDelay %d can't be a negative number", c.GCInitialDelay))
 	}
 	if c.GCInterval <= 0 {
 		errors = append(errors, fmt.Errorf("storage GCMetaInterval must be greater than 0, but is: %d", c.GCInterval))
 	}
-	if len(c.DriverGCConfigs) == 0 {
+	if len(c.DriverConfigs) == 0 {
 		errors = append(errors, fmt.Errorf("storage DriverConfigs can not be empty"))
 	}
-	// validate gc
+	builder := Get(c.StorageMode)
+	if builder == nil {
+		var storageModes []string
+		for s := range managerMap {
+			storageModes = append(storageModes, s)
+		}
+		errors = append(errors, fmt.Errorf("storage StorageMode must in [%s]. but is: %s", storageModes, c.StorageMode))
+	}
+	errors = append(errors, builder.Validate(c.DriverConfigs)...)
 	return errors
+}
+
+type DriverConfig struct {
+	BaseDir        string          `yaml:"baseDir"`
+	DriverGCConfig *DriverGCConfig `yaml:"driverGCConfig"`
 }
 
 // DriverGCConfig driver gc config
@@ -96,4 +107,10 @@ const (
 
 	// DefaultInterval is the interval time to execute the GC storage.
 	DefaultInterval = 15 * time.Second
+)
+
+var (
+	DefaultDiskBaseDir = filepath.Join(basic.HomeDir, "ftp")
+
+	DefaultMemoryBaseDir = "/dev/shm/dragonfly"
 )

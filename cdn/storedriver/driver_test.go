@@ -102,9 +102,9 @@ func TestRegister(t *testing.T) {
 	var pluginName = "mock"
 	var baseDir = "/tmp/drivertest"
 	var driverBuilder = newDriver
-	err := Register(pluginName, driverBuilder)
+	err := RegisterPlugin(pluginName, driverBuilder)
 	assert.Nil(err)
-	driver, ok := Get(pluginName)
+	driver, ok := GetPlugin(pluginName)
 	assert.Nil(driver)
 	assert.Equal(false, ok)
 	// enable driver
@@ -120,7 +120,7 @@ func TestRegister(t *testing.T) {
 		},
 	})
 	assert.Nil(err)
-	driver, ok = Get("mock")
+	driver, ok = GetPlugin("mock")
 	assert.Equal(&mockDriver{
 		BaseDir: baseDir,
 	}, driver)

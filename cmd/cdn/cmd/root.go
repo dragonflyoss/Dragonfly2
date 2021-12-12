@@ -17,11 +17,11 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn"
 	"d7y.io/dragonfly/v2/cdn/config"
@@ -89,10 +89,13 @@ func initDfpath(logDir string) (dfpath.Dfpath, error) {
 
 func runCdnSystem() error {
 	logger.Infof("Version:\n%s", version.Version())
-	// cdn system config values
-	s, _ := yaml.Marshal(cfg)
 
-	logger.Infof("cdn system configuration:\n%s", string(s))
+	// validate config
+	if errs := cfg.Validate(); len(errs) != 0 {
+		return fmt.Errorf("failed to validate cdn config:\n%s", errs)
+	}
+	// cdn system config values
+	logger.Infof("cdn system configuration:\n%s", cfg)
 
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()

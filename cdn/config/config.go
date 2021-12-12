@@ -22,9 +22,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
-	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
-	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
@@ -43,15 +41,14 @@ func New() *Config {
 			Addr:         "",
 			CDNClusterID: 0,
 			KeepAlive: KeepAliveConfig{
-				Interval: 0,
+				Interval: 5 * time.Second,
 			},
 		},
 		Host: HostConfig{
 			Location: "",
 			IDC:      "",
 		},
-		LogDir:  "",
-		Plugins: NewDefaultPlugins(),
+		LogDir: "",
 	}
 }
 
@@ -68,8 +65,7 @@ type Config struct {
 	// Host configuration
 	Host HostConfig `yaml:"host" mapstructure:"host"`
 	// Log directory
-	LogDir  string                                             `yaml:"logDir" mapstructure:"logDir"`
-	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 }
 
 func (c *Config) String() string {
@@ -79,25 +75,14 @@ func (c *Config) String() string {
 	return ""
 }
 
-// NewDefaultPlugins creates plugin instants with default values.
-func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
-	return map[plugins.PluginType][]*plugins.PluginProperties{
-		plugins.StorageDriverPlugin: {
-			{
-				Name:   "disk",
-				Enable: true,
-				Config: &storedriver.Config{
-					BaseDir: DefaultDiskBaseDir,
-				},
-			}, {
-				Name:   "memory",
-				Enable: false,
-				Config: &storedriver.Config{
-					BaseDir: DefaultMemoryBaseDir,
-				},
-			},
-		},
-	}
+func (c *Config) Validate() []error {
+	var errs []error
+	errs = append(errs, c.Metrics.Validate()...)
+	errs = append(errs, c.Storage.Validate()...)
+	errs = append(errs, c.RPCServer.Validate()...)
+	errs = append(errs, c.Task.Validate()...)
+	errs = append(errs, c.CDN.Validate()...)
+	return errs
 }
 
 type ManagerConfig struct {
