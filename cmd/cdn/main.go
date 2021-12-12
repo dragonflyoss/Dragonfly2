@@ -17,7 +17,7 @@
 package main
 
 import (
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // Register disk storage manager
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   //nolint:gci    // Register disk storage manager
 	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // Register hybrid storage manager
 	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"           // Register http client
 	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"            // Register oss client
