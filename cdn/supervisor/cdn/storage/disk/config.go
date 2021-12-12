@@ -21,47 +21,32 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-type Config struct {
-	GCInitialDelay time.Duration    `yaml:"gcInitialDelay"`
-	GCInterval     time.Duration    `yaml:"gcInterval"`
-	GCConfig       storage.GCConfig `yaml:"gcConfig"`
+func getDefaultDriverGCConfigs(diskDriver storedriver.Driver) (map[string]*storage.DriverGCConfig, error) {
+	diskGCConfig, err := getDiskGCConfig(diskDriver)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]*storage.DriverGCConfig{
+		"disk": diskGCConfig,
+	}, nil
 }
 
-func applyDefaults(driver storedriver.Driver, storageConfig storage.Config) Config {
-	cfg := Config{
-		GCInitialDelay: 0 * time.Second,
-		GCInterval:     15 * time.Second,
-	}
-	if storageConfig.GCInitialDelay != 0 {
-		cfg.GCInitialDelay = storageConfig.GCInitialDelay
-	}
-	if storageConfig.GCInterval != 0 {
-		cfg.GCInterval = storageConfig.GCInterval
-	}
-	cfg.GCConfig = getDiskGCConfig(driver, storageConfig.DriverConfigs["disk"])
-	return cfg
-}
-
-func getDiskGCConfig(diskDriver storedriver.Driver, config *storage.DriverConfig) storage.GCConfig {
-	if config != nil && config.GCConfig != nil {
-		return *config.GCConfig
-	}
+func getDiskGCConfig(diskDriver storedriver.Driver) (*storage.DriverGCConfig, error) {
 	totalSpace, err := diskDriver.GetTotalSpace()
 	if err != nil {
-		logger.GcLogger.With("type", "hybrid").Errorf("failed to get total space of disk: %v", err)
+		return nil, err
 	}
 	yongGCThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGCThreshold {
 		yongGCThreshold = totalSpace / 4
 	}
-	return storage.GCConfig{
+	return &storage.DriverGCConfig{
 		YoungGCThreshold:  yongGCThreshold,
 		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
 		CleanRatio:        1,
-	}
+	}, nil
 }

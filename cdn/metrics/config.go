@@ -16,17 +16,47 @@
 
 package metrics
 
+import (
+	"fmt"
+	"net"
+)
+
+const DefaultNetwork = "tcp"
+
 type Config struct {
 	Net  string `yaml:"net" mapstructure:"net"`
 	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
-func (cfg Config) applyDefaults() Config {
-	if cfg.Net == "" {
-		cfg.Net = "tcp"
+func DefaultConfig() Config {
+	config := Config{}
+	return config.applyDefaults()
+}
+
+func (c Config) applyDefaults() Config {
+	if c.Net == "" {
+		c.Net = DefaultNetwork
 	}
-	if cfg.Addr == "" {
-		cfg.Addr = ":8080"
+	if c.Addr == "" {
+		c.Addr = ":8080"
 	}
-	return cfg
+	return c
+}
+
+func (c Config) Validate() []error {
+	var errors []error
+	if c.Net != "" && c.Net != DefaultNetwork && c.Net != "unix" {
+		errors = append(errors, fmt.Errorf("metrics net only support tcp and unix, but is: %s", c.Net))
+	}
+	if c.Net == DefaultNetwork {
+		if _, err := net.ResolveTCPAddr(c.Net, c.Addr); err != nil {
+			errors = append(errors, fmt.Errorf("metrics addr is configured incorrect: %v", err))
+		}
+	}
+	if c.Net == "unix" {
+		if _, err := net.ResolveUnixAddr(c.Net, c.Addr); err != nil {
+			errors = append(errors, fmt.Errorf("metrics addr is configured incorrect: %v", err))
+		}
+	}
+	return errors
 }

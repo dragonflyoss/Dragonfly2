@@ -21,67 +21,55 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-type Config struct {
-	GCInitialDelay time.Duration    `yaml:"gcInitialDelay"`
-	GCInterval     time.Duration    `yaml:"gcInterval"`
-	MemoryGCConfig storage.GCConfig `yaml:"memoryGCConfig"`
-	DiskGCConfig   storage.GCConfig `yaml:"diskGCConfig"`
+func getDefaultDriverGCConfigs(diskDriver storedriver.Driver, memoryDriver storedriver.Driver) (map[string]*storage.DriverGCConfig, error) {
+	diskGCConfig, err := getDiskGCConfig(diskDriver)
+	if err != nil {
+		return nil, err
+	}
+	memoryGCConfig, err := getMemoryGCConfig(memoryDriver)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]*storage.DriverGCConfig{
+		"disk":   diskGCConfig,
+		"memory": memoryGCConfig,
+	}, nil
 }
 
-func applyDefaults(diskDriver storedriver.Driver, memoryDriver storedriver.Driver, storageConfig storage.Config) Config {
-	cfg := Config{}
-	if storageConfig.GCInitialDelay == 0 {
-		cfg.GCInitialDelay = 0 * time.Second
-	}
-	if storageConfig.GCInterval == 0 {
-		cfg.GCInterval = 15 * time.Second
-	}
-	cfg.DiskGCConfig = getDiskGCConfig(diskDriver, storageConfig.DriverConfigs["disk"])
-	cfg.MemoryGCConfig = getMemoryGCConfig(memoryDriver, storageConfig.DriverConfigs["memory"])
-	return cfg
-}
-
-func getDiskGCConfig(diskDriver storedriver.Driver, config *storage.DriverConfig) storage.GCConfig {
-	if config != nil && config.GCConfig != nil {
-		return *config.GCConfig
-	}
+func getDiskGCConfig(diskDriver storedriver.Driver) (*storage.DriverGCConfig, error) {
 	totalSpace, err := diskDriver.GetTotalSpace()
 	if err != nil {
-		logger.GcLogger.With("type", "hybrid").Errorf("failed to get total space of disk: %v", err)
+		return nil, err
 	}
 	yongGCThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGCThreshold {
 		yongGCThreshold = totalSpace / 4
 	}
-	return storage.GCConfig{
+	return &storage.DriverGCConfig{
 		YoungGCThreshold:  yongGCThreshold,
 		FullGCThreshold:   25 * unit.GB,
 		IntervalThreshold: 2 * time.Hour,
 		CleanRatio:        1,
-	}
+	}, nil
 }
 
-func getMemoryGCConfig(memoryDriver storedriver.Driver, config *storage.DriverConfig) storage.GCConfig {
+func getMemoryGCConfig(memoryDriver storedriver.Driver) (*storage.DriverGCConfig, error) {
 	// determine whether the shared cache can be used
-	if config != nil && config.GCConfig != nil {
-		return *config.GCConfig
-	}
 	diff := unit.Bytes(0)
 	totalSpace, err := memoryDriver.GetTotalSpace()
 	if err != nil {
-		logger.GcLogger.With("type", "hybrid").Errorf("failed to get total space of memory: %v", err)
+		return nil, err
 	}
 	if totalSpace < 72*unit.GB {
 		diff = 72*unit.GB - totalSpace
 	}
-	return storage.GCConfig{
+	return &storage.DriverGCConfig{
 		YoungGCThreshold:  10*unit.GB + diff,
 		FullGCThreshold:   2*unit.GB + diff,
 		CleanRatio:        3,
 		IntervalThreshold: 2 * time.Hour,
-	}
+	}, nil
 }

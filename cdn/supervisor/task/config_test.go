@@ -26,7 +26,7 @@ func TestConfig_applyDefaults(t *testing.T) {
 	type fields struct {
 		GCInitialDelay     time.Duration
 		GCMetaInterval     time.Duration
-		TaskExpireTime     time.Duration
+		ExpireTime         time.Duration
 		FailAccessInterval time.Duration
 	}
 	tests := []struct {
@@ -40,33 +40,33 @@ func TestConfig_applyDefaults(t *testing.T) {
 			want: Config{
 				GCInitialDelay:     DefaultGCInitialDelay,
 				GCMetaInterval:     DefaultGCMetaInterval,
-				TaskExpireTime:     DefaultTaskExpireTime,
+				ExpireTime:         DefaultExpireTime,
 				FailAccessInterval: DefaultFailAccessInterval,
 			},
 		}, {
 			name: "unset GCInitialDelay",
 			fields: fields{
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 			want: Config{
 				GCInitialDelay:     DefaultGCInitialDelay,
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 		}, {
 			name: "unset GCMetaInterval",
 			fields: fields{
 				GCInitialDelay:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 			want: Config{
 				GCInitialDelay:     2 * time.Second,
 				GCMetaInterval:     DefaultGCMetaInterval,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 		}, {
@@ -79,7 +79,7 @@ func TestConfig_applyDefaults(t *testing.T) {
 			want: Config{
 				GCInitialDelay:     2 * time.Second,
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     DefaultTaskExpireTime,
+				ExpireTime:         DefaultExpireTime,
 				FailAccessInterval: 5 * time.Minute,
 			},
 		}, {
@@ -87,12 +87,12 @@ func TestConfig_applyDefaults(t *testing.T) {
 			fields: fields{
 				GCInitialDelay: 2 * time.Second,
 				GCMetaInterval: 2 * time.Second,
-				TaskExpireTime: 3 * time.Minute,
+				ExpireTime:     3 * time.Minute,
 			},
 			want: Config{
 				GCInitialDelay:     2 * time.Second,
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: DefaultFailAccessInterval,
 			},
 		}, {
@@ -100,13 +100,13 @@ func TestConfig_applyDefaults(t *testing.T) {
 			fields: fields{
 				GCInitialDelay:     2 * time.Second,
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 			want: Config{
 				GCInitialDelay:     2 * time.Second,
 				GCMetaInterval:     2 * time.Second,
-				TaskExpireTime:     3 * time.Minute,
+				ExpireTime:         3 * time.Minute,
 				FailAccessInterval: 5 * time.Minute,
 			},
 		},
@@ -116,7 +116,7 @@ func TestConfig_applyDefaults(t *testing.T) {
 			c := Config{
 				GCInitialDelay:     tt.fields.GCInitialDelay,
 				GCMetaInterval:     tt.fields.GCMetaInterval,
-				TaskExpireTime:     tt.fields.TaskExpireTime,
+				ExpireTime:         tt.fields.ExpireTime,
 				FailAccessInterval: tt.fields.FailAccessInterval,
 			}
 			if got := c.applyDefaults(); !reflect.DeepEqual(got, tt.want) {

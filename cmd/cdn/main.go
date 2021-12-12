@@ -17,13 +17,12 @@
 package main
 
 import (
-	"d7y.io/dragonfly/v2/cmd/cdn/cmd"
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // Register disk storage manager
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // Register hybrid storage manager
+	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"           // Register http client
+	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"            // Register oss client
 
-	// Register http client
-	_ "d7y.io/dragonfly/v2/pkg/source/httpprotocol"
-
-	// Register oss client
-	_ "d7y.io/dragonfly/v2/pkg/source/ossprotocol"
+	"d7y.io/dragonfly/v2/cmd/cdn/cmd" //nolint:gci
 )
 
 func main() {

@@ -46,7 +46,9 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 		diskDriver:  diskDriver,
 		taskManager: taskManager,
 	}
-	cleaner, err := storage.NewStorageCleaner(storage.GCConfig{}, diskDriver, suite.m, taskManager)
+	driverGCConfig, err := getDiskGCConfig(diskDriver)
+	suite.Nil(err)
+	cleaner, err := storage.NewStorageCleaner(driverGCConfig, diskDriver, suite.m, taskManager)
 	suite.Require().Nil(err)
 	suite.m.diskCleaner = cleaner
 

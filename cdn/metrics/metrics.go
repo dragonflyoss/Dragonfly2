@@ -27,7 +27,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -70,13 +69,6 @@ type Server struct {
 }
 
 func New(config Config, rpcServer *grpc.Server) (*Server, error) {
-	config = config.applyDefaults()
-	// scheduler config values
-	s, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal metrics server config")
-	}
-	logger.Infof("metrics server config: \n%s", s)
 	grpc_prometheus.Register(rpcServer)
 
 	return &Server{

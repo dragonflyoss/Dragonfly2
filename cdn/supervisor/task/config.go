@@ -16,7 +16,10 @@
 
 package task
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Config struct {
 	// GCInitialDelay is the delay time from the start to the first GC execution.
@@ -27,15 +30,20 @@ type Config struct {
 	// default: 2min
 	GCMetaInterval time.Duration `yaml:"gcMetaInterval" mapstructure:"gcMetaInterval"`
 
-	// TaskExpireTime when a task is not accessed within the taskExpireTime,
+	// ExpireTime when a task is not accessed within the ExpireTime,
 	// and it will be treated to be expired.
 	// default: 3min
-	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
+	ExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
 
 	// FailAccessInterval is the interval time after failed to access the URL.
 	// unit: minutes
 	// default: 30
 	FailAccessInterval time.Duration `yaml:"failAccessInterval" mapstructure:"failAccessInterval"`
+}
+
+func DefaultConfig() Config {
+	config := Config{}
+	return config.applyDefaults()
 }
 
 func (c Config) applyDefaults() Config {
@@ -45,8 +53,8 @@ func (c Config) applyDefaults() Config {
 	if c.GCMetaInterval == 0 {
 		c.GCMetaInterval = DefaultGCMetaInterval
 	}
-	if c.TaskExpireTime == 0 {
-		c.TaskExpireTime = DefaultTaskExpireTime
+	if c.ExpireTime == 0 {
+		c.ExpireTime = DefaultExpireTime
 	}
 	if c.FailAccessInterval == 0 {
 		c.FailAccessInterval = DefaultFailAccessInterval
@@ -54,12 +62,29 @@ func (c Config) applyDefaults() Config {
 	return c
 }
 
+func (c Config) Validate() []error {
+	var errors []error
+	if c.GCInitialDelay < 0 {
+		errors = append(errors, fmt.Errorf("task GCInitialDelay %d can't be a negative number", c.GCInitialDelay))
+	}
+	if c.GCMetaInterval <= 0 {
+		errors = append(errors, fmt.Errorf("task GCMetaInterval must be greater than 0, but is: %d", c.GCMetaInterval))
+	}
+	if c.ExpireTime <= 0 {
+		errors = append(errors, fmt.Errorf("task ExpireTime must be greater than 0, but is: %d", c.ExpireTime))
+	}
+	if c.FailAccessInterval <= 0 {
+		errors = append(errors, fmt.Errorf("task FailAccessInterval must be greater than 0, but is: %d", c.FailAccessInterval))
+	}
+	return errors
+}
+
 const (
 	// DefaultFailAccessInterval is the interval time after failed to access the URL.
 	DefaultFailAccessInterval = 3 * time.Minute
 )
 
-// gc
+// gc config
 const (
 	// DefaultGCInitialDelay is the delay time from the start to the first GC execution.
 	DefaultGCInitialDelay = 6 * time.Second
@@ -67,7 +92,7 @@ const (
 	// DefaultGCMetaInterval is the interval time to execute the GC meta.
 	DefaultGCMetaInterval = 2 * time.Minute
 
-	// DefaultTaskExpireTime when a task is not accessed within the taskExpireTime,
+	// DefaultExpireTime when a task is not accessed within the ExpireTime,
 	// and it will be treated to be expired.
-	DefaultTaskExpireTime = 30 * time.Minute
+	DefaultExpireTime = 30 * time.Minute
 )

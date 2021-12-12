@@ -30,6 +30,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -50,23 +51,18 @@ var (
 
 type hybridStorageBuilder struct{}
 
-func (*hybridStorageBuilder) Build(storageConfig storage.Config, taskManager task.Manager) (storage.Manager, error) {
-	if len(storageConfig.DriverConfigs) != 2 {
-		return nil, fmt.Errorf("disk storage manager should have two driver, cfg's driver number is wrong : %v", storageConfig)
+func (*hybridStorageBuilder) Build(config storage.Config, taskManager task.Manager) (storage.Manager, error) {
+	if len(config.DriverGCConfigs) != 2 {
+		return nil, fmt.Errorf("disk storage manager should have two driver, cfg's driver number is wrong : %v", config)
 	}
-	driverNames := make([]string, len(storageConfig.DriverConfigs))
-	for k := range storageConfig.DriverConfigs {
-		driverNames = append(driverNames, k)
-	}
-	diskDriver, ok := storedriver.Get(driverNames[0])
+	diskDriver, ok := storedriver.Get(local.DiskDriverName)
 	if !ok {
-		return nil, fmt.Errorf("can not find %s driver for hybrid storage manager, config is %v", driverNames[0], storageConfig)
+		return nil, fmt.Errorf("can not find disk driver for hybrid storage manager")
 	}
-	memoryDriver, ok := storedriver.Get(driverNames[1])
+	memoryDriver, ok := storedriver.Get(local.MemoryDriverName)
 	if !ok {
-		return nil, fmt.Errorf("can not find %s driver for hybrid storage manager, config %v", driverNames[1], storageConfig)
+		return nil, fmt.Errorf("can not find memory driver for hybrid storage manager")
 	}
-	config := applyDefaults(diskDriver, memoryDriver, storageConfig)
 
 	storageManager := &hybridStorageManager{
 		config:       config,
@@ -77,11 +73,11 @@ func (*hybridStorageBuilder) Build(storageConfig storage.Config, taskManager tas
 		hasShm:       true,
 	}
 
-	diskDriverCleaner, err := storage.NewStorageCleaner(config.DiskGCConfig, diskDriver, storageManager, taskManager)
+	diskDriverCleaner, err := storage.NewStorageCleaner(config.DriverGCConfigs[local.DiskDriverName], diskDriver, storageManager, taskManager)
 	if err != nil {
 		return nil, err
 	}
-	memoryDriverCleaner, err := storage.NewStorageCleaner(config.MemoryGCConfig, memoryDriver, storageManager, taskManager)
+	memoryDriverCleaner, err := storage.NewStorageCleaner(config.DriverGCConfigs[local.MemoryDriverName], memoryDriver, storageManager, taskManager)
 	if err != nil {
 		return nil, err
 	}
@@ -98,11 +94,23 @@ func (*hybridStorageBuilder) Name() string {
 }
 
 func init() {
-	storage.Register(&hybridStorageBuilder{})
+	diskDriver, ok := storedriver.Get(local.DiskDriverName)
+	if !ok {
+		panic("can not find disk driver for hybrid storage manager")
+	}
+	memoryDriver, ok := storedriver.Get(local.MemoryDriverName)
+	if !ok {
+		panic("can not find memory driver for hybrid storage manager")
+	}
+	driverGCConfigs, err := getDefaultDriverGCConfigs(diskDriver, memoryDriver)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get default driver gc configs for disk storage manager: %v", err))
+	}
+	storage.Register(&hybridStorageBuilder{}, driverGCConfigs)
 }
 
 type hybridStorageManager struct {
-	config              Config
+	config              storage.Config
 	memoryDriver        storedriver.Driver
 	diskDriver          storedriver.Driver
 	diskDriverCleaner   storage.Cleaner

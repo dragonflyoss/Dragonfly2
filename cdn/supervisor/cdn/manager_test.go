@@ -27,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
@@ -58,19 +57,9 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-ManagerTestSuite-")
 	fmt.Printf("workHome: %s", suite.workHome)
 	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
-	storageManagerBuilder := storage.Get(constants.DefaultStorageMode)
-	if storageManagerBuilder == nil {
-		suite.Failf("failed to get storage mode %s", constants.DefaultStorageMode)
-	}
 	ctrl := gomock.NewController(suite.T())
 	taskManager := taskMock.NewMockManager(ctrl)
-	storageManager, err := storageManagerBuilder.Build(storage.Config{
-		GCInitialDelay: 0,
-		GCInterval:     0,
-		DriverConfigs: map[string]*storage.DriverConfig{
-			"disk": {},
-		},
-	}, taskManager)
+	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
 	suite.Require().Nil(err)
 
 	progressManager := progressMock.NewMockManager(ctrl)

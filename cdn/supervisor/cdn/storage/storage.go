@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 //go:generate mockgen -destination ./mock/mock_storage_manager.go -package mock d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage Manager
 
 package storage
@@ -22,19 +23,18 @@ import (
 	"io"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var (
-	// m is a map from name to storageManager builder.
-	m = make(map[string]Builder)
+	// managerMap is a map from name to storageManager builder.
+	managerMap = make(map[string]Builder)
+	configMap  = make(map[string]map[string]*DriverGCConfig)
 )
 
 var (
@@ -170,32 +170,31 @@ type Builder interface {
 
 // Register defines an interface to register a storage manager builder.
 // All storage managers should call this function to register its builder to the storage manager factory.
-func Register(builder Builder) {
-	m[strings.ToLower(builder.Name())] = builder
+func Register(builder Builder, driverGCConfigs map[string]*DriverGCConfig) {
+	managerMap[strings.ToLower(builder.Name())] = builder
+	configMap[strings.ToLower(builder.Name())] = driverGCConfigs
 }
 
-// Get a storage manager from manager with specified name.
-func Get(name string) Builder {
-	if b, ok := m[strings.ToLower(name)]; ok {
+// GetBuilder return a storage manager from manager with specified name.
+func GetBuilder(name string) Builder {
+	if b, ok := managerMap[strings.ToLower(name)]; ok {
 		return b
 	}
 	return nil
 }
 
-type Config struct {
-	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
-	GCInterval     time.Duration            `yaml:"gcInterval"`
-	DriverConfigs  map[string]*DriverConfig `yaml:"driverConfigs"`
+func GetConfig(name string) map[string]*DriverGCConfig {
+	if c, ok := configMap[strings.ToLower(name)]; ok {
+		return c
+	}
+	return nil
 }
 
-type DriverConfig struct {
-	GCConfig *GCConfig `yaml:"gcConfig"`
-}
-
-// GCConfig gc config
-type GCConfig struct {
-	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
-	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
-	CleanRatio        int           `yaml:"cleanRatio"`
-	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
+func NewManager(config Config, taskManager task.Manager) (Manager, error) {
+	// Initialize storage manager
+	storageManagerBuilder := GetBuilder(config.StorageMode)
+	if storageManagerBuilder == nil {
+		return nil, fmt.Errorf("can not find storage manager mode %s", config.StorageMode)
+	}
+	return storageManagerBuilder.Build(config, taskManager)
 }

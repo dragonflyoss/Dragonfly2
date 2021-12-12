@@ -28,12 +28,9 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // nolint
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // nolint
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -83,12 +80,6 @@ type manager struct {
 // NewManager returns a new Manager.
 func NewManager(config Config, cacheStore storage.Manager, progressManager progress.Manager,
 	taskManager task.Manager) (Manager, error) {
-	config = config.applyDefaults()
-	s, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal cdn manager config")
-	}
-	logger.Infof("cdn manager config: \n%s", s)
 	return newManager(config, cacheStore, progressManager, taskManager)
 }
 
@@ -176,7 +167,7 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	reader := limitreader.NewLimitReaderWithLimiterAndDigest(respBody, cm.limiter, fileDigest, digestutils.Algorithms[digestType])
 
 	// forth: write to storage
-	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint)
+	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint, cm.config.WriterRoutineLimit)
 	if err != nil {
 		server.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)

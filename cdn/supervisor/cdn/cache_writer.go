@@ -68,14 +68,15 @@ func newCacheWriter(cdnReporter *reporter, metadataManager *metadataManager, cac
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(ctx context.Context, reader *limitreader.LimitReader, seedTask *task.SeedTask, breakPoint int64) (*downloadMetadata,
+func (cw *cacheWriter) startWriter(ctx context.Context, reader *limitreader.LimitReader, seedTask *task.SeedTask, breakPoint int64,
+	writerRoutineLimit int) (*downloadMetadata,
 	error) {
 	var writeSpan trace.Span
 	ctx, writeSpan = tracer.Start(ctx, constants.SpanWriteData)
 	defer writeSpan.End()
 	// currentSourceFileLength is used to calculate the source file Length dynamically
 	currentSourceFileLength := breakPoint
-	routineCount := calculateRoutineCount(seedTask.SourceFileLength-currentSourceFileLength, seedTask.PieceSize)
+	routineCount := calculateRoutineCount(seedTask.SourceFileLength-currentSourceFileLength, seedTask.PieceSize, writerRoutineLimit)
 	writeSpan.SetAttributes(constants.AttributeWriteGoroutineCount.Int(routineCount))
 	// start writer pool
 	backSourceLength, totalPieceCount, err := cw.doWrite(ctx, reader, seedTask, routineCount, breakPoint)
@@ -215,8 +216,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 */
 
 // calculateRoutineCount max goroutine count is CDNWriterRoutineLimit
-func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
-	routineSize := constants.CDNWriterRoutineLimit
+func calculateRoutineCount(remainingFileLength int64, pieceSize int32, writerRoutineLimit int) int {
+	routineSize := writerRoutineLimit
 	if remainingFileLength < 0 || pieceSize <= 0 {
 		return routineSize
 	}

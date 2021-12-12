@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -93,13 +92,6 @@ type manager struct {
 
 // NewManager returns a new Manager Object.
 func NewManager(config Config) (Manager, error) {
-	config = config.applyDefaults()
-	// scheduler config values
-	s, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal task manager config")
-	}
-	logger.Infof("task manager config: \n%s", s)
 
 	manager := &manager{
 		config: config,
@@ -251,7 +243,7 @@ func (tm *manager) GC() error {
 		synclock.Lock(taskID, false)
 		defer synclock.UnLock(taskID, false)
 		atime := value.(time.Time)
-		if time.Since(atime) < tm.config.TaskExpireTime {
+		if time.Since(atime) < tm.config.ExpireTime {
 			return true
 		}
 

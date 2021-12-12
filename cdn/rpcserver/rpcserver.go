@@ -22,12 +22,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -53,13 +51,6 @@ type Server struct {
 
 // New returns a new Manager Object.
 func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOption) (*Server, error) {
-	config = config.applyDefaults()
-	// scheduler config values
-	s, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal grpc server config")
-	}
-	logger.Infof("grpc server config: \n%s", s)
 	svr := &Server{
 		config:  config,
 		service: cdnService,

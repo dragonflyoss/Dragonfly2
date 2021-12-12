@@ -16,7 +16,11 @@
 
 package rpcserver
 
-import "d7y.io/dragonfly/v2/pkg/util/net/iputils"
+import (
+	"fmt"
+
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+)
 
 type Config struct {
 
@@ -33,17 +37,36 @@ type Config struct {
 	DownloadPort int `yaml:"downloadPort" mapstructure:"downloadPort"`
 }
 
-func (config Config) applyDefaults() Config {
-	if config.AdvertiseIP == "" {
-		config.AdvertiseIP = iputils.IPv4
+func DefaultConfig() Config {
+	config := Config{}
+	return config.applyDefaults()
+}
+
+func (c Config) applyDefaults() Config {
+	if c.AdvertiseIP == "" {
+		c.AdvertiseIP = iputils.IPv4
 	}
-	if config.ListenPort == 0 {
-		config.ListenPort = DefaultListenPort
+	if c.ListenPort == 0 {
+		c.ListenPort = DefaultListenPort
 	}
-	if config.DownloadPort == 0 {
-		config.DownloadPort = DefaultDownloadPort
+	if c.DownloadPort == 0 {
+		c.DownloadPort = DefaultDownloadPort
 	}
-	return config
+	return c
+}
+
+func (c Config) Validate() []error {
+	var errors []error
+	if c.AdvertiseIP == "" {
+		errors = append(errors, fmt.Errorf("rpc server AdvertiseIP can't be empty"))
+	}
+	if c.ListenPort > 65535 || c.ListenPort < 1024 {
+		errors = append(errors, fmt.Errorf("rpc server ListenPort must be between 0 and 65535, inclusive. but is: %d", c.ListenPort))
+	}
+	if c.DownloadPort > 65535 || c.DownloadPort < 1024 {
+		errors = append(errors, fmt.Errorf("rpc server DownloadPort must be between 0 and 65535, inclusive. but is: %d", c.DownloadPort))
+	}
+	return errors
 }
 
 const (

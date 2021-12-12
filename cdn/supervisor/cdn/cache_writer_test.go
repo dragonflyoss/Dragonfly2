@@ -27,7 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
@@ -71,13 +70,7 @@ func (suite *CacheWriterTestSuite) SetupSuite() {
 	progressManager.EXPECT().PublishPiece(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	progressManager.EXPECT().PublishTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	taskManager := taskMock.NewMockManager(ctrl)
-	storageManager, err := storage.Get(constants.DefaultStorageMode).Build(storage.Config{
-		GCInitialDelay: 0,
-		GCInterval:     0,
-		DriverConfigs: map[string]*storage.DriverConfig{
-			"disk": {},
-		},
-	}, taskManager)
+	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
 	suite.Require().Nil(err)
 	metadataManager := newMetadataManager(storageManager)
 	cdnReporter := newReporter(progressManager)
@@ -97,9 +90,10 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 	suite.Nil(err)
 	contentLen := int64(len(content))
 	type args struct {
-		reader     *limitreader.LimitReader
-		task       *task.SeedTask
-		breakPoint int64
+		reader             *limitreader.LimitReader
+		task               *task.SeedTask
+		breakPoint         int64
+		writerRoutineLimit int
 	}
 
 	tests := []struct {
@@ -116,6 +110,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					ID:        "5806501c3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
 					PieceSize: 50,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -132,6 +127,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					ID:        "5816501c3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
 					PieceSize: 50,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -149,6 +145,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					PieceSize:        50,
 					SourceFileLength: contentLen,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -161,7 +158,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			downloadMetadata, err := suite.writer.startWriter(context.Background(), tt.args.reader, tt.args.task, tt.args.breakPoint)
+			downloadMetadata, err := suite.writer.startWriter(context.Background(), tt.args.reader, tt.args.task, tt.args.breakPoint, tt.args.writerRoutineLimit)
 			suite.Equal(tt.wantErr, err != nil)
 			suite.Equal(tt.result, downloadMetadata)
 			suite.checkFileSize(suite.writer.cacheStore, tt.args.task.ID, contentLen)
@@ -179,6 +176,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 	type args struct {
 		remainingFileLength int64
 		pieceSize           int32
+		writerRoutineLimit  int
 	}
 	tests := []struct {
 		name string
@@ -190,6 +188,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 200,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
@@ -198,6 +197,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 2222,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
@@ -206,6 +206,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 0,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 1,
 		},
@@ -214,6 +215,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 10,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 1,
 		},
@@ -222,13 +224,14 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 10,
 				pieceSize:           0,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			if got := calculateRoutineCount(tt.args.remainingFileLength, tt.args.pieceSize); got != tt.want {
+			if got := calculateRoutineCount(tt.args.remainingFileLength, tt.args.pieceSize, tt.args.writerRoutineLimit); got != tt.want {
 				suite.Equal(tt.want, got)
 			}
 		})

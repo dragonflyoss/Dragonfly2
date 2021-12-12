@@ -18,8 +18,6 @@ package cdn
 
 import (
 	"context"
-	"fmt"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -60,23 +58,15 @@ type Server struct {
 }
 
 // New creates a brand-new server instance.
-func New(cfg *config.Config) (*Server, error) {
-	if ok := storage.IsSupport(cfg.StorageMode); !ok {
-		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
-	}
+func New(config *config.Config) (*Server, error) {
 
 	// Initialize plugins
-	if err := plugins.Initialize(cfg.Plugins); err != nil {
+	if err := plugins.Initialize(config.Plugins); err != nil {
 		return nil, errors.Wrapf(err, "init plugins")
 	}
 
 	// Initialize task manager
-	taskManager, err := task.NewManager(task.Config{
-		GCInitialDelay:     cfg.GCInitialDelay,
-		GCMetaInterval:     cfg.GCMetaInterval,
-		TaskExpireTime:     cfg.TaskExpireTime,
-		FailAccessInterval: cfg.FailAccessInterval,
-	})
+	taskManager, err := task.NewManager(config.Task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
@@ -88,20 +78,13 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize storage manager
-	storageManagerBuilder := storage.Get(cfg.StorageMode)
-	if storageManagerBuilder == nil {
-		return nil, fmt.Errorf("can not find storage manager mode %s", cfg.StorageMode)
-	}
-	storageManager, err := storageManagerBuilder.Build(config.NewStorage(cfg.StorageMode), taskManager)
+	storageManager, err := storage.NewManager(config.Storage, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create storage manager")
 	}
 
 	// Initialize CDN manager
-	cdnManager, err := cdn.NewManager(cdn.Config{
-		SystemReservedBandwidth: cfg.SystemReservedBandwidth,
-		MaxBandwidth:            cfg.MaxBandwidth,
-	}, storageManager, progressManager, taskManager)
+	cdnManager, err := cdn.NewManager(config.CDN, storageManager, progressManager, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
@@ -113,28 +96,24 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	// Initialize storage manager
 	var opts []grpc.ServerOption
-	if cfg.Options.Telemetry.Jaeger != "" {
+	if config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(rpcserver.Config{
-		AdvertiseIP:  cfg.AdvertiseIP,
-		ListenPort:   cfg.ListenPort,
-		DownloadPort: cfg.DownloadPort,
-	}, service, opts...)
+	grpcServer, err := rpcserver.New(config.RPCServer, service, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
 	// Initialize gc server
-	gcServer, err := gc.New(gc.Config{})
+	gcServer, err := gc.New()
 	if err != nil {
 		return nil, errors.Wrap(err, "create gcServer")
 	}
 
 	var metricsServer *metrics.Server
-	if cfg.Metrics.Addr != "" {
+	if config.Metrics.Addr != "" {
 		// Initialize metrics server
-		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
+		metricsServer, err = metrics.New(config.Metrics, grpcServer.Server)
 		if err != nil {
 			return nil, errors.Wrap(err, "create metricsServer")
 		}
@@ -142,14 +121,14 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize configServer
 	var configServer managerClient.Client
-	if cfg.Manager.Addr != "" {
-		configServer, err = managerClient.New(cfg.Manager.Addr)
+	if config.Manager.Addr != "" {
+		configServer, err = managerClient.New(config.Manager.Addr)
 		if err != nil {
 			return nil, errors.Wrap(err, "create configServer")
 		}
 	}
 	return &Server{
-		config:        cfg,
+		config:        config,
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,

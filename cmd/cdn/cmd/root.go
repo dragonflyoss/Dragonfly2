@@ -48,7 +48,7 @@ from remote source repeatedly.`,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Initialize dfpath
-		d, err := initDfpath(cfg.BaseProperties)
+		d, err := initDfpath(cfg.LogDir)
 		if err != nil {
 			return err
 		}
@@ -78,10 +78,10 @@ func init() {
 	dependency.InitCobra(rootCmd, true, cfg)
 }
 
-func initDfpath(cfg *config.BaseProperties) (dfpath.Dfpath, error) {
+func initDfpath(logDir string) (dfpath.Dfpath, error) {
 	options := []dfpath.Option{}
-	if cfg.LogDir != "" {
-		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	if logDir != "" {
+		options = append(options, dfpath.WithLogDir(logDir))
 	}
 
 	return dfpath.New(options...)

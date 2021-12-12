@@ -50,25 +50,20 @@ var (
 
 type diskStorageBuilder struct{}
 
-func (b *diskStorageBuilder) Build(storageConfig storage.Config, taskManager task.Manager) (storage.Manager, error) {
-	if len(storageConfig.DriverConfigs) != 1 {
-		return nil, fmt.Errorf("disk storage manager should have only one disk driver, cfg's driver number is wrong. config: %v", storageConfig)
+func (b *diskStorageBuilder) Build(config storage.Config, taskManager task.Manager) (storage.Manager, error) {
+	if len(config.DriverGCConfigs) != 1 {
+		return nil, fmt.Errorf("disk storage manager should have only one disk driver, cfg's driver number is wrong. config: %v", config)
 	}
-	driverNames := make([]string, 0, len(storageConfig.DriverConfigs))
-	for k := range storageConfig.DriverConfigs {
-		driverNames = append(driverNames, k)
-	}
-	diskDriver, ok := storedriver.Get(driverNames[0])
+	diskDriver, ok := storedriver.Get(local.DiskDriverName)
 	if !ok {
-		return nil, fmt.Errorf("can not find disk driver for disk storage manager, config is %#v", storageConfig)
+		return nil, fmt.Errorf("can not find disk driver for disk storage manager")
 	}
-	config := applyDefaults(diskDriver, storageConfig)
 	storageManager := &diskStorageManager{
 		config:      config,
 		diskDriver:  diskDriver,
 		taskManager: taskManager,
 	}
-	cleaner, err := storage.NewStorageCleaner(config.GCConfig, diskDriver, storageManager, taskManager)
+	cleaner, err := storage.NewStorageCleaner(config.DriverGCConfigs[local.DiskDriverName], diskDriver, storageManager, taskManager)
 	if err != nil {
 		return nil, err
 	}
@@ -82,12 +77,20 @@ func (*diskStorageBuilder) Name() string {
 }
 
 func init() {
+	diskDriver, ok := storedriver.Get(local.DiskDriverName)
+	if !ok {
+		panic("can not find disk driver for disk storage manager")
+	}
+	driverGCConfigs, err := getDefaultDriverGCConfigs(diskDriver)
+	if err != nil {
+		panic(fmt.Sprintf("failed to get default driver gc configs for disk storage manager: %v", err))
+	}
 	// TODO add support OS
-	storage.Register(&diskStorageBuilder{})
+	storage.Register(&diskStorageBuilder{}, driverGCConfigs)
 }
 
 type diskStorageManager struct {
-	config      Config
+	config      storage.Config
 	diskDriver  storedriver.Driver
 	diskCleaner storage.Cleaner
 	taskManager task.Manager
