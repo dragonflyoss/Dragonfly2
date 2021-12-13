@@ -48,6 +48,7 @@ from remote source repeatedly.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg = deprecatedConfig.Convert()
 		// Initialize dfpath
 		d, err := initDfpath(cfg.LogDir)
 		if err != nil {
@@ -76,7 +77,7 @@ func init() {
 	// Initialize default cdn system config
 	deprecatedConfig = config.NewDeprecatedConfig()
 	// Initialize cobra
-	dependency.InitCobra(rootCmd, true, cfg)
+	dependency.InitCobra(rootCmd, true, deprecatedConfig)
 }
 
 func initDfpath(logDir string) (dfpath.Dfpath, error) {
@@ -90,8 +91,6 @@ func initDfpath(logDir string) (dfpath.Dfpath, error) {
 
 func runCdnSystem() error {
 	logger.Infof("Version:\n%s", version.Version())
-
-	cfg = deprecatedConfig.Convert()
 	// validate config
 	if errs := cfg.Validate(); len(errs) != 0 {
 		return fmt.Errorf("failed to validate cdn config:\n%s", errs)
