@@ -48,9 +48,7 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 		downloadRequest.Header.Add(source.Range, breakRange)
 	}
 	body, expireInfo, err := source.DownloadWithExpireInfo(downloadRequest)
-	seedTask.Log().Infof("success downloading %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
 	if err != nil {
-		seedTask.Log().Infof("failed downloading %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
 		return nil, err
 	}
 	// update Expire info
