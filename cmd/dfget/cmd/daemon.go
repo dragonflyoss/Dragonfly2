@@ -97,7 +97,7 @@ func init() {
 }
 
 func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
-	options := []dfpath.Option{}
+	var options []dfpath.Option
 	if cfg.WorkHome != "" {
 		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
 	}

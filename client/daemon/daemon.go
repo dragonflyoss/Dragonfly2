@@ -54,6 +54,7 @@ import (
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type Daemon interface {
@@ -90,6 +91,9 @@ type clientDaemon struct {
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
+	// update plugin directory
+	source.UpdatePluginDir(d.PluginDir())
+
 	host := &scheduler.PeerHost{
 		Uuid:           idgen.UUIDString(),
 		Ip:             opt.Host.AdvertiseIP,

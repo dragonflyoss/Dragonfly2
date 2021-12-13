@@ -140,10 +140,8 @@ func NewManager() ClientManager {
 
 type Option func(c *clientManager)
 
-func WithPluginDir(dir string) Option {
-	return func(c *clientManager) {
-		c.pluginDir = dir
-	}
+func UpdatePluginDir(pluginDir string) {
+	_defaultManager.(*clientManager).pluginDir = pluginDir
 }
 
 func (m *clientManager) Register(scheme string, resourceClient ResourceClient, adaptor requestAdapter, hooks ...Hook) error {

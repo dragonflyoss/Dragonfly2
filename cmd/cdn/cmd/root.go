@@ -29,6 +29,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -58,6 +59,9 @@ from remote source repeatedly.`,
 			return errors.Wrap(err, "init cdn system logger")
 		}
 
+		// update plugin directory
+		source.UpdatePluginDir(d.PluginDir())
+
 		return runCdnSystem()
 	},
 }
@@ -79,9 +83,12 @@ func init() {
 }
 
 func initDfpath(cfg *config.BaseProperties) (dfpath.Dfpath, error) {
-	options := []dfpath.Option{}
+	var options []dfpath.Option
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+	if cfg.WorkHome != "" {
+		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
 	}
 
 	return dfpath.New(options...)
