@@ -65,6 +65,9 @@ func (c Config) Validate() []error {
 		errors = append(errors, fmt.Errorf("cdn MaxBandwidth must be greater than SystemReservedBandwidth, MaxBandwidth is: %d, "+
 			"SystemReservedBandwidth is: %d", c.MaxBandwidth, c.SystemReservedBandwidth))
 	}
+	if c.WriterRoutineLimit <= 0 {
+		errors = append(errors, fmt.Errorf("cdn WriterRoutineLimit %d can't be a negative number", c.WriterRoutineLimit))
+	}
 	return errors
 }
 

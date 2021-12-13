@@ -24,7 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/basic"
@@ -67,10 +66,8 @@ func (c DeprecatedConfig) Convert() *Config {
 		ExpireTime:         base.TaskExpireTime,
 		FailAccessInterval: base.FailAccessInterval,
 	}
-	newConfig.CDN = cdn.Config{
-		SystemReservedBandwidth: base.SystemReservedBandwidth,
-		MaxBandwidth:            base.MaxBandwidth,
-	}
+	newConfig.CDN.SystemReservedBandwidth = base.SystemReservedBandwidth
+	newConfig.CDN.MaxBandwidth = base.MaxBandwidth
 	newConfig.RPCServer = rpcserver.Config{
 		AdvertiseIP:  base.AdvertiseIP,
 		ListenPort:   base.ListenPort,

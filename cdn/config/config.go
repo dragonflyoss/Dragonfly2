@@ -17,6 +17,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -84,6 +85,7 @@ func (c *Config) Validate() []error {
 	errs = append(errs, c.RPCServer.Validate()...)
 	errs = append(errs, c.Task.Validate()...)
 	errs = append(errs, c.CDN.Validate()...)
+	errs = append(errs, c.Manager.Validate()...)
 	return errs
 }
 
@@ -98,9 +100,28 @@ type ManagerConfig struct {
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
+func (c ManagerConfig) Validate() []error {
+	var errors []error
+	if c.Addr != "" {
+		if c.CDNClusterID <= 0 {
+			errors = append(errors, fmt.Errorf("cdn cluster id %d can't be a negative number", c.CDNClusterID))
+		}
+		errors = append(errors, c.KeepAlive.Validate()...)
+	}
+	return errors
+}
+
 type KeepAliveConfig struct {
 	// Keep alive interval
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+}
+
+func (c KeepAliveConfig) Validate() []error {
+	var errors []error
+	if c.Interval <= 0 {
+		errors = append(errors, fmt.Errorf("keep alive interval %d can't be a negative number", c.Interval))
+	}
+	return errors
 }
 
 type HostConfig struct {
