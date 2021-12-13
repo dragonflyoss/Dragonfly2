@@ -84,7 +84,7 @@ func init() {
 }
 
 func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
-	options := []dfpath.Option{}
+	var options []dfpath.Option
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
