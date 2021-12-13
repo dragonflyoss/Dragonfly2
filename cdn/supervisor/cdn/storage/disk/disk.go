@@ -81,7 +81,7 @@ type diskStorageManager struct {
 func (s *diskStorageManager) getDefaultGcConfig() *config.GCConfig {
 	totalSpace, err := s.diskDriver.GetTotalSpace()
 	if err != nil {
-		logger.GcLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
+		logger.StorageGCLogger.With("type", "disk").Errorf("get total space of disk: %v", err)
 	}
 	yongGcThreshold := 200 * unit.GB
 	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
@@ -100,7 +100,7 @@ func (s *diskStorageManager) Initialize(taskManager task.Manager) {
 	diskGcConfig := s.cfg.DriverConfigs[local.DiskDriverName].GCConfig
 	if diskGcConfig == nil {
 		diskGcConfig = s.getDefaultGcConfig()
-		logger.GcLogger.With("type", "disk").Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
+		logger.StorageGCLogger.With("type", "disk").Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
 	}
 	s.cleaner, _ = storage.NewStorageCleaner(diskGcConfig, s.diskDriver, s, taskManager)
 }
@@ -127,10 +127,10 @@ func (s *diskStorageManager) ReadPieceMetaRecords(taskID string) ([]*storage.Pie
 }
 
 func (s *diskStorageManager) GC() error {
-	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
+	logger.StorageGCLogger.With("type", "disk").Info("start the disk storage gc job")
 	gcTaskIDs, err := s.cleaner.GC("disk", false)
 	if err != nil {
-		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIDs")
+		logger.StorageGCLogger.With("type", "disk").Error("failed to get gcTaskIDs")
 	}
 	var realGCCount int
 	for _, taskID := range gcTaskIDs {
@@ -142,13 +142,13 @@ func (s *diskStorageManager) GC() error {
 		}
 		realGCCount++
 		if err := s.DeleteTask(taskID); err != nil {
-			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.StorageGCLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
 			continue
 		}
 		synclock.UnLock(taskID, false)
 	}
-	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), realGCCount)
+	logger.StorageGCLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), realGCCount)
 	return nil
 }
 
