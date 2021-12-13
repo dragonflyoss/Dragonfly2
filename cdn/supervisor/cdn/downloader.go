@@ -48,13 +48,14 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 		downloadRequest.Header.Add(source.Range, breakRange)
 	}
 	body, expireInfo, err := source.DownloadWithExpireInfo(downloadRequest)
-	// update Expire info
-	if err == nil {
-		cm.updateExpireInfo(seedTask.ID, map[string]string{
-			source.LastModified: expireInfo.LastModified,
-			source.ETag:         expireInfo.ETag,
-		})
+	if err != nil {
+		return nil, err
 	}
+	// update Expire info
+	cm.updateExpireInfo(seedTask.ID, map[string]string{
+		source.LastModified: expireInfo.LastModified,
+		source.ETag:         expireInfo.ETag,
+	})
 	return body, err
 }
 
