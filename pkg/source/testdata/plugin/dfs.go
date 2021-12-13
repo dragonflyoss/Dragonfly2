@@ -25,6 +25,12 @@ import (
 
 var data = "hello world"
 
+var (
+	buildCommit = "unknown"
+	buildTime   = "unknown"
+	vendor      = "d7y"
+)
+
 var _ source.ResourceClient = (*client)(nil)
 
 type client struct {
@@ -55,5 +61,12 @@ func (c *client) GetLastModified(request *source.Request) (int64, error) {
 }
 
 func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
-	return &client{}, map[string]string{"type": "resource", "name": "dfs", "scheme": "dfs"}, nil
+	return &client{}, map[string]string{
+		"type":        "resource",
+		"name":        "dfs",
+		"scheme":      "dfs",
+		"buildCommit": buildCommit,
+		"buildTime":   buildTime,
+		"vendor":      vendor,
+	}, nil
 }

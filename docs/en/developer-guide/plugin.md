@@ -18,27 +18,29 @@ and a function
 
 <!-- markdownlint-disable -->
 ```golang
-// ResourceClient supply apis that interact with the source.
+// ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
-	// GetContentLength get length of resource content
-	// return -l if request fail
-	// return task.IllegalSourceFileLen if response status is not StatusOK and StatusPartialContent
-	GetContentLength(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (int64, error)
-
-	// IsSupportRange checks if resource supports breakpoint continuation
-	IsSupportRange(ctx context.Context, url string, header RequestHeader) (bool, error)
-
-	// IsExpired checks if a resource received or stored is the same.
-	IsExpired(ctx context.Context, url string, header RequestHeader, expireInfo map[string]string) (bool, error)
-
-	// Download downloads from source
-	Download(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, error)
-
-	// DownloadWithResponseHeader download from source with responseHeader
-	DownloadWithResponseHeader(ctx context.Context, url string, header RequestHeader, rang *rangers.Range) (io.ReadCloser, ResponseHeader, error)
-
-	// GetLastModifiedMillis gets last modified timestamp milliseconds of resource
-	GetLastModifiedMillis(ctx context.Context, url string, header RequestHeader) (int64, error)
+    // GetContentLength get length of resource content
+    // return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
+    GetContentLength(request *Request) (int64, error)
+    
+    // IsSupportRange checks if resource supports breakpoint continuation
+    // return false if response status is not StatusPartialContent
+    IsSupportRange(request *Request) (bool, error)
+    
+    // IsExpired checks if a resource received or stored is the same.
+    // return false and non-nil err to prevent the source from exploding if
+    // fails to get the result, it is considered that the source has not expired
+    IsExpired(request *Request, info *ExpireInfo) (bool, error)
+    
+    // Download downloads from source
+    Download(request *Request) (io.ReadCloser, error)
+    
+    // DownloadWithExpireInfo download from source with expireInfo
+    DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error)
+    
+    // GetLastModified gets last modified timestamp milliseconds of resource
+    GetLastModified(request *Request) (int64, error)
 }
 ```
 <!-- markdownlint-restore -->
@@ -53,12 +55,9 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"io"
-	"time"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var data = "hello world"
@@ -74,28 +73,28 @@ var (
 type client struct {
 }
 
-func (c *client) GetContentLength(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (int64, error) {
+func (c *client) GetContentLength(request *source.Request) (int64, error) {
 	return int64(len(data)), nil
 }
 
-func (c *client) IsSupportRange(ctx context.Context, url string, header source.RequestHeader) (bool, error) {
+func (c *client) IsSupportRange(request *source.Request) (bool, error) {
 	return false, nil
 }
 
-func (c *client) IsExpired(ctx context.Context, url string, header source.RequestHeader, expireInfo map[string]string) (bool, error) {
-	return false, nil
+func (c *client) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {
+	panic("implement me")
 }
 
-func (c *client) Download(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, error) {
+func (c *client) Download(request *source.Request) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewBufferString(data)), nil
 }
 
-func (c *client) DownloadWithResponseHeader(ctx context.Context, url string, header source.RequestHeader, rang *rangeutils.Range) (io.ReadCloser, source.ResponseHeader, error) {
-	return io.NopCloser(bytes.NewBufferString(data)), map[string]string{}, nil
+func (c *client) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
+	return io.NopCloser(bytes.NewBufferString(data)), nil, nil
 }
 
-func (c *client) GetLastModifiedMillis(ctx context.Context, url string, header source.RequestHeader) (int64, error) {
-	return time.Now().UnixMilli(), nil
+func (c *client) GetLastModified(request *source.Request) (int64, error) {
+	panic("implement me")
 }
 
 func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
@@ -108,6 +107,8 @@ func DragonflyPluginInit(option map[string]string) (interface{}, map[string]stri
 		"vendor":      vendor,
 	}, nil
 }
+
+
 ```
 <!-- markdownlint-restore -->
 
@@ -119,7 +120,7 @@ module example.com/d7yfs
 
 go 1.17
 
-require d7y.io/dragonfly/v2 v2.0.0-20211203114106-01798aa08a6b
+require d7y.io/dragonfly/v2 v2.0.1
 
 require (
         github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a // indirect
@@ -140,6 +141,8 @@ replace d7y.io/dragonfly/v2 => /Dragonfly2
 
 #### 1. Build plugin with target Dragonfly2 commit
 
+> Update `D7Y_COMMIT` in the following script.
+
 <!-- markdownlint-disable -->
 ```shell
 # golang plugin need cgo
@@ -147,7 +150,7 @@ replace d7y.io/dragonfly/v2 => /Dragonfly2
 # "dfdaemon" and "cdn" need to re-compile with CGO_ENABLED=1
 export CGO_ENABLED="1"
 
-# ensure commit in plugin go.mod
+# ensure same commit of code base
 D7Y_COMMIT=01798aa08a6b4510210dd0a901e9f89318405440
 git clone https://github.com/dragonflyoss/Dragonfly2.git /Dragonfly2 && git reset --hard ${D7Y_COMMIT}
 (cd /Dragonfly2 && make build-dfget build-cdn)
@@ -172,7 +175,7 @@ Example output:
 <!-- markdownlint-disable -->
 ```text
 search plugin in /usr/local/dragonfly/plugins
-resource plugin d7yfs, location: d7y-resource-plugin-d7yfs.so, attribute: {"buildCommit":"00c24a4","buildTime":"2021-12-06T05:10:39Z","name":"d7yfs","schema":"d7yfs","type":"resource","vendor":"d7y"}
+resource plugin d7yfs, location: d7y-resource-plugin-d7yfs.so, attribute: {"buildCommit":"bb65f13","buildTime":"2021-12-13T08:53:04Z","name":"d7yfs","schema":"d7yfs","type":"resource","vendor":"d7y"}
 ```
 <!-- markdownlint-restore -->
 
