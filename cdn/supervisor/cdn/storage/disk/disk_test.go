@@ -46,6 +46,8 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 		diskDriver:  diskDriver,
 		taskManager: taskManager,
 	}
+	diskDriver.EXPECT().GetTotalSpace().Return(100*unit.GB, nil)
+	diskDriver.EXPECT().GetBaseDir().Return(storage.DefaultDiskBaseDir)
 	driverDriverConfig, err := getDiskDriverConfig(diskDriver)
 	suite.Nil(err)
 	cleaner, err := storage.NewStorageCleaner(driverDriverConfig.DriverGCConfig, diskDriver, suite.m, taskManager)
