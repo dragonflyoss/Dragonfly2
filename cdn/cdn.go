@@ -58,12 +58,6 @@ type Server struct {
 
 // New creates a brand-new server instance.
 func New(config *config.Config) (*Server, error) {
-
-	// Initialize plugins
-	//if err := plugins.Initialize(config.Plugins); err != nil {
-	//	return nil, errors.Wrapf(err, "init plugins")
-	//}
-
 	// Initialize task manager
 	taskManager, err := task.NewManager(config.Task)
 	if err != nil {

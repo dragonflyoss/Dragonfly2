@@ -33,7 +33,8 @@ import (
 )
 
 var (
-	cfg *config.Config
+	deprecatedConfig *config.DeprecatedConfig
+	cfg              *config.Config
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -73,7 +74,7 @@ func Execute() {
 
 func init() {
 	// Initialize default cdn system config
-	cfg = config.New()
+	deprecatedConfig = config.NewDeprecatedConfig()
 	// Initialize cobra
 	dependency.InitCobra(rootCmd, true, cfg)
 }
@@ -90,6 +91,7 @@ func initDfpath(logDir string) (dfpath.Dfpath, error) {
 func runCdnSystem() error {
 	logger.Infof("Version:\n%s", version.Version())
 
+	cfg = deprecatedConfig.Convert()
 	// validate config
 	if errs := cfg.Validate(); len(errs) != 0 {
 		return fmt.Errorf("failed to validate cdn config:\n%s", errs)
