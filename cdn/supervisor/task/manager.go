@@ -232,7 +232,7 @@ const (
 )
 
 func (tm *manager) GC() error {
-	logger.Info("start the task meta gc job")
+	logger.GcLogger.Info("start the task meta gc job")
 	startTime := time.Now()
 
 	totalTaskNums := 0
