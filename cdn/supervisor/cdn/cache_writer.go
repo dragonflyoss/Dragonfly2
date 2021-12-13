@@ -153,6 +153,7 @@ loop:
 		}
 	}
 	close(jobCh)
+	seedTask.Log().Infof("finish read from resource, backSourceLength %d", backSourceLength)
 	if err := g.Wait(); err != nil {
 		return backSourceLength, 0, errors.Wrapf(err, "write pool")
 	}
