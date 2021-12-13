@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
+
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
@@ -72,6 +74,10 @@ func (c DeprecatedConfig) Convert() *Config {
 		AdvertiseIP:  base.AdvertiseIP,
 		ListenPort:   base.ListenPort,
 		DownloadPort: base.DownloadPort,
+	}
+	driverConfig := &storedriver.Config{}
+	if err := mapstructure.Decode(c.Plugins[plugins.StorageDriverPlugin][0].Config, driverConfig); err == nil {
+		newConfig.Storage.DriverConfigs["disk"].BaseDir = driverConfig.BaseDir
 	}
 	newConfig.Verbose = c.Verbose
 	newConfig.Console = c.Console
