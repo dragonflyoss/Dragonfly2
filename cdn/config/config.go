@@ -206,6 +206,9 @@ type BaseProperties struct {
 	// Log directory
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
+	// WorkHome directory
+	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
+
 	// Manager configuration
 	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
