@@ -66,6 +66,8 @@ type Config struct {
 	Host HostConfig `yaml:"host" mapstructure:"host"`
 	// Log directory
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+	// WorkHome directory
+	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
 }
 
 func (c *Config) String() string {

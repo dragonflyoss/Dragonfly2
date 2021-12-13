@@ -54,6 +54,7 @@ func (c DeprecatedConfig) Convert() *Config {
 	newConfig.Manager = base.Manager
 	newConfig.Host = base.Host
 	newConfig.LogDir = base.LogDir
+	newConfig.WorkHome = base.WorkHome
 	if base.Metrics != nil {
 		newConfig.Metrics = metrics.Config{
 			Net:  "tcp",
@@ -191,6 +192,9 @@ type BaseProperties struct {
 
 	// Log directory
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
+	// WorkHome directory
+	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
 
 	// Manager configuration
 	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`

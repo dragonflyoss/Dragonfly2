@@ -29,6 +29,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -50,7 +51,7 @@ from remote source repeatedly.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg = deprecatedConfig.Convert()
 		// Initialize dfpath
-		d, err := initDfpath(cfg.LogDir)
+		d, err := initDfpath(cfg.LogDir, cfg.WorkHome)
 		if err != nil {
 			return err
 		}
@@ -59,6 +60,9 @@ from remote source repeatedly.`,
 		if err := logcore.InitCdnSystem(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init cdn system logger")
 		}
+
+		// update plugin directory
+		source.UpdatePluginDir(d.PluginDir())
 
 		return runCdnSystem()
 	},
@@ -80,10 +84,13 @@ func init() {
 	dependency.InitCobra(rootCmd, true, deprecatedConfig)
 }
 
-func initDfpath(logDir string) (dfpath.Dfpath, error) {
-	options := []dfpath.Option{}
-	if logDir != "" {
+func initDfpath(logDir, workHome string) (dfpath.Dfpath, error) {
+	var options []dfpath.Option
+	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(logDir))
+	}
+	if cfg.WorkHome != "" {
+		options = append(options, dfpath.WithWorkHome(workHome))
 	}
 
 	return dfpath.New(options...)
