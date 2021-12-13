@@ -55,15 +55,16 @@ func New(service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Serve
 
 func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
 	defer func() {
-		logger.Debugf("peer %s register result %v, err: %v", request.PeerId, resp, err)
+		logger.Infof("peer %s register result %v, err: %v", request.PeerId, resp, err)
 	}()
+	logger.Infof("register peer task, req: %#v", request)
+
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
-	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 	defer span.End()
-	logger.Debugf("register peer task, req: %#v", request)
-	resp = new(scheduler.RegisterResult)
+	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 
+	resp = new(scheduler.RegisterResult)
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
