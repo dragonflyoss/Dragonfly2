@@ -59,7 +59,9 @@ func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (Daemon
 			}),
 		}
 	})
-	elasticDaemonClient.AddServerNode(addr)
+	if err := elasticDaemonClient.AddServerNode(addr); err != nil {
+		return nil, err
+	}
 	return elasticDaemonClient, nil
 }
 

@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"reflect"
 	"strings"
@@ -109,7 +110,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 		t.addresses = append(t.addresses, lis.Addr().String())
 
 		go func(s *grpc.Server, l net.Listener) {
-			s.Serve(l)
+			log.Fatalf("failed to serve %v", s.Serve(l))
 		}(s, lis)
 	}
 

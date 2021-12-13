@@ -364,7 +364,9 @@ func (b *d7yBalancer) scManager() {
 				if len(pickRecord.ctxs) == 0 {
 					if pickRecord.accessTime.Add(connectionLifetime).Before(time.Now()) {
 						b.pickHistory.Delete(key)
-						b.resetSubConn(subConn)
+						if err := b.resetSubConn(subConn); err != nil {
+							log.Printf("d7yBalancer: failed to reset subConn: %v", err)
+						}
 						b.subConnPickRecords.Delete(subConn)
 					}
 				}

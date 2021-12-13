@@ -111,7 +111,9 @@ func NewConnection(ctx context.Context, scheme string, addrs []dfnet.NetAddr, co
 		opt.apply(conn)
 	}
 	if resolver, ok := Scheme2Resolver[scheme]; ok {
-		resolver.UpdateAddrs(addrs)
+		if err := resolver.UpdateAddrs(addrs); err != nil {
+			return nil
+		}
 	}
 	// TODO(zzy987) add an error?
 	return conn
@@ -127,7 +129,9 @@ func (conn *Connection) AddServerNode(addr dfnet.NetAddr) error {
 	}
 	conn.serverNodes = append(conn.serverNodes, addr)
 	if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-		resolver.UpdateAddrs(conn.serverNodes)
+		if err := resolver.UpdateAddrs(conn.serverNodes); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -178,7 +182,10 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	if updateFlag {
 		conn.serverNodes = addrs
 		if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-			resolver.UpdateAddrs(addrs)
+			if err := resolver.UpdateAddrs(addrs); err != nil {
+				//TODO
+				fmt.Printf("%v", err)
+			}
 		}
 	}
 }
