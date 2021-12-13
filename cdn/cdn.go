@@ -163,7 +163,7 @@ func (s *Server) Serve() error {
 				logger.Fatalf("update cdn instance failed: %v", err)
 			}
 			// Serve Keepalive
-			logger.Infof("====starting keepalive cdn instance %#v to manager %s====", CDNInstance)
+			logger.Infof("====starting keepalive cdn instance %s to manager %s====", CDNInstance, s.config.Manager.Addr)
 			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,
