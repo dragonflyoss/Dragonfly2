@@ -64,7 +64,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	if pe, ok := peer.FromContext(ctx); ok {
 		clientAddr = pe.Addr.String()
 	}
-	logger.Infof("trigger obtain seed for taskID: %s, url: %s, urlMeta: %+v client: %s", req.TaskId, req.Url, req.UrlMeta, clientAddr)
+	logger.Infof("trigger obtain seed for taskID: %s, url: %s, urlMeta: %s client: %s", req.TaskId, req.Url, req.UrlMeta, clientAddr)
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, constants.SpanObtainSeeds, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
