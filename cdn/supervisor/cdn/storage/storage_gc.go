@@ -25,7 +25,6 @@ import (
 	"github.com/emirpasic/gods/maps/treemap"
 	godsutils "github.com/emirpasic/gods/utils"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -37,15 +36,15 @@ type Cleaner interface {
 }
 
 type cleaner struct {
-	cfg            *config.GCConfig
+	config         *DriverGCConfig
 	driver         storedriver.Driver
 	taskManager    task.Manager
 	storageManager Manager
 }
 
-func NewStorageCleaner(cfg *config.GCConfig, driver storedriver.Driver, storageManager Manager, taskManager task.Manager) (Cleaner, error) {
+func NewStorageCleaner(config *DriverGCConfig, driver storedriver.Driver, storageManager Manager, taskManager task.Manager) (Cleaner, error) {
 	return &cleaner{
-		cfg:            cfg,
+		config:         config,
 		driver:         driver,
 		taskManager:    taskManager,
 		storageManager: storageManager,
@@ -70,10 +69,10 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	}
 	fullGC := force
 	if !fullGC {
-		if freeSpace > cleaner.cfg.YoungGCThreshold {
+		if freeSpace > cleaner.config.YoungGCThreshold {
 			return nil, nil
 		}
-		if freeSpace <= cleaner.cfg.FullGCThreshold {
+		if freeSpace <= cleaner.config.FullGCThreshold {
 			fullGC = true
 		}
 	}
@@ -146,7 +145,7 @@ func (cleaner *cleaner) sortInert(gapTasks, intervalTasks *treemap.Map, metadata
 	gap := timeutils.CurrentTimeMillis() - metadata.AccessTime
 
 	if metadata.Interval > 0 &&
-		gap <= metadata.Interval+(int64(cleaner.cfg.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
+		gap <= metadata.Interval+(int64(cleaner.config.IntervalThreshold.Seconds())*int64(time.Millisecond)) {
 		info, err := cleaner.storageManager.StatDownloadFile(metadata.TaskID)
 		if err != nil {
 			return err
@@ -187,6 +186,6 @@ func (cleaner *cleaner) getGCTasks(gapTasks, intervalTasks *treemap.Map) []strin
 		}
 	}
 
-	gcLen := (len(gcTasks)*cleaner.cfg.CleanRatio + 9) / 10
+	gcLen := (len(gcTasks)*cleaner.config.CleanRatio + 9) / 10
 	return gcTasks[0:gcLen]
 }

@@ -39,7 +39,7 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 			return nil, errors.Wrapf(err, "calculate the breakRange")
 		}
 	}
-	seedTask.Log().Infof("start downloading URL %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
+	seedTask.Log().Infof("start downloading %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
 	downloadRequest, err := source.NewRequestWithContext(ctx, seedTask.RawURL, seedTask.Header)
 	if err != nil {
 		return nil, errors.Wrap(err, "create download request")
@@ -48,13 +48,14 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 		downloadRequest.Header.Add(source.Range, breakRange)
 	}
 	body, expireInfo, err := source.DownloadWithExpireInfo(downloadRequest)
-	// update Expire info
-	if err == nil {
-		cm.updateExpireInfo(seedTask.ID, map[string]string{
-			source.LastModified: expireInfo.LastModified,
-			source.ETag:         expireInfo.ETag,
-		})
+	if err != nil {
+		return nil, err
 	}
+	// update Expire info
+	cm.updateExpireInfo(seedTask.ID, map[string]string{
+		source.LastModified: expireInfo.LastModified,
+		source.ETag:         expireInfo.ETag,
+	})
 	return body, err
 }
 

@@ -24,12 +24,10 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
@@ -41,101 +39,87 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
-const StorageMode = storage.HybridStorageMode
+const _hybrid = "hybrid"
 
 const secureLevel = 500 * unit.MB
 
-var _ storage.Manager = (*hybridStorageManager)(nil)
-var _ gc.Executor = (*hybridStorageManager)(nil)
+var (
+	_ storage.Manager = (*hybridStorageManager)(nil)
+	_ gc.Executor     = (*hybridStorageManager)(nil)
+	_ storage.Builder = (*hybridStorageBuilder)(nil)
+)
 
-func init() {
-	if err := storage.Register(StorageMode, newStorageManager); err != nil {
-		logger.CoreLogger.Error(err)
-	}
+type hybridStorageBuilder struct {
+	defaultDriverConfigsFunc func() map[string]*storage.DriverConfig
+	validateFunc             func(map[string]*storage.DriverConfig) []error
 }
 
-// NewStorageManager performs initialization for storage manager and return a storage Manager.
-func newStorageManager(cfg *config.StorageConfig) (storage.Manager, error) {
-	if len(cfg.DriverConfigs) != 2 {
-		return nil, fmt.Errorf("disk storage manager should have two driver, cfg's driver number is wrong : %v", cfg)
+func (*hybridStorageBuilder) Build(config storage.Config, taskManager task.Manager) (storage.Manager, error) {
+	diskDriverBuilder := storedriver.Get(local.DiskDriverName)
+	if diskDriverBuilder == nil {
+		return nil, fmt.Errorf("can not find disk driver for hybrid storage manager")
 	}
-	diskDriver, ok := storedriver.Get(local.DiskDriverName)
-	if !ok {
-		return nil, fmt.Errorf("can not find disk driver for hybrid storage manager, config is %v", cfg)
+	diskDriver, err := diskDriverBuilder(&storedriver.Config{
+		BaseDir: config.DriverConfigs[local.DiskDriverName].BaseDir,
+	})
+	if err != nil {
+		return nil, err
 	}
-	memoryDriver, ok := storedriver.Get(local.MemoryDriverName)
-	if !ok {
-		return nil, fmt.Errorf("can not find memory driver for hybrid storage manager, config %v", cfg)
+	memoryDriverBuilder := storedriver.Get(local.MemoryDriverName)
+	if memoryDriverBuilder == nil {
+		return nil, fmt.Errorf("can not find memory driver for hybrid storage manager")
+	}
+	memoryDriver, err := memoryDriverBuilder(&storedriver.Config{
+		BaseDir: config.DriverConfigs[local.MemoryDriverName].BaseDir,
+	})
+	if err != nil {
+		return nil, err
 	}
 	storageManager := &hybridStorageManager{
-		cfg:          cfg,
+		config:       config,
 		memoryDriver: memoryDriver,
 		diskDriver:   diskDriver,
-		hasShm:       true,
+		taskManager:  taskManager,
 		shmSwitch:    newShmSwitch(),
+		hasShm:       true,
 	}
-	gc.Register("hybridStorage", cfg.GCInitialDelay, cfg.GCInterval, storageManager)
+
+	diskDriverCleaner, err := storage.NewStorageCleaner(config.DriverConfigs[local.DiskDriverName].DriverGCConfig, diskDriver, storageManager, taskManager)
+	if err != nil {
+		return nil, err
+	}
+	memoryDriverCleaner, err := storage.NewStorageCleaner(config.DriverConfigs[local.MemoryDriverName].DriverGCConfig, memoryDriver, storageManager, taskManager)
+	if err != nil {
+		return nil, err
+	}
+	storageManager.diskDriverCleaner = diskDriverCleaner
+	storageManager.memoryDriverCleaner = memoryDriverCleaner
+
+	gc.Register("hybridStorage", config.GCInitialDelay, config.GCInterval, storageManager)
 	return storageManager, nil
 }
 
-func (h *hybridStorageManager) Initialize(taskManager task.Manager) {
-	h.taskManager = taskManager
-	diskGcConfig := h.cfg.DriverConfigs[local.DiskDriverName].GCConfig
-
-	if diskGcConfig == nil {
-		diskGcConfig = h.getDiskDefaultGcConfig()
-		logger.StorageGCLogger.With("type", "hybrid").Warnf("disk gc config is nil, use default gcConfig: %v", diskGcConfig)
-	}
-	h.diskDriverCleaner, _ = storage.NewStorageCleaner(diskGcConfig, h.diskDriver, h, taskManager)
-	memoryGcConfig := h.cfg.DriverConfigs[local.MemoryDriverName].GCConfig
-	if memoryGcConfig == nil {
-		memoryGcConfig = h.getMemoryDefaultGcConfig()
-		logger.StorageGCLogger.With("type", "hybrid").Warnf("memory gc config is nil, use default gcConfig: %v", diskGcConfig)
-	}
-	h.memoryDriverCleaner, _ = storage.NewStorageCleaner(memoryGcConfig, h.memoryDriver, h, taskManager)
-	logger.StorageGCLogger.With("type", "hybrid").Info("success initialize hybrid cleaners")
+func (*hybridStorageBuilder) Name() string {
+	return _hybrid
 }
 
-func (h *hybridStorageManager) getDiskDefaultGcConfig() *config.GCConfig {
-	totalSpace, err := h.diskDriver.GetTotalSpace()
-	if err != nil {
-		logger.StorageGCLogger.With("type", "hybrid").Errorf("failed to get total space of disk: %v", err)
-	}
-	yongGcThreshold := 200 * unit.GB
-	if totalSpace > 0 && totalSpace/4 < yongGcThreshold {
-		yongGcThreshold = totalSpace / 4
-	}
-	return &config.GCConfig{
-		YoungGCThreshold:  yongGcThreshold,
-		FullGCThreshold:   25 * unit.GB,
-		IntervalThreshold: 2 * time.Hour,
-		CleanRatio:        1,
-	}
+func (b *hybridStorageBuilder) Validate(driverConfigs map[string]*storage.DriverConfig) []error {
+	return b.validateFunc(driverConfigs)
 }
 
-func (h *hybridStorageManager) getMemoryDefaultGcConfig() *config.GCConfig {
-	// determine whether the shared cache can be used
-	diff := unit.Bytes(0)
-	totalSpace, err := h.memoryDriver.GetTotalSpace()
-	if err != nil {
-		logger.StorageGCLogger.With("type", "hybrid").Errorf("failed to get total space of memory: %v", err)
-	}
-	if totalSpace < 72*unit.GB {
-		diff = 72*unit.GB - totalSpace
-	}
-	if diff >= totalSpace {
-		h.hasShm = false
-	}
-	return &config.GCConfig{
-		YoungGCThreshold:  10*unit.GB + diff,
-		FullGCThreshold:   2*unit.GB + diff,
-		CleanRatio:        3,
-		IntervalThreshold: 2 * time.Hour,
-	}
+func (b *hybridStorageBuilder) DefaultDriverConfigs() map[string]*storage.DriverConfig {
+	return b.defaultDriverConfigsFunc()
+}
+
+func init() {
+	storage.Register(&hybridStorageBuilder{
+		defaultDriverConfigsFunc: getDefaultDriverGCConfigs,
+		validateFunc:             validateConfig,
+	})
 }
 
 type hybridStorageManager struct {
-	cfg                 *config.StorageConfig
+	config              storage.Config
 	memoryDriver        storedriver.Driver
 	diskDriver          storedriver.Driver
 	diskDriverCleaner   storage.Cleaner
@@ -401,7 +385,7 @@ func (h *hybridStorageManager) GC() error {
 		defer wg.Done()
 		gcTaskIDs, err := h.diskDriverCleaner.GC("hybrid", false)
 		if err != nil {
-			logger.StorageGCLogger.With("type", "hybrid").Error("gc disk: failed to get gcTaskIds")
+			logger.StorageGCLogger.With("type", "hybrid").Error("gc disk: failed to get gcTaskIDs")
 		}
 		realGCCount := h.gcTasks(gcTaskIDs, true)
 		logger.StorageGCLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from disk, actual gc %d tasks", len(gcTaskIDs), realGCCount)

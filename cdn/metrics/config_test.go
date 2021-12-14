@@ -14,11 +14,28 @@
  * limitations under the License.
  */
 
-package gc
+package metrics
 
-type Config struct {
-}
+import (
+	"net"
+	"testing"
 
-func (config Config) applyDefaults() Config {
-	return config
+	"github.com/stretchr/testify/assert"
+)
+
+func TestConfig(t *testing.T) {
+	tcpConfig := Config{
+		Net:  "tcp",
+		Addr: "1.1.1.1:22",
+	}
+	addr, err := net.ResolveTCPAddr(tcpConfig.Net, tcpConfig.Addr)
+	assert.Equal(t, tcpConfig.Addr, addr.String())
+	assert.Nil(t, err)
+	unixConfig := Config{
+		Net:  "unix",
+		Addr: "/unix/metrics.sock",
+	}
+	unixAddr, err := net.ResolveUnixAddr(unixConfig.Net, unixConfig.Addr)
+	assert.Equal(t, unixConfig.Addr, unixAddr.String())
+	assert.Nil(t, err)
 }
