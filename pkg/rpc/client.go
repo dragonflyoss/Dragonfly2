@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/common/log"
 	"sync"
 	"time"
 
@@ -125,7 +126,9 @@ func (conn *Connection) AddServerNode(addr dfnet.NetAddr) error {
 		}
 	}
 	conn.serverNodes = append(conn.serverNodes, addr)
-	conn.resolver.UpdateAddrs(conn.serverNodes)
+	if err := conn.resolver.UpdateAddrs(conn.serverNodes); err != nil {
+		log.Debugf("fail to update addresses %v\n", err)
+	}
 	return nil
 }
 
@@ -174,6 +177,8 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	}
 	if updateFlag {
 		conn.serverNodes = addrs
-		conn.resolver.UpdateAddrs(addrs)
+		if err := conn.resolver.UpdateAddrs(addrs); err != nil {
+			log.Debugf("fail to update addresses %v\n", err)
+		}
 	}
 }
