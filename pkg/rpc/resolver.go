@@ -31,42 +31,25 @@ const (
 )
 
 var (
-	_ resolver.Builder  = &d7yResolverBuilder{}
+	_ resolver.Builder  = &d7yResolver{}
 	_ resolver.Resolver = &d7yResolver{}
-
-	Scheme2Resolver = map[string]*d7yResolver{
-		CDNScheme:       {addrs: make([]dfnet.NetAddr, 0)},
-		SchedulerScheme: {addrs: make([]dfnet.NetAddr, 0)},
-		DaemonScheme:    {addrs: make([]dfnet.NetAddr, 0)},
-	}
 )
 
-func init() {
-	resolver.Register(&d7yResolverBuilder{scheme: CDNScheme})
-	resolver.Register(&d7yResolverBuilder{scheme: SchedulerScheme})
-	resolver.Register(&d7yResolverBuilder{scheme: DaemonScheme})
-}
-
-type d7yResolverBuilder struct {
-	scheme string
-}
-
-func (builder *d7yResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
-	r := Scheme2Resolver[builder.scheme]
-	r.target = target
-	r.cc = cc
-	err := r.UpdateAddrs(r.addrs)
-	return r, err
-}
-
-func (builder *d7yResolverBuilder) Scheme() string {
-	return builder.scheme
-}
-
 type d7yResolver struct {
+	scheme string
 	target resolver.Target
 	cc     resolver.ClientConn
 	addrs  []dfnet.NetAddr
+}
+
+func (r *d7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	r.target = target
+	r.cc = cc
+	return r, nil
+}
+
+func (r *d7yResolver) Scheme() string {
+	return r.scheme
 }
 
 func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
