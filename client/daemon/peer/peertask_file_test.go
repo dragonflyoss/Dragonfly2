@@ -136,7 +136,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		req,
 		ptm.schedulerClient,
 		ptm.schedulerOption,
-		0)
+		0, 10)
 	assert.Nil(err, "new file peer task")
 	pt.needBackSource = true
 
@@ -261,7 +261,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		req,
 		ptm.schedulerClient,
 		ptm.schedulerOption,
-		0)
+		0, 10)
 	assert.Nil(err, "new file peer task")
 	pt.needBackSource = true
 

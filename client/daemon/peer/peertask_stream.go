@@ -60,7 +60,8 @@ func newStreamPeerTask(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, *streamPeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit,
+	getPiecesMaxRetry int) (context.Context, *streamPeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -172,6 +173,7 @@ func newStreamPeerTask(ctx context.Context,
 			contentLength:       atomic.NewInt64(-1),
 			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
+			getPiecesMaxRetry:   getPiecesMaxRetry,
 			schedulerOption:     schedulerOption,
 			schedulerClient:     schedulerClient,
 			limiter:             limiter,
