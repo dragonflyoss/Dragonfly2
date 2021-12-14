@@ -219,7 +219,7 @@ func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
 	return s.peerManager.Get(id)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
+func (s *SchedulerService) RegisterTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
 	// get or create host
 	peerHost := req.PeerHost
 	host, ok := s.hostManager.Get(peerHost.Uuid)
@@ -246,10 +246,10 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	return peer
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
+func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
-	synclock.Lock(task.ID, true)
 
+	synclock.Lock(task.ID, true)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
@@ -262,6 +262,7 @@ func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor
 	} else {
 		task.Log().Infof("add new task %s", task.ID)
 	}
+
 	synclock.UnLock(task.ID, true)
 
 	synclock.Lock(task.ID, false)
