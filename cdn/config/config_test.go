@@ -47,15 +47,15 @@ func TestConfig_Convert(t *testing.T) {
 			},
 		},
 		BaseProperties: &BaseProperties{
-			ListenPort:              8003,
-			DownloadPort:            8001,
-			SystemReservedBandwidth: 20 * unit.MB,
-			MaxBandwidth:            2 * unit.GB,
+			ListenPort:              8006,
+			DownloadPort:            8000,
+			SystemReservedBandwidth: 200 * unit.MB,
+			MaxBandwidth:            20 * unit.GB,
 			AdvertiseIP:             "127.0.0.1",
-			FailAccessInterval:      3 * time.Minute,
-			GCInitialDelay:          6 * time.Second,
-			GCMetaInterval:          2 * time.Minute,
-			TaskExpireTime:          4 * time.Minute,
+			FailAccessInterval:      30 * time.Minute,
+			GCInitialDelay:          60 * time.Second,
+			GCMetaInterval:          20 * time.Minute,
+			TaskExpireTime:          40 * time.Minute,
 			StorageMode:             "disk",
 			LogDir:                  "aaa",
 			WorkHome:                "/workHome",
@@ -63,7 +63,7 @@ func TestConfig_Convert(t *testing.T) {
 				Addr:         "127.0.0.1:8004",
 				CDNClusterID: 5,
 				KeepAlive: KeepAliveConfig{
-					Interval: 5 * time.Second,
+					Interval: 50 * time.Second,
 				},
 			},
 			Host: HostConfig{
@@ -71,7 +71,7 @@ func TestConfig_Convert(t *testing.T) {
 				IDC:      "na61",
 			},
 			Metrics: &RestConfig{
-				Addr: ":8080",
+				Addr: ":8081",
 			},
 		},
 		Plugins: map[plugins.PluginType][]*plugins.PluginProperties{
@@ -88,15 +88,15 @@ func TestConfig_Convert(t *testing.T) {
 					Name:   "disk",
 					Enable: true,
 					Config: &StorageConfig{
-						GCInitialDelay: 0 * time.Second,
-						GCInterval:     15 * time.Second,
+						GCInitialDelay: 10 * time.Second,
+						GCInterval:     150 * time.Second,
 						DriverConfigs: map[string]*DriverConfig{
 							"disk": {
 								GCConfig: &GCConfig{
-									YoungGCThreshold:  100 * unit.GB,
-									FullGCThreshold:   5 * unit.GB,
-									CleanRatio:        1,
-									IntervalThreshold: 2 * time.Hour,
+									YoungGCThreshold:  1000 * unit.GB,
+									FullGCThreshold:   50 * unit.GB,
+									CleanRatio:        3,
+									IntervalThreshold: 3 * time.Hour,
 								},
 							},
 						},
@@ -119,45 +119,45 @@ func TestConfig_Convert(t *testing.T) {
 		},
 		Metrics: metrics.Config{
 			Net:  "tcp",
-			Addr: ":8080",
+			Addr: ":8081",
 		},
 		Storage: storage.Config{
 			StorageMode:    "disk",
-			GCInitialDelay: 0,
-			GCInterval:     15000000000,
+			GCInitialDelay: 10 * time.Second,
+			GCInterval:     150 * time.Second,
 			DriverConfigs: map[string]*storage.DriverConfig{
 				"disk": {
 					BaseDir: filepath.Join(basic.HomeDir, "ftp"),
 					DriverGCConfig: &storage.DriverGCConfig{
-						YoungGCThreshold:  100 * unit.GB,
-						FullGCThreshold:   5 * unit.GB,
-						CleanRatio:        1,
-						IntervalThreshold: 2 * time.Hour,
+						YoungGCThreshold:  1000 * unit.GB,
+						FullGCThreshold:   50 * unit.GB,
+						CleanRatio:        3,
+						IntervalThreshold: 3 * time.Hour,
 					},
 				},
 			},
 		},
 		RPCServer: rpcserver.Config{
 			AdvertiseIP:  "127.0.0.1",
-			ListenPort:   8003,
-			DownloadPort: 8001,
+			ListenPort:   8006,
+			DownloadPort: 8000,
 		},
 		Task: task.Config{
-			FailAccessInterval: 3 * time.Minute,
-			GCInitialDelay:     6 * time.Second,
-			GCMetaInterval:     2 * time.Minute,
-			ExpireTime:         4 * time.Minute,
+			FailAccessInterval: 30 * time.Minute,
+			GCInitialDelay:     60 * time.Second,
+			GCMetaInterval:     20 * time.Minute,
+			ExpireTime:         40 * time.Minute,
 		},
 		CDN: cdn.Config{
-			SystemReservedBandwidth: 20 * unit.MB,
-			MaxBandwidth:            2 * unit.GB,
+			SystemReservedBandwidth: 200 * unit.MB,
+			MaxBandwidth:            20 * unit.GB,
 			WriterRoutineLimit:      4,
 		},
 		Manager: ManagerConfig{
 			Addr:         "127.0.0.1:8004",
 			CDNClusterID: 5,
 			KeepAlive: KeepAliveConfig{
-				Interval: 5 * time.Second,
+				Interval: 50 * time.Second,
 			},
 		},
 		Host: HostConfig{
