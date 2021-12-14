@@ -17,15 +17,21 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   //nolint:gci    // Register disk storage manager
+	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // Register hybrid storage manager
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/basic"
@@ -51,38 +57,94 @@ type DeprecatedConfig struct {
 
 func (c DeprecatedConfig) Convert() *Config {
 	newConfig := New()
-	base := c.BaseProperties
-	newConfig.Manager = base.Manager
-	newConfig.Host = base.Host
-	newConfig.LogDir = base.LogDir
-	newConfig.WorkHome = base.WorkHome
-	if base.Metrics != nil {
+	baseProperties := c.BaseProperties
+	newConfig.Manager = baseProperties.Manager
+	newConfig.Host = baseProperties.Host
+	newConfig.LogDir = baseProperties.LogDir
+	newConfig.WorkHome = baseProperties.WorkHome
+	if baseProperties.Metrics != nil {
 		newConfig.Metrics = metrics.Config{
 			Net:  "tcp",
-			Addr: base.Metrics.Addr,
+			Addr: baseProperties.Metrics.Addr,
 		}
 	}
 	newConfig.Task = task.Config{
-		GCInitialDelay:     base.GCInitialDelay,
-		GCMetaInterval:     base.GCMetaInterval,
-		ExpireTime:         base.TaskExpireTime,
-		FailAccessInterval: base.FailAccessInterval,
+		GCInitialDelay:     baseProperties.GCInitialDelay,
+		GCMetaInterval:     baseProperties.GCMetaInterval,
+		ExpireTime:         baseProperties.TaskExpireTime,
+		FailAccessInterval: baseProperties.FailAccessInterval,
 	}
-	newConfig.CDN.SystemReservedBandwidth = base.SystemReservedBandwidth
-	newConfig.CDN.MaxBandwidth = base.MaxBandwidth
+	newConfig.CDN.SystemReservedBandwidth = baseProperties.SystemReservedBandwidth
+	newConfig.CDN.MaxBandwidth = baseProperties.MaxBandwidth
 	newConfig.RPCServer = rpcserver.Config{
-		AdvertiseIP:  base.AdvertiseIP,
-		ListenPort:   base.ListenPort,
-		DownloadPort: base.DownloadPort,
+		AdvertiseIP:  baseProperties.AdvertiseIP,
+		ListenPort:   baseProperties.ListenPort,
+		DownloadPort: baseProperties.DownloadPort,
 	}
-	driverConfig := &storedriver.Config{}
-	if err := mapstructure.Decode(c.Plugins[plugins.StorageDriverPlugin][0].Config, driverConfig); err == nil {
-		newConfig.Storage.DriverConfigs["disk"].BaseDir = driverConfig.BaseDir
+	for _, properties := range c.Plugins[plugins.StorageManagerPlugin] {
+		if properties.Enable == false {
+			continue
+		}
+		storageManager := properties
+		newConfig.Storage.StorageMode = storageManager.Name
+		storageConfig := &StorageConfig{}
+		if err := decodeStorageManager(storageManager.Config, storageConfig); err == nil {
+			newConfig.Storage.GCInitialDelay = storageConfig.GCInitialDelay
+			newConfig.Storage.GCInterval = storageConfig.GCInterval
+			for driverName, config := range storageConfig.DriverConfigs {
+				var baseDir string
+				for _, pluginProperties := range c.Plugins[plugins.StorageDriverPlugin] {
+					if pluginProperties.Name != driverName || pluginProperties.Enable == false {
+						continue
+					}
+					driverConfig := &storedriver.Config{}
+					if err := mapstructure.Decode(pluginProperties.Config, driverConfig); err == nil {
+						baseDir = driverConfig.BaseDir
+					}
+				}
+
+				newConfig.Storage.DriverConfigs[driverName] = &storage.DriverConfig{
+					BaseDir: baseDir,
+					DriverGCConfig: &storage.DriverGCConfig{
+						YoungGCThreshold:  config.GCConfig.YoungGCThreshold,
+						FullGCThreshold:   config.GCConfig.FullGCThreshold,
+						CleanRatio:        config.GCConfig.CleanRatio,
+						IntervalThreshold: config.GCConfig.IntervalThreshold,
+					},
+				}
+				newConfig.Storage.DriverConfigs[driverName].DriverGCConfig.CleanRatio = config.GCConfig.CleanRatio
+			}
+		}
 	}
 	newConfig.Verbose = c.Verbose
 	newConfig.Console = c.Console
 	newConfig.Telemetry = c.Telemetry
+	newConfig.PProfPort = c.PProfPort
 	return newConfig
+}
+
+func decodeStorageManager(conf interface{}, sc *StorageConfig) error {
+	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
+			switch to {
+			case reflect.TypeOf(unit.B),
+				reflect.TypeOf(time.Second):
+				b, _ := yaml.Marshal(v)
+				p := reflect.New(to)
+				if err := yaml.Unmarshal(b, p.Interface()); err != nil {
+					return nil, err
+				}
+				return p.Interface(), nil
+			default:
+				return v, nil
+			}
+		}),
+		Result: sc,
+	})
+	if err != nil {
+		return fmt.Errorf("parse config: %v", err)
+	}
+	return decoder.Decode(conf)
 }
 
 // NewDefaultPlugins creates plugin instants with default values.
@@ -100,6 +162,50 @@ func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
 				Enable: false,
 				Config: &storedriver.Config{
 					BaseDir: "/dev/shm/dragonfly",
+				},
+			},
+		}, plugins.StorageManagerPlugin: {
+			{
+				Name:   "disk",
+				Enable: true,
+				Config: &StorageConfig{
+					GCInitialDelay: 0 * time.Second,
+					GCInterval:     15 * time.Second,
+					DriverConfigs: map[string]*DriverConfig{
+						"disk": {
+							GCConfig: &GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        1,
+								IntervalThreshold: 2 * time.Hour,
+							},
+						},
+					},
+				},
+			}, {
+				Name:   "hybrid",
+				Enable: false,
+				Config: &StorageConfig{
+					GCInitialDelay: 0 * time.Second,
+					GCInterval:     15 * time.Second,
+					DriverConfigs: map[string]*DriverConfig{
+						"disk": {
+							GCConfig: &GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        1,
+								IntervalThreshold: 2 * time.Hour,
+							},
+						},
+						"memory": {
+							GCConfig: &GCConfig{
+								YoungGCThreshold:  100 * unit.GB,
+								FullGCThreshold:   5 * unit.GB,
+								CleanRatio:        3,
+								IntervalThreshold: 2 * time.Hour,
+							},
+						},
+					},
 				},
 			},
 		},
