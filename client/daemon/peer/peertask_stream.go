@@ -34,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 // StreamPeerTask represents a peer task with stream io for reading directly without once more disk io
@@ -55,37 +54,32 @@ type streamPeerTask struct {
 var _ StreamPeerTask = (*streamPeerTask)(nil)
 
 func newStreamPeerTask(ctx context.Context,
-	host *scheduler.PeerHost,
-	pieceManager PieceManager,
-	request *scheduler.PeerTaskRequest,
-	schedulerClient schedulerclient.SchedulerClient,
-	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit,
-	getPiecesMaxRetry int) (context.Context, *streamPeerTask, *TinyData, error) {
+	ptm *peerTaskManager,
+	request *scheduler.PeerTaskRequest) (context.Context, *streamPeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
-	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
 	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
 		request.PeerId, request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag)
 	// trace register
-	regCtx, cancel := context.WithTimeout(ctx, schedulerOption.ScheduleTimeout.Duration)
+	regCtx, cancel := context.WithTimeout(ctx, ptm.schedulerOption.ScheduleTimeout.Duration)
 	defer cancel()
 	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
-	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
+	result, err := ptm.schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
 	var needBackSource bool
 	if err != nil {
 		if err == context.DeadlineExceeded {
-			logger.Errorf("scheduler did not response in %s", schedulerOption.ScheduleTimeout.Duration)
+			logger.Errorf("scheduler did not response in %s", ptm.schedulerOption.ScheduleTimeout.Duration)
 		}
 		logger.Errorf("step 1: peer %s register failed: %s", request.PeerId, err)
-		if schedulerOption.DisableAutoBackSource {
+		if ptm.schedulerOption.DisableAutoBackSource {
 			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
 			span.RecordError(err)
 			span.End()
@@ -93,7 +87,7 @@ func newStreamPeerTask(ctx context.Context,
 		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
-		schedulerClient = &dummySchedulerClient{}
+		ptm.schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: idgen.TaskID(request.Url, request.UrlMeta)}
 		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
@@ -138,7 +132,7 @@ func newStreamPeerTask(ctx context.Context,
 		}
 	}
 
-	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := ptm.schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
 	if err != nil {
 		defer span.End()
@@ -146,19 +140,19 @@ func newStreamPeerTask(ctx context.Context,
 		return ctx, nil, nil, err
 	}
 	var limiter *rate.Limiter
-	if perPeerRateLimit > 0 {
-		limiter = rate.NewLimiter(perPeerRateLimit, int(perPeerRateLimit))
+	if ptm.perPeerRateLimit > 0 {
+		limiter = rate.NewLimiter(ptm.perPeerRateLimit, int(ptm.perPeerRateLimit))
 	}
 	pt := &streamPeerTask{
 		successPieceCh: make(chan int32),
 		streamDone:     make(chan struct{}),
 		peerTask: peerTask{
 			ctx:                 ctx,
-			host:                host,
+			host:                ptm.host,
 			needBackSource:      needBackSource,
 			request:             request,
 			peerPacketStream:    peerPacketStream,
-			pieceManager:        pieceManager,
+			pieceManager:        ptm.pieceManager,
 			peerPacketReady:     make(chan bool, 1),
 			peerID:              request.PeerId,
 			taskID:              result.TaskId,
@@ -173,9 +167,9 @@ func newStreamPeerTask(ctx context.Context,
 			contentLength:       atomic.NewInt64(-1),
 			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
-			getPiecesMaxRetry:   getPiecesMaxRetry,
-			schedulerOption:     schedulerOption,
-			schedulerClient:     schedulerClient,
+			getPiecesMaxRetry:   ptm.getPiecesMaxRetry,
+			schedulerOption:     ptm.schedulerOption,
+			schedulerClient:     ptm.schedulerClient,
 			limiter:             limiter,
 			completedLength:     atomic.NewInt64(0),
 			usedTraffic:         atomic.NewUint64(0),

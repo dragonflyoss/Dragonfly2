@@ -221,8 +221,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	}
 
 	start := time.Now()
-	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager,
-		req, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit, ptm.getPiecesMaxRetry)
+	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm, req)
 	if err != nil {
 		return nil, nil, err
 	}
