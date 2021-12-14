@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 )
 
 // Manager as an interface defines all operations about seed progress
@@ -48,7 +48,7 @@ type Manager interface {
 var _ Manager = (*manager)(nil)
 
 type manager struct {
-	mu               *synclock.LockerPool
+	kmu              *pkgsync.Krwmutex
 	taskManager      task.Manager
 	seedTaskSubjects map[string]*publisher
 }
@@ -59,15 +59,15 @@ func NewManager(taskManager task.Manager) (Manager, error) {
 
 func newManager(taskManager task.Manager) (*manager, error) {
 	return &manager{
-		mu:               synclock.NewLockerPool(),
+		kmu:              pkgsync.NewKrwmutex(),
 		taskManager:      taskManager,
 		seedTaskSubjects: make(map[string]*publisher),
 	}, nil
 }
 
 func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, taskID string) (<-chan *task.PieceInfo, error) {
-	pm.mu.Lock(taskID, false)
-	defer pm.mu.UnLock(taskID, false)
+	pm.kmu.Lock(taskID)
+	defer pm.kmu.Unlock(taskID)
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(constants.EventWatchSeedProgress)
 	seedTask, err := pm.taskManager.Get(taskID)
@@ -106,8 +106,8 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 }
 
 func (pm *manager) PublishPiece(ctx context.Context, taskID string, record *task.PieceInfo) (err error) {
-	pm.mu.Lock(taskID, false)
-	defer pm.mu.UnLock(taskID, false)
+	pm.kmu.Lock(taskID)
+	defer pm.kmu.Unlock(taskID)
 	span := trace.SpanFromContext(ctx)
 	jsonRecord, err := json.Marshal(record)
 	if err != nil {
@@ -128,8 +128,8 @@ func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *tas
 		return errors.Wrapf(err, "json marshal seedTask: %#v", seedTask)
 	}
 	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonTask)
-	pm.mu.Lock(taskID, false)
-	defer pm.mu.UnLock(taskID, false)
+	pm.kmu.Lock(taskID)
+	defer pm.kmu.Unlock(taskID)
 	span := trace.SpanFromContext(ctx)
 	recordBytes, _ := json.Marshal(seedTask)
 	span.AddEvent(constants.EventPublishTask, trace.WithAttributes(constants.AttributeSeedTask.String(string(recordBytes))))

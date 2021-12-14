@@ -28,7 +28,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
@@ -88,13 +88,14 @@ type manager struct {
 	taskStore               sync.Map
 	accessTimeMap           sync.Map
 	taskURLUnreachableStore sync.Map
+	kmu                     *pkgsync.Krwmutex
 }
 
 // NewManager returns a new Manager Object.
 func NewManager(config Config) (Manager, error) {
-
 	manager := &manager{
 		config: config,
+		kmu:    pkgsync.NewKrwmutex(),
 	}
 
 	gc.Register("task", config.GCInitialDelay, config.GCMetaInterval, manager)
@@ -107,10 +108,10 @@ func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err 
 			tm.accessTimeMap.Store(registerTask.ID, time.Now())
 		}
 	}()
-	synclock.Lock(registerTask.ID, true)
+	tm.kmu.RLock(registerTask.ID)
 	if unreachableTime, ok := tm.getTaskUnreachableTime(registerTask.ID); ok {
 		if time.Since(unreachableTime) < tm.config.FailAccessInterval {
-			synclock.UnLock(registerTask.ID, true)
+			tm.kmu.RUnlock(registerTask.ID)
 			// TODO 校验Header
 			return nil, errURLUnreachable
 		}
@@ -120,16 +121,16 @@ func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err 
 	actual, loaded := tm.taskStore.LoadOrStore(registerTask.ID, registerTask)
 	seedTask = actual.(*SeedTask)
 	if loaded && !IsSame(seedTask, registerTask) {
-		synclock.UnLock(registerTask.ID, true)
+		tm.kmu.RUnlock(registerTask.ID)
 		return nil, errors.Wrapf(errTaskIDConflict, "register task %#v is conflict with exist task %#v", registerTask, seedTask)
 	}
 	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
-		synclock.UnLock(registerTask.ID, true)
+		tm.kmu.RUnlock(registerTask.ID)
 		return seedTask, nil
 	}
-	synclock.UnLock(registerTask.ID, true)
-	synclock.Lock(registerTask.ID, false)
-	defer synclock.UnLock(registerTask.ID, false)
+	tm.kmu.RUnlock(registerTask.ID)
+	tm.kmu.Lock(registerTask.ID)
+	defer tm.kmu.Unlock(registerTask.ID)
 	if seedTask.SourceFileLength != source.UnknownSourceFileLen {
 		return seedTask, nil
 	}
@@ -168,8 +169,9 @@ func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err 
 }
 
 func (tm *manager) Get(taskID string) (*SeedTask, error) {
-	synclock.Lock(taskID, true)
-	defer synclock.UnLock(taskID, true)
+	tm.kmu.RLock(taskID)
+	defer tm.kmu.RUnlock(taskID)
+
 	// only update access when get task success
 	if task, ok := tm.getTask(taskID); ok {
 		tm.accessTimeMap.Store(taskID, time.Now())
@@ -179,8 +181,8 @@ func (tm *manager) Get(taskID string) (*SeedTask, error) {
 }
 
 func (tm *manager) Update(taskID string, taskInfo *SeedTask) error {
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
+	tm.kmu.Lock(taskID)
+	defer tm.kmu.Unlock(taskID)
 
 	if err := tm.updateTask(taskID, taskInfo); err != nil {
 		return err
@@ -191,8 +193,8 @@ func (tm *manager) Update(taskID string, taskInfo *SeedTask) error {
 }
 
 func (tm *manager) UpdateProgress(taskID string, info *PieceInfo) error {
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
+	tm.kmu.Lock(taskID)
+	defer tm.kmu.Unlock(taskID)
 
 	seedTask, ok := tm.getTask(taskID)
 	if !ok {
@@ -205,8 +207,9 @@ func (tm *manager) UpdateProgress(taskID string, info *PieceInfo) error {
 }
 
 func (tm *manager) GetProgress(taskID string) (map[uint32]*PieceInfo, error) {
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
+	tm.kmu.Lock(taskID)
+	defer tm.kmu.Unlock(taskID)
+
 	seedTask, ok := tm.getTask(taskID)
 	if !ok {
 		return nil, errTaskNotFound
@@ -220,8 +223,9 @@ func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
 }
 
 func (tm *manager) Delete(taskID string) {
-	synclock.Lock(taskID, false)
-	defer synclock.UnLock(taskID, false)
+	tm.kmu.Lock(taskID)
+	defer tm.kmu.Unlock(taskID)
+
 	tm.deleteTask(taskID)
 }
 
@@ -240,8 +244,8 @@ func (tm *manager) GC() error {
 	tm.accessTimeMap.Range(func(key, value interface{}) bool {
 		totalTaskNums++
 		taskID := key.(string)
-		synclock.Lock(taskID, false)
-		defer synclock.UnLock(taskID, false)
+		tm.kmu.Lock(taskID)
+		defer tm.kmu.Unlock(taskID)
 		atime := value.(time.Time)
 		if time.Since(atime) < tm.config.ExpireTime {
 			return true

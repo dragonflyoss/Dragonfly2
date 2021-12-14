@@ -30,7 +30,8 @@ func NewKrwmutex() *Krwmutex {
 }
 
 func (k *Krwmutex) Lock(key interface{}) {
-	rm, _ := k.m.LoadOrStore(key, &sync.RWMutex{})
+	m := sync.RWMutex{}
+	rm, _ := k.m.LoadOrStore(key, &m)
 	mu := rm.(*sync.RWMutex)
 	mu.Lock()
 }
@@ -47,7 +48,8 @@ func (k *Krwmutex) Unlock(key interface{}) {
 }
 
 func (k *Krwmutex) RLock(key interface{}) {
-	rm, _ := k.m.LoadOrStore(key, &sync.RWMutex{})
+	m := sync.RWMutex{}
+	rm, _ := k.m.LoadOrStore(key, &m)
 	mu := rm.(*sync.RWMutex)
 	mu.RLock()
 }

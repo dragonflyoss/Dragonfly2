@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
@@ -32,21 +32,22 @@ import (
 
 // metadataManager manages the meta file and piece meta file of each TaskID.
 type metadataManager struct {
-	storage     storage.Manager
-	cacheLocker *synclock.LockerPool
+	storage storage.Manager
+	kmu     *pkgsync.Krwmutex
 }
 
 func newMetadataManager(storageManager storage.Manager) *metadataManager {
 	return &metadataManager{
-		storageManager,
-		synclock.NewLockerPool(),
+		storage: storageManager,
+		kmu:     pkgsync.NewKrwmutex(),
 	}
 }
 
 // writeFileMetadataByTask stores metadata of task
 func (mm *metadataManager) writeFileMetadataByTask(seedTask *task.SeedTask) (*storage.FileMetadata, error) {
-	mm.cacheLocker.Lock(seedTask.ID, false)
-	defer mm.cacheLocker.UnLock(seedTask.ID, false)
+	mm.kmu.Lock(seedTask.ID)
+	defer mm.kmu.Unlock(seedTask.ID)
+
 	metadata := &storage.FileMetadata{
 		TaskID:          seedTask.ID,
 		TaskURL:         seedTask.TaskURL,
@@ -70,8 +71,8 @@ func (mm *metadataManager) writeFileMetadataByTask(seedTask *task.SeedTask) (*st
 
 // updateAccessTime update access and interval
 func (mm *metadataManager) updateAccessTime(taskID string, accessTime int64) error {
-	mm.cacheLocker.Lock(taskID, false)
-	defer mm.cacheLocker.UnLock(taskID, false)
+	mm.kmu.Lock(taskID)
+	defer mm.kmu.Unlock(taskID)
 
 	originMetadata, err := mm.readFileMetadata(taskID)
 	if err != nil {
@@ -91,8 +92,8 @@ func (mm *metadataManager) updateAccessTime(taskID string, accessTime int64) err
 }
 
 func (mm *metadataManager) updateExpireInfo(taskID string, expireInfo map[string]string) error {
-	mm.cacheLocker.Lock(taskID, false)
-	defer mm.cacheLocker.UnLock(taskID, false)
+	mm.kmu.Lock(taskID)
+	defer mm.kmu.Unlock(taskID)
 
 	originMetadata, err := mm.readFileMetadata(taskID)
 	if err != nil {
@@ -105,8 +106,8 @@ func (mm *metadataManager) updateExpireInfo(taskID string, expireInfo map[string
 }
 
 func (mm *metadataManager) updateStatusAndResult(taskID string, metadata *storage.FileMetadata) error {
-	mm.cacheLocker.Lock(taskID, false)
-	defer mm.cacheLocker.UnLock(taskID, false)
+	mm.kmu.Lock(taskID)
+	defer mm.kmu.Unlock(taskID)
 
 	originMetadata, err := mm.readFileMetadata(taskID)
 	if err != nil {
@@ -137,24 +138,24 @@ func (mm *metadataManager) readFileMetadata(taskID string) (*storage.FileMetadat
 
 // appendPieceMetadata append piece meta info to storage
 func (mm *metadataManager) appendPieceMetadata(taskID string, record *storage.PieceMetaRecord) error {
-	mm.cacheLocker.Lock(taskID, false)
-	defer mm.cacheLocker.UnLock(taskID, false)
+	mm.kmu.Lock(taskID)
+	defer mm.kmu.Unlock(taskID)
 	// write to the storage
 	return mm.storage.AppendPieceMetadata(taskID, record)
 }
 
 // appendPieceMetadata append piece meta info to storage
 func (mm *metadataManager) writePieceMetaRecords(taskID string, records []*storage.PieceMetaRecord) error {
-	mm.cacheLocker.Lock(taskID, false)
-	defer mm.cacheLocker.UnLock(taskID, false)
+	mm.kmu.Lock(taskID)
+	defer mm.kmu.Unlock(taskID)
 	// write to the storage
 	return mm.storage.WritePieceMetaRecords(taskID, records)
 }
 
 // readPieceMetaRecords reads pieceMetaRecords from storage and without check data integrity
 func (mm *metadataManager) readPieceMetaRecords(taskID string) ([]*storage.PieceMetaRecord, error) {
-	mm.cacheLocker.Lock(taskID, true)
-	defer mm.cacheLocker.UnLock(taskID, true)
+	mm.kmu.RLock(taskID)
+	defer mm.kmu.RUnlock(taskID)
 	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(taskID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read piece meta file")
@@ -167,12 +168,13 @@ func (mm *metadataManager) readPieceMetaRecords(taskID string) ([]*storage.Piece
 }
 
 func (mm *metadataManager) getPieceMd5Sign(taskID string) (string, []*storage.PieceMetaRecord, error) {
-	mm.cacheLocker.Lock(taskID, true)
-	defer mm.cacheLocker.UnLock(taskID, true)
+	mm.kmu.RLock(taskID)
+	defer mm.kmu.RUnlock(taskID)
 	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(taskID)
 	if err != nil {
 		return "", nil, errors.Wrapf(err, "read piece meta file")
 	}
+
 	var pieceMd5 []string
 	sort.Slice(pieceMetaRecords, func(i, j int) bool {
 		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum

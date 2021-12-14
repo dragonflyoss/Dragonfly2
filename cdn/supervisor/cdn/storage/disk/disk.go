@@ -35,7 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
@@ -68,6 +68,7 @@ func (b *diskStorageBuilder) Build(config storage.Config, taskManager task.Manag
 		config:      config,
 		diskDriver:  diskDriver,
 		taskManager: taskManager,
+		kmu:         pkgsync.NewKrwmutex(),
 	}
 	cleaner, err := storage.NewStorageCleaner(config.DriverConfigs[local.DiskDriverName].DriverGCConfig, diskDriver, storageManager, taskManager)
 	if err != nil {
@@ -103,6 +104,7 @@ type diskStorageManager struct {
 	diskDriver  storedriver.Driver
 	diskCleaner storage.Cleaner
 	taskManager task.Manager
+	kmu         *pkgsync.Krwmutex
 }
 
 func (s *diskStorageManager) AppendPieceMetadata(taskID string, pieceRecord *storage.PieceMetaRecord) error {
@@ -287,19 +289,19 @@ func (s *diskStorageManager) GC() error {
 	}
 	var realGCCount int
 	for _, taskID := range gcTaskIDs {
-		synclock.Lock(taskID, false)
+		s.kmu.Lock(taskID)
 		// try to ensure the taskID is not using again
 		if _, exist := s.taskManager.Exist(taskID); exist {
-			synclock.UnLock(taskID, false)
+			s.kmu.Unlock(taskID)
 			continue
 		}
 		realGCCount++
 		if err := s.DeleteTask(taskID); err != nil {
 			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
-			synclock.UnLock(taskID, false)
+			s.kmu.Unlock(taskID)
 			continue
 		}
-		synclock.UnLock(taskID, false)
+		s.kmu.Unlock(taskID)
 	}
 	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), realGCCount)
 	return nil

@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
@@ -82,6 +82,7 @@ func (*hybridStorageBuilder) Build(config storage.Config, taskManager task.Manag
 		taskManager:  taskManager,
 		shmSwitch:    newShmSwitch(),
 		hasShm:       true,
+		kmu:          pkgsync.NewKrwmutex(),
 	}
 
 	diskDriverCleaner, err := storage.NewStorageCleaner(config.DriverConfigs[local.DiskDriverName].DriverGCConfig, diskDriver, storageManager, taskManager)
@@ -128,6 +129,7 @@ type hybridStorageManager struct {
 	shmSwitch           *shmSwitch
 	// whether enable shm
 	hasShm bool
+	kmu    *pkgsync.Krwmutex
 }
 
 func (h *hybridStorageManager) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
@@ -414,21 +416,21 @@ func (h *hybridStorageManager) gcTasks(gcTaskIDs []string, isDisk bool) int {
 			continue
 		}
 		realGCCount++
-		synclock.Lock(taskID, false)
+		h.kmu.Lock(taskID)
 		if isDisk {
 			if err := h.deleteDiskFiles(taskID); err != nil {
 				logger.GcLogger.With("type", "hybrid").Errorf("gc disk: failed to delete disk files with taskID(%s): %v", taskID, err)
-				synclock.UnLock(taskID, false)
+				h.kmu.Unlock(taskID)
 				continue
 			}
 		} else {
 			if err := h.deleteMemoryFiles(taskID); err != nil {
 				logger.GcLogger.With("type", "hybrid").Errorf("gc memory: failed to delete memory files with taskID(%s): %v", taskID, err)
-				synclock.UnLock(taskID, false)
+				h.kmu.Unlock(taskID)
 				continue
 			}
 		}
-		synclock.UnLock(taskID, false)
+		h.kmu.Unlock(taskID)
 	}
 	return realGCCount
 }

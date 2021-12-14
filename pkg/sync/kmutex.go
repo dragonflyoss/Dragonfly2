@@ -30,7 +30,8 @@ func NewKmutex() *Kmutex {
 }
 
 func (k *Kmutex) Lock(key interface{}) {
-	rm, _ := k.m.LoadOrStore(key, &sync.Mutex{})
+	m := sync.Mutex{}
+	rm, _ := k.m.LoadOrStore(key, &m)
 	mu := rm.(*sync.Mutex)
 	mu.Lock()
 }

@@ -37,7 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 	"d7y.io/dragonfly/v2/pkg/util/timeutils"
@@ -68,7 +68,7 @@ type manager struct {
 	config          Config
 	cacheStore      storage.Manager
 	limiter         *ratelimiter.RateLimiter
-	cdnLocker       *synclock.LockerPool
+	kmu             *pkgsync.Krwmutex
 	metadataManager *metadataManager
 	progressManager progress.Manager
 	taskManager     task.Manager
@@ -97,7 +97,7 @@ func newManager(config Config, cacheStore storage.Manager, progressManager progr
 		taskManager:     taskManager,
 		detector:        newCacheDetector(metadataManager, cacheStore),
 		writer:          newCacheWriter(cdnReporter, metadataManager, cacheStore),
-		cdnLocker:       synclock.NewLockerPool(),
+		kmu:             pkgsync.NewKrwmutex(),
 	}, nil
 }
 
@@ -116,8 +116,8 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, constants.SpanTriggerCDN)
 	defer span.End()
-	cm.cdnLocker.Lock(seedTask.ID, false)
-	defer cm.cdnLocker.UnLock(seedTask.ID, false)
+	cm.kmu.Lock(seedTask.ID)
+	defer cm.kmu.Unlock(seedTask.ID)
 
 	var fileDigest = md5.New()
 	var digestType = digestutils.Md5Hash.String()
@@ -185,8 +185,8 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 }
 
 func (cm *manager) Delete(taskID string) error {
-	cm.cdnLocker.Lock(taskID, false)
-	defer cm.cdnLocker.UnLock(taskID, false)
+	cm.kmu.Lock(taskID)
+	defer cm.kmu.Unlock(taskID)
 	err := cm.cacheStore.DeleteTask(taskID)
 	if err != nil {
 		return errors.Wrap(err, "failed to delete task files")

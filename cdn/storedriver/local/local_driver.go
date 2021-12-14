@@ -24,7 +24,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 	"d7y.io/dragonfly/v2/pkg/util/statutils"
@@ -38,7 +38,7 @@ const (
 	MemoryDriverName = "memory"
 )
 
-var fileLocker = synclock.NewLockerPool()
+var fileLocker = pkgsync.NewKrwmutex()
 
 func init() {
 	storedriver.Register(DiskDriverName, NewStorageDriver)
@@ -385,18 +385,26 @@ func (ds *driver) statPath(bucket, key string) (string, os.FileInfo, error) {
 
 func lock(path string, offset int64, ro bool) {
 	if offset != -1 {
-		fileLocker.Lock(LockKey(path, -1), true)
+		fileLocker.RLock(LockKey(path, -1))
 	}
 
-	fileLocker.Lock(LockKey(path, offset), ro)
+	if ro {
+		fileLocker.RLock(LockKey(path, offset))
+	} else {
+		fileLocker.Lock(LockKey(path, offset))
+	}
 }
 
 func unLock(path string, offset int64, ro bool) {
 	if offset != -1 {
-		fileLocker.UnLock(LockKey(path, -1), true)
+		fileLocker.RUnlock(LockKey(path, -1))
 	}
 
-	fileLocker.UnLock(LockKey(path, offset), ro)
+	if ro {
+		fileLocker.RUnlock(LockKey(path, offset))
+	} else {
+		fileLocker.Unlock(LockKey(path, offset))
+	}
 }
 
 func LockKey(path string, offset int64) string {

@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 )
 
 var (
@@ -53,6 +53,7 @@ type cdnService struct {
 	taskManager     task.Manager
 	cdnManager      cdn.Manager
 	progressManager progress.Manager
+	kmu             *pkgsync.Krwmutex
 }
 
 func NewCDNService(taskManager task.Manager, cdnManager cdn.Manager, progressManager progress.Manager) (CDNService, error) {
@@ -60,6 +61,7 @@ func NewCDNService(taskManager task.Manager, cdnManager cdn.Manager, progressMan
 		taskManager:     taskManager,
 		cdnManager:      cdnManager,
 		progressManager: progressManager,
+		kmu:             pkgsync.NewKrwmutex(),
 	}, nil
 }
 
@@ -79,23 +81,26 @@ func (service *cdnService) triggerCdnSyncAction(ctx context.Context, taskID stri
 	if err != nil {
 		return err
 	}
-	synclock.Lock(taskID, true)
+
+	service.kmu.RLock(seedTask.ID)
 	if seedTask.SourceFileLength > 0 {
 		if ok, err := service.cdnManager.TryFreeSpace(seedTask.SourceFileLength); err != nil {
 			seedTask.Log().Errorf("failed to try free space: %v", err)
 		} else if !ok {
+			service.kmu.RUnlock(seedTask.ID)
 			return errResourcesLacked
 		}
 	}
 	if !seedTask.IsFrozen() {
 		seedTask.Log().Infof("seedTask status is %s，no need trigger again", seedTask.CdnStatus)
-		synclock.UnLock(seedTask.ID, true)
+		service.kmu.RUnlock(seedTask.ID)
 		return nil
 	}
-	synclock.UnLock(seedTask.ID, true)
+	service.kmu.RUnlock(seedTask.ID)
 
-	synclock.Lock(seedTask.ID, false)
-	defer synclock.UnLock(seedTask.ID, false)
+	service.kmu.Lock(seedTask.ID)
+	defer service.kmu.Unlock(seedTask.ID)
+
 	// reconfirm
 	if !seedTask.IsFrozen() {
 		seedTask.Log().Infof("reconfirm seedTask status is not frozen, no need trigger again, current status: %s", seedTask.CdnStatus)
