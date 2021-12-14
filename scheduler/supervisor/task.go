@@ -292,6 +292,18 @@ func (task *Task) GetOrAddPiece(p *base.PieceInfo) (*base.PieceInfo, bool) {
 	return piece.(*base.PieceInfo), ok
 }
 
+func (task *Task) GetSizeScope() base.SizeScope {
+	if task.ContentLength.Load() <= TinyFileSize {
+		return base.SizeScope_TINY
+	}
+
+	if task.TotalPieceCount.Load() == 1 {
+		return base.SizeScope_SMALL
+	}
+
+	return base.SizeScope_NORMAL
+}
+
 func (task *Task) CanBackToSource() bool {
 	return task.BackToSourceWeight.Load() > 0
 }

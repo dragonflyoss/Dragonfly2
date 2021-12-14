@@ -53,66 +53,101 @@ func New(service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Serve
 	return svr.Server, nil
 }
 
-func (s *server) RegisterPeerTask(ctx context.Context, request *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
-	defer func() {
-		logger.Debugf("peer %s register result %v, err: %v", request.PeerId, resp, err)
-	}()
+func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	log := logger.WithTaskAndPeerID(taskID, req.PeerId)
+	log.Infof("register peer task, req: %#v", req)
+
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
-	span.SetAttributes(config.AttributePeerRegisterRequest.String(request.String()))
 	defer span.End()
-	logger.Debugf("register peer task, req: %#v", request)
-	resp = new(scheduler.RegisterResult)
-
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	span.SetAttributes(config.AttributePeerRegisterRequest.String(req.String()))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
-	task := s.service.GetOrCreateTask(ctx, supervisor.NewTask(taskID, request.Url, request.UrlMeta))
+
+	// Get task or add new task
+	task := s.service.GetOrAddTask(ctx, supervisor.NewTask(taskID, req.Url, req.UrlMeta))
 	if task.IsFail() {
-		err = dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
-		logger.Errorf("task %s status is fail", task.ID)
-		span.RecordError(err)
-		return
+		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
+		log.Error(dferr.Message)
+		span.RecordError(dferr)
+		return nil, dferr
 	}
-	resp.SizeScope = getTaskSizeScope(task)
-	span.SetAttributes(config.AttributeTaskSizeScope.String(resp.SizeScope.String()))
-	resp.TaskId = taskID
-	switch resp.SizeScope {
-	case base.SizeScope_TINY:
-		resp.DirectPiece = &scheduler.RegisterResult_PieceContent{
-			PieceContent: task.DirectPiece,
+
+	// Task has been successful
+	if task.IsSuccess() {
+		log.Info("task has been successful")
+		sizeScope := task.GetSizeScope()
+		span.SetAttributes(config.AttributeTaskSizeScope.String(sizeScope.String()))
+		switch sizeScope {
+		case base.SizeScope_TINY:
+			log.Info("task size scope is tiny and return piece content directly")
+			return &scheduler.RegisterResult{
+				TaskId:    taskID,
+				SizeScope: sizeScope,
+				DirectPiece: &scheduler.RegisterResult_PieceContent{
+					PieceContent: task.DirectPiece,
+				},
+			}, nil
+		case base.SizeScope_SMALL:
+			log.Info("task size scope is small")
+			peer := s.service.RegisterTask(req, task)
+			parent, err := s.service.SelectParent(peer)
+			if err != nil {
+				log.Warn("task size scope is small and it can not select parent")
+				span.AddEvent(config.EventSmallTaskSelectParentFail)
+				return &scheduler.RegisterResult{
+					TaskId:    taskID,
+					SizeScope: sizeScope,
+				}, nil
+			}
+
+			firstPiece, ok := task.GetPiece(0)
+			if !ok {
+				log.Warn("task size scope is small and it can not get first piece")
+				return &scheduler.RegisterResult{
+					TaskId:    taskID,
+					SizeScope: sizeScope,
+				}, nil
+			}
+
+			singlePiece := &scheduler.SinglePiece{
+				DstPid:  parent.ID,
+				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
+				PieceInfo: &base.PieceInfo{
+					PieceNum:    firstPiece.PieceNum,
+					RangeStart:  firstPiece.RangeStart,
+					RangeSize:   firstPiece.RangeSize,
+					PieceMd5:    firstPiece.PieceMd5,
+					PieceOffset: firstPiece.PieceOffset,
+					PieceStyle:  firstPiece.PieceStyle,
+				},
+			}
+			log.Infof("task size scope is small and return single piece %#v", sizeScope)
+			span.SetAttributes(config.AttributeSinglePiece.String(singlePiece.String()))
+			return &scheduler.RegisterResult{
+				TaskId:    taskID,
+				SizeScope: sizeScope,
+				DirectPiece: &scheduler.RegisterResult_SinglePiece{
+					SinglePiece: singlePiece,
+				},
+			}, nil
+		default:
+			log.Info("task size scope is normal and needs to be register")
+			s.service.RegisterTask(req, task)
+			return &scheduler.RegisterResult{
+				TaskId:    taskID,
+				SizeScope: sizeScope,
+			}, nil
 		}
-		return
-	case base.SizeScope_SMALL:
-		peer := s.service.RegisterPeerTask(request, task)
-		parent, schErr := s.service.SelectParent(peer)
-		if schErr != nil {
-			span.AddEvent(config.EventSmallTaskSelectParentFail)
-			resp.SizeScope = base.SizeScope_NORMAL
-			resp.TaskId = taskID
-			return
-		}
-		firstPiece, _ := task.GetPiece(0)
-		singlePiece := &scheduler.SinglePiece{
-			DstPid:  parent.ID,
-			DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
-			PieceInfo: &base.PieceInfo{
-				PieceNum:    firstPiece.PieceNum,
-				RangeStart:  firstPiece.RangeStart,
-				RangeSize:   firstPiece.RangeSize,
-				PieceMd5:    firstPiece.PieceMd5,
-				PieceOffset: firstPiece.PieceOffset,
-				PieceStyle:  firstPiece.PieceStyle,
-			},
-		}
-		resp.DirectPiece = &scheduler.RegisterResult_SinglePiece{
-			SinglePiece: singlePiece,
-		}
-		span.SetAttributes(config.AttributeSinglePiece.String(singlePiece.String()))
-		return
-	default:
-		s.service.RegisterPeerTask(request, task)
-		return
 	}
+
+	// Task is unsuccessful
+	log.Info("task is unsuccessful and needs to be register")
+	s.service.RegisterTask(req, task)
+	return &scheduler.RegisterResult{
+		TaskId:    taskID,
+		SizeScope: base.SizeScope_NORMAL,
+	}, nil
 }
 
 func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
@@ -205,16 +240,4 @@ func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (e
 		return
 	}
 	return s.service.HandleLeaveTask(ctx, peer)
-}
-
-func getTaskSizeScope(task *supervisor.Task) base.SizeScope {
-	if task.IsSuccess() {
-		if task.ContentLength.Load() <= supervisor.TinyFileSize {
-			return base.SizeScope_TINY
-		}
-		if task.TotalPieceCount.Load() == 1 {
-			return base.SizeScope_SMALL
-		}
-	}
-	return base.SizeScope_NORMAL
 }
