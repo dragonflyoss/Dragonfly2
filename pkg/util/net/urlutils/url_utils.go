@@ -41,24 +41,11 @@ func FilterURLParam(str string, filters []string) string {
 	}
 
 	u.RawQuery = values.Encode()
-
 	return u.String()
 }
 
 // IsValidURL returns whether the string url is a valid URL.
 func IsValidURL(str string) bool {
 	u, err := url.Parse(str)
-	if err != nil {
-		return false
-	}
-
-	if stringutils.IsBlank(u.Scheme) {
-		return false
-	}
-
-	if stringutils.IsBlank(u.Host) {
-		return false
-	}
-
-	return true
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
