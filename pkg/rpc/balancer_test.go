@@ -110,7 +110,9 @@ func startTestServers(count int) (_ *testServerData, err error) {
 		t.addresses = append(t.addresses, lis.Addr().String())
 
 		go func(s *grpc.Server, l net.Listener) {
-			log.Fatalf("failed to serve %v", s.Serve(l))
+			if err := s.Serve(l); err != nil {
+				log.Fatalf("failed to serve %v", err)
+			}
 		}(s, lis)
 	}
 
