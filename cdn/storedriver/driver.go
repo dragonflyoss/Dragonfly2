@@ -34,12 +34,29 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
+var (
+	// m is a map from name to driver builder.
+	m = make(map[string]DriverBuilder)
+)
+
 // DriverBuilder is a function that creates a new storage driver plugin instant with the giving Config.
 type DriverBuilder func(cfg *Config) (Driver, error)
 
-// Register defines an interface to register a driver with specified name.
+func Register(name string, builder DriverBuilder) {
+	m[strings.ToLower(name)] = builder
+}
+
+// Get return a storage manager from manager with specified name.
+func Get(name string) DriverBuilder {
+	if b, ok := m[strings.ToLower(name)]; ok {
+		return b
+	}
+	return nil
+}
+
+// RegisterPlugin defines an interface to register a driver with specified name.
 // All drivers should call this function to register itself to the driverFactory.
-func Register(name string, builder DriverBuilder) error {
+func RegisterPlugin(name string, builder DriverBuilder) error {
 	name = strings.ToLower(name)
 	// plugin builder
 	var f = func(conf interface{}) (plugins.Plugin, error) {
@@ -60,8 +77,8 @@ func Register(name string, builder DriverBuilder) error {
 	return plugins.RegisterPluginBuilder(plugins.StorageDriverPlugin, name, f)
 }
 
-// Get a store from manager with specified name.
-func Get(name string) (Driver, bool) {
+// GetPlugin a store from manager with specified name.
+func GetPlugin(name string) (Driver, bool) {
 	v, ok := plugins.GetPlugin(plugins.StorageDriverPlugin, strings.ToLower(name))
 	if !ok {
 		return nil, false

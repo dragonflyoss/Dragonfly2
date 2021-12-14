@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -78,7 +77,7 @@ func TestIsTaskNotFound(t *testing.T) {
 
 func Test_manager_Exist(t *testing.T) {
 	httpmock.Activate()
-	tm, err := NewManager(config.New())
+	tm, err := NewManager(Config{})
 	require := require.New(t)
 	require.Nil(err)
 	ctl := gomock.NewController(t)
@@ -99,7 +98,7 @@ func Test_manager_Exist(t *testing.T) {
 }
 
 func Test_manager_AddOrUpdate(t *testing.T) {
-	tm, err := NewManager(config.New())
+	tm, err := NewManager(Config{})
 	require := require.New(t)
 	require.Nil(err)
 	ctl := gomock.NewController(t)
