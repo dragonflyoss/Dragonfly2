@@ -234,31 +234,30 @@ const (
 func (tm *manager) GC() error {
 	logger.MetaGCLogger.Info("start the task meta gc job")
 	startTime := time.Now()
-
-	totalTaskNums := 0
-	removedTaskCount := 0
+	var gcTasks []string
+	var remainingTasks []string
 	tm.accessTimeMap.Range(func(key, value interface{}) bool {
-		totalTaskNums++
 		taskID := key.(string)
 		synclock.Lock(taskID, false)
 		defer synclock.UnLock(taskID, false)
 		atime := value.(time.Time)
 		if time.Since(atime) < tm.config.ExpireTime {
+			remainingTasks = append(remainingTasks, taskID)
 			return true
 		}
-
+		gcTasks = append(gcTasks, taskID)
 		// gc task memory data
-		logger.MetaGCLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
+		logger.MetaGCLogger.With("type", "meta").Infof("gc task: %s", taskID)
 		tm.deleteTask(taskID)
-		removedTaskCount++
 		return true
 	})
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.MetaGCLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", removedTaskCount, timeDuring.Seconds())
+		logger.MetaGCLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", len(gcTasks), timeDuring.Seconds())
 	}
-	logger.MetaGCLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", removedTaskCount,
-		totalTaskNums-removedTaskCount)
+	logger.MetaGCLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", len(gcTasks),
+		len(remainingTasks))
+	logger.MetaGCLogger.With("type", "meta").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
 	return nil
 }

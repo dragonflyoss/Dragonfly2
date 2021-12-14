@@ -387,33 +387,36 @@ func (h *hybridStorageManager) GC() error {
 		if err != nil {
 			logger.StorageGCLogger.With("type", "hybrid").Error("gc disk: failed to get gcTaskIDs")
 		}
-		realGCCount := h.gcTasks(gcTaskIDs, true)
-		logger.StorageGCLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from disk, actual gc %d tasks", len(gcTaskIDs), realGCCount)
+		actualGCTasks := h.gcTasks(gcTaskIDs, true)
+		logger.StorageGCLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from disk, actual gc %d tasks", len(gcTaskIDs), len(actualGCTasks))
+		logger.StorageGCLogger.With("type", "hybrid").Debugf("actual gc %s tasks from disk", actualGCTasks)
 	}()
 	if h.hasShm {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			gcTaskIDs, err := h.memoryDriverCleaner.GC("hybrid", false)
-			logger.StorageGCLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from memory", len(gcTaskIDs))
 			if err != nil {
 				logger.StorageGCLogger.With("type", "hybrid").Error("gc memory: failed to get gcTaskIds")
 			}
-			h.gcTasks(gcTaskIDs, false)
+			actualGCTasks := h.gcTasks(gcTaskIDs, false)
+			logger.StorageGCLogger.With("type", "hybrid").Infof("at most %d tasks can be cleaned up from memory, actual gc %d tasks", len(gcTaskIDs),
+				len(actualGCTasks))
+			logger.StorageGCLogger.With("type", "hybrid").Debugf("actual gc %s tasks from memory", actualGCTasks)
 		}()
 	}
 	wg.Wait()
 	return nil
 }
 
-func (h *hybridStorageManager) gcTasks(gcTaskIDs []string, isDisk bool) int {
-	var realGCCount int
+func (h *hybridStorageManager) gcTasks(gcTaskIDs []string, isDisk bool) (actualGCTasks []string) {
+	var realGCTasks []string
 	for _, taskID := range gcTaskIDs {
 		// try to ensure the taskID is not using again
 		if _, exist := h.taskManager.Exist(taskID); exist {
 			continue
 		}
-		realGCCount++
+		realGCTasks = append(realGCTasks, taskID)
 		synclock.Lock(taskID, false)
 		if isDisk {
 			if err := h.deleteDiskFiles(taskID); err != nil {
@@ -430,7 +433,8 @@ func (h *hybridStorageManager) gcTasks(gcTaskIDs []string, isDisk bool) int {
 		}
 		synclock.UnLock(taskID, false)
 	}
-	return realGCCount
+
+	return realGCTasks
 }
 
 func (h *hybridStorageManager) getMemoryUsableSpace() unit.Bytes {
