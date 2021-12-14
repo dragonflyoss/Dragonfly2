@@ -46,6 +46,7 @@ type Connection struct {
 	scheme         string
 	serverNodes    []dfnet.NetAddr
 
+	resolver             *d7yResolver
 	once                 sync.Once
 	consistentHashClient *grpc.ClientConn
 }
@@ -110,11 +111,7 @@ func NewConnection(ctx context.Context, scheme string, addrs []dfnet.NetAddr, co
 	for _, opt := range connOpts {
 		opt.apply(conn)
 	}
-	if resolver, ok := Scheme2Resolver[scheme]; ok {
-		if err := resolver.UpdateAddrs(addrs); err != nil {
-			return nil
-		}
-	}
+	conn.resolver = &d7yResolver{scheme: conn.scheme}
 	// TODO(zzy987) add an error?
 	return conn
 }
@@ -128,11 +125,7 @@ func (conn *Connection) AddServerNode(addr dfnet.NetAddr) error {
 		}
 	}
 	conn.serverNodes = append(conn.serverNodes, addr)
-	if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-		if err := resolver.UpdateAddrs(conn.serverNodes); err != nil {
-			return err
-		}
-	}
+	conn.resolver.UpdateAddrs(conn.serverNodes)
 	return nil
 }
 
@@ -142,9 +135,9 @@ func (conn *Connection) GetConsistentHashClient(target string, opts ...grpc.Dial
 	conn.once.Do(func() {
 		ctx, cancel := context.WithTimeout(conn.ctx, conn.dialTimeout)
 		defer cancel()
-		opts = append(append(conn.dialOpts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{
-		"loadBalancingPolicy": "%s"
-	}`, d7yBalancerPolicy))), opts...)
+		opts = append(append(append(conn.dialOpts,
+			grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, d7yBalancerPolicy))),
+			grpc.WithResolvers(conn.resolver)), opts...)
 		conn.consistentHashClient, err = grpc.DialContext(ctx, target, opts...)
 	})
 
@@ -181,11 +174,6 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	}
 	if updateFlag {
 		conn.serverNodes = addrs
-		if resolver, ok := Scheme2Resolver[conn.scheme]; ok {
-			if err := resolver.UpdateAddrs(addrs); err != nil {
-				//TODO
-				fmt.Printf("%v", err)
-			}
-		}
+		conn.resolver.UpdateAddrs(addrs)
 	}
 }
