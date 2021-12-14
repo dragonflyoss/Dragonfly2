@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 //go:generate mockgen -destination ./mock/mock_storage_manager.go -package mock d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage Manager
 
 package storage
@@ -20,28 +21,29 @@ package storage
 import (
 	"fmt"
 	"io"
-	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
+var (
+	// managerMap is a map from name to storageManager builder.
+	managerMap = make(map[string]Builder)
+)
+
+var (
+	ErrTaskNotPersisted = errors.New("task is not persisted")
+)
+
 type Manager interface {
-	Initialize(taskManager task.Manager)
 
 	// ResetRepo reset the storage of task
-	ResetRepo(*task.SeedTask) error
+	ResetRepo(task *task.SeedTask) error
 
 	// StatDownloadFile stat download file info, if task file is not exist on storage, return errTaskNotPersisted
 	StatDownloadFile(taskID string) (*storedriver.StorageInfo, error)
@@ -156,126 +158,38 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	}, nil
 }
 
-type managerPlugin struct {
-	// name is a unique identifier, you can also name it ID.
-	name string
-	// instance holds a manger instant which implements the interface of Manager.
-	instance Manager
+// Builder creates a balancer.
+type Builder interface {
+	// Build creates a new balancer with the ClientConn.
+	Build(cfg Config, taskManager task.Manager) (Manager, error)
+	// Name returns the name of balancers built by this builder.
+	// It will be used to pick balancers (for example in service config).
+	Name() string
+	// Validate driver configs
+	Validate(map[string]*DriverConfig) []error
+	// DefaultDriverConfigs default driver config
+	DefaultDriverConfigs() map[string]*DriverConfig
 }
 
-func (m *managerPlugin) Type() plugins.PluginType {
-	return plugins.StorageManagerPlugin
+// Register defines an interface to register a storage manager builder.
+// All storage managers should call this function to register its builder to the storage manager factory.
+func Register(builder Builder) {
+	managerMap[strings.ToLower(builder.Name())] = builder
 }
 
-func (m *managerPlugin) Name() string {
-	return m.name
-}
-
-func (m *managerPlugin) ResetRepo(task *task.SeedTask) error {
-	return m.instance.ResetRepo(task)
-}
-
-func (m *managerPlugin) StatDownloadFile(path string) (*storedriver.StorageInfo, error) {
-	return m.instance.StatDownloadFile(path)
-}
-
-func (m *managerPlugin) WriteDownloadFile(taskID string, offset int64, len int64, data io.Reader) error {
-	return m.instance.WriteDownloadFile(taskID, offset, len, data)
-}
-
-func (m *managerPlugin) ReadDownloadFile(taskID string) (io.ReadCloser, error) {
-	return m.instance.ReadDownloadFile(taskID)
-}
-
-func (m *managerPlugin) ReadFileMetadata(taskID string) (*FileMetadata, error) {
-	return m.instance.ReadFileMetadata(taskID)
-}
-
-func (m *managerPlugin) WriteFileMetadata(taskID string, data *FileMetadata) error {
-	return m.instance.WriteFileMetadata(taskID, data)
-}
-
-func (m *managerPlugin) WritePieceMetaRecords(taskID string, records []*PieceMetaRecord) error {
-	return m.instance.WritePieceMetaRecords(taskID, records)
-}
-
-func (m *managerPlugin) AppendPieceMetadata(taskID string, record *PieceMetaRecord) error {
-	return m.instance.AppendPieceMetadata(taskID, record)
-}
-
-func (m *managerPlugin) ReadPieceMetaRecords(taskID string) ([]*PieceMetaRecord, error) {
-	return m.instance.ReadPieceMetaRecords(taskID)
-}
-
-func (m *managerPlugin) DeleteTask(taskID string) error {
-	return m.instance.DeleteTask(taskID)
-}
-
-// ManagerBuilder is a function that creates a new storage manager plugin instant with the giving conf.
-type ManagerBuilder func(cfg *config.StorageConfig) (Manager, error)
-
-// Register defines an interface to register a storage manager with specified name.
-// All storage managers should call this function to register itself to the storage manager factory.
-func Register(name string, builder ManagerBuilder) error {
-	name = strings.ToLower(name)
-	// plugin builder
-	var f = func(conf interface{}) (plugins.Plugin, error) {
-		cfg := &config.StorageConfig{}
-		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-			DecodeHook: mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
-				switch to {
-				case reflect.TypeOf(unit.B),
-					reflect.TypeOf(time.Second):
-					b, _ := yaml.Marshal(v)
-					p := reflect.New(to)
-					if err := yaml.Unmarshal(b, p.Interface()); err != nil {
-						return nil, err
-					}
-					return p.Interface(), nil
-				default:
-					return v, nil
-				}
-			}),
-			Result: cfg,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("create decoder: %v", err)
-		}
-		err = decoder.Decode(conf)
-		if err != nil {
-			return nil, fmt.Errorf("parse config: %v", err)
-		}
-		return newManagerPlugin(name, builder, cfg)
+// Get return a storage manager from manager with specified name.
+func Get(name string) Builder {
+	if b, ok := managerMap[strings.ToLower(name)]; ok {
+		return b
 	}
-	return plugins.RegisterPluginBuilder(plugins.StorageManagerPlugin, name, f)
+	return nil
 }
 
-func newManagerPlugin(name string, builder ManagerBuilder, cfg *config.StorageConfig) (plugins.Plugin, error) {
-	if name == "" || builder == nil {
-		return nil, fmt.Errorf("storage manager plugin's name and builder cannot be nil")
+func NewManager(config Config, taskManager task.Manager) (Manager, error) {
+	// Initialize storage manager
+	storageManagerBuilder := Get(config.StorageMode)
+	if storageManagerBuilder == nil {
+		return nil, fmt.Errorf("can not find storage manager mode %s", config.StorageMode)
 	}
-
-	instant, err := builder(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("init storage manager %s: %v", name, err)
-	}
-
-	return &managerPlugin{
-		name:     name,
-		instance: instant,
-	}, nil
+	return storageManagerBuilder.Build(config, taskManager)
 }
-
-// Get a storage manager from manager with specified name.
-func Get(name string) (Manager, bool) {
-	v, ok := plugins.GetPlugin(plugins.StorageManagerPlugin, strings.ToLower(name))
-	if !ok {
-		return nil, false
-	}
-	return v.(*managerPlugin).instance, true
-}
-
-const (
-	HybridStorageMode = "hybrid"
-	DiskStorageMode   = "disk"
-)

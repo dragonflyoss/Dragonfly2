@@ -24,7 +24,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
@@ -110,7 +109,7 @@ func (suite *ProgressManagerTestSuite) SetupSuite() {
 	source.UnRegister("https")
 	suite.Nil(source.Register("https", sourceClient, httpprotocol.Adapter))
 	sourceClient.EXPECT().GetContentLength(source.RequestEq(testTask.RawURL)).Return(int64(1024*1024*500+1000), nil).Times(1)
-	taskManager, err := task.NewManager(config.New())
+	taskManager, err := task.NewManager(task.Config{})
 	suite.Nil(err)
 	seedTask, err := taskManager.AddOrUpdate(testTask)
 	suite.Nil(err)

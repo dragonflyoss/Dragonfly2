@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -68,14 +69,14 @@ func newCacheWriter(cdnReporter *reporter, metadataManager *metadataManager, cac
 }
 
 // startWriter writes the stream data from the reader to the underlying storage.
-func (cw *cacheWriter) startWriter(ctx context.Context, reader *limitreader.LimitReader, seedTask *task.SeedTask, breakPoint int64) (*downloadMetadata,
-	error) {
+func (cw *cacheWriter) startWriter(ctx context.Context, reader *limitreader.LimitReader, seedTask *task.SeedTask, breakPoint int64,
+	writerRoutineLimit int) (*downloadMetadata, error) {
 	var writeSpan trace.Span
 	ctx, writeSpan = tracer.Start(ctx, constants.SpanWriteData)
 	defer writeSpan.End()
 	// currentSourceFileLength is used to calculate the source file Length dynamically
 	currentSourceFileLength := breakPoint
-	routineCount := calculateRoutineCount(seedTask.SourceFileLength-currentSourceFileLength, seedTask.PieceSize)
+	routineCount := calculateRoutineCount(seedTask.SourceFileLength-currentSourceFileLength, seedTask.PieceSize, writerRoutineLimit)
 	writeSpan.SetAttributes(constants.AttributeWriteGoroutineCount.Int(routineCount))
 	// start writer pool
 	backSourceLength, totalPieceCount, err := cw.doWrite(ctx, reader, seedTask, routineCount, breakPoint)
@@ -108,6 +109,7 @@ func (cw *cacheWriter) doWrite(ctx context.Context, reader io.Reader, seedTask *
 	err error) {
 	// the pieceNum currently have been processed
 	curPieceNum := int32(breakPoint / int64(seedTask.PieceSize))
+	seedTask.Log().Infof("start writing resource to storage from piece %d", curPieceNum)
 	var bufPool = &sync.Pool{
 		New: func() interface{} {
 			return new(bytes.Buffer)
@@ -132,6 +134,7 @@ loop:
 				close(jobCh)
 				return backSourceLength, 0, errors.Errorf("read taskID %s pieceNum %d piece from source failed: %v", seedTask.ID, curPieceNum, err)
 			}
+			seedTask.Log().Debugf("success read %d bytes from source", n)
 			if n == 0 {
 				break loop
 			}
@@ -150,6 +153,7 @@ loop:
 		}
 	}
 	close(jobCh)
+	seedTask.Log().Infof("finish read from resource, backSourceLength %d", backSourceLength)
 	if err := g.Wait(); err != nil {
 		return backSourceLength, 0, errors.Wrapf(err, "write pool")
 	}
@@ -176,6 +180,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 					if err != nil {
 						return errors.Errorf("write taskID %s pieceNum %d to download file failed: %v", p.taskID, p.pieceNum, err)
 					}
+					logger.WithTaskID(p.taskID).Debugf("success write pieceNum %d content to storage", p.pieceNum)
 					// Recycle Buffer
 					bufPool.Put(waitToWriteContent)
 					start := uint64(p.pieceNum) * uint64(p.pieceSize)
@@ -198,6 +203,7 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 					if err = cw.metadataManager.appendPieceMetadata(p.taskID, pieceRecord); err != nil {
 						return errors.Errorf("write piece meta to piece meta file failed: %v", err)
 					}
+					logger.WithTaskID(p.taskID).Debugf("success write pieceNum %d meta to storage", p.pieceNum)
 					// report piece info
 					if err = cw.cdnReporter.reportPieceMetaRecord(ctx, p.taskID, pieceRecord, DownloaderReport); err != nil {
 						// NOTE: should we do this job again?
@@ -215,8 +221,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 */
 
 // calculateRoutineCount max goroutine count is CDNWriterRoutineLimit
-func calculateRoutineCount(remainingFileLength int64, pieceSize int32) int {
-	routineSize := constants.CDNWriterRoutineLimit
+func calculateRoutineCount(remainingFileLength int64, pieceSize int32, writerRoutineLimit int) int {
+	routineSize := writerRoutineLimit
 	if remainingFileLength < 0 || pieceSize <= 0 {
 		return routineSize
 	}

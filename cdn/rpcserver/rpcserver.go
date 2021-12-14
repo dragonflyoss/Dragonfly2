@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
@@ -46,12 +45,12 @@ var tracer = otel.Tracer("cdn-server")
 
 type Server struct {
 	*grpc.Server
-	config  *config.Config
+	config  Config
 	service supervisor.CDNService
 }
 
 // New returns a new Manager Object.
-func New(config *config.Config, cdnService supervisor.CDNService, opts ...grpc.ServerOption) (*Server, error) {
+func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOption) (*Server, error) {
 	svr := &Server{
 		config:  config,
 		service: cdnService,
@@ -65,7 +64,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	if pe, ok := peer.FromContext(ctx); ok {
 		clientAddr = pe.Addr.String()
 	}
-	logger.Infof("trigger obtain seed for taskID: %s, url: %s, urlMeta: %+v client: %s", req.TaskId, req.Url, req.UrlMeta, clientAddr)
+	logger.Infof("trigger obtain seed for taskID: %s, url: %s, urlMeta: %s client: %s", req.TaskId, req.Url, req.UrlMeta, clientAddr)
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, constants.SpanObtainSeeds, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
@@ -244,4 +243,8 @@ func (css *Server) Shutdown() error {
 	case <-stopped:
 	}
 	return nil
+}
+
+func (css *Server) GetConfig() Config {
+	return css.config
 }

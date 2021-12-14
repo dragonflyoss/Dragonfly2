@@ -62,6 +62,9 @@ func (cd *cacheDetector) detectCache(ctx context.Context, seedTask *task.SeedTas
 	defer span.End()
 	result, err = cd.doDetect(ctx, seedTask, fileDigest)
 	if err != nil {
+		if err != storage.ErrTaskNotPersisted {
+			seedTask.Log().Infof("reset storage cache because %v", err)
+		}
 		metadata, err := cd.resetCache(seedTask)
 		if err != nil {
 			return nil, errors.Wrapf(err, "reset cache")

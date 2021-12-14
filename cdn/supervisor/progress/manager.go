@@ -133,6 +133,7 @@ func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *tas
 	span := trace.SpanFromContext(ctx)
 	recordBytes, _ := json.Marshal(seedTask)
 	span.AddEvent(constants.EventPublishTask, trace.WithAttributes(constants.AttributeSeedTask.String(string(recordBytes))))
+	// task status must be updated before removing the subscribers
 	if err := pm.taskManager.Update(taskID, seedTask); err != nil {
 		return err
 	}

@@ -27,8 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
@@ -59,18 +57,17 @@ func (suite *CDNManagerTestSuite) SetupSuite() {
 	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-ManagerTestSuite-")
 	fmt.Printf("workHome: %s", suite.workHome)
 	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
-	storeMgr, ok := storage.Get(constants.DefaultStorageMode)
-	if !ok {
-		suite.Failf("failed to get storage mode %s", constants.DefaultStorageMode)
-	}
 	ctrl := gomock.NewController(suite.T())
 	taskManager := taskMock.NewMockManager(ctrl)
+	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
+	suite.Require().Nil(err)
+
 	progressManager := progressMock.NewMockManager(ctrl)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(98 * 2)
 	progressManager.EXPECT().PublishTask(gomock.Any(), md5TaskID, gomock.Any()).Return(nil).Times(2)
 	progressManager.EXPECT().PublishTask(gomock.Any(), sha256TaskID, gomock.Any()).Return(nil).Times(2)
-	suite.cm, _ = newManager(config.New(), storeMgr, progressManager, taskManager)
+	suite.cm, _ = NewManager(Config{}.applyDefaults(), storageManager, progressManager, taskManager)
 }
 
 var (

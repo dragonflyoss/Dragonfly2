@@ -23,22 +23,18 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/config"
-	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
 	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
+	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
-	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 func TestCacheWriterSuite(t *testing.T) {
@@ -53,30 +49,12 @@ type CacheWriterTestSuite struct {
 
 func NewPlugins(workHome string) map[plugins.PluginType][]*plugins.PluginProperties {
 	return map[plugins.PluginType][]*plugins.PluginProperties{
-		plugins.StorageDriverPlugin: {
+		"storagedriver": {
 			{
 				Name:   local.DiskDriverName,
 				Enable: true,
 				Config: &storedriver.Config{
 					BaseDir: workHome,
-				},
-			},
-		}, plugins.StorageManagerPlugin: {
-			{
-				Name:   disk.StorageMode,
-				Enable: true,
-				Config: &config.StorageConfig{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*config.DriverConfig{
-						local.DiskDriverName: {
-							GCConfig: &config.GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							}},
-					},
 				},
 			},
 		},
@@ -91,13 +69,12 @@ func (suite *CacheWriterTestSuite) SetupSuite() {
 	progressManager := progressMock.NewMockManager(ctrl)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	progressManager.EXPECT().PublishTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	storeManager, ok := storage.Get(constants.DefaultStorageMode)
-	if !ok {
-		suite.Failf("failed to get storage mode %s", constants.DefaultStorageMode)
-	}
-	metadataManager := newMetadataManager(storeManager)
+	taskManager := taskMock.NewMockManager(ctrl)
+	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
+	suite.Require().Nil(err)
+	metadataManager := newMetadataManager(storageManager)
 	cdnReporter := newReporter(progressManager)
-	suite.writer = newCacheWriter(cdnReporter, metadataManager, storeManager)
+	suite.writer = newCacheWriter(cdnReporter, metadataManager, storageManager)
 }
 
 func (suite *CacheWriterTestSuite) TearDownSuite() {
@@ -113,9 +90,10 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 	suite.Nil(err)
 	contentLen := int64(len(content))
 	type args struct {
-		reader     *limitreader.LimitReader
-		task       *task.SeedTask
-		breakPoint int64
+		reader             *limitreader.LimitReader
+		task               *task.SeedTask
+		breakPoint         int64
+		writerRoutineLimit int
 	}
 
 	tests := []struct {
@@ -132,6 +110,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					ID:        "5806501c3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
 					PieceSize: 50,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -148,6 +127,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					ID:        "5816501c3bb92f0b645918c5a4b15495a63259e3e0363008f97e186509e9e",
 					PieceSize: 50,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -165,6 +145,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 					PieceSize:        50,
 					SourceFileLength: contentLen,
 				},
+				writerRoutineLimit: 4,
 			},
 			result: &downloadMetadata{
 				backSourceLength:     contentLen,
@@ -177,7 +158,7 @@ func (suite *CacheWriterTestSuite) TestStartWriter() {
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			downloadMetadata, err := suite.writer.startWriter(context.Background(), tt.args.reader, tt.args.task, tt.args.breakPoint)
+			downloadMetadata, err := suite.writer.startWriter(context.Background(), tt.args.reader, tt.args.task, tt.args.breakPoint, tt.args.writerRoutineLimit)
 			suite.Equal(tt.wantErr, err != nil)
 			suite.Equal(tt.result, downloadMetadata)
 			suite.checkFileSize(suite.writer.cacheStore, tt.args.task.ID, contentLen)
@@ -195,6 +176,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 	type args struct {
 		remainingFileLength int64
 		pieceSize           int32
+		writerRoutineLimit  int
 	}
 	tests := []struct {
 		name string
@@ -206,6 +188,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 200,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
@@ -214,6 +197,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 2222,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
@@ -222,6 +206,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 0,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 1,
 		},
@@ -230,6 +215,7 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 10,
 				pieceSize:           50,
+				writerRoutineLimit:  4,
 			},
 			want: 1,
 		},
@@ -238,13 +224,14 @@ func (suite *CacheWriterTestSuite) TestCalculateRoutineCount() {
 			args: args{
 				remainingFileLength: 10,
 				pieceSize:           0,
+				writerRoutineLimit:  4,
 			},
 			want: 4,
 		},
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			if got := calculateRoutineCount(tt.args.remainingFileLength, tt.args.pieceSize); got != tt.want {
+			if got := calculateRoutineCount(tt.args.remainingFileLength, tt.args.pieceSize, tt.args.writerRoutineLimit); got != tt.want {
 				suite.Equal(tt.want, got)
 			}
 		})
