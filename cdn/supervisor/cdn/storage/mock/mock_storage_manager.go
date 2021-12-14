@@ -65,18 +65,6 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
-// Initialize mocks base method.
-func (m *MockManager) Initialize(arg0 task.Manager) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Initialize", arg0)
-}
-
-// Initialize indicates an expected call of Initialize.
-func (mr *MockManagerMockRecorder) Initialize(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Initialize", reflect.TypeOf((*MockManager)(nil).Initialize), arg0)
-}
-
 // ReadDownloadFile mocks base method.
 func (m *MockManager) ReadDownloadFile(arg0 string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()

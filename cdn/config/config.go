@@ -17,32 +17,58 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/constants"
-	"d7y.io/dragonfly/v2/cdn/plugins"
-	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/metrics"
+	"d7y.io/dragonfly/v2/cdn/rpcserver"
+	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
+	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 // New creates an instant with default values.
 func New() *Config {
 	return &Config{
-		BaseProperties: NewDefaultBaseProperties(),
-		Plugins:        NewDefaultPlugins(),
+		Metrics:   metrics.DefaultConfig(),
+		Storage:   storage.DefaultConfig(),
+		RPCServer: rpcserver.DefaultConfig(),
+		Task:      task.DefaultConfig(),
+		CDN:       cdn.DefaultConfig(),
+		Manager: ManagerConfig{
+			Addr:         "",
+			CDNClusterID: 0,
+			KeepAlive: KeepAliveConfig{
+				Interval: 5 * time.Second,
+			},
+		},
+		Host: HostConfig{
+			Location: "",
+			IDC:      "",
+		},
+		LogDir: "",
 	}
 }
 
 // Config contains all configuration of cdn node.
 type Config struct {
-	base.Options    `yaml:",inline" mapstructure:",squash"`
-	*BaseProperties `yaml:"base" mapstructure:"base"`
-
-	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
+	base.Options `yaml:",inline" mapstructure:",squash"`
+	Metrics      metrics.Config   `yaml:"metrics" mapstructure:"metrics"`
+	Storage      storage.Config   `yaml:"storage" mapstructure:"storage"`
+	RPCServer    rpcserver.Config `yaml:"rpcServer" mapstructure:"rpcServer"`
+	Task         task.Config      `yaml:"taskConfig" mapstructure:"taskConfig"`
+	CDN          cdn.Config       `yaml:"cdnConfig" mapstructure:"cdnConfig"`
+	// Manager configuration
+	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
+	// Host configuration
+	Host HostConfig `yaml:"host" mapstructure:"host"`
+	// Log directory
+	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+	// WorkHome directory
+	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
 }
 
 func (c *Config) String() string {
@@ -52,171 +78,15 @@ func (c *Config) String() string {
 	return ""
 }
 
-// NewDefaultPlugins creates plugin instants with default values.
-func NewDefaultPlugins() map[plugins.PluginType][]*plugins.PluginProperties {
-	return map[plugins.PluginType][]*plugins.PluginProperties{
-		plugins.StorageDriverPlugin: {
-			{
-				Name:   "disk",
-				Enable: true,
-				Config: &storedriver.Config{
-					BaseDir: DefaultDiskBaseDir,
-				},
-			}, {
-				Name:   "memory",
-				Enable: false,
-				Config: &storedriver.Config{
-					BaseDir: DefaultMemoryBaseDir,
-				},
-			},
-		}, plugins.StorageManagerPlugin: {
-			{
-				Name:   "disk",
-				Enable: true,
-				Config: &StorageConfig{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*DriverConfig{
-						"disk": {
-							GCConfig: &GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							}},
-					},
-				},
-			}, {
-				Name:   "hybrid",
-				Enable: false,
-				Config: &StorageConfig{
-					GCInitialDelay: 0 * time.Second,
-					GCInterval:     15 * time.Second,
-					DriverConfigs: map[string]*DriverConfig{
-						"disk": {
-							GCConfig: &GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        1,
-								IntervalThreshold: 2 * time.Hour,
-							},
-						},
-						"memory": {
-							GCConfig: &GCConfig{
-								YoungGCThreshold:  100 * unit.GB,
-								FullGCThreshold:   5 * unit.GB,
-								CleanRatio:        3,
-								IntervalThreshold: 2 * time.Hour,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-// NewDefaultBaseProperties creates an base properties instant with default values.
-func NewDefaultBaseProperties() *BaseProperties {
-	return &BaseProperties{
-		ListenPort:              constants.DefaultListenPort,
-		DownloadPort:            constants.DefaultDownloadPort,
-		SystemReservedBandwidth: constants.DefaultSystemReservedBandwidth,
-		MaxBandwidth:            constants.DefaultMaxBandwidth,
-		AdvertiseIP:             iputils.IPv4,
-		FailAccessInterval:      constants.DefaultFailAccessInterval,
-		GCInitialDelay:          constants.DefaultGCInitialDelay,
-		GCMetaInterval:          constants.DefaultGCMetaInterval,
-		TaskExpireTime:          constants.DefaultTaskExpireTime,
-		StorageMode:             constants.DefaultStorageMode,
-		Manager: ManagerConfig{
-			KeepAlive: KeepAliveConfig{
-				Interval: constants.DefaultKeepAliveInterval,
-			},
-		},
-		Host: HostConfig{},
-		Metrics: &RestConfig{
-			Addr: ":8080",
-		},
-	}
-}
-
-type StorageConfig struct {
-	GCInitialDelay time.Duration            `yaml:"gcInitialDelay"`
-	GCInterval     time.Duration            `yaml:"gcInterval"`
-	DriverConfigs  map[string]*DriverConfig `yaml:"driverConfigs"`
-}
-
-type DriverConfig struct {
-	GCConfig *GCConfig `yaml:"gcConfig"`
-}
-
-// GCConfig gc config
-type GCConfig struct {
-	YoungGCThreshold  unit.Bytes    `yaml:"youngGCThreshold"`
-	FullGCThreshold   unit.Bytes    `yaml:"fullGCThreshold"`
-	CleanRatio        int           `yaml:"cleanRatio"`
-	IntervalThreshold time.Duration `yaml:"intervalThreshold"`
-}
-
-// BaseProperties contains all basic properties of cdn system.
-type BaseProperties struct {
-	// ListenPort is the port cdn server listens on.
-	// default: 8002
-	ListenPort int `yaml:"listenPort" mapstructure:"listenPort"`
-
-	// DownloadPort is the port for download files from cdn.
-	// default: 8001
-	DownloadPort int `yaml:"downloadPort" mapstructure:"downloadPort"`
-
-	// SystemReservedBandwidth is the network bandwidth reserved for system software.
-	// default: 20 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	SystemReservedBandwidth unit.Bytes `yaml:"systemReservedBandwidth" mapstructure:"systemReservedBandwidth"`
-
-	// MaxBandwidth is the network bandwidth that cdn system can use.
-	// default: 200 MB, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte.
-	MaxBandwidth unit.Bytes `yaml:"maxBandwidth" mapstructure:"maxBandwidth"`
-
-	// AdvertiseIP is used to set the ip that we advertise to other peer in the p2p-network.
-	// By default, the first non-loop address is advertised.
-	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
-
-	// FailAccessInterval is the interval time after failed to access the URL.
-	// unit: minutes
-	// default: 3
-	FailAccessInterval time.Duration `yaml:"failAccessInterval" mapstructure:"failAccessInterval"`
-
-	// gc related
-	// GCInitialDelay is the delay time from the start to the first GC execution.
-	// default: 6s
-	GCInitialDelay time.Duration `yaml:"gcInitialDelay" mapstructure:"gcInitialDelay"`
-
-	// GCMetaInterval is the interval time to execute GC meta.
-	// default: 2min
-	GCMetaInterval time.Duration `yaml:"gcMetaInterval" mapstructure:"gcMetaInterval"`
-
-	// TaskExpireTime when a task is not accessed within the taskExpireTime,
-	// and it will be treated to be expired.
-	// default: 3min
-	TaskExpireTime time.Duration `yaml:"taskExpireTime" mapstructure:"taskExpireTime"`
-
-	// StorageMode disk/hybrid/memory
-	StorageMode string `yaml:"storageMode" mapstructure:"storageMode"`
-
-	// Log directory
-	LogDir string `yaml:"logDir" mapstructure:"logDir"`
-
-	// WorkHome directory
-	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
-
-	// Manager configuration
-	Manager ManagerConfig `yaml:"manager" mapstructure:"manager"`
-
-	// Host configuration
-	Host HostConfig `yaml:"host" mapstructure:"host"`
-
-	// Metrics configuration
-	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
+func (c *Config) Validate() []error {
+	var errs []error
+	errs = append(errs, c.Metrics.Validate()...)
+	errs = append(errs, c.Storage.Validate()...)
+	errs = append(errs, c.RPCServer.Validate()...)
+	errs = append(errs, c.Task.Validate()...)
+	errs = append(errs, c.CDN.Validate()...)
+	errs = append(errs, c.Manager.Validate()...)
+	return errs
 }
 
 type ManagerConfig struct {
@@ -230,9 +100,28 @@ type ManagerConfig struct {
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
+func (c ManagerConfig) Validate() []error {
+	var errors []error
+	if c.Addr != "" {
+		if c.CDNClusterID <= 0 {
+			errors = append(errors, fmt.Errorf("cdn cluster id %d can't be a negative number", c.CDNClusterID))
+		}
+		errors = append(errors, c.KeepAlive.Validate()...)
+	}
+	return errors
+}
+
 type KeepAliveConfig struct {
 	// Keep alive interval
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
+}
+
+func (c KeepAliveConfig) Validate() []error {
+	var errors []error
+	if c.Interval <= 0 {
+		errors = append(errors, fmt.Errorf("keep alive interval %d can't be a negative number", c.Interval))
+	}
+	return errors
 }
 
 type HostConfig struct {
@@ -241,8 +130,4 @@ type HostConfig struct {
 
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
-}
-
-type RestConfig struct {
-	Addr string `yaml:"addr" mapstructure:"addr"`
 }

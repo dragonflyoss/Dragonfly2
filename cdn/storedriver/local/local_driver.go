@@ -41,11 +41,13 @@ const (
 var fileLocker = synclock.NewLockerPool()
 
 func init() {
-	if err := storedriver.Register(DiskDriverName, NewStorageDriver); err != nil {
+	storedriver.Register(DiskDriverName, NewStorageDriver)
+	storedriver.Register(MemoryDriverName, NewStorageDriver)
+	if err := storedriver.RegisterPlugin(DiskDriverName, NewStorageDriver); err != nil {
 		logger.CoreLogger.Error(err)
 	}
 
-	if err := storedriver.Register(MemoryDriverName, NewStorageDriver); err != nil {
+	if err := storedriver.RegisterPlugin(MemoryDriverName, NewStorageDriver); err != nil {
 		logger.CoreLogger.Error(err)
 	}
 }
@@ -58,6 +60,13 @@ type driver struct {
 
 // NewStorageDriver performs initialization for disk Storage and return a storage Driver.
 func NewStorageDriver(cfg *storedriver.Config) (storedriver.Driver, error) {
+	// prepare the base dir
+	if !filepath.IsAbs(cfg.BaseDir) {
+		return nil, fmt.Errorf("not absolute path: %s", cfg.BaseDir)
+	}
+	if err := fileutils.MkdirAll(cfg.BaseDir); err != nil {
+		return nil, fmt.Errorf("create baseDir %s: %v", cfg.BaseDir, err)
+	}
 	return &driver{
 		BaseDir: cfg.BaseDir,
 	}, nil

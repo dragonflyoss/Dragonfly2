@@ -17,7 +17,7 @@
 package storage
 
 func IsSupport(mode string) bool {
-	if mode == DiskStorageMode {
+	if mode == "disk" {
 		return true
 	}
 	return false

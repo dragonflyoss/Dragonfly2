@@ -18,8 +18,6 @@ package cdn
 
 import (
 	"context"
-	"fmt"
-	"runtime"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -29,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
-	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
@@ -60,18 +57,9 @@ type Server struct {
 }
 
 // New creates a brand-new server instance.
-func New(cfg *config.Config) (*Server, error) {
-	if ok := storage.IsSupport(cfg.StorageMode); !ok {
-		return nil, fmt.Errorf("os %s is not support storage mode %s", runtime.GOOS, cfg.StorageMode)
-	}
-
-	// Initialize plugins
-	if err := plugins.Initialize(cfg.Plugins); err != nil {
-		return nil, errors.Wrapf(err, "init plugins")
-	}
-
+func New(config *config.Config) (*Server, error) {
 	// Initialize task manager
-	taskManager, err := task.NewManager(cfg)
+	taskManager, err := task.NewManager(config.Task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
@@ -83,14 +71,13 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize storage manager
-	storageManager, ok := storage.Get(cfg.StorageMode)
-	if !ok {
-		return nil, fmt.Errorf("can not find storage pattern %s", cfg.StorageMode)
+	storageManager, err := storage.NewManager(config.Storage, taskManager)
+	if err != nil {
+		return nil, errors.Wrapf(err, "create storage manager")
 	}
-	storageManager.Initialize(taskManager)
 
 	// Initialize CDN manager
-	cdnManager, err := cdn.NewManager(cfg, storageManager, progressManager, taskManager)
+	cdnManager, err := cdn.NewManager(config.CDN, storageManager, progressManager, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
@@ -102,10 +89,10 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 	// Initialize storage manager
 	var opts []grpc.ServerOption
-	if cfg.Options.Telemetry.Jaeger != "" {
+	if config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(cfg, service, opts...)
+	grpcServer, err := rpcserver.New(config.RPCServer, service, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
@@ -117,9 +104,9 @@ func New(cfg *config.Config) (*Server, error) {
 	}
 
 	var metricsServer *metrics.Server
-	if cfg.Metrics != nil && cfg.Metrics.Addr != "" {
+	if config.Metrics.Addr != "" {
 		// Initialize metrics server
-		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
+		metricsServer, err = metrics.New(config.Metrics, grpcServer.Server)
 		if err != nil {
 			return nil, errors.Wrap(err, "create metricsServer")
 		}
@@ -127,14 +114,14 @@ func New(cfg *config.Config) (*Server, error) {
 
 	// Initialize configServer
 	var configServer managerClient.Client
-	if cfg.Manager.Addr != "" {
-		configServer, err = managerClient.New(cfg.Manager.Addr)
+	if config.Manager.Addr != "" {
+		configServer, err = managerClient.New(config.Manager.Addr)
 		if err != nil {
 			return nil, errors.Wrap(err, "create configServer")
 		}
 	}
 	return &Server{
-		config:        cfg,
+		config:        config,
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
@@ -161,12 +148,13 @@ func (s *Server) Serve() error {
 
 	go func() {
 		if s.configServer != nil {
+			var rpcServerConfig = s.grpcServer.GetConfig()
 			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
 				SourceType:   manager.SourceType_CDN_SOURCE,
 				HostName:     hostutils.FQDNHostname,
-				Ip:           s.config.AdvertiseIP,
-				Port:         int32(s.config.ListenPort),
-				DownloadPort: int32(s.config.DownloadPort),
+				Ip:           rpcServerConfig.AdvertiseIP,
+				Port:         int32(rpcServerConfig.ListenPort),
+				DownloadPort: int32(rpcServerConfig.DownloadPort),
 				Idc:          s.config.Host.IDC,
 				Location:     s.config.Host.Location,
 				CdnClusterId: uint64(s.config.Manager.CDNClusterID),
@@ -175,7 +163,7 @@ func (s *Server) Serve() error {
 				logger.Fatalf("update cdn instance failed: %v", err)
 			}
 			// Serve Keepalive
-			logger.Infof("====starting keepalive cdn instance %#v to manager %s====", CDNInstance)
+			logger.Infof("====starting keepalive cdn instance %s to manager %s====", CDNInstance, s.config.Manager.Addr)
 			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,

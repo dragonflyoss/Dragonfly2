@@ -24,7 +24,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -85,14 +84,14 @@ func IsTaskNotFound(err error) bool {
 
 // manager is an implementation of the interface of Manager.
 type manager struct {
-	config                  *config.Config
+	config                  Config
 	taskStore               sync.Map
 	accessTimeMap           sync.Map
 	taskURLUnreachableStore sync.Map
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(config *config.Config) (Manager, error) {
+func NewManager(config Config) (Manager, error) {
 
 	manager := &manager{
 		config: config,
@@ -233,7 +232,7 @@ const (
 )
 
 func (tm *manager) GC() error {
-	logger.Info("start the task meta gc job")
+	logger.GcLogger.Info("start the task meta gc job")
 	startTime := time.Now()
 
 	totalTaskNums := 0
@@ -244,7 +243,7 @@ func (tm *manager) GC() error {
 		synclock.Lock(taskID, false)
 		defer synclock.UnLock(taskID, false)
 		atime := value.(time.Time)
-		if time.Since(atime) < tm.config.TaskExpireTime {
+		if time.Since(atime) < tm.config.ExpireTime {
 			return true
 		}
 

@@ -55,7 +55,7 @@ func (s *LocalDriverTestSuite) SetupSuite() {
 		},
 	}
 	s.Nil(plugins.Initialize(pluginProps))
-	gotDriver, ok := storedriver.Get(DiskDriverName)
+	gotDriver, ok := storedriver.GetPlugin(DiskDriverName)
 	s.True(ok)
 	s.Equal(&driver{BaseDir: filepath.Join(s.workHome, "repo")}, gotDriver)
 	s.Driver = gotDriver

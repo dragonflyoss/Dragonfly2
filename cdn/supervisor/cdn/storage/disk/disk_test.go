@@ -29,16 +29,16 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-func TestDiskStorageMgrSuite(t *testing.T) {
-	suite.Run(t, new(DiskStorageMgrSuite))
+func TestDiskStorageManagerSuite(t *testing.T) {
+	suite.Run(t, new(DiskStorageManagerSuite))
 }
 
-type DiskStorageMgrSuite struct {
+type DiskStorageManagerSuite struct {
 	m *diskStorageManager
 	suite.Suite
 }
 
-func (suite *DiskStorageMgrSuite) TestTryFreeSpace() {
+func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 	ctrl := gomock.NewController(suite.T())
 	diskDriver := storedriver.NewMockDriver(ctrl)
 	taskManager := taskMock.NewMockManager(ctrl)
@@ -47,8 +47,12 @@ func (suite *DiskStorageMgrSuite) TestTryFreeSpace() {
 		taskManager: taskManager,
 	}
 	diskDriver.EXPECT().GetTotalSpace().Return(100*unit.GB, nil)
-	cleaner, _ := storage.NewStorageCleaner(suite.m.getDefaultGcConfig(), diskDriver, suite.m, taskManager)
-	suite.m.cleaner = cleaner
+	diskDriver.EXPECT().GetBaseDir().Return(storage.DefaultDiskBaseDir)
+	driverDriverConfig, err := getDiskDriverConfig(diskDriver)
+	suite.Nil(err)
+	cleaner, err := storage.NewStorageCleaner(driverDriverConfig.DriverGCConfig, diskDriver, suite.m, taskManager)
+	suite.Require().Nil(err)
+	suite.m.diskCleaner = cleaner
 
 	tests := []struct {
 		name       string

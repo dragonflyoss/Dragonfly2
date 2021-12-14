@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ../mocks/cdn/mock_cdn_manager.go -package cdn d7y.io/dragonfly/v2/cdn/supervisor/cdn Manager
+
 package cdn
 
 import (
@@ -27,11 +29,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"   // nolint
-	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/hybrid" // nolint
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -66,7 +65,7 @@ var tracer = otel.Tracer("cdn-server")
 
 // Manager is an implementation of the interface of Manager.
 type manager struct {
-	cfg             *config.Config
+	config          Config
 	cacheStore      storage.Manager
 	limiter         *ratelimiter.RateLimiter
 	cdnLocker       *synclock.LockerPool
@@ -79,17 +78,17 @@ type manager struct {
 }
 
 // NewManager returns a new Manager.
-func NewManager(cfg *config.Config, cacheStore storage.Manager, progressManager progress.Manager,
+func NewManager(config Config, cacheStore storage.Manager, progressManager progress.Manager,
 	taskManager task.Manager) (Manager, error) {
-	return newManager(cfg, cacheStore, progressManager, taskManager)
+	return newManager(config, cacheStore, progressManager, taskManager)
 }
 
-func newManager(cfg *config.Config, cacheStore storage.Manager, progressManager progress.Manager, taskManager task.Manager) (Manager, error) {
-	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(cfg.MaxBandwidth-cfg.SystemReservedBandwidth)), 2)
+func newManager(config Config, cacheStore storage.Manager, progressManager progress.Manager, taskManager task.Manager) (Manager, error) {
+	rateLimiter := ratelimiter.NewRateLimiter(ratelimiter.TransRate(int64(config.MaxBandwidth-config.SystemReservedBandwidth)), 2)
 	metadataManager := newMetadataManager(cacheStore)
 	cdnReporter := newReporter(progressManager)
 	return &manager{
-		cfg:             cfg,
+		config:          config,
 		cacheStore:      cacheStore,
 		limiter:         rateLimiter,
 		metadataManager: metadataManager,
@@ -168,7 +167,7 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	reader := limitreader.NewLimitReaderWithLimiterAndDigest(respBody, cm.limiter, fileDigest, digestutils.Algorithms[digestType])
 
 	// forth: write to storage
-	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint)
+	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint, cm.config.WriterRoutineLimit)
 	if err != nil {
 		server.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)

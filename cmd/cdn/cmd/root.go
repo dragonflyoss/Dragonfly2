@@ -17,11 +17,11 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn"
 	"d7y.io/dragonfly/v2/cdn/config"
@@ -34,7 +34,8 @@ import (
 )
 
 var (
-	cfg *config.Config
+	deprecatedConfig *config.DeprecatedConfig
+	cfg              *config.Config
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -48,8 +49,9 @@ from remote source repeatedly.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg = deprecatedConfig.Convert()
 		// Initialize dfpath
-		d, err := initDfpath(cfg.BaseProperties)
+		d, err := initDfpath(cfg.LogDir, cfg.WorkHome)
 		if err != nil {
 			return err
 		}
@@ -77,18 +79,18 @@ func Execute() {
 
 func init() {
 	// Initialize default cdn system config
-	cfg = config.New()
+	deprecatedConfig = config.NewDeprecatedConfig()
 	// Initialize cobra
-	dependency.InitCobra(rootCmd, true, cfg)
+	dependency.InitCobra(rootCmd, true, deprecatedConfig)
 }
 
-func initDfpath(cfg *config.BaseProperties) (dfpath.Dfpath, error) {
+func initDfpath(logDir, workHome string) (dfpath.Dfpath, error) {
 	var options []dfpath.Option
 	if cfg.LogDir != "" {
-		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+		options = append(options, dfpath.WithLogDir(logDir))
 	}
 	if cfg.WorkHome != "" {
-		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
+		options = append(options, dfpath.WithWorkHome(workHome))
 	}
 
 	return dfpath.New(options...)
@@ -96,10 +98,12 @@ func initDfpath(cfg *config.BaseProperties) (dfpath.Dfpath, error) {
 
 func runCdnSystem() error {
 	logger.Infof("Version:\n%s", version.Version())
+	// validate config
+	if errs := cfg.Validate(); len(errs) != 0 {
+		return fmt.Errorf("failed to validate cdn config:\n%s", errs)
+	}
 	// cdn system config values
-	s, _ := yaml.Marshal(cfg)
-
-	logger.Infof("cdn system configuration:\n%s", string(s))
+	logger.Infof("cdn system configuration:\n%s", cfg)
 
 	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
 	defer ff()

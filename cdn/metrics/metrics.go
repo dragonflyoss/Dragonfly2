@@ -27,9 +27,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -66,17 +64,11 @@ var (
 )
 
 type Server struct {
-	config     *config.RestConfig
+	config     Config
 	httpServer *http.Server
 }
 
-func New(config *config.RestConfig, rpcServer *grpc.Server) (*Server, error) {
-	// scheduler config values
-	s, err := yaml.Marshal(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshal metrics server config")
-	}
-	logger.Infof("metrics server config: \n%s", s)
+func New(config Config, rpcServer *grpc.Server) (*Server, error) {
 	grpc_prometheus.Register(rpcServer)
 
 	return &Server{
@@ -94,7 +86,7 @@ func (s *Server) Handler() http.Handler {
 
 // ListenAndServe is a blocking call which runs s.
 func (s *Server) ListenAndServe(h http.Handler) error {
-	l, err := net.Listen("tcp", s.config.Addr)
+	l, err := net.Listen(s.config.Net, s.config.Addr)
 	if err != nil {
 		return err
 	}
