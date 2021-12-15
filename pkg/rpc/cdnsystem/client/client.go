@@ -19,7 +19,6 @@ package client
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -35,29 +34,56 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
+	resolver := rpc.NewD7yResolver(rpc.CDNScheme, addrs)
+
+	dialOpts := append(append(append(
+		rpc.DefaultClientOpts,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy))),
+		grpc.WithResolvers(resolver)),
+		opts...)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	conn, err := grpc.DialContext(
+		ctx,
+		// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
+		fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"),
+		dialOpts...,
+	)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
+
 	cc := &cdnClient{
-		rpc.NewConnection(context.Background(), rpc.CDNScheme, addrs, []rpc.ConnOption{
-			rpc.WithDialOption(opts),
-		}),
+		ctx:       ctx,
+		cancel:    cancel,
+		cdnClient: cdnsystem.NewSeederClient(conn),
+		conn:      conn,
+		resolver:  resolver,
 	}
 	return cc, nil
 }
 
-var once sync.Once
-var elasticCdnClient *cdnClient
-
 func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	once.Do(func() {
-		elasticCdnClient = &cdnClient{
-			rpc.NewConnection(context.Background(), rpc.CDNScheme, nil, []rpc.ConnOption{
-				rpc.WithDialOption(opts),
-			}),
-		}
-	})
-	if err := elasticCdnClient.AddServerNode(addr); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	conn, err := getClientByAddr(ctx, addr, opts...)
+	if err != nil {
+		cancel()
 		return nil, err
 	}
-	return elasticCdnClient, nil
+
+	return &cdnClient{
+		ctx:       ctx,
+		cancel:    cancel,
+		cdnClient: cdnsystem.NewSeederClient(conn),
+		conn:      conn,
+	}, nil
+}
+
+func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+	dialOpts := append(append(rpc.DefaultClientOpts, grpc.WithDisableServiceConfig()), opts...)
+	return grpc.DialContext(ctx, addr.GetEndpoint(), dialOpts...)
 }
 
 // CdnClient see cdnsystem.CdnClient
@@ -72,26 +98,25 @@ type CdnClient interface {
 }
 
 type cdnClient struct {
-	*rpc.Connection
+	ctx       context.Context
+	cancel    context.CancelFunc
+	cdnClient cdnsystem.SeederClient
+	conn      *grpc.ClientConn
+	resolver  *rpc.D7yResolver
 }
 
 var _ CdnClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, error) {
-	// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
-	clientConn, err := cc.Connection.GetConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"))
-	if err != nil {
-		return nil, err
-	}
-	return cdnsystem.NewSeederClient(clientConn), nil
+	return cc.cdnClient, nil
 }
 
-func (cc *cdnClient) getCdnClientByTarget(target string) (cdnsystem.SeederClient, error) {
-	clientConn, err := cc.Connection.GetDirectClient(target)
+func (cc *cdnClient) getCdnClientByAddr(addr dfnet.NetAddr) (cdnsystem.SeederClient, error) {
+	conn, err := getClientByAddr(cc.ctx, addr)
 	if err != nil {
 		return nil, err
 	}
-	return cdnsystem.NewSeederClient(clientConn), nil
+	return cdnsystem.NewSeederClient(conn), nil
 }
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
@@ -100,7 +125,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getCdnClientByTarget(addr.GetEndpoint())
+		client, err := cc.getCdnClientByAddr(addr)
 		if err != nil {
 			return nil, err
 		}
@@ -111,4 +136,16 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		return nil, err
 	}
 	return res.(*base.PiecePacket), nil
+}
+
+func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {
+	if err := cc.resolver.UpdateAddrs(addrs); err != nil {
+		// TODO(zzy987) modify log
+		logger.Errorf("update resolver error: %v\n", err)
+	}
+}
+
+func (cc *cdnClient) Close() error {
+	cc.cancel()
+	return nil
 }

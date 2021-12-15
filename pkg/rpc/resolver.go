@@ -19,6 +19,8 @@ package rpc
 import (
 	"log"
 
+	"go.uber.org/atomic"
+
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -31,31 +33,58 @@ const (
 )
 
 var (
-	_ resolver.Builder  = &d7yResolver{}
-	_ resolver.Resolver = &d7yResolver{}
+	_ resolver.Builder  = &D7yResolver{}
+	_ resolver.Resolver = &D7yResolver{}
 )
 
-type d7yResolver struct {
+func NewD7yResolver(scheme string, addrs []dfnet.NetAddr) *D7yResolver {
+	return &D7yResolver{scheme: scheme, addrs: addrs}
+}
+
+type D7yResolver struct {
+	built  atomic.Bool
 	scheme string
 	target resolver.Target
 	cc     resolver.ClientConn
 	addrs  []dfnet.NetAddr
 }
 
-func (r *d7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+func (r *D7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	var err error
 	r.target = target
 	r.cc = cc
-	return r, nil
+	if len(r.addrs) != 0 {
+		err = r.UpdateAddrs(r.addrs)
+	}
+	r.built.Store(true)
+	return r, err
 }
 
-func (r *d7yResolver) Scheme() string {
+func (r *D7yResolver) Scheme() string {
 	return r.scheme
 }
 
-func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
+func (r *D7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 	if len(addrs) == 0 {
 		return nil
 	}
+
+	updateFlag := false
+	if len(addrs) != len(r.addrs) {
+		updateFlag = true
+	} else {
+		for i := 0; i < len(addrs); i++ {
+			if addrs[i] != r.addrs[i] {
+				updateFlag = true
+				break
+			}
+		}
+	}
+
+	if !updateFlag {
+		return nil
+	}
+
 	addresses := make([]resolver.Address, len(addrs))
 	for i, addr := range addrs {
 		if addr.Type == dfnet.UNIX {
@@ -65,13 +94,15 @@ func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 		}
 	}
 	r.addrs = addrs
-	if r.cc == nil {
+
+	log.Printf("resolver update addresses: %v", addresses)
+	if r.built.Load() == false {
 		return nil
 	}
-	log.Printf("resolver update addresses: %v", addresses)
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
+
 }
 
-func (r *d7yResolver) ResolveNow(options resolver.ResolveNowOptions) {}
+func (r *D7yResolver) ResolveNow(options resolver.ResolveNowOptions) {}
 
-func (r *d7yResolver) Close() {}
+func (r *D7yResolver) Close() {}

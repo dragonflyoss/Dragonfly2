@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	d7yBalancerPolicy  = "consistent_hash_policy"
+	D7yBalancerPolicy  = "consistent_hash_policy"
 	connectionLifetime = 10 * time.Minute
 )
 
@@ -66,7 +66,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 
 // Name returns the scheme of the d7yBalancer registering in grpc.
 func (builder *d7yBalancerBuilder) Name() string {
-	return d7yBalancerPolicy
+	return D7yBalancerPolicy
 }
 
 // subConnInfo records the state and addr corresponding to the SubConn.

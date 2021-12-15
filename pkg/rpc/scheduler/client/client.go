@@ -33,17 +33,41 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
+var _ SchedulerClient = (*schedulerClient)(nil)
+
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	if len(addrs) == 0 {
-		return nil, errors.New("address list of scheduler is empty")
+		return nil, errors.New("address list of cdn is empty")
 	}
-	sc := &schedulerClient{
-		rpc.NewConnection(context.Background(), rpc.SchedulerScheme, addrs, []rpc.ConnOption{
-			rpc.WithDialOption(opts),
-		}),
+	resolver := rpc.NewD7yResolver(rpc.DaemonScheme, addrs)
+
+	dialOpts := append(append(append(
+		rpc.DefaultClientOpts,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy))),
+		grpc.WithResolvers(resolver)),
+		opts...)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	conn, err := grpc.DialContext(
+		ctx,
+		// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
+		fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"),
+		dialOpts...,
+	)
+	if err != nil {
+		cancel()
+		return nil, err
 	}
-	logger.Infof("scheduler server list: %s", addrs)
-	return sc, nil
+
+	cc := &schedulerClient{
+		ctx:             ctx,
+		cancel:          cancel,
+		schedulerClient: scheduler.NewSchedulerClient(conn),
+		conn:            conn,
+		resolver:        resolver,
+	}
+	return cc, nil
 }
 
 // SchedulerClient see scheduler.SchedulerClient
@@ -63,16 +87,15 @@ type SchedulerClient interface {
 }
 
 type schedulerClient struct {
-	*rpc.Connection
+	ctx             context.Context
+	cancel          context.CancelFunc
+	schedulerClient scheduler.SchedulerClient
+	conn            *grpc.ClientConn
+	resolver        *rpc.D7yResolver
 }
 
 func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, error) {
-	// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
-	clientConn, err := sc.Connection.GetConsistentHashClient(fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"))
-	if err != nil {
-		return nil, err
-	}
-	return scheduler.NewSchedulerClient(clientConn), nil
+	return sc.schedulerClient, nil
 }
 
 func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
@@ -221,4 +244,14 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	return
 }
 
-var _ SchedulerClient = (*schedulerClient)(nil)
+func (sc *schedulerClient) UpdateState(addrs []dfnet.NetAddr) {
+	if err := sc.resolver.UpdateAddrs(addrs); err != nil {
+		// TODO(zzy987) modify log
+		logger.Errorf("update resolver error: %v\n", err)
+	}
+}
+
+func (sc *schedulerClient) Close() error {
+	sc.cancel()
+	return nil
+}

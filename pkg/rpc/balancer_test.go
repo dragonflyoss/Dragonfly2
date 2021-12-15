@@ -129,7 +129,7 @@ func (tester) TestOneBackend(t *testing.T) {
 	defer test.cleanup()
 
 	cc, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r),
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, d7yBalancerPolicy)))
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, D7yBalancerPolicy)))
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
@@ -166,7 +166,7 @@ func (tester) TestMigration(t *testing.T) {
 	defer test.cleanup()
 
 	cc, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r),
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, d7yBalancerPolicy)))
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, D7yBalancerPolicy)))
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
