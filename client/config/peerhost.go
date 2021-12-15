@@ -173,6 +173,7 @@ type DownloadOption struct {
 	PeerGRPC             ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
+	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
 }
 
 type TransportOption struct {

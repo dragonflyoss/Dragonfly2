@@ -28,7 +28,6 @@ import (
 	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -321,17 +320,22 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		return nil, ErrInvalidDigest
 	}
 
-	var pieces []*base.PieceInfo
 	t.RLock()
 	defer t.RUnlock()
 	t.touch()
-	if t.TotalPieces > 0 && int32(req.StartNum) >= t.TotalPieces {
-		t.Errorf("invalid start num: %d", req.StartNum)
-		return nil, dferrors.ErrInvalidArgument
+	piecePacket := &base.PiecePacket{
+		TaskId:        req.TaskId,
+		DstPid:        t.PeerID,
+		TotalPiece:    t.TotalPieces,
+		ContentLength: t.ContentLength,
+		PieceMd5Sign:  t.PieceMd5Sign,
+	}
+	if t.TotalPieces > -1 && int32(req.StartNum) >= t.TotalPieces {
+		t.Warnf("invalid start num: %d", req.StartNum)
 	}
 	for i := int32(0); i < int32(req.Limit); i++ {
 		if piece, ok := t.Pieces[int32(req.StartNum)+i]; ok {
-			pieces = append(pieces, &base.PieceInfo{
+			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &base.PieceInfo{
 				PieceNum:    piece.Num,
 				RangeStart:  uint64(piece.Range.Start),
 				RangeSize:   uint32(piece.Range.Length),
@@ -341,14 +345,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 			})
 		}
 	}
-	return &base.PiecePacket{
-		TaskId:        req.TaskId,
-		DstPid:        t.PeerID,
-		PieceInfos:    pieces,
-		TotalPiece:    t.TotalPieces,
-		ContentLength: t.ContentLength,
-		PieceMd5Sign:  t.PieceMd5Sign,
-	}, nil
+	return piecePacket, nil
 }
 
 func (t *localTaskStore) CanReclaim() bool {
