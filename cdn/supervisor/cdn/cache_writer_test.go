@@ -27,9 +27,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/plugins"
-	"d7y.io/dragonfly/v2/cdn/storedriver"
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
@@ -47,30 +44,17 @@ type CacheWriterTestSuite struct {
 	suite.Suite
 }
 
-func NewPlugins(workHome string) map[plugins.PluginType][]*plugins.PluginProperties {
-	return map[plugins.PluginType][]*plugins.PluginProperties{
-		"storagedriver": {
-			{
-				Name:   local.DiskDriverName,
-				Enable: true,
-				Config: &storedriver.Config{
-					BaseDir: workHome,
-				},
-			},
-		},
-	}
-}
-
 func (suite *CacheWriterTestSuite) SetupSuite() {
 	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-CacheWriterDetectorTestSuite-")
 	suite.T().Log("workHome:", suite.workHome)
-	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
 	ctrl := gomock.NewController(suite.T())
 	progressManager := progressMock.NewMockManager(ctrl)
 	progressManager.EXPECT().PublishPiece(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	progressManager.EXPECT().PublishTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 	taskManager := taskMock.NewMockManager(ctrl)
-	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
+	storageConfig := storage.DefaultConfig()
+	storageConfig.DriverConfigs["disk"].BaseDir = suite.workHome
+	storageManager, err := storage.NewManager(storageConfig, taskManager)
 	suite.Require().Nil(err)
 	metadataManager := newMetadataManager(storageManager)
 	cdnReporter := newReporter(progressManager)
