@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdn/gc"
@@ -30,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
