@@ -39,7 +39,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
-	resolver := rpc.NewD7yResolver(rpc.DaemonScheme, addrs)
+	resolver := rpc.NewD7yResolver(rpc.SchedulerScheme, addrs)
 
 	dialOpts := append(append(append(
 		rpc.DefaultClientOpts,
