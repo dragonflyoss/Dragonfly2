@@ -504,8 +504,8 @@ loop:
 
 func (pt *peerTask) init(piecePacket *base.PiecePacket, pieceBufferSize uint32) (chan *DownloadPieceRequest, bool) {
 	pt.contentLength.Store(piecePacket.ContentLength)
-	if pt.contentLength.Load() > 0 {
-		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(pt.contentLength.Load()))
+	if piecePacket.ContentLength > 0 {
+		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
 	}
 	if err := pt.callback.Init(pt); err != nil {
 		pt.span.RecordError(err)
@@ -607,6 +607,7 @@ func (pt *peerTask) waitAvailablePeerPacket() (int32, bool) {
 }
 
 func (pt *peerTask) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceRequest, piecePacket *base.PiecePacket) {
+	pt.Debugf("dispatch piece request, piece count: %d", len(piecePacket.PieceInfos))
 	for _, piece := range piecePacket.PieceInfos {
 		pt.Infof("get piece %d from %s/%s, md5: %s, start: %d, size: %d",
 			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
@@ -855,37 +856,48 @@ func (pt *peerTask) getPieceTasks(span trace.Span, curPeerPacket *scheduler.Peer
 			}
 			return nil, true, getError
 		}
-		// by santong: when peer return empty, retry later
-		if len(piecePacket.PieceInfos) == 0 {
-			count++
-			sendError := pt.peerPacketStream.Send(&scheduler.PieceResult{
-				TaskId:        pt.taskID,
-				SrcPid:        pt.peerID,
-				DstPid:        peer.PeerId,
-				PieceInfo:     &base.PieceInfo{},
-				Success:       false,
-				Code:          base.Code_ClientWaitPieceReady,
-				HostLoad:      nil,
-				FinishedCount: pt.readyPieces.Settled(),
-			})
-			if sendError != nil {
-				span.RecordError(sendError)
-				pt.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
-			}
-			// fast way to exit retry
-			lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
-			if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
-				pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
-					curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
-				peerPacketChanged = true
-				return nil, true, nil
-			}
-			span.AddEvent("retry due to empty pieces",
-				trace.WithAttributes(config.AttributeGetPieceRetry.Int(count)))
-			pt.Infof("peer %s returns success but with empty pieces, retry later", peer.PeerId)
-			return nil, false, dferrors.ErrEmptyValue
+		// got any pieces
+		if len(piecePacket.PieceInfos) > 0 {
+			return piecePacket, false, nil
 		}
-		return piecePacket, false, nil
+		// need update metadata
+		if piecePacket.ContentLength > pt.contentLength.Load() || piecePacket.TotalPiece > pt.totalPiece {
+			return piecePacket, false, nil
+		}
+		// invalid request num
+		if piecePacket.TotalPiece > -1 && uint32(piecePacket.TotalPiece) <= request.StartNum {
+			pt.Warnf("invalid start num: %d, total piece: %d", request.StartNum, piecePacket.TotalPiece)
+			return piecePacket, false, nil
+		}
+
+		// by santong: when peer return empty, retry later
+		sendError := pt.peerPacketStream.Send(&scheduler.PieceResult{
+			TaskId:        pt.taskID,
+			SrcPid:        pt.peerID,
+			DstPid:        peer.PeerId,
+			PieceInfo:     &base.PieceInfo{},
+			Success:       false,
+			Code:          base.Code_ClientWaitPieceReady,
+			HostLoad:      nil,
+			FinishedCount: pt.readyPieces.Settled(),
+		})
+		if sendError != nil {
+			span.RecordError(sendError)
+			pt.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
+		}
+		// fast way to exit retry
+		lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
+		if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
+			pt.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
+				curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
+			peerPacketChanged = true
+			return nil, true, nil
+		}
+		count++
+		span.AddEvent("retry due to empty pieces",
+			trace.WithAttributes(config.AttributeGetPieceRetry.Int(count)))
+		pt.Infof("peer %s returns success but with empty pieces, retry later", peer.PeerId)
+		return nil, false, dferrors.ErrEmptyValue
 	}, 0.05, 0.2, 40, nil)
 	if peerPacketChanged {
 		return nil, errPeerPacketChanged
