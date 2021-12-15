@@ -268,7 +268,7 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	s.kmu.RUnlock(task.ID)
 
 	s.kmu.Lock(task.ID)
-	defer s.kmu.Lock(task.ID)
+	defer s.kmu.Unlock(task.ID)
 
 	// do trigger
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
