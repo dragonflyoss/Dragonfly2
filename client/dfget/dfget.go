@@ -20,7 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -59,7 +61,11 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 
 	go func() {
 		defer cancel()
-		downError = download(ctx, client, cfg, wLog)
+		if cfg.Recursive {
+			downError = recursiveDownload(ctx, client, cfg)
+		} else {
+			downError = download(ctx, client, cfg, wLog)
+		}
 	}()
 
 	<-ctx.Done()
@@ -237,4 +243,39 @@ func newProgressBar(max int64) *progressbar.ProgressBar {
 			BarStart:      "[",
 			BarEnd:        "]",
 		}))
+}
+
+func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig) error {
+	request, err := source.NewRequestWithContext(ctx, cfg.URL, parseHeader(cfg.Header))
+	if err != nil {
+		return err
+	}
+	dirURL, err := url.Parse(cfg.URL)
+	if err != nil {
+		return err
+	}
+	logger.Debugf("dirURL: %s", cfg.URL)
+
+	urls, err := source.List(request)
+	if err != nil {
+		return err
+	}
+	for _, u := range urls {
+		// reuse dfget config
+		c := *cfg
+		// update some attributes
+		c.Recursive, c.URL, c.Output = false, u.String(), path.Join(cfg.Output, strings.TrimPrefix(u.Path, dirURL.Path))
+		// validate new dfget config
+		if err = c.Validate(); err != nil {
+			logger.Errorf("validate failed: %s", err)
+			return err
+		}
+
+		logger.Debugf("download %s to %s", c.URL, c.Output)
+		err = download(ctx, client, &c, logger.With("url", c.URL))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
