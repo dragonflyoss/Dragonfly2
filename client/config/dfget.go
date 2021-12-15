@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -46,9 +47,6 @@ type ClientOption struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
 	// URL download URL.
 	URL string `yaml:"url,omitempty" mapstructure:"url,omitempty"`
-
-	// Recursive indicates to download all resources in target url, the target source client must support list action
-	Recursive bool `yaml:"recursive,omitempty" mapstructure:"recursive,omitempty"`
 
 	// Output full output path.
 	Output string `yaml:"output,omitempty" mapstructure:"output,omitempty"`
@@ -116,6 +114,16 @@ type ClientOption struct {
 
 	// MoreDaemonOptions indicates more options passed to daemon by command line.
 	MoreDaemonOptions string `yaml:"moreDaemonOptions,omitempty" mapstructure:"moreDaemonOptions,omitempty"`
+
+	// Recursive indicates to download all resources in target url, the target source client must support list action
+	Recursive bool `yaml:"recursive,omitempty" mapstructure:"recursive,omitempty"`
+
+	// RecursiveLevel indicates to the maximum number of subdirectories that dfget will recurse into
+	RecursiveLevel uint `yaml:"recursiveLevel,omitempty" mapstructure:"level,omitempty"`
+
+	RecursiveAcceptRegex string `yaml:"acceptRegex,omitempty" mapstructure:"accept-regex,omitempty"`
+
+	RecursiveRejectRegex string `yaml:"rejectRegex,omitempty" mapstructure:"reject-regex,omitempty"`
 }
 
 func NewDfgetConfig() *ClientOption {
@@ -129,6 +137,14 @@ func (cfg *ClientOption) Validate() error {
 
 	if !urlutils.IsValidURL(cfg.URL) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
+	}
+
+	if _, err := regexp.Compile(cfg.RecursiveAcceptRegex); err != nil {
+		return err
+	}
+
+	if _, err := regexp.Compile(cfg.RecursiveRejectRegex); err != nil {
+		return err
 	}
 
 	if err := cfg.checkOutput(); err != nil {

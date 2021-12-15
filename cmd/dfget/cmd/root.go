@@ -166,10 +166,19 @@ func init() {
 
 	flagSet.String("workhome", dfgetConfig.WorkHome, "Dfget working directory")
 
-	flagSet.String("log-dir", dfgetConfig.LogDir, "Dfget log directory")
+	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
 
 	flagSet.BoolP("recursive", "r", dfgetConfig.Recursive,
 		"Recursively download all resources in target url, the target source client must support list action")
+
+	flagSet.UintP("level", "l", dfgetConfig.RecursiveLevel,
+		"Recursively download only. Set the maximum number of subdirectories that dfget will recurse into. Set to 0 for no limit")
+
+	flagSet.String("accept-regex", dfgetConfig.RecursiveAcceptRegex,
+		"Recursively download only. Specify a regular expression to accept the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it")
+
+	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
+		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
 
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
