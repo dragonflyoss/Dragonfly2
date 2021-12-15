@@ -23,7 +23,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/internal/dfpath"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 )
 
 // SetCoreLevel sets core log level, export internal SetCoreLevel for using dragonfly as library
