@@ -60,6 +60,7 @@ var peerHostConfig = DaemonOption{
 	Download: DownloadOption{
 		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
+		GetPiecesMaxRetry:    100,
 		TotalRateLimit: clientutil.RateLimit{
 			Limit: rate.Limit(DefaultTotalDownloadLimit),
 		},

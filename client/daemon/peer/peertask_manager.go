@@ -117,6 +117,8 @@ type peerTaskManager struct {
 	enableMultiplex bool
 
 	calculateDigest bool
+
+	getPiecesMaxRetry int
 }
 
 func NewPeerTaskManager(
@@ -127,18 +129,20 @@ func NewPeerTaskManager(
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
 	multiplex bool,
-	calculateDigest bool) (TaskManager, error) {
+	calculateDigest bool,
+	getPiecesMaxRetry int) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
-		host:             host,
-		runningPeerTasks: sync.Map{},
-		pieceManager:     pieceManager,
-		storageManager:   storageManager,
-		schedulerClient:  schedulerClient,
-		schedulerOption:  schedulerOption,
-		perPeerRateLimit: perPeerRateLimit,
-		enableMultiplex:  multiplex,
-		calculateDigest:  calculateDigest,
+		host:              host,
+		runningPeerTasks:  sync.Map{},
+		pieceManager:      pieceManager,
+		storageManager:    storageManager,
+		schedulerClient:   schedulerClient,
+		schedulerOption:   schedulerOption,
+		perPeerRateLimit:  perPeerRateLimit,
+		enableMultiplex:   multiplex,
+		calculateDigest:   calculateDigest,
+		getPiecesMaxRetry: getPiecesMaxRetry,
 	}
 	return ptm, nil
 }
@@ -159,7 +163,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 		limit = rate.Limit(req.Limit)
 	}
 	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
-		req, ptm.schedulerClient, ptm.schedulerOption, limit)
+		req, ptm.schedulerClient, ptm.schedulerOption, limit, ptm.getPiecesMaxRetry)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -217,8 +221,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	}
 
 	start := time.Now()
-	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm.host, ptm.pieceManager,
-		req, ptm.schedulerClient, ptm.schedulerOption, ptm.perPeerRateLimit)
+	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm, req)
 	if err != nil {
 		return nil, nil, err
 	}
