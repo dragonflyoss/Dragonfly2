@@ -118,6 +118,9 @@ type ClientOption struct {
 	// Recursive indicates to download all resources in target url, the target source client must support list action
 	Recursive bool `yaml:"recursive,omitempty" mapstructure:"recursive,omitempty"`
 
+	// RecursiveList indicates to list all resources in target url, the target source client must support list action
+	RecursiveList bool `yaml:"recursiveList,omitempty" mapstructure:"list,omitempty"`
+
 	// RecursiveLevel indicates to the maximum number of subdirectories that dfget will recurse into
 	RecursiveLevel uint `yaml:"recursiveLevel,omitempty" mapstructure:"level,omitempty"`
 

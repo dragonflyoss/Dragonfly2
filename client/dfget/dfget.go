@@ -311,6 +311,10 @@ func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cf
 			logger.Debugf("url %s is not accepted, skip", c.URL)
 			continue
 		}
+		if cfg.RecursiveList {
+			fmt.Printf("%s\n", u.String())
+			continue
+		}
 		// validate new dfget config
 		if err = c.Validate(); err != nil {
 			logger.Errorf("validate failed: %s", err)
