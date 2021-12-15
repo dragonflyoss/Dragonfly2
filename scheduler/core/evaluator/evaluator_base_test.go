@@ -22,7 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )

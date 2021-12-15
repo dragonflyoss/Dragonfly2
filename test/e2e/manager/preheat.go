@@ -28,10 +28,10 @@ import (
 	. "github.com/onsi/ginkgo" //nolint
 	. "github.com/onsi/gomega" //nolint
 
-	"d7y.io/dragonfly/v2/internal/idgen"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"

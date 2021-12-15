@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"

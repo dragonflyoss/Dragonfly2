@@ -32,7 +32,7 @@ import (
 	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
