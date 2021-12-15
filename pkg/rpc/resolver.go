@@ -53,10 +53,10 @@ func (r *D7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts
 	var err error
 	r.target = target
 	r.cc = cc
+	r.built.Store(true)
 	if len(r.addrs) != 0 {
 		err = r.UpdateAddrs(r.addrs)
 	}
-	r.built.Store(true)
 	return r, err
 }
 
@@ -100,7 +100,6 @@ func (r *D7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 		return nil
 	}
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
-
 }
 
 func (r *D7yResolver) ResolveNow(options resolver.ResolveNowOptions) {}
