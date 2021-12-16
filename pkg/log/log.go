@@ -70,7 +70,7 @@ func SetupDaemon(logDir string, console bool) error {
 	if err != nil {
 		return err
 	}
-	logger.SetGcLogger(gcLogger.Sugar())
+	logger.SetGCLogger(gcLogger.Sugar())
 
 	return nil
 }

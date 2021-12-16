@@ -77,7 +77,7 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 		}
 	}
 
-	logger.GcLogger.With("type", storagePattern).Debugf("storage is insufficient, start to exec gc with fullGC: %t", fullGC)
+	logger.StorageGCLogger.With("type", storagePattern).Debugf("storage is insufficient, start to exec gc with fullGC: %t", fullGC)
 
 	gapTasks := treemap.NewWith(godsutils.Int64Comparator)
 	intervalTasks := treemap.NewWith(godsutils.Int64Comparator)
@@ -87,10 +87,10 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	walkTaskIds := make(map[string]bool)
 	var gcTaskIDs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		logger.GcLogger.With("type", storagePattern).Debugf("start to walk path(%s)", path)
+		logger.StorageGCLogger.With("type", storagePattern).Debugf("start to walk path(%s)", path)
 
 		if err != nil {
-			logger.GcLogger.With("type", storagePattern).Errorf("failed to access path(%s): %v", path, err)
+			logger.StorageGCLogger.With("type", storagePattern).Errorf("failed to access path(%s): %v", path, err)
 			return err
 		}
 		if info.IsDir() {
@@ -116,13 +116,13 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 
 		metadata, err := cleaner.storageManager.ReadFileMetadata(taskID)
 		if err != nil || metadata == nil {
-			logger.GcLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
+			logger.StorageGCLogger.With("type", storagePattern).Debugf("taskID: %s, failed to get metadata: %v", taskID, err)
 			gcTaskIDs = append(gcTaskIDs, taskID)
 			return nil
 		}
 		// put taskID into gapTasks or intervalTasks which will sort by some rules
 		if err := cleaner.sortInert(gapTasks, intervalTasks, metadata); err != nil {
-			logger.GcLogger.With("type", storagePattern).Errorf("failed to parse inert metadata(%#v): %v", metadata, err)
+			logger.StorageGCLogger.With("type", storagePattern).Errorf("failed to parse inert metadata(%#v): %v", metadata, err)
 		}
 
 		return nil
