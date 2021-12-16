@@ -64,14 +64,12 @@ type hdfsSourceClient struct {
 type hdfsFileReaderClose struct {
 	limited io.Reader
 	c       io.Closer
-	buf     *bytes.Buffer
 }
 
 func newHdfsFileReaderClose(r io.Reader, n int64, c io.Closer) io.ReadCloser {
 	return &hdfsFileReaderClose{
 		limited: io.LimitReader(r, n),
 		c:       c,
-		buf:     bytes.NewBuffer(make([]byte, 512)),
 	}
 }
 
