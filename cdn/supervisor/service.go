@@ -40,7 +40,7 @@ func IsResourcesLacked(err error) bool {
 
 type CDNService interface {
 	// RegisterSeedTask registers seed task
-	RegisterSeedTask(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (<-chan *task.PieceInfo, error)
+	RegisterSeedTask(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error)
 
 	// GetSeedPieces returns pieces associated with taskID, which are sorted by pieceNum
 	GetSeedPieces(taskID string) (pieces []*task.PieceInfo, err error)
@@ -63,14 +63,17 @@ func NewCDNService(taskManager task.Manager, cdnManager cdn.Manager, progressMan
 	}, nil
 }
 
-func (service *cdnService) RegisterSeedTask(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (<-chan *task.PieceInfo, error) {
-	if _, err := service.taskManager.AddOrUpdate(registerTask); err != nil {
-		return nil, err
+func (service *cdnService) RegisterSeedTask(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask,
+	<-chan *task.PieceInfo, error) {
+	seedTask, err := service.taskManager.AddOrUpdate(registerTask)
+	if err != nil {
+		return nil, nil, err
 	}
-	if err := service.triggerCdnSyncAction(ctx, registerTask.ID); err != nil {
-		return nil, err
+	if err = service.triggerCdnSyncAction(ctx, registerTask.ID); err != nil {
+		return seedTask, nil, err
 	}
-	return service.progressManager.WatchSeedProgress(ctx, clientAddr, registerTask.ID)
+	pieceChan, err := service.progressManager.WatchSeedProgress(ctx, clientAddr, registerTask.ID)
+	return seedTask, pieceChan, err
 }
 
 // triggerCdnSyncAction trigger cdn sync action

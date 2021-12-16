@@ -14,29 +14,35 @@
  * limitations under the License.
  */
 
-package util
+package sync
 
-const (
-	// DefaultPieceSize 4M
-	DefaultPieceSize = 4 * 1024 * 1024
-
-	// DefaultPieceSizeLimit 15M
-	DefaultPieceSizeLimit = 15 * 1024 * 1024
+import (
+	"sync"
 )
 
-// ComputePieceSize computes the piece size with specified fileLength.
-//
-// If the fileLength<0, which means failed to get fileLength
-// and then use the DefaultPieceSize.
-func ComputePieceSize(length int64) uint32 {
-	if length <= 200*1024*1024 {
-		return DefaultPieceSize
+type Kmutex struct {
+	m *sync.Map
+}
+
+func NewKmutex() *Kmutex {
+	m := sync.Map{}
+	return &Kmutex{&m}
+}
+
+func (k *Kmutex) Lock(key interface{}) {
+	m := sync.Mutex{}
+	rm, _ := k.m.LoadOrStore(key, &m)
+	mu := rm.(*sync.Mutex)
+	mu.Lock()
+}
+
+func (k *Kmutex) Unlock(key interface{}) {
+	rm, ok := k.m.Load(key)
+	if !ok {
+		return
 	}
 
-	gapCount := length / int64(100*1024*1024)
-	mpSize := (gapCount-2)*1024*1024 + DefaultPieceSize
-	if mpSize > DefaultPieceSizeLimit {
-		return DefaultPieceSizeLimit
-	}
-	return uint32(mpSize)
+	mu := rm.(*sync.Mutex)
+	k.m.Delete(key)
+	mu.Unlock()
 }

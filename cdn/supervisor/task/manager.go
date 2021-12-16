@@ -151,19 +151,19 @@ func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err 
 		return seedTask, err
 	}
 	seedTask.SourceFileLength = sourceFileLength
-	seedTask.Log().Debugf("success get file content length: %d", sourceFileLength)
-
 	// if success to get the information successfully with the req.Header then update the task.UrlMeta to registerTask.UrlMeta.
 	if registerTask.Header != nil {
 		seedTask.Header = registerTask.Header
 	}
 
 	// calculate piece size and update the PieceSize and PieceTotal
-	if registerTask.PieceSize <= 0 {
-		pieceSize := util.ComputePieceSize(registerTask.SourceFileLength)
-		seedTask.PieceSize = int32(pieceSize)
-		seedTask.Log().Debugf("piece size calculate result: %s", unit.ToBytes(int64(pieceSize)))
+	pieceSize := util.ComputePieceSize(registerTask.SourceFileLength)
+	seedTask.PieceSize = int32(pieceSize)
+	if sourceFileLength > 0 {
+		seedTask.TotalPieceCount = int32((registerTask.SourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
 	}
+	seedTask.Log().Infof("success get content length: %s, pieceSize: %s, totalPieceCount: %d", unit.ToBytes(seedTask.SourceFileLength),
+		unit.ToBytes(int64(seedTask.PieceSize)), seedTask.TotalPieceCount)
 	return seedTask, nil
 }
 
