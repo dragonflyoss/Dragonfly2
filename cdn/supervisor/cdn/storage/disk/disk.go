@@ -280,27 +280,30 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (s *diskStorageManager) GC() error {
-	logger.GcLogger.With("type", "disk").Info("start the disk storage gc job")
+	logger.StorageGCLogger.With("type", "disk").Info("start the disk storage gc job")
 	gcTaskIDs, err := s.diskCleaner.GC("disk", false)
 	if err != nil {
-		logger.GcLogger.With("type", "disk").Error("failed to get gcTaskIDs")
+		logger.StorageGCLogger.With("type", "disk").Error("failed to get gcTaskIDs")
 	}
-	var realGCCount int
+	var gcTasks []string
+	var remainingTasks []string
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, exist := s.taskManager.Exist(taskID); exist {
 			synclock.UnLock(taskID, false)
+			remainingTasks = append(remainingTasks, taskID)
 			continue
 		}
-		realGCCount++
+		gcTasks = append(gcTasks, taskID)
 		if err := s.DeleteTask(taskID); err != nil {
-			logger.GcLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
+			logger.StorageGCLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
 			continue
 		}
 		synclock.UnLock(taskID, false)
 	}
-	logger.GcLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), realGCCount)
+	logger.StorageGCLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), len(remainingTasks))
+	logger.StorageGCLogger.With("type", "disk").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
 	return nil
 }

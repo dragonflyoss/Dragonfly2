@@ -109,7 +109,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.dynconfig = dynConfig
 
 	// Initialize GC
-	s.gc = gc.New(gc.WithLogger(logger.GcLogger))
+	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
 
 	// Initialize scheduler service
 	var openTel bool

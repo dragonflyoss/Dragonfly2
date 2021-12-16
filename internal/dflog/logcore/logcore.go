@@ -28,6 +28,7 @@ var (
 	CoreLogFileName       = "core.log"
 	GrpcLogFileName       = "grpc.log"
 	GCLogFileName         = "gc.log"
+	StorageGCLogFileName  = "storage-gc.log"
 	JobLogFileName        = "job.log"
 	StatPeerLogFileName   = "peer.log"
 	StatSeedLogFileName   = "stat/seed.log"
