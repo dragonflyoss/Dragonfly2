@@ -194,7 +194,7 @@ type Task struct {
 	lock sync.RWMutex
 }
 
-func NewTask(id, url string, meta *base.UrlMeta) *Task {
+func NewTask(id, url string, backToSourceWeight int32, meta *base.UrlMeta) *Task {
 	now := time.Now()
 	task := &Task{
 		ID:                id,
@@ -209,6 +209,7 @@ func NewTask(id, url string, meta *base.UrlMeta) *Task {
 		logger:            logger.WithTaskID(id),
 	}
 
+	task.BackToSourceWeight.Store(backToSourceWeight)
 	task.status.Store(TaskStatusWaiting)
 	return task
 }

@@ -47,7 +47,6 @@ func New() *Config {
 			Algorithm:            "default",
 			WorkerNum:            runtime.GOMAXPROCS(0),
 			BackSourceCount:      3,
-			AccessWindow:         3 * time.Minute,
 			CandidateParentCount: 10,
 			Scheduler:            "basic",
 			CDNLoad:              100,
@@ -178,17 +177,15 @@ type DynConfig struct {
 }
 
 type SchedulerConfig struct {
-	Algorithm       string `yaml:"algorithm" mapstructure:"algorithm"`
-	WorkerNum       int    `yaml:"workerNum" mapstructure:"workerNum"`
-	BackSourceCount int32  `yaml:"backSourceCount" mapstructure:"backSourceCount"`
-	// AccessWindow should less than CDN task expireTime
-	AccessWindow         time.Duration `yaml:"accessWindow" mapstructure:"accessWindow"`
-	CandidateParentCount int           `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
-	Scheduler            string        `yaml:"scheduler" mapstructure:"scheduler"`
-	CDNLoad              int           `yaml:"cdnLoad" mapstructure:"cdnLoad"`
-	ClientLoad           int32         `yaml:"clientLoad" mapstructure:"clientLoad"`
-	OpenMonitor          bool          `yaml:"openMonitor" mapstructure:"openMonitor"`
-	GC                   *GCConfig     `yaml:"gc" mapstructure:"gc"`
+	Algorithm            string    `yaml:"algorithm" mapstructure:"algorithm"`
+	WorkerNum            int       `yaml:"workerNum" mapstructure:"workerNum"`
+	BackSourceCount      int32     `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	CandidateParentCount int       `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
+	Scheduler            string    `yaml:"scheduler" mapstructure:"scheduler"`
+	CDNLoad              int       `yaml:"cdnLoad" mapstructure:"cdnLoad"`
+	ClientLoad           int32     `yaml:"clientLoad" mapstructure:"clientLoad"`
+	OpenMonitor          bool      `yaml:"openMonitor" mapstructure:"openMonitor"`
+	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 
 type ServerConfig struct {

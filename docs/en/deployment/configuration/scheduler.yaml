@@ -16,9 +16,6 @@ scheduler:
   # backSourceCount is the number of back-to-origin clients when the CDN is disable or unavailable
   # default: 3
   backSourceCount: 3
-  # accessWindow is access interval window that can trigger CDN back to the source again
-  # default: 3m
-  accessWindow: 3m
   # candidateParentCount is number of candidate parent nodes
   # default: 10
   candidateParentCount: 10

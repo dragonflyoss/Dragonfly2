@@ -79,12 +79,11 @@ type SchedulerService struct {
 	wg      sync.WaitGroup
 	kmu     *pkgsync.Krwmutex
 
-	config        *config.SchedulerConfig
-	dynconfig     config.DynconfigInterface
-	metricsConfig *config.MetricsConfig
+	config    *config.Config
+	dynconfig config.DynconfigInterface
 }
 
-func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsConfig *config.MetricsConfig, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
+func NewSchedulerService(cfg *config.Config, pluginDir string, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
 	ops := &Options{}
 	for _, op := range options {
 		op(ops)
@@ -92,17 +91,17 @@ func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsC
 
 	hostManager := supervisor.NewHostManager()
 
-	peerManager, err := supervisor.NewPeerManager(cfg.GC, gc, hostManager)
+	peerManager, err := supervisor.NewPeerManager(cfg.Scheduler.GC, gc, hostManager)
 	if err != nil {
 		return nil, err
 	}
 
-	taskManager, err := supervisor.NewTaskManager(cfg.GC, gc, peerManager)
+	taskManager, err := supervisor.NewTaskManager(cfg.Scheduler.GC, gc, peerManager)
 	if err != nil {
 		return nil, err
 	}
 
-	sched, err := scheduler.Get(cfg.Scheduler).Build(cfg, &scheduler.BuildOptions{
+	sched, err := scheduler.Get(cfg.Scheduler.Scheduler).Build(cfg.Scheduler, &scheduler.BuildOptions{
 		PeerManager: peerManager,
 		PluginDir:   pluginDir,
 	})
@@ -110,22 +109,22 @@ func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsC
 		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)
 	}
 
-	work := newEventLoopGroup(cfg.WorkerNum)
-	downloadMonitor := newMonitor(cfg.OpenMonitor, peerManager)
+	work := newEventLoopGroup(cfg.Scheduler.WorkerNum)
+	downloadMonitor := newMonitor(cfg.Scheduler.OpenMonitor, peerManager)
 	s := &SchedulerService{
-		taskManager:   taskManager,
-		hostManager:   hostManager,
-		peerManager:   peerManager,
-		worker:        work,
-		monitor:       downloadMonitor,
-		sched:         sched,
-		config:        cfg,
-		metricsConfig: metricsConfig,
-		dynconfig:     dynConfig,
-		done:          make(chan struct{}),
-		wg:            sync.WaitGroup{},
-		kmu:           pkgsync.NewKrwmutex(),
+		taskManager: taskManager,
+		hostManager: hostManager,
+		peerManager: peerManager,
+		worker:      work,
+		monitor:     downloadMonitor,
+		sched:       sched,
+		config:      cfg,
+		dynconfig:   dynConfig,
+		done:        make(chan struct{}),
+		wg:          sync.WaitGroup{},
+		kmu:         pkgsync.NewKrwmutex(),
 	}
+
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
 		if ops.openTel {
@@ -254,46 +253,42 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 
 	s.kmu.RLock(task.ID)
 	task, ok := s.taskManager.GetOrAdd(task)
+	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
+	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 	if ok {
-		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-		span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
-		if task.LastTriggerAt.Load().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
+		task.Log().Infof("task exists and status is %s", task.GetStatus())
+		// task is healthy and can be reused
+		if task.IsHealth() {
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
 			s.kmu.RUnlock(task.ID)
 			return task
 		}
 	} else {
-		task.Log().Infof("add new task %s", task.ID)
+		task.Log().Info("add new task")
 	}
 	s.kmu.RUnlock(task.ID)
 
 	s.kmu.Lock(task.ID)
 	defer s.kmu.Unlock(task.ID)
 
-	// do trigger
-	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
-	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
-	if task.IsHealth() {
-		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-		return task
-	}
-
+	// trigger task
 	task.LastTriggerAt.Store(time.Now())
 	task.SetStatus(supervisor.TaskStatusRunning)
+
+	// disabled cdn will cause the peer to directly back source
 	if s.CDN == nil {
-		// client back source
 		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-		task.BackToSourceWeight.Store(s.config.BackSourceCount)
+		task.Log().Info("cdn is disabled, task will back source")
 		return task
 	}
-	span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 
+	// start seed cdn task
 	go func() {
+		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 		if cdnPeer, err := s.CDN.StartSeedTask(ctx, task); err != nil {
 			// fall back to client back source
 			task.Log().Errorf("seed task failed: %v", err)
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
-			task.BackToSourceWeight.Store(s.config.BackSourceCount)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
 				logger.Error("send taskSeed fail event failed, eventLoop is shutdown")
 			}
@@ -310,7 +305,7 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
 	peer.Touch()
-	if pieceResult.Success && s.metricsConfig != nil && s.metricsConfig.EnablePeerHost {
+	if pieceResult.Success && s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
 		// TODO parse PieceStyle
 		metrics.PeerHostTraffic.WithLabelValues("download", peer.Host.UUID, peer.Host.IP).Add(float64(pieceResult.PieceInfo.RangeSize))
 		if p, ok := s.peerManager.Get(pieceResult.DstPid); ok {

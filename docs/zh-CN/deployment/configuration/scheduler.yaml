@@ -13,9 +13,6 @@ scheduler:
   # backSourceCount 当 CDN 禁用或不可用时，回源客户端的数量
   # default: 3
   backSourceCount: 3
-  # accessWindow 可触发 CDN 回源的时间间隔窗口
-  # default: 3m
-  accessWindow: 3m
   # candidateParentCount 候选父节点数量，
   # default: 10
   candidateParentCount: 10

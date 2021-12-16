@@ -41,12 +41,14 @@ var tracer = otel.Tracer("scheduler-server")
 type server struct {
 	*grpc.Server
 	service *core.SchedulerService
+	config  *config.Config
 }
 
 // New returns a new transparent scheduler server from the given options
-func New(service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Server, error) {
+func New(cfg *config.Config, service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	svr := &server{
 		service: service,
+		config:  cfg,
 	}
 
 	svr.Server = schedulerserver.New(svr, opts...)
@@ -65,11 +67,13 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 
 	// Get task or add new task
-	task := s.service.GetOrAddTask(ctx, supervisor.NewTask(taskID, req.Url, req.UrlMeta))
+	task := s.service.GetOrAddTask(ctx, supervisor.NewTask(
+		taskID, req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta,
+	))
 	if task.IsFail() {
 		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
-		log.Error(dferr.Message)
 		span.RecordError(dferr)
+		log.Error(dferr.Message)
 		return nil, dferr
 	}
 
