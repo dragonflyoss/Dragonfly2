@@ -39,4 +39,6 @@ var dfgetConfig = ClientOption{
 	DisableBackSource: false,
 	Insecure:          false,
 	ShowProgress:      false,
+	Recursive:         false,
+	RecursiveLevel:    5,
 }

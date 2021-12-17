@@ -20,8 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -58,8 +61,8 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 	}
 
 	go func() {
-		defer cancel()
 		downError = download(ctx, client, cfg, wLog)
+		cancel()
 	}()
 
 	<-ctx.Done()
@@ -71,6 +74,13 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 }
 
 func download(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
+	if cfg.Recursive {
+		return recursiveDownload(ctx, client, cfg)
+	}
+	return singleDownload(ctx, client, cfg, wLog)
+}
+
+func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig, wLog *logger.SugaredLoggerOnWith) error {
 	hdr := parseHeader(cfg.Header)
 
 	if client == nil {
@@ -237,4 +247,85 @@ func newProgressBar(max int64) *progressbar.ProgressBar {
 			BarStart:      "[",
 			BarEnd:        "]",
 		}))
+}
+
+func accept(u string, parent, sub string, level uint, accept, reject string) bool {
+	if !checkDirectoryLevel(parent, sub, level) {
+		logger.Debugf("url %s not accept by level: %d", u, level)
+		return false
+	}
+	if !acceptRegex(u, accept) {
+		logger.Debugf("url %s not accept by regex: %s", u, accept)
+		return false
+	}
+	if rejectRegex(u, reject) {
+		logger.Debugf("url %s rejected by regex: %s", u, reject)
+		return false
+	}
+	return true
+}
+
+func checkDirectoryLevel(parent, sub string, level uint) bool {
+	if level == 0 {
+		return true
+	}
+	dirs := strings.Split(strings.Trim(strings.TrimLeft(sub, parent), "/"), "/")
+	return uint(len(dirs)) <= level
+}
+
+func acceptRegex(u string, accept string) bool {
+	if accept == "" {
+		return true
+	}
+	return regexp.MustCompile(accept).Match([]byte(u))
+}
+
+func rejectRegex(u string, reject string) bool {
+	if reject == "" {
+		return false
+	}
+	return regexp.MustCompile(reject).Match([]byte(u))
+}
+
+func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig) error {
+	request, err := source.NewRequestWithContext(ctx, cfg.URL, parseHeader(cfg.Header))
+	if err != nil {
+		return err
+	}
+	dirURL, err := url.Parse(cfg.URL)
+	if err != nil {
+		return err
+	}
+	logger.Debugf("dirURL: %s", cfg.URL)
+
+	urls, err := source.List(request)
+	if err != nil {
+		return err
+	}
+	for _, u := range urls {
+		// reuse dfget config
+		c := *cfg
+		// update some attributes
+		c.Recursive, c.URL, c.Output = false, u.String(), path.Join(cfg.Output, strings.TrimPrefix(u.Path, dirURL.Path))
+		if !accept(c.URL, dirURL.Path, u.Path, cfg.RecursiveLevel, cfg.RecursiveAcceptRegex, cfg.RecursiveRejectRegex) {
+			logger.Debugf("url %s is not accepted, skip", c.URL)
+			continue
+		}
+		if cfg.RecursiveList {
+			fmt.Printf("%s\n", u.String())
+			continue
+		}
+		// validate new dfget config
+		if err = c.Validate(); err != nil {
+			logger.Errorf("validate failed: %s", err)
+			return err
+		}
+
+		logger.Debugf("download %s to %s", c.URL, c.Output)
+		err = download(ctx, client, &c, logger.With("url", c.URL))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
