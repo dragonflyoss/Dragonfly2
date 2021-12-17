@@ -17,7 +17,6 @@
 package hdfsprotocol
 
 import (
-	"bytes"
 	"io"
 	"net/url"
 	"os/user"
@@ -64,14 +63,12 @@ type hdfsSourceClient struct {
 type hdfsFileReaderClose struct {
 	limited io.Reader
 	c       io.Closer
-	buf     *bytes.Buffer
 }
 
 func newHdfsFileReaderClose(r io.Reader, n int64, c io.Closer) io.ReadCloser {
 	return &hdfsFileReaderClose{
 		limited: io.LimitReader(r, n),
 		c:       c,
-		buf:     bytes.NewBuffer(make([]byte, 512)),
 	}
 }
 
@@ -261,12 +258,4 @@ func (rc *hdfsFileReaderClose) Read(p []byte) (n int, err error) {
 
 func (rc *hdfsFileReaderClose) Close() error {
 	return rc.c.Close()
-}
-
-func (rc *hdfsFileReaderClose) WriteTo(w io.Writer) (n int64, err error) {
-	_, err = rc.limited.Read(rc.buf.Bytes())
-	if err != nil {
-		return -1, err
-	}
-	return rc.buf.WriteTo(w)
 }
