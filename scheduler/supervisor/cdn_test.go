@@ -48,49 +48,6 @@ var (
 	mockLogger          = &logger.SugaredLoggerOnWith{}
 )
 
-func TestCDN_Nil(t *testing.T) {
-	tests := []struct {
-		name   string
-		status supervisor.TaskStatus
-		mock   func(t *testing.T) (supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches)
-		expect func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error)
-	}{
-		{
-			name:   "nil client",
-			status: supervisor.TaskStatusWaiting,
-			mock: func(t *testing.T) (supervisor.PeerManager, supervisor.HostManager, *gomonkey.Patches) {
-				ctl := gomock.NewController(t)
-				defer ctl.Finish()
-
-				mockPeerManager := mocks.NewMockPeerManager(ctl)
-				mockHostManager := mocks.NewMockHostManager(ctl)
-				mockTask.ID = "mocktask"
-
-				patch := &gomonkey.Patches{}
-				return mockPeerManager, mockHostManager, patch
-			},
-			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
-				assert := assert.New(t)
-				assert.NotNil(cdn)
-				assert.Nil(cdn.GetClient())
-				assert.Nil(peer)
-				assert.Equal(supervisor.ErrCDNClientUninitialized, err)
-
-			},
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockPeerManager, mockHostManager, patch := tc.mock(t)
-			cdn := supervisor.NewCDN(nil, mockPeerManager, mockHostManager)
-			mockTask.SetStatus(tc.status)
-			peer, err := cdn.StartSeedTask(context.Background(), mockTask)
-			tc.expect(t, cdn, peer, err)
-			patch.Reset()
-		})
-	}
-}
-
 func TestCDN_Initial(t *testing.T) {
 	tests := []struct {
 		name   string

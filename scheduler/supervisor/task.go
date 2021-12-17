@@ -322,10 +322,6 @@ func (task *Task) ContainsBackToSourcePeer(peerID string) bool {
 }
 
 func (task *Task) AddBackToSourcePeer(peerID string) {
-	if ok := task.ContainsBackToSourcePeer(peerID); ok {
-		return
-	}
-
 	if task.BackToSourceWeight.Load() <= 0 {
 		return
 	}

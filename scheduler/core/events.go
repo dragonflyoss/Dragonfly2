@@ -269,10 +269,15 @@ type peerDownloadSuccessEvent struct {
 var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
-	e.peer.SetStatus(supervisor.PeerStatusSuccess)
-	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) && !e.peer.Task.IsSuccess() {
-		e.peer.Task.UpdateSuccess(e.peerResult.TotalPieceCount, e.peerResult.ContentLength)
+	peer := e.peer
+	result := e.peerResult
+	peer.SetStatus(supervisor.PeerStatusSuccess)
+
+	// If the cdn backsource successfully or the peer backsource successfully, the task status is successful.
+	if (peer.Task.ContainsBackToSourcePeer(e.peer.ID) || peer.Host.IsCDN) && !peer.Task.IsSuccess() {
+		peer.Task.UpdateSuccess(result.TotalPieceCount, result.ContentLength)
 	}
+
 	removePeerFromCurrentTree(e.peer, s)
 	children := s.sched.ScheduleChildren(e.peer, sets.NewString())
 	for _, child := range children {
@@ -378,38 +383,34 @@ func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, 
 }
 
 func handleCDNSeedTaskFail(task *supervisor.Task) {
-	if task.CanBackToSource() {
-		task.GetPeers().Range(func(item list.Item) bool {
-			peer, ok := item.(*supervisor.Peer)
-			if !ok {
-				return true
-			}
-
-			if task.CanBackToSource() {
-				if !task.ContainsBackToSourcePeer(peer.ID) {
-					if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)) == nil {
-						task.AddBackToSourcePeer(peer.ID)
-					}
-				}
-				return true
-			}
-
-			return false
-		})
-	} else {
+	if !task.CanBackToSource() {
 		task.SetStatus(supervisor.TaskStatusFail)
-		task.GetPeers().Range(func(item list.Item) bool {
-			peer, ok := item.(*supervisor.Peer)
-			if !ok {
-				return true
-			}
-
-			if err := peer.CloseChannelWithError(dferrors.New(base.Code_SchedTaskStatusError, "schedule task status failed")); err != nil {
-				peer.Log().Warnf("close peer conn channel failed: %v", err)
-			}
-			return true
-		})
 	}
+
+	task.GetPeers().Range(func(item list.Item) bool {
+		peer, ok := item.(*supervisor.Peer)
+		if !ok {
+			return true
+		}
+
+		// If the task status failed and can backsource, notify dfdaemon to backsource
+		if task.CanBackToSource() && !task.ContainsBackToSourcePeer(peer.ID) {
+			if err := peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)); err != nil {
+				peer.Log().Errorf("close channel with backsource failed: %v", err)
+			}
+			task.AddBackToSourcePeer(peer.ID)
+			peer.Log().Info("notify dfdaemon to backsource successfully")
+			return true
+		}
+
+		// If the task status failed, notify dfdaemon to task error
+		if err := peer.CloseChannelWithError(dferrors.New(base.Code_SchedTaskStatusError, "cdn seed task failed")); err != nil {
+			peer.Log().Warnf("close channel failed: %v", err)
+			return true
+		}
+
+		return true
+	})
 }
 
 func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {

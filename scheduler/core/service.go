@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
@@ -174,16 +174,20 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 			peer := rsPeer.peer
 			wsdq.Done(v)
 			if rsPeer.times > maxRescheduleTimes {
-				if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
-					peer.ID)) == nil {
-					peer.Task.AddBackToSourcePeer(peer.ID)
+				if !peer.Task.ContainsBackToSourcePeer(peer.ID) {
+					if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "reschedule parent for peer %s already reaches max reschedule times",
+						peer.ID)) == nil {
+						peer.Task.AddBackToSourcePeer(peer.ID)
+					}
+					continue
 				}
-				continue
 			}
+
 			if peer.Task.ContainsBackToSourcePeer(peer.ID) {
 				logger.WithTaskAndPeerID(peer.Task.ID, peer.ID).Debugf("runReScheduleLoop: peer is back source client, no need to reschedule it")
 				continue
 			}
+
 			if peer.IsDone() || peer.IsLeave() {
 				peer.Log().Debugf("runReScheduleLoop: peer has left from waitScheduleParentPeerQueue because peer is done or leave, peer status is %s, "+
 					"isLeave %t", peer.GetStatus(), peer.IsLeave())
@@ -221,7 +225,7 @@ func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
 	return s.peerManager.Get(id)
 }
 
-func (s *SchedulerService) RegisterTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
+func (s *SchedulerService) RegisterTask(req *rpcscheduler.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
 	// get or create host
 	peerHost := req.PeerHost
 	host, ok := s.hostManager.Get(peerHost.Uuid)
@@ -285,25 +289,28 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	// start seed cdn task
 	go func() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
-		if cdnPeer, err := s.CDN.StartSeedTask(ctx, task); err != nil {
-			// fall back to client back source
-			task.Log().Errorf("seed task failed: %v", err)
+		task.Log().Info("cdn start seed task")
+		peer, err := s.CDN.StartSeedTask(ctx, task)
+		if err != nil {
+			// cdn seed task failed
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
+			task.Log().Errorf("cdn seed task failed: %v", err)
 			if ok = s.worker.send(taskSeedFailEvent{task}); !ok {
-				logger.Error("send taskSeed fail event failed, eventLoop is shutdown")
+				task.Log().Error("send taskSeedFailEvent failed, eventLoop is shutdown")
 			}
-		} else {
-			if ok = s.worker.send(peerDownloadSuccessEvent{cdnPeer, nil}); !ok {
-				logger.Error("send taskSeed success event failed, eventLoop is shutdown")
-			}
-			logger.Infof("successfully obtain seeds from cdn, task: %#v", task)
+			return
 		}
+
+		if ok = s.worker.send(peerDownloadSuccessEvent{peer, nil}); !ok {
+			logger.Error("send taskSeed success event failed, eventLoop is shutdown")
+		}
+		logger.Infof("successfully obtain seeds from cdn, task: %#v", task)
 	}()
 
 	return task
 }
 
-func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *schedulerRPC.PieceResult) error {
+func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *rpcscheduler.PieceResult) error {
 	peer.Touch()
 	if pieceResult.Success && s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
 		// TODO parse PieceStyle
@@ -337,7 +344,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 	return nil
 }
 
-func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervisor.Peer, peerResult *schedulerRPC.PeerResult) error {
+func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervisor.Peer, peerResult *rpcscheduler.PeerResult) error {
 	peer.Touch()
 	if peerResult.Success {
 		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {

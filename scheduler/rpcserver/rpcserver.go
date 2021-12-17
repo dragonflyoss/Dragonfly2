@@ -70,6 +70,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	task := s.service.GetOrAddTask(ctx, supervisor.NewTask(
 		taskID, req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta,
 	))
+
+	// In the case of concurrency, if the task status is failure, it will directly return to registration failure.
 	if task.IsFail() {
 		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
 		span.RecordError(dferr)

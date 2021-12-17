@@ -30,23 +30,21 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
-	ErrCDNClientUninitialized = errors.New("cdn client is not initialized")
-	ErrCDNRegisterFail        = errors.New("cdn task register failed")
-	ErrCDNDownloadFail        = errors.New("cdn task download failed")
-	ErrCDNUnknown             = errors.New("cdn obtain seed encounter unknown err")
-	ErrCDNInvokeFail          = errors.New("invoke cdn interface failed")
-	ErrInitCDNPeerFail        = errors.New("init cdn peer failed")
+	ErrCDNRegisterFail = errors.New("cdn task register failed")
+	ErrCDNDownloadFail = errors.New("cdn task download failed")
+	ErrCDNUnknown      = errors.New("cdn obtain seed encounter unknown err")
+	ErrCDNInvokeFail   = errors.New("invoke cdn interface failed")
+	ErrInitCDNPeerFail = errors.New("init cdn peer failed")
 )
 
 var tracer = otel.Tracer("scheduler-cdn")
@@ -56,7 +54,7 @@ type CDN interface {
 	GetClient() CDNDynmaicClient
 
 	// StartSeedTask start seed cdn task
-	StartSeedTask(context.Context, *Task) (*Peer, error)
+	StartSeedTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
 }
 
 type cdn struct {
@@ -80,50 +78,29 @@ func (c *cdn) GetClient() CDNDynmaicClient {
 	return c.client
 }
 
-func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
-	logger.Infof("start seed task %s", task.ID)
-	defer func() {
-		logger.Infof("finish seed task %s, task status is %s", task.ID, task.GetStatus())
-	}()
-	var seedSpan trace.Span
-	ctx, seedSpan = tracer.Start(ctx, config.SpanTriggerCDNSeed)
-	defer seedSpan.End()
+func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, config.SpanTriggerCDNSeed)
+	defer span.End()
+
 	seedRequest := &cdnsystem.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,
 		UrlMeta: task.URLMeta,
 	}
-	seedSpan.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
+	span.SetAttributes(config.AttributeCDNSeedRequest.String(seedRequest.String()))
 
-	if c.client == nil {
-		err := ErrCDNClientUninitialized
-		seedSpan.RecordError(err)
-		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
-		return nil, err
-	}
-
-	stream, err := c.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), seedSpan), seedRequest)
+	stream, err := c.client.ObtainSeeds(trace.ContextWithSpan(context.Background(), span), seedRequest)
 	if err != nil {
-		seedSpan.RecordError(err)
-		seedSpan.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
-		if cdnErr, ok := err.(*dferrors.DfError); ok {
-			logger.Errorf("failed to obtain cdn seed: %v", cdnErr)
-			switch cdnErr.Code {
-			case base.Code_CDNTaskRegistryFail:
-				return nil, errors.Wrap(ErrCDNRegisterFail, "obtain seeds")
-			case base.Code_CDNTaskDownloadFail:
-				return nil, errors.Wrapf(ErrCDNDownloadFail, "obtain seeds")
-			default:
-				return nil, errors.Wrapf(ErrCDNUnknown, "obtain seeds")
-			}
-		}
-		return nil, errors.Wrapf(ErrCDNInvokeFail, "obtain seeds from cdn: %v", err)
+		span.RecordError(err)
+		span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
+		return nil, nil, err
 	}
 
 	return c.receivePiece(ctx, task, stream)
 }
 
-func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.PieceSeedStream) (*Peer, error) {
+func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.PieceSeedStream) (*Peer, *rpcscheduler.PeerResult, error) {
 	span := trace.SpanFromContext(ctx)
 	var initialized bool
 	var cdnPeer *Peer
@@ -131,67 +108,50 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 		piece, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				logger.Infof("task %s connection closed", task.ID)
-				if cdnPeer != nil && task.GetStatus() == TaskStatusSuccess {
-					span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
-					return cdnPeer, nil
-				}
-				return nil, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
+				return nil, nil, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
 			}
 
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
-			logger.Errorf("task %s add piece err %v", task.ID, err)
-			if recvErr, ok := err.(*dferrors.DfError); ok {
-				switch recvErr.Code {
-				case base.Code_CDNTaskRegistryFail:
-					return nil, errors.Wrapf(ErrCDNRegisterFail, "receive piece")
-				case base.Code_CDNTaskDownloadFail:
-					return nil, errors.Wrapf(ErrCDNDownloadFail, "receive piece")
-				default:
-					return nil, errors.Wrapf(ErrCDNUnknown, "recive piece")
-				}
-			}
-			return nil, errors.Wrapf(ErrCDNInvokeFail, "receive piece from cdn: %v", err)
+			task.Log().Errorf("receive piece failed: %v", err)
+			return nil, nil, err
 		}
 
-		if piece != nil {
-			logger.Infof("task %s add piece %v", task.ID, piece)
-			if !initialized {
-				cdnPeer, err = c.initCDNPeer(ctx, task, piece)
-				if err != nil {
-					return nil, err
-				}
-
-				logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
-				if !task.CanSchedule() {
-					task.SetStatus(TaskStatusSeeding)
-				}
-				initialized = true
+		logger.Infof("task %s add piece %v", task.ID, piece)
+		if !initialized {
+			cdnPeer, err = c.initCDNPeer(ctx, task, piece)
+			if err != nil {
+				return nil, nil, err
 			}
 
-			span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
-			cdnPeer.Touch()
-			if piece.Done {
-				logger.Infof("task %s receive pieces finish", task.ID)
-				task.TotalPieceCount.Store(piece.TotalPieceCount)
-				task.ContentLength.Store(piece.ContentLength)
-				task.SetStatus(TaskStatusSuccess)
-				cdnPeer.SetStatus(PeerStatusSuccess)
-				if task.ContentLength.Load() <= TinyFileSize {
-					data, err := downloadTinyFile(ctx, task, cdnPeer.Host)
-					if err == nil && len(data) == int(task.ContentLength.Load()) {
-						task.DirectPiece = data
-					}
-				}
-				span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
-				span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength.Load()))
-				return cdnPeer, nil
+			logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
+			if !task.CanSchedule() {
+				task.SetStatus(TaskStatusSeeding)
 			}
-
-			cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
-			task.GetOrAddPiece(piece.PieceInfo)
+			initialized = true
 		}
+
+		span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
+		cdnPeer.Touch()
+		if piece.Done {
+			logger.Infof("task %s receive pieces finish", task.ID)
+			task.TotalPieceCount.Store(piece.TotalPieceCount)
+			task.ContentLength.Store(piece.ContentLength)
+			task.SetStatus(TaskStatusSuccess)
+			cdnPeer.SetStatus(PeerStatusSuccess)
+			if task.ContentLength.Load() <= TinyFileSize {
+				data, err := downloadTinyFile(ctx, task, cdnPeer.Host)
+				if err == nil && len(data) == int(task.ContentLength.Load()) {
+					task.DirectPiece = data
+				}
+			}
+			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
+			span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength.Load()))
+			return cdnPeer, nil
+		}
+
+		cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
+		task.GetOrAddPiece(piece.PieceInfo)
 	}
 }
 

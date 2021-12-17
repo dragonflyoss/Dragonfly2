@@ -323,7 +323,7 @@ func (pt *peerTask) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
-	case base.Code_SchedError:
+	case base.Code_SchedError, base.Code_SchedTaskStatusError:
 		// 5xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
@@ -801,7 +801,7 @@ retry:
 		code = de.Code
 	}
 	pt.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
-	perr := pt.peerPacketStream.Send(&scheduler.PieceResult{
+	sendError := pt.peerPacketStream.Send(&scheduler.PieceResult{
 		TaskId:        pt.taskID,
 		SrcPid:        pt.peerID,
 		DstPid:        peer.PeerId,
@@ -811,9 +811,9 @@ retry:
 		HostLoad:      nil,
 		FinishedCount: -1,
 	})
-	if perr != nil {
-		span.RecordError(perr)
-		pt.Errorf("send piece result error: %s, code to send: %d", err, code)
+	if sendError != nil {
+		span.RecordError(sendError)
+		pt.Errorf("send piece result error: %s, code to send: %d", sendError, code)
 	}
 
 	if code == base.Code_CDNTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {

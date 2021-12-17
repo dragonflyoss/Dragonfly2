@@ -109,14 +109,14 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.dynconfig = dynConfig
 
 	// Initialize GC
-	s.gc = gc.New(gc.WithLogger(logger.GcLogger))
+	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
 
 	// Initialize scheduler service
 	var openTel bool
 	if cfg.Options.Telemetry.Jaeger != "" {
 		openTel = true
 	}
-	service, err := core.NewSchedulerService(cfg.Scheduler, d.PluginDir(), cfg.Metrics, dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
+	service, err := core.NewSchedulerService(cfg, d.PluginDir(), dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +127,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	if s.config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(s.service, opts...)
+	grpcServer, err := rpcserver.New(cfg, s.service, opts...)
 	if err != nil {
 		return nil, err
 	}
