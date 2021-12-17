@@ -61,14 +61,14 @@ type hdfsSourceClient struct {
 
 // hdfsFileReaderClose is a combination object of the  io.LimitedReader and io.Closer
 type hdfsFileReaderClose struct {
-	limited io.Reader
-	c       io.Closer
+	reader io.Reader
+	closer io.Closer
 }
 
 func newHdfsFileReaderClose(r io.ReadCloser, n int64) io.ReadCloser {
 	return &hdfsFileReaderClose{
-		limited: io.LimitReader(r, n),
-		c:       r,
+		reader: io.LimitReader(r, n),
+		closer: r,
 	}
 }
 
@@ -253,9 +253,9 @@ func newHDFSSourceClient(opts ...HDFSSourceClientOption) *hdfsSourceClient {
 var _ source.ResourceClient = (*hdfsSourceClient)(nil)
 
 func (rc *hdfsFileReaderClose) Read(p []byte) (n int, err error) {
-	return rc.limited.Read(p)
+	return rc.reader.Read(p)
 }
 
 func (rc *hdfsFileReaderClose) Close() error {
-	return rc.c.Close()
+	return rc.closer.Close()
 }
