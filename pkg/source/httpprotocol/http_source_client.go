@@ -18,7 +18,6 @@ package httpprotocol
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -170,7 +169,7 @@ func (client *httpSourceClient) IsExpired(request *source.Request, info *source.
 		LastModified)), nil
 }
 
-func (client *httpSourceClient) Download(request *source.Request) (io.ReadCloser, error) {
+func (client *httpSourceClient) Download(request *source.Request) (*source.Response, error) {
 	resp, err := client.doRequest(http.MethodGet, request)
 	if err != nil {
 		return nil, err
@@ -180,23 +179,15 @@ func (client *httpSourceClient) Download(request *source.Request) (io.ReadCloser
 		resp.Body.Close()
 		return nil, err
 	}
-	return resp.Body, nil
-}
-
-func (client *httpSourceClient) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-	resp, err := client.doRequest(http.MethodGet, request)
-	if err != nil {
-		return nil, nil, err
-	}
-	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
-	if err != nil {
-		resp.Body.Close()
-		return nil, nil, err
-	}
-	return resp.Body, &source.ExpireInfo{
-		LastModified: resp.Header.Get(headers.LastModified),
-		ETag:         resp.Header.Get(headers.ETag),
-	}, nil
+	response := source.NewResponse(
+		resp.Body,
+		source.WithExpireInfo(
+			source.ExpireInfo{
+				LastModified: resp.Header.Get(headers.LastModified),
+				ETag:         resp.Header.Get(headers.ETag),
+			},
+		))
+	return response, nil
 }
 
 func (client *httpSourceClient) GetLastModified(request *source.Request) (int64, error) {

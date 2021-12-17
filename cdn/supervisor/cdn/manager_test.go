@@ -94,31 +94,22 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	sourceClient.EXPECT().IsSupportRange(gomock.Any()).Return(true, nil).AnyTimes()
 	sourceClient.EXPECT().IsExpired(gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
+		func(request *source.Request) (*source.Response, error) {
 			content, _ := os.ReadFile("../../testdata/cdn/go.html")
 			if request.Header.Get(source.Range) != "" {
 				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))), nil
-			}
-			return io.NopCloser(strings.NewReader(string(content))), nil
-		},
-	).AnyTimes()
-	sourceClient.EXPECT().DownloadWithExpireInfo(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-			content, _ := os.ReadFile("../../testdata/cdn/go.html")
-			if request.Header.Get(source.Range) != "" {
-				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
-					&source.ExpireInfo{
+				return source.NewResponse(
+					io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
+					source.WithExpireInfo(source.ExpireInfo{
 						LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 						ETag:         "etag",
-					}, nil
+					})), nil
 			}
-			return io.NopCloser(strings.NewReader(string(content))),
-				&source.ExpireInfo{
+			return source.NewResponse(io.NopCloser(strings.NewReader(string(content))),
+				source.WithExpireInfo(source.ExpireInfo{
 					LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 					ETag:         "etag",
-				}, nil
+				})), nil
 		},
 	).AnyTimes()
 	sourceClient.EXPECT().GetLastModified(gomock.Any()).Return(

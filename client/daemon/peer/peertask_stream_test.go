@@ -90,8 +90,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			return int64(len(testBytes)), nil
 		})
 	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+		func(request *source.Request) (*source.Response, error) {
+			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -190,8 +190,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			return -1, nil
 		})
 	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+		func(request *source.Request) (*source.Response, error) {
+			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 		})
 
 	ptm := &peerTaskManager{

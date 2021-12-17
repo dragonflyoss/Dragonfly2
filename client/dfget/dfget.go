@@ -143,7 +143,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		wLog     = logger.With("url", cfg.URL)
 		start    = time.Now()
 		target   *os.File
-		response io.ReadCloser
+		response *source.Response
 		err      error
 		written  int64
 	)
@@ -164,9 +164,9 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	if response, err = source.Download(downloadRequest); err != nil {
 		return err
 	}
-	defer response.Close()
+	defer response.Body.Close()
 
-	if written, err = io.Copy(target, response); err != nil {
+	if written, err = io.Copy(target, response.Body); err != nil {
 		return err
 	}
 

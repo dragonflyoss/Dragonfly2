@@ -131,7 +131,6 @@ func (suite *HTTPSourceClientTestSuite) SetupTest() {
 	httpmock.RegisterResponder(http.MethodGet, notfoundRawURL, httpmock.NewStringResponder(http.StatusNotFound, "not found"))
 	httpmock.RegisterResponder(http.MethodGet, normalNotSupportRangeRawURL, httpmock.NewStringResponder(http.StatusOK, testContent))
 	httpmock.RegisterResponder(http.MethodGet, errorRawURL, httpmock.NewErrorResponder(fmt.Errorf("error")))
-
 }
 
 func (suite *HTTPSourceClientTestSuite) TestNewHTTPSourceClient() {
@@ -150,12 +149,11 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	timeoutRequest, err := source.NewRequestWithContext(ctx, timeoutRawURL, nil)
 	suite.Nil(err)
-	reader, expireInfo, err := suite.httpClient.DownloadWithExpireInfo(timeoutRequest)
+	response, err := suite.httpClient.Download(timeoutRequest)
 	cancel()
 	suite.NotNil(err)
 	suite.Equal("Get \"https://timeout.com\": context deadline exceeded", err.Error())
-	suite.Nil(reader)
-	suite.Nil(expireInfo)
+	suite.Nil(response)
 
 	normalRequest, _ := source.NewRequest(normalRawURL)
 	normalRangeRequest, _ := source.NewRequest(normalRawURL)
@@ -203,15 +201,16 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 	}
 	for _, tt := range tests {
 		suite.Run(tt.name, func() {
-			reader, expireInfo, err := suite.httpClient.DownloadWithExpireInfo(tt.request)
+			response, err := suite.httpClient.Download(tt.request)
 			if err != nil {
 				suite.True(tt.wantErr.Error() == err.Error())
 				return
 			}
-			bytes, err := io.ReadAll(reader)
+			bytes, err := io.ReadAll(response.Body)
 			suite.Nil(err)
 			suite.Equal(tt.content, string(bytes))
-			suite.Equal(tt.expireInfo, expireInfo)
+			expireInfo := response.ExpireInfo()
+			suite.Equal(tt.expireInfo, &expireInfo)
 		})
 	}
 }
