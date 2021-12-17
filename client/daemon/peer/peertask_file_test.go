@@ -95,9 +95,9 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			return -1, fmt.Errorf("unexpect url: %s", request.URL.String())
 		})
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
+		func(request *source.Request) (*source.Response, error) {
 			if request.URL.String() == url {
-				return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+				return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 			}
 			return nil, fmt.Errorf("unexpect url: %s", request.URL.String())
 		})
@@ -220,9 +220,9 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			return -1, fmt.Errorf("unexpect url: %s", request.URL.String())
 		})
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
+		func(request *source.Request) (*source.Response, error) {
 			if request.URL.String() == url {
-				return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+				return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 			}
 			return nil, fmt.Errorf("unexpect url: %s", request.URL.String())
 		})
