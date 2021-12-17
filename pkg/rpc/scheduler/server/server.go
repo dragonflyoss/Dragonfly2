@@ -20,14 +20,10 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 )
 
@@ -55,24 +51,13 @@ func New(schedulerServer SchedulerServer, opts ...grpc.ServerOption) *grpc.Serve
 }
 
 func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
-	isSuccess := true
 	metrics.RegisterPeerTaskCount.Inc()
 	resp, err := p.server.RegisterPeerTask(ctx, req)
 	if err != nil {
-		isSuccess = false
 		metrics.RegisterPeerTaskFailureCount.Inc()
 	} else {
 		metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 	}
-
-	logger.StatPeerLogger.Info("Register Peer Task",
-		zap.Bool("Success", isSuccess),
-		zap.String("URL", req.Url),
-		zap.String("TaskID", resp.TaskId),
-		zap.String("SchedulerIP", iputils.IPv4),
-		zap.String("SchedulerHostname", hostutils.FQDNHostname),
-		zap.Any("Peer", req.PeerHost),
-	)
 
 	return resp, err
 }
@@ -92,22 +77,6 @@ func (p *proxy) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult)
 	} else {
 		metrics.DownloadFailureCount.Inc()
 	}
-
-	logger.StatPeerLogger.Info("Finish Peer Task",
-		zap.Bool("Success", req.Success),
-		zap.String("URL", req.Url),
-		zap.String("TaskID", req.TaskId),
-		zap.String("PeerID", req.PeerId),
-		zap.String("PeerIP", req.SrcIp),
-		zap.String("SecurityDomain", req.SecurityDomain),
-		zap.String("IDC", req.Idc),
-		zap.String("SchedulerIP", iputils.IPv4),
-		zap.String("SchedulerHostname", hostutils.FQDNHostname),
-		zap.Int64("ContentLength", req.ContentLength),
-		zap.Uint64("Traffic", req.Traffic),
-		zap.Uint32("Cost", req.Cost),
-		zap.Int32("Code", int32(req.Code)),
-	)
 
 	return new(empty.Empty), p.server.ReportPeerResult(ctx, req)
 }

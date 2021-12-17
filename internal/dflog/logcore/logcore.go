@@ -30,7 +30,6 @@ var (
 	GCLogFileName         = "gc.log"
 	StorageGCLogFileName  = "storage-gc.log"
 	JobLogFileName        = "job.log"
-	StatPeerLogFileName   = "peer.log"
 	StatSeedLogFileName   = "stat/seed.log"
 	DownloaderLogFileName = "downloader.log"
 	KeepAliveLogFileName  = "keepalive.log"
