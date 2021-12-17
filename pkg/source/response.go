@@ -16,7 +16,10 @@
 
 package source
 
-import "io"
+import (
+	"io"
+	"net/http"
+)
 
 type Response struct {
 	Status        string
@@ -24,4 +27,47 @@ type Response struct {
 	Header        Header
 	Body          io.ReadCloser
 	ContentLength int64
+}
+
+func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
+	resp := &Response{
+		Header:        make(Header),
+		Status:        "OK",
+		StatusCode:    http.StatusOK,
+		Body:          rc,
+		ContentLength: -1,
+	}
+
+	for _, opt := range opts {
+		opt(resp)
+	}
+	return resp
+}
+
+func WithStatus(code int, status string) func(*Response) {
+	return func(resp *Response) {
+		resp.StatusCode = code
+		resp.Status = status
+	}
+}
+
+func WithContentLength(length int64) func(*Response) {
+	return func(resp *Response) {
+		resp.ContentLength = length
+	}
+}
+
+func WithHeader(header map[string]string) func(*Response) {
+	return func(resp *Response) {
+		for k, v := range header {
+			resp.Header[k] = append(resp.Header[k], v)
+		}
+	}
+}
+
+func WithExpireInfo(info ExpireInfo) func(*Response) {
+	return func(resp *Response) {
+		resp.Header[LastModified] = []string{info.LastModified}
+		resp.Header[ETag] = []string{info.ETag}
+	}
 }
