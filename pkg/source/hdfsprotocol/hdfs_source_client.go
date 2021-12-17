@@ -65,10 +65,10 @@ type hdfsFileReaderClose struct {
 	c       io.Closer
 }
 
-func newHdfsFileReaderClose(r io.Reader, n int64, c io.Closer) io.ReadCloser {
+func newHdfsFileReaderClose(r io.ReadCloser, n int64) io.ReadCloser {
 	return &hdfsFileReaderClose{
 		limited: io.LimitReader(r, n),
-		c:       c,
+		c:       r,
 	}
 }
 
@@ -139,7 +139,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (io.ReadCloser, err
 		limitReadN = int64(requestRange.Length())
 	}
 
-	return newHdfsFileReaderClose(hdfsFile, limitReadN, hdfsFile), nil
+	return newHdfsFileReaderClose(hdfsFile, limitReadN), nil
 }
 
 func (h *hdfsSourceClient) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
@@ -174,7 +174,7 @@ func (h *hdfsSourceClient) DownloadWithExpireInfo(request *source.Request) (io.R
 		}
 		limitReadN = int64(requestRange.EndIndex - requestRange.StartIndex)
 	}
-	return newHdfsFileReaderClose(hdfsFile, limitReadN, hdfsFile), &source.ExpireInfo{
+	return newHdfsFileReaderClose(hdfsFile, limitReadN), &source.ExpireInfo{
 		LastModified: timeutils.Format(fileInfo.ModTime()),
 	}, nil
 }
