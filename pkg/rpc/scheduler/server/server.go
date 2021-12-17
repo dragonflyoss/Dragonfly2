@@ -61,8 +61,9 @@ func (p *proxy) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskReq
 	if err != nil {
 		isSuccess = false
 		metrics.RegisterPeerTaskFailureCount.Inc()
+	} else {
+		metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 	}
-	metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
 
 	logger.StatPeerLogger.Info("Register Peer Task",
 		zap.Bool("Success", isSuccess),
