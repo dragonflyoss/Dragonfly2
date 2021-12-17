@@ -17,7 +17,6 @@
 package hdfsprotocol
 
 import (
-	"bytes"
 	"io"
 	"net/url"
 	"os/user"
@@ -62,16 +61,14 @@ type hdfsSourceClient struct {
 
 // hdfsFileReaderClose is a combination object of the  io.LimitedReader and io.Closer
 type hdfsFileReaderClose struct {
-	limited io.Reader
-	c       io.Closer
-	buf     *bytes.Buffer
+	reader io.Reader
+	closer io.Closer
 }
 
-func newHdfsFileReaderClose(r io.Reader, n int64, c io.Closer) io.ReadCloser {
+func newHdfsFileReaderClose(reader io.Reader, n int64, closer io.Closer) io.ReadCloser {
 	return &hdfsFileReaderClose{
-		limited: io.LimitReader(r, n),
-		c:       c,
-		buf:     bytes.NewBuffer(make([]byte, 512)),
+		reader: io.LimitReader(reader, n),
+		closer: closer,
 	}
 }
 
@@ -256,17 +253,9 @@ func newHDFSSourceClient(opts ...HDFSSourceClientOption) *hdfsSourceClient {
 var _ source.ResourceClient = (*hdfsSourceClient)(nil)
 
 func (rc *hdfsFileReaderClose) Read(p []byte) (n int, err error) {
-	return rc.limited.Read(p)
+	return rc.reader.Read(p)
 }
 
 func (rc *hdfsFileReaderClose) Close() error {
-	return rc.c.Close()
-}
-
-func (rc *hdfsFileReaderClose) WriteTo(w io.Writer) (n int64, err error) {
-	_, err = rc.limited.Read(rc.buf.Bytes())
-	if err != nil {
-		return -1, err
-	}
-	return rc.buf.WriteTo(w)
+	return rc.closer.Close()
 }
