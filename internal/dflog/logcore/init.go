@@ -88,12 +88,6 @@ func InitScheduler(console bool, dir string) error {
 	}
 	logger.SetJobLogger(jobLogger.Sugar())
 
-	statPeerLogger, err := CreateLogger(path.Join(logDir, StatPeerLogFileName), true, true)
-	if err != nil {
-		return err
-	}
-	logger.SetStatPeerLogger(statPeerLogger)
-
 	return nil
 }
 
