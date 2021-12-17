@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,6 +38,9 @@ var (
 
 	// ErrNoClientFound represents no source client to resolve url
 	ErrNoClientFound = errors.New("no source client found")
+
+	// ErrClientNotSupportList represents the source client not support list action
+	ErrClientNotSupportList = errors.New("source client not support list")
 )
 
 // UnexpectedStatusCodeError is returned when a source responds with neither an error
@@ -108,6 +112,11 @@ type ResourceClient interface {
 
 	// GetLastModified gets last modified timestamp milliseconds of resource
 	GetLastModified(request *Request) (int64, error)
+}
+
+// ResourceLister defines the interface to list all downloadable resources in request url
+type ResourceLister interface {
+	List(request *Request) (urls []*url.URL, err error)
 }
 
 type ClientManager interface {
@@ -323,4 +332,16 @@ func DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error
 		return nil, nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	return client.DownloadWithExpireInfo(request)
+}
+
+func List(request *Request) ([]*url.URL, error) {
+	client, ok := _defaultManager.GetClient(request.URL.Scheme)
+	if !ok {
+		return nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
+	}
+	lister, ok := client.(ResourceLister)
+	if !ok {
+		return nil, errors.Wrapf(ErrClientNotSupportList, "scheme: %s", request.URL.Scheme)
+	}
+	return lister.List(request)
 }
