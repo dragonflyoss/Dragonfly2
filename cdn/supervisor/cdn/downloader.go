@@ -51,11 +51,13 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 	if err != nil {
 		return nil, err
 	}
-	// update Expire info
-	cm.updateExpireInfo(seedTask.ID, map[string]string{
-		source.LastModified: expireInfo.LastModified,
-		source.ETag:         expireInfo.ETag,
-	})
+	if expireInfo != nil {
+		// update Expire info
+		cm.updateExpireInfo(seedTask.ID, map[string]string{
+			source.LastModified: expireInfo.LastModified,
+			source.ETag:         expireInfo.ETag,
+		})
+	}
 	return body, err
 }
 
