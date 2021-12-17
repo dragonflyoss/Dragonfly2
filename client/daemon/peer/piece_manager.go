@@ -376,16 +376,16 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	if err != nil {
 		return err
 	}
-	body, err := source.Download(downloadRequest)
+	response, err := source.Download(downloadRequest)
 	if err != nil {
 		return err
 	}
-	defer body.Close()
-	reader := body.(io.Reader)
+	defer response.Body.Close()
+	reader := response.Body.(io.Reader)
 
 	// calc total md5
 	if pm.calculateDigest && request.UrlMeta.Digest != "" {
-		reader = digestutils.NewDigestReader(pt.Log(), body, request.UrlMeta.Digest)
+		reader = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
 	}
 
 	// 2. save to storage

@@ -39,13 +39,13 @@ func main() {
 	}
 
 	request, err = source.NewRequest("")
-	rc, err := client.Download(request)
+	response, err := client.Download(request)
 	if err != nil {
 		fmt.Printf("download error: %s\n", err)
 		os.Exit(1)
 	}
 
-	data, err := io.ReadAll(rc)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		fmt.Printf("read error: %s\n", err)
 		os.Exit(1)
@@ -56,7 +56,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = rc.Close()
+	err = response.Body.Close()
 	if err != nil {
 		fmt.Printf("close error: %s\n", err)
 		os.Exit(1)

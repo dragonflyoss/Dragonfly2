@@ -18,7 +18,6 @@ package ossprotocol
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"sync"
@@ -147,44 +146,33 @@ func (osc *ossSourceClient) IsExpired(request *source.Request, info *source.Expi
 	return !(resHeader.Get(oss.HTTPHeaderEtag) == info.ETag || resHeader.Get(oss.HTTPHeaderLastModified) == info.LastModified), nil
 }
 
-func (osc *ossSourceClient) Download(request *source.Request) (io.ReadCloser, error) {
+func (osc *ossSourceClient) Download(request *source.Request) (*source.Response, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return nil, errors.Wrap(err, "get oss client")
+		return nil, errors.Wrapf(err, "get oss client")
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get oss bucket %s", request.URL.Host)
-	}
-	resp, err := bucket.GetObject(request.URL.Path, getOptions(request.Header)...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "get oss object %s", request.URL.Path)
-	}
-	return resp, nil
-}
-
-func (osc *ossSourceClient) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-	client, err := osc.getClient(request.Header)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "get oss client")
-	}
-	bucket, err := client.Bucket(request.URL.Host)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return nil, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
 	}
 	objectResult, err := bucket.DoGetObject(&oss.GetObjectRequest{ObjectKey: request.URL.Path}, getOptions(request.Header))
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "get oss Object: %s", request.URL.Path)
+		return nil, errors.Wrapf(err, "get oss Object: %s", request.URL.Path)
 	}
 	err = source.CheckResponseCode(objectResult.Response.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
 		objectResult.Response.Body.Close()
-		return nil, nil, err
+		return nil, err
 	}
-	return objectResult.Response.Body, &source.ExpireInfo{
-		LastModified: objectResult.Response.Headers.Get(headers.LastModified),
-		ETag:         objectResult.Response.Headers.Get(headers.ETag),
-	}, nil
+	response := source.NewResponse(
+		objectResult.Response.Body,
+		source.WithExpireInfo(
+			source.ExpireInfo{
+				LastModified: objectResult.Response.Headers.Get(headers.LastModified),
+				ETag:         objectResult.Response.Headers.Get(headers.ETag),
+			},
+		))
+	return response, nil
 }
 
 func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, error) {

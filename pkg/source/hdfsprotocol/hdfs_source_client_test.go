@@ -228,9 +228,9 @@ func Test_Download_FileExist_ByRange(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	download, err := sourceClient.Download(request)
+	response, err := sourceClient.Download(request)
 	assert.Nil(t, err)
-	data, _ := io.ReadAll(download)
+	data, _ := io.ReadAll(response.Body)
 
 	assert.Equal(t, hdfsExistFileContent, string(data))
 }
@@ -285,11 +285,11 @@ func Test_DownloadWithResponseHeader_FileExist_ByRange(t *testing.T) {
 	request, err := source.NewRequest(hdfsExistFileURL)
 	assert.Nil(t, err)
 	request.Header.Add(source.Range, rang.String())
-	body, expireInfo, err := sourceClient.DownloadWithExpireInfo(request)
+	response, err := sourceClient.Download(request)
 	assert.Nil(t, err)
-	assert.Equal(t, hdfsExistFileLastModified, expireInfo.LastModified)
+	assert.Equal(t, hdfsExistFileLastModified, response.ExpireInfo().LastModified)
 
-	data, _ := io.ReadAll(body)
+	data, _ := io.ReadAll(response.Body)
 	assert.Equal(t, string(data), string([]byte(hdfsExistFileContent)[hdfsExistFileRangeStart:hdfsExistFileRangeEnd]))
 }
 
@@ -303,10 +303,9 @@ func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 	request, err := source.NewRequest(hdfsNotExistFileURL)
 	assert.Nil(t, err)
 	request.Header.Add(source.Range, rang.String())
-	reader, expireInfo, err := sourceClient.DownloadWithExpireInfo(request)
+	response, err := sourceClient.Download(request)
 	assert.EqualError(t, err, "open /user/root/input/f3.txt: file does not exist")
-	assert.Nil(t, reader)
-	assert.Nil(t, expireInfo)
+	assert.Nil(t, response)
 }
 
 func TestGetLastModified_FileExist(t *testing.T) {
