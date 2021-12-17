@@ -165,7 +165,7 @@ func (eb *evaluatorBase) NeedAdjustParent(peer *supervisor.Peer) bool {
 	}
 
 	// Peer has parent but parent can't be scheduled.
-	if ok && (parent.IsLeave() || eb.IsBadNode(parent)) {
+	if ok && eb.IsBadNode(parent) {
 		logger.Infof("peer %s need adjust parent because parent can't be scheduled", peer.ID)
 		return true
 	}
@@ -202,8 +202,8 @@ func (eb *evaluatorBase) NeedAdjustParent(peer *supervisor.Peer) bool {
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *supervisor.Peer) bool {
-	if peer.IsBad() {
-		logger.Infof("peer %s is bad because it's status is %s", peer.ID, peer.GetStatus())
+	if peer.IsFail() {
+		logger.Infof("peer %s status is fail", peer.ID)
 		return true
 	}
 

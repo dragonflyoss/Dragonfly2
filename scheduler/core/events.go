@@ -199,7 +199,7 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 		e.peer.ReplaceParent(parentPeer)
 	}
 
-	parentPeer.Touch()
+	parentPeer.LastAccessAt.Store(time.Now())
 	if parentPeer.ID == e.pr.DstPid {
 		return
 	}
@@ -234,7 +234,7 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	case base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		s.peerManager.Delete(e.pr.DstPid)
 		go func() {
-			if _, err := s.cdn.StartSeedTask(e.ctx, e.peer.Task); err != nil {
+			if _, _, err := s.cdn.StartSeedTask(e.ctx, e.peer.Task); err != nil {
 				e.peer.Log().Errorf("peerDownloadPieceFailEvent: seed task failed: %v", err)
 			}
 		}()
@@ -270,12 +270,15 @@ var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	peer := e.peer
+	task := e.peer.Task
 	result := e.peerResult
 	peer.SetStatus(supervisor.PeerStatusSuccess)
 
 	// If the cdn backsource successfully or the peer backsource successfully, the task status is successful.
 	if (peer.Task.ContainsBackToSourcePeer(e.peer.ID) || peer.Host.IsCDN) && !peer.Task.IsSuccess() {
-		peer.Task.UpdateSuccess(result.TotalPieceCount, result.ContentLength)
+		task.SetStatus(supervisor.TaskStatusSuccess)
+		task.TotalPieceCount.Store(result.TotalPieceCount)
+		task.ContentLength.Store(result.ContentLength)
 	}
 
 	removePeerFromCurrentTree(e.peer, s)
@@ -394,12 +397,17 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 		}
 
 		// If the task status failed and can backsource, notify dfdaemon to backsource
-		if task.CanBackToSource() && !task.ContainsBackToSourcePeer(peer.ID) {
-			if err := peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)); err != nil {
-				peer.Log().Errorf("close channel with backsource failed: %v", err)
+		if task.CanBackToSource() {
+			if !task.ContainsBackToSourcePeer(peer.ID) {
+				if err := peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source because cdn seed task failed", peer.ID)); err != nil {
+					peer.Log().Errorf("close channel with backsource failed: %v", err)
+				}
+				task.AddBackToSourcePeer(peer.ID)
+				peer.Log().Info("notify dfdaemon to backsource successfully")
+				return true
 			}
-			task.AddBackToSourcePeer(peer.ID)
-			peer.Log().Info("notify dfdaemon to backsource successfully")
+
+			peer.Log().Info("has contains backsource peer list")
 			return true
 		}
 

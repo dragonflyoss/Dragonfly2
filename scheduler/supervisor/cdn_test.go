@@ -27,7 +27,6 @@ import (
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/golang/mock/gomock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -75,7 +74,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNRegisterFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -97,7 +96,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNDownloadFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -119,7 +118,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNUnknown, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -141,7 +140,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Equal(supervisor.ErrCDNInvokeFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -241,7 +240,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNRegisterFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -266,7 +265,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNDownloadFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -291,7 +290,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Error(supervisor.ErrCDNUnknown, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -317,7 +316,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Equal(supervisor.ErrCDNInvokeFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -344,7 +343,7 @@ func TestCDN_Initial(t *testing.T) {
 			expect: func(t *testing.T, cdn supervisor.CDN, peer *supervisor.Peer, err error) {
 				assert := assert.New(t)
 				assert.Nil(peer)
-				assert.Equal(supervisor.ErrInitCDNPeerFail, errors.Cause(err))
+				assert.Error(err)
 			},
 		},
 		{
@@ -470,7 +469,7 @@ func TestCDN_Initial(t *testing.T) {
 			mockCDNDynmaicClient, mockPeerManager, mockHostManager, patch := tc.mock(t)
 			cdn := supervisor.NewCDN(mockCDNDynmaicClient, mockPeerManager, mockHostManager)
 			mockTask.SetStatus(tc.status)
-			peer, err := cdn.StartSeedTask(context.Background(), mockTask)
+			peer, _, err := cdn.StartSeedTask(context.Background(), mockTask)
 			tc.expect(t, cdn, peer, err)
 			patch.Reset()
 		})

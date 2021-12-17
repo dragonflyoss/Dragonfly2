@@ -103,18 +103,9 @@ func (m *taskManager) RunGC() error {
 	m.tasks.Range(func(key, value interface{}) bool {
 		taskID := key.(string)
 		task := value.(*Task)
-		elapsed := time.Since(task.lastAccessAt.Load())
-		if elapsed > m.taskTTI && task.IsSuccess() {
-			task.Log().Info("elapsed larger than taskTTI, task status become zombie")
-			task.SetStatus(TaskStatusZombie)
-		}
+		elapsed := time.Since(task.LastAccessAt.Load())
 
-		if task.GetPeers().Len() == 0 {
-			task.Log().Info("peers is empty, task status become waiting")
-			task.SetStatus(TaskStatusWaiting)
-		}
-
-		if elapsed > m.taskTTL {
+		if task.GetPeers().Len() == 0 && elapsed > m.taskTTL {
 			// TODO lock
 			peers := m.peerManager.GetPeersByTask(taskID)
 			for _, peer := range peers {
@@ -141,8 +132,6 @@ func (status TaskStatus) String() string {
 		return "Seeding"
 	case TaskStatusSuccess:
 		return "Success"
-	case TaskStatusZombie:
-		return "Zombie"
 	case TaskStatusFail:
 		return "Fail"
 	default:
@@ -155,7 +144,6 @@ const (
 	TaskStatusRunning
 	TaskStatusSeeding
 	TaskStatusSuccess
-	TaskStatusZombie
 	TaskStatusFail
 )
 
@@ -174,8 +162,8 @@ type Task struct {
 	CreateAt *atomic.Time
 	// LastTriggerAt is peer last trigger time
 	LastTriggerAt *atomic.Time
-	// lastAccessAt is peer last access time
-	lastAccessAt *atomic.Time
+	// LastAccessAt is peer last access time
+	LastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
 	// peers is peer sorted unique list
@@ -202,7 +190,7 @@ func NewTask(id, url string, backToSourceWeight int32, meta *base.UrlMeta) *Task
 		URLMeta:           meta,
 		CreateAt:          atomic.NewTime(now),
 		LastTriggerAt:     atomic.NewTime(now),
-		lastAccessAt:      atomic.NewTime(now),
+		LastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
 		peers:             list.NewSortedUniqueList(),
@@ -246,21 +234,6 @@ func (task *Task) IsHealth() bool {
 // IsFail determines whether task is fail
 func (task *Task) IsFail() bool {
 	return task.GetStatus() == TaskStatusFail
-}
-
-func (task *Task) Touch() {
-	task.lastAccessAt.Store(time.Now())
-}
-
-func (task *Task) UpdateSuccess(pieceCount int32, contentLength int64) {
-	task.lock.Lock()
-	defer task.lock.Unlock()
-
-	if task.GetStatus() != TaskStatusSuccess {
-		task.SetStatus(TaskStatusSuccess)
-		task.TotalPieceCount.Store(pieceCount)
-		task.ContentLength.Store(contentLength)
-	}
 }
 
 func (task *Task) AddPeer(peer *Peer) {

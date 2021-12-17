@@ -125,6 +125,7 @@ func NewSchedulerService(cfg *config.Config, pluginDir string, dynConfig config.
 		kmu:         pkgsync.NewKrwmutex(),
 	}
 
+	// Disable CDN
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
 		if ops.openTel {
@@ -259,16 +260,13 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	task, ok := s.taskManager.GetOrAdd(task)
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 	span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
-	if ok {
-		task.Log().Infof("task exists and status is %s", task.GetStatus())
+	if ok && task.IsHealth() {
 		// task is healthy and can be reused
-		if task.IsHealth() {
-			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-			s.kmu.RUnlock(task.ID)
-			return task
-		}
-	} else {
-		task.Log().Info("add new task")
+		task.LastAccessAt.Store(time.Now())
+		task.Log().Infof("reuse task and status is %s", task.GetStatus())
+		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
+		s.kmu.RUnlock(task.ID)
+		return task
 	}
 	s.kmu.RUnlock(task.ID)
 
@@ -276,8 +274,8 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	defer s.kmu.Unlock(task.ID)
 
 	// trigger task
-	task.LastTriggerAt.Store(time.Now())
 	task.SetStatus(supervisor.TaskStatusRunning)
+	task.LastAccessAt.Store(time.Now())
 
 	// disabled cdn will cause the peer to directly back source
 	if s.CDN == nil {
@@ -290,7 +288,7 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	go func() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 		task.Log().Info("cdn start seed task")
-		peer, err := s.CDN.StartSeedTask(ctx, task)
+		peer, result, err := s.CDN.StartSeedTask(ctx, task)
 		if err != nil {
 			// cdn seed task failed
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
@@ -301,17 +299,21 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 			return
 		}
 
-		if ok = s.worker.send(peerDownloadSuccessEvent{peer, nil}); !ok {
-			logger.Error("send taskSeed success event failed, eventLoop is shutdown")
+		if ok = s.worker.send(peerDownloadSuccessEvent{peer, &rpcscheduler.PeerResult{
+			TotalPieceCount: result.TotalPieceCount,
+			ContentLength:   result.ContentLength,
+		}}); !ok {
+			peer.Log().Error("send peerDownloadSuccessEvent failed, eventLoop is shutdown")
 		}
-		logger.Infof("successfully obtain seeds from cdn, task: %#v", task)
+
+		peer.Log().Infof("successfully obtain seeds from cdn, task: %#v", task)
 	}()
 
 	return task
 }
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *rpcscheduler.PieceResult) error {
-	peer.Touch()
+	peer.LastAccessAt.Store(time.Now())
 	if pieceResult.Success && s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
 		// TODO parse PieceStyle
 		metrics.PeerHostTraffic.WithLabelValues("download", peer.Host.UUID, peer.Host.IP).Add(float64(pieceResult.PieceInfo.RangeSize))
@@ -345,7 +347,7 @@ func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervis
 }
 
 func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *supervisor.Peer, peerResult *rpcscheduler.PeerResult) error {
-	peer.Touch()
+	peer.LastAccessAt.Store(time.Now())
 	if peerResult.Success {
 		if !s.worker.send(peerDownloadSuccessEvent{peer: peer, peerResult: peerResult}) {
 			logger.Errorf("send peer download success event failed")
@@ -357,7 +359,7 @@ func (s *SchedulerService) HandlePeerResult(ctx context.Context, peer *superviso
 }
 
 func (s *SchedulerService) HandleLeaveTask(ctx context.Context, peer *supervisor.Peer) error {
-	peer.Touch()
+	peer.LastAccessAt.Store(time.Now())
 	if !s.worker.send(peerLeaveEvent{
 		ctx:  ctx,
 		peer: peer,

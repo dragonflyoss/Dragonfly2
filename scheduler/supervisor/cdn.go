@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -37,14 +38,6 @@ import (
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-)
-
-var (
-	ErrCDNRegisterFail = errors.New("cdn task register failed")
-	ErrCDNDownloadFail = errors.New("cdn task download failed")
-	ErrCDNUnknown      = errors.New("cdn obtain seed encounter unknown err")
-	ErrCDNInvokeFail   = errors.New("invoke cdn interface failed")
-	ErrInitCDNPeerFail = errors.New("init cdn peer failed")
 )
 
 var tracer = otel.Tracer("scheduler-cdn")
@@ -102,80 +95,82 @@ func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, *rpcschedul
 
 func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.PieceSeedStream) (*Peer, *rpcscheduler.PeerResult, error) {
 	span := trace.SpanFromContext(ctx)
-	var initialized bool
-	var cdnPeer *Peer
+	var (
+		initialized bool
+		peer        *Peer
+	)
+
 	for {
 		piece, err := stream.Recv()
+		span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 		if err != nil {
-			if err == io.EOF {
-				return nil, nil, errors.Errorf("cdn stream receive EOF but task status is %s", task.GetStatus())
-			}
-
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
-			task.Log().Errorf("receive piece failed: %v", err)
 			return nil, nil, err
 		}
+		task.Log().Infof("piece info: %#v", piece)
 
-		logger.Infof("task %s add piece %v", task.ID, piece)
+		// Init cdn peer
 		if !initialized {
-			cdnPeer, err = c.initCDNPeer(ctx, task, piece)
+			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			logger.Infof("task %s init cdn peer %v", task.ID, cdnPeer)
-			if !task.CanSchedule() {
-				task.SetStatus(TaskStatusSeeding)
-			}
+			// Set task status seeding
+			task.SetStatus(TaskStatusSeeding)
+			peer.SetStatus(PeerStatusRunning)
 			initialized = true
 		}
 
-		span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
-		cdnPeer.Touch()
+		// trigger peer
+		peer.LastAccessAt.Store(time.Now())
 		if piece.Done {
 			logger.Infof("task %s receive pieces finish", task.ID)
-			task.TotalPieceCount.Store(piece.TotalPieceCount)
-			task.ContentLength.Store(piece.ContentLength)
-			task.SetStatus(TaskStatusSuccess)
-			cdnPeer.SetStatus(PeerStatusSuccess)
 			if task.ContentLength.Load() <= TinyFileSize {
-				data, err := downloadTinyFile(ctx, task, cdnPeer.Host)
+				data, err := downloadTinyFile(ctx, task, peer.Host)
 				if err == nil && len(data) == int(task.ContentLength.Load()) {
 					task.DirectPiece = data
 				}
 			}
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
 			span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength.Load()))
-			return cdnPeer, nil
+			return peer, &rpcscheduler.PeerResult{
+				TotalPieceCount: piece.TotalPieceCount,
+				ContentLength:   piece.ContentLength,
+			}, nil
 		}
 
-		cdnPeer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
+		peer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
 		task.GetOrAddPiece(piece.PieceInfo)
 	}
 }
 
-func (c *cdn) initCDNPeer(ctx context.Context, task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
-	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventCreateCDNPeer)
+func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
+	var (
+		peer *Peer
+		host *Host
+		ok   bool
+	)
 
-	var host *Host
-	var ok bool
-	peer, ok := c.peerManager.Get(ps.PeerId)
+	peer, ok = c.peerManager.Get(ps.PeerId)
 	if !ok {
+		task.Log().Infof("can not find cdn peer: %s", ps.PeerId)
 		if host, ok = c.hostManager.Get(ps.HostUuid); !ok {
 			if host, ok = c.client.GetHost(ps.HostUuid); !ok {
-				logger.Errorf("cannot find cdn host %s", ps.HostUuid)
-				return nil, errors.Wrapf(ErrInitCDNPeerFail, "cannot find host %s", ps.HostUuid)
+				task.Log().Errorf("can not find cdn host uuid: %s", ps.HostUuid)
+				return nil, errors.Errorf("can not find host uuid: %s", ps.HostUuid)
 			}
 			c.hostManager.Add(host)
+			task.Log().Infof("find cdn host: %s", host.HostName)
 		}
 		peer = NewPeer(ps.PeerId, task, host)
+		peer.Log().Info("new cdn peer succeeded")
 	}
 
 	peer.SetStatus(PeerStatusRunning)
 	c.peerManager.Add(peer)
-	peer.Task.Log().Debugf("cdn peer %s has been added", peer.ID)
+	peer.Log().Info("cdn peer has been added")
 	return peer, nil
 }
 

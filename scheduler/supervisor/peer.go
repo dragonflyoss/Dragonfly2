@@ -134,27 +134,25 @@ func (m *peerManager) RunGC() error {
 	m.peers.Range(func(key, value interface{}) bool {
 		id := key.(string)
 		peer := value.(*Peer)
-		elapsed := time.Since(peer.lastAccessAt.Load())
+		elapsed := time.Since(peer.LastAccessAt.Load())
 
-		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN {
-			if !peer.IsConnected() {
-				peer.Log().Infof("peer is not connected")
-				peer.Leave()
-			}
-			if peer.GetStatus() != PeerStatusZombie {
-				peer.Log().Infof("peer has been more than %s since last access, it's status changes from %s to zombie", m.peerTTI, peer.GetStatus().String())
-				peer.SetStatus(PeerStatusZombie)
-			}
+		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN && !peer.IsConnected() {
+			peer.Log().Infof("peer leaves")
+			peer.Leave()
 		}
 
 		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
-			if elapsed > m.peerTTL {
-				peer.Log().Infof("delete peer because %s have passed since last access", m.peerTTL)
-			}
+			peer.Log().Infof("peer is deleted, its status is %s and elapsed is %v", peer.GetStatus(), elapsed)
+
+			// Delete Peer
 			m.Delete(id)
+
+			// Remove empty host
 			if peer.Host.GetPeersLen() == 0 {
 				m.hostManager.Delete(peer.Host.UUID)
 			}
+
+			// Set task status waiting
 			if peer.Task.GetPeers().Len() == 0 {
 				peer.Task.Log().Info("peers is empty, task status become waiting")
 				peer.Task.SetStatus(TaskStatusWaiting)
@@ -175,8 +173,6 @@ func (status PeerStatus) String() string {
 		return "Waiting"
 	case PeerStatusRunning:
 		return "Running"
-	case PeerStatusZombie:
-		return "Zombie"
 	case PeerStatusFail:
 		return "Fail"
 	case PeerStatusSuccess:
@@ -189,8 +185,6 @@ func (status PeerStatus) String() string {
 const (
 	PeerStatusWaiting PeerStatus = iota
 	PeerStatusRunning
-	// TODO add Seeding status
-	PeerStatusZombie
 	PeerStatusFail
 	PeerStatusSuccess
 )
@@ -206,8 +200,8 @@ type Peer struct {
 	TotalPieceCount atomic.Int32
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
-	// lastAccessAt is peer last access time
-	lastAccessAt *atomic.Time
+	// LastAccessAt is peer last access time
+	LastAccessAt *atomic.Time
 	// parent is peer parent and type is *Peer
 	parent atomic.Value
 	// children is peer children map
@@ -232,7 +226,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Task:         task,
 		Host:         host,
 		CreateAt:     atomic.NewTime(time.Now()),
-		lastAccessAt: atomic.NewTime(time.Now()),
+		LastAccessAt: atomic.NewTime(time.Now()),
 		children:     &sync.Map{},
 		logger:       logger.WithTaskAndPeerID(task.ID, id),
 	}
@@ -357,11 +351,6 @@ func (peer *Peer) Touch() {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 
-	peer.lastAccessAt.Store(time.Now())
-	if peer.GetStatus() == PeerStatusZombie && !peer.leave.Load() {
-		peer.SetStatus(PeerStatusRunning)
-	}
-	peer.Task.Touch()
 }
 
 func (peer *Peer) GetPieceCosts() []int {
@@ -437,10 +426,6 @@ func (peer *Peer) IsSuccess() bool {
 
 func (peer *Peer) IsDone() bool {
 	return peer.GetStatus() == PeerStatusSuccess || peer.GetStatus() == PeerStatusFail
-}
-
-func (peer *Peer) IsBad() bool {
-	return peer.GetStatus() == PeerStatusFail || peer.GetStatus() == PeerStatusZombie
 }
 
 func (peer *Peer) IsFail() bool {

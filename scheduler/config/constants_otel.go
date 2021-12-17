@@ -54,7 +54,6 @@ const (
 	EventSmallTaskSelectParentFail = "small-task-select-parent-fail"
 	EventPeerNotFound              = "peer-not-found"
 	EventHostNotFound              = "host-not-found"
-	EventCreateCDNPeer             = "create-cdn-peer"
 	EventCDNPieceReceived          = "receive-cdn-piece"
 	EventPeerDownloaded            = "downloaded"
 	EventDownloadTinyFile          = "download-tiny-file"
