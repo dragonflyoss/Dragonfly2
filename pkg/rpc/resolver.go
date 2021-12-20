@@ -19,8 +19,6 @@ package rpc
 import (
 	"log"
 
-	"go.uber.org/atomic"
-
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -42,7 +40,6 @@ func NewD7yResolver(scheme string, addrs []dfnet.NetAddr) *D7yResolver {
 }
 
 type D7yResolver struct {
-	built  atomic.Bool
 	scheme string
 	target resolver.Target
 	cc     resolver.ClientConn
@@ -53,9 +50,8 @@ func (r *D7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts
 	var err error
 	r.target = target
 	r.cc = cc
-	r.built.Store(true)
 	if len(r.addrs) != 0 {
-		err = r.UpdateAddrs(r.addrs)
+		err = r.updateAddrs(r.addrs)
 	}
 	return r, err
 }
@@ -85,6 +81,10 @@ func (r *D7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 		return nil
 	}
 
+	return r.updateAddrs(addrs)
+}
+
+func (r *D7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
 	addresses := make([]resolver.Address, len(addrs))
 	for i, addr := range addrs {
 		if addr.Type == dfnet.UNIX {
@@ -96,7 +96,7 @@ func (r *D7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 	r.addrs = addrs
 
 	log.Printf("resolver update addresses: %v", addresses)
-	if r.built.Load() == false {
+	if r.cc == nil {
 		return nil
 	}
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
