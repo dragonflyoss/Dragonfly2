@@ -32,12 +32,9 @@ type ResourceClient interface {
     // return false and non-nil err to prevent the source from exploding if
     // fails to get the result, it is considered that the source has not expired
     IsExpired(request *Request, info *ExpireInfo) (bool, error)
-    
+
     // Download downloads from source
-    Download(request *Request) (io.ReadCloser, error)
-    
-    // DownloadWithExpireInfo download from source with expireInfo
-    DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error)
+    Download(request *Request) (*Response, error)
     
     // GetLastModified gets last modified timestamp milliseconds of resource
     GetLastModified(request *Request) (int64, error)
@@ -85,8 +82,8 @@ func (c *client) IsExpired(request *source.Request, info *source.ExpireInfo) (bo
 	panic("implement me")
 }
 
-func (c *client) Download(request *source.Request) (io.ReadCloser, error) {
-	return io.NopCloser(bytes.NewBufferString(data)), nil
+func (c *client) Download(request *source.Request) (*source.Response, error) {
+	return source.NewResponse(io.NopCloser(bytes.NewBufferString(data))), nil
 }
 
 func (c *client) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
