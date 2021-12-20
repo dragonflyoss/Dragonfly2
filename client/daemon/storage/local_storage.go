@@ -109,6 +109,10 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if err != nil {
 		return 0, err
 	}
+	// when UnknownLength and size is align to piece num
+	if req.UnknownLength && n == 0 {
+		return 0, nil
+	}
 	// update copied bytes from BufferedReader.B
 	n += bn
 	if n != req.Range.Length {
@@ -152,13 +156,15 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	t.persistentMetadata.ContentLength = req.ContentLength
 	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
+		t.Debugf("update total pieces: %d", t.TotalPieces)
 	}
 	if len(t.PieceMd5Sign) == 0 {
 		t.PieceMd5Sign = req.PieceMd5Sign
+		t.Debugf("update piece md5 sign: %s", t.PieceMd5Sign)
 	}
 	if req.GenPieceDigest {
 		var pieceDigests []string
-		for i := int32(0); i < int32(t.TotalPieces); i++ {
+		for i := int32(0); i < t.TotalPieces; i++ {
 			pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 		}
 
