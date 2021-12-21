@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bits-and-blooms/bitset"
 	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 
@@ -109,7 +110,7 @@ func (m *peerManager) Delete(id string) {
 	if peer, ok := m.Get(id); ok {
 		peer.Host.DeletePeer(id)
 		peer.Task.DeletePeer(peer)
-		peer.ReplaceParent(nil)
+		peer.DeleteParent()
 		m.peers.Delete(id)
 	}
 }
@@ -196,8 +197,6 @@ type Peer struct {
 	Task *Task
 	// Host is peer host
 	Host *Host
-	// TotalPieceCount is downloaded finished piece count
-	TotalPieceCount atomic.Int32
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 	// LastAccessAt is peer last access time
@@ -208,6 +207,8 @@ type Peer struct {
 	children *sync.Map
 	// status is peer status and type is PeerStatus
 	status atomic.Value
+	// pieces is piece bitset
+	Pieces bitset.BitSet
 	// pieceCosts is piece historical download time
 	pieceCosts []int
 	// conn is channel instance and type is *Channel
@@ -225,6 +226,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		ID:           id,
 		Task:         task,
 		Host:         host,
+		Pieces:       bitset.BitSet{},
 		CreateAt:     atomic.NewTime(time.Now()),
 		LastAccessAt: atomic.NewTime(time.Now()),
 		children:     &sync.Map{},
@@ -304,13 +306,13 @@ func (peer *Peer) IsAncestor(offspring *Peer) bool {
 func (peer *Peer) insertChild(child *Peer) {
 	peer.children.Store(child.ID, child)
 	peer.Host.CurrentUploadLoad.Inc()
-	peer.Task.UpdatePeer(peer)
+	peer.Task.AddPeer(peer)
 }
 
 func (peer *Peer) deleteChild(child *Peer) {
 	peer.children.Delete(child.ID)
 	peer.Host.CurrentUploadLoad.Dec()
-	peer.Task.UpdatePeer(peer)
+	peer.Task.AddPeer(peer)
 }
 
 func (peer *Peer) ReplaceParent(parent *Peer) {
@@ -320,9 +322,16 @@ func (peer *Peer) ReplaceParent(parent *Peer) {
 	}
 
 	peer.SetParent(parent)
-	if parent != nil {
-		parent.insertChild(peer)
+	parent.insertChild(peer)
+}
+
+func (peer *Peer) DeleteParent() {
+	oldParent, ok := peer.GetParent()
+	if ok {
+		oldParent.deleteChild(peer)
 	}
+
+	peer.SetParent(nil)
 }
 
 func (peer *Peer) GetChildren() *sync.Map {
@@ -367,26 +376,10 @@ func (peer *Peer) SetPieceCosts(costs ...int) {
 	peer.pieceCosts = append(peer.pieceCosts, costs...)
 }
 
-func (peer *Peer) UpdateProgress(finishedCount int32, cost int) {
-	if finishedCount > peer.TotalPieceCount.Load() {
-		peer.TotalPieceCount.Store(finishedCount)
-		peer.SetPieceCosts(cost)
-		peer.Task.UpdatePeer(peer)
-		return
-	}
-}
-
-func (peer *Peer) SortedValue() int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-
-	pieceCount := peer.TotalPieceCount.Load()
-	freeLoad := peer.getFreeLoad()
-	if peer.Host.IsCDN {
-		// if peer's host is CDN, peer has the lowest priority among all peers with the same number of pieces
-		return int(pieceCount * HostMaxLoad)
-	}
-	return int(pieceCount*HostMaxLoad + freeLoad)
+func (peer *Peer) AddPiece(num int32, cost int) {
+	peer.Pieces.Set(uint(num))
+	peer.SetPieceCosts(cost)
+	peer.Task.AddPeer(peer)
 }
 
 func (peer *Peer) getFreeLoad() int32 {

@@ -33,8 +33,6 @@ type workerGroup struct {
 	workerList []*baseWorker
 }
 
-var _ worker = (*workerGroup)(nil)
-
 func newEventLoopGroup(workerNum int) worker {
 	return &workerGroup{
 		workerNum:  workerNum,

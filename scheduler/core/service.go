@@ -25,46 +25,26 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 const maxRescheduleTimes = 8
 
-type Options struct {
-	openTel    bool
-	disableCDN bool
-}
-
-type Option func(options *Options)
-
-func WithOpenTel(openTel bool) Option {
-	return func(options *Options) {
-		options.openTel = openTel
-	}
-}
-
-func WithDisableCDN(disableCDN bool) Option {
-	return func(options *Options) {
-		options.disableCDN = disableCDN
-	}
-}
-
 type SchedulerService struct {
-	// CDN manager
-	CDN supervisor.CDN
+	// cdn manager
+	cdn supervisor.CDN
 	// task manager
 	taskManager supervisor.TaskManager
 	// host manager
@@ -72,77 +52,65 @@ type SchedulerService struct {
 	// Peer manager
 	peerManager supervisor.PeerManager
 
-	sched   scheduler.Scheduler
-	worker  worker
-	monitor *monitor
-	done    chan struct{}
-	wg      sync.WaitGroup
-	kmu     *pkgsync.Krwmutex
+	sched  Scheduler
+	worker worker
+	done   chan struct{}
+	wg     sync.WaitGroup
+	kmu    *pkgsync.Krwmutex
 
 	config    *config.Config
 	dynconfig config.DynconfigInterface
 }
 
-func NewSchedulerService(cfg *config.Config, pluginDir string, dynConfig config.DynconfigInterface, gc gc.GC, options ...Option) (*SchedulerService, error) {
-	ops := &Options{}
-	for _, op := range options {
-		op(ops)
-	}
-
+func NewSchedulerService(cfg *config.Config, pluginDir string, dynConfig config.DynconfigInterface, gc gc.GC, openTel bool) (*SchedulerService, error) {
+	// Initialize host manager
 	hostManager := supervisor.NewHostManager()
 
+	// Initialize peer manager
 	peerManager, err := supervisor.NewPeerManager(cfg.Scheduler.GC, gc, hostManager)
 	if err != nil {
 		return nil, err
 	}
 
+	// Initialize task manager
 	taskManager, err := supervisor.NewTaskManager(cfg.Scheduler.GC, gc, peerManager)
 	if err != nil {
 		return nil, err
 	}
 
-	sched, err := scheduler.Get(cfg.Scheduler.Scheduler).Build(cfg.Scheduler, &scheduler.BuildOptions{
-		PeerManager: peerManager,
-		PluginDir:   pluginDir,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "build scheduler %v", cfg.Scheduler)
-	}
+	// Initialize scheduler
+	sched := newScheduler(cfg.Scheduler, peerManager, pluginDir)
 
+	// Initialize work event loop
 	work := newEventLoopGroup(cfg.Scheduler.WorkerNum)
-	downloadMonitor := newMonitor(cfg.Scheduler.OpenMonitor, peerManager)
-	s := &SchedulerService{
+
+	// Initialize cdn
+	var options []grpc.DialOption
+	if openTel {
+		options = []grpc.DialOption{
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		}
+	}
+	client, err := supervisor.NewCDNDynmaicClient(dynConfig, options)
+	if err != nil {
+		return nil, errors.Wrap(err, "new refreshable cdn client")
+	}
+	cdn := supervisor.NewCDN(client, peerManager, hostManager)
+
+	return &SchedulerService{
+		cdn:         cdn,
 		taskManager: taskManager,
 		hostManager: hostManager,
 		peerManager: peerManager,
 		worker:      work,
-		monitor:     downloadMonitor,
 		sched:       sched,
 		config:      cfg,
 		dynconfig:   dynConfig,
 		done:        make(chan struct{}),
 		wg:          sync.WaitGroup{},
 		kmu:         pkgsync.NewKrwmutex(),
-	}
-
-	// Disable CDN
-	if !ops.disableCDN {
-		var opts []grpc.DialOption
-		if ops.openTel {
-			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
-		}
-		client, err := supervisor.NewCDNDynmaicClient(dynConfig, opts)
-		if err != nil {
-			return nil, errors.Wrap(err, "new refreshable cdn client")
-		}
-
-		cdn := supervisor.NewCDN(client, peerManager, hostManager)
-		if err != nil {
-			return nil, errors.Wrap(err, "new cdn manager")
-		}
-		s.CDN = cdn
-	}
-	return s, nil
+	}, nil
 }
 
 func (s *SchedulerService) Serve() {
@@ -150,13 +118,12 @@ func (s *SchedulerService) Serve() {
 	wsdq := workqueue.NewNamedDelayingQueue("wait reSchedule parent")
 	go s.runWorkerLoop(wsdq)
 	go s.runReScheduleParentLoop(wsdq)
-	go s.runMonitor()
 	logger.Debugf("start scheduler service successfully")
 }
 
 func (s *SchedulerService) runWorkerLoop(wsdq workqueue.DelayingInterface) {
 	defer s.wg.Done()
-	s.worker.start(newState(s.sched, s.peerManager, s.CDN, wsdq))
+	s.worker.start(newState(s.sched, s.peerManager, s.cdn, wsdq))
 }
 
 func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterface) {
@@ -199,13 +166,6 @@ func (s *SchedulerService) runReScheduleParentLoop(wsdq workqueue.DelayingInterf
 	}
 }
 
-func (s *SchedulerService) runMonitor() {
-	defer s.wg.Done()
-	if s.monitor != nil {
-		s.monitor.start(s.done)
-	}
-}
-
 func (s *SchedulerService) Stop() {
 	close(s.done)
 	if s.worker != nil {
@@ -215,7 +175,7 @@ func (s *SchedulerService) Stop() {
 }
 
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
-	parent, _, hasParent := s.sched.ScheduleParent(peer, sets.NewString())
+	parent, _, hasParent := s.sched.ScheduleParent(peer, set.NewSafeSet())
 	if !hasParent || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %s", peer.ID)
 	}
@@ -277,18 +237,11 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	task.SetStatus(supervisor.TaskStatusRunning)
 	task.LastAccessAt.Store(time.Now())
 
-	// disabled cdn will cause the peer to directly back source
-	if s.CDN == nil {
-		span.SetAttributes(config.AttributeClientBackSource.Bool(true))
-		task.Log().Info("cdn is disabled, task will back source")
-		return task
-	}
-
 	// start seed cdn task
 	go func() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 		task.Log().Info("cdn start seed task")
-		peer, result, err := s.CDN.StartSeedTask(ctx, task)
+		peer, result, err := s.cdn.StartSeedTask(ctx, task)
 		if err != nil {
 			// cdn seed task failed
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))

@@ -31,7 +31,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -102,12 +101,13 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 
 	for {
 		piece, err := stream.Recv()
-		span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 		if err != nil {
 			span.RecordError(err)
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(false))
 			return nil, nil, err
 		}
+
+		span.AddEvent(config.EventCDNPieceReceived, trace.WithAttributes(config.AttributePieceReceived.String(piece.String())))
 		task.Log().Infof("piece info: %#v", piece)
 
 		// Init cdn peer
@@ -116,23 +116,35 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 			if err != nil {
 				return nil, nil, err
 			}
-
-			// Set task status seeding
-			task.SetStatus(TaskStatusSeeding)
-			peer.SetStatus(PeerStatusRunning)
 			initialized = true
 		}
 
-		// trigger peer
+		// Trigger peer
+		peer.SetStatus(PeerStatusRunning)
 		peer.LastAccessAt.Store(time.Now())
+
+		// Get last piece
 		if piece.Done {
-			logger.Infof("task %s receive pieces finish", task.ID)
-			if task.ContentLength.Load() <= TinyFileSize {
-				data, err := downloadTinyFile(ctx, task, peer.Host)
-				if err == nil && len(data) == int(task.ContentLength.Load()) {
+			peer.Log().Info("receive last piece: %#v", piece)
+			if piece.ContentLength <= TinyFileSize {
+				peer.Log().Info("peer type is tiny file")
+				data, err := downloadTinyFile(ctx, task, peer)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if len(data) != int(piece.ContentLength) {
+					return nil, nil, errors.Errorf(
+						"piece actual data length is different from content length, content length is %d, data length is %d",
+						piece.ContentLength, len(data),
+					)
+				}
+
+				if len(data) == int(piece.ContentLength) {
 					task.DirectPiece = data
 				}
 			}
+
 			span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(true))
 			span.SetAttributes(config.AttributeContentLength.Int64(task.ContentLength.Load()))
 			return peer, &rpcscheduler.PeerResult{
@@ -141,7 +153,9 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 			}, nil
 		}
 
-		peer.UpdateProgress(piece.PieceInfo.PieceNum+1, 0)
+		// TODO(244372610) add piece cost by cdn
+		// Update piece info
+		peer.AddPiece(piece.PieceInfo.PieceNum, 0)
 		task.GetOrAddPiece(piece.PieceInfo)
 	}
 }
@@ -168,20 +182,20 @@ func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 		peer.Log().Info("new cdn peer succeeded")
 	}
 
-	peer.SetStatus(PeerStatusRunning)
 	c.peerManager.Add(peer)
 	peer.Log().Info("cdn peer has been added")
 	return peer, nil
 }
 
-func downloadTinyFile(ctx context.Context, task *Task, cdnHost *Host) ([]byte, error) {
+func downloadTinyFile(ctx context.Context, task *Task, peer *Peer) ([]byte, error) {
 	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
 	// taskIndex is the first three characters of taskID
 	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		cdnHost.IP, cdnHost.DownloadPort, task.ID[:3], task.ID)
+		peer.Host.IP, peer.Host.DownloadPort, task.ID[:3], task.ID)
 
 	span := trace.SpanFromContext(ctx)
 	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
+	peer.Log().Infof("download tiny file url: %s", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -189,12 +203,7 @@ func downloadTinyFile(ctx context.Context, task *Task, cdnHost *Host) ([]byte, e
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return io.ReadAll(resp.Body)
 }
 
 type CDNDynmaicClient interface {

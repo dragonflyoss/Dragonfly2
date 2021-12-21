@@ -88,15 +88,14 @@ func TestTask_Status(t *testing.T) {
 			name:       "status Waiting",
 			status:     supervisor.TaskStatusWaiting,
 			statusName: "Waiting",
-			judgeArray: []bool{false, false, true, false, false},
+			judgeArray: []bool{false, true, false, false},
 			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
 				assert := assert.New(t)
 				assert.Equal(supervisor.TaskStatus.String(status), statusName)
 				assert.Equal(task.GetStatus(), status)
 
 				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
+					task.IsSuccess(), task.IsWaiting(), task.IsHealth(), task.IsFail(),
 				}
 				assert.Equal(statutusJudgeArray, judgeArray)
 			},
@@ -105,32 +104,14 @@ func TestTask_Status(t *testing.T) {
 			name:       "status Running",
 			status:     supervisor.TaskStatusRunning,
 			statusName: "Running",
-			judgeArray: []bool{false, false, false, true, false},
+			judgeArray: []bool{false, false, true, false},
 			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
 				assert := assert.New(t)
 				assert.Equal(supervisor.TaskStatus.String(status), statusName)
 				assert.Equal(task.GetStatus(), status)
 
 				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
-				}
-				assert.Equal(statutusJudgeArray, judgeArray)
-			},
-		},
-		{
-			name:       "status seeding",
-			status:     supervisor.TaskStatusSeeding,
-			statusName: "Seeding",
-			judgeArray: []bool{false, true, false, true, false},
-			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
-				assert := assert.New(t)
-				assert.Equal(supervisor.TaskStatus.String(status), statusName)
-				assert.Equal(task.GetStatus(), status)
-
-				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
+					task.IsSuccess(), task.IsWaiting(), task.IsHealth(), task.IsFail(),
 				}
 				assert.Equal(statutusJudgeArray, judgeArray)
 			},
@@ -139,32 +120,14 @@ func TestTask_Status(t *testing.T) {
 			name:       "status success",
 			status:     supervisor.TaskStatusSuccess,
 			statusName: "Success",
-			judgeArray: []bool{true, true, false, true, false},
+			judgeArray: []bool{true, false, true, false},
 			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
 				assert := assert.New(t)
 				assert.Equal(supervisor.TaskStatus.String(status), statusName)
 				assert.Equal(task.GetStatus(), status)
 
 				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
-				}
-				assert.Equal(statutusJudgeArray, judgeArray)
-			},
-		},
-		{
-			name:       "status zombie",
-			status:     supervisor.TaskStatusZombie,
-			statusName: "Zombie",
-			judgeArray: []bool{false, false, false, false, false},
-			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
-				assert := assert.New(t)
-				assert.Equal(supervisor.TaskStatus.String(status), statusName)
-				assert.Equal(task.GetStatus(), status)
-
-				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
+					task.IsSuccess(), task.IsWaiting(), task.IsHealth(), task.IsFail(),
 				}
 				assert.Equal(statutusJudgeArray, judgeArray)
 			},
@@ -173,15 +136,14 @@ func TestTask_Status(t *testing.T) {
 			name:       "status Fail",
 			status:     supervisor.TaskStatusFail,
 			statusName: "Fail",
-			judgeArray: []bool{false, false, false, false, true},
+			judgeArray: []bool{false, false, false, true},
 			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
 				assert := assert.New(t)
 				assert.Equal(supervisor.TaskStatus.String(status), statusName)
 				assert.Equal(task.GetStatus(), status)
 
 				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
+					task.IsSuccess(), task.IsWaiting(), task.IsHealth(), task.IsFail(),
 				}
 				assert.Equal(statutusJudgeArray, judgeArray)
 			},
@@ -190,15 +152,14 @@ func TestTask_Status(t *testing.T) {
 			name:       "unknown",
 			status:     100,
 			statusName: "unknown",
-			judgeArray: []bool{false, false, false, false, false},
+			judgeArray: []bool{false, false, false, false},
 			expect: func(t *testing.T, task *supervisor.Task, status supervisor.TaskStatus, statusName string, judgeArray []bool) {
 				assert := assert.New(t)
 				assert.Equal(supervisor.TaskStatus.String(status), statusName)
 				assert.Equal(task.GetStatus(), status)
 
 				statutusJudgeArray := []bool{
-					task.IsSuccess(), task.CanSchedule(),
-					task.IsWaiting(), task.IsHealth(), task.IsFail(),
+					task.IsSuccess(), task.IsWaiting(), task.IsHealth(), task.IsFail(),
 				}
 				assert.Equal(statutusJudgeArray, judgeArray)
 			},
@@ -329,7 +290,7 @@ func TestTask_Pick(t *testing.T) {
 			for i := 0; i < tc.number; i++ {
 				index := strconv.Itoa(i)
 				peer := mockAPeer(index, task)
-				peer.UpdateProgress((int32)(i), i)
+				peer.AddPiece((int32)(i), i)
 				task.AddPeer(peer)
 			}
 			var peers []*supervisor.Peer

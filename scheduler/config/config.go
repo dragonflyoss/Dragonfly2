@@ -38,7 +38,6 @@ type Config struct {
 	Host         *HostConfig      `yaml:"host" mapstructure:"host"`
 	Job          *JobConfig       `yaml:"job" mapstructure:"job"`
 	Metrics      *MetricsConfig   `yaml:"metrics" mapstructure:"metrics"`
-	DisableCDN   bool             `yaml:"disableCDN" mapstructure:"disableCDN"`
 }
 
 func New() *Config {
@@ -48,10 +47,8 @@ func New() *Config {
 			WorkerNum:            runtime.GOMAXPROCS(0),
 			BackSourceCount:      3,
 			CandidateParentCount: 10,
-			Scheduler:            "basic",
 			CDNLoad:              100,
 			ClientLoad:           10,
-			OpenMonitor:          false,
 			GC: &GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
@@ -107,7 +104,6 @@ func New() *Config {
 				BackendDB: 2,
 			},
 		},
-		DisableCDN: false,
 	}
 }
 
@@ -181,10 +177,8 @@ type SchedulerConfig struct {
 	WorkerNum            int       `yaml:"workerNum" mapstructure:"workerNum"`
 	BackSourceCount      int32     `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 	CandidateParentCount int       `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
-	Scheduler            string    `yaml:"scheduler" mapstructure:"scheduler"`
 	CDNLoad              int       `yaml:"cdnLoad" mapstructure:"cdnLoad"`
 	ClientLoad           int32     `yaml:"clientLoad" mapstructure:"clientLoad"`
-	OpenMonitor          bool      `yaml:"openMonitor" mapstructure:"openMonitor"`
 	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 

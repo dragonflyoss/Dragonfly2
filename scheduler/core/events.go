@@ -21,16 +21,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/util/workqueue"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/list"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
@@ -40,19 +38,19 @@ type event interface {
 }
 
 type rsPeer struct {
-	times        int32
-	peer         *supervisor.Peer
-	blankParents sets.String
+	times     int32
+	peer      *supervisor.Peer
+	blocklist set.SafeSet
 }
 
 type state struct {
-	sched                       scheduler.Scheduler
+	sched                       Scheduler
 	peerManager                 supervisor.PeerManager
 	cdn                         supervisor.CDN
 	waitScheduleParentPeerQueue workqueue.DelayingInterface
 }
 
-func newState(sched scheduler.Scheduler, peerManager supervisor.PeerManager, cdn supervisor.CDN, wsdq workqueue.DelayingInterface) *state {
+func newState(sched Scheduler, peerManager supervisor.PeerManager, cdn supervisor.CDN, wsdq workqueue.DelayingInterface) *state {
 	return &state{
 		sched:                       sched,
 		peerManager:                 peerManager,
@@ -78,14 +76,14 @@ func (e reScheduleParentEvent) apply(s *state) {
 		return
 	}
 	oldParent, ok := peer.GetParent()
-	blankParents := rsPeer.blankParents
-	if ok && !blankParents.Has(oldParent.ID) {
+	blocklist := rsPeer.blocklist
+	if ok && !blocklist.Contains(oldParent.ID) {
 		logger.WithTaskAndPeerID(peer.Task.ID,
 			peer.ID).Warnf("reScheduleParent： peer already schedule a parent %s and new parent is not in blank parents", oldParent.ID)
 		return
 	}
 
-	parent, candidates, hasParent := s.sched.ScheduleParent(peer, blankParents)
+	parent, candidates, hasParent := s.sched.ScheduleParent(peer, blocklist)
 	if !hasParent {
 		if peer.Task.CanBackToSource() && !peer.Task.ContainsBackToSourcePeer(peer.ID) {
 			if peer.CloseChannelWithError(dferrors.Newf(base.Code_SchedNeedBackSource, "peer %s need back source", peer.ID)) == nil {
@@ -129,7 +127,7 @@ func (e startReportPieceResultEvent) apply(s *state) {
 		return
 	}
 
-	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer, sets.NewString())
+	parent, candidates, hasParent := s.sched.ScheduleParent(e.peer, set.NewSafeSet())
 	// No parent node is currently available
 	if !hasParent {
 		if e.peer.Task.CanBackToSource() && !e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
@@ -157,18 +155,18 @@ func (e startReportPieceResultEvent) hashKey() string {
 type peerDownloadPieceSuccessEvent struct {
 	ctx  context.Context
 	peer *supervisor.Peer
-	pr   *schedulerRPC.PieceResult
+	pr   *rpcscheduler.PieceResult
 }
 
 var _ event = peerDownloadPieceSuccessEvent{}
 
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
-	e.peer.UpdateProgress(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
+	e.peer.AddPiece(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
 	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 		e.peer.Task.GetOrAddPiece(e.pr.PieceInfo)
-		if !e.peer.Task.CanSchedule() {
+		if !e.peer.Task.IsHealth() {
 			e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: update task status seeding")
-			e.peer.Task.SetStatus(supervisor.TaskStatusSeeding)
+			e.peer.Task.SetStatus(supervisor.TaskStatusRunning)
 		}
 		return
 	}
@@ -182,13 +180,15 @@ func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 
 	if parentPeer.IsLeave() {
 		e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: need reschedule parent for peer because it's parent is already left")
-		e.peer.ReplaceParent(nil)
+		e.peer.DeleteParent()
 		var hasParent bool
-		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer, sets.NewString(parentPeer.ID))
+		blocklist := set.NewSafeSet()
+		blocklist.Add(parentPeer.ID)
+		parentPeer, candidates, hasParent = s.sched.ScheduleParent(e.peer, blocklist)
 		if !hasParent {
 			e.peer.Log().Warnf("peerDownloadPieceSuccessEvent: no parent node is currently available, " +
 				"reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blankParents: sets.NewString(parentPeer.ID)}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blocklist: blocklist}, time.Second)
 			return
 		}
 	}
@@ -217,7 +217,7 @@ func (e peerDownloadPieceSuccessEvent) hashKey() string {
 type peerDownloadPieceFailEvent struct {
 	ctx  context.Context
 	peer *supervisor.Peer
-	pr   *schedulerRPC.PieceResult
+	pr   *rpcscheduler.PieceResult
 }
 
 var _ event = peerDownloadPieceFailEvent{}
@@ -241,7 +241,9 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	default:
 		e.peer.Log().Debugf("report piece download fail message, piece result %s", e.pr.String())
 	}
-	s.waitScheduleParentPeerQueue.Add(&rsPeer{peer: e.peer, blankParents: sets.NewString(e.pr.DstPid)})
+	blocklist := set.NewSafeSet()
+	blocklist.Add(e.pr.DstPid)
+	s.waitScheduleParentPeerQueue.Add(&rsPeer{peer: e.peer, blocklist: blocklist})
 }
 func (e peerDownloadPieceFailEvent) hashKey() string {
 	return e.peer.Task.ID
@@ -263,7 +265,7 @@ func (e taskSeedFailEvent) hashKey() string {
 
 type peerDownloadSuccessEvent struct {
 	peer       *supervisor.Peer
-	peerResult *schedulerRPC.PeerResult
+	peerResult *rpcscheduler.PeerResult
 }
 
 var _ event = peerDownloadSuccessEvent{}
@@ -272,9 +274,9 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	peer := e.peer
 	task := e.peer.Task
 	result := e.peerResult
-	peer.SetStatus(supervisor.PeerStatusSuccess)
 
 	// If the cdn backsource successfully or the peer backsource successfully, the task status is successful.
+	peer.SetStatus(supervisor.PeerStatusSuccess)
 	if (peer.Task.ContainsBackToSourcePeer(e.peer.ID) || peer.Host.IsCDN) && !peer.Task.IsSuccess() {
 		task.SetStatus(supervisor.TaskStatusSuccess)
 		task.TotalPieceCount.Store(result.TotalPieceCount)
@@ -282,10 +284,11 @@ func (e peerDownloadSuccessEvent) apply(s *state) {
 	}
 
 	removePeerFromCurrentTree(e.peer, s)
-	children := s.sched.ScheduleChildren(e.peer, sets.NewString())
-	for _, child := range children {
-		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, e.peer, nil)); err != nil {
-			sendErrorHandler(err, s, child)
+	if children, ok := s.sched.ScheduleChildren(e.peer, set.NewSafeSet()); ok {
+		for _, child := range children {
+			if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, e.peer, nil)); err != nil {
+				sendErrorHandler(err, s, child)
+			}
 		}
 	}
 }
@@ -296,7 +299,7 @@ func (e peerDownloadSuccessEvent) hashKey() string {
 
 type peerDownloadFailEvent struct {
 	peer       *supervisor.Peer
-	peerResult *schedulerRPC.PeerResult
+	peerResult *rpcscheduler.PeerResult
 }
 
 var _ event = peerDownloadFailEvent{}
@@ -311,10 +314,13 @@ func (e peerDownloadFailEvent) apply(s *state) {
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
 		child := (value).(*supervisor.Peer)
-		parent, candidates, hasParent := s.sched.ScheduleParent(child, sets.NewString(e.peer.ID))
+
+		blocklist := set.NewSafeSet()
+		blocklist.Add(e.peer.ID)
+		parent, candidates, hasParent := s.sched.ScheduleParent(child, blocklist)
 		if !hasParent {
 			e.peer.Log().Warnf("peerDownloadFailEvent: there is no available parent, reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blankParents: sets.NewString(e.peer.ID)}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: e.peer, blocklist: blocklist}, time.Second)
 			return true
 		}
 		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
@@ -340,13 +346,16 @@ func (e peerLeaveEvent) apply(s *state) {
 	removePeerFromCurrentTree(e.peer, s)
 	e.peer.GetChildren().Range(func(key, value interface{}) bool {
 		child := value.(*supervisor.Peer)
-		parent, candidates, hasParent := s.sched.ScheduleParent(child, sets.NewString(e.peer.ID))
-		if !hasParent {
+
+		blocklist := set.NewSafeSet()
+		blocklist.Add(e.peer.ID)
+		parent, candidateParents, ok := s.sched.ScheduleParent(child, blocklist)
+		if !ok {
 			e.peer.Log().Warnf("handlePeerLeave: there is no available parent，reschedule it later")
-			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: child, blankParents: sets.NewString(e.peer.ID)}, time.Second)
+			s.waitScheduleParentPeerQueue.AddAfter(&rsPeer{peer: child, blocklist: blocklist}, time.Second)
 			return true
 		}
-		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidates)); err != nil {
+		if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, candidateParents)); err != nil {
 			sendErrorHandler(err, s, child)
 		}
 		return true
@@ -358,31 +367,30 @@ func (e peerLeaveEvent) hashKey() string {
 	return e.peer.Task.ID
 }
 
-// constructSuccessPeerPacket construct success peer schedule packet
-func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, candidates []*supervisor.Peer) *schedulerRPC.PeerPacket {
-	mainPeer := &schedulerRPC.PeerPacket_DestPeer{
-		Ip:      parent.Host.IP,
-		RpcPort: parent.Host.RPCPort,
-		PeerId:  parent.ID,
-	}
-	var stealPeers []*schedulerRPC.PeerPacket_DestPeer
-	for _, candidate := range candidates {
-		stealPeers = append(stealPeers, &schedulerRPC.PeerPacket_DestPeer{
-			Ip:      candidate.Host.IP,
-			RpcPort: candidate.Host.RPCPort,
-			PeerId:  candidate.ID,
+// constructSuccessPeerPacket construct success schedule packet
+func constructSuccessPeerPacket(peer *supervisor.Peer, parent *supervisor.Peer, candidateParents []*supervisor.Peer) *rpcscheduler.PeerPacket {
+	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
+	for _, candidateParent := range candidateParents {
+		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
+			Ip:      candidateParent.Host.IP,
+			RpcPort: candidateParent.Host.RPCPort,
+			PeerId:  candidateParent.ID,
 		})
 	}
-	peerPacket := &schedulerRPC.PeerPacket{
+
+	// TODO(gaius-qi) Configure ParallelCount in the manager
+	return &rpcscheduler.PeerPacket{
 		TaskId:        peer.Task.ID,
 		SrcPid:        peer.ID,
 		ParallelCount: 1,
-		MainPeer:      mainPeer,
-		StealPeers:    stealPeers,
-		Code:          base.Code_Success,
+		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+			Ip:      parent.Host.IP,
+			RpcPort: parent.Host.RPCPort,
+			PeerId:  parent.ID,
+		},
+		StealPeers: stealPeers,
+		Code:       base.Code_Success,
 	}
-	logger.Debugf("send peerPacket %#v to peer %s", peerPacket, peer.ID)
-	return peerPacket
 }
 
 func handleCDNSeedTaskFail(task *supervisor.Task) {
@@ -390,7 +398,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 		task.SetStatus(supervisor.TaskStatusFail)
 	}
 
-	task.GetPeers().Range(func(item list.Item) bool {
+	task.GetPeers().Range(func(item interface{}) bool {
 		peer, ok := item.(*supervisor.Peer)
 		if !ok {
 			return true
@@ -423,11 +431,14 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 
 func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {
 	parent, ok := peer.GetParent()
-	peer.ReplaceParent(nil)
+	if !ok {
+		return
+	}
+	peer.DeleteParent()
 
-	// parent frees up upload resources
-	if ok {
-		children := s.sched.ScheduleChildren(parent, sets.NewString(peer.ID))
+	blocklist := set.NewSafeSet()
+	blocklist.Add(peer.ID)
+	if children, ok := s.sched.ScheduleChildren(parent, blocklist); ok {
 		for _, child := range children {
 			if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, peer, nil)); err != nil {
 				sendErrorHandler(err, s, child)

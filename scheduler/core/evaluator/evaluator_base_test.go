@@ -397,7 +397,7 @@ func TestEvaluatorEvaluate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, nil)
+			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 
 			parentHost := supervisor.NewClientHost(
 				tc.parent.hostUUID, "", "", 0, 0,
@@ -409,7 +409,7 @@ func TestEvaluatorEvaluate(t *testing.T) {
 			)
 			parentHost.CurrentUploadLoad.Store(tc.parent.currentUploadLoad)
 			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
-			parent.TotalPieceCount.Store(tc.parent.finishedPieceCount)
+			parent.Pieces.Set(uint(tc.parent.finishedPieceCount))
 
 			childHost := supervisor.NewClientHost(
 				tc.parent.hostUUID, "", "", 0, 0,
@@ -419,7 +419,7 @@ func TestEvaluatorEvaluate(t *testing.T) {
 				supervisor.WithNetTopology(tc.child.netTopology),
 			)
 			child := supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
-			child.TotalPieceCount.Store(tc.child.finishedPieceCount)
+			child.Pieces.Set(uint(tc.child.finishedPieceCount))
 
 			e := NewEvaluatorBase()
 			tc.expect(t, e.Evaluate(parent, child, tc.parent.taskPieceCount))
@@ -566,7 +566,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, nil)
+			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 
 			parentHost := supervisor.NewClientHost(uuid.NewString(), "", "", 0, 0, "", "", "")
 			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
@@ -649,7 +649,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, nil)
+			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 
 			var peer *supervisor.Peer
 			if tc.peer.hostType == cdnHostType {

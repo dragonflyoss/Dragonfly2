@@ -51,5 +51,3 @@ job:
 
 metrics:
   addr: ":8000"
-
-disableCDN: true

@@ -93,14 +93,14 @@ func calculatePieceScore(parent *supervisor.Peer, child *supervisor.Peer, taskPi
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node
 	if taskPieceCount > 0 {
-		finishedPieceCount := parent.TotalPieceCount.Load()
+		finishedPieceCount := parent.Pieces.Count()
 		return float64(finishedPieceCount) / float64(taskPieceCount)
 	}
 
 	// Use the difference between the parent node and the child node to
 	// download the piece to roughly represent the piece score
-	parentFinishedPieceCount := parent.TotalPieceCount.Load()
-	childFinishedPieceCount := child.TotalPieceCount.Load()
+	parentFinishedPieceCount := parent.Pieces.Count()
+	childFinishedPieceCount := child.Pieces.Count()
 	return float64(parentFinishedPieceCount - childFinishedPieceCount)
 }
 

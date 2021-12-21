@@ -112,11 +112,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
 
 	// Initialize scheduler service
-	var openTel bool
-	if cfg.Options.Telemetry.Jaeger != "" {
-		openTel = true
-	}
-	service, err := core.NewSchedulerService(cfg, d.PluginDir(), dynConfig, s.gc, core.WithDisableCDN(cfg.DisableCDN), core.WithOpenTel(openTel))
+	service, err := core.NewSchedulerService(cfg, d.PluginDir(), dynConfig, s.gc, cfg.Options.Telemetry.Jaeger != "")
 	if err != nil {
 		return nil, err
 	}

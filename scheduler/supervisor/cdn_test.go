@@ -193,7 +193,7 @@ func TestCDN_Initial(t *testing.T) {
 
 				patch.ApplyMethodSeq(reflect.TypeOf(mockPeer), "Touch",
 					[]gomonkey.OutputCell{{Values: gomonkey.Params{}}})
-				patch.ApplyMethodSeq(reflect.TypeOf(mockPeer), "UpdateProgress",
+				patch.ApplyMethodSeq(reflect.TypeOf(mockPeer), "AddPiece",
 					[]gomonkey.OutputCell{{Values: gomonkey.Params{}}})
 
 				newPeerRet := []gomonkey.OutputCell{

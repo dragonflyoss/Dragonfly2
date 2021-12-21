@@ -75,7 +75,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		Metrics: &MetricsConfig{
 			Addr: ":8000",
 		},
-		DisableCDN: true,
 	}
 
 	schedulerConfigYAML := &Config{}

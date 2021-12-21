@@ -24,7 +24,7 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/list"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -128,8 +128,6 @@ func (status TaskStatus) String() string {
 		return "Waiting"
 	case TaskStatusRunning:
 		return "Running"
-	case TaskStatusSeeding:
-		return "Seeding"
 	case TaskStatusSuccess:
 		return "Success"
 	case TaskStatusFail:
@@ -142,7 +140,6 @@ func (status TaskStatus) String() string {
 const (
 	TaskStatusWaiting TaskStatus = iota
 	TaskStatusRunning
-	TaskStatusSeeding
 	TaskStatusSuccess
 	TaskStatusFail
 )
@@ -166,8 +163,8 @@ type Task struct {
 	LastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
-	// peers is peer sorted unique list
-	peers list.SortedUniqueList
+	// peers is peer safe set
+	peers set.SafeSet
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
@@ -193,7 +190,7 @@ func NewTask(id, url string, backToSourceWeight int32, meta *base.UrlMeta) *Task
 		LastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             list.NewSortedUniqueList(),
+		peers:             set.NewSafeSet(),
 		logger:            logger.WithTaskID(id),
 	}
 
@@ -215,12 +212,6 @@ func (task *Task) IsSuccess() bool {
 	return task.GetStatus() == TaskStatusSuccess
 }
 
-// CanSchedule determines whether task can be scheduled
-// only task status is seeding or success can be scheduled
-func (task *Task) CanSchedule() bool {
-	return task.GetStatus() == TaskStatusSeeding || task.GetStatus() == TaskStatusSuccess
-}
-
 // IsWaiting determines whether task is waiting
 func (task *Task) IsWaiting() bool {
 	return task.GetStatus() == TaskStatusWaiting
@@ -228,7 +219,7 @@ func (task *Task) IsWaiting() bool {
 
 // IsHealth determines whether task is health
 func (task *Task) IsHealth() bool {
-	return task.GetStatus() == TaskStatusRunning || task.GetStatus() == TaskStatusSeeding || task.GetStatus() == TaskStatusSuccess
+	return task.GetStatus() == TaskStatusRunning || task.GetStatus() == TaskStatusSuccess
 }
 
 // IsFail determines whether task is fail
@@ -237,18 +228,14 @@ func (task *Task) IsFail() bool {
 }
 
 func (task *Task) AddPeer(peer *Peer) {
-	task.peers.Insert(peer)
-}
-
-func (task *Task) UpdatePeer(peer *Peer) {
-	task.peers.Insert(peer)
+	task.peers.Add(peer)
 }
 
 func (task *Task) DeletePeer(peer *Peer) {
-	task.peers.Remove(peer)
+	task.peers.Delete(peer)
 }
 
-func (task *Task) GetPeers() list.SortedUniqueList {
+func (task *Task) GetPeers() set.SafeSet {
 	return task.peers
 }
 
@@ -311,48 +298,6 @@ func (task *Task) GetBackToSourcePeers() []string {
 	defer task.lock.RUnlock()
 
 	return task.backToSourcePeers
-}
-
-func (task *Task) Pick(limit int, pickFn func(peer *Peer) bool) []*Peer {
-	var peers []*Peer
-
-	task.GetPeers().Range(func(item list.Item) bool {
-		if len(peers) >= limit {
-			return false
-		}
-		peer, ok := item.(*Peer)
-		if !ok {
-			return true
-		}
-
-		if pickFn(peer) {
-			peers = append(peers, peer)
-		}
-		return true
-	})
-
-	return peers
-}
-
-func (task *Task) PickReverse(limit int, pickFn func(peer *Peer) bool) []*Peer {
-	var peers []*Peer
-
-	task.GetPeers().ReverseRange(func(item list.Item) bool {
-		if len(peers) >= limit {
-			return false
-		}
-		peer, ok := item.(*Peer)
-		if !ok {
-			return true
-		}
-
-		if pickFn(peer) {
-			peers = append(peers, peer)
-		}
-		return true
-	})
-
-	return peers
 }
 
 func (task *Task) Log() *logger.SugaredLoggerOnWith {
