@@ -46,7 +46,7 @@ func InitManager(console bool, dir string) error {
 	if err != nil {
 		return err
 	}
-	logger.SetGcLogger(gcLogger.Sugar())
+	logger.SetGCLogger(gcLogger.Sugar())
 
 	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
 	if err != nil {
@@ -80,19 +80,13 @@ func InitScheduler(console bool, dir string) error {
 	if err != nil {
 		return err
 	}
-	logger.SetGcLogger(gcLogger.Sugar())
+	logger.SetGCLogger(gcLogger.Sugar())
 
 	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
 	if err != nil {
 		return err
 	}
 	logger.SetJobLogger(jobLogger.Sugar())
-
-	statPeerLogger, err := CreateLogger(path.Join(logDir, StatPeerLogFileName), true, true)
-	if err != nil {
-		return err
-	}
-	logger.SetStatPeerLogger(statPeerLogger)
 
 	return nil
 }
@@ -120,7 +114,13 @@ func InitCdnSystem(console bool, dir string) error {
 	if err != nil {
 		return err
 	}
-	logger.SetGcLogger(gcLogger.Sugar())
+	logger.SetGCLogger(gcLogger.Sugar())
+
+	storageGCLogger, err := CreateLogger(path.Join(logDir, StorageGCLogFileName), false, false)
+	if err != nil {
+		return err
+	}
+	logger.SetGCLogger(storageGCLogger.Sugar())
 
 	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
 	if err != nil {
@@ -171,7 +171,7 @@ func InitDaemon(console bool, dir string) error {
 	if err != nil {
 		return err
 	}
-	logger.SetGcLogger(gcLogger.Sugar())
+	logger.SetGCLogger(gcLogger.Sugar())
 
 	return nil
 }

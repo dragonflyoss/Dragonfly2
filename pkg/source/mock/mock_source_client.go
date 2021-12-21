@@ -5,7 +5,6 @@
 package mock
 
 import (
-	io "io"
 	reflect "reflect"
 
 	source "d7y.io/dragonfly/v2/pkg/source"
@@ -36,10 +35,10 @@ func (m *MockResourceClient) EXPECT() *MockResourceClientMockRecorder {
 }
 
 // Download mocks base method.
-func (m *MockResourceClient) Download(arg0 *source.Request) (io.ReadCloser, error) {
+func (m *MockResourceClient) Download(arg0 *source.Request) (*source.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Download", arg0)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(*source.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -48,22 +47,6 @@ func (m *MockResourceClient) Download(arg0 *source.Request) (io.ReadCloser, erro
 func (mr *MockResourceClientMockRecorder) Download(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockResourceClient)(nil).Download), arg0)
-}
-
-// DownloadWithExpireInfo mocks base method.
-func (m *MockResourceClient) DownloadWithExpireInfo(arg0 *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadWithExpireInfo", arg0)
-	ret0, _ := ret[0].(io.ReadCloser)
-	ret1, _ := ret[1].(*source.ExpireInfo)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// DownloadWithExpireInfo indicates an expected call of DownloadWithExpireInfo.
-func (mr *MockResourceClientMockRecorder) DownloadWithExpireInfo(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadWithExpireInfo", reflect.TypeOf((*MockResourceClient)(nil).DownloadWithExpireInfo), arg0)
 }
 
 // GetContentLength mocks base method.

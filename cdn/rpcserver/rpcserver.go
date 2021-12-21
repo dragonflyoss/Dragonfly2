@@ -32,12 +32,11 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
-	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
@@ -78,7 +77,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		}
 	}()
 	// register seed task
-	pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
+	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
 		if supervisor.IsResourcesLacked(err) {
 			err = dferrors.Newf(base.Code_ResourceLacked, "resources lacked for task(%s): %v", req.TaskId, err)
@@ -104,8 +103,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 				PieceStyle:  piece.PieceStyle,
 			},
 			Done:            false,
-			ContentLength:   source.UnknownSourceFileLen,
-			TotalPieceCount: task.UnknownTotalPieceCount,
+			ContentLength:   registeredTask.SourceFileLength,
+			TotalPieceCount: registeredTask.TotalPieceCount,
 		}
 		psc <- pieceSeed
 		jsonPiece, err := json.Marshal(pieceSeed)

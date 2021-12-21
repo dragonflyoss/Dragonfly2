@@ -29,7 +29,7 @@ const (
 // If the fileLength<0, which means failed to get fileLength
 // and then use the DefaultPieceSize.
 func ComputePieceSize(length int64) uint32 {
-	if length <= 0 || length <= 200*1024*1024 {
+	if length <= 200*1024*1024 {
 		return DefaultPieceSize
 	}
 

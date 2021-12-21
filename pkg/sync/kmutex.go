@@ -1,6 +1,3 @@
-//go:build linux
-// +build linux
-
 /*
  *     Copyright 2020 The Dragonfly Authors
  *
@@ -17,24 +14,35 @@
  * limitations under the License.
  */
 
-package config
+package sync
 
-var dfgetConfig = ClientOption{
-	URL:               "",
-	Output:            "",
-	Timeout:           0,
-	Md5:               "",
-	DigestMethod:      "",
-	DigestValue:       "",
-	Tag:               "",
-	CallSystem:        "",
-	Pattern:           "",
-	Cacerts:           nil,
-	Filter:            "",
-	Header:            nil,
-	DisableBackSource: false,
-	Insecure:          false,
-	ShowProgress:      false,
-	Recursive:         false,
-	RecursiveLevel:    5,
+import (
+	"sync"
+)
+
+type Kmutex struct {
+	m *sync.Map
+}
+
+func NewKmutex() *Kmutex {
+	m := sync.Map{}
+	return &Kmutex{&m}
+}
+
+func (k *Kmutex) Lock(key interface{}) {
+	m := sync.Mutex{}
+	rm, _ := k.m.LoadOrStore(key, &m)
+	mu := rm.(*sync.Mutex)
+	mu.Lock()
+}
+
+func (k *Kmutex) Unlock(key interface{}) {
+	rm, ok := k.m.Load(key)
+	if !ok {
+		return
+	}
+
+	mu := rm.(*sync.Mutex)
+	k.m.Delete(key)
+	mu.Unlock()
 }

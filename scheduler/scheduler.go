@@ -26,8 +26,8 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -109,7 +109,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.dynconfig = dynConfig
 
 	// Initialize GC
-	s.gc = gc.New(gc.WithLogger(logger.GcLogger))
+	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
 
 	// Initialize scheduler service
 	var openTel bool

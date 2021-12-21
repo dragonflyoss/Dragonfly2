@@ -28,7 +28,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -86,7 +86,8 @@ func newFilePeerTask(ctx context.Context,
 	request *FilePeerTaskRequest,
 	schedulerClient schedulerclient.SchedulerClient,
 	schedulerOption config.SchedulerOption,
-	perPeerRateLimit rate.Limit) (context.Context, *filePeerTask, *TinyData, error) {
+	perPeerRateLimit rate.Limit,
+	getPiecesMaxRetry int) (context.Context, *filePeerTask, *TinyData, error) {
 	ctx, span := tracer.Start(ctx, config.SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -196,6 +197,7 @@ func newFilePeerTask(ctx context.Context,
 			contentLength:       atomic.NewInt64(-1),
 			pieceParallelCount:  atomic.NewInt32(0),
 			totalPiece:          -1,
+			getPiecesMaxRetry:   getPiecesMaxRetry,
 			schedulerOption:     schedulerOption,
 			schedulerClient:     schedulerClient,
 			limiter:             limiter,

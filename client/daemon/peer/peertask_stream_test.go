@@ -32,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -91,8 +90,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 			return int64(len(testBytes)), nil
 		})
 	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+		func(request *source.Request) (*source.Response, error) {
+			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -101,9 +100,11 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:   storageManager,
-			pieceDownloader:  downloader,
-			computePieceSize: util.ComputePieceSize,
+			storageManager:  storageManager,
+			pieceDownloader: downloader,
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
+			},
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -120,19 +121,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx,
-		ptm.host,
-		&pieceManager{
-			storageManager:  storageManager,
-			pieceDownloader: downloader,
-			computePieceSize: func(contentLength int64) uint32 {
-				return uint32(pieceSize)
-			},
-		},
-		req,
-		ptm.schedulerClient,
-		ptm.schedulerOption,
-		0)
+	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ptm:   ptm,
@@ -201,8 +190,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			return -1, nil
 		})
 	sourceClient.EXPECT().Download(source.RequestEq(request.URL.String())).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+		func(request *source.Request) (*source.Response, error) {
+			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 		})
 
 	ptm := &peerTaskManager{
@@ -211,9 +200,11 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:   storageManager,
-			pieceDownloader:  downloader,
-			computePieceSize: util.ComputePieceSize,
+			storageManager:  storageManager,
+			pieceDownloader: downloader,
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
+			},
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -230,19 +221,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx,
-		ptm.host,
-		&pieceManager{
-			storageManager:  storageManager,
-			pieceDownloader: downloader,
-			computePieceSize: func(contentLength int64) uint32 {
-				return uint32(pieceSize)
-			},
-		},
-		req,
-		schedulerClient,
-		ptm.schedulerOption,
-		0)
+	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ptm:   ptm,

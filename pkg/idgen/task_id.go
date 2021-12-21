@@ -27,15 +27,13 @@ import (
 // TaskID generates a taskId.
 // filter is separated by & character.
 func TaskID(url string, meta *base.UrlMeta) string {
-	var data []string
-
-	filter := ""
-	if meta != nil {
-		filter = meta.Filter
+	var filters []string
+	if meta != nil && meta.Filter != "" {
+		filters = strings.Split(meta.Filter, "&")
 	}
 
-	data = append(data, urlutils.FilterURLParam(url, strings.Split(filter, "&")))
-
+	var data []string
+	data = append(data, urlutils.FilterURLParam(url, filters))
 	if meta != nil {
 		if meta.Digest != "" {
 			data = append(data, meta.Digest)

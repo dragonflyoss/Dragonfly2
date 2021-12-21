@@ -222,8 +222,8 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 			return int64(len(testBytes)), nil
 		})
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
-			return io.NopCloser(bytes.NewBuffer(testBytes)), nil
+		func(request *source.Request) (*source.Response, error) {
+			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
 		})
 
 	pm := &pieceManager{
@@ -256,8 +256,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx, ptm.host, pm, req,
-		ptm.schedulerClient, ptm.schedulerOption, 0)
+	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
 	assert.Nil(err, "new stream peer task")
 	pt.SetCallback(&streamPeerTaskCallback{
 		ptm:   ptm,

@@ -48,12 +48,8 @@ func (c *client) IsExpired(request *source.Request, info *source.ExpireInfo) (bo
 	panic("implement me")
 }
 
-func (c *client) Download(request *source.Request) (io.ReadCloser, error) {
-	return io.NopCloser(bytes.NewBufferString(data)), nil
-}
-
-func (c *client) DownloadWithExpireInfo(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-	return io.NopCloser(bytes.NewBufferString(data)), nil, nil
+func (c *client) Download(request *source.Request) (*source.Response, error) {
+	return source.NewResponse(io.NopCloser(bytes.NewBufferString(data))), nil
 }
 
 func (c *client) GetLastModified(request *source.Request) (int64, error) {

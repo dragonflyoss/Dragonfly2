@@ -18,6 +18,7 @@ package dfget
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,7 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -56,8 +57,60 @@ func Test_downloadFromSource(t *testing.T) {
 	}
 	request, err := source.NewRequest(cfg.URL)
 	assert.Nil(t, err)
-	sourceClient.EXPECT().Download(request).Return(io.NopCloser(strings.NewReader(content)), nil)
+	sourceClient.EXPECT().Download(request).Return(source.NewResponse(io.NopCloser(strings.NewReader(content))), nil)
 
 	err = downloadFromSource(context.Background(), cfg, nil)
 	assert.Nil(t, err)
+}
+
+func Test_checkDirectoryLevel(t *testing.T) {
+	testCases := []struct {
+		parent string
+		sub    string
+		level  uint
+		ok     bool
+	}{
+		{
+			parent: "/data/",
+			sub:    "/data/1/2/3/4/5",
+			level:  0,
+			ok:     true,
+		},
+		{
+			parent: "/data/",
+			sub:    "/data/1",
+			level:  1,
+			ok:     true,
+		},
+		{
+			parent: "/data/",
+			sub:    "/data/1/2",
+			level:  1,
+			ok:     false,
+		},
+		{
+			parent: "/data/",
+			sub:    "/data/1/2/3/4/5",
+			level:  5,
+			ok:     true,
+		},
+		{
+			parent: "/data/",
+			sub:    "/data/1/2/3/4/5",
+			level:  4,
+			ok:     false,
+		},
+		{
+			parent: "/d7y-test",
+			sub:    "/d7y-test/dir/file",
+			level:  1,
+			ok:     false,
+		},
+	}
+	for i, tc := range testCases {
+		t.Run(fmt.Sprintf("case-%d", i), func(t *testing.T) {
+			ok := checkDirectoryLevel(tc.parent, tc.sub, tc.level)
+			assert.Equal(t, tc.ok, ok)
+		})
+	}
 }

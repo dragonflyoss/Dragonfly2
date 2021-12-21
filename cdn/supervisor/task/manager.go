@@ -151,19 +151,19 @@ func (tm *manager) AddOrUpdate(registerTask *SeedTask) (seedTask *SeedTask, err 
 		return seedTask, err
 	}
 	seedTask.SourceFileLength = sourceFileLength
-	seedTask.Log().Debugf("success get file content length: %d", sourceFileLength)
-
 	// if success to get the information successfully with the req.Header then update the task.UrlMeta to registerTask.UrlMeta.
 	if registerTask.Header != nil {
 		seedTask.Header = registerTask.Header
 	}
 
 	// calculate piece size and update the PieceSize and PieceTotal
-	if registerTask.PieceSize <= 0 {
-		pieceSize := util.ComputePieceSize(registerTask.SourceFileLength)
-		seedTask.PieceSize = int32(pieceSize)
-		seedTask.Log().Debugf("piece size calculate result: %s", unit.ToBytes(int64(pieceSize)))
+	pieceSize := util.ComputePieceSize(registerTask.SourceFileLength)
+	seedTask.PieceSize = int32(pieceSize)
+	if sourceFileLength > 0 {
+		seedTask.TotalPieceCount = int32((registerTask.SourceFileLength + (int64(pieceSize) - 1)) / int64(pieceSize))
 	}
+	seedTask.Log().Infof("success get content length: %s, pieceSize: %s, totalPieceCount: %d", unit.ToBytes(seedTask.SourceFileLength),
+		unit.ToBytes(int64(seedTask.PieceSize)), seedTask.TotalPieceCount)
 	return seedTask, nil
 }
 
@@ -232,33 +232,32 @@ const (
 )
 
 func (tm *manager) GC() error {
-	logger.GcLogger.Info("start the task meta gc job")
+	logger.MetaGCLogger.Info("start the task meta gc job")
 	startTime := time.Now()
-
-	totalTaskNums := 0
-	removedTaskCount := 0
+	var gcTasks []string
+	var remainingTasks []string
 	tm.accessTimeMap.Range(func(key, value interface{}) bool {
-		totalTaskNums++
 		taskID := key.(string)
 		synclock.Lock(taskID, false)
 		defer synclock.UnLock(taskID, false)
 		atime := value.(time.Time)
 		if time.Since(atime) < tm.config.ExpireTime {
+			remainingTasks = append(remainingTasks, taskID)
 			return true
 		}
-
+		gcTasks = append(gcTasks, taskID)
 		// gc task memory data
-		logger.GcLogger.With("type", "meta").Infof("gc task: start to deal with task: %s", taskID)
+		logger.MetaGCLogger.With("type", "meta").Infof("gc task: %s", taskID)
 		tm.deleteTask(taskID)
-		removedTaskCount++
 		return true
 	})
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.GcLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", removedTaskCount, timeDuring.Seconds())
+		logger.MetaGCLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", len(gcTasks), timeDuring.Seconds())
 	}
-	logger.GcLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", removedTaskCount,
-		totalTaskNums-removedTaskCount)
+	logger.MetaGCLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", len(gcTasks),
+		len(remainingTasks))
+	logger.MetaGCLogger.With("type", "meta").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
 	return nil
 }

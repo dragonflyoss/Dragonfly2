@@ -20,7 +20,7 @@ package source
 import (
 	"context"
 	"fmt"
-	"io"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -37,6 +37,9 @@ var (
 
 	// ErrNoClientFound represents no source client to resolve url
 	ErrNoClientFound = errors.New("no source client found")
+
+	// ErrClientNotSupportList represents the source client not support list action
+	ErrClientNotSupportList = errors.New("source client not support list")
 )
 
 // UnexpectedStatusCodeError is returned when a source responds with neither an error
@@ -101,13 +104,15 @@ type ResourceClient interface {
 	IsExpired(request *Request, info *ExpireInfo) (bool, error)
 
 	// Download downloads from source
-	Download(request *Request) (io.ReadCloser, error)
-
-	// DownloadWithExpireInfo download from source with expireInfo
-	DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error)
+	Download(request *Request) (*Response, error)
 
 	// GetLastModified gets last modified timestamp milliseconds of resource
 	GetLastModified(request *Request) (int64, error)
+}
+
+// ResourceLister defines the interface to list all downloadable resources in request url
+type ResourceLister interface {
+	List(request *Request) (urls []*url.URL, err error)
 }
 
 type ClientManager interface {
@@ -242,12 +247,8 @@ func (c *clientWrapper) IsSupportRange(request *Request) (bool, error) {
 func (c *clientWrapper) IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 	return c.rc.IsExpired(c.adapter(request), info)
 }
-func (c *clientWrapper) Download(request *Request) (io.ReadCloser, error) {
+func (c *clientWrapper) Download(request *Request) (*Response, error) {
 	return c.rc.Download(c.adapter(request))
-}
-
-func (c *clientWrapper) DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error) {
-	return c.rc.DownloadWithExpireInfo(c.adapter(request))
 }
 
 func (c *clientWrapper) GetLastModified(request *Request) (int64, error) {
@@ -309,7 +310,7 @@ func GetLastModified(request *Request) (int64, error) {
 	return client.GetLastModified(request)
 }
 
-func Download(request *Request) (io.ReadCloser, error) {
+func Download(request *Request) (*Response, error) {
 	client, ok := _defaultManager.GetClient(request.URL.Scheme)
 	if !ok {
 		return nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
@@ -317,10 +318,14 @@ func Download(request *Request) (io.ReadCloser, error) {
 	return client.Download(request)
 }
 
-func DownloadWithExpireInfo(request *Request) (io.ReadCloser, *ExpireInfo, error) {
+func List(request *Request) ([]*url.URL, error) {
 	client, ok := _defaultManager.GetClient(request.URL.Scheme)
 	if !ok {
-		return nil, nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
+		return nil, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
-	return client.DownloadWithExpireInfo(request)
+	lister, ok := client.(ResourceLister)
+	if !ok {
+		return nil, errors.Wrapf(ErrClientNotSupportList, "scheme: %s", request.URL.Scheme)
+	}
+	return lister.List(request)
 }

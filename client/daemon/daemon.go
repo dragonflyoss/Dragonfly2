@@ -46,8 +46,8 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/internal/dfpath"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -142,19 +142,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
-	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
-		/* gc callback */
-		func(request storage.CommonTaskRequest) {
-			er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
-				TaskId: request.TaskID,
-				PeerId: request.PeerID,
-			})
-			if er != nil {
-				logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
-			} else {
-				logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
-			}
+	gcCallback := func(request storage.CommonTaskRequest) {
+		er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			TaskId: request.TaskID,
+			PeerId: request.PeerID,
 		})
+		if er != nil {
+			logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+		} else {
+			logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
+		}
+	}
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
+		gcCallback, storage.WithGCInterval(opt.GCInterval.Duration))
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
 	if err != nil {
 		return nil, err
 	}

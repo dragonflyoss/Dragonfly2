@@ -38,9 +38,10 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/internal/dfpath"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
@@ -64,6 +65,7 @@ var rootCmd = &cobra.Command{
 	Long:               dfgetDescription,
 	Args:               cobra.MaximumNArgs(1),
 	DisableAutoGenTag:  true,
+	SilenceUsage:       true,
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		start := time.Now()
@@ -78,6 +80,9 @@ var rootCmd = &cobra.Command{
 		if err := logcore.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
+
+		// update plugin directory
+		source.UpdatePluginDir(d.PluginDir())
 
 		// Convert config
 		if err := dfgetConfig.Convert(args); err != nil {
@@ -161,7 +166,22 @@ func init() {
 
 	flagSet.String("workhome", dfgetConfig.WorkHome, "Dfget working directory")
 
-	flagSet.String("log-dir", dfgetConfig.LogDir, "Dfget log directory")
+	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
+
+	flagSet.BoolP("recursive", "r", dfgetConfig.Recursive,
+		"Recursively download all resources in target url, the target source client must support list action")
+
+	flagSet.Uint("level", dfgetConfig.RecursiveLevel,
+		"Recursively download only. Set the maximum number of subdirectories that dfget will recurse into. Set to 0 for no limit")
+
+	flagSet.BoolP("list", "l", dfgetConfig.RecursiveList,
+		"Recursively download only. List all urls instead of downloading them.")
+
+	flagSet.String("accept-regex", dfgetConfig.RecursiveAcceptRegex,
+		"Recursively download only. Specify a regular expression to accept the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it")
+
+	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
+		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
 
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {

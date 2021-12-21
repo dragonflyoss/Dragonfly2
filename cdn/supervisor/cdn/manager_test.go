@@ -27,13 +27,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	_ "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/disk"
 	progressMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/progress"
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
@@ -56,10 +55,11 @@ type CDNManagerTestSuite struct {
 func (suite *CDNManagerTestSuite) SetupSuite() {
 	suite.workHome, _ = os.MkdirTemp("/tmp", "cdn-ManagerTestSuite-")
 	fmt.Printf("workHome: %s", suite.workHome)
-	suite.Nil(plugins.Initialize(NewPlugins(suite.workHome)))
 	ctrl := gomock.NewController(suite.T())
 	taskManager := taskMock.NewMockManager(ctrl)
-	storageManager, err := storage.NewManager(storage.DefaultConfig(), taskManager)
+	storageConfig := storage.DefaultConfig()
+	storageConfig.DriverConfigs["disk"].BaseDir = suite.workHome
+	storageManager, err := storage.NewManager(storageConfig, taskManager)
 	suite.Require().Nil(err)
 
 	progressManager := progressMock.NewMockManager(ctrl)
@@ -94,31 +94,22 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 	sourceClient.EXPECT().IsSupportRange(gomock.Any()).Return(true, nil).AnyTimes()
 	sourceClient.EXPECT().IsExpired(gomock.Any(), gomock.Any()).Return(false, nil).AnyTimes()
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, error) {
+		func(request *source.Request) (*source.Response, error) {
 			content, _ := os.ReadFile("../../testdata/cdn/go.html")
 			if request.Header.Get(source.Range) != "" {
 				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))), nil
-			}
-			return io.NopCloser(strings.NewReader(string(content))), nil
-		},
-	).AnyTimes()
-	sourceClient.EXPECT().DownloadWithExpireInfo(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (io.ReadCloser, *source.ExpireInfo, error) {
-			content, _ := os.ReadFile("../../testdata/cdn/go.html")
-			if request.Header.Get(source.Range) != "" {
-				parsed, _ := rangeutils.GetRange(request.Header.Get(source.Range))
-				return io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
-					&source.ExpireInfo{
+				return source.NewResponse(
+					io.NopCloser(io.NewSectionReader(strings.NewReader(string(content)), int64(parsed.StartIndex), int64(parsed.EndIndex))),
+					source.WithExpireInfo(source.ExpireInfo{
 						LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 						ETag:         "etag",
-					}, nil
+					})), nil
 			}
-			return io.NopCloser(strings.NewReader(string(content))),
-				&source.ExpireInfo{
+			return source.NewResponse(io.NopCloser(strings.NewReader(string(content))),
+				source.WithExpireInfo(source.ExpireInfo{
 					LastModified: "Sun, 06 Jun 2021 12:52:30 GMT",
 					ETag:         "etag",
-				}, nil
+				})), nil
 		},
 	).AnyTimes()
 	sourceClient.EXPECT().GetLastModified(gomock.Any()).Return(

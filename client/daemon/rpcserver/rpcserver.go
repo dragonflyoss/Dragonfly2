@@ -32,7 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/idgen"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -88,6 +88,9 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 	p, err := m.storageManager.GetPieces(ctx, request)
 	if err != nil {
 		code := base.Code_UnknownError
+		if err == dferrors.ErrInvalidArgument {
+			code = base.Code_BadRequest
+		}
 		if err != storage.ErrTaskNotFound {
 			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)

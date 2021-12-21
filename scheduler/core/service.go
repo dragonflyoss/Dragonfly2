@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	schedulerRPC "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/synclock"
+	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -77,6 +77,7 @@ type SchedulerService struct {
 	monitor *monitor
 	done    chan struct{}
 	wg      sync.WaitGroup
+	kmu     *pkgsync.Krwmutex
 
 	config        *config.SchedulerConfig
 	dynconfig     config.DynconfigInterface
@@ -122,6 +123,8 @@ func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsC
 		metricsConfig: metricsConfig,
 		dynconfig:     dynConfig,
 		done:          make(chan struct{}),
+		wg:            sync.WaitGroup{},
+		kmu:           pkgsync.NewKrwmutex(),
 	}
 	if !ops.disableCDN {
 		var opts []grpc.DialOption
@@ -219,7 +222,7 @@ func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
 	return s.peerManager.Get(id)
 }
 
-func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
+func (s *SchedulerService) RegisterTask(req *schedulerRPC.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
 	// get or create host
 	peerHost := req.PeerHost
 	host, ok := s.hostManager.Get(peerHost.Uuid)
@@ -246,26 +249,26 @@ func (s *SchedulerService) RegisterPeerTask(req *schedulerRPC.PeerTaskRequest, t
 	return peer
 }
 
-func (s *SchedulerService) GetOrCreateTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
+func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
-	synclock.Lock(task.ID, true)
 
+	s.kmu.RLock(task.ID)
 	task, ok := s.taskManager.GetOrAdd(task)
 	if ok {
 		span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
 		span.SetAttributes(config.AttributeLastTriggerTime.String(task.LastTriggerAt.Load().String()))
 		if task.LastTriggerAt.Load().Add(s.config.AccessWindow).After(time.Now()) || task.IsHealth() {
 			span.SetAttributes(config.AttributeNeedSeedCDN.Bool(false))
-			synclock.UnLock(task.ID, true)
+			s.kmu.RUnlock(task.ID)
 			return task
 		}
 	} else {
 		task.Log().Infof("add new task %s", task.ID)
 	}
-	synclock.UnLock(task.ID, true)
+	s.kmu.RUnlock(task.ID)
 
-	synclock.Lock(task.ID, false)
-	defer synclock.UnLock(task.ID, false)
+	s.kmu.Lock(task.ID)
+	defer s.kmu.Unlock(task.ID)
 
 	// do trigger
 	span.SetAttributes(config.AttributeTaskStatus.String(task.GetStatus().String()))
