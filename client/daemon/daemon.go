@@ -142,19 +142,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
-	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
-		/* gc callback */
-		func(request storage.CommonTaskRequest) {
-			er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
-				TaskId: request.TaskID,
-				PeerId: request.PeerID,
-			})
-			if er != nil {
-				logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
-			} else {
-				logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
-			}
+	gcCallback := func(request storage.CommonTaskRequest) {
+		er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			TaskId: request.TaskID,
+			PeerId: request.PeerID,
 		})
+		if er != nil {
+			logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+		} else {
+			logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
+		}
+	}
+	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
+		gcCallback, storage.WithGCInterval(opt.GCInterval.Duration))
 	if err != nil {
 		return nil, err
 	}

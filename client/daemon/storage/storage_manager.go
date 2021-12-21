@@ -32,6 +32,7 @@ import (
 
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/v3/disk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
@@ -116,7 +117,7 @@ type storageManager struct {
 	markedReclaimTasks []PeerTaskMetadata
 	dataPathStat       *syscall.Stat_t
 	gcCallback         func(CommonTaskRequest)
-
+	gcInterval         time.Duration
 	indexRWMutex       sync.RWMutex
 	indexTask2PeerTask map[string][]*localTaskStore // key: task id, value: slice of localTaskStore
 }
@@ -153,12 +154,12 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	}
 
 	s := &storageManager{
-		KeepAlive:     clientutil.NewKeepAlive("storage manager"),
-		storeStrategy: storeStrategy,
-		storeOption:   opt,
-		dataPathStat:  stat.Sys().(*syscall.Stat_t),
-		gcCallback:    gcCallback,
-
+		KeepAlive:          clientutil.NewKeepAlive("storage manager"),
+		storeStrategy:      storeStrategy,
+		storeOption:        opt,
+		dataPathStat:       stat.Sys().(*syscall.Stat_t),
+		gcCallback:         gcCallback,
+		gcInterval:         time.Minute,
 		indexTask2PeerTask: map[string][]*localTaskStore{},
 	}
 
@@ -179,6 +180,13 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 func WithStorageOption(opt *config.StorageOption) func(*storageManager) error {
 	return func(manager *storageManager) error {
 		manager.storeOption = opt
+		return nil
+	}
+}
+
+func WithGCInterval(gcInterval time.Duration) func(*storageManager) error {
+	return func(manager *storageManager) error {
+		manager.gcInterval = gcInterval
 		return nil
 	}
 }
@@ -478,8 +486,22 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 	)
 	for _, dir := range dirs {
 		taskID := dir.Name()
-		peerDirs, err := os.ReadDir(path.Join(s.storeOption.DataPath, taskID))
+		taskDir := path.Join(s.storeOption.DataPath, taskID)
+		peerDirs, err := os.ReadDir(taskDir)
 		if err != nil {
+			continue
+		}
+		// remove empty task dir
+		if len(peerDirs) == 0 {
+			// skip dot files or directories
+			if strings.HasPrefix(taskDir, ".") {
+				continue
+			}
+			if err := os.Remove(taskDir); err != nil {
+				logger.Errorf("remove empty task dir %s failed: %s", taskDir, err)
+			} else {
+				logger.Infof("remove empty task dir %s", taskDir)
+			}
 			continue
 		}
 		for _, peerDir := range peerDirs {
@@ -593,17 +615,34 @@ func (s *storageManager) TryGC() (bool, error) {
 		return true
 	})
 
-	if s.storeOption.DiskGCThreshold > 0 && totalNotMarkedSize > int64(s.storeOption.DiskGCThreshold) {
-		logger.Infof("quota threshold reached, start gc oldest task")
+	quotaBytesExceed := totalNotMarkedSize - int64(s.storeOption.DiskGCThreshold)
+	quotaExceed := s.storeOption.DiskGCThreshold > 0 && quotaBytesExceed > 0
+	usageExceed, usageBytesExceed := s.diskUsageExceed()
+
+	if quotaExceed || usageExceed {
+		var bytesExceed int64
+		if quotaBytesExceed > usageBytesExceed {
+			bytesExceed = quotaBytesExceed
+		} else {
+			bytesExceed = usageBytesExceed
+		}
+		logger.Infof("quota threshold reached, start gc oldest task, size: %d bytes", bytesExceed)
 		var tasks []*localTaskStore
-		s.tasks.Range(func(key, task interface{}) bool {
+		s.tasks.Range(func(key, val interface{}) bool {
 			// skip reclaimed task
-			if task.(*localTaskStore).reclaimMarked.Load() {
+			task := val.(*localTaskStore)
+			if task.reclaimMarked.Load() {
 				return true
 			}
-			tasks = append(tasks, task.(*localTaskStore))
+			// task is not done, and is active in s.gcInterval
+			// next gc loop will check it again
+			if !task.Done && time.Now().Sub(time.Unix(0, task.lastAccess.Load())) < s.gcInterval {
+				return true
+			}
+			tasks = append(tasks, task)
 			return true
 		})
+		// sort by access time
 		sort.SliceStable(tasks, func(i, j int) bool {
 			return tasks[i].lastAccess.Load() < tasks[j].lastAccess.Load()
 		})
@@ -613,10 +652,13 @@ func (s *storageManager) TryGC() (bool, error) {
 			logger.Infof("quota threshold reached, mark task %s/%s reclaimed, last access: %s, size: %s",
 				task.TaskID, task.PeerID, time.Unix(0, task.lastAccess.Load()).Format(time.RFC3339Nano),
 				units.BytesSize(float64(task.ContentLength)))
-			totalNotMarkedSize -= task.ContentLength
-			if totalNotMarkedSize < int64(s.storeOption.DiskGCThreshold) {
+			bytesExceed -= task.ContentLength
+			if bytesExceed <= 0 {
 				break
 			}
+		}
+		if bytesExceed > 0 {
+			logger.Warnf("no enough tasks to gc, remind %d bytes", bytesExceed)
 		}
 	}
 
@@ -671,4 +713,21 @@ func (s *storageManager) forceGC() (bool, error) {
 		return true
 	})
 	return true, nil
+}
+
+func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
+	usage, err := disk.Usage(s.storeOption.DataPath)
+	if err != nil {
+		logger.Warnf("get %s disk usage error: %s", s.storeOption.DataPath, err)
+		return false, 0
+	}
+	logger.Debugf("disk usage: %#v", usage)
+	if usage.UsedPercent < s.storeOption.DiskGCThresholdPercent {
+		return false, 0
+	}
+
+	bs := (usage.UsedPercent - s.storeOption.DiskGCThresholdPercent) * float64(usage.Total)
+	logger.Infof("disk used percent %f, exceed threshold percent %f, %d bytes to reclaim",
+		usage.UsedPercent, s.storeOption.DiskGCThresholdPercent, int64(bs))
+	return true, int64(bs)
 }
