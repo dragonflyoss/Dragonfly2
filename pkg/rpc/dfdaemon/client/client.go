@@ -37,7 +37,7 @@ var _ DaemonClient = (*daemonClient)(nil)
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
+		return nil, errors.New("address list of dfdaemon is empty")
 	}
 	resolver := rpc.NewD7yResolver(rpc.DaemonScheme, addrs)
 
@@ -126,7 +126,7 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 	req.Uuid = uuid.New().String()
 	// generate taskID
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	return newDownResultStream(ctx, dc, taskID, req, opts)
+	return newDownResultStream(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: taskID, Attempt: 1}), dc, taskID, req, opts)
 }
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
