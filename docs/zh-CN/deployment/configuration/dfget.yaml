@@ -153,6 +153,9 @@ storage:
   strategy: io.d7y.storage.v2.advance
   # 磁盘 GC 阈值，缓存数据超过阈值后，最旧的缓存数据将会被清理
   diskGCThreshold: 50Gi
+  # 磁盘利用率 GC 阈值，磁盘利用率超过阈值后，最旧的缓存数据将会被清理
+  # 例如, diskGCThresholdPercent=80, 当磁盘利用率超过 80% 的时候，会进行清理最旧的缓存数据
+  diskGCThresholdPercent: 80
   # 相同 task id 的 peer task 是否复用缓存
   multiplex: true
 
