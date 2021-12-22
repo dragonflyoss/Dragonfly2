@@ -1,5 +1,3 @@
-# scheduler 配置文件模版, 您可以根据您的需求更改这里的参数来配置您的 Scheduler
-
 # scheduler 调度策略配置
 scheduler:
   # algorithm 使用不同调度算法配置，当前默认支持 "default" 和 "ml" 两种类型
@@ -8,40 +6,15 @@ scheduler:
   # 并且在 dragonfly 工作目录 plugins 中添加编译好的 `d7y-scheduler-plugin-evaluator.so` 文件
   algorithm: default
   # workerNum 执行调度任务处理的 goroutine 数量
-  # default: 默认机器可用的 CPU 数量
-  workerNum: 12
-  # backSourceCount 当 CDN 禁用或不可用时，回源客户端的数量
-  # default: 3
+  workerNum: 10
+  # backSourceCount 回源客户端的数量
   backSourceCount: 3
-  # candidateParentCount 候选父节点数量，
-  # default: 10
-  candidateParentCount: 10
-  # scheduler 当前生效的 scheduler 调度策略
-  # default: basic
-  scheduler: basic
-  # cdnLoad CDN 节点可以提供上传的最大负载
-  # default: 100
-  cdnLoad: 100
-  # clientLoad 普通客户端节点可以提供上传的最大负载
-  # default: 10
-  clientLoad: 10
-  # openMonitor 是否打开监控，目前只监控了当前的 peer 列表状态信息
-  # default: false
-  openMonitor: false
   # gc 元数据回收策略
   gc:
-    # peerGCInterval peer 的回收间隔
-    peerGCInterval: 1m
-    # peerTTL peer 的离开时间, 距离上次 peer 的访问时间超过改值则 peer 会被设置成 leave 状态
-    peerTTL: 10m
-    # peerTTI peer 的 TTI 时间，距离上次 peer 的访问时间超过改值则 peer 会被设置成 zombie 状态
-    peerTTI: 3m
     # taskGCInterval task 的回收间隔
     taskGCInterval: 1m
     # taskTTL task 的离开时间, 距离上次 task 的访问时间超过改值则 task 会被设置成 leave 状态
     taskTTL: 10m
-    # taskTTI 的 TTI 时间，距离上次 task 的访问时间超过改值则 task 会被设置成 zombie 状态
-    taskTTI: 3m
 
 # server scheduler 服务实例配置信息
 server:
@@ -50,7 +23,6 @@ server:
   # host
   # host: localhost
   # ListenPort is the ip and port scheduler server listens on.
-  # default: 8002
   port:
   # daemon 动态配置缓存目录
   # linux 上默认目录 /var/cache/dragonfly
@@ -64,8 +36,8 @@ server:
 
 # 动态数据配置
 dynConfig:
-  # type 动态数据来源类型
-  type: manager
+  # refreshInterval 动态数据刷新间隔时间
+  refreshInterval: 5 * time.Minute
 
 # manager 配置
 manager:
@@ -80,10 +52,12 @@ manager:
 
 # scheduler 自身主机信息
 host:
-  # location scheduler 实例所在的地理位置信息
-  location: ""
-  # idc scheduler 实例所在机房
+  # idc 实例所在机房
   idc: ""
+  # netTopology 实例网络拓扑信息
+  netTopology: ""
+  # location 实例所在的地理位置信息
+  location: ""
 
 # machinery 异步任务配置，配置参考 https://github.com/RichardKnop/machinery
 job:
@@ -106,20 +80,13 @@ job:
     # backendDB
     backendDB: ""
 
-# disableCDN 是否停用 CDN
-# default: false
-disableCDN: false
-
 # Console 是否在控制台程序中显示日志
-# default: false
 console: false
 
 # verbose 是否使用调试级别的日志、是否启用 pprof。
-# default: false
 verbose: false
 
 # pprofPort pprof 监听的端口，仅在 verbose 为 true 时可用
-# default is -1. If it is 0, pprof will use a random port.
 pprofPort: -1
 
 # jaeger 地址
@@ -127,9 +94,10 @@ pprofPort: -1
 jaeger: ""
 
 # tracer 中使用的 service-name
-# 默认值：dragonfly-cdn
 service-name: dragonfly-scheduler
 # 开启数据收集服务
 # metrics:
 #  # 数据服务地址
 #  addr: ":8000"
+#  # 收集 host 数据
+#  enablePeerHost: false

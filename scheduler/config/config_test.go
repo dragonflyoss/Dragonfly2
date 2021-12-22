@@ -25,8 +25,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 )
 
 func TestSchedulerConfig_Load(t *testing.T) {
@@ -34,13 +32,17 @@ func TestSchedulerConfig_Load(t *testing.T) {
 
 	config := &Config{
 		DynConfig: &DynConfig{
-			Type:       dc.LocalSourceType,
-			ExpireTime: 1000,
-			CDNDirPath: "tmp",
+			RefreshInterval: 5 * time.Minute,
+			CDNDir:          "tmp",
 		},
 		Scheduler: &SchedulerConfig{
-			Algorithm: "default",
-			WorkerNum: 8,
+			Algorithm:       "default",
+			WorkerNum:       10,
+			BackSourceCount: 3,
+			GC: &GCConfig{
+				TaskGCInterval: 1 * time.Minute,
+				TaskTTL:        10 * time.Minute,
+			},
 		},
 		Server: &ServerConfig{
 			IP:       "127.0.0.1",
@@ -57,8 +59,9 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			},
 		},
 		Host: &HostConfig{
-			IDC:      "foo",
-			Location: "bar",
+			IDC:         "foo",
+			NetTopology: "baz",
+			Location:    "bar",
 		},
 		Job: &JobConfig{
 			GlobalWorkerNum:    1,
@@ -73,7 +76,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			},
 		},
 		Metrics: &MetricsConfig{
-			Addr: ":8000",
+			Addr:           ":8000",
+			EnablePeerHost: true,
 		},
 	}
 

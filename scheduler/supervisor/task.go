@@ -51,8 +51,6 @@ type taskManager struct {
 	peerManager PeerManager
 	// taskTTL is task TTL
 	taskTTL time.Duration
-	// taskTTI is task TTI
-	taskTTI time.Duration
 	// tasks is task map
 	tasks *sync.Map
 }
@@ -61,14 +59,13 @@ func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManag
 	m := &taskManager{
 		peerManager: peerManager,
 		taskTTL:     cfg.TaskTTL,
-		taskTTI:     cfg.TaskTTI,
 		tasks:       &sync.Map{},
 	}
 
 	if err := gcManager.Add(gc.Task{
 		ID:       TaskGCID,
-		Interval: cfg.PeerGCInterval,
-		Timeout:  cfg.PeerGCInterval,
+		Interval: cfg.TaskGCInterval,
+		Timeout:  cfg.TaskGCInterval,
 		Runner:   m,
 	}); err != nil {
 		return nil, err

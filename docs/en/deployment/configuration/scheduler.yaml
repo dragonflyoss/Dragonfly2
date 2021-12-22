@@ -1,6 +1,3 @@
-# This file is the template of scheduler configuration file.
-# You can configure your scheduler by change the parameter according your requirement.
-
 # scheduler policy configuration
 scheduler:
   # algorithm configuration to use different scheduling algorithms,
@@ -11,34 +8,15 @@ scheduler:
   # the dragonfly working directory plugins
   algorithm: default
   # workerNum is the number of goroutines that perform scheduling tasks
-  # default:
-  workerNum: 12
-  # backSourceCount is the number of back-to-origin clients when the CDN is disable or unavailable
-  # default: 3
+  workerNum: 10
+  # backSourceCount is the number of backsource clients when the CDN is unavailable
   backSourceCount: 3
-  # candidateParentCount is number of candidate parent nodes
-  # default: 10
-  candidateParentCount: 10
-  # scheduler is currently effective scheduling policy
-  # default: basic
-  scheduler: basic
-  # openMonitor Whether to enable monitoring, currently only the current peer list status information is monitored
-  # default: false
-  openMonitor: false
   # gc metadata configuration
   gc:
-    # peerGCInterval peer's gc interval
-    peerGCInterval: 1m
-    # peerTTL peer's TTL duration
-    peerTTL: 10m
-    # peerTTI peer's TTI duration
-    peerTTI: 3m
     # taskGCInterval task's gc interval
     taskGCInterval: 1m
     # taskTTL task's TTL duration
     taskTTL: 10m
-    # taskTTI task's TTI duration
-    taskTTI: 3m
 
 # server scheduler instance configuration
 server:
@@ -47,7 +25,6 @@ server:
   # host
   # host: localhost
   # ListenPort is the ip and port scheduler server listens on.
-  # default: 8002
   port: 8002
 
   # cacheDir is dynconfig cache storage directory
@@ -62,8 +39,8 @@ server:
 
 # dynamic data configuration
 dynConfig:
-  # dynamic data source type
-  type: manager
+  # dynamic config refresh interval
+  refreshInterval: 5 * time.Minute
 
 # manager configuration
 manager:
@@ -76,12 +53,14 @@ manager:
     # interval
     interval: 5s
 
-# host scheduler host configuration
+# scheduler host configuration
 host:
-  # location is the location of scheduler instance
-  location: ""
   # idc is the idc of scheduler instance
   idc: ""
+  # netTopology is the net topology of scheduler instance
+  netTopology: ""
+  # location is the location of scheduler instance
+  location: ""
 
 # machinery async job configuration, see https://github.com/RichardKnop/machinery
 job:
@@ -104,16 +83,10 @@ job:
     # backendDB
     backendDB: ""
 
-# whether to disable CDN
-# default: false
-disableCDN: false
-
 # console shows log on console
-# default: false
 console: false
 
 # Whether to enable debug level logger and enable pprof
-# default: false
 verbose: false
 
 # listen port for pprof, only valid when the verbose option is true
@@ -121,14 +94,13 @@ verbose: false
 pprofPort: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
-# default: ""
 jaeger: ""
 
 # service name used in tracer
-# default: dragonfly-scheduler
 service-name: dragonfly-scheduler
-
 # enable prometheus metrics
 # metrics:
 #  # metrics service address
 #  addr: ":8000"
+#  # enable peer host metrics
+#  enablePeerHost: false

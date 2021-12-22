@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 	"sync"
 	"time"
@@ -189,15 +190,18 @@ func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 
 func downloadTinyFile(ctx context.Context, task *Task, peer *Peer) ([]byte, error) {
 	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
-	// taskIndex is the first three characters of taskID
-	url := fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler",
-		peer.Host.IP, peer.Host.DownloadPort, task.ID[:3], task.ID)
+	url := url.URL{
+		Scheme:   "http",
+		Host:     fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.DownloadPort),
+		Path:     fmt.Sprintf("download/%s/%s", task.ID[:3], task.ID),
+		RawQuery: "peerId=scheduler",
+	}
 
 	span := trace.SpanFromContext(ctx)
-	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url)))
+	span.AddEvent(config.EventDownloadTinyFile, trace.WithAttributes(config.AttributeDownloadFileURL.String(url.String())))
 	peer.Log().Infof("download tiny file url: %s", url)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url.String())
 	if err != nil {
 		return nil, err
 	}

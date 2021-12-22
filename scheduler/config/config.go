@@ -18,13 +18,11 @@ package config
 
 import (
 	"net"
-	"runtime"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -43,19 +41,12 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Scheduler: &SchedulerConfig{
-			Algorithm:            "default",
-			WorkerNum:            runtime.GOMAXPROCS(0),
-			BackSourceCount:      3,
-			CandidateParentCount: 10,
-			CDNLoad:              100,
-			ClientLoad:           10,
+			Algorithm:       "default",
+			WorkerNum:       10,
+			BackSourceCount: 3,
 			GC: &GCConfig{
-				PeerGCInterval: 1 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
-				PeerTTL:        10 * time.Minute,
-				PeerTTI:        3 * time.Minute,
 				TaskTTL:        10 * time.Minute,
-				TaskTTI:        3 * time.Minute,
 			},
 		},
 		Server: &ServerConfig{
@@ -64,33 +55,19 @@ func New() *Config {
 			Port: 8002,
 		},
 		DynConfig: &DynConfig{
-			Type:       dc.LocalSourceType,
-			ExpireTime: 30 * time.Second,
-			CDNDirPath: "",
-			Data: &DynconfigData{
-				CDNs: []*CDN{
-					{
-						HostName:      "localhost",
-						IP:            "127.0.0.1",
-						Port:          8003,
-						DownloadPort:  8001,
-						SecurityGroup: "",
-						Location:      "",
-						IDC:           "",
-					},
-				},
-			},
+			RefreshInterval: 5 * time.Minute,
 		},
 		Manager: &ManagerConfig{
 			Addr:               "",
-			SchedulerClusterID: 0,
+			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
 		},
 		Host: &HostConfig{
-			Location: "",
-			IDC:      "",
+			IDC:         "",
+			NetTopology: "",
+			Location:    "",
 		},
 		Job: &JobConfig{
 			GlobalWorkerNum:    10,
@@ -108,24 +85,16 @@ func New() *Config {
 }
 
 func (c *Config) Validate() error {
-	if c.DynConfig.CDNDirPath == "" {
-		if c.DynConfig.Type == dc.LocalSourceType && c.DynConfig.Data == nil {
-			return errors.New("dynconfig is LocalSourceType type requires parameter data")
-		}
+	if c.DynConfig.RefreshInterval == 0 {
+		return errors.New("dynconfig is ManagerSourceType type requires parameter refreshInterval")
 	}
 
-	if c.DynConfig.Type == dc.ManagerSourceType {
-		if c.DynConfig.ExpireTime == 0 {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter expireTime")
-		}
+	if c.DynConfig.CDNDir == "" && c.Manager.Addr == "" {
+		return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
+	}
 
-		if c.Manager.Addr == "" {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter manager addr")
-		}
-
-		if c.Manager.SchedulerClusterID == 0 {
-			return errors.New("dynconfig is ManagerSourceType type requires parameter manager schedulerClusterID")
-		}
+	if c.Manager.SchedulerClusterID == 0 {
+		return errors.New("dynconfig is ManagerSourceType type requires parameter manager schedulerClusterID")
 	}
 
 	return nil
@@ -159,27 +128,18 @@ type KeepAliveConfig struct {
 }
 
 type DynConfig struct {
-	// Type is dynconfig source type.
-	Type dc.SourceType `yaml:"type" mapstructure:"type"`
+	// RefreshInterval is refresh interval for manager cache.
+	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
 
-	// ExpireTime is expire time for manager cache.
-	ExpireTime time.Duration `yaml:"expireTime" mapstructure:"expireTime"`
-
-	// CDNDirPath is cdn dir.
-	CDNDirPath string `yaml:"cdnDirPath" mapstructure:"cdnDirPath"`
-
-	// Data is dynconfig local data.
-	Data *DynconfigData `yaml:"data" mapstructure:"data"`
+	// CDNDir is cdn dir path.
+	CDNDir string `yaml:"cdnDir" mapstructure:"cdnDir"`
 }
 
 type SchedulerConfig struct {
-	Algorithm            string    `yaml:"algorithm" mapstructure:"algorithm"`
-	WorkerNum            int       `yaml:"workerNum" mapstructure:"workerNum"`
-	BackSourceCount      int32     `yaml:"backSourceCount" mapstructure:"backSourceCount"`
-	CandidateParentCount int       `yaml:"candidateParentCount" mapstructure:"candidateParentCount"`
-	CDNLoad              int       `yaml:"cdnLoad" mapstructure:"cdnLoad"`
-	ClientLoad           int32     `yaml:"clientLoad" mapstructure:"clientLoad"`
-	GC                   *GCConfig `yaml:"gc" mapstructure:"gc"`
+	Algorithm       string    `yaml:"algorithm" mapstructure:"algorithm"`
+	WorkerNum       int       `yaml:"workerNum" mapstructure:"workerNum"`
+	BackSourceCount int32     `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	GC              *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 
 type ServerConfig struct {
@@ -191,13 +151,8 @@ type ServerConfig struct {
 }
 
 type GCConfig struct {
-	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
-	// PeerTTL is advised to set the time to be smaller than the expire time of a task in the CDN
-	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
-	PeerTTI        time.Duration `yaml:"peerTTI" mapstructure:"peerTTI"`
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
-	TaskTTI        time.Duration `yaml:"taskTTI" mapstructure:"taskTTI"`
 }
 
 type MetricsConfig struct {
@@ -206,11 +161,14 @@ type MetricsConfig struct {
 }
 
 type HostConfig struct {
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
-
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
+
+	// NetTopology for scheduler
+	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+
+	// Location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
 }
 
 type RedisConfig struct {

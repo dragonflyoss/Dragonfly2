@@ -31,6 +31,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -67,10 +68,7 @@ func NewSchedulerService(cfg *config.Config, pluginDir string, dynConfig config.
 	hostManager := supervisor.NewHostManager()
 
 	// Initialize peer manager
-	peerManager, err := supervisor.NewPeerManager(cfg.Scheduler.GC, gc, hostManager)
-	if err != nil {
-		return nil, err
-	}
+	peerManager := supervisor.NewPeerManager(hostManager)
 
 	// Initialize task manager
 	taskManager, err := supervisor.NewTaskManager(cfg.Scheduler.GC, gc, peerManager)
@@ -174,46 +172,17 @@ func (s *SchedulerService) Stop() {
 	s.wg.Wait()
 }
 
-func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
-	parent, _, ok := s.sched.ScheduleParent(peer, set.NewSafeSet())
-	if !ok || parent == nil {
-		return nil, errors.Errorf("no parent peer available for peer %s", peer.ID)
-	}
-	return parent, nil
+func (s *SchedulerService) ScheduleParent(peer *supervisor.Peer) (*supervisor.Peer, []*supervisor.Peer, bool) {
+	return s.sched.ScheduleParent(peer, set.NewSafeSet())
 }
 
 func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
 	return s.peerManager.Get(id)
 }
 
-func (s *SchedulerService) RegisterTask(req *rpcscheduler.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
-	// Register host
-	rawHost := req.PeerHost
-	host, ok := s.hostManager.Get(rawHost.Uuid)
-	if !ok {
-		var options []supervisor.HostOption
-		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
-			options = append(options, supervisor.WithTotalUploadLoad(clientConfig.LoadLimit))
-		}
-
-		s.hostManager.Add(supervisor.NewHost(rawHost, options...))
-		task.Log().Infof("new host %s successfully", host.UUID)
-	}
-
-	// Register peer
-	peer, ok := s.peerManager.Get(req.PeerId)
-	if ok {
-		logger.Warnf("peer %s has already registered", peer.ID)
-		return peer
-	}
-
-	peer = supervisor.NewPeer(req.PeerId, task, host)
-	s.peerManager.Add(peer)
-	return peer
-}
-
-func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Task) *supervisor.Task {
+func (s *SchedulerService) GetOrAddTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
+	task := supervisor.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, backSourceCount, req.UrlMeta)
 
 	s.kmu.RLock(task.ID)
 	task, ok := s.taskManager.GetOrAdd(task)
@@ -262,6 +231,36 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, task *supervisor.Ta
 	}()
 
 	return task
+}
+
+func (s *SchedulerService) GetOrAddHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *supervisor.Host {
+	rawHost := req.PeerHost
+	host, ok := s.hostManager.Get(rawHost.Uuid)
+	if !ok {
+		var options []supervisor.HostOption
+		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+			options = append(options, supervisor.WithTotalUploadLoad(clientConfig.LoadLimit))
+		}
+
+		s.hostManager.Add(supervisor.NewHost(rawHost, options...))
+		host.Log().Info("create host")
+	}
+
+	host.Log().Info("host already exists")
+	return host
+}
+
+func (s *SchedulerService) GetOrAddPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *supervisor.Task, host *supervisor.Host) *supervisor.Peer {
+	peer, ok := s.peerManager.Get(req.PeerId)
+	if !ok {
+		peer = supervisor.NewPeer(req.PeerId, task, host)
+		s.peerManager.Add(peer)
+		peer.Log().Info("create peer")
+		return peer
+	}
+
+	peer.Log().Info("peer already exists")
+	return peer
 }
 
 func (s *SchedulerService) HandlePieceResult(ctx context.Context, peer *supervisor.Peer, pieceResult *rpcscheduler.PieceResult) error {

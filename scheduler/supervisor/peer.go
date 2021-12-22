@@ -27,9 +27,7 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 const (
@@ -54,35 +52,17 @@ type PeerManager interface {
 type peerManager struct {
 	// hostManager is host manager
 	hostManager HostManager
-	// peerTTL is peer TTL
-	peerTTL time.Duration
-	// peerTTI is peer TTI
-	peerTTI time.Duration
 	// peers is peer map
 	peers *sync.Map
 	// peerManager lock
 	lock sync.RWMutex
 }
 
-func NewPeerManager(cfg *config.GCConfig, gcManager gc.GC, hostManager HostManager) (PeerManager, error) {
-	m := &peerManager{
+func NewPeerManager(hostManager HostManager) PeerManager {
+	return &peerManager{
 		hostManager: hostManager,
-		peerTTL:     cfg.PeerTTL,
-		peerTTI:     cfg.PeerTTI,
 		peers:       &sync.Map{},
 	}
-
-	// Add GC task
-	if err := gcManager.Add(gc.Task{
-		ID:       PeerGCID,
-		Interval: cfg.PeerGCInterval,
-		Timeout:  cfg.PeerGCInterval,
-		Runner:   m,
-	}); err != nil {
-		return nil, err
-	}
-
-	return m, nil
 }
 
 func (m *peerManager) Add(peer *Peer) {
@@ -129,41 +109,6 @@ func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
 
 func (m *peerManager) GetPeers() *sync.Map {
 	return m.peers
-}
-
-func (m *peerManager) RunGC() error {
-	m.peers.Range(func(key, value interface{}) bool {
-		id := key.(string)
-		peer := value.(*Peer)
-		elapsed := time.Since(peer.LastAccessAt.Load())
-
-		if elapsed > m.peerTTI && !peer.IsDone() && !peer.Host.IsCDN && !peer.IsConnected() {
-			peer.Log().Infof("peer leaves")
-			peer.Leave()
-		}
-
-		if peer.IsLeave() || peer.IsFail() || elapsed > m.peerTTL {
-			peer.Log().Infof("peer is deleted, its status is %s and elapsed is %v", peer.GetStatus(), elapsed)
-
-			// Delete Peer
-			m.Delete(id)
-
-			// Remove empty host
-			if peer.Host.GetPeersLen() == 0 {
-				m.hostManager.Delete(peer.Host.UUID)
-			}
-
-			// Set task status waiting
-			if peer.Task.GetPeers().Len() == 0 {
-				peer.Task.Log().Info("peers is empty, task status become waiting")
-				peer.Task.SetStatus(TaskStatusWaiting)
-			}
-		}
-
-		return true
-	})
-
-	return nil
 }
 
 type PeerStatus uint8

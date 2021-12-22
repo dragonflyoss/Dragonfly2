@@ -24,9 +24,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -95,14 +93,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize dynconfig client
-	options := []dynconfig.Option{dynconfig.WithLocalConfigPath(dependency.GetConfigPath("scheduler"))}
-	if s.managerClient != nil && cfg.DynConfig.Type == dynconfig.ManagerSourceType {
-		options = append(options,
-			dynconfig.WithManagerClient(config.NewManagerClient(s.managerClient, cfg)),
-			dynconfig.WithExpireTime(cfg.DynConfig.ExpireTime),
-		)
-	}
-	dynConfig, err := config.NewDynconfig(cfg.DynConfig.Type, d.CacheDir(), cfg.DynConfig.CDNDirPath, options...)
+	dynConfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
 	if err != nil {
 		return nil, err
 	}

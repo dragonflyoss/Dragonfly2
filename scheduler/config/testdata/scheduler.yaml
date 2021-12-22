@@ -1,14 +1,14 @@
 dynconfig:
-  type: local
-  expireTime: 1000
-  cdnDirPath: tmp
+  refreshInterval: 5m
+  cdnDir: tmp
 
 scheduler:
-  workerNum: 8
-  workerJobPoolSize: 10000
-  senderNum: 10
-  senderJobPoolSize: 10000
+  workerNum: 10
+  backSourceCount: 3
   algorithm: default
+  gc:
+    taskGCInterval: 1m
+    taskTTL: 10m
 
 server:
   ip: "127.0.0.1"
@@ -16,17 +16,6 @@ server:
   port: 8002
   cacheDir: "foo"
   logDir: "foo"
-
-cdn:
-  servers:
-    - name: "cdn"
-      ip: "127.0.0.1"
-      rpcPort: 8003
-      downloadPort: 8001
-
-gc:
-  taskDelay: 3600000
-  peerTaskDelay: 3600000
 
 manager:
   addr: 127.0.0.1:65003
@@ -36,6 +25,7 @@ manager:
 
 host:
   idc: foo
+  netTopology: baz
   location: bar
 
 job:
@@ -51,3 +41,4 @@ job:
 
 metrics:
   addr: ":8000"
+  enablePeerHost: true
