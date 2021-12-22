@@ -87,16 +87,16 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 		if v, ok := p.pickHistory.Load(pickReq.Key); ok {
 			targetAddr = v.(string)
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		} else if targetAddr, ok = p.hashRing.GetNode(pickReq.Key); ok {
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		}
 	} else {
 		if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
 			targetAddr = targetAddrs[pickReq.Attempt-1]
 			ret.SubConn = p.subConns[targetAddr]
-			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
 		}
 	}
 

@@ -60,7 +60,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 		pickHistory:        sync.Map{},
 		subConnPickRecords: sync.Map{},
 	}
-	go b.scManager()
+	//go b.scManager()
 	return b
 }
 
