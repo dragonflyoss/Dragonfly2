@@ -430,6 +430,9 @@ type StorageOption struct {
 	TaskExpireTime clientutil.Duration `mapstructure:"taskExpireTime" yaml:"taskExpireTime"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
 	DiskGCThreshold unit.Bytes `mapstructure:"diskGCThreshold" yaml:"diskGCThreshold"`
+	// DiskGCThresholdPercent indicates the threshold to gc the oldest tasks according the disk usage
+	// Eg, DiskGCThresholdPercent=80, when the disk usage is above 80%, start to gc the oldest tasks
+	DiskGCThresholdPercent float64 `mapstructure:"diskGCThresholdPercent" yaml:"diskGCThresholdPercent"`
 	// Multiplex indicates reusing underlying storage for same task id
 	Multiplex     bool          `mapstructure:"multiplex" yaml:"multiplex"`
 	StoreStrategy StoreStrategy `mapstructure:"strategy" yaml:"strategy"`

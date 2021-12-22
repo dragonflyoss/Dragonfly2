@@ -57,7 +57,7 @@ func Test_downloadFromSource(t *testing.T) {
 	}
 	request, err := source.NewRequest(cfg.URL)
 	assert.Nil(t, err)
-	sourceClient.EXPECT().Download(request).Return(io.NopCloser(strings.NewReader(content)), nil)
+	sourceClient.EXPECT().Download(request).Return(source.NewResponse(io.NopCloser(strings.NewReader(content))), nil)
 
 	err = downloadFromSource(context.Background(), cfg, nil)
 	assert.Nil(t, err)
