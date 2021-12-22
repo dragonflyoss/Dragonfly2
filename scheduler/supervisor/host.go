@@ -24,11 +24,11 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 const (
-	// When using the manager configuration parameter, limit the maximum load number to 5000
-	HostMaxLoad = 5 * 1000
+	defaultTotalUploadLoad = 100
 )
 
 type HostManager interface {
@@ -75,9 +75,9 @@ func WithTotalUploadLoad(load uint32) HostOption {
 	}
 }
 
-func WithNetTopology(n string) HostOption {
+func WithIsCDN(isCDN bool) HostOption {
 	return func(h *Host) *Host {
-		h.NetTopology = n
+		h.IsCDN = isCDN
 		return h
 	}
 }
@@ -115,8 +115,28 @@ type Host struct {
 	logger *logger.SugaredLoggerOnWith
 }
 
-func NewClientHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
-	return newHost(uuid, ip, hostname, rpcPort, downloadPort, false, securityDomain, location, idc, options...)
+func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
+	h := &Host{
+		UUID:            rawHost.Uuid,
+		IP:              rawHost.Ip,
+		HostName:        rawHost.HostName,
+		RPCPort:         rawHost.RpcPort,
+		DownloadPort:    rawHost.DownPort,
+		IsCDN:           false,
+		SecurityDomain:  rawHost.SecurityDomain,
+		Location:        rawHost.Location,
+		IDC:             rawHost.Idc,
+		NetTopology:     rawHost.NetTopology,
+		TotalUploadLoad: defaultTotalUploadLoad,
+		peers:           &sync.Map{},
+		logger:          logger.With("hostID", rawHost.Uuid),
+	}
+
+	for _, opt := range options {
+		opt(h)
+	}
+
+	return h
 }
 
 func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, securityDomain, location, idc string, options ...HostOption) *Host {
@@ -125,19 +145,18 @@ func NewCDNHost(uuid, ip, hostname string, rpcPort, downloadPort int32, security
 
 func newHost(uuid, ip, hostname string, rpcPort, downloadPort int32, isCDN bool, securityDomain, location, idc string, options ...HostOption) *Host {
 	host := &Host{
-		UUID:            uuid,
-		IP:              ip,
-		HostName:        hostname,
-		RPCPort:         rpcPort,
-		DownloadPort:    downloadPort,
-		IsCDN:           isCDN,
-		SecurityDomain:  securityDomain,
-		Location:        location,
-		IDC:             idc,
-		NetTopology:     "",
-		TotalUploadLoad: 100,
-		peers:           &sync.Map{},
-		logger:          logger.With("hostUUID", uuid),
+		UUID:           uuid,
+		IP:             ip,
+		HostName:       hostname,
+		RPCPort:        rpcPort,
+		DownloadPort:   downloadPort,
+		IsCDN:          isCDN,
+		SecurityDomain: securityDomain,
+		Location:       location,
+		IDC:            idc,
+		NetTopology:    "",
+		peers:          &sync.Map{},
+		logger:         logger.With("hostUUID", uuid),
 	}
 
 	for _, opt := range options {

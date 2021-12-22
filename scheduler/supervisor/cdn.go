@@ -176,7 +176,7 @@ func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 				return nil, errors.Errorf("can not find host uuid: %s", ps.HostUuid)
 			}
 			c.hostManager.Add(host)
-			task.Log().Infof("find cdn host: %s", host.HostName)
+			task.Log().Infof("new host %s successfully", host.UUID)
 		}
 		peer = NewPeer(ps.PeerId, task, host)
 		peer.Log().Info("new cdn peer succeeded")
@@ -272,18 +272,26 @@ func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
 func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 	hosts := map[string]*Host{}
 	for _, cdn := range cdns {
-		var options []HostOption
+		var netTopology string
+		options := []HostOption{WithIsCDN(true)}
 		if config, ok := cdn.GetCDNClusterConfig(); ok {
-			options = []HostOption{
-				WithNetTopology(config.NetTopology),
-				WithTotalUploadLoad(config.LoadLimit),
-			}
+			options = append(options, WithTotalUploadLoad(config.LoadLimit))
+			netTopology = config.NetTopology
 		}
 
 		id := idgen.CDNHostID(cdn.HostName, cdn.Port)
-		hosts[id] = NewCDNHost(id, cdn.IP, cdn.HostName, cdn.Port, cdn.DownloadPort, cdn.SecurityGroup, cdn.Location, cdn.IDC, options...)
+		hosts[id] = NewHost(&rpcscheduler.PeerHost{
+			Uuid:           id,
+			Ip:             cdn.IP,
+			HostName:       cdn.HostName,
+			RpcPort:        cdn.Port,
+			DownPort:       cdn.DownloadPort,
+			SecurityDomain: cdn.SecurityGroup,
+			Idc:            cdn.IDC,
+			Location:       cdn.Location,
+			NetTopology:    netTopology,
+		}, options...)
 	}
-
 	return hosts
 }
 

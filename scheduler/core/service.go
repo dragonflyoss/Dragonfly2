@@ -175,8 +175,8 @@ func (s *SchedulerService) Stop() {
 }
 
 func (s *SchedulerService) SelectParent(peer *supervisor.Peer) (parent *supervisor.Peer, err error) {
-	parent, _, hasParent := s.sched.ScheduleParent(peer, set.NewSafeSet())
-	if !hasParent || parent == nil {
+	parent, _, ok := s.sched.ScheduleParent(peer, set.NewSafeSet())
+	if !ok || parent == nil {
 		return nil, errors.Errorf("no parent peer available for peer %s", peer.ID)
 	}
 	return parent, nil
@@ -187,27 +187,26 @@ func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
 }
 
 func (s *SchedulerService) RegisterTask(req *rpcscheduler.PeerTaskRequest, task *supervisor.Task) *supervisor.Peer {
-	// get or create host
-	peerHost := req.PeerHost
-	host, ok := s.hostManager.Get(peerHost.Uuid)
+	// Register host
+	rawHost := req.PeerHost
+	host, ok := s.hostManager.Get(rawHost.Uuid)
 	if !ok {
 		var options []supervisor.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
-			options = []supervisor.HostOption{
-				supervisor.WithTotalUploadLoad(clientConfig.LoadLimit),
-			}
+			options = append(options, supervisor.WithTotalUploadLoad(clientConfig.LoadLimit))
 		}
 
-		host = supervisor.NewClientHost(peerHost.Uuid, peerHost.Ip, peerHost.HostName, peerHost.RpcPort, peerHost.DownPort,
-			peerHost.SecurityDomain, peerHost.Location, peerHost.Idc, options...)
-		s.hostManager.Add(host)
+		s.hostManager.Add(supervisor.NewHost(rawHost, options...))
+		task.Log().Infof("new host %s successfully", host.UUID)
 	}
-	// get or creat PeerTask
+
+	// Register peer
 	peer, ok := s.peerManager.Get(req.PeerId)
 	if ok {
 		logger.Warnf("peer %s has already registered", peer.ID)
 		return peer
 	}
+
 	peer = supervisor.NewPeer(req.PeerId, task, host)
 	s.peerManager.Add(peer)
 	return peer

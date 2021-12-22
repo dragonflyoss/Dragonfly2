@@ -63,8 +63,6 @@ type reScheduleParentEvent struct {
 	rsPeer *rsPeer
 }
 
-var _ event = reScheduleParentEvent{}
-
 func (e reScheduleParentEvent) apply(s *state) {
 	rsPeer := e.rsPeer
 	rsPeer.times = rsPeer.times + 1
@@ -111,8 +109,6 @@ type startReportPieceResultEvent struct {
 	peer *supervisor.Peer
 }
 
-var _ event = startReportPieceResultEvent{}
-
 func (e startReportPieceResultEvent) apply(s *state) {
 	span := trace.SpanFromContext(e.ctx)
 	if parent, ok := e.peer.GetParent(); ok {
@@ -157,8 +153,6 @@ type peerDownloadPieceSuccessEvent struct {
 	peer *supervisor.Peer
 	pr   *rpcscheduler.PieceResult
 }
-
-var _ event = peerDownloadPieceSuccessEvent{}
 
 func (e peerDownloadPieceSuccessEvent) apply(s *state) {
 	e.peer.AddPiece(e.pr.FinishedCount, int(e.pr.EndTime-e.pr.BeginTime))
@@ -220,8 +214,6 @@ type peerDownloadPieceFailEvent struct {
 	pr   *rpcscheduler.PieceResult
 }
 
-var _ event = peerDownloadPieceFailEvent{}
-
 func (e peerDownloadPieceFailEvent) apply(s *state) {
 	if e.peer.Task.ContainsBackToSourcePeer(e.peer.ID) {
 		return
@@ -253,8 +245,6 @@ type taskSeedFailEvent struct {
 	task *supervisor.Task
 }
 
-var _ event = taskSeedFailEvent{}
-
 func (e taskSeedFailEvent) apply(s *state) {
 	handleCDNSeedTaskFail(e.task)
 }
@@ -267,8 +257,6 @@ type peerDownloadSuccessEvent struct {
 	peer       *supervisor.Peer
 	peerResult *rpcscheduler.PeerResult
 }
-
-var _ event = peerDownloadSuccessEvent{}
 
 func (e peerDownloadSuccessEvent) apply(s *state) {
 	peer := e.peer
@@ -301,8 +289,6 @@ type peerDownloadFailEvent struct {
 	peer       *supervisor.Peer
 	peerResult *rpcscheduler.PeerResult
 }
-
-var _ event = peerDownloadFailEvent{}
 
 func (e peerDownloadFailEvent) apply(s *state) {
 	e.peer.SetStatus(supervisor.PeerStatusFail)
@@ -421,6 +407,7 @@ func handleCDNSeedTaskFail(task *supervisor.Task) {
 
 		// If the task status failed, notify dfdaemon to task error
 		if err := peer.CloseChannelWithError(dferrors.New(base.Code_SchedTaskStatusError, "cdn seed task failed")); err != nil {
+			peer.SetStatus(supervisor.PeerStatusFail)
 			peer.Log().Warnf("close channel failed: %v", err)
 			return true
 		}

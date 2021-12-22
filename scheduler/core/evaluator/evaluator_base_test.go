@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
@@ -399,24 +400,36 @@ func TestEvaluatorEvaluate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 
-			parentHost := supervisor.NewClientHost(
-				tc.parent.hostUUID, "", "", 0, 0,
-				tc.parent.securityDomain,
-				tc.parent.location,
-				tc.parent.idc,
-				supervisor.WithNetTopology(tc.parent.netTopology),
+			parentHost := supervisor.NewHost(
+				&scheduler.PeerHost{
+					Uuid:           tc.parent.hostUUID,
+					Ip:             "",
+					HostName:       "",
+					RpcPort:        0,
+					DownPort:       0,
+					SecurityDomain: tc.parent.securityDomain,
+					Location:       tc.parent.location,
+					Idc:            tc.parent.idc,
+					NetTopology:    tc.parent.netTopology,
+				},
 				supervisor.WithTotalUploadLoad(tc.parent.totalUploadLoad),
 			)
 			parentHost.CurrentUploadLoad.Store(tc.parent.currentUploadLoad)
 			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
 			parent.Pieces.Set(uint(tc.parent.finishedPieceCount))
 
-			childHost := supervisor.NewClientHost(
-				tc.parent.hostUUID, "", "", 0, 0,
-				tc.child.securityDomain,
-				tc.child.location,
-				tc.child.idc,
-				supervisor.WithNetTopology(tc.child.netTopology),
+			childHost := supervisor.NewHost(
+				&scheduler.PeerHost{
+					Uuid:           tc.parent.hostUUID,
+					Ip:             "",
+					HostName:       "",
+					RpcPort:        0,
+					DownPort:       0,
+					SecurityDomain: tc.parent.securityDomain,
+					Location:       tc.parent.location,
+					Idc:            tc.parent.idc,
+					NetTopology:    tc.parent.netTopology,
+				},
 			)
 			child := supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
 			child.Pieces.Set(uint(tc.child.finishedPieceCount))
@@ -566,18 +579,28 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			mockTask := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			mockPeerHost := &scheduler.PeerHost{
+				Uuid:           uuid.NewString(),
+				Ip:             "",
+				HostName:       "",
+				RpcPort:        0,
+				DownPort:       0,
+				SecurityDomain: "",
+				Location:       "",
+				Idc:            "",
+			}
 
-			parentHost := supervisor.NewClientHost(uuid.NewString(), "", "", 0, 0, "", "", "")
-			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
+			parentHost := supervisor.NewHost(mockPeerHost)
+			parent := supervisor.NewPeer(idgen.PeerID(mockIP), mockTask, parentHost)
 
 			var child *supervisor.Peer
 			if tc.child.hostType == cdnHostType {
-				childHost := supervisor.NewCDNHost(uuid.NewString(), "", "", 0, 0, "", "", "")
-				child = supervisor.NewPeer(idgen.CDNPeerID(mockIP), task, childHost)
+				childHost := supervisor.NewHost(mockPeerHost)
+				child = supervisor.NewPeer(idgen.CDNPeerID(mockIP), mockTask, childHost)
 			} else {
-				childHost := supervisor.NewClientHost(uuid.NewString(), "", "", 0, 0, "", "", "")
-				child = supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
+				childHost := supervisor.NewHost(mockPeerHost)
+				child = supervisor.NewPeer(idgen.PeerID(mockIP), mockTask, childHost)
 			}
 
 			e := NewEvaluatorBase()
@@ -650,13 +673,23 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			mockPeerHost := &scheduler.PeerHost{
+				Uuid:           uuid.NewString(),
+				Ip:             "",
+				HostName:       "",
+				RpcPort:        0,
+				DownPort:       0,
+				SecurityDomain: "",
+				Location:       "",
+				Idc:            "",
+			}
 
 			var peer *supervisor.Peer
 			if tc.peer.hostType == cdnHostType {
-				childHost := supervisor.NewCDNHost(uuid.NewString(), "", "", 0, 0, "", "", "")
+				childHost := supervisor.NewHost(mockPeerHost, supervisor.WithIsCDN(true))
 				peer = supervisor.NewPeer(idgen.CDNPeerID(mockIP), task, childHost)
 			} else {
-				childHost := supervisor.NewClientHost(uuid.NewString(), "", "", 0, 0, "", "", "")
+				childHost := supervisor.NewHost(mockPeerHost)
 				peer = supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
 			}
 
