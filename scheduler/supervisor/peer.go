@@ -370,13 +370,14 @@ func (peer *Peer) IsFail() bool {
 	return peer.GetStatus() == PeerStatusFail
 }
 
-func (peer *Peer) BindNewConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
+func (peer *Peer) BindConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
 	peer.lock.Lock()
 	defer peer.lock.Unlock()
 
 	if peer.GetStatus() == PeerStatusWaiting {
 		peer.SetStatus(PeerStatusRunning)
 	}
+
 	peer.setConn(newChannel(stream))
 	return peer.getConn()
 }

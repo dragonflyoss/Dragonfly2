@@ -176,10 +176,6 @@ func (s *SchedulerService) ScheduleParent(peer *supervisor.Peer) (*supervisor.Pe
 	return s.sched.ScheduleParent(peer, set.NewSafeSet())
 }
 
-func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
-	return s.peerManager.Get(id)
-}
-
 func (s *SchedulerService) GetOrAddTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) *supervisor.Task {
 	span := trace.SpanFromContext(ctx)
 	task := supervisor.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, backSourceCount, req.UrlMeta)
@@ -209,7 +205,7 @@ func (s *SchedulerService) GetOrAddTask(ctx context.Context, req *rpcscheduler.P
 	go func() {
 		span.SetAttributes(config.AttributeNeedSeedCDN.Bool(true))
 		task.Log().Info("cdn start seed task")
-		peer, result, err := s.cdn.StartSeedTask(ctx, task)
+		peer, result, err := s.cdn.TriggerTask(ctx, task)
 		if err != nil {
 			// cdn seed task failed
 			span.AddEvent(config.EventCDNFailBackClientSource, trace.WithAttributes(config.AttributeTriggerCDNError.String(err.Error())))
@@ -248,6 +244,10 @@ func (s *SchedulerService) GetOrAddHost(ctx context.Context, req *rpcscheduler.P
 
 	host.Log().Info("host already exists")
 	return host
+}
+
+func (s *SchedulerService) GetPeer(id string) (*supervisor.Peer, bool) {
+	return s.peerManager.Get(id)
 }
 
 func (s *SchedulerService) GetOrAddPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *supervisor.Task, host *supervisor.Host) *supervisor.Peer {

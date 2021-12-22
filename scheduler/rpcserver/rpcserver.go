@@ -33,6 +33,7 @@ import (
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/core"
+	"d7y.io/dragonfly/v2/scheduler/supervisor"
 )
 
 var tracer = otel.Tracer("scheduler-server")
@@ -164,31 +165,35 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 	ctx, span := tracer.Start(stream.Context(), config.SpanReportPieceResult, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 
-	pieceResult, err := stream.Recv()
+	startPiece, err := stream.Recv()
 	if err != nil {
 		if err == io.EOF {
 			return nil
 		}
-		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
+		dferr := dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
 		span.RecordError(err)
-		return err
+		return dferr
 	}
-	logger.Debugf("peer %s start report piece result", pieceResult.SrcPid)
+	log := logger.WithTaskAndPeerID(startPiece.TaskId, startPiece.SrcPid)
+	log.Infof("receive start piece result: %#v", startPiece)
 
-	peer, ok := s.service.GetPeer(pieceResult.SrcPid)
+	peer, ok := s.service.GetPeer(startPiece.SrcPid)
 	if !ok {
-		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", pieceResult.SrcPid)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", startPiece.SrcPid)
 		span.RecordError(err)
+		log.Error("peer not found")
 		return err
 	}
 
 	if peer.Task.IsFail() {
-		err = dferrors.Newf(base.Code_SchedTaskStatusError, "peer's task status is fail, task status %s", peer.Task.GetStatus())
+		peer.SetStatus(supervisor.PeerStatusFail)
+		err = dferrors.Newf(base.Code_SchedTaskStatusError, "task status is fail")
 		span.RecordError(err)
+		log.Error("task status is fail")
 		return err
 	}
 
-	conn, ok := peer.BindNewConn(stream)
+	conn, ok := peer.BindConn(stream)
 	if !ok {
 		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "peer can not bind conn")
 		span.RecordError(err)
@@ -200,8 +205,8 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Error())
 		span.RecordError(conn.Error())
 	}()
-	if err := s.service.HandlePieceResult(ctx, peer, pieceResult); err != nil {
-		logger.Errorf("peer %s handle piece result %v fail: %v", peer.ID, pieceResult, err)
+	if err := s.service.HandlePieceResult(ctx, peer, startPiece); err != nil {
+		logger.Errorf("peer %s handle piece result %v fail: %v", peer.ID, startPiece, err)
 	}
 	for {
 		select {

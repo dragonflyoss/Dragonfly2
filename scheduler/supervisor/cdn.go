@@ -46,8 +46,8 @@ type CDN interface {
 	// CetClient get cdn grpc client
 	GetClient() CDNDynmaicClient
 
-	// StartSeedTask start seed cdn task
-	StartSeedTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
+	// TriggerTask start to trigger cdn task
+	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
 }
 
 type cdn struct {
@@ -71,7 +71,7 @@ func (c *cdn) GetClient() CDNDynmaicClient {
 	return c.client
 }
 
-func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
+func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
 	var span trace.Span
 	ctx, span = tracer.Start(ctx, config.SpanTriggerCDNSeed)
 	defer span.End()
@@ -124,7 +124,7 @@ func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.Pi
 		peer.SetStatus(PeerStatusRunning)
 		peer.LastAccessAt.Store(time.Now())
 
-		// Get last piece
+		// Get end piece
 		if piece.Done {
 			peer.Log().Info("receive last piece: %#v", piece)
 			if piece.ContentLength <= TinyFileSize {
