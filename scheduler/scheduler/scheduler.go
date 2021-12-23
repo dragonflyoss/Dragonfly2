@@ -14,40 +14,37 @@
  * limitations under the License.
  */
 
-package core
+package scheduler
 
 import (
+	"context"
 	"sort"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/core/evaluator"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(peer *supervisor.Peer, blocklist set.SafeSet) ([]*supervisor.Peer, bool)
+	ScheduleChildren(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
 
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(peer *supervisor.Peer, blocklist set.SafeSet) (*supervisor.Peer, []*supervisor.Peer, bool)
+	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) (*entity.Peer, []*entity.Peer, bool)
 }
 
 type scheduler struct {
-	evaluator   evaluator.Evaluator
-	peerManager supervisor.PeerManager
-	config      *config.SchedulerConfig
+	evaluator evaluator.Evaluator
 }
 
-func newScheduler(cfg *config.SchedulerConfig, peerManager supervisor.PeerManager, pluginDir string) Scheduler {
+func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
 	return &scheduler{
-		evaluator:   evaluator.New(cfg.Algorithm, pluginDir),
-		peerManager: peerManager,
-		config:      cfg,
+		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 	}
 }
 
-func (s *scheduler) ScheduleChildren(peer *supervisor.Peer, blocklist set.SafeSet) ([]*supervisor.Peer, bool) {
+func (s *scheduler) ScheduleChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) ([]*entity.Peer, bool) {
 	// If the peer is bad, it is not allowed to be the parent of other peers
 	if s.evaluator.IsBadNode(peer) {
 		peer.Log().Info("peer is a bad node and cannot be scheduled")
@@ -90,7 +87,7 @@ func (s *scheduler) ScheduleChildren(peer *supervisor.Peer, blocklist set.SafeSe
 	return children, true
 }
 
-func (s *scheduler) ScheduleParent(peer *supervisor.Peer, blocklist set.SafeSet) (*supervisor.Peer, []*supervisor.Peer, bool) {
+func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) (*entity.Peer, []*entity.Peer, bool) {
 	// If task is not health, it is not allowed to be the child of other peers
 	if !peer.Task.IsHealth() {
 		peer.Log().Info("task is not health and cannot be scheduled")
@@ -119,10 +116,10 @@ func (s *scheduler) ScheduleParent(peer *supervisor.Peer, blocklist set.SafeSet)
 	return parents[0], parents[1:], true
 }
 
-func (s *scheduler) findChildren(peer *supervisor.Peer, blocklist set.SafeSet) []*supervisor.Peer {
-	var children []*supervisor.Peer
+func (s *scheduler) findChildren(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
+	var children []*entity.Peer
 	peer.Task.GetPeers().Range(func(item interface{}) bool {
-		child, ok := item.(*supervisor.Peer)
+		child, ok := item.(*entity.Peer)
 		if !ok {
 			return true
 		}
@@ -162,14 +159,9 @@ func (s *scheduler) findChildren(peer *supervisor.Peer, blocklist set.SafeSet) [
 			return true
 		}
 
-		if !child.IsConnected() {
-			peer.Log().Infof("child %s is not selected because it is not connected", child.ID)
-			return true
-		}
-
 		if child.Pieces.Count() >= peer.Pieces.Count() {
 			peer.Log().Infof("child %s is not selected because its pieces count is greater than peer pieces count", child.ID)
-			return false
+			return true
 		}
 
 		parent, ok := child.GetParent()
@@ -189,10 +181,10 @@ func (s *scheduler) findChildren(peer *supervisor.Peer, blocklist set.SafeSet) [
 	return children
 }
 
-func (s *scheduler) findParents(peer *supervisor.Peer, blocklist set.SafeSet) []*supervisor.Peer {
-	var parents []*supervisor.Peer
+func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
+	var parents []*entity.Peer
 	peer.Task.GetPeers().Range(func(item interface{}) bool {
-		parent, ok := item.(*supervisor.Peer)
+		parent, ok := item.(*entity.Peer)
 		if !ok {
 			return true
 		}
@@ -229,7 +221,7 @@ func (s *scheduler) findParents(peer *supervisor.Peer, blocklist set.SafeSet) []
 
 		if parent.Pieces.Count() <= peer.Pieces.Count() {
 			peer.Log().Infof("parent %s is not selected because its pieces count is less than peer pieces count", parent.ID)
-			return false
+			return true
 		}
 
 		if s.evaluator.IsBadNode(parent) {

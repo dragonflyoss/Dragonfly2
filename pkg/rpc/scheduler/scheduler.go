@@ -26,7 +26,7 @@ func NewZeroPieceResult(taskID, peerID string) *PieceResult {
 		TaskId: taskID,
 		SrcPid: peerID,
 		PieceInfo: &base.PieceInfo{
-			PieceNum:    common.ZeroOfPiece,
+			PieceNum:    common.BeginOfPiece,
 			RangeStart:  0,
 			RangeSize:   0,
 			PieceMd5:    "",

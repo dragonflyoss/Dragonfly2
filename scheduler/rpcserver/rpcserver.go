@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"time"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -32,20 +31,18 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/core"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/service"
 )
-
-var tracer = otel.Tracer("scheduler-server")
 
 type server struct {
 	*grpc.Server
-	service *core.SchedulerService
+	service service.Service
 	config  *config.Config
 }
 
 // New returns a new transparent scheduler server from the given options
-func New(cfg *config.Config, service *core.SchedulerService, opts ...grpc.ServerOption) (*grpc.Server, error) {
+func New(cfg *config.Config, service service.Service, opts ...grpc.ServerOption) (*grpc.Server, error) {
 	svr := &server{
 		service: service,
 		config:  cfg,
@@ -56,21 +53,14 @@ func New(cfg *config.Config, service *core.SchedulerService, opts ...grpc.Server
 }
 
 func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanPeerRegister, trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-	span.SetAttributes(config.AttributePeerRegisterRequest.String(req.String()))
-
 	// Get task or add new task
 	task := s.service.GetOrAddTask(ctx, req, s.config.Scheduler.BackSourceCount)
-	span.SetAttributes(config.AttributeTaskID.String(task.ID))
 	log := logger.WithTaskAndPeerID(task.ID, req.PeerId)
-	log.Infof("register peer task, req: %#v", req)
+	log.Infof("register peer task request: %#v", req)
 
 	// In the case of concurrency, if the task status is failure, it will directly return to registration failure.
 	if task.IsFail() {
 		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
-		span.RecordError(dferr)
 		log.Error(dferr.Message)
 		return nil, dferr
 	}
@@ -79,7 +69,6 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	if task.IsSuccess() {
 		log.Info("task has been successful")
 		sizeScope := task.GetSizeScope()
-		span.SetAttributes(config.AttributeTaskSizeScope.String(sizeScope.String()))
 		switch sizeScope {
 		case base.SizeScope_TINY:
 			log.Info("task size scope is tiny and return piece content directly")
@@ -94,9 +83,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			log.Info("task size scope is small")
 			host := s.service.GetOrAddHost(ctx, req)
 			peer := s.service.GetOrAddPeer(ctx, req, task, host)
-			parent, _, ok := s.service.ScheduleParent(peer)
+			parent, _, ok := s.service.ScheduleParent(ctx, peer)
 			if !ok {
-				span.AddEvent(config.EventSmallTaskSelectParentFail)
 				log.Warnf("task size scope is small and it can not select parent")
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
@@ -130,7 +118,6 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 					PieceStyle:  firstPiece.PieceStyle,
 				},
 			}
-			span.SetAttributes(config.AttributeSinglePiece.String(singlePiece.String()))
 			log.Infof("task size scope is small and return single piece %#v", sizeScope)
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
@@ -161,98 +148,80 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 }
 
 func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
-	var span trace.Span
-	ctx, span := tracer.Start(stream.Context(), config.SpanReportPieceResult, trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
+	ctx := stream.Context()
 
-	startPiece, err := stream.Recv()
+	// Handle begin of piece
+	beginOfPiece, err := stream.Recv()
 	if err != nil {
 		if err == io.EOF {
 			return nil
 		}
-		dferr := dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "receive an error from peer stream: %v", err)
-		span.RecordError(err)
-		return dferr
+		logger.Errorf("receive error: %v", err)
+		return err
 	}
-	log := logger.WithTaskAndPeerID(startPiece.TaskId, startPiece.SrcPid)
-	log.Infof("receive start piece result: %#v", startPiece)
+	log := logger.WithTaskAndPeerID(beginOfPiece.TaskId, beginOfPiece.SrcPid)
+	log.Infof("receive begin of piece: %#v", beginOfPiece)
 
-	peer, ok := s.service.GetPeer(startPiece.SrcPid)
+	// Get peer from peer manager
+	peer, ok := s.service.GetPeer(beginOfPiece.SrcPid)
 	if !ok {
-		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", startPiece.SrcPid)
-		span.RecordError(err)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
 		log.Error("peer not found")
 		return err
 	}
 
+	// Handle task fails
 	if peer.Task.IsFail() {
-		peer.SetStatus(supervisor.PeerStatusFail)
+		peer.SetStatus(entity.PeerStatusFail)
 		err = dferrors.Newf(base.Code_SchedTaskStatusError, "task status is fail")
-		span.RecordError(err)
 		log.Error("task status is fail")
 		return err
 	}
 
-	conn, ok := peer.BindConn(stream)
-	if !ok {
-		err = dferrors.Newf(base.Code_SchedPeerPieceResultReportFail, "peer can not bind conn")
-		span.RecordError(err)
-		return err
-	}
-	logger.Infof("peer %s is connected", peer.ID)
-
-	defer func() {
-		logger.Infof("peer %s is disconnect: %v", peer.ID, conn.Error())
-		span.RecordError(conn.Error())
-	}()
-	if err := s.service.HandlePieceResult(ctx, peer, startPiece); err != nil {
-		logger.Errorf("peer %s handle piece result %v fail: %v", peer.ID, startPiece, err)
-	}
+	// Peer setting stream
+	peer.SetStream(stream)
 	for {
 		select {
-		case <-conn.Done():
-			return conn.Error()
-		case piece := <-conn.Receiver():
-			if piece == nil {
-				logger.Infof("peer %s channel has been closed", peer.ID)
-				continue
-			}
-			if err := s.service.HandlePieceResult(ctx, peer, piece); err != nil {
-				logger.Errorf("peer %s handle piece result %v fail: %v", peer.ID, piece, err)
-			}
+		case <-ctx.Done():
+			log.Infof("context was done")
+			return ctx.Err()
+		default:
 		}
+
+		piece, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			log.Errorf("receive error: %v", err)
+			return err
+		}
+
+		log.Infof("receive piece: %#v", piece)
+		peer.LastAccessAt.Store(time.Now())
+		s.service.HandlePiece(ctx, peer, piece)
 	}
 }
 
-func (s *server) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (err error) {
-	logger.Debugf("report peer result %v", result)
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanReportPeerResult, trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-	span.SetAttributes(config.AttributeReportPeerID.String(result.PeerId))
-	span.SetAttributes(config.AttributePeerDownloadSuccess.Bool(result.Success))
-	span.SetAttributes(config.AttributePeerDownloadResult.String(result.String()))
-	peer, ok := s.service.GetPeer(result.PeerId)
+func (s *server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (err error) {
+	logger.Debugf("report peer result request: %#v", req)
+	peer, ok := s.service.GetPeer(req.PeerId)
 	if !ok {
-		logger.Warnf("report peer result: peer %s is not exists", result.PeerId)
-		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", result.PeerId)
-		span.RecordError(err)
+		logger.Warnf("report peer result: peer %s is not exists", req.PeerId)
+		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
 		return err
 	}
-	return s.service.HandlePeerResult(ctx, peer, result)
+	s.service.HandlePeer(ctx, peer, req)
+	return nil
 }
 
 func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
 	logger.Debugf("leave task %v", target)
-	var span trace.Span
-	ctx, span = tracer.Start(ctx, config.SpanPeerLeave, trace.WithSpanKind(trace.SpanKindServer))
-	defer span.End()
-	span.SetAttributes(config.AttributeLeavePeerID.String(target.PeerId))
-	span.SetAttributes(config.AttributeLeaveTaskID.String(target.TaskId))
 	peer, ok := s.service.GetPeer(target.PeerId)
 	if !ok {
 		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
 		return
 	}
-	return s.service.HandleLeaveTask(ctx, peer)
+	s.service.HandlePeerLeave(ctx, peer)
+	return nil
 }

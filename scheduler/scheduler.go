@@ -31,10 +31,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/core"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
+	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
 const (
@@ -52,7 +52,7 @@ type Server struct {
 	metricsServer *http.Server
 
 	// Scheduler service
-	service *core.SchedulerService
+	service service.Service
 
 	// Manager client
 	managerClient managerclient.Client
@@ -103,18 +103,22 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
 
 	// Initialize scheduler service
-	service, err := core.NewSchedulerService(cfg, d.PluginDir(), dynConfig, s.gc, cfg.Options.Telemetry.Jaeger != "")
+	service, err := service.New(cfg, d.PluginDir(), s.gc, dynConfig, cfg.Options.Telemetry.Jaeger != "")
 	if err != nil {
 		return nil, err
 	}
 	s.service = service
 
 	// Initialize grpc service
-	var opts []grpc.ServerOption
+	var options []grpc.ServerOption
 	if s.config.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+		options = []grpc.ServerOption{
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		}
 	}
-	grpcServer, err := rpcserver.New(cfg, s.service, opts...)
+
+	grpcServer, err := rpcserver.New(cfg, s.service, options...)
 	if err != nil {
 		return nil, err
 	}

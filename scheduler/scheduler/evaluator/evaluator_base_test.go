@@ -25,7 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/entity"
 )
 
 const (
@@ -398,9 +398,9 @@ func TestEvaluatorEvaluate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			task := entity.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 
-			parentHost := supervisor.NewHost(
+			parentHost := entity.NewHost(
 				&scheduler.PeerHost{
 					Uuid:           tc.parent.hostUUID,
 					Ip:             "",
@@ -412,13 +412,13 @@ func TestEvaluatorEvaluate(t *testing.T) {
 					Idc:            tc.parent.idc,
 					NetTopology:    tc.parent.netTopology,
 				},
-				supervisor.WithTotalUploadLoad(tc.parent.totalUploadLoad),
+				entity.WithTotalUploadLoad(tc.parent.totalUploadLoad),
 			)
 			parentHost.CurrentUploadLoad.Store(tc.parent.currentUploadLoad)
-			parent := supervisor.NewPeer(idgen.PeerID(mockIP), task, parentHost)
+			parent := entity.NewPeer(idgen.PeerID(mockIP), task, parentHost)
 			parent.Pieces.Set(uint(tc.parent.finishedPieceCount))
 
-			childHost := supervisor.NewHost(
+			childHost := entity.NewHost(
 				&scheduler.PeerHost{
 					Uuid:           tc.parent.hostUUID,
 					Ip:             "",
@@ -431,7 +431,7 @@ func TestEvaluatorEvaluate(t *testing.T) {
 					NetTopology:    tc.parent.netTopology,
 				},
 			)
-			child := supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
+			child := entity.NewPeer(idgen.PeerID(mockIP), task, childHost)
 			child.Pieces.Set(uint(tc.child.finishedPieceCount))
 
 			e := NewEvaluatorBase()
@@ -445,7 +445,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 		name   string
 		parent *factor
 		child  *factor
-		expect func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer)
+		expect func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer)
 	}{
 		{
 			name: "peer is CDN",
@@ -455,7 +455,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: cdnHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				assert.Equal(e.NeedAdjustParent(child), false)
 			},
@@ -468,7 +468,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				assert.Equal(e.NeedAdjustParent(child), true)
 			},
@@ -481,7 +481,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				assert.Equal(e.NeedAdjustParent(child), true)
 			},
@@ -494,7 +494,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				parent.Leave()
@@ -509,7 +509,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				assert.Equal(e.NeedAdjustParent(child), false)
@@ -523,7 +523,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				child.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}...)
@@ -538,7 +538,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				child.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 23}...)
@@ -553,7 +553,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				child.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 5}...)
@@ -568,7 +568,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 			child: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, parent *supervisor.Peer, child *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, parent *entity.Peer, child *entity.Peer) {
 				assert := assert.New(t)
 				child.SetParent(parent)
 				child.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15}...)
@@ -579,7 +579,7 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mockTask := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			mockTask := entity.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 			mockPeerHost := &scheduler.PeerHost{
 				Uuid:           uuid.NewString(),
 				Ip:             "",
@@ -591,16 +591,16 @@ func TestEvaluatorNeedAdjustParent(t *testing.T) {
 				Idc:            "",
 			}
 
-			parentHost := supervisor.NewHost(mockPeerHost)
-			parent := supervisor.NewPeer(idgen.PeerID(mockIP), mockTask, parentHost)
+			parentHost := entity.NewHost(mockPeerHost)
+			parent := entity.NewPeer(idgen.PeerID(mockIP), mockTask, parentHost)
 
-			var child *supervisor.Peer
+			var child *entity.Peer
 			if tc.child.hostType == cdnHostType {
-				childHost := supervisor.NewHost(mockPeerHost)
-				child = supervisor.NewPeer(idgen.CDNPeerID(mockIP), mockTask, childHost)
+				childHost := entity.NewHost(mockPeerHost)
+				child = entity.NewPeer(idgen.CDNPeerID(mockIP), mockTask, childHost)
 			} else {
-				childHost := supervisor.NewHost(mockPeerHost)
-				child = supervisor.NewPeer(idgen.PeerID(mockIP), mockTask, childHost)
+				childHost := entity.NewHost(mockPeerHost)
+				child = entity.NewPeer(idgen.PeerID(mockIP), mockTask, childHost)
 			}
 
 			e := NewEvaluatorBase()
@@ -613,16 +613,16 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 	tests := []struct {
 		name   string
 		peer   *factor
-		expect func(t *testing.T, e Evaluator, peer *supervisor.Peer)
+		expect func(t *testing.T, e Evaluator, peer *entity.Peer)
 	}{
 		{
 			name: "peer is bad",
 			peer: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, peer *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, peer *entity.Peer) {
 				assert := assert.New(t)
-				peer.SetStatus(supervisor.PeerStatusFail)
+				peer.SetStatus(entity.PeerStatusFail)
 				assert.Equal(e.IsBadNode(peer), true)
 			},
 		},
@@ -631,7 +631,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 			peer: &factor{
 				hostType: cdnHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, peer *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, peer *entity.Peer) {
 				assert := assert.New(t)
 				assert.Equal(e.IsBadNode(peer), false)
 			},
@@ -641,7 +641,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 			peer: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, peer *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, peer *entity.Peer) {
 				assert := assert.New(t)
 				assert.Equal(e.IsBadNode(peer), false)
 			},
@@ -651,7 +651,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 			peer: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, peer *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, peer *entity.Peer) {
 				assert := assert.New(t)
 				peer.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 9}...)
 				assert.Equal(e.IsBadNode(peer), false)
@@ -662,7 +662,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 			peer: &factor{
 				hostType: clientHostType,
 			},
-			expect: func(t *testing.T, e Evaluator, peer *supervisor.Peer) {
+			expect: func(t *testing.T, e Evaluator, peer *entity.Peer) {
 				assert := assert.New(t)
 				peer.SetPieceCosts([]int{1, 2, 3, 4, 5, 6, 7, 8, 181}...)
 				assert.Equal(e.IsBadNode(peer), true)
@@ -672,7 +672,7 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := supervisor.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
+			task := entity.NewTask(idgen.TaskID(mockTaskURL, nil), mockTaskURL, 0, nil)
 			mockPeerHost := &scheduler.PeerHost{
 				Uuid:           uuid.NewString(),
 				Ip:             "",
@@ -684,13 +684,13 @@ func TestEvaluatorIsBadNode(t *testing.T) {
 				Idc:            "",
 			}
 
-			var peer *supervisor.Peer
+			var peer *entity.Peer
 			if tc.peer.hostType == cdnHostType {
-				childHost := supervisor.NewHost(mockPeerHost, supervisor.WithIsCDN(true))
-				peer = supervisor.NewPeer(idgen.CDNPeerID(mockIP), task, childHost)
+				childHost := entity.NewHost(mockPeerHost, entity.WithIsCDN(true))
+				peer = entity.NewPeer(idgen.CDNPeerID(mockIP), task, childHost)
 			} else {
-				childHost := supervisor.NewHost(mockPeerHost)
-				peer = supervisor.NewPeer(idgen.PeerID(mockIP), task, childHost)
+				childHost := entity.NewHost(mockPeerHost)
+				peer = entity.NewPeer(idgen.PeerID(mockIP), task, childHost)
 			}
 
 			e := NewEvaluatorBase()

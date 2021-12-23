@@ -13,103 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mocks/peer_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor PeerManager
 
-package supervisor
+package entity
 
 import (
-	"io"
 	"sync"
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
-	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
-
-const (
-	PeerGCID = "peer"
-)
-
-var ErrChannelBusy = errors.New("channel busy")
-
-type PeerManager interface {
-	// Add peer
-	Add(*Peer)
-	// Get peer
-	Get(string) (*Peer, bool)
-	// Delete peer
-	Delete(string)
-	// Get peer by task id
-	GetPeersByTask(string) []*Peer
-	// Get peers
-	GetPeers() *sync.Map
-}
-
-type peerManager struct {
-	// hostManager is host manager
-	hostManager HostManager
-	// peers is peer map
-	peers *sync.Map
-	// peerManager lock
-	lock sync.RWMutex
-}
-
-func NewPeerManager(hostManager HostManager) PeerManager {
-	return &peerManager{
-		hostManager: hostManager,
-		peers:       &sync.Map{},
-	}
-}
-
-func (m *peerManager) Add(peer *Peer) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	peer.Host.AddPeer(peer)
-	peer.Task.AddPeer(peer)
-	m.peers.Store(peer.ID, peer)
-}
-
-func (m *peerManager) Get(id string) (*Peer, bool) {
-	peer, ok := m.peers.Load(id)
-	if !ok {
-		return nil, false
-	}
-
-	return peer.(*Peer), ok
-}
-
-func (m *peerManager) Delete(id string) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-
-	if peer, ok := m.Get(id); ok {
-		peer.Host.DeletePeer(id)
-		peer.Task.DeletePeer(peer)
-		peer.DeleteParent()
-		m.peers.Delete(id)
-	}
-}
-
-func (m *peerManager) GetPeersByTask(taskID string) []*Peer {
-	var peers []*Peer
-	m.peers.Range(func(_, value interface{}) bool {
-		peer := value.(*Peer)
-		if peer.Task.ID == taskID {
-			peers = append(peers, peer)
-		}
-		return true
-	})
-	return peers
-}
-
-func (m *peerManager) GetPeers() *sync.Map {
-	return m.peers
-}
 
 type PeerStatus uint8
 
@@ -156,8 +72,8 @@ type Peer struct {
 	Pieces bitset.BitSet
 	// pieceCosts is piece historical download time
 	pieceCosts []int
-	// conn is channel instance and type is *Channel
-	conn atomic.Value
+	// stream is grpc stream instance
+	stream atomic.Value
 	// leave is whether the peer leaves
 	leave atomic.Bool
 	// peer logger
@@ -370,186 +286,20 @@ func (peer *Peer) IsFail() bool {
 	return peer.GetStatus() == PeerStatusFail
 }
 
-func (peer *Peer) BindConn(stream scheduler.Scheduler_ReportPieceResultServer) (*Channel, bool) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-
-	if peer.GetStatus() == PeerStatusWaiting {
-		peer.SetStatus(PeerStatusRunning)
-	}
-
-	peer.setConn(newChannel(stream))
-	return peer.getConn()
+func (peer *Peer) SetStream(stream scheduler.Scheduler_ReportPieceResultServer) {
+	peer.stream.Store(stream)
 }
 
-func (peer *Peer) setConn(conn *Channel) {
-	peer.conn.Store(conn)
-}
-
-func (peer *Peer) getConn() (*Channel, bool) {
-	conn := peer.conn.Load()
-	if conn == nil {
+func (peer *Peer) GetStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
+	rawStream := peer.stream.Load()
+	stream, ok := rawStream.(scheduler.Scheduler_ReportPieceResultServer)
+	if stream == nil || !ok {
 		return nil, false
 	}
 
-	c, ok := conn.(*Channel)
-	if c == nil || !ok {
-		return nil, false
-	}
-
-	return c, true
-}
-
-func (peer *Peer) IsConnected() bool {
-	conn, ok := peer.getConn()
-	if !ok {
-		return false
-	}
-
-	return !conn.IsClosed()
-}
-
-func (peer *Peer) SendSchedulePacket(packet *scheduler.PeerPacket) error {
-	conn, ok := peer.getConn()
-	if !ok {
-		return errors.New("client peer is not connected")
-	}
-
-	return conn.Send(packet)
-}
-
-func (peer *Peer) CloseChannelWithError(err error) error {
-	conn, ok := peer.getConn()
-	if !ok {
-		return errors.New("client peer is not connected")
-	}
-
-	conn.err = err
-	conn.Close()
-	return nil
+	return stream, true
 }
 
 func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
 	return peer.logger
-}
-
-type Channel struct {
-	sender   chan *scheduler.PeerPacket
-	receiver chan *scheduler.PieceResult
-	stream   scheduler.Scheduler_ReportPieceResultServer
-	closed   *atomic.Bool
-	done     chan struct{}
-	wg       sync.WaitGroup
-	err      error
-}
-
-func newChannel(stream scheduler.Scheduler_ReportPieceResultServer) *Channel {
-	c := &Channel{
-		sender:   make(chan *scheduler.PeerPacket),
-		receiver: make(chan *scheduler.PieceResult),
-		stream:   stream,
-		closed:   atomic.NewBool(false),
-		done:     make(chan struct{}),
-	}
-
-	c.wg.Add(2)
-	c.start()
-	return c
-}
-
-func (c *Channel) start() {
-	startWG := &sync.WaitGroup{}
-	startWG.Add(2)
-
-	go c.receiveLoop(startWG)
-	go c.sendLoop(startWG)
-	startWG.Wait()
-}
-
-func (c *Channel) Send(packet *scheduler.PeerPacket) error {
-	select {
-	case <-c.done:
-		return errors.New("conn has closed")
-	case c.sender <- packet:
-		return nil
-	default:
-		return ErrChannelBusy
-	}
-}
-
-func (c *Channel) Receiver() <-chan *scheduler.PieceResult {
-	return c.receiver
-}
-
-func (c *Channel) Close() {
-	if !c.closed.CAS(false, true) {
-		return
-	}
-	go func() {
-		close(c.done)
-		c.wg.Wait()
-	}()
-}
-
-func (c *Channel) Error() error {
-	return c.err
-}
-
-func (c *Channel) Done() <-chan struct{} {
-	if c.done == nil {
-		c.done = make(chan struct{})
-	}
-	return c.done
-}
-
-func (c *Channel) IsClosed() bool {
-	return c.closed.Load()
-}
-
-func (c *Channel) receiveLoop(startWG *sync.WaitGroup) {
-	defer func() {
-		close(c.receiver)
-		c.wg.Done()
-		c.Close()
-	}()
-
-	startWG.Done()
-
-	for {
-		select {
-		case <-c.done:
-			return
-		default:
-			pieceResult, err := c.stream.Recv()
-			if err == io.EOF {
-				return
-			}
-			if err != nil {
-				c.err = err
-				return
-			}
-			c.receiver <- pieceResult
-		}
-	}
-}
-
-func (c *Channel) sendLoop(startWG *sync.WaitGroup) {
-	defer func() {
-		c.wg.Done()
-		c.Close()
-	}()
-
-	startWG.Done()
-
-	for {
-		select {
-		case <-c.done:
-			return
-		case packet := <-c.sender:
-			if err := c.stream.Send(packet); err != nil {
-				c.err = err
-				return
-			}
-		}
-	}
 }

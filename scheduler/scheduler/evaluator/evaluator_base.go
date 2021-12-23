@@ -24,7 +24,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
-	"d7y.io/dragonfly/v2/scheduler/supervisor"
+	"d7y.io/dragonfly/v2/scheduler/entity"
 )
 
 const (
@@ -72,7 +72,7 @@ func NewEvaluatorBase() Evaluator {
 }
 
 // The larger the value after evaluation, the higher the priority
-func (eb *evaluatorBase) Evaluate(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64 {
+func (eb *evaluatorBase) Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64 {
 	// If the SecurityDomain of hosts exists but is not equal,
 	// it cannot be scheduled as a parent
 	if parent.Host.SecurityDomain != "" &&
@@ -89,7 +89,7 @@ func (eb *evaluatorBase) Evaluate(parent *supervisor.Peer, child *supervisor.Pee
 }
 
 // calculatePieceScore 0.0~unlimited larger and better
-func calculatePieceScore(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64 {
+func calculatePieceScore(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node
 	if taskPieceCount > 0 {
@@ -105,14 +105,14 @@ func calculatePieceScore(parent *supervisor.Peer, child *supervisor.Peer, taskPi
 }
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
-func calculateFreeLoadScore(host *supervisor.Host) float64 {
+func calculateFreeLoadScore(host *entity.Host) float64 {
 	load := host.CurrentUploadLoad.Load()
 	totalLoad := host.TotalUploadLoad
 	return float64(totalLoad-load) / float64(totalLoad)
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better
-func calculateIDCAffinityScore(dst, src *supervisor.Host) float64 {
+func calculateIDCAffinityScore(dst, src *entity.Host) float64 {
 	if dst.IDC != "" && src.IDC != "" && strings.Compare(dst.IDC, src.IDC) == 0 {
 		return maxScore
 	}
@@ -151,7 +151,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	return float64(score) / float64(maxElementLen)
 }
 
-func (eb *evaluatorBase) NeedAdjustParent(peer *supervisor.Peer) bool {
+func (eb *evaluatorBase) NeedAdjustParent(peer *entity.Peer) bool {
 	// CDN is the root node
 	if peer.Host.IsCDN {
 		return false
@@ -201,15 +201,10 @@ func (eb *evaluatorBase) NeedAdjustParent(peer *supervisor.Peer) bool {
 	return isNeedAdjustParent
 }
 
-func (eb *evaluatorBase) IsBadNode(peer *supervisor.Peer) bool {
+func (eb *evaluatorBase) IsBadNode(peer *entity.Peer) bool {
 	if peer.IsFail() {
 		logger.Infof("peer %s status is fail", peer.ID)
 		return true
-	}
-
-	if peer.Host.IsCDN {
-		logger.Infof("peer %s is cdn can't be bad node", peer.ID)
-		return false
 	}
 
 	// Determine whether to bad node based on piece download costs

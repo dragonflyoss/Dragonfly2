@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mocks/task_mock.go -package mocks d7y.io/dragonfly/v2/scheduler/supervisor TaskManager
 
-package supervisor
+package entity
 
 import (
 	"sync"
@@ -25,97 +24,12 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	gc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 const (
-	TaskGCID     = "task"
 	TinyFileSize = 128
 )
-
-type TaskManager interface {
-	// Add task
-	Add(*Task)
-	// Get task
-	Get(string) (*Task, bool)
-	// Delete task
-	Delete(string)
-	// GetOrAdd or add task
-	GetOrAdd(*Task) (*Task, bool)
-}
-
-type taskManager struct {
-	// peerManager is peer manager
-	peerManager PeerManager
-	// taskTTL is task TTL
-	taskTTL time.Duration
-	// tasks is task map
-	tasks *sync.Map
-}
-
-func NewTaskManager(cfg *config.GCConfig, gcManager gc.GC, peerManager PeerManager) (TaskManager, error) {
-	m := &taskManager{
-		peerManager: peerManager,
-		taskTTL:     cfg.TaskTTL,
-		tasks:       &sync.Map{},
-	}
-
-	if err := gcManager.Add(gc.Task{
-		ID:       TaskGCID,
-		Interval: cfg.TaskGCInterval,
-		Timeout:  cfg.TaskGCInterval,
-		Runner:   m,
-	}); err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
-func (m *taskManager) Delete(id string) {
-	m.tasks.Delete(id)
-}
-
-func (m *taskManager) Add(task *Task) {
-	m.tasks.Store(task.ID, task)
-}
-
-func (m *taskManager) Get(id string) (*Task, bool) {
-	task, ok := m.tasks.Load(id)
-	if !ok {
-		return nil, false
-	}
-
-	return task.(*Task), ok
-}
-
-func (m *taskManager) GetOrAdd(t *Task) (*Task, bool) {
-	task, ok := m.tasks.LoadOrStore(t.ID, t)
-	return task.(*Task), ok
-}
-
-func (m *taskManager) RunGC() error {
-	m.tasks.Range(func(key, value interface{}) bool {
-		taskID := key.(string)
-		task := value.(*Task)
-		elapsed := time.Since(task.LastAccessAt.Load())
-
-		if task.GetPeers().Len() == 0 && elapsed > m.taskTTL {
-			// TODO lock
-			peers := m.peerManager.GetPeersByTask(taskID)
-			for _, peer := range peers {
-				task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
-				m.peerManager.Delete(peer.ID)
-			}
-			task.Log().Info("delete task because elapsed larger than task TTL")
-			m.Delete(taskID)
-		}
-		return true
-	})
-	return nil
-}
 
 type TaskStatus uint8
 
@@ -160,13 +74,13 @@ type Task struct {
 	LastAccessAt *atomic.Time
 	// status is task status and type is TaskStatus
 	status atomic.Value
-	// peers is peer safe set
-	peers set.SafeSet
+	// peers is peer sync map
+	peers *sync.Map
 	// BackToSourceWeight is back-to-source peer weight
 	BackToSourceWeight atomic.Int32
 	// backToSourcePeers is back-to-source peers list
 	backToSourcePeers []string
-	// pieces is piece map
+	// pieces is piece sync map
 	pieces *sync.Map
 	// TotalPieceCount is total piece count
 	TotalPieceCount atomic.Int32
@@ -187,7 +101,7 @@ func NewTask(id, url string, backToSourceWeight int32, meta *base.UrlMeta) *Task
 		LastAccessAt:      atomic.NewTime(now),
 		backToSourcePeers: []string{},
 		pieces:            &sync.Map{},
-		peers:             set.NewSafeSet(),
+		peers:             &sync.Map{},
 		logger:            logger.WithTaskID(id),
 	}
 

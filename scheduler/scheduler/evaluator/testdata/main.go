@@ -16,22 +16,33 @@
 
 package main
 
-import "d7y.io/dragonfly/v2/scheduler/supervisor"
+import (
+	"fmt"
+	"os"
 
-type evaluator struct{}
+	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
+)
 
-func (e *evaluator) Evaluate(parent *supervisor.Peer, child *supervisor.Peer, taskPieceCount int32) float64 {
-	return float64(1)
-}
+func main() {
+	e, err := evaluator.LoadPlugin("./testdata")
+	if err != nil {
+		fmt.Printf("load plugin error: %s\n", err)
+		os.Exit(1)
+	}
 
-func (e *evaluator) NeedAdjustParent(peer *supervisor.Peer) bool {
-	return true
-}
+	if score := e.Evaluate(&entity.Peer{}, &entity.Peer{}, int32(0)); score != float64(1) {
+		fmt.Println("Evaluate failed")
+		os.Exit(1)
+	}
 
-func (e *evaluator) IsBadNode(peer *supervisor.Peer) bool {
-	return true
-}
+	if ok := e.NeedAdjustParent(&entity.Peer{}); !ok {
+		fmt.Println("NeedAdjustParent failed")
+		os.Exit(1)
+	}
 
-func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
-	return &evaluator{}, map[string]string{"type": "scheduler", "name": "evaluator"}, nil
+	if ok := e.IsBadNode(&entity.Peer{}); !ok {
+		fmt.Println("IsBadNode failed")
+		os.Exit(1)
+	}
 }
