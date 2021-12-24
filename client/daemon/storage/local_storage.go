@@ -200,7 +200,7 @@ func (t *localTaskStore) IsInvalid(*PeerTaskMetadata) (bool, error) {
 	return t.invalid.Load(), nil
 }
 
-// ReadPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
+// ReadPiece get a LimitReadCloser from task data with sought, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")
