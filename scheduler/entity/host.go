@@ -18,6 +18,7 @@ package entity
 
 import (
 	"sync"
+	"time"
 
 	"go.uber.org/atomic"
 
@@ -26,18 +27,22 @@ import (
 )
 
 const (
+	// Host's default upload load limit count
 	defaultUploadLoadLimit = 100
 )
 
-type HostOption func(rt *Host) *Host
+// HostOption is a functional option for configuring the host
+type HostOption func(h *Host) *Host
 
-func WithTotalUploadLoad(load uint32) HostOption {
+// WithUploadLoadLimit sets host's UploadLoadLimit
+func WithUploadLoadLimit(limit int32) HostOption {
 	return func(h *Host) *Host {
-		h.UploadLoadLimit = load
+		h.UploadLoadLimit.Store(limit)
 		return h
 	}
 }
 
+// WithIsCDN sets host's IsCDN
 func WithIsCDN(isCDN bool) HostOption {
 	return func(h *Host) *Host {
 		h.IsCDN = isCDN
@@ -72,24 +77,29 @@ type Host struct {
 	NetTopology string
 
 	// Location is location of host
+	// Example: country|province|...
 	Location string
+
+	// UploadLoadLimit is upload load limit count
+	UploadLoadLimit *atomic.Int32
+
+	// Peer sync map
+	Peers *sync.Map
 
 	// IsCDN is used as tag cdn
 	IsCDN bool
 
-	// UploadLoad is current upload load count
-	UploadLoad atomic.Uint32
+	// CreateAt is host create time
+	CreateAt *atomic.Time
 
-	// UploadLoadLimit is upload load limit count
-	UploadLoadLimit uint32
+	// UpdateAt is host update time
+	UpdateAt *atomic.Time
 
-	// Peer sync map
-	peers *sync.Map
-
-	// Host logger
-	logger *logger.SugaredLoggerOnWith
+	// Host log
+	Log *logger.SugaredLoggerOnWith
 }
 
+// New host instance
 func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	h := &Host{
 		ID:              rawHost.Uuid,
@@ -101,10 +111,12 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		IDC:             rawHost.Idc,
 		NetTopology:     rawHost.NetTopology,
 		Location:        rawHost.Location,
+		UploadLoadLimit: atomic.NewInt32(defaultUploadLoadLimit),
+		Peers:           &sync.Map{},
 		IsCDN:           false,
-		UploadLoadLimit: defaultUploadLoadLimit,
-		peers:           &sync.Map{},
-		logger:          logger.With("hostID", rawHost.Uuid),
+		CreateAt:        atomic.NewTime(time.Now()),
+		UpdateAt:        atomic.NewTime(time.Now()),
+		Log:             logger.WithHostID(rawHost.Uuid),
 	}
 
 	for _, opt := range options {
@@ -114,8 +126,9 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	return h
 }
 
+// LoadPeer return peer entity for a key
 func (h *Host) LoadPeer(key string) (*Peer, bool) {
-	rawPeer, ok := h.peers.Load(key)
+	rawPeer, ok := h.Peers.Load(key)
 	if !ok {
 		return nil, false
 	}
@@ -123,22 +136,28 @@ func (h *Host) LoadPeer(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), ok
 }
 
+// StorePeer set peer entity
 func (h *Host) StorePeer(peer *Peer) {
-	h.peers.Store(peer.ID, peer)
+	h.Peers.Store(peer.ID, peer)
 }
 
+// LoadOrStorePeer returns peer entity the key if present.
+// Otherwise, it stores and returns the given peer entity.
+// The loaded result is true if the peer entity was loaded, false if stored.
 func (h *Host) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
-	rawPeer, loaded := h.peers.LoadOrStore(peer.ID, peer)
+	rawPeer, loaded := h.Peers.LoadOrStore(peer.ID, peer)
 	return rawPeer.(*Peer), loaded
 }
 
+// DeletePeer deletes peer entity for a key
 func (h *Host) DeletePeer(key string) {
-	h.peers.Delete(key)
+	h.Peers.Delete(key)
 }
 
+// LenPeers return length of peers sync map
 func (h *Host) LenPeers() int {
 	var len int
-	h.peers.Range(func(_, _ interface{}) bool {
+	h.Peers.Range(func(_, _ interface{}) bool {
 		len++
 		return true
 	})
@@ -146,10 +165,7 @@ func (h *Host) LenPeers() int {
 	return len
 }
 
-func (h *Host) FreeUploadLoad() uint32 {
-	return h.UploadLoadLimit - h.UploadLoad.Load()
-}
-
-func (h *Host) Log() *logger.SugaredLoggerOnWith {
-	return h.logger
+// FreeUploadLoad return free upload load of host
+func (h *Host) FreeUploadLoad() int32 {
+	return h.UploadLoadLimit.Load() - int32(h.LenPeers())
 }

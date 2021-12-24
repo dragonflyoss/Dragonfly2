@@ -57,6 +57,7 @@ type task struct {
 	ttl time.Duration
 }
 
+// New task interface
 func newTask(cfg *config.GCConfig, gc pkggc.GC, peerManager Peer) (Task, error) {
 	t := &task{
 		Map:         &sync.Map{},
@@ -99,22 +100,17 @@ func (t *task) Delete(key string) {
 }
 
 func (t *task) RunGC() error {
-	t.Map.Range(func(key, value interface{}) bool {
-		taskID := key.(string)
+	t.Map.Range(func(_, value interface{}) bool {
 		task := value.(*entity.Task)
-		elapsed := time.Since(task.LastAccessAt.Load())
+		elapsed := time.Since(task.UpdateAt.Load())
 
-		if task.GetPeers().Len() == 0 && elapsed > t.ttl {
-			// TODO lock
-			peers := t.peerManager.GetPeersByTask(taskID)
-			for _, peer := range peers {
-				task.Log().Infof("delete peer %s because task is time to leave", peer.ID)
-				t.peerManager.Delete(peer.ID)
-			}
-			task.Log().Info("delete task because elapsed larger than task TTL")
-			t.Delete(taskID)
+		if task.LenPeers() == 0 && elapsed > t.ttl {
+			task.Log.Info("delete task because elapsed larger than task TTL")
+			t.Delete(task.ID)
 		}
+
 		return true
 	})
+
 	return nil
 }

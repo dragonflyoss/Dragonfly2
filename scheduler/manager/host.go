@@ -43,6 +43,7 @@ type host struct {
 	*sync.Map
 }
 
+// New host interface
 func newHost() Host {
 	return &host{&sync.Map{}}
 }

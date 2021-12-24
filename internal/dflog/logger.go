@@ -94,21 +94,27 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostID(hostID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"hostID", hostID},
+	}
+}
+
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID},
+		withArgs: []interface{}{"taskID", taskID},
 	}
 }
 
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
+		withArgs: []interface{}{"taskID", taskID, "peerID", peerID},
 	}
 }
 
 func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "url", url},
+		withArgs: []interface{}{"taskID", taskID, "url", url},
 	}
 }
 

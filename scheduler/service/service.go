@@ -102,43 +102,47 @@ func (s *service) ScheduleParent(ctx context.Context, peer *entity.Peer) (*entit
 	return s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 }
 
-func (s *service) GetOrAddTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) *entity.Task {
+func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) (*entity.Task, error) {
 	task := entity.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, backSourceCount, req.UrlMeta)
 
-	s.kmu.RLock(task.ID)
-	task, ok := s.manager.Task.GetOrAdd(task)
-	if ok && task.IsHealth() {
-		// task is healthy and can be reused
-		task.LastAccessAt.Store(time.Now())
-		task.Log().Infof("reuse task and status is %s", task.GetStatus())
-		s.kmu.RUnlock(task.ID)
-		return task
-	}
-	s.kmu.RUnlock(task.ID)
-
 	s.kmu.Lock(task.ID)
-	defer s.kmu.Unlock(task.ID)
+	task, ok := s.manager.Task.LoadOrStore(task)
+	if ok {
+		// Task is healthy and can be reused
+		task.UpdateAt.Store(time.Now())
+		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
+		return task, nil
+	}
 
-	// trigger task
-	task.SetStatus(entity.TaskStatusRunning)
-	task.LastAccessAt.Store(time.Now())
+	// Trigger task
+	if err := task.FSM.Event(entity.TaskEventDownloadFromCDN); err != nil {
+		return nil, err
+	}
 
-	// start seed cdn task
+	// Start seed cdn task
 	go func() {
-		task.Log().Info("cdn start seed task")
+		task.Log.Info("cdn start seed task")
 		peer, result, err := s.manager.CDN.TriggerTask(ctx, task)
+		if err := task.FSM.Event(entity.TaskEventFinished); err != nil {
+			task.Log.Errorf("task fsm event failed: %v", err)
+		}
+
 		if err != nil {
-			// cdn seed task failed
-			task.Log().Errorf("cdn seed task failed: %v", err)
+			// CDN seed task failed
+			if err := task.FSM.Event(entity.TaskStateFailed); err != nil {
+				task.Log.Errorf("task fsm event failed: %v", err)
+			}
+
+			task.Log.Errorf("cdn seed task failed: %v", err)
 			s.callback.TaskFail(ctx, task)
 			return
 		}
 
 		s.callback.PeerSuccess(ctx, peer, result)
-		peer.Log().Infof("successfully obtain seeds from cdn, task: %#v", task)
+		peer.Log.Infof("successfully obtain seeds from cdn, task: %#v", task)
 	}()
 
-	return task
+	return task, nil
 }
 
 func (s *service) GetOrAddHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *entity.Host {

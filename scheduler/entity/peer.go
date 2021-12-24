@@ -21,285 +21,285 @@ import (
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
+	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-type PeerStatus uint8
+const (
+	// Peer has been created but did not start running
+	PeerStatePending = "Pending"
 
-func (status PeerStatus) String() string {
-	switch status {
-	case PeerStatusWaiting:
-		return "Waiting"
-	case PeerStatusRunning:
-		return "Running"
-	case PeerStatusFail:
-		return "Fail"
-	case PeerStatusSuccess:
-		return "Success"
-	default:
-		return "unknown"
-	}
-}
+	// Peer is downloading resources from CDN or back-to-source
+	PeerStateRunning = "Running"
+
+	// Peer is downloading resources finished
+	PeerStateFinished = "Finished"
+
+	// Peer has been downloaded successfully
+	PeerStateSucceeded = "Succeeded"
+
+	// Peer has been downloaded failed
+	PeerStateFailed = "Failed"
+
+	// Peer has been left
+	PeerStateLeave = "Leave"
+)
 
 const (
-	PeerStatusWaiting PeerStatus = iota
-	PeerStatusRunning
-	PeerStatusFail
-	PeerStatusSuccess
+	// Peer is downloading
+	PeerEventDownload = "Download"
+
+	// Peer downloaded finished
+	PeerEventFinished = "Finished"
+
+	// Peer downloaded successfully
+	PeerEventSucceeded = "Succeeded"
+
+	// Peer downloaded failed
+	PeerEventFailed = "Failed"
+
+	// Peer leaves
+	PeerEventLeave = "Leave"
 )
 
 type Peer struct {
-	// ID is ID of peer
+	// ID is peer id
 	ID string
+
+	// Pieces is piece bitset
+	Pieces *bitset.BitSet
+
+	// PieceCosts is piece downloaded time
+	PieceCosts set.SafeSet
+
+	// Stream is grpc stream instance
+	Stream *atomic.Value
+
+	// Record peer report piece grpc interface stop code
+	StopChannel chan base.Code
+
+	// Task state machine
+	FSM *fsm.FSM
+
 	// Task is peer task
 	Task *Task
+
 	// Host is peer host
 	Host *Host
+
+	// Parent is peer parent
+	Parent *atomic.Value
+
+	// Children is peer children
+	Children *sync.Map
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
-	// LastAccessAt is peer last access time
-	LastAccessAt *atomic.Time
-	// parent is peer parent and type is *Peer
-	parent atomic.Value
-	// children is peer children map
-	children *sync.Map
-	// status is peer status and type is PeerStatus
-	status atomic.Value
-	// pieces is piece bitset
-	Pieces bitset.BitSet
-	// pieceCosts is piece historical download time
-	pieceCosts []int
-	// stream is grpc stream instance
-	stream atomic.Value
-	// leave is whether the peer leaves
-	leave atomic.Bool
-	// peer logger
-	logger *logger.SugaredLoggerOnWith
-	// peer lock
-	lock sync.RWMutex
+
+	// UpdateAt is peer update time
+	UpdateAt *atomic.Time
+
+	// Peer mutex
+	mu *sync.Mutex
+
+	// Peer log
+	Log *logger.SugaredLoggerOnWith
 }
 
+// New Peer instance
 func NewPeer(id string, task *Task, host *Host) *Peer {
-	peer := &Peer{
-		ID:           id,
-		Task:         task,
-		Host:         host,
-		Pieces:       bitset.BitSet{},
-		CreateAt:     atomic.NewTime(time.Now()),
-		LastAccessAt: atomic.NewTime(time.Now()),
-		children:     &sync.Map{},
-		logger:       logger.WithTaskAndPeerID(task.ID, id),
+	p := &Peer{
+		ID:          id,
+		Pieces:      &bitset.BitSet{},
+		PieceCosts:  set.NewSafeSet(),
+		Stream:      &atomic.Value{},
+		StopChannel: make(chan base.Code),
+		Task:        task,
+		Host:        host,
+		Parent:      &atomic.Value{},
+		Children:    &sync.Map{},
+		CreateAt:    atomic.NewTime(time.Now()),
+		UpdateAt:    atomic.NewTime(time.Now()),
+		mu:          &sync.Mutex{},
+		Log:         logger.WithTaskAndPeerID(task.ID, id),
 	}
 
-	peer.status.Store(PeerStatusWaiting)
-	return peer
+	// Initialize state machine
+	p.FSM = fsm.NewFSM(
+		PeerStatePending,
+		fsm.Events{
+			{Name: PeerEventDownload, Src: []string{PeerStatePending}, Dst: PeerStateRunning},
+			{Name: PeerEventFinished, Src: []string{PeerStateRunning}, Dst: PeerEventFinished},
+			{Name: PeerEventSucceeded, Src: []string{PeerEventFinished}, Dst: PeerStateSucceeded},
+			{Name: PeerEventFailed, Src: []string{PeerStatePending, PeerStateRunning, PeerEventFinished}, Dst: PeerStateFailed},
+			{Name: PeerEventLeave, Src: []string{PeerEventFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
+		},
+		fsm.Callbacks{
+			PeerEventDownload: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+			},
+			PeerEventFinished: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+			},
+			PeerEventSucceeded: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+			},
+			PeerEventFailed: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+			},
+		},
+	)
+
+	return p
 }
 
-func (peer *Peer) GetTreeNodeCount() int {
+// LoadChild return peer child for a key
+func (p *Peer) LoadChild(key string) (*Peer, bool) {
+	rawChild, ok := p.Children.Load(key)
+	if !ok {
+		return nil, false
+	}
+
+	return rawChild.(*Peer), ok
+}
+
+// StoreChild set peer child
+func (p *Peer) StoreChild(child *Peer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.Children.Store(child.ID, child)
+	p.Host.Peers.Store(child.ID, child)
+	p.Task.Peers.Store(child.ID, child)
+	child.Parent.Store(p)
+}
+
+// DeleteChild deletes peer child for a key
+func (p *Peer) DeleteChild(key string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	child, ok := p.LoadChild(key)
+	if !ok {
+		return
+	}
+
+	p.Children.Delete(child.ID)
+	p.Host.DeletePeer(child.ID)
+	p.Task.DeletePeer(child.ID)
+	child.Parent = &atomic.Value{}
+}
+
+// LoadParent return peer parent
+func (p *Peer) LoadParent() (*Peer, bool) {
+	rawParent := p.Parent.Load()
+	if rawParent == nil {
+		return nil, false
+	}
+
+	return rawParent.(*Peer), true
+}
+
+// StoreParent set peer parent
+func (p *Peer) StoreParent(parent *Peer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.Parent.Store(parent)
+	parent.Children.Store(p.ID, p)
+	parent.Host.Peers.Store(p.ID, p)
+	parent.Task.Peers.Store(p.ID, p)
+}
+
+// DeleteParent deletes peer parent
+func (p *Peer) DeleteParent() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	parent, ok := p.LoadParent()
+	if !ok {
+		return
+	}
+
+	p.Parent = &atomic.Value{}
+	parent.Children.Delete(p.ID)
+	parent.Host.Peers.Delete(p.ID)
+	parent.Task.Peers.Delete(p.ID)
+}
+
+// ReplaceParent replaces peer parent
+func (p *Peer) ReplaceParent(parent *Peer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.DeleteParent()
+	p.StoreParent(parent)
+}
+
+// TreeTotalNodeCount represents tree's total node count
+func (p *Peer) TreeTotalNodeCount() int {
 	count := 1
-	peer.children.Range(func(key, value interface{}) bool {
-		node := value.(*Peer)
-		count += node.GetTreeNodeCount()
+	p.Children.Range(func(_, value interface{}) bool {
+		node, ok := value.(*Peer)
+		if !ok {
+			return true
+		}
+
+		count += node.TreeTotalNodeCount()
 		return true
 	})
 
 	return count
 }
 
-func (peer *Peer) GetTreeDepth() int {
-	var deep int
-	node := peer
-	for node != nil {
-		deep++
-		parent, ok := node.GetParent()
-		if !ok || node.Host.IsCDN {
-			break
-		}
-		node = parent
-	}
-	return deep
+// IsDescendant determines whether it is ancestor of peer
+func (p *Peer) IsDescendant(ancestor *Peer) bool {
+	return isDescendant(ancestor, p)
 }
 
-func (peer *Peer) GetRoot() *Peer {
-	node := peer
-	for node != nil {
-		parent, ok := node.GetParent()
-		if !ok || node.Host.IsCDN {
-			break
-		}
-		node = parent
-	}
-
-	return node
+// IsAncestor determines whether it is descendant of peer
+func (p *Peer) IsAncestor(descendant *Peer) bool {
+	return isDescendant(p, descendant)
 }
 
-// IsDescendant if peer is offspring of ancestor
-func (peer *Peer) IsDescendant(ancestor *Peer) bool {
-	return isDescendant(ancestor, peer)
-}
-
-func isDescendant(ancestor, offspring *Peer) bool {
-	if ancestor == nil || offspring == nil {
-		return false
-	}
-	// TODO avoid circulation
-	node := offspring
+// isDescendant determines whether it is ancestor of peer
+func isDescendant(ancestor, descendant *Peer) bool {
+	node := descendant
 	for node != nil {
-		parent, ok := node.GetParent()
+		parent, ok := node.LoadParent()
 		if !ok {
 			return false
-		} else if parent.ID == ancestor.ID {
+		}
+		if parent.ID == ancestor.ID {
 			return true
 		}
 		node = parent
 	}
+
 	return false
 }
 
-// IsAncestorOf if offspring is offspring of peer
-func (peer *Peer) IsAncestor(offspring *Peer) bool {
-	return isDescendant(peer, offspring)
+// StoreStream set grpc stream
+func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
+	p.Stream.Store(stream)
 }
 
-func (peer *Peer) insertChild(child *Peer) {
-	peer.children.Store(child.ID, child)
-	peer.Host.CurrentUploadLoad.Inc()
-	peer.Task.AddPeer(peer)
-}
-
-func (peer *Peer) deleteChild(child *Peer) {
-	peer.children.Delete(child.ID)
-	peer.Host.CurrentUploadLoad.Dec()
-	peer.Task.AddPeer(peer)
-}
-
-func (peer *Peer) ReplaceParent(parent *Peer) {
-	oldParent, ok := peer.GetParent()
-	if ok {
-		oldParent.deleteChild(peer)
-	}
-
-	peer.SetParent(parent)
-	parent.insertChild(peer)
-}
-
-func (peer *Peer) DeleteParent() {
-	oldParent, ok := peer.GetParent()
-	if ok {
-		oldParent.deleteChild(peer)
-	}
-
-	peer.SetParent(nil)
-}
-
-func (peer *Peer) GetChildren() *sync.Map {
-	return peer.children
-}
-
-func (peer *Peer) SetParent(parent *Peer) {
-	peer.parent.Store(parent)
-}
-
-func (peer *Peer) GetParent() (*Peer, bool) {
-	parent := peer.parent.Load()
-	if parent == nil {
+// LoadStream return grpc stream
+func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
+	rawStream := p.Stream.Load()
+	if rawStream == nil {
 		return nil, false
 	}
 
-	p, ok := parent.(*Peer)
-	if p == nil || !ok {
-		return nil, false
-	}
-
-	return p, true
+	return rawStream.(scheduler.Scheduler_ReportPieceResultServer), true
 }
 
-func (peer *Peer) Touch() {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-
-}
-
-func (peer *Peer) GetPieceCosts() []int {
-	peer.lock.RLock()
-	defer peer.lock.RUnlock()
-
-	return peer.pieceCosts
-}
-
-func (peer *Peer) SetPieceCosts(costs ...int) {
-	peer.lock.Lock()
-	defer peer.lock.Unlock()
-
-	peer.pieceCosts = append(peer.pieceCosts, costs...)
-}
-
-func (peer *Peer) AddPiece(num int32, cost int) {
-	peer.Pieces.Set(uint(num))
-	peer.SetPieceCosts(cost)
-	peer.Task.AddPeer(peer)
-}
-
-func (peer *Peer) getFreeLoad() int32 {
-	if peer.Host == nil {
-		return 0
-	}
-	return peer.Host.GetFreeUploadLoad()
-}
-
-func (peer *Peer) SetStatus(status PeerStatus) {
-	peer.status.Store(status)
-}
-
-func (peer *Peer) GetStatus() PeerStatus {
-	return peer.status.Load().(PeerStatus)
-}
-
-func (peer *Peer) Leave() {
-	peer.leave.Store(true)
-}
-
-func (peer *Peer) IsLeave() bool {
-	return peer.leave.Load()
-}
-
-func (peer *Peer) IsRunning() bool {
-	return peer.GetStatus() == PeerStatusRunning
-}
-
-func (peer *Peer) IsWaiting() bool {
-	return peer.GetStatus() == PeerStatusWaiting
-}
-
-func (peer *Peer) IsSuccess() bool {
-	return peer.GetStatus() == PeerStatusSuccess
-}
-
-func (peer *Peer) IsDone() bool {
-	return peer.GetStatus() == PeerStatusSuccess || peer.GetStatus() == PeerStatusFail
-}
-
-func (peer *Peer) IsFail() bool {
-	return peer.GetStatus() == PeerStatusFail
-}
-
-func (peer *Peer) SetStream(stream scheduler.Scheduler_ReportPieceResultServer) {
-	peer.stream.Store(stream)
-}
-
-func (peer *Peer) GetStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
-	rawStream := peer.stream.Load()
-	stream, ok := rawStream.(scheduler.Scheduler_ReportPieceResultServer)
-	if stream == nil || !ok {
-		return nil, false
-	}
-
-	return stream, true
-}
-
-func (peer *Peer) Log() *logger.SugaredLoggerOnWith {
-	return peer.logger
+// DeleteStream deletes grpc stream
+func (p *Peer) DeleteStream() {
+	p.Stream = &atomic.Value{}
 }

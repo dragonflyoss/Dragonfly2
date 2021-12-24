@@ -185,6 +185,9 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		case <-ctx.Done():
 			log.Infof("context was done")
 			return ctx.Err()
+		case code := <-peer.StopChannel:
+			log.Infof("context was done")
+			return dferrors.New(code, "")
 		default:
 		}
 

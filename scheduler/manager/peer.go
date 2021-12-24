@@ -36,9 +36,6 @@ type Peer interface {
 
 	// Delete deletes peer entity for a key
 	Delete(string)
-
-	// Get peer by task id
-	GetPeersByTask(string) []*entity.Peer
 }
 
 type peer struct {
@@ -49,6 +46,7 @@ type peer struct {
 	mu *sync.Mutex
 }
 
+// New peer interface
 func newPeer() Peer {
 	return &peer{
 		Map: &sync.Map{},
@@ -69,9 +67,9 @@ func (p *peer) Store(peer *entity.Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	peer.Host.AddPeer(peer)
-	peer.Task.AddPeer(peer)
 	p.Map.Store(peer.ID, peer)
+	peer.Host.StorePeer(peer)
+	peer.Task.StorePeer(peer)
 }
 
 func (p *peer) LoadOrStore(peer *entity.Peer) (*entity.Peer, bool) {
@@ -80,8 +78,8 @@ func (p *peer) LoadOrStore(peer *entity.Peer) (*entity.Peer, bool) {
 
 	rawPeer, loaded := p.Map.LoadOrStore(peer.ID, peer)
 	if !loaded {
-		peer.Host.AddPeer(peer)
-		peer.Task.AddPeer(peer)
+		peer.Host.StorePeer(peer)
+		peer.Task.StorePeer(peer)
 	}
 
 	return rawPeer.(*entity.Peer), loaded
@@ -92,19 +90,8 @@ func (p *peer) Delete(key string) {
 	defer p.mu.Unlock()
 
 	if peer, ok := p.Load(key); ok {
-		peer.Host.DeletePeer(key)
-		peer.Task.DeletePeer(peer)
 		p.Map.Delete(key)
+		peer.Host.DeletePeer(key)
+		peer.Task.DeletePeer(key)
 	}
-}
-
-func (p *peer) DeleteByTaskID(taskID string) {
-	p.Map.Range(func(_, value interface{}) bool {
-		peer := value.(*entity.Peer)
-		if peer.Task.ID == taskID {
-			p.Delete(peer.ID)
-			return true
-		}
-		return true
-	})
 }

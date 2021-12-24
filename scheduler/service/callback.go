@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/entity"
 	"d7y.io/dragonfly/v2/scheduler/manager"
@@ -48,4 +49,25 @@ func newCallback(manager *manager.Manager, scheduler scheduler.Scheduler) Callba
 		manager:   manager,
 		scheduler: scheduler,
 	}
+}
+
+func (c *callback) TaskFail(ctx context.Context, task *entity.Task) {
+	task.Peers.Range(func(_, value interface{}) bool {
+		peer, ok := value.(*entity.Peer)
+		if !ok {
+			return true
+		}
+
+		if task.CanBackToSource() {
+			if !task.BackToSourcePeers.Contains(peer) {
+				peer.StopChannel <- base.Code_SchedNeedBackSource
+				task.BackToSourcePeers.Add(peer)
+				return true
+			}
+			return true
+		}
+
+		peer.StopChannel <- base.Code_SchedTaskStatusError
+		return true
+	})
 }
