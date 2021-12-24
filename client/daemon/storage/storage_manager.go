@@ -47,7 +47,7 @@ type TaskStorageDriver interface {
 	WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error)
 
 	// ReadPiece get a piece data reader of a task from storage
-	// return a Reader and a Closer from task data with seeked, caller should read bytes and close it.
+	// return a Reader and a Closer from task data with sought, caller should read bytes and close it.
 	// If req.Num is equal to -1, range has a fixed value.
 	ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error)
 
