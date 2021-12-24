@@ -420,7 +420,7 @@ func removePeerFromCurrentTree(peer *supervisor.Peer, s *state) {
 	if ok {
 		children := s.sched.ScheduleChildren(parent, sets.NewString(peer.ID))
 		for _, child := range children {
-			if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, peer, nil)); err != nil {
+			if err := child.SendSchedulePacket(constructSuccessPeerPacket(child, parent, nil)); err != nil {
 				sendErrorHandler(err, s, child)
 			}
 		}
