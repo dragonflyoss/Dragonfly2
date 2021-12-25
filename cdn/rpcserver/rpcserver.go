@@ -36,7 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
@@ -46,6 +45,7 @@ type Server struct {
 	*grpc.Server
 	config  Config
 	service supervisor.CDNService
+	cdnsystem.UnimplementedSeederServer
 }
 
 // New returns a new Manager Object.
@@ -54,11 +54,14 @@ func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOpt
 		config:  config,
 		service: cdnService,
 	}
-	svr.Server = cdnserver.New(svr, opts...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	svr.Server = grpcServer
+	cdnsystem.RegisterSeederServer(grpcServer, svr)
 	return svr, nil
 }
 
-func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, psc chan<- *cdnsystem.PieceSeed) (err error) {
+func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
+	ctx := stream.Context()
 	clientAddr := "unknown"
 	if pe, ok := peer.FromContext(ctx); ok {
 		clientAddr = pe.Addr.String()
@@ -69,13 +72,6 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	defer span.End()
 	span.SetAttributes(constants.AttributeObtainSeedsRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
-	defer func() {
-		if r := recover(); r != nil {
-			err = dferrors.Newf(base.Code_UnknownError, "obtain task(%s) seeds encounter an panic: %v", req.TaskId, r)
-			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("%v", err)
-		}
-	}()
 	// register seed task
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
@@ -106,7 +102,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			ContentLength:   registeredTask.SourceFileLength,
 			TotalPieceCount: registeredTask.TotalPieceCount,
 		}
-		psc <- pieceSeed
+		stream.Send(pieceSeed)
 		jsonPiece, err := json.Marshal(pieceSeed)
 		if err != nil {
 			logger.Errorf("failed to json marshal seed piece: %v", err)
@@ -137,7 +133,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		ContentLength:   seedTask.SourceFileLength,
 		TotalPieceCount: seedTask.TotalPieceCount,
 	}
-	psc <- pieceSeed
+	stream.Send(pieceSeed)
 	jsonPiece, err := json.Marshal(pieceSeed)
 	if err != nil {
 		logger.Errorf("failed to json marshal seed piece: %v", err)
@@ -146,21 +142,12 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	return nil
 }
 
-func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
+func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	var span trace.Span
 	_, span = tracer.Start(ctx, constants.SpanGetPieceTasks, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 	span.SetAttributes(constants.AttributeGetPieceTasksRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
-	logger.Infof("get piece tasks: %#v", req)
-	defer func() {
-		if r := recover(); r != nil {
-			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
-			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
-		}
-		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
-	}()
 	logger.Infof("get piece tasks: %#v", req)
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {
