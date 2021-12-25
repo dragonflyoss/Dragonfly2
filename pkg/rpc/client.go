@@ -18,6 +18,15 @@ package rpc
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	"github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"sync"
 	"time"
 
@@ -47,14 +56,57 @@ type Connection struct {
 }
 
 var DefaultClientOpts = []grpc.DialOption{
+	grpc.WithUserAgent("Dragonfly2"),
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithInsecure(),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:    2 * time.Minute,
-		Timeout: 10 * time.Second,
+		Time:                2 * time.Minute,
+		Timeout:             10 * time.Second,
+		PermitWithoutStream: false,
 	}),
-	grpc.WithStreamInterceptor(streamClientInterceptor),
-	grpc.WithUnaryInterceptor(unaryClientInterceptor),
+	grpc.WithChainUnaryInterceptor(
+		grpc_prometheus.UnaryClientInterceptor,
+		grpc_zap.PayloadUnaryClientInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
+			return true
+		}),
+		grpc_validator.UnaryClientInterceptor(),
+		grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
+			grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable),
+		),
+	),
+	grpc.WithChainStreamInterceptor(
+		grpc_prometheus.StreamClientInterceptor,
+		grpc_zap.PayloadStreamClientInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
+			return true
+		}),
+		grpc_retry.StreamClientInterceptor(
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
+			grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable),
+		),
+	),
+}
+
+func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
+	var res interface{}
+	for i := 0; i < maxAttempts; i++ {
+		if _, ok := cause.(*dferrors.DfError); ok {
+			return res, cause
+		}
+		if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
+			return res, cause
+		}
+		if i > 0 {
+			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+		}
+
+		res, cause = f()
+		if cause == nil {
+			break
+		}
+	}
+
+	return res, cause
 }

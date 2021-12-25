@@ -17,6 +17,7 @@
 package rpc
 
 import (
+	"context"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"time"
 
@@ -35,15 +36,19 @@ var DefaultServerOptions = []grpc.ServerOption{
 	grpc.ConnectionTimeout(10 * time.Second),
 	grpc.InitialConnWindowSize(8 * 1024 * 1024),
 	grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-		MinTime: 1 * time.Minute,
+		MinTime:             1 * time.Minute,
+		PermitWithoutStream: false,
 	}),
 	grpc.KeepaliveParams(keepalive.ServerParameters{
 		MaxConnectionIdle: 5 * time.Minute,
 	}),
 	grpc.MaxConcurrentStreams(100),
+	grpc.ConnectionTimeout(5 * time.Second),
 	grpc.ChainStreamInterceptor(
 		grpc_prometheus.StreamServerInterceptor,
-		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_zap.PayloadStreamServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+			return true
+		}),
 		grpc_validator.StreamServerInterceptor(),
 		grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 			return status.Errorf(codes.Unknown, "panic triggered: %v", p)
@@ -51,7 +56,9 @@ var DefaultServerOptions = []grpc.ServerOption{
 	),
 	grpc.ChainUnaryInterceptor(
 		grpc_prometheus.UnaryServerInterceptor,
-		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_zap.PayloadUnaryServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+			return true
+		}),
 		grpc_validator.UnaryServerInterceptor(),
 		grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(func(p interface{}) (err error) {
 			return status.Errorf(codes.Unknown, "panic triggered: %v", p)
