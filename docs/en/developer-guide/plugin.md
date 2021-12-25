@@ -125,7 +125,7 @@ require (
         go.uber.org/atomic v1.9.0 // indirect
         go.uber.org/multierr v1.5.0 // indirect
         go.uber.org/zap v1.16.0 // indirect
-        google.golang.org/grpc v1.39.0 // indirect
+        google.golang.org/grpc v1.41.0 // indirect
         gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
