@@ -18,8 +18,8 @@ package rpc
 
 import (
 	"context"
+	"google.golang.org/grpc/balancer/base"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/serialx/hashring"
@@ -38,38 +38,40 @@ type PickReq struct {
 }
 
 var (
-	_ balancer.Picker = &d7yPicker{}
+	_ balancer.Picker = (*d7yHashPicker)(nil)
 )
 
-type PickResult struct {
-	Key        string
-	TargetAddr string
-	SC         balancer.SubConn
-	Ctx        context.Context
-	PickTime   time.Time
+type pickResult struct {
+	ctx        context.Context
+	key        string
+	targetAddr string
+	sc         balancer.SubConn
+	pickTime   time.Time
 }
 
-func newD7yPicker(subConns map[string]balancer.SubConn, reportChan chan<- PickResult, pickHistory *sync.Map) *d7yPicker {
+func newD7yHashPicker(subConns map[string]balancer.SubConn, pickHistory map[string]balancer.SubConn) balancer.Picker {
+	if len(subConns) == 0 {
+		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
+	}
 	addrs := make([]string, 0)
 	for addr := range subConns {
 		addrs = append(addrs, addr)
 	}
-	return &d7yPicker{
+	return &d7yHashPicker{
 		subConns:    subConns,
 		hashRing:    hashring.New(addrs),
-		reportChan:  reportChan,
 		pickHistory: pickHistory,
 	}
 }
 
-type d7yPicker struct {
+type d7yHashPicker struct {
 	subConns    map[string]balancer.SubConn // address string -> balancer.SubConn
 	hashRing    *hashring.HashRing
-	reportChan  chan<- PickResult
-	pickHistory *sync.Map
+	reportChan  chan<- pickResult
+	pickHistory map[string]balancer.SubConn
 }
 
-func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
+func (p *d7yHashPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 	var (
 		targetAddr string
 		ret        balancer.PickResult

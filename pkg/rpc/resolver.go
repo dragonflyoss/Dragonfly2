@@ -17,91 +17,97 @@
 package rpc
 
 import (
-	"log"
-
 	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
-const (
-	CDNScheme       = "cdn"
-	SchedulerScheme = "scheduler"
-	DaemonScheme    = "dfdaemon"
-)
-
 var (
-	_ resolver.Builder  = &D7yResolver{}
-	_ resolver.Resolver = &D7yResolver{}
+	_ resolver.Builder  = (*d7yResolverBuilder)(nil)
+	_ resolver.Resolver = (*d7yResolver)(nil)
 )
 
-func NewD7yResolver(scheme string, addrs []dfnet.NetAddr) *D7yResolver {
-	return &D7yResolver{scheme: scheme, addrs: addrs}
+func NewD7yResolverBuilder(scheme string) resolver.Builder {
+	return &d7yResolverBuilder{scheme: scheme}
 }
 
-type D7yResolver struct {
+type d7yResolverBuilder struct {
 	scheme string
-	target resolver.Target
-	cc     resolver.ClientConn
-	addrs  []dfnet.NetAddr
 }
 
-func (r *D7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+func (b *d7yResolverBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	var err error
-	r.target = target
-	r.cc = cc
+	r := &d7yResolver{
+		scheme: b.scheme,
+		target: target,
+		cc:     cc,
+		addrs:  nil,
+	}
 	if len(r.addrs) != 0 {
 		err = r.updateAddrs(r.addrs)
 	}
 	return r, err
 }
 
-func (r *D7yResolver) Scheme() string {
-	return r.scheme
+func (b *d7yResolverBuilder) Scheme() string {
+	return b.scheme
 }
 
-func (r *D7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
-	if len(addrs) == 0 {
-		return nil
-	}
-
-	updateFlag := false
-	if len(addrs) != len(r.addrs) {
-		updateFlag = true
-	} else {
-		for i := 0; i < len(addrs); i++ {
-			if addrs[i] != r.addrs[i] {
-				updateFlag = true
-				break
-			}
-		}
-	}
-
-	if !updateFlag {
-		return nil
-	}
-
-	return r.updateAddrs(addrs)
+type d7yResolver struct {
+	scheme  string
+	target  resolver.Target
+	cc      resolver.ClientConn
+	watcher *Watcher
+	addrs   []dfnet.NetAddr
 }
 
-func (r *D7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
-	addresses := make([]resolver.Address, len(addrs))
-	for i, addr := range addrs {
-		if addr.Type == dfnet.UNIX {
-			addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
-		} else {
-			addresses[i] = resolver.Address{Addr: addr.Addr}
-		}
-	}
-	r.addrs = addrs
-
-	log.Printf("resolver update addresses: %v", addresses)
-	if r.cc == nil {
-		return nil
-	}
-	return r.cc.UpdateState(resolver.State{Addresses: addresses})
+type Watcher struct {
 }
 
-func (r *D7yResolver) ResolveNow(options resolver.ResolveNowOptions) {}
+//func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
+//	if len(addrs) == 0 {
+//		return nil
+//	}
+//
+//	updateFlag := false
+//	if len(addrs) != len(r.addrs) {
+//		updateFlag = true
+//	} else {
+//		for i := 0; i < len(addrs); i++ {
+//			if addrs[i] != r.addrs[i] {
+//				updateFlag = true
+//				break
+//			}
+//		}
+//	}
+//
+//	if !updateFlag {
+//		return nil
+//	}
+//
+//	return r.updateAddrs(addrs)
+//}
 
-func (r *D7yResolver) Close() {}
+//func (r *d7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
+//	addresses := make([]resolver.Address, len(addrs))
+//	for i, addr := range addrs {
+//		if addr.Type == dfnet.UNIX {
+//			addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
+//		} else {
+//			addresses[i] = resolver.Address{Addr: addr.Addr}
+//		}
+//	}
+//	r.addrs = addrs
+//
+//	log.Printf("resolver update addresses: %v", addresses)
+//	if r.cc == nil {
+//		return nil
+//	}
+//	return r.cc.UpdateState(resolver.State{Addresses: addresses})
+//}
+
+func (r *d7yResolver) ResolveNow(options resolver.ResolveNowOptions) {
+
+}
+
+func (r *d7yResolver) Close() {}

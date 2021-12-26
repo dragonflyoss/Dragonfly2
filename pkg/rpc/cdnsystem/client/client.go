@@ -19,66 +19,61 @@ package client
 import (
 	"context"
 	"fmt"
-
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 )
 
-func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
-	}
-	resolver := rpc.NewD7yResolver(rpc.CDNScheme, addrs)
-
-	dialOpts := append(append(append(
+func Dial(target string, opts ...grpc.DialOption) (CDNClient, error) {
+	dialOpts := append(
 		rpc.DefaultClientOpts,
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy))),
-		grpc.WithResolvers(resolver)),
-		opts...)
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	conn, err := grpc.DialContext(
-		ctx,
-		// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
-		fmt.Sprintf("%s:///%s", rpc.CDNScheme, "cdnsystem.Seeder"),
-		dialOpts...,
-	)
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
+		grpc.WithResolvers(rpc.NewD7yResolverBuilder("cdn")))
+	clientConn, err := grpc.Dial(target, append(dialOpts, opts...)...)
 	if err != nil {
-		cancel()
 		return nil, err
 	}
-
-	cc := &cdnClient{
-		ctx:       ctx,
-		cancel:    cancel,
-		cdnClient: cdnsystem.NewSeederClient(conn),
-		conn:      conn,
-		resolver:  resolver,
-	}
-	return cc, nil
+	return &cdnClient{
+		ClientConn:   clientConn,
+		seederClient: cdnsystem.NewSeederClient(clientConn),
+	}, nil
 }
 
-func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	conn, err := getClientByAddr(ctx, addr, opts...)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
+type CDNClient interface {
+	ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error)
 
-	return &cdnClient{
-		ctx:       ctx,
-		cancel:    cancel,
-		cdnClient: cdnsystem.NewSeederClient(conn),
-		conn:      conn,
-	}, nil
+	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+
+	Close() error
+}
+
+type cdnClient struct {
+	*grpc.ClientConn
+	seederClient cdnsystem.SeederClient
+}
+
+var _ CDNClient = (*cdnClient)(nil)
+
+func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
+	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, opts...)
+	if err == nil {
+		return seeder, err
+	}
+	status.FromContextError(err)
+	// try next CDN
+
+}
+
+func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
+}
+
+func (cc *cdnClient) Close() error {
+	return cc.ClientConn.Close()
 }
 
 func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
@@ -86,66 +81,10 @@ func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialO
 	return grpc.DialContext(ctx, addr.GetEndpoint(), dialOpts...)
 }
 
-// CdnClient see cdnsystem.CdnClient
-type CdnClient interface {
-	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
-
-	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
-
-	UpdateState(addrs []dfnet.NetAddr)
-
-	Close() error
-}
-
-type cdnClient struct {
-	ctx       context.Context
-	cancel    context.CancelFunc
-	cdnClient cdnsystem.SeederClient
-	conn      *grpc.ClientConn
-	resolver  *rpc.D7yResolver
-}
-
-var _ CdnClient = (*cdnClient)(nil)
-
-func (cc *cdnClient) getCdnClient() (cdnsystem.SeederClient, error) {
-	return cc.cdnClient, nil
-}
-
 func (cc *cdnClient) getCdnClientByAddr(addr dfnet.NetAddr) (cdnsystem.SeederClient, error) {
-	conn, err := getClientByAddr(cc.ctx, addr)
+	conn, err := getClientByAddr(context.Background(), addr)
 	if err != nil {
 		return nil, err
 	}
 	return cdnsystem.NewSeederClient(conn), nil
-}
-
-func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
-	return newPieceSeedStream(ctx, cc, sr.TaskId, sr, opts)
-}
-
-func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getCdnClientByAddr(addr)
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, req, opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.WithTaskID(req.TaskId).Infof("GetPieceTasks: invoke cdn node %s GetPieceTasks failed: %v", addr.GetEndpoint(), err)
-		return nil, err
-	}
-	return res.(*base.PiecePacket), nil
-}
-
-func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {
-	if err := cc.resolver.UpdateAddrs(addrs); err != nil {
-		// TODO(zzy987) modify log
-		logger.Errorf("update resolver error: %v\n", err)
-	}
-}
-
-func (cc *cdnClient) Close() error {
-	cc.cancel()
-	return nil
 }

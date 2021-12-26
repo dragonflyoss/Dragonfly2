@@ -19,8 +19,9 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/attributes"
 	"log"
-	"sync"
 	"time"
 
 	"google.golang.org/grpc/balancer"
@@ -30,49 +31,53 @@ import (
 )
 
 const (
-	D7yBalancerPolicy  = "consistent_hash_policy"
+	D7yBalancerPolicy  = "d7y_hash_policy"
 	connectionLifetime = 10 * time.Minute
 )
 
 var (
-	_ balancer.Builder  = &d7yBalancerBuilder{}
-	_ balancer.Balancer = &d7yBalancer{}
+	_ balancer.Builder  = (*d7yBalancerBuilder)(nil)
+	_ balancer.Balancer = (*d7yBalancer)(nil)
 
-	ErrSubConnNotFound  = fmt.Errorf("SubConn not found")
-	ErrResetSubConnFail = fmt.Errorf("reset SubConn fail")
+	ErrSubConnNotFound  = errors.New("SubConn not found")
+	ErrResetSubConnFail = errors.New("reset SubConn fail")
 )
 
-func init() {
-	balancer.Register(&d7yBalancerBuilder{})
+func newD7yBalancerBuilder() balancer.Builder {
+	return &d7yBalancerBuilder{}
 }
 
-// d7yBalancerBuilder is an empty struct with functions Build and Name, implemented from balancer.Builder
-type d7yBalancerBuilder struct{}
+func init() {
+	balancer.Register(newD7yBalancerBuilder())
+}
+
+// d7yBalancerBuilder is a struct with functions Build and Name, implemented from balancer.Builder
+type d7yBalancerBuilder struct {
+	name   string
+	config Config
+}
 
 // Build creates a d7yBalancer, and starts its scManager.
-func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
+func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
-		cc:                 cc,
-		addrInfos:          make(map[string]resolver.Address),
-		subConns:           make(map[string]balancer.SubConn),
-		scInfos:            sync.Map{},
-		pickResultChan:     make(chan PickResult, 1),
-		pickHistory:        sync.Map{},
-		subConnPickRecords: sync.Map{},
+		cc:       cc,
+		config:   dbb.config,
+		subConns: make(map[resolver.Address]subConnInfo),
+		scStates: make(map[balancer.SubConn]connectivity.State),
+		csEvltr:  &balancer.ConnectivityStateEvaluator{},
 	}
-	//go b.scManager()
+	b.picker = base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	return b
 }
 
 // Name returns the scheme of the d7yBalancer registering in grpc.
-func (builder *d7yBalancerBuilder) Name() string {
+func (dbb *d7yBalancerBuilder) Name() string {
 	return D7yBalancerPolicy
 }
 
-// subConnInfo records the state and addr corresponding to the SubConn.
 type subConnInfo struct {
-	state connectivity.State
-	addr  string
+	subConn balancer.SubConn
+	attrs   *attributes.Attributes
 }
 
 type subConnPickRecord struct {
@@ -85,58 +90,65 @@ type d7yBalancer struct {
 	// cc points to the balancer.ClientConn who creates the d7yBalancer.
 	cc balancer.ClientConn
 
+	csEvltr *balancer.ConnectivityStateEvaluator
 	// state indicates the state of the whole ClientConn from the perspective of the balancer, it will be changed during regeneratePicker.
 	state connectivity.State
 
-	// addrInfos maps the address string to resolver.Address.
-	addrInfos map[string]resolver.Address
-	// subConns maps the address string to balancer.SubConn.
-	subConns map[string]balancer.SubConn
-	// scInfos maps the balancer.SubConn to subConnInfo.
-	scInfos sync.Map
-	// baseInfosLock is the lock for addrInfos, subConns and scInfos.
-	baseInfosLock sync.RWMutex
-
+	subConns *resolver.AddressMap
+	scStates map[balancer.SubConn]connectivity.State
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
 	picker balancer.Picker
+	config Config
 
 	// resolverErr is the last error reported by the resolver; cleared on successful resolution.
 	resolverErr error
 	// connErr is the last connection error; cleared upon leaving TransientFailure
 	connErr error
+}
 
-	// pickResultChan is the channel for the picker to report PickResult to the balancer.
-	pickResultChan chan PickResult
-	// pickHistory maps pickReq.Key(taskID) to the last picked targetAddr string.
-	pickHistory sync.Map
-	//subConnPickRecords maps subConn to its *subConnPickRecord.
-	subConnPickRecords sync.Map
-	// pickInfosLock is the lock for pickHistory and subConnPickRecords.
-	pickInfosLock sync.RWMutex
+// Config contains the config info about the base balancer builder.
+type Config struct {
+	// HealthCheck indicates whether health checking should be enabled for this specific balancer.
+	HealthCheck bool
+}
+
+// ResolverError is implemented from balancer.Balancer, modified from baseBalancer, and update the state of the balancer.
+func (b *d7yBalancer) ResolverError(err error) {
+	b.resolverErr = err
+	if b.subConns.Len() == 0 {
+		b.state = connectivity.TransientFailure
+	}
+
+	if b.state != connectivity.TransientFailure {
+		// The picker will not change since the balancer does not currently
+		// report an error.
+		return
+	}
+	b.regeneratePicker()
+	b.cc.UpdateState(balancer.State{
+		ConnectivityState: b.state,
+		Picker:            b.picker,
+	})
 }
 
 // UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
 // ClientConn will call it after Builder builds the balancer to pass the necessary data.
 func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
+	// clear resolver error
 	b.resolverErr = nil
-	addrsSet := make(map[string]struct{})
-
-	b.baseInfosLock.Lock()
+	addrsSet := resolver.NewAddressMap()
 	for _, a := range s.ResolverState.Addresses {
+		addrsSet.Set(a, nil)
 		addr := a.Addr
-		b.addrInfos[addr] = a
-		addrsSet[addr] = struct{}{}
-		if sc, ok := b.subConns[addr]; !ok {
-			newSC, err := b.cc.NewSubConn([]resolver.Address{a}, balancer.NewSubConnOptions{HealthCheckEnabled: false})
+		if sc, ok := b.subConns.Get(a); !ok {
+			newSC, err := b.cc.NewSubConn([]resolver.Address{a}, balancer.NewSubConnOptions{HealthCheckEnabled: b.config.HealthCheck})
 			if err != nil {
 				log.Printf("d7yBalancer: failed to create new SubConn: %v", err)
 				continue
 			}
-			b.subConns[addr] = newSC
-			b.scInfos.Store(newSC, &subConnInfo{
-				state: connectivity.Idle,
-				addr:  addr,
-			})
+			b.subConns.Set(a, newSC)
+			b.scStates[newSC] = connectivity.Idle
+			b.csEvltr.RecordTransition(connectivity.Shutdown, connectivity.Idle)
 			// newSC.Connect()
 			// newSC.Connect() will lead to a function call for balancer.UpdateSubConnState(),
 			// and the picker will be generated at the first time in the design of the baseBalancer.
@@ -147,12 +159,10 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 			// and the programme will be blocked by the pickerWrapper permanently.
 			// We should use another way to achieve ClientConn.UpdateState() with a picker before the first pick,
 			// for example, we call ClientConn.UpdateState() directly.
-		} else {
-			b.cc.UpdateAddresses(sc, []resolver.Address{a})
 		}
 	}
-	for a, sc := range b.subConns {
-		if _, ok := addrsSet[a]; !ok {
+	for a, sc := range b.subConns.Keys() {
+		if _, ok := b.subConns.Get(a); !ok {
 			b.cc.RemoveSubConn(sc)
 			delete(b.addrInfos, a)
 			delete(b.subConns, a)
@@ -176,28 +186,15 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	return nil
 }
 
-// ResolverError is implemented from balancer.Balancer, modified from baseBalancer, and update the state of the balancer.
-func (b *d7yBalancer) ResolverError(err error) {
-	b.resolverErr = err
-
-	b.regeneratePicker()
-	if b.state != connectivity.TransientFailure {
-		// The picker will not change since the balancer does not currently
-		// report an error.
-		return
-	}
-	b.cc.UpdateState(balancer.State{
-		ConnectivityState: b.state,
-		Picker:            b.picker,
-	})
-}
-
 // regeneratePicker generates a new picker to replace the old one with new data.
 func (b *d7yBalancer) regeneratePicker() {
+	if b.state == connectivity.TransientFailure {
+		b.picker = base.NewErrPicker(b.mergeErrors())
+		return
+	}
 	availableSCs := make(map[string]balancer.SubConn)
 
-	b.baseInfosLock.RLock()
-	for addr, sc := range b.subConns {
+	for addr, sc := range b.subConns.Keys() {
 		if st, ok := b.scInfos.Load(sc); ok {
 			info := st.(*subConnInfo)
 			// The next line may not be safe, but we have to use subConns without check,

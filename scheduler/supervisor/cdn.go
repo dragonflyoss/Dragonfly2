@@ -25,11 +25,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
-
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -38,6 +33,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
@@ -52,7 +50,7 @@ var (
 var tracer = otel.Tracer("scheduler-cdn")
 
 type CDN interface {
-	// CetClient get cdn grpc client
+	// GetClient get cdn grpc client
 	GetClient() CDNDynmaicClient
 
 	// StartSeedTask start seed cdn task
@@ -256,27 +254,6 @@ type cdnDynmaicClient struct {
 	data  *config.DynconfigData
 	hosts map[string]*Host
 	lock  sync.RWMutex
-}
-
-func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDNDynmaicClient, error) {
-	config, err := dynConfig.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := cdnclient.GetClientByAddrs(cdnsToNetAddrs(config.CDNs), opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	dc := &cdnDynmaicClient{
-		CdnClient: client,
-		data:      config,
-		hosts:     cdnsToHosts(config.CDNs),
-	}
-
-	dynConfig.Register(dc)
-	return dc, nil
 }
 
 func (dc *cdnDynmaicClient) GetHost(id string) (*Host, bool) {
