@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/attributes"
 	"log"
 	"time"
 
@@ -43,12 +42,15 @@ var (
 	ErrResetSubConnFail = errors.New("reset SubConn fail")
 )
 
-func newD7yBalancerBuilder() balancer.Builder {
-	return &d7yBalancerBuilder{}
+func newD7yBalancerBuilder(name string) balancer.Builder {
+	return &d7yBalancerBuilder{
+		name:   name,
+		config: Config{HealthCheck: false},
+	}
 }
 
 func init() {
-	balancer.Register(newD7yBalancerBuilder())
+	balancer.Register(newD7yBalancerBuilder("cdn"))
 }
 
 // d7yBalancerBuilder is a struct with functions Build and Name, implemented from balancer.Builder
@@ -62,7 +64,7 @@ func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.Build
 	b := &d7yBalancer{
 		cc:       cc,
 		config:   dbb.config,
-		subConns: make(map[resolver.Address]subConnInfo),
+		subConns: resolver.NewAddressMap(),
 		scStates: make(map[balancer.SubConn]connectivity.State),
 		csEvltr:  &balancer.ConnectivityStateEvaluator{},
 	}
@@ -75,9 +77,8 @@ func (dbb *d7yBalancerBuilder) Name() string {
 	return D7yBalancerPolicy
 }
 
-type subConnInfo struct {
-	subConn balancer.SubConn
-	attrs   *attributes.Attributes
+type SubConnInfo struct {
+	Address resolver.Address // the address used to create this SubConn
 }
 
 type subConnPickRecord struct {

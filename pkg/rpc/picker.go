@@ -18,8 +18,11 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/resolver"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/serialx/hashring"
@@ -49,19 +52,26 @@ type pickResult struct {
 	pickTime   time.Time
 }
 
-func newD7yHashPicker(subConns map[string]balancer.SubConn, pickHistory map[string]balancer.SubConn) balancer.Picker {
-	if len(subConns) == 0 {
+func buildD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
+	if len(info.SCs) == 0 {
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
-	addrs := make([]string, 0)
-	for addr := range subConns {
-		addrs = append(addrs, addr)
+	scs := make(map[string]balancer.SubConn, len(info.SCs))
+	weights := make(map[string]int, len(info.SCs))
+	for sc, connInfo := range info.SCs {
+		weights[connInfo.Address.Addr] = getWeight(connInfo.Address)
+		scs[connInfo.Address.Addr] = sc
 	}
 	return &d7yHashPicker{
-		subConns:    subConns,
-		hashRing:    hashring.New(addrs),
-		pickHistory: pickHistory,
+		subConns:    scs,
+		hashRing:    hashring.NewWithWeights(weights),
+		pickHistory: info.pickHistory,
 	}
+}
+
+type d7yPickerBuildInfo struct {
+	SCs         map[balancer.SubConn]SubConnInfo
+	pickHistory map[string]balancer.SubConn
 }
 
 type d7yHashPicker struct {
@@ -107,4 +117,27 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error
 		return ret, dferrors.ErrNoCandidateNode
 	}
 	return ret, nil
+}
+
+const (
+	WeightKey = "weight"
+)
+
+func getWeight(addr resolver.Address) int {
+	if addr.Attributes == nil {
+		return 1
+	}
+	value := addr.Attributes.Value(WeightKey)
+	if value == nil {
+		return 1
+	}
+	weight, err := strconv.Atoi(value)
+	if err == nil {
+		return weight
+	}
+	return 1
+}
+
+func wrapAddr(addr string, idx int) string {
+	return fmt.Sprintf("%s-%d", addr, idx)
 }
