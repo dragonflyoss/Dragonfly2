@@ -33,7 +33,8 @@ const (
 )
 
 type Callback interface {
-	ScheduleParent(context.Context, *entity.Peer)
+	ScheduleParent(context.Context, *entity.Peer, set.SafeSet)
+	ScheduleChildren(context.Context, *entity.Peer, set.SafeSet)
 	InitReport(context.Context, *entity.Peer)
 	PieceSuccess(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
 	PieceFail(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
@@ -64,22 +65,7 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer, result *r
 		return
 	}
 
-	children, ok := c.scheduler.ScheduleChildren(ctx, peer, set.NewSafeSet())
-	if !ok {
-		peer.Log.Error("schedule children failed")
-	}
-
-	for _, child := range children {
-		stream, ok := child.LoadStream()
-		if !ok {
-			peer.Log.Errorf("load child %s peer stream failed", child.ID)
-			continue
-		}
-
-		if err := stream.Send(constructSuccessPeerPacket(child, peer, nil)); err != nil {
-			peer.Log.Errorf("child %s peer stream send faied: %v", child.ID, err)
-		}
-	}
+	go c.ScheduleChildren(ctx, peer, set.NewSafeSet())
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer, result *rpcscheduler.PeerResult) {
@@ -178,6 +164,25 @@ func (c *callback) TaskFail(ctx context.Context, task *entity.Task) {
 
 		return true
 	})
+}
+
+func (c *callback) ScheduleChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {
+	children, ok := c.scheduler.ScheduleChildren(ctx, peer, blocklist)
+	if !ok {
+		peer.Log.Error("schedule children failed")
+	}
+
+	for _, child := range children {
+		stream, ok := child.LoadStream()
+		if !ok {
+			peer.Log.Errorf("load child %s peer stream failed", child.ID)
+			continue
+		}
+
+		if err := stream.Send(constructSuccessPeerPacket(child, peer, nil)); err != nil {
+			peer.Log.Errorf("child %s peer stream send faied: %v", child.ID, err)
+		}
+	}
 }
 
 func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {

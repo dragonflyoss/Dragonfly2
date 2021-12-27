@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -38,7 +37,8 @@ import (
 )
 
 type Service interface {
-	ScheduleParent(context.Context, *entity.Peer) (*entity.Peer, []*entity.Peer, bool)
+	ScheduleParent(context.Context, *entity.Peer)
+	ScheduleChildren(context.Context, *entity.Peer)
 	GetOrAddTask(context.Context, *rpcscheduler.PeerTaskRequest, int32) *entity.Task
 	GetOrAddHost(context.Context, *rpcscheduler.PeerTaskRequest) *entity.Host
 	GetOrAddPeer(context.Context, *rpcscheduler.PeerTaskRequest, *entity.Task, *entity.Host) *entity.Peer
@@ -96,10 +96,6 @@ func New(cfg *config.Config, pluginDir string, gc gc.GC, dynconfig config.Dyncon
 		dynconfig: dynconfig,
 		kmu:       pkgsync.NewKrwmutex(),
 	}, nil
-}
-
-func (s *service) ScheduleParent(ctx context.Context, peer *entity.Peer) (*entity.Peer, []*entity.Peer, bool) {
-	return s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 }
 
 func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) (*entity.Task, error) {
