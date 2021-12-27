@@ -50,19 +50,15 @@ type task struct {
 	// Task sync map
 	*sync.Map
 
-	// Peer manager store peer entity
-	peerManager Peer
-
 	// Task time to live
 	ttl time.Duration
 }
 
 // New task interface
-func newTask(cfg *config.GCConfig, gc pkggc.GC, peerManager Peer) (Task, error) {
+func newTask(cfg *config.GCConfig, gc pkggc.GC) (Task, error) {
 	t := &task{
-		Map:         &sync.Map{},
-		peerManager: peerManager,
-		ttl:         cfg.TaskTTL,
+		Map: &sync.Map{},
+		ttl: cfg.TaskTTL,
 	}
 
 	if err := gc.Add(pkggc.Task{
@@ -104,8 +100,8 @@ func (t *task) RunGC() error {
 		task := value.(*entity.Task)
 		elapsed := time.Since(task.UpdateAt.Load())
 
-		if task.LenPeers() == 0 && elapsed > t.ttl {
-			task.Log.Info("delete task because elapsed larger than task TTL")
+		if elapsed > t.ttl && task.LenPeers() == 0 {
+			task.Log.Info("task gc succeeded")
 			t.Delete(task.ID)
 		}
 

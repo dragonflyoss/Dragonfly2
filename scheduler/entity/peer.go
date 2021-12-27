@@ -143,23 +143,32 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateRunning}, Dst: PeerStateBackToSource},
 			{Name: PeerEventFinished, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerEventFinished},
 			{Name: PeerEventSucceeded, Src: []string{PeerEventFinished}, Dst: PeerStateSucceeded},
-			{Name: PeerEventFailed, Src: []string{PeerStatePending, PeerStateRunning, PeerEventFinished}, Dst: PeerStateFailed},
-			{Name: PeerEventLeave, Src: []string{PeerEventFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
+			{Name: PeerEventFailed, Src: []string{PeerStatePending, PeerStateRunning, PeerStateBackToSource, PeerEventFinished}, Dst: PeerStateFailed},
+			{Name: PeerEventLeave, Src: []string{PeerEventFinished, PeerEventFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
 			PeerEventDownload: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
+				p.Task.BackToSourcePeers.Add(p)
 				p.UpdateAt.Store(time.Now())
 			},
 			PeerEventFinished: func(e *fsm.Event) {
+				if e.Src == PeerStateBackToSource {
+					p.Task.BackToSourcePeers.Delete(p)
+				}
+
 				p.UpdateAt.Store(time.Now())
 			},
 			PeerEventSucceeded: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 			},
 			PeerEventFailed: func(e *fsm.Event) {
+				if e.Src == PeerStateBackToSource {
+					p.Task.BackToSourcePeers.Delete(p)
+				}
+
 				p.UpdateAt.Store(time.Now())
 			},
 		},
@@ -203,6 +212,17 @@ func (p *Peer) DeleteChild(key string) {
 	p.Host.DeletePeer(child.ID)
 	p.Task.DeletePeer(child.ID)
 	child.Parent = &atomic.Value{}
+}
+
+// LenChildren return length of children sync map
+func (p *Peer) LenChildren() int {
+	var len int
+	p.Children.Range(func(_, _ interface{}) bool {
+		len++
+		return true
+	})
+
+	return len
 }
 
 // LoadParent return peer parent
@@ -333,5 +353,6 @@ func (p *Peer) StopStream(code base.Code) bool {
 		return false
 	}
 
+	p.Log.Infof("stop stream with code %s", code)
 	return true
 }

@@ -18,8 +18,16 @@ package manager
 
 import (
 	"sync"
+	"time"
 
+	pkggc "d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/entity"
+)
+
+const (
+	// GC peer id
+	GCPeerID = "peer"
 )
 
 type Peer interface {
@@ -42,16 +50,31 @@ type peer struct {
 	// Peer sync map
 	*sync.Map
 
+	// Peer time to live
+	ttl time.Duration
+
 	// Peer mutex
 	mu *sync.Mutex
 }
 
 // New peer interface
-func newPeer() Peer {
-	return &peer{
+func newPeer(cfg *config.GCConfig, gc pkggc.GC) (Peer, error) {
+	p := &peer{
 		Map: &sync.Map{},
+		ttl: cfg.PeerTTL,
 		mu:  &sync.Mutex{},
 	}
+
+	if err := gc.Add(pkggc.Task{
+		ID:       GCPeerID,
+		Interval: cfg.PeerGCInterval,
+		Timeout:  cfg.PeerGCInterval,
+		Runner:   p,
+	}); err != nil {
+		return nil, err
+	}
+
+	return p, nil
 }
 
 func (p *peer) Load(key string) (*entity.Peer, bool) {
@@ -94,4 +117,27 @@ func (p *peer) Delete(key string) {
 		peer.Host.DeletePeer(key)
 		peer.Task.DeletePeer(key)
 	}
+}
+
+func (p *peer) RunGC() error {
+	p.Map.Range(func(_, value interface{}) bool {
+		peer := value.(*entity.Peer)
+		elapsed := time.Since(peer.UpdateAt.Load())
+
+		if elapsed > p.ttl {
+			if peer.FSM.Is(entity.PeerStateLeave) && peer.LenChildren() == 0 {
+				peer.DeleteParent()
+				p.Delete(peer.ID)
+				peer.Log.Info("peer gc succeeded")
+			}
+
+			if err := peer.FSM.Event(entity.PeerEventLeave); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %v", err)
+			}
+		}
+
+		return true
+	})
+
+	return nil
 }

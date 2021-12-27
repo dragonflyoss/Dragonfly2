@@ -202,13 +202,13 @@ func (eb *evaluatorBase) NeedAdjustParent(peer *entity.Peer) bool {
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *entity.Peer) bool {
-	if peer.IsFail() {
-		logger.Infof("peer %s status is fail", peer.ID)
+	if peer.FSM.Is(entity.PeerStateFailed) || peer.FSM.Is(entity.PeerStateLeave) || peer.FSM.Is(entity.PeerStatePending) {
+		peer.Log.Infof("peer is bad node because peer status is %s", peer.FSM.Current())
 		return true
 	}
 
 	// Determine whether to bad node based on piece download costs
-	rawCosts := peer.GetPieceCosts()
+	rawCosts := peer.PieceCosts.Values()
 	costs := stats.LoadRawData(rawCosts)
 	len := len(costs)
 	// Peer has not finished downloading enough piece

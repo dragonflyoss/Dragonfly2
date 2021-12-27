@@ -40,40 +40,22 @@ const (
 	// Task is downloading resources from CDN or back-to-source
 	TaskStateRunning = "Running"
 
-	// Task is downloading resources from back-to-source
-	TaskStateBackToSource = "BackToSource"
-
-	// Task is downloading resources finished
-	TaskStateFinished = "Finished"
-
 	// Task has been downloaded successfully
 	TaskStateSucceeded = "Succeeded"
 
 	// Task has been downloaded failed
 	TaskStateFailed = "Failed"
-
-	// Task has been left
-	TaskStateLeave = "Leave"
 )
 
 const (
 	// Task is downloading
 	TaskEventDownload = "Download"
 
-	// Task is downloading from back-to-source
-	TaskEventDownloadFromBackToSource = "DownloadFromBackToSource"
-
-	// Task downloaded finished
-	TaskEventFinished = "Finished"
-
 	// Task downloaded successfully
 	TaskEventSucceeded = "Succeeded"
 
 	// Task downloaded failed
 	TaskEventFailed = "Failed"
-
-	// Task leaves
-	TaskEventLeave = "Leave"
 )
 
 type Task struct {
@@ -139,18 +121,12 @@ func NewTask(id, url string, backToSourceLimit int32, meta *base.UrlMeta) *Task 
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventDownload, Src: []string{TaskStatePending}, Dst: TaskStateRunning},
-			{Name: TaskEventDownloadFromBackToSource, Src: []string{TaskStateRunning}, Dst: TaskStateBackToSource},
-			{Name: TaskEventFinished, Src: []string{TaskStateRunning, TaskStateBackToSource}, Dst: TaskStateFinished},
-			{Name: TaskEventSucceeded, Src: []string{TaskStateFinished}, Dst: TaskStateSucceeded},
-			{Name: TaskEventFailed, Src: []string{TaskStateFinished}, Dst: TaskStateFailed},
-			{Name: TaskEventLeave, Src: []string{TaskEventFailed, TaskStateSucceeded}, Dst: TaskEventLeave},
+			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskEventFailed}, Dst: TaskStateRunning},
+			{Name: TaskEventSucceeded, Src: []string{TaskStateRunning}, Dst: TaskStateSucceeded},
+			{Name: TaskEventFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
 		},
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
-			},
-			TaskEventFinished: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 			},
 			TaskEventSucceeded: func(e *fsm.Event) {
@@ -205,13 +181,13 @@ func (t *Task) LenPeers() int {
 }
 
 // LoadPiece return piece for a key
-func (t *Task) LoadPiece(key int32) (*Peer, bool) {
+func (t *Task) LoadPiece(key int32) (*base.PieceInfo, bool) {
 	rawPiece, ok := t.Pieces.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rawPiece.(*Peer), ok
+	return rawPiece.(*base.PieceInfo), ok
 }
 
 // StorePiece set piece

@@ -7,6 +7,8 @@ scheduler:
   backSourceCount: 3
   algorithm: default
   gc:
+    peerGCInterval: 1m
+    peerTTL: 10m
     taskGCInterval: 1m
     taskTTL: 10m
 

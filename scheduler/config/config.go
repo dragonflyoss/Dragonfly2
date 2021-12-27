@@ -45,6 +45,8 @@ func New() *Config {
 			WorkerNum:       10,
 			BackSourceCount: 3,
 			GC: &GCConfig{
+				PeerGCInterval: 1 * time.Minute,
+				PeerTTL:        5 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
 				TaskTTL:        10 * time.Minute,
 			},
@@ -151,6 +153,8 @@ type ServerConfig struct {
 }
 
 type GCConfig struct {
+	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
+	PeerTTL        time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 	TaskTTL        time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
 }

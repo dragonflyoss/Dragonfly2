@@ -29,6 +29,7 @@ import (
 	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -143,19 +144,24 @@ func New(options ...Option) (http.RoundTripper, error) {
 }
 
 // RoundTrip only process first redirect at present
-// fix resource release
+// TODO: fix resource release
 func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
+		metrics.ProxyRequestViaDragonflyCount.Add(1)
 		resp, err = rt.download(req)
 	} else {
 		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
 		req.Host = req.URL.Host
 		req.Header.Set("Host", req.Host)
 		resp, err = rt.baseRoundTripper.RoundTrip(req)
+	}
+
+	if resp.ContentLength > 0 {
+		metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(resp.ContentLength))
 	}
 	if err != nil {
 		logger.With("method", req.Method, "url", req.URL.String()).

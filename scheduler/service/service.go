@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -37,12 +38,11 @@ import (
 )
 
 type Service interface {
-	ScheduleParent(context.Context, *entity.Peer)
-	ScheduleChildren(context.Context, *entity.Peer)
-	GetOrAddTask(context.Context, *rpcscheduler.PeerTaskRequest, int32) *entity.Task
-	GetOrAddHost(context.Context, *rpcscheduler.PeerTaskRequest) *entity.Host
-	GetOrAddPeer(context.Context, *rpcscheduler.PeerTaskRequest, *entity.Task, *entity.Host) *entity.Peer
-	GetPeer(string) (*entity.Peer, bool)
+	ScheduleParent(context.Context, *entity.Peer) (*entity.Peer, []*entity.Peer, bool)
+	RegisterTask(context.Context, *rpcscheduler.PeerTaskRequest, int32) *entity.Task
+	LoadOrStoreHost(context.Context, *rpcscheduler.PeerTaskRequest) *entity.Host
+	LoadOrStorePeer(context.Context, *rpcscheduler.PeerTaskRequest, *entity.Task, *entity.Host) *entity.Peer
+	LoadPeer(string) (*entity.Peer, bool)
 	HandlePiece(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
 	HandlePeer(context.Context, *entity.Peer, *rpcscheduler.PeerResult)
 	HandlePeerLeave(ctx context.Context, peer *entity.Peer)
@@ -104,7 +104,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	s.kmu.Lock(task.ID)
 	defer s.kmu.Unlock(task.ID)
 	task, ok := s.manager.Task.LoadOrStore(task)
-	if ok {
+	if ok && !task.FSM.Is(entity.TaskStatePending) {
 		// Task is healthy and can be reused
 		task.UpdateAt.Store(time.Now())
 		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
@@ -119,65 +119,63 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	// Start seed cdn task
 	go func() {
 		task.Log.Info("cdn start seed task")
-		peer, result, err := s.manager.CDN.TriggerTask(ctx, task)
-		if err := task.FSM.Event(entity.TaskEventFinished); err != nil {
-			task.Log.Errorf("task fsm event failed: %v", err)
-		}
-
+		peer, endOfPiece, err := s.manager.CDN.TriggerTask(ctx, task)
 		if err != nil {
 			task.Log.Errorf("trigger task failed: %v", err)
 
 			// Update the peer status first to help task return the error code to the peer that is downloading
 			// If init cdn fails, peer is nil
-			if peer != nil {
-				s.callback.PeerFail(ctx, peer, result)
-			}
-
 			s.callback.TaskFail(ctx, task)
+			if peer != nil {
+				s.callback.PeerFail(ctx, peer)
+			}
 			return
 		}
 
 		// Update the task status first to help peer scheduling evaluation and scoring
-		s.callback.TaskSuccess(ctx, peer, task, result)
-		s.callback.PeerSuccess(ctx, peer, result)
+		s.callback.TaskSuccess(ctx, peer, task, endOfPiece)
+		s.callback.PeerSuccess(ctx, peer)
 	}()
 
 	return task, nil
 }
 
-func (s *service) GetOrAddHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *entity.Host {
+func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *entity.Host {
 	rawHost := req.PeerHost
-	host, ok := s.manager.Host.Get(rawHost.Uuid)
+	host, ok := s.manager.Host.Load(rawHost.Uuid)
 	if !ok {
 		// Get scheduler cluster client config by manager
 		var options []entity.HostOption
 		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
-			options = append(options, entity.WithTotalUploadLoad(clientConfig.LoadLimit))
+			options = append(options, entity.WithUploadLoadLimit(int32(clientConfig.LoadLimit)))
 		}
 
-		s.manager.Host.Add(entity.NewHost(rawHost, options...))
-		host.Log().Info("create host")
+		s.manager.Host.Store(entity.NewHost(rawHost, options...))
+		host.Log.Info("create host")
 	}
 
-	host.Log().Info("host already exists")
+	host.Log.Info("host already exists")
 	return host
 }
 
-func (s *service) GetOrAddPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *entity.Task, host *entity.Host) *entity.Peer {
-	peer, ok := s.manager.Peer.Get(req.PeerId)
-	if !ok {
-		peer = entity.NewPeer(req.PeerId, task, host)
-		s.manager.Peer.Add(peer)
-		peer.Log().Info("create peer")
-		return peer
+func (s *service) LoadOrStorePeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *entity.Task, host *entity.Host) *entity.Peer {
+	peer := entity.NewPeer(req.PeerId, task, host)
+	peer, loaded := s.manager.Peer.LoadOrStore(peer)
+	if loaded {
+		peer.Log.Info("peer already exists")
+	} else {
+		peer.Log.Info("create peer")
 	}
 
-	peer.Log().Info("peer already exists")
 	return peer
 }
 
-func (s *service) GetPeer(id string) (*entity.Peer, bool) {
-	return s.manager.Peer.Get(id)
+func (s *service) LoadPeer(id string) (*entity.Peer, bool) {
+	return s.manager.Peer.Load(id)
+}
+
+func (s *service) ScheduleParent(ctx context.Context, peer *entity.Peer) (*entity.Peer, []*entity.Peer, bool) {
+	return s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 }
 
 func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
@@ -187,48 +185,55 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 
 		// Collect peer host traffic metrics
 		if s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
-			metrics.PeerHostTraffic.WithLabelValues("download", peer.Host.UUID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
-			if p, ok := s.manager.Peer.Get(piece.DstPid); ok {
-				metrics.PeerHostTraffic.WithLabelValues("upload", p.Host.UUID, p.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+			metrics.PeerHostTraffic.WithLabelValues("download", peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+			if p, ok := s.manager.Peer.Load(piece.DstPid); ok {
+				metrics.PeerHostTraffic.WithLabelValues("upload", p.Host.ID, p.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
-				peer.Log().Warnf("dst peer %s not found for piece %#v, pieceInfo %#v", piece.DstPid, piece, piece.PieceInfo)
+				peer.Log.Warnf("dst peer %s not found for piece %#v, pieceInfo %#v", piece.DstPid, piece, piece.PieceInfo)
 			}
 		}
 		return
 	}
 
-	// Handle end of piece and begin of piece
+	// Handle begin of piece and end of piece
 	if piece.PieceInfo != nil {
-		if piece.PieceInfo.PieceNum == common.EndOfPiece {
-			peer.Log().Info("receive end of piece")
+		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
+			peer.Log.Info("receive begin of piece")
+			s.callback.BeginOfPiece(ctx, peer)
 			return
 		}
 
-		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			s.callback.InitReport(ctx, peer)
-			peer.Log().Info("receive begin of piece")
+		if piece.PieceInfo.PieceNum == common.EndOfPiece {
+			peer.Log.Info("receive end of piece")
+			s.callback.EndOfPiece(ctx, peer)
 			return
 		}
 	}
 
 	// Handle piece download failed
 	if piece.Code != base.Code_Success {
+		peer.Log.Infof("receive piece error: %v", piece.Code)
 		s.callback.PieceFail(ctx, peer, piece)
-		peer.Log().Infof("receive piece error: %v", piece.Code)
 		return
 	}
 }
 
-func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, peerResult *rpcscheduler.PeerResult) error {
-	peer.LastAccessAt.Store(time.Now())
-	if !peerResult.Success {
-		s.callback.PeerFail(ctx, peer, peerResult)
+func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcscheduler.PeerResult) error {
+	if !req.Success {
+		if peer.Task.BackToSourcePeers.Contains(peer) {
+			s.callback.TaskFail(ctx, peer.Task)
+		}
+		s.callback.PeerFail(ctx, peer)
 	}
-	s.callback.PeerSuccess(ctx, peer, peerResult)
+
+	if peer.Task.BackToSourcePeers.Contains(peer) {
+		s.callback.TaskSuccess(ctx, peer, peer.Task, req)
+	}
+	s.callback.PeerSuccess(ctx, peer)
 	return nil
 }
 
 func (s *service) HandlePeerLeave(ctx context.Context, peer *entity.Peer) error {
-	peer.LastAccessAt.Store(time.Now())
+	s.callback.PeerLeave(ctx, peer)
 	return nil
 }

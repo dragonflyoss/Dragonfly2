@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"time"
 
 	"google.golang.org/grpc"
 
@@ -54,21 +53,21 @@ func New(cfg *config.Config, service service.Service, opts ...grpc.ServerOption)
 
 func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	// Get task or add new task
-	task := s.service.GetOrAddTask(ctx, req, s.config.Scheduler.BackSourceCount)
+	task := s.service.RegisterTask(ctx, req, s.config.Scheduler.BackSourceCount)
 	log := logger.WithTaskAndPeerID(task.ID, req.PeerId)
 	log.Infof("register peer task request: %#v", req)
 
 	// In the case of concurrency, if the task status is failure, it will directly return to registration failure.
-	if task.IsFail() {
+	if task.FSM.Is(entity.TaskStateFailed) {
 		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
 		log.Error(dferr.Message)
 		return nil, dferr
 	}
 
 	// Task has been successful
-	if task.IsSuccess() {
+	if task.FSM.Is(entity.TaskStateSucceeded) {
 		log.Info("task has been successful")
-		sizeScope := task.GetSizeScope()
+		sizeScope := task.SizeScope()
 		switch sizeScope {
 		case base.SizeScope_TINY:
 			log.Info("task size scope is tiny and return piece content directly")
@@ -81,8 +80,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}, nil
 		case base.SizeScope_SMALL:
 			log.Info("task size scope is small")
-			host := s.service.GetOrAddHost(ctx, req)
-			peer := s.service.GetOrAddPeer(ctx, req, task, host)
+			host := s.service.LoadOrStoreHost(ctx, req)
+			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
 			parent, _, ok := s.service.ScheduleParent(ctx, peer)
 			if !ok {
 				log.Warnf("task size scope is small and it can not select parent")
@@ -92,7 +91,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 				}, nil
 			}
 
-			firstPiece, ok := task.GetPiece(0)
+			firstPiece, ok := task.LoadPiece(0)
 			if !ok {
 				log.Warn("task size scope is small and it can not get first piece")
 				return &scheduler.RegisterResult{
@@ -128,8 +127,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}, nil
 		default:
 			log.Info("task size scope is normal and needs to be register")
-			host := s.service.GetOrAddHost(ctx, req)
-			s.service.GetOrAddPeer(ctx, req, task, host)
+			host := s.service.LoadOrStoreHost(ctx, req)
+			s.service.LoadOrStorePeer(ctx, req, task, host)
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
 				SizeScope: sizeScope,
@@ -139,8 +138,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 	// Task is unsuccessful
 	log.Info("task is unsuccessful and needs to be register")
-	host := s.service.GetOrAddHost(ctx, req)
-	s.service.GetOrAddPeer(ctx, req, task, host)
+	host := s.service.LoadOrStoreHost(ctx, req)
+	s.service.LoadOrStorePeer(ctx, req, task, host)
 	return &scheduler.RegisterResult{
 		TaskId:    task.ID,
 		SizeScope: base.SizeScope_NORMAL,
@@ -163,30 +162,29 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 	log.Infof("receive begin of piece: %#v", beginOfPiece)
 
 	// Get peer from peer manager
-	peer, ok := s.service.GetPeer(beginOfPiece.SrcPid)
+	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
 	if !ok {
 		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
 		log.Error("peer not found")
 		return err
 	}
 
-	// Handle task fails
-	if peer.Task.IsFail() {
-		peer.SetStatus(entity.PeerStatusFail)
-		err = dferrors.Newf(base.Code_SchedTaskStatusError, "task status is fail")
+	// Handle peer fails
+	if peer.FSM.Is(entity.PeerStateFailed) {
+		err = dferrors.Newf(base.Code_SchedTaskStatusError, "peer status is fail")
 		log.Error("task status is fail")
 		return err
 	}
 
 	// Peer setting stream
-	peer.SetStream(stream)
+	peer.StoreStream(stream)
 	for {
 		select {
 		case <-ctx.Done():
 			log.Infof("context was done")
 			return ctx.Err()
 		case code := <-peer.StopChannel:
-			log.Infof("context was done")
+			log.Errorf("stream stop code: %v", code)
 			return dferrors.New(code, "")
 		default:
 		}
@@ -201,30 +199,30 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		}
 
 		log.Infof("receive piece: %#v", piece)
-		peer.LastAccessAt.Store(time.Now())
 		s.service.HandlePiece(ctx, peer, piece)
 	}
 }
 
 func (s *server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (err error) {
-	logger.Debugf("report peer result request: %#v", req)
-	peer, ok := s.service.GetPeer(req.PeerId)
+	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
-		logger.Warnf("report peer result: peer %s is not exists", req.PeerId)
-		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
-		return err
+		logger.Errorf("report peer result: peer %s is not exists", req.PeerId)
+		return dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
 	}
+
+	peer.Log.Infof("report peer result request: %#v", req)
 	s.service.HandlePeer(ctx, peer, req)
 	return nil
 }
 
-func (s *server) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (err error) {
-	logger.Debugf("leave task %v", target)
-	peer, ok := s.service.GetPeer(target.PeerId)
+func (s *server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err error) {
+	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
-		logger.Warnf("leave task: peer %s is not exists", target.PeerId)
-		return
+		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
+		return nil
 	}
+
+	peer.Log.Infof("leave tsk request: %#v", req)
 	s.service.HandlePeerLeave(ctx, peer)
 	return nil
 }

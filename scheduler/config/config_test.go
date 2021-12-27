@@ -40,6 +40,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 			WorkerNum:       10,
 			BackSourceCount: 3,
 			GC: &GCConfig{
+				PeerGCInterval: 1 * time.Minute,
+				PeerTTL:        10 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
 				TaskTTL:        10 * time.Minute,
 			},

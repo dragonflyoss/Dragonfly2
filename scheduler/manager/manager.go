@@ -41,10 +41,13 @@ func New(cfg *config.Config, gc gc.GC, dynConfig config.DynconfigInterface, opts
 	host := newHost()
 
 	// Initialize peer manager
-	peer := newPeer()
+	peer, err := newPeer(cfg.Scheduler.GC, gc)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize task manager
-	task, err := newTask(cfg.Scheduler.GC, gc, peer)
+	task, err := newTask(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
