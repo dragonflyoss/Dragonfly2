@@ -148,4 +148,6 @@ service Manager {
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
+  //
+  rpc ListServers(ListS)returns()
 }
