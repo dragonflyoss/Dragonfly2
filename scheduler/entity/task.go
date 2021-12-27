@@ -40,6 +40,9 @@ const (
 	// Task is downloading resources from CDN or back-to-source
 	TaskStateRunning = "Running"
 
+	// Task is downloading resources from back-to-source
+	TaskStateBackToSource = "BackToSource"
+
 	// Task is downloading resources finished
 	TaskStateFinished = "Finished"
 
@@ -54,8 +57,8 @@ const (
 )
 
 const (
-	// Task is downloading from cdn
-	TaskEventDownloadFromCDN = "DownloadFromCDN"
+	// Task is downloading
+	TaskEventDownload = "Download"
 
 	// Task is downloading from back-to-source
 	TaskEventDownloadFromBackToSource = "DownloadFromBackToSource"
@@ -136,18 +139,15 @@ func NewTask(id, url string, backToSourceLimit int32, meta *base.UrlMeta) *Task 
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventDownloadFromCDN, Src: []string{TaskStatePending}, Dst: TaskStateRunning},
-			{Name: TaskEventDownloadFromBackToSource, Src: []string{TaskStateFailed}, Dst: TaskStateRunning},
-			{Name: TaskEventFinished, Src: []string{TaskStateRunning}, Dst: TaskStateFinished},
+			{Name: TaskEventDownload, Src: []string{TaskStatePending}, Dst: TaskStateRunning},
+			{Name: TaskEventDownloadFromBackToSource, Src: []string{TaskStateRunning}, Dst: TaskStateBackToSource},
+			{Name: TaskEventFinished, Src: []string{TaskStateRunning, TaskStateBackToSource}, Dst: TaskStateFinished},
 			{Name: TaskEventSucceeded, Src: []string{TaskStateFinished}, Dst: TaskStateSucceeded},
 			{Name: TaskEventFailed, Src: []string{TaskStateFinished}, Dst: TaskStateFailed},
 			{Name: TaskEventLeave, Src: []string{TaskEventFailed, TaskStateSucceeded}, Dst: TaskEventLeave},
 		},
 		fsm.Callbacks{
-			TaskEventDownloadFromCDN: func(e *fsm.Event) {
-				t.UpdateAt.Store(time.Now())
-			},
-			TaskEventDownloadFromBackToSource: func(e *fsm.Event) {
+			TaskEventDownload: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 			},
 			TaskEventFinished: func(e *fsm.Event) {

@@ -34,8 +34,11 @@ const (
 	// Peer has been created but did not start running
 	PeerStatePending = "Pending"
 
-	// Peer is downloading resources from CDN or back-to-source
+	// Peer is downloading resources from peer
 	PeerStateRunning = "Running"
+
+	// Peer is downloading resources from back-to-source
+	PeerStateBackToSource = "BackToSource"
 
 	// Peer is downloading resources finished
 	PeerStateFinished = "Finished"
@@ -53,6 +56,9 @@ const (
 const (
 	// Peer is downloading
 	PeerEventDownload = "Download"
+
+	// Peer is downloading from back-to-source
+	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
 
 	// Peer downloaded finished
 	PeerEventFinished = "Finished"
@@ -134,13 +140,17 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		PeerStatePending,
 		fsm.Events{
 			{Name: PeerEventDownload, Src: []string{PeerStatePending}, Dst: PeerStateRunning},
-			{Name: PeerEventFinished, Src: []string{PeerStateRunning}, Dst: PeerEventFinished},
+			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateRunning}, Dst: PeerStateBackToSource},
+			{Name: PeerEventFinished, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerEventFinished},
 			{Name: PeerEventSucceeded, Src: []string{PeerEventFinished}, Dst: PeerStateSucceeded},
 			{Name: PeerEventFailed, Src: []string{PeerStatePending, PeerStateRunning, PeerEventFinished}, Dst: PeerStateFailed},
 			{Name: PeerEventLeave, Src: []string{PeerEventFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
 			PeerEventDownload: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+			},
+			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 			},
 			PeerEventFinished: func(e *fsm.Event) {
@@ -302,4 +312,26 @@ func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) 
 // DeleteStream deletes grpc stream
 func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
+}
+
+// StopStream stops grpc stream with error code
+func (p *Peer) StopStream(code base.Code) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	rawStream := p.Stream.Load()
+	if rawStream == nil {
+		p.Log.Error("stop stream failed: can not find peer stream")
+		return false
+	}
+	p.DeleteStream()
+
+	select {
+	case p.StopChannel <- code:
+	default:
+		p.Log.Error("stop channel busy")
+		return false
+	}
+
+	return true
 }

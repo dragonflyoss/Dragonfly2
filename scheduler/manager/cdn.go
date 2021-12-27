@@ -88,10 +88,6 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			if err := peer.FSM.Event(entity.PeerStateFailed); err != nil {
-				return nil, nil, err
-			}
-
 			return nil, nil, err
 		}
 
@@ -123,17 +119,11 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 				peer.Log.Info("peer type is tiny file")
 				data, err := downloadTinyFile(ctx, task, peer)
 				if err != nil {
-					if err := peer.FSM.Event(entity.PeerStateFailed); err != nil {
-						return nil, nil, err
-					}
 					return nil, nil, err
 				}
 
 				// Tiny file downloaded directly from CDN is exception
 				if len(data) != int(piece.ContentLength) {
-					if err := peer.FSM.Event(entity.PeerStateFailed); err != nil {
-						return nil, nil, err
-					}
 					return nil, nil, errors.Errorf(
 						"piece actual data length is different from content length, content length is %d, data length is %d",
 						piece.ContentLength, len(data),

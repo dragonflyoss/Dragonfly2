@@ -106,6 +106,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	task := entity.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, backSourceCount, req.UrlMeta)
 
 	s.kmu.Lock(task.ID)
+	defer s.kmu.Unlock(task.ID)
 	task, ok := s.manager.Task.LoadOrStore(task)
 	if ok {
 		// Task is healthy and can be reused
@@ -115,7 +116,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	}
 
 	// Trigger task
-	if err := task.FSM.Event(entity.TaskEventDownloadFromCDN); err != nil {
+	if err := task.FSM.Event(entity.TaskEventDownload); err != nil {
 		return nil, err
 	}
 
@@ -128,18 +129,21 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		}
 
 		if err != nil {
-			// CDN seed task failed
-			if err := task.FSM.Event(entity.TaskStateFailed); err != nil {
-				task.Log.Errorf("task fsm event failed: %v", err)
+			task.Log.Errorf("trigger task failed: %v", err)
+
+			// Update the peer status first to help task return the error code to the peer that is downloading
+			// If init cdn fails, peer is nil
+			if peer != nil {
+				s.callback.PeerFail(ctx, peer, result)
 			}
 
-			task.Log.Errorf("cdn seed task failed: %v", err)
 			s.callback.TaskFail(ctx, task)
 			return
 		}
 
+		// Update the task status first to help peer scheduling evaluation and scoring
+		s.callback.TaskSuccess(ctx, peer, task, result)
 		s.callback.PeerSuccess(ctx, peer, result)
-		peer.Log.Infof("successfully obtain seeds from cdn, task: %#v", task)
 	}()
 
 	return task, nil
