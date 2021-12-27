@@ -29,6 +29,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -56,6 +57,7 @@ var _ StreamPeerTask = (*streamPeerTask)(nil)
 func newStreamPeerTask(ctx context.Context,
 	ptm *peerTaskManager,
 	request *scheduler.PeerTaskRequest) (context.Context, *streamPeerTask, *TinyData, error) {
+	metrics.PeerTaskCount.Add(1)
 	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
@@ -320,6 +322,7 @@ func (s *streamPeerTask) finish() error {
 func (s *streamPeerTask) cleanUnfinished() {
 	// send last progress
 	s.once.Do(func() {
+		metrics.PeerTaskFailedCount.Add(1)
 		// send EOF piece result to scheduler
 		_ = s.peerPacketStream.Send(
 			scheduler.NewEndPieceResult(s.taskID, s.peerID, s.readyPieces.Settled()))

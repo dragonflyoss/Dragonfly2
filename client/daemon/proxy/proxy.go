@@ -37,6 +37,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -232,6 +233,10 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	metrics.ProxyRequestCount.WithLabelValues(r.Method).Add(1)
+	metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Add(1)
+	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
+
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
 	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
@@ -293,7 +298,6 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// handle http proxy requests
 		proxy.handleHTTP(span, w, r)
 	}
-
 }
 
 func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
@@ -339,6 +343,11 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 		span.RecordError(err)
 	} else {
 		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
+		// when resp.ContentLength == -1 or 0, byte count can not be updated by transport
+		// TODO how to handle byte count for https ?
+		if resp.ContentLength == -1 {
+			metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(n))
+		}
 	}
 }
 

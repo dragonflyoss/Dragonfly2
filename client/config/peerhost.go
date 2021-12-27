@@ -49,6 +49,7 @@ type DaemonOption struct {
 	// when AliveTime == 0, will run infinitely
 	AliveTime  clientutil.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
 	GCInterval clientutil.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
+	Metrics    string              `yaml:"metrics" mapstructure:"metrics"`
 
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`

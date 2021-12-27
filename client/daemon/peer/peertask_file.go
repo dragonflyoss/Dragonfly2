@@ -27,6 +27,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -88,6 +89,7 @@ func newFilePeerTask(ctx context.Context,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
 	getPiecesMaxRetry int) (context.Context, *filePeerTask, *TinyData, error) {
+	metrics.PeerTaskCount.Add(1)
 	ctx, span := tracer.Start(ctx, config.SpanFilePeerTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(host.Ip))
@@ -380,6 +382,7 @@ func (pt *filePeerTask) cleanUnfinished() {
 	defer pt.cancel()
 	// send last progress
 	pt.once.Do(func() {
+		metrics.PeerTaskFailedCount.Add(1)
 		defer pt.recoverFromPanic()
 		// send EOF piece result to scheduler
 		_ = pt.peerPacketStream.Send(

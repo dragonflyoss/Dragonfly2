@@ -39,6 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
@@ -483,6 +484,19 @@ func (cd *clientDaemon) Serve() error {
 			logger.Info("dynconfig start successfully")
 			return nil
 		})
+	}
+
+	if cd.Option.Metrics != "" {
+		metricsServer := metrics.New(cd.Option.Metrics)
+		go func() {
+			logger.Infof("started metrics server at %s", metricsServer.Addr)
+			if err := metricsServer.ListenAndServe(); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Fatalf("metrics server closed unexpect: %v", err)
+			}
+		}()
 	}
 
 	werr := g.Wait()

@@ -32,6 +32,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -153,6 +154,7 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
+			metrics.PeerTaskReuseCount.Add(1)
 			return progress, nil, nil
 		}
 	}
@@ -216,6 +218,7 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	if ptm.enableMultiplex {
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
+			metrics.PeerTaskReuseCount.Add(1)
 			return r, attr, nil
 		}
 	}
