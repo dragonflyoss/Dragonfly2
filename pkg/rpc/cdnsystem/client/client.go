@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 
@@ -29,6 +30,10 @@ import (
 )
 
 func Dial(target string, opts ...grpc.DialOption) (CDNClient, error) {
+	return DialContext(context.Background(), target, opts...)
+}
+
+func DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (CDNClient, error) {
 	dialOpts := append(
 		rpc.DefaultClientOpts,
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
@@ -65,7 +70,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	}
 	status.FromContextError(err)
 	// try next CDN
-
+	return nil, nil
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {

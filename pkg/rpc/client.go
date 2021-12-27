@@ -18,6 +18,9 @@ package rpc
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
@@ -27,8 +30,6 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"sync"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -50,7 +51,7 @@ type Connection struct {
 	scheme         string
 	serverNodes    []dfnet.NetAddr
 
-	resolver             *D7yResolver
+	resolver             *d7yResolver
 	once                 sync.Once
 	consistentHashClient *grpc.ClientConn
 }

@@ -91,7 +91,7 @@ type schedulerClient struct {
 	cancel          context.CancelFunc
 	schedulerClient scheduler.SchedulerClient
 	conn            *grpc.ClientConn
-	resolver        *rpc.D7yResolver
+	resolver        *rpc.d7yResolver
 }
 
 func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, error) {

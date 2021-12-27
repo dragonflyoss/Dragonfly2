@@ -42,15 +42,15 @@ var (
 	ErrResetSubConnFail = errors.New("reset SubConn fail")
 )
 
-func newD7yBalancerBuilder(name string, config Config) balancer.Builder {
+func newD7yBalancerBuilder(name string) balancer.Builder {
 	return &d7yBalancerBuilder{
 		name:   name,
-		config: config,
+		config: Config{HealthCheck: false},
 	}
 }
 
 func init() {
-	balancer.Register(newD7yBalancerBuilder("cdn", Config{HealthCheck: false}))
+	balancer.Register(newD7yBalancerBuilder("cdn"))
 }
 
 // d7yBalancerBuilder is a struct with functions Build and Name, implemented from balancer.Builder

@@ -134,6 +134,7 @@ func (r *d7yResolver) ResolveNow(resolver.ResolveNowOptions) {
 
 func (r *d7yResolver) Close() {
 	r.watcher.Close()
+	r.wg.Wait()
 }
 
 type Watcher struct {
