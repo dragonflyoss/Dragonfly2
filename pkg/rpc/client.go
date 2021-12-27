@@ -17,33 +17,16 @@
 package rpc
 
 import (
-	"context"
-	"sync"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
-
-	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 type Closer interface {
 	Close() error
-}
-
-type Connection struct {
-	ctx            context.Context
-	cancel         context.CancelFunc
-	rwMutex        sync.RWMutex
-	dialOpts       []grpc.DialOption
-	connExpireTime time.Duration
-	dialTimeout    time.Duration
-	scheme         string
-	serverNodes    []dfnet.NetAddr
-
-	resolver             *D7yResolver
-	once                 sync.Once
-	consistentHashClient *grpc.ClientConn
 }
 
 var DefaultClientOpts = []grpc.DialOption{
@@ -55,6 +38,18 @@ var DefaultClientOpts = []grpc.DialOption{
 		Time:    2 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
-	grpc.WithStreamInterceptor(streamClientInterceptor),
-	grpc.WithUnaryInterceptor(unaryClientInterceptor),
+	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+		streamClientInterceptor,
+		grpc_retry.StreamClientInterceptor(
+			grpc_retry.WithMax(3),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinearWithJitter(time.Second, 0.5)),
+		),
+	)),
+	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+		unaryClientInterceptor,
+		grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithMax(3),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinearWithJitter(time.Second, 0.5)),
+		),
+	)),
 }

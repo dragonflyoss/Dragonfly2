@@ -131,28 +131,24 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientByAddr(target)
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, ptr, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := dc.getDaemonClientByAddr(target)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.GetPieceTasks(ctx, ptr, opts...)
 	if err != nil {
 		logger.WithTaskID(ptr.TaskId).Infof("GetPieceTasks: invoke daemon node %s GetPieceTasks failed: %v", target, err)
 		return nil, err
 	}
-	return res.(*base.PiecePacket), nil
+	return res, nil
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
-	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientByAddr(target)
-		if err != nil {
-			return nil, err
-		}
-		return client.CheckHealth(ctx, new(empty.Empty), opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := dc.getDaemonClientByAddr(target)
+	if err != nil {
+		return err
+	}
+	_, err = client.CheckHealth(ctx, new(empty.Empty), opts...)
 	if err != nil {
 		logger.Infof("CheckHealth: invoke daemon node %s CheckHealth failed: %v", target, err)
 		return

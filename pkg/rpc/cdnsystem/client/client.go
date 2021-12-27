@@ -124,18 +124,16 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getCdnClientByAddr(addr)
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, req, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := cc.getCdnClientByAddr(addr)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.GetPieceTasks(ctx, req, opts...)
 	if err != nil {
 		logger.WithTaskID(req.TaskId).Infof("GetPieceTasks: invoke cdn node %s GetPieceTasks failed: %v", addr.GetEndpoint(), err)
 		return nil, err
 	}
-	return res.(*base.PiecePacket), nil
+	return res, nil
 }
 
 func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {

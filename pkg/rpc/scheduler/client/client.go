@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -106,16 +107,11 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	key := idgen.TaskID(ptr.Url, ptr.UrlMeta)
 	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
 		ptr.Url)
-	reg := func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: key, Attempt: 1}), ptr, opts...)
+	client, err := sc.getSchedulerClient()
+	if err != nil {
+		return nil, err
 	}
-	res, err := rpc.ExecuteWithRetry(reg, 0.2, 2.0, 3, nil)
+	res, err = client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: key, Attempt: 1}), ptr, opts...)
 	if err != nil {
 		logger.WithTaskAndPeerID(key, ptr.PeerId).Errorf("RegisterPeerTask: register peer task to scheduler failed: %v", err)
 		return sc.retryRegisterPeerTask(ctx, key, ptr, err, opts)
@@ -138,21 +134,17 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 	var (
 		taskID string
 	)
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: hashKey, Attempt: 2}), ptr, opts...)
-	}, 0.2, 2.0, 3, cause)
+	client, err := sc.getSchedulerClient()
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.RegisterPeerTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: hashKey, Attempt: 2}), ptr, opts...)
 	if err != nil {
 		logger.WithTaskAndPeerID(hashKey, ptr.PeerId).Errorf("retryRegisterPeerTask: register peer task to scheduler failed: %v", err)
 		//TODO(zzy987) ensure it can return
 		return sc.retryRegisterPeerTask(ctx, hashKey, ptr, err, opts)
 	}
-	rr := res.(*scheduler.RegisterResult)
+	rr := res
 	taskID = rr.TaskId
 	if taskID != hashKey {
 		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", hashKey, taskID)
@@ -164,6 +156,8 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 }
 
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
+	// grpc_retry do not support bidi streams
+	opts = append(opts, grpc_retry.Disable())
 	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
 	if err != nil {
 		return pps, err
@@ -175,15 +169,11 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
-	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 1}), pr, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := sc.getSchedulerClient()
+	if err != nil {
+		return err
+	}
+	_, err = client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 1}), pr, opts...)
 	if err != nil {
 		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("ReportPeerResult: report peer result to scheduler failed: %v", err)
 		return sc.retryReportPeerResult(ctx, pr, err, opts)
@@ -199,15 +189,12 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 		suc  bool
 		code base.Code
 	)
-	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			code = base.Code_ServerUnavailable
-			return nil, err
-		}
-		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 2}), pr, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := sc.getSchedulerClient()
+	if err != nil {
+		code = base.Code_ServerUnavailable
+		return err
+	}
+	_, err = client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 2}), pr, opts...)
 	if err != nil {
 		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("retryReportPeerResult: report peer result to scheduler failed: %v", err)
 		//TODO(zzy987) ensure it can return
@@ -229,15 +216,11 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result: %t for taskId: %s, err:%v", suc, pt.TaskId, err)
 	}()
 
-	leaveFun := func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
+	client, err := sc.getSchedulerClient()
+	if err != nil {
+		return err
 	}
-	_, err = rpc.ExecuteWithRetry(leaveFun, 0.2, 2.0, 3, nil)
+	_, err = client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
 	if err == nil {
 		suc = true
 	}
