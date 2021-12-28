@@ -269,8 +269,11 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// check direct request
+	directRequest := r.Method != http.MethodConnect && r.URL.Scheme == ""
+
 	// check whiteList
-	if !proxy.checkWhiteList(r) {
+	if !directRequest && !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
 		http.Error(w, http.StatusText(status), status)
 		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
