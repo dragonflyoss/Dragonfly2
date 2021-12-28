@@ -66,8 +66,8 @@ data:
         insecure: false
         url: https://index.docker.io
       proxies:
-        - regx: blobs/sha256.*
-        - regx: file-server
+      - regx: blobs/sha256.*
+      - regx: file-server
 
 ---
 
@@ -116,16 +116,21 @@ spec:
         volumeMounts:
         - mountPath: /etc/dragonfly
           name: config
-        - mountPath: /var/log/dragonfly/daemon
+        - mountPath: /var/log/dragonfly/
           name: logs
-        - mountPath: /root/.dragonfly/dfget-daemon/
+        - mountPath: /var/lib/dragonfly/
           name: data
+        - mountPath: /tmp/artifact
+          name: artifact
       volumes:
-      - configMap:
-          defaultMode: 420
+      - name: config
+        configMap:
           name: proxy
-        name: config
-      - emptyDir: {}
-        name: data
-      - emptyDir: {}
-        name: logs
+          defaultMode: 420
+      - name: data
+        emptyDir: { }
+      - name: logs
+        emptyDir: { }
+      - name: artifact
+        hostPath:
+          path: /tmp/artifact
