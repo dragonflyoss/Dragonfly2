@@ -17,99 +17,88 @@
 package rpc
 
 import (
-	"context"
-	"fmt"
-	"google.golang.org/grpc/balancer/base"
-	"google.golang.org/grpc/resolver"
-	"log"
 	"strconv"
-	"time"
+	"sync"
 
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 )
-
-// PickKey is a context.Context Value key. Its associated value should be a *PickReq.
-type PickKey struct{}
-
-// PickReq is a context.Context Value.
-type PickReq struct {
-	Key     string
-	Attempt int
-}
 
 var (
 	_ balancer.Picker = (*d7yHashPicker)(nil)
 )
 
-type pickResult struct {
-	ctx        context.Context
-	key        string
-	targetAddr string
-	sc         balancer.SubConn
-	pickTime   time.Time
-}
+const (
+	StickFlag = "stick"
+	HashKey   = "d7yHashKey"
+)
 
-func buildD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
-	if len(info.SCs) == 0 {
+func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
+	if len(info.subConns) == 0 {
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
-	scs := make(map[string]balancer.SubConn, len(info.SCs))
-	weights := make(map[string]int, len(info.SCs))
-	for sc, connInfo := range info.SCs {
-		weights[connInfo.Address.Addr] = getWeight(connInfo.Address)
-		scs[connInfo.Address.Addr] = sc
+	weights := make(map[string]int, len(info.subConns))
+	subConns := make(map[string]balancer.SubConn)
+	for addr, subConn := range info.subConns {
+		weights[addr.Addr] = getWeight(addr)
+		subConns[addr.Addr] = subConn
 	}
 	return &d7yHashPicker{
-		subConns:    scs,
-		hashRing:    hashring.NewWithWeights(weights),
+		subConns:    subConns,
 		pickHistory: info.pickHistory,
+		scStates:    info.scStates,
+		hashRing:    hashring.NewWithWeights(weights),
+		stickFlag:   StickFlag,
+		hashKey:     HashKey,
 	}
 }
 
 type d7yPickerBuildInfo struct {
-	SCs         map[balancer.SubConn]SubConnInfo
+	subConns    map[resolver.Address]balancer.SubConn
 	pickHistory map[string]balancer.SubConn
+	scStates    map[balancer.SubConn]connectivity.State
 }
 
 type d7yHashPicker struct {
-	subConns    map[string]balancer.SubConn // address string -> balancer.SubConn
+	mu          sync.Mutex
+	subConns    map[string]balancer.SubConn // target address string -> balancer.SubConn
+	pickHistory map[string]balancer.SubConn // hashKey -> balancer.SubConn
+	scStates    map[balancer.SubConn]connectivity.State
 	hashRing    *hashring.HashRing
-	reportChan  chan<- pickResult
-	pickHistory map[string]balancer.SubConn
+	stickFlag   string
+	hashKey     string
 }
 
 func (p *d7yHashPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
-	var (
-		targetAddr string
-		ret        balancer.PickResult
-	)
-	pickReq, ok := info.Ctx.Value(PickKey{}).(*PickReq)
-	if !ok {
-		pickReq = &PickReq{
-			Key:     info.FullMethodName,
-			Attempt: 1,
-		}
-	}
-	log.Printf("pick for %s, for %d time(s)\n", pickReq.Key, pickReq.Attempt)
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	if pickReq.Attempt == 1 {
-		if v, ok := p.pickHistory.Load(pickReq.Key); ok {
-			targetAddr = v.(string)
-			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
-		} else if targetAddr, ok = p.hashRing.GetNode(pickReq.Key); ok {
-			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+	var ret balancer.PickResult
+	var isStick = false
+	if stick := info.Ctx.Value(p.stickFlag); stick != nil {
+		isStick = stick.(bool)
+	}
+
+	key := info.Ctx.Value(p.hashKey).(string)
+	if isStick {
+		subConn, ok := p.pickHistory[key]
+		if !ok {
+
 		}
-	} else {
-		if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
-			targetAddr = targetAddrs[pickReq.Attempt-1]
-			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
-		}
+		ret.SubConn = subConn
+		return ret, nil
+	}
+
+	targetAddr, ok := p.hashRing.GetNode(key)
+	if ok {
+		ret.SubConn = p.subConns[targetAddr]
+		p.pickHistory[key] = p.subConns[targetAddr]
+		return ret, nil
 	}
 
 	if ret.SubConn == nil {
@@ -131,13 +120,9 @@ func getWeight(addr resolver.Address) int {
 	if value == nil {
 		return 1
 	}
-	weight, err := strconv.Atoi(value)
+	weight, err := strconv.Atoi(value.(string))
 	if err == nil {
 		return weight
 	}
 	return 1
-}
-
-func wrapAddr(addr string, idx int) string {
-	return fmt.Sprintf("%s-%d", addr, idx)
 }

@@ -38,12 +38,12 @@ func DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (C
 		rpc.DefaultClientOpts,
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
 		grpc.WithResolvers(rpc.NewD7yResolverBuilder("cdn")))
-	clientConn, err := grpc.Dial(target, append(dialOpts, opts...)...)
+	clientConn, err := grpc.DialContext(ctx, target, append(dialOpts, opts...)...)
 	if err != nil {
 		return nil, err
 	}
 	return &cdnClient{
-		ClientConn:   clientConn,
+		cc:           clientConn,
 		seederClient: cdnsystem.NewSeederClient(clientConn),
 	}, nil
 }
@@ -57,7 +57,7 @@ type CDNClient interface {
 }
 
 type cdnClient struct {
-	*grpc.ClientConn
+	cc           *grpc.ClientConn
 	seederClient cdnsystem.SeederClient
 }
 
@@ -68,6 +68,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	if err == nil {
 		return seeder, err
 	}
+
 	status.FromContextError(err)
 	// try next CDN
 	return nil, nil
@@ -78,7 +79,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 }
 
 func (cc *cdnClient) Close() error {
-	return cc.ClientConn.Close()
+	return cc.cc.Close()
 }
 
 func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialOption) (*grpc.ClientConn, error) {

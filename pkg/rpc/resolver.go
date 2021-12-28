@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"github.com/patrickmn/go-cache"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -32,6 +33,8 @@ var (
 	_ resolver.Builder  = (*d7yResolverBuilder)(nil)
 	_ resolver.Resolver = (*d7yResolver)(nil)
 )
+
+var resolverLogger = grpclog.Component("resolver")
 
 func NewD7yResolverBuilder(scheme string) resolver.Builder {
 	return &d7yResolverBuilder{scheme: scheme}
