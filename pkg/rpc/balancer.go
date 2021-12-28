@@ -48,7 +48,7 @@ func init() {
 // d7yBalancerBuilder is an empty struct with functions Build and Name, implemented from balancer.Builder
 type d7yBalancerBuilder struct{}
 
-// Build creates a d7yBalancer, and starts its scManager.
+// Build creates a d7yBalancer, and starts its historyManager.
 func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
 		cc:             cc,
@@ -58,7 +58,7 @@ func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.B
 		pickResultChan: make(chan PickResult, 1),
 		pickHistory:    sync.Map{},
 	}
-	//go b.scManager()
+	go b.historyManager()
 	return b
 }
 
@@ -306,8 +306,8 @@ func (b *d7yBalancer) resetSubConnWithAddr(addr string) error {
 	return nil
 }
 
-// scManager launches two goroutines to receive PickResult and manage the subConns.
-func (b *d7yBalancer) scManager() {
+// historyManager launches two goroutines to receive PickResult and manage the subConns.
+func (b *d7yBalancer) historyManager() {
 	// The first goroutine listens to the pickResultChan, put pickResults into subConnPickRecords map.
 	go func() {
 		for {
