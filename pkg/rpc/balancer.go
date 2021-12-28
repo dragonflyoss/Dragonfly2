@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -30,8 +29,8 @@ import (
 )
 
 const (
-	D7yBalancerPolicy  = "consistent_hash_policy"
-	connectionLifetime = 10 * time.Minute
+	D7yBalancerPolicy = "consistent_hash_policy"
+	historyLifetime   = 10 * time.Minute
 )
 
 var (
@@ -52,13 +51,12 @@ type d7yBalancerBuilder struct{}
 // Build creates a d7yBalancer, and starts its scManager.
 func (builder *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
-		cc:                 cc,
-		addrInfos:          make(map[string]resolver.Address),
-		subConns:           make(map[string]balancer.SubConn),
-		scInfos:            sync.Map{},
-		pickResultChan:     make(chan PickResult, 1),
-		pickHistory:        sync.Map{},
-		subConnPickRecords: sync.Map{},
+		cc:             cc,
+		addrInfos:      make(map[string]resolver.Address),
+		subConns:       make(map[string]balancer.SubConn),
+		scInfos:        sync.Map{},
+		pickResultChan: make(chan PickResult, 1),
+		pickHistory:    sync.Map{},
 	}
 	//go b.scManager()
 	return b
@@ -73,11 +71,6 @@ func (builder *d7yBalancerBuilder) Name() string {
 type subConnInfo struct {
 	state connectivity.State
 	addr  string
-}
-
-type subConnPickRecord struct {
-	ctxs       []context.Context
-	accessTime time.Time
 }
 
 // d7yBalancer is modified from baseBalancer, you can refer to https://github.com/grpc/grpc-go/blob/master/balancer/base/balancer.go
@@ -107,12 +100,8 @@ type d7yBalancer struct {
 
 	// pickResultChan is the channel for the picker to report PickResult to the balancer.
 	pickResultChan chan PickResult
-	// pickHistory maps pickReq.Key(taskID) to the last picked targetAddr string.
+	// pickHistory maps pickReq.Key(taskID) to the last PickResult.
 	pickHistory sync.Map
-	//subConnPickRecords maps subConn to its *subConnPickRecord.
-	subConnPickRecords sync.Map
-	// pickInfosLock is the lock for pickHistory and subConnPickRecords.
-	pickInfosLock sync.RWMutex
 }
 
 // UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
@@ -323,57 +312,28 @@ func (b *d7yBalancer) scManager() {
 	go func() {
 		for {
 			pickResult := <-b.pickResultChan
-			b.pickInfosLock.Lock()
-			b.pickHistory.Store(pickResult.Key, pickResult.TargetAddr)
-			if v, ok := b.subConnPickRecords.Load(pickResult.SC); ok {
-				pickRecord := v.(*subConnPickRecord)
-				pickRecord.ctxs = append(pickRecord.ctxs, pickResult.Ctx)
-				pickRecord.accessTime = pickResult.PickTime
-			} else {
-				b.subConnPickRecords.Store(pickResult.SC,
-					&subConnPickRecord{
-						ctxs:       []context.Context{pickResult.Ctx},
-						accessTime: pickResult.PickTime,
-					},
-				)
-			}
-			b.pickInfosLock.Unlock()
+			b.pickHistory.Store(pickResult.Key, pickResult)
 		}
 	}()
 
-	// The second goroutine check the subConnPickRecords map, resets the SubConn alive for more than connectionLifetime.
+	// The second goroutine check the subConnPickRecords map, resets the SubConn alive for more than historyLifetime.
 	go func() {
 		ticker := time.NewTicker(2 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
-			b.pickInfosLock.Lock()
 			b.pickHistory.Range(func(key, value interface{}) bool {
+				record := value.(PickResult)
 				b.baseInfosLock.RLock()
-				addr := value.(string)
-				subConn := b.subConns[addr]
-				_pickRecord, _ := b.subConnPickRecords.Load(subConn)
-				pickRecord := _pickRecord.(*subConnPickRecord)
-				for i, ctx := range pickRecord.ctxs {
-					select {
-					case <-ctx.Done():
-						pickRecord.ctxs = append(pickRecord.ctxs[:i], pickRecord.ctxs[i+1:]...)
-					default:
-						pickRecord.accessTime = time.Now()
-					}
-				}
-				if len(pickRecord.ctxs) == 0 {
-					if pickRecord.accessTime.Add(connectionLifetime).Before(time.Now()) {
-						b.pickHistory.Delete(key)
-						if err := b.resetSubConn(subConn); err != nil {
-							log.Printf("d7yBalancer: failed to reset subConn: %v", err)
-						}
-						b.subConnPickRecords.Delete(subConn)
+				subConn := b.subConns[record.TargetAddr]
+				if record.PickTime.Add(historyLifetime).Before(time.Now()) {
+					b.pickHistory.Delete(key)
+					if err := b.resetSubConn(subConn); err != nil {
+						log.Printf("d7yBalancer: failed to reset subConn: %v", err)
 					}
 				}
 				b.baseInfosLock.RUnlock()
 				return true
 			})
-			b.pickInfosLock.Unlock()
 		}
 	}()
 }

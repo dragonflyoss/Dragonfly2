@@ -51,8 +51,6 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 		opts:    opts,
 		RetryMeta: rpc.RetryMeta{
 			MaxAttempts: 3,
-			InitBackoff: 0.2,
-			MaxBackOff:  2.0,
 		},
 	}
 
@@ -104,7 +102,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 	if err != nil {
 		return err
 	}
-	stream, err :=  client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
+	stream, err := client.ObtainSeeds(context.WithValue(pss.ctx, rpc.PickKey{}, &rpc.PickReq{Key: pss.hashKey, Attempt: pss.StreamTimes + 1}), pss.sr, pss.opts...)
 	if err != nil {
 		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn ObtainSeeds failed: %v", err)
 		pss.StreamTimes++

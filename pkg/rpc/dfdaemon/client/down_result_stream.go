@@ -52,8 +52,6 @@ func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, 
 
 		RetryMeta: rpc.RetryMeta{
 			MaxAttempts: 3,
-			MaxBackOff:  2.0,
-			InitBackoff: 0.2,
 		},
 	}
 

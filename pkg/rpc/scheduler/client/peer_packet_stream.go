@@ -62,8 +62,6 @@ func newPeerPacketStream(ctx context.Context, sc *schedulerClient, hashKey strin
 		opts:    opts,
 		retryMeta: rpc.RetryMeta{
 			MaxAttempts: 3,
-			InitBackoff: 0.2,
-			MaxBackOff:  2.0,
 		},
 	}
 

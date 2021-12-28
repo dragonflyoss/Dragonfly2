@@ -17,7 +17,6 @@
 package rpc
 
 import (
-	"context"
 	"log"
 	"sync"
 	"time"
@@ -44,8 +43,6 @@ var (
 type PickResult struct {
 	Key        string
 	TargetAddr string
-	SC         balancer.SubConn
-	Ctx        context.Context
 	PickTime   time.Time
 }
 
@@ -85,18 +82,19 @@ func (p *d7yPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
 
 	if pickReq.Attempt == 1 {
 		if v, ok := p.pickHistory.Load(pickReq.Key); ok {
-			targetAddr = v.(string)
+			lastPick := v.(PickResult)
+			targetAddr = lastPick.TargetAddr
 			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, PickTime: time.Now()}
 		} else if targetAddr, ok = p.hashRing.GetNode(pickReq.Key); ok {
 			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, PickTime: time.Now()}
 		}
 	} else {
 		if targetAddrs, ok := p.hashRing.GetNodes(pickReq.Key, pickReq.Attempt); ok {
 			targetAddr = targetAddrs[pickReq.Attempt-1]
 			ret.SubConn = p.subConns[targetAddr]
-			//p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, SC: ret.SubConn, Ctx: info.Ctx, PickTime: time.Now()}
+			p.reportChan <- PickResult{Key: pickReq.Key, TargetAddr: targetAddr, PickTime: time.Now()}
 		}
 	}
 
