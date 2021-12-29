@@ -232,7 +232,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 		},
 		Host: HostConfig{},
 		Metrics: &RestConfig{
-			Addr: ":8080",
+			Addr: ":8000",
 		},
 	}
 }
