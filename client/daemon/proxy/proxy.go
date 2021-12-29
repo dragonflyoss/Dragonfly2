@@ -556,7 +556,14 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 // shouldUseDragonflyForMirror returns whether we should use dragonfly to proxy a request
 // when we use registry mirror.
 func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
-	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseDragonfly(req)
+	if proxy.registry == nil || proxy.registry.Direct {
+		return false
+	}
+	if proxy.registry.UseProxies {
+		return proxy.shouldUseDragonfly(req)
+	} else {
+		return transport.NeedUseDragonfly(req)
+	}
 }
 
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an
