@@ -70,7 +70,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client
-	if cfg.Manager.Addr != "" {
+	if cfg.Manager.Enable {
 		managerClient, err := managerclient.New(cfg.Manager.Addr)
 		if err != nil {
 			return nil, err
@@ -130,17 +130,17 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.grpcServer = grpcServer
 
-	// Initialize metrics
-	if cfg.Metrics != nil {
-		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
-	}
-
 	// Initialize job service
-	if cfg.Job.Redis.Host != "" {
+	if cfg.Job.Enable {
 		s.job, err = job.New(cfg, service)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Initialize metrics
+	if cfg.Metrics.Enable {
+		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 
 	return s, nil
@@ -161,12 +161,8 @@ func (s *Server) Serve() error {
 
 	// Serve Job
 	if s.job != nil {
-		go func() {
-			if err := s.job.Serve(); err != nil {
-				logger.Fatalf("job start failed %v", err)
-			}
-			logger.Info("job start successfully")
-		}()
+		s.job.Serve()
+		logger.Info("job start successfully")
 	}
 
 	// Started metrics server
@@ -182,7 +178,6 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	// Serve Keepalive
 	if s.managerClient != nil {
 		// Register to manager
 		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
@@ -194,9 +189,10 @@ func (s *Server) Serve() error {
 			Location:           s.config.Host.Location,
 			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
 		}); err != nil {
-			logger.Fatalf("scheduler register to manager failed %v", err)
+			logger.Fatalf("register to manager failed %v", err)
 		}
 
+		// scheduler keepalive with manager
 		go func() {
 			logger.Info("start keepalive to manager")
 			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &rpcmanager.KeepAliveRequest{

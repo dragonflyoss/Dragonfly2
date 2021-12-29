@@ -30,8 +30,11 @@ import (
 )
 
 var (
+	// Cache filename
 	cacheFileName = "scheduler_dynconfig"
-	watchInterval = 1 * time.Second
+
+	// Notify interval
+	watchInterval = 5 * time.Second
 )
 
 type DynconfigData struct {
@@ -135,6 +138,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 		if err != nil {
 			return nil, err
 		}
+
 		d.Dynconfig = client
 	}
 
@@ -280,7 +284,6 @@ func (d *dynconfig) Serve() error {
 	}
 
 	go d.watch()
-
 	return nil
 }
 
@@ -308,6 +311,7 @@ func (d *dynconfig) Stop() error {
 	return nil
 }
 
+// Manager client for dynconfig
 type managerClient struct {
 	managerclient.Client
 	config *Config

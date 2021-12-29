@@ -31,7 +31,7 @@ import (
 )
 
 type Job interface {
-	Serve() error
+	Serve()
 	Stop()
 }
 
@@ -99,7 +99,7 @@ func New(cfg *config.Config, service service.Service) (Job, error) {
 	return t, nil
 }
 
-func (t *job) Serve() error {
+func (t *job) Serve() {
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on global queue", t.config.Job.GlobalWorkerNum)
 		if err := t.globalJob.LaunchWorker("global_worker", int(t.config.Job.GlobalWorkerNum)); err != nil {
@@ -114,8 +114,12 @@ func (t *job) Serve() error {
 		}
 	}()
 
-	logger.Infof("ready to launch %d worker(s) on local queue", t.config.Job.LocalWorkerNum)
-	return t.localJob.LaunchWorker("local_worker", int(t.config.Job.LocalWorkerNum))
+	go func() {
+		logger.Infof("ready to launch %d worker(s) on local queue", t.config.Job.LocalWorkerNum)
+		if err := t.localJob.LaunchWorker("local_worker", int(t.config.Job.LocalWorkerNum)); err != nil {
+			logger.Fatalf("scheduler queue worker error: %v", err)
+		}
+	}()
 }
 
 func (t *job) Stop() {

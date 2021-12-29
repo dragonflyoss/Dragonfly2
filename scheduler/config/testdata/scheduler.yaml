@@ -9,13 +9,13 @@ scheduler:
   algorithm: default
   backSourceCount: 3
   gc:
-    peerGCInterval: 1m
-    peerTTL: 5m
-    taskGCInterval: 1m
-    taskTTL: 10m
+    peerGCInterval: 60000000000
+    peerTTL: 300000000000
+    taskGCInterval: 60000000000
+    taskTTL: 600000000000
 
 dynconfig:
-  refreshInterval: 5m
+  refreshInterval: 300000000000
   cdnDir: foo
 
 host:
@@ -28,7 +28,7 @@ manager:
   addr: 127.0.0.1:65003
   schedulerClusterID: 1
   keepAlive:
-    interval: 1s
+    interval: 5000000000
 
 job:
   enable: true

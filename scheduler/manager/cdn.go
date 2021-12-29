@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -272,7 +273,9 @@ func (dc *cdnClient) LoadHost(key string) (*entity.Host, bool) {
 
 // Dynamic config notify function
 func (dc *cdnClient) OnNotify(data *config.DynconfigData) {
+	ips := getCDNIPs(data.CDNs)
 	if reflect.DeepEqual(dc.data, data) {
+		logger.Infof("cdn addresses deep equal: %v", ips)
 		return
 	}
 
@@ -282,11 +285,12 @@ func (dc *cdnClient) OnNotify(data *config.DynconfigData) {
 	dc.data = data
 	dc.hosts = cdnsToHosts(data.CDNs)
 	dc.UpdateState(cdnsToNetAddrs(data.CDNs))
+	logger.Infof("cdn addresses have been updated: %v", ips)
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
 func cdnsToHosts(cdns []*config.CDN) map[string]*entity.Host {
-	var hosts map[string]*entity.Host
+	hosts := map[string]*entity.Host{}
 	for _, cdn := range cdns {
 		var netTopology string
 		options := []entity.HostOption{entity.WithIsCDN(true)}
@@ -322,4 +326,14 @@ func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
 	}
 
 	return netAddrs
+}
+
+// getCDNIPs get ips by []*config.CDN.
+func getCDNIPs(cdns []*config.CDN) []string {
+	ips := []string{}
+	for _, cdn := range cdns {
+		ips = append(ips, cdn.IP)
+	}
+
+	return ips
 }

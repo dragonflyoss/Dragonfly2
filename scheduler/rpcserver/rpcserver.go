@@ -226,7 +226,7 @@ func (s *server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err 
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
-		return nil
+		return dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
 	}
 
 	peer.Log.Infof("leave tsk request: %#v", req)

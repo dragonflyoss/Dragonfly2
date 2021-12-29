@@ -18,7 +18,6 @@ package config
 
 import (
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -95,5 +94,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
 		t.Fatal(err)
 	}
-	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
+
+	assert.EqualValues(config, schedulerConfigYAML)
 }
