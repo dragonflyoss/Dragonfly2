@@ -162,6 +162,7 @@ func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey st
 }
 
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
+	sc.schedulerClient.ReportPieceResult(ctx, opts...)
 	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
 	if err != nil {
 		return pps, err
@@ -173,20 +174,13 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
-	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.ReportPeerResult(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pr.TaskId, Attempt: 1}), pr, opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("ReportPeerResult: report peer result to scheduler failed: %v", err)
-		return sc.retryReportPeerResult(ctx, pr, err, opts)
-	}
-	return nil
+	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+		HashKey: pr.TaskId,
+		IsStick: true,
+	})
+
+	_, err := sc.schedulerClient.ReportPeerResult(ctx, pr, opts...)
+	return err
 }
 
 func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, cause error, opts []grpc.CallOption) (err error) {

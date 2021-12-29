@@ -21,7 +21,6 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -65,11 +64,6 @@ type cdnClient struct {
 var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
-	ctx = context.WithValue(ctx, rpc.HashKey, rpc.PickerReq{
-		HashKey: req.TaskId,
-		Attempt: 0,
-	})
-	peer.FromContext()
 	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, opts...)
 	if err == nil {
 		return seeder, err
@@ -82,6 +76,12 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+		HashKey:    req.TaskId,
+		FailNodes:  nil,
+		IsStick:    false,
+		TargetAddr: addr.String(),
+	})
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
 }
 
