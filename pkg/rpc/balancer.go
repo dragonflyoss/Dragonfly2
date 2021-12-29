@@ -88,8 +88,9 @@ type d7yBalancer struct {
 	subConns *resolver.AddressMap
 	scStates map[balancer.SubConn]connectivity.State
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
-	picker balancer.Picker
-	config Config
+	picker      balancer.Picker
+	config      Config
+	pickHistory map[string]balancer.SubConn
 
 	resolverErr error // last error reported by the resolver; cleared on successful resolution.
 	connErr     error // the last connection error; cleared upon leaving TransientFailure
@@ -199,9 +200,8 @@ func (b *d7yBalancer) regeneratePicker() {
 	} else {
 		b.state = connectivity.Ready
 		b.picker = newD7yPicker(d7yPickerBuildInfo{
-			availableSubConns,
-			scStates,
-			b.picker.,
+			subConns: availableSubConns,
+			scStates: scStates,
 		})
 	}
 }

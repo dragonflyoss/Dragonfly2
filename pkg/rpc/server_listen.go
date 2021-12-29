@@ -22,7 +22,7 @@ import (
 	"os"
 	"syscall"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	d7yLogger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
@@ -44,16 +44,16 @@ func ListenWithPortRange(listen string, startPort, endPort int) (net.Listener, i
 		endPort = startPort
 	}
 	for port := startPort; port <= endPort; port++ {
-		logger.Debugf("start to listen port: %s:%d", listen, port)
+		d7yLogger.Debugf("start to listen port: %s:%d", listen, port)
 		listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", listen, port))
 		if err == nil && listener != nil {
 			return listener, listener.Addr().(*net.TCPAddr).Port, nil
 		}
 		if isErrAddr(err) {
-			logger.Warnf("listen port %s:%d is in used, sys error: %s", listen, port, err)
+			d7yLogger.Warnf("listen port %s:%d is in used, sys error: %s", listen, port, err)
 			continue
 		} else if err != nil {
-			logger.Warnf("listen port %s:%d error: %s", listen, port, err)
+			d7yLogger.Warnf("listen port %s:%d error: %s", listen, port, err)
 			return nil, -1, err
 		}
 	}

@@ -18,15 +18,13 @@ package client
 
 import (
 	"context"
-	"fmt"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
-
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"fmt"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 func Dial(target string, opts ...grpc.DialOption) (CDNClient, error) {
@@ -68,8 +66,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	if err == nil {
 		return seeder, err
 	}
-	rpc.TryMigrate(ctx, err)
-	cc.seederClient.ObtainSeeds(ctx)
+	rpc.FromContext(ctx)
 	status.FromContextError(err)
 	// try next CDN
 	return nil, nil
@@ -77,9 +74,6 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
-		HashKey:    req.TaskId,
-		FailNodes:  nil,
-		IsStick:    false,
 		TargetAddr: addr.String(),
 	})
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)

@@ -18,8 +18,7 @@ package rpc
 
 import (
 	"context"
-	"math/rand"
-	"net"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"strconv"
 	"sync"
 
@@ -39,10 +38,10 @@ var (
 
 // PickRequest contains the information of the subConn pick info
 type PickRequest struct {
-	HashKey    string
-	FailNodes  []net.Addr
-	IsStick    bool
-	TargetAddr string
+	HashKey     string
+	FailedNodes sets.String
+	IsStick     bool
+	TargetAddr  string
 }
 
 type pickKey struct{}
@@ -79,29 +78,25 @@ func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
 		subConns[addr.Addr] = subConn
 	}
 	return &d7yHashPicker{
-		subConns:    subConns,
-		pickHistory: info.pickHistory,
-		scStates:    info.scStates,
-		hashRing:    hashring.NewWithWeights(weights),
-		stickFlag:   StickFlag,
-		hashKey:     HashKey,
+		subConns: subConns,
+		balancer: info.balancer,
+		scStates: info.scStates,
+		hashRing: hashring.NewWithWeights(weights),
 	}
 }
 
 type d7yPickerBuildInfo struct {
-	subConns    map[resolver.Address]balancer.SubConn
-	pickHistory map[string]balancer.SubConn
-	scStates    map[balancer.SubConn]connectivity.State
+	subConns map[resolver.Address]balancer.SubConn
+	balancer *d7yBalancer
+	scStates map[balancer.SubConn]connectivity.State
 }
 
 type d7yHashPicker struct {
-	mu          sync.Mutex
-	subConns    map[string]balancer.SubConn // target address string -> balancer.SubConn
-	pickHistory map[string]balancer.SubConn // hashKey -> balancer.SubConn
-	scStates    map[balancer.SubConn]connectivity.State
-	hashRing    *hashring.HashRing
-	stickFlag   string
-	hashKey     string
+	mu       sync.Mutex
+	subConns map[string]balancer.SubConn // target address string -> balancer.SubConn
+	balancer *d7yBalancer
+	scStates map[balancer.SubConn]connectivity.State
+	hashRing *hashring.HashRing
 }
 
 func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, err error) {
@@ -128,7 +123,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
-			subConn, ok := p.pickHistory[pickRequest.HashKey]
+			subConn, ok := p.balancer.pickHistory[pickRequest.HashKey]
 			if !ok {
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot found history")
 				return
@@ -144,29 +139,25 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	}
 	targetAddrs, ok := p.hashRing.GetNodes(key, p.hashRing.Size())
 	if !ok {
-		err = status.Errorf()
+		err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
 		return
 	}
-
-	for targetIndex, targetAddr := range targetAddrs {
-		for _, failNode := range pickRequest.FailNodes {
-			if targetAddr == failNode {
-				break
-			}
+	var targetAddress string
+	for _, targetAddr := range targetAddrs {
+		if !pickRequest.FailedNodes.Has(targetAddr) {
+			targetAddress = targetAddr
+			break
 		}
 	}
+	if targetAddress == "" {
+		err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried")
+	}
 	if pickRequest != nil && pickRequest.HashKey != "" {
-		ret.SubConn = p.subConns[targetAddr]
-		p.pickHistory[key] = p.subConns[targetAddr]
-		return
+		ret.SubConn = p.subConns[targetAddress]
+		p.balancer.pickHistory[key] = p.subConns[targetAddress]
+		ret.SubConn.Connect()
 	}
-	// rand select a sc
-	var scs []balancer.SubConn
-	for _, conn := range p.subConns {
-		scs = append(scs, conn)
-	}
-	ret.SubConn = scs[rand.Intn(len(scs))]
-	return ret, nil
+	return
 }
 
 const (

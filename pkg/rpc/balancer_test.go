@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	testpb "google.golang.org/grpc/test/grpc_testing"
 	"log"
 	"net"
 	"reflect"
@@ -31,20 +32,19 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
 	"google.golang.org/grpc/status"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
 const (
 	testPickKey = "balancer_test"
 )
 
-type tester struct{}
+type balancerTester struct{}
 
-func Test(t *testing.T) {
-	RunSubTests(t, tester{})
+func BalancerTest(t *testing.T) {
+	RunSubTests(t, balancerTester{})
 }
 
-func RunSubTests(t *testing.T, x tester) {
+func RunSubTests(t *testing.T, x balancerTester) {
 	xt := reflect.TypeOf(x)
 	xv := reflect.ValueOf(x)
 
@@ -119,7 +119,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 	return t, nil
 }
 
-func (tester) TestOneBackend(t *testing.T) {
+func (balancerTester) TestOneBackend(t *testing.T) {
 	r := manual.NewBuilderWithScheme("whatever")
 
 	test, err := startTestServers(1)
@@ -156,7 +156,7 @@ func (tester) TestOneBackend(t *testing.T) {
 	}
 }
 
-func (tester) TestMigration(t *testing.T) {
+func (balancerTester) TestMigration(t *testing.T) {
 	r := manual.NewBuilderWithScheme("whatever")
 
 	test, err := startTestServers(2)
