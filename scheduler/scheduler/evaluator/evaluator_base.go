@@ -171,8 +171,19 @@ func (eb *evaluatorBase) IsBadNode(peer *entity.Peer) bool {
 	mean, _ := stats.Mean(costs[:len-1]) // nolint: errcheck
 
 	// Download costs does not meet the normal distribution,
-	// if the last cost is forty times more than mean, it is bad node.
-	isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean*40)) > 0
-	logger.Infof("peer %s mean is %.2f and it is bad node: %t", peer.ID, mean, isBadNode)
+	// if the last cost is twenty times more than mean, it is bad node.
+	if len < normalDistributionLen {
+		isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean*20)) > 0
+		logger.Infof("peer %s mean is %.2f and it is bad node: %t", peer.ID, mean, isBadNode)
+		return isBadNode
+	}
+
+	// Download costs satisfies the normal distribution,
+	// last cost falling outside of three-sigma effect need to be adjusted parent,
+	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
+	stdev, _ := stats.StandardDeviation(costs[:len-2]) // nolint: errcheck
+	isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean+3*stdev)) > 0
+	logger.Infof("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer is bad node: %t",
+		peer.ID, mean, stdev, isBadNode)
 	return isBadNode
 }

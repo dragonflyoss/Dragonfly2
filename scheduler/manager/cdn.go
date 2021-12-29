@@ -110,7 +110,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 
 		// Get end piece
 		if piece.Done {
-			peer.Log.Info("receive last piece: %#v", piece)
+			peer.Log.Infof("receive last piece: %#v", piece)
 			if err := peer.FSM.Event(entity.PeerStateFinished); err != nil {
 				return nil, nil, err
 			}
@@ -195,7 +195,7 @@ func downloadTinyFile(ctx context.Context, task *entity.Task, peer *entity.Peer)
 		RawQuery: "peerId=scheduler",
 	}
 
-	peer.Log.Infof("download tiny file url: %s", url)
+	peer.Log.Infof("download tiny file url: %#v", url)
 
 	resp, err := http.Get(url.String())
 	if err != nil {

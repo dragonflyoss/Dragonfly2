@@ -17,9 +17,10 @@
 package manager
 
 import (
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"google.golang.org/grpc"
 )
 
 type Manager struct {
