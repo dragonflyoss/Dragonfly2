@@ -38,7 +38,7 @@ func (c Config) applyDefaults() Config {
 		c.Net = DefaultNetwork
 	}
 	if c.Addr == "" {
-		c.Addr = ":8080"
+		c.Addr = ":8000"
 	}
 	return c
 }
