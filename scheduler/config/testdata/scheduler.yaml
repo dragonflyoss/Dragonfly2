@@ -1,46 +1,48 @@
-dynconfig:
-  refreshInterval: 5m
-  cdnDir: tmp
+server:
+  ip: 127.0.0.1
+  host: foo
+  port: 8002
+  cacheDir: foo
+  logDir: bar
 
 scheduler:
-  workerNum: 10
-  backSourceCount: 3
   algorithm: default
+  backSourceCount: 3
   gc:
     peerGCInterval: 1m
-    peerTTL: 10m
+    peerTTL: 5m
     taskGCInterval: 1m
     taskTTL: 10m
 
-server:
-  ip: "127.0.0.1"
-  host: "foo"
-  port: 8002
-  cacheDir: "foo"
-  logDir: "foo"
-
-manager:
-  addr: 127.0.0.1:65003
-  schedulerClusterID: 1
-  keepAlive:
-    interval: 1000000000
+dynconfig:
+  refreshInterval: 5m
+  cdnDir: foo
 
 host:
   idc: foo
-  netTopology: baz
-  location: bar
+  netTopology: bar
+  location: baz
+
+manager:
+  enable: true
+  addr: 127.0.0.1:65003
+  schedulerClusterID: 1
+  keepAlive:
+    interval: 1s
 
 job:
+  enable: true
   globalWorkerNum: 1
   schedulerWorkerNum: 1
   localWorkerNum: 5
   redis:
-    host: "127.0.0.1"
+    host: 127.0.0.1
     port: 6379
-    password: "password"
+    password: foo
     brokerDB: 1
     backendDB: 2
 
 metrics:
+  enable: false
   addr: ":8000"
-  enablePeerHost: true
+  enablePeerHost: false

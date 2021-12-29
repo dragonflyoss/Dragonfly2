@@ -1,3 +1,20 @@
+# scheduler 服务实例配置信息
+server:
+  # # 服务 IP
+  # ip: 127.0.0.1
+  # # 服务地址
+  # host: localhost
+  # 服务监听端口
+  port:
+  # daemon 动态配置缓存目录
+  # linux 上默认目录 /var/cache/dragonfly
+  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
+  cacheDir: ""
+  # daemon 日志目录
+  # linux 上默认目录 /var/log/dragonfly
+  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
+  logDir: ""
+
 # scheduler 调度策略配置
 scheduler:
   # algorithm 使用不同调度算法配置，当前默认支持 "default" 和 "ml" 两种类型
@@ -5,80 +22,77 @@ scheduler:
   # 也支持用户 plugin 扩展的方式，值为 "plugin"
   # 并且在 dragonfly 工作目录 plugins 中添加编译好的 `d7y-scheduler-plugin-evaluator.so` 文件
   algorithm: default
-  # workerNum 执行调度任务处理的 goroutine 数量
-  workerNum: 10
-  # backSourceCount 回源客户端的数量
+  # 单个任务允许客户端回源的数量
   backSourceCount: 3
-  # gc 元数据回收策略
+  # 数据回收策略
   gc:
-    # taskGCInterval task 的回收间隔
+    # peer 的回收间隔
+    peerGCInterval: 1m
+    # 不活跃的 peer 的存活时间
+    peerTTL: 5m
+    # task 的回收间隔
     taskGCInterval: 1m
-    # taskTTL task 的离开时间, 距离上次 task 的访问时间超过改值则 task 会被设置成 leave 状态
+    # 不活跃的 task 的存活时间
     taskTTL: 10m
-
-# server scheduler 服务实例配置信息
-server:
-  # ip
-  # ip: 127.0.0.1
-  # host
-  # host: localhost
-  # ListenPort is the ip and port scheduler server listens on.
-  port:
-  # daemon 动态配置缓存目录
-  # linux 上默认目录 /var/cache/dragonfly
-  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
-  cacheDir: ""
-
-  # daemon 日志目录
-  # linux 上默认目录 /var/log/dragonfly
-  # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
-  logDir: ""
 
 # 动态数据配置
 dynConfig:
-  # refreshInterval 动态数据刷新间隔时间
+  # 动态数据刷新间隔时间
   refreshInterval: 5 * time.Minute
+
+# 实例主机信息
+host:
+  # 实例所在机房
+  idc: ""
+  # 实例网络拓扑信息
+  netTopology: ""
+  # 实例所在的地理位置信息
+  location: ""
 
 # manager 配置
 manager:
-  # addr manager 访问地址
+  # 启动与 manager 的连接
+  enable: true
+  # manager 访问地址
   addr: ""
-  # schedulerClusterID 要注册的 scheduler 集群 ID
+  # 注册的 scheduler 集群 ID
   schedulerClusterID:
-  # keepAlive 和 manager 保持心跳的配置
+  # manager 心跳配置
   keepAlive:
-    # interval 保持心跳的时间间隔
+    # 保持心跳的时间间隔
     interval: 5s
-
-# scheduler 自身主机信息
-host:
-  # idc 实例所在机房
-  idc: ""
-  # netTopology 实例网络拓扑信息
-  netTopology: ""
-  # location 实例所在的地理位置信息
-  location: ""
 
 # machinery 异步任务配置，配置参考 https://github.com/RichardKnop/machinery
 job:
-  # globalWorkerNum
-  globalWorkerNum: 2
-  # schedulerWorkerNum
-  schedulerWorkerNum: 3
-  # localWorkerNum
-  localWorkerNum: 3
-  # redis configuration
+  # 启动 job 服务
+  enable: true
+  # global 通道 worker 数量
+  globalWorkerNum: 1
+  # scheduler 通道 worker 数量
+  schedulerWorkerNum: 1
+  # local 通道 worker 数量
+  localWorkerNum: 5
+  # redis 配置
   redis:
-    # host redis 服务实例地址
+    # 服务地址
     host: ""
-    # port redis 服务实例端口
+    # 服务端口
     port: 6379
-    # password
+    # 密码
     password: ""
-    # brokerDB
-    brokerDB: ""
-    # backendDB
-    backendDB: ""
+    # broker 数据库
+    brokerDB: 1
+    # backend 数据库
+    backendDB: 2
+
+# 开启数据收集服务
+metrics:
+  # 启动数据收集服务
+  enable: false
+  # 数据服务地址
+  addr: ":8000"
+  # 开机收集 peer host 数据
+  enablePeerHost: false
 
 # Console 是否在控制台程序中显示日志
 console: false
@@ -92,12 +106,3 @@ pprofPort: -1
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
 jaeger: ""
-
-# tracer 中使用的 service-name
-service-name: dragonfly-scheduler
-# 开启数据收集服务
-# metrics:
-#  # 数据服务地址
-#  addr: ":8000"
-#  # 收集 host 数据
-#  enablePeerHost: false

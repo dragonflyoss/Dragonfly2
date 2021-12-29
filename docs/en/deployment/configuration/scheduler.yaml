@@ -1,3 +1,20 @@
+# server scheduler instance configuration
+server:
+  # # ip
+  # ip: 127.0.0.1
+  # # host
+  # host: localhost
+  # ListenPort is the ip and port scheduler server listens on.
+  port: 8002
+  # cacheDir is dynconfig cache storage directory
+  # in linux, default value is /var/cache/dragonfly
+  # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+  cacheDir: ""
+  # logDir is the log storage directory
+  # in linux, default value is /var/log/dragonfly
+  # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+  logDir: ""
+
 # scheduler policy configuration
 scheduler:
   # algorithm configuration to use different scheduling algorithms,
@@ -13,45 +30,19 @@ scheduler:
   backSourceCount: 3
   # gc metadata configuration
   gc:
+    # peerGCInterval peer's gc interval
+    peerGCInterval: 1m
+    # peerTTL peer's TTL duration
+    peerTTL: 5m
     # taskGCInterval task's gc interval
     taskGCInterval: 1m
     # taskTTL task's TTL duration
     taskTTL: 10m
 
-# server scheduler instance configuration
-server:
-  # ip
-  # ip: 127.0.0.1
-  # host
-  # host: localhost
-  # ListenPort is the ip and port scheduler server listens on.
-  port: 8002
-
-  # cacheDir is dynconfig cache storage directory
-  # in linux, default value is /var/cache/dragonfly
-  # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
-  cacheDir: ""
-
-  # logDir is the log storage directory
-  # in linux, default value is /var/log/dragonfly
-  # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
-  logDir: ""
-
 # dynamic data configuration
 dynConfig:
   # dynamic config refresh interval
   refreshInterval: 5 * time.Minute
-
-# manager configuration
-manager:
-  # addr manager access address
-  addr: 127.0.0.1:65003
-  # schedulerClusterID cluster id to which scheduler instance belongs
-  schedulerClusterID: 1
-  # keepAlive keep alive configuration
-  keepAlive:
-    # interval
-    interval: 5s
 
 # scheduler host configuration
 host:
@@ -62,14 +53,29 @@ host:
   # location is the location of scheduler instance
   location: ""
 
+# manager configuration
+manager:
+  # scheduler enable contact with manager
+  enable: true
+  # addr manager access address
+  addr: 127.0.0.1:65003
+  # schedulerClusterID cluster id to which scheduler instance belongs
+  schedulerClusterID: 1
+  # keepAlive keep alive configuration
+  keepAlive:
+    # interval
+    interval: 5s
+
 # machinery async job configuration, see https://github.com/RichardKnop/machinery
 job:
-  # globalWorkerNum
-  globalWorkerNum: 2
-  # schedulerWorkerNum
-  schedulerWorkerNum: 3
-  # localWorkerNum
-  localWorkerNum: 3
+  # scheduler enable job service
+  enable: true
+  # number of workers in global queue
+  globalWorkerNum: 1
+  # number of workers in scheduler queue
+  schedulerWorkerNum: 1
+  # number of workers in local queue
+  localWorkerNum: 5
   # redis configuration
   redis:
     # host
@@ -79,9 +85,18 @@ job:
     # password
     password: ""
     # brokerDB
-    brokerDB: ""
+    brokerDB: 1
     # backendDB
-    backendDB: ""
+    backendDB: 2
+
+# enable prometheus metrics
+metrics:
+  # scheduler enable metrics service
+  enable: false
+  # metrics service address
+  addr: ":8000"
+  # enable peer host metrics
+  enablePeerHost: false
 
 # console shows log on console
 console: false
@@ -95,12 +110,3 @@ pprofPort: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
 jaeger: ""
-
-# service name used in tracer
-service-name: dragonfly-scheduler
-# enable prometheus metrics
-# metrics:
-#  # metrics service address
-#  addr: ":8000"
-#  # enable peer host metrics
-#  enablePeerHost: false

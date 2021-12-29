@@ -66,11 +66,6 @@ generate and maintain a P2P network during the download process, and push suitab
 			return err
 		}
 
-		// Convert redis host config
-		if err := cfg.Convert(); err != nil {
-			return err
-		}
-
 		return runScheduler(ctx, d)
 	},
 }
