@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	// Host's default upload load limit count
+	// Host default upload load limit
 	defaultUploadLoadLimit = 100
 )
 

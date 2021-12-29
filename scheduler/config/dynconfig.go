@@ -33,8 +33,8 @@ var (
 	// Cache filename
 	cacheFileName = "scheduler_dynconfig"
 
-	// Notify interval
-	watchInterval = 5 * time.Second
+	// Notify observer interval
+	watchInterval = 10 * time.Second
 )
 
 type DynconfigData struct {
