@@ -103,7 +103,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 				return nil, nil, err
 			}
 
-			if err := peer.FSM.Event(entity.PeerStateRunning); err != nil {
+			if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
 		}
@@ -111,7 +111,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 		// Get end piece
 		if piece.Done {
 			peer.Log.Infof("receive last piece: %#v", piece)
-			if err := peer.FSM.Event(entity.PeerStateFinished); err != nil {
+			if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
 				return nil, nil, err
 			}
 

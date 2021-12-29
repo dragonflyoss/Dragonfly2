@@ -64,13 +64,6 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	log := logger.WithTaskAndPeerID(task.ID, req.PeerId)
 	log.Infof("register peer task request: %#v", req)
 
-	// In the case of concurrency, if the task status is failure, it will directly return to registration failure.
-	if task.FSM.Is(entity.TaskStateFailed) {
-		dferr := dferrors.New(base.Code_SchedTaskStatusError, "task status is fail")
-		log.Error(dferr.Message)
-		return nil, dferr
-	}
-
 	// Task has been successful
 	if task.FSM.Is(entity.TaskStateSucceeded) {
 		log.Info("task has been successful")
@@ -156,35 +149,13 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	ctx := stream.Context()
 
-	// Handle begin of piece
-	beginOfPiece, err := stream.Recv()
-	if err != nil {
-		if err == io.EOF {
-			return nil
-		}
-		logger.Errorf("receive error: %v", err)
-		return err
-	}
-	log := logger.WithTaskAndPeerID(beginOfPiece.TaskId, beginOfPiece.SrcPid)
-	log.Infof("receive begin of piece: %#v", beginOfPiece)
-
-	// Get peer from peer manager
-	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
-	if !ok {
-		err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
-		log.Error("peer not found")
-		return err
-	}
-
-	// Handle peer fails
-	if peer.FSM.Is(entity.PeerStateFailed) {
-		err = dferrors.Newf(base.Code_SchedTaskStatusError, "peer status is fail")
-		log.Error("task status is fail")
-		return err
-	}
+	var (
+		initialized bool
+		peer        *entity.Peer
+		log         *logger.SugaredLoggerOnWith
+	)
 
 	// Peer setting stream
-	peer.StoreStream(stream)
 	for {
 		select {
 		case <-ctx.Done():
@@ -201,8 +172,25 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 			if err == io.EOF {
 				return nil
 			}
-			log.Errorf("receive error: %v", err)
+			logger.Errorf("receive error: %v", err)
 			return err
+		}
+
+		if !initialized {
+			initialized = true
+
+			// Initialize log
+			log = logger.WithTaskAndPeerID(piece.TaskId, piece.SrcPid)
+			log.Infof("receive begin of piece: %#v", piece)
+
+			// Get peer from peer manager
+			peer, ok := s.service.LoadPeer(piece.SrcPid)
+			if !ok {
+				err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", piece.SrcPid)
+				log.Error("peer not found")
+				return err
+			}
+			peer.StoreStream(stream)
 		}
 
 		log.Infof("receive piece: %#v", piece)
@@ -229,7 +217,7 @@ func (s *server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err 
 		return dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
 	}
 
-	peer.Log.Infof("leave tsk request: %#v", req)
+	peer.Log.Infof("leave task request: %#v", req)
 	s.service.HandlePeerLeave(ctx, peer)
 	return nil
 }

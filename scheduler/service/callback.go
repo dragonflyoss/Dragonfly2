@@ -209,7 +209,9 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 	}
 
 	// Schedule children to peer
-	go c.scheduler.ScheduleChildren(ctx, peer, set.NewSafeSet())
+	blocklist := set.NewSafeSet()
+	blocklist.Add(peer.ID)
+	go c.scheduler.ScheduleChildren(ctx, peer, blocklist)
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {

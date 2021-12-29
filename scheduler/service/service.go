@@ -92,7 +92,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	s.kmu.Lock(task.ID)
 	defer s.kmu.Unlock(task.ID)
 	task, ok := s.manager.Task.LoadOrStore(task)
-	if ok && !task.FSM.Is(entity.TaskStatePending) {
+	if ok && (task.FSM.Is(entity.TaskStateRunning) || task.FSM.Is(entity.TaskStateSucceeded)) {
 		// Task is healthy and can be reused
 		task.UpdateAt.Store(time.Now())
 		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
@@ -107,7 +107,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	// Start seed cdn task
 	go func() {
 		task.Log.Info("cdn start seed task")
-		peer, endOfPiece, err := s.manager.CDN.TriggerTask(ctx, task)
+		peer, endOfPiece, err := s.manager.CDN.TriggerTask(context.Background(), task)
 		if err != nil {
 			task.Log.Errorf("trigger task failed: %v", err)
 
@@ -138,7 +138,8 @@ func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTas
 			options = append(options, entity.WithUploadLoadLimit(int32(clientConfig.LoadLimit)))
 		}
 
-		s.manager.Host.Store(entity.NewHost(rawHost, options...))
+		host = entity.NewHost(rawHost, options...)
+		s.manager.Host.Store(host)
 		host.Log.Info("create host")
 	}
 
@@ -148,13 +149,7 @@ func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTas
 
 func (s *service) LoadOrStorePeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *entity.Task, host *entity.Host) *entity.Peer {
 	peer := entity.NewPeer(req.PeerId, task, host)
-	peer, loaded := s.manager.Peer.LoadOrStore(peer)
-	if loaded {
-		peer.Log.Info("peer already exists")
-	} else {
-		peer.Log.Info("create peer")
-	}
-
+	peer, _ = s.manager.Peer.LoadOrStore(peer)
 	return peer
 }
 
@@ -182,13 +177,13 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 	// Handle begin of piece and end of piece
 	if piece.PieceInfo != nil {
 		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			peer.Log.Info("receive begin of piece")
+			peer.Log.Infof("receive begin of piece: %#v", piece)
 			s.callback.BeginOfPiece(ctx, peer)
 			return
 		}
 
 		if piece.PieceInfo.PieceNum == common.EndOfPiece {
-			peer.Log.Info("receive end of piece")
+			peer.Log.Infof("receive end of piece: %#v", piece)
 			s.callback.EndOfPiece(ctx, peer)
 			return
 		}

@@ -108,6 +108,8 @@ func NewTask(id, url string, backToSourceLimit int32, meta *base.UrlMeta) *Task 
 		ID:                id,
 		URL:               url,
 		URLMeta:           meta,
+		ContentLength:     atomic.NewInt64(0),
+		TotalPieceCount:   atomic.NewInt32(0),
 		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
