@@ -55,7 +55,7 @@ func TestDial(t *testing.T) {
 }
 
 func TestDialWithTimeout(t *testing.T) {
-	lis, err := net.Listen("tcp", "localhost:0")
+	lis, err := net.Listen("tcp", "localhost:8003")
 	if err != nil {
 		t.Fatalf("Error while listening. Err: %v", err)
 	}
@@ -65,6 +65,7 @@ func TestDialWithTimeout(t *testing.T) {
 	// 1st listener accepts the connection and then does nothing
 	go func() {
 		defer close(lisDone)
+
 		conn, err := lis.Accept()
 		if err != nil {
 			t.Errorf("Error while accepting. Err: %v", err)

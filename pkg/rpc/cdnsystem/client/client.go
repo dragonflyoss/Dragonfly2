@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -68,6 +69,7 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 		HashKey: req.TaskId,
 		Attempt: 0,
 	})
+	peer.FromContext()
 	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, opts...)
 	if err == nil {
 		return seeder, err
