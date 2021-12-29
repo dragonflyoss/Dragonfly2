@@ -26,7 +26,7 @@ import (
 var (
 	CoreLogger       *zap.SugaredLogger
 	GrpcLogger       *zap.SugaredLogger
-	MetaGCLogger     *zap.SugaredLogger
+	GCLogger         *zap.SugaredLogger
 	StorageGCLogger  *zap.SugaredLogger
 	JobLogger        *zap.SugaredLogger
 	KeepAliveLogger  *zap.SugaredLogger
@@ -56,7 +56,7 @@ func SetCoreLogger(log *zap.SugaredLogger) {
 }
 
 func SetGCLogger(log *zap.SugaredLogger) {
-	MetaGCLogger = log
+	GCLogger = log
 }
 
 func SetStorageGCLogger(log *zap.SugaredLogger) {

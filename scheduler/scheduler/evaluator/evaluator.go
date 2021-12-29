@@ -35,9 +35,6 @@ type Evaluator interface {
 	// Evaluate todo Normalization
 	Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64
 
-	// NeedAdjustParent determine whether the peer needs a new parent node
-	NeedAdjustParent(peer *entity.Peer) bool
-
 	// IsBadNode determine if peer is a failed node
 	IsBadNode(peer *entity.Peer) bool
 }

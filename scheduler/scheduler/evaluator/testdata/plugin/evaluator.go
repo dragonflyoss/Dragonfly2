@@ -24,10 +24,6 @@ func (e *evaluator) Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceC
 	return float64(1)
 }
 
-func (e *evaluator) NeedAdjustParent(peer *entity.Peer) bool {
-	return true
-}
-
 func (e *evaluator) IsBadNode(peer *entity.Peer) bool {
 	return true
 }

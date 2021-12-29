@@ -28,12 +28,14 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	rpcmanager "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
+	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
+	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
@@ -51,9 +53,6 @@ type Server struct {
 	// Metrics server
 	metricsServer *http.Server
 
-	// Scheduler service
-	service service.Service
-
 	// Manager client
 	managerClient managerclient.Client
 
@@ -67,7 +66,7 @@ type Server struct {
 	gc gc.GC
 }
 
-func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
+func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s := &Server{config: cfg}
 
 	// Initialize manager client
@@ -77,19 +76,6 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			return nil, err
 		}
 		s.managerClient = managerClient
-
-		// Register to manager
-		if _, err := s.managerClient.UpdateScheduler(&manager.UpdateSchedulerRequest{
-			SourceType:         manager.SourceType_SCHEDULER_SOURCE,
-			HostName:           s.config.Server.Host,
-			Ip:                 s.config.Server.IP,
-			Port:               int32(s.config.Server.Port),
-			Idc:                s.config.Host.IDC,
-			Location:           s.config.Host.Location,
-			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-		}); err != nil {
-			return nil, err
-		}
 	}
 
 	// Initialize dynconfig client
@@ -100,38 +86,58 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.dynconfig = dynConfig
 
 	// Initialize GC
-	s.gc = gc.New(gc.WithLogger(logger.MetaGCLogger))
+	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
-	// Initialize scheduler service
-	service, err := service.New(cfg, d.PluginDir(), s.gc, dynConfig, cfg.Options.Telemetry.Jaeger != "")
+	// Initialize grpc options
+	var (
+		serverOptions []grpc.ServerOption
+		dialOptions   []grpc.DialOption
+	)
+
+	if s.config.Options.Telemetry.Jaeger != "" {
+		serverOptions = append(
+			serverOptions,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+
+		dialOptions = append(
+			dialOptions,
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		)
+	}
+
+	// Initialize manager
+	manager, err := manager.New(cfg, s.gc, dynConfig, dialOptions)
 	if err != nil {
 		return nil, err
 	}
-	s.service = service
 
-	// Initialize grpc service
-	var options []grpc.ServerOption
-	if s.config.Options.Telemetry.Jaeger != "" {
-		options = []grpc.ServerOption{
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		}
+	// Initialize scheduler
+	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
+
+	// Initialize scheduler service
+	service, err := service.New(cfg, scheduler, manager, dynConfig)
+	if err != nil {
+		return nil, err
 	}
 
-	grpcServer, err := rpcserver.New(cfg, s.service, options...)
+	// Initialize grpc service
+	grpcServer, err := rpcserver.New(cfg, service, serverOptions...)
 	if err != nil {
 		return nil, err
 	}
 	s.grpcServer = grpcServer
 
-	// Initialize prometheus
+	// Initialize metrics
 	if cfg.Metrics != nil {
 		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 
 	// Initialize job service
 	if cfg.Job.Redis.Host != "" {
-		s.job, err = job.New(context.Background(), cfg.Job, cfg.Manager.SchedulerClusterID, cfg.Server.Host, s.service)
+		s.job, err = job.New(cfg, service)
 		if err != nil {
 			return nil, err
 		}
@@ -152,12 +158,6 @@ func (s *Server) Serve() error {
 	// Serve GC
 	s.gc.Serve()
 	logger.Info("gc start successfully")
-
-	// Serve service
-	go func() {
-		s.service.Serve()
-		logger.Info("scheduler service start successfully")
-	}()
 
 	// Serve Job
 	if s.job != nil {
@@ -184,11 +184,24 @@ func (s *Server) Serve() error {
 
 	// Serve Keepalive
 	if s.managerClient != nil {
+		// Register to manager
+		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
+			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+			HostName:           s.config.Server.Host,
+			Ip:                 s.config.Server.IP,
+			Port:               int32(s.config.Server.Port),
+			Idc:                s.config.Host.IDC,
+			Location:           s.config.Host.Location,
+			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+		}); err != nil {
+			logger.Fatalf("scheduler register to manager failed %v", err)
+		}
+
 		go func() {
 			logger.Info("start keepalive to manager")
-			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
+			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &rpcmanager.KeepAliveRequest{
 				HostName:   s.config.Server.Host,
-				SourceType: manager.SourceType_SCHEDULER_SOURCE,
+				SourceType: rpcmanager.SourceType_SCHEDULER_SOURCE,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
 			})
 		}()
@@ -229,10 +242,6 @@ func (s *Server) Stop() {
 	// Stop GC
 	s.gc.Stop()
 	logger.Info("gc closed")
-
-	// Stop scheduler service
-	s.service.Stop()
-	logger.Info("scheduler service closed")
 
 	// Stop metrics server
 	if s.metricsServer != nil {

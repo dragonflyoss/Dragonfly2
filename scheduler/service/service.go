@@ -20,11 +20,6 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"google.golang.org/grpc"
-
-	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
@@ -38,8 +33,9 @@ import (
 )
 
 type Service interface {
-	ScheduleParent(context.Context, *entity.Peer) (*entity.Peer, []*entity.Peer, bool)
-	RegisterTask(context.Context, *rpcscheduler.PeerTaskRequest, int32) *entity.Task
+	Scheduler() scheduler.Scheduler
+	Manager() *manager.Manager
+	RegisterTask(context.Context, *rpcscheduler.PeerTaskRequest) (*entity.Task, error)
 	LoadOrStoreHost(context.Context, *rpcscheduler.PeerTaskRequest) *entity.Host
 	LoadOrStorePeer(context.Context, *rpcscheduler.PeerTaskRequest, *entity.Task, *entity.Host) *entity.Peer
 	LoadPeer(string) (*entity.Peer, bool)
@@ -68,23 +64,7 @@ type service struct {
 	kmu *pkgsync.Krwmutex
 }
 
-func New(cfg *config.Config, pluginDir string, gc gc.GC, dynconfig config.DynconfigInterface, openTel bool) (*service, error) {
-	// Initialize manager
-	var options []grpc.DialOption
-	if openTel {
-		options = []grpc.DialOption{
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
-		}
-	}
-	manager, err := manager.New(cfg, gc, dynconfig, options)
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize scheduler
-	scheduler := scheduler.New(cfg.Scheduler, pluginDir)
-
+func New(cfg *config.Config, scheduler scheduler.Scheduler, manager *manager.Manager, dynconfig config.DynconfigInterface) (Service, error) {
 	// Initialize callback
 	callback := newCallback(manager, scheduler)
 
@@ -98,8 +78,16 @@ func New(cfg *config.Config, pluginDir string, gc gc.GC, dynconfig config.Dyncon
 	}, nil
 }
 
-func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest, backSourceCount int32) (*entity.Task, error) {
-	task := entity.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, backSourceCount, req.UrlMeta)
+func (s *service) Scheduler() scheduler.Scheduler {
+	return s.scheduler
+}
+
+func (s *service) Manager() *manager.Manager {
+	return s.manager
+}
+
+func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*entity.Task, error) {
+	task := entity.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 
 	s.kmu.Lock(task.ID)
 	defer s.kmu.Unlock(task.ID)
@@ -174,10 +162,6 @@ func (s *service) LoadPeer(id string) (*entity.Peer, bool) {
 	return s.manager.Peer.Load(id)
 }
 
-func (s *service) ScheduleParent(ctx context.Context, peer *entity.Peer) (*entity.Peer, []*entity.Peer, bool) {
-	return s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
-}
-
 func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
 	// Handle piece download successfully
 	if piece.Success {
@@ -218,7 +202,7 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 	}
 }
 
-func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcscheduler.PeerResult) error {
+func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcscheduler.PeerResult) {
 	if !req.Success {
 		if peer.Task.BackToSourcePeers.Contains(peer) {
 			s.callback.TaskFail(ctx, peer.Task)
@@ -230,10 +214,8 @@ func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcsch
 		s.callback.TaskSuccess(ctx, peer, peer.Task, req)
 	}
 	s.callback.PeerSuccess(ctx, peer)
-	return nil
 }
 
-func (s *service) HandlePeerLeave(ctx context.Context, peer *entity.Peer) error {
+func (s *service) HandlePeerLeave(ctx context.Context, peer *entity.Peer) {
 	s.callback.PeerLeave(ctx, peer)
-	return nil
 }

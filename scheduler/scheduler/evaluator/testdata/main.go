@@ -36,11 +36,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	if ok := e.NeedAdjustParent(&entity.Peer{}); !ok {
-		fmt.Println("NeedAdjustParent failed")
-		os.Exit(1)
-	}
-
 	if ok := e.IsBadNode(&entity.Peer{}); !ok {
 		fmt.Println("IsBadNode failed")
 		os.Exit(1)

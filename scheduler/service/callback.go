@@ -34,8 +34,7 @@ const (
 )
 
 type Callback interface {
-	ScheduleSendParent(context.Context, *entity.Peer, set.SafeSet)
-	ScheduleSendChildren(context.Context, *entity.Peer, set.SafeSet)
+	ScheduleParent(context.Context, *entity.Peer, set.SafeSet)
 	BeginOfPiece(context.Context, *entity.Peer)
 	EndOfPiece(context.Context, *entity.Peer)
 	PieceSuccess(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
@@ -62,22 +61,15 @@ func newCallback(manager *manager.Manager, scheduler scheduler.Scheduler) Callba
 	}
 }
 
-// Schedule parent for peer, peer status must be PeerStateRunning
-func (c *callback) ScheduleSendParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {
+// Repeat schedule parent for peer
+func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {
 	var n int
-
 	for {
 		select {
 		case <-ctx.Done():
 			peer.Log.Infof("context was done")
 			return
 		default:
-		}
-
-		stream, ok := peer.LoadStream()
-		if !ok {
-			peer.Log.Error("load peer stream failed")
-			return
 		}
 
 		if n > defalutReschedulerLimit {
@@ -116,8 +108,7 @@ func (c *callback) ScheduleSendParent(ctx context.Context, peer *entity.Peer, bl
 			return
 		}
 
-		parent, candidateParents, ok := c.scheduler.ScheduleParent(ctx, peer, blocklist)
-		if !ok {
+		if _, ok := c.scheduler.ScheduleParent(ctx, peer, blocklist); !ok {
 			n++
 			peer.Log.Infof("reschedule parent %d times failed", n)
 
@@ -126,54 +117,8 @@ func (c *callback) ScheduleSendParent(ctx context.Context, peer *entity.Peer, bl
 			continue
 		}
 
-		// After scheduling, the parent is the same, so there is no need to reschedule
-		if oldParent, ok := peer.LoadParent(); ok && oldParent == parent {
-			peer.Log.Infof("reschedule same parent %s", parent.ID)
-			return
-		}
-
-		if parent.Host.FreeUploadLoad() > 0 {
-			if err := stream.Send(constructSuccessPeerPacket(peer, parent, candidateParents)); err != nil {
-				peer.Log.Error(err)
-				return
-			}
-
-			peer.ReplaceParent(parent)
-			peer.Log.Infof("reschedule parent %d times succeeded, replace parent to %s", n, parent.ID)
-			return
-		}
-	}
-}
-
-func (c *callback) ScheduleSendChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {
-	children, ok := c.scheduler.ScheduleChildren(ctx, peer, blocklist)
-	if !ok {
-		peer.Log.Error("schedule children failed")
+		peer.Log.Infof("reschedule parent %d times successfully", n)
 		return
-	}
-
-	for _, child := range children {
-		stream, ok := child.LoadStream()
-		if !ok {
-			peer.Log.Errorf("load child %s peer stream failed", child.ID)
-			continue
-		}
-
-		// After scheduling, the parent is the same, so there is no need to reschedule
-		if oldParent, ok := child.LoadParent(); ok && oldParent == peer {
-			peer.Log.Infof("reschedule same parent %s", peer.ID)
-			continue
-		}
-
-		if peer.Host.FreeUploadLoad() > 0 {
-			if err := stream.Send(constructSuccessPeerPacket(child, peer, nil)); err != nil {
-				peer.Log.Errorf("child %s peer stream send faied: %v", child.ID, err)
-				continue
-			}
-
-			child.ReplaceParent(peer)
-			child.Log.Infof("replace parent to %s", peer.ID)
-		}
 	}
 }
 
@@ -191,7 +136,7 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
 		return
 	}
 
-	c.ScheduleSendParent(ctx, peer, set.NewSafeSet())
+	c.ScheduleParent(ctx, peer, set.NewSafeSet())
 }
 
 func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {
@@ -242,7 +187,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 		blocklist.Add(parent.ID)
 	}
 
-	c.ScheduleSendParent(ctx, peer, blocklist)
+	c.ScheduleParent(ctx, peer, blocklist)
 }
 
 func (c *callback) PieceSuccess(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
@@ -264,7 +209,7 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 	}
 
 	// Schedule children to peer
-	go c.ScheduleSendChildren(ctx, peer, set.NewSafeSet())
+	go c.scheduler.ScheduleChildren(ctx, peer, set.NewSafeSet())
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
@@ -289,7 +234,7 @@ func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
 			return true
 		}
 
-		go c.ScheduleSendParent(ctx, child, blocklist)
+		go c.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
 }
@@ -316,7 +261,7 @@ func (c *callback) PeerLeave(ctx context.Context, peer *entity.Peer) {
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
 
-		c.ScheduleSendParent(ctx, child, blocklist)
+		c.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
 
@@ -345,30 +290,5 @@ func (c *callback) TaskFail(ctx context.Context, task *entity.Task) {
 	if err := task.FSM.Event(entity.TaskEventFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
-	}
-}
-
-func constructSuccessPeerPacket(peer *entity.Peer, parent *entity.Peer, candidateParents []*entity.Peer) *rpcscheduler.PeerPacket {
-	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
-	for _, candidateParent := range candidateParents {
-		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
-			Ip:      candidateParent.Host.IP,
-			RpcPort: candidateParent.Host.Port,
-			PeerId:  candidateParent.ID,
-		})
-	}
-
-	return &rpcscheduler.PeerPacket{
-		TaskId: peer.Task.ID,
-		SrcPid: peer.ID,
-		// TODO(gaius-qi) Configure ParallelCount parameter in manager service
-		ParallelCount: 1,
-		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
-			Ip:      parent.Host.IP,
-			RpcPort: parent.Host.Port,
-			PeerId:  parent.ID,
-		},
-		StealPeers: stealPeers,
-		Code:       base.Code_Success,
 	}
 }

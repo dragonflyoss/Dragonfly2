@@ -26,6 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
@@ -53,7 +54,13 @@ func New(cfg *config.Config, service service.Service, opts ...grpc.ServerOption)
 
 func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	// Get task or add new task
-	task := s.service.RegisterTask(ctx, req, s.config.Scheduler.BackSourceCount)
+	task, err := s.service.RegisterTask(ctx, req)
+	if err != nil {
+		dferr := dferrors.New(base.Code_SchedTaskStatusError, "register task is fail")
+		logger.Errorf("peer %s register is failed: %v", req.PeerId, err)
+		return nil, dferr
+	}
+
 	log := logger.WithTaskAndPeerID(task.ID, req.PeerId)
 	log.Infof("register peer task request: %#v", req)
 
@@ -82,7 +89,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			log.Info("task size scope is small")
 			host := s.service.LoadOrStoreHost(ctx, req)
 			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
-			parent, _, ok := s.service.ScheduleParent(ctx, peer)
+			parents, ok := s.service.Scheduler().ScheduleParent(ctx, peer, set.NewSafeSet())
 			if !ok {
 				log.Warnf("task size scope is small and it can not select parent")
 				return &scheduler.RegisterResult{
@@ -102,11 +109,11 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 			dstURL := url.URL{
 				Scheme: "http",
-				Host:   fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
+				Host:   fmt.Sprintf("%s:%d", parents[0].Host.IP, parents[0].Host.DownloadPort),
 			}
 
 			singlePiece := &scheduler.SinglePiece{
-				DstPid:  parent.ID,
+				DstPid:  parents[0].ID,
 				DstAddr: dstURL.String(),
 				PieceInfo: &base.PieceInfo{
 					PieceNum:    firstPiece.PieceNum,

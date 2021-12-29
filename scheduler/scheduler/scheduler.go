@@ -21,6 +21,8 @@ import (
 	"sort"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/entity"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
@@ -28,10 +30,10 @@ import (
 
 type Scheduler interface {
 	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
+	ScheduleChildren(context.Context, *entity.Peer, set.SafeSet) []*entity.Peer
 
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) (*entity.Peer, []*entity.Peer, bool)
+	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
 }
 
 type scheduler struct {
@@ -44,52 +46,73 @@ func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
 	}
 }
 
-func (s *scheduler) ScheduleChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) ([]*entity.Peer, bool) {
+func (s *scheduler) ScheduleChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
 	// If the peer is bad, it is not allowed to be the parent of other peers
 	if s.evaluator.IsBadNode(peer) {
 		peer.Log.Info("peer is a bad node and cannot be scheduled")
-		return nil, false
+		return []*entity.Peer{}
 	}
 
 	// If the peer's host free upload is empty, it is not allowed to be the parent of other peers
 	if peer.Host.FreeUploadLoad() <= 0 {
 		peer.Log.Info("host free upload is empty and cannot be scheduled")
-		return nil, false
+		return []*entity.Peer{}
 	}
 
 	// Find the children that can be scheduled
-	children := s.findChildren(peer, blocklist)
-	if len(children) == 0 {
+	candidateChildren := s.findChildren(peer, blocklist)
+	if len(candidateChildren) == 0 {
 		peer.Log.Info("can not find children")
-		return nil, false
+		return []*entity.Peer{}
 	}
 
 	// Sort children by evaluation score
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	sort.Slice(
-		children,
+		candidateChildren,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, children[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, children[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(peer, candidateChildren[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, candidateChildren[j], taskTotalPieceCount)
 		},
 	)
 
-	return children, true
+	// Send scheduling success message
+	var children []*entity.Peer
+	for _, child := range candidateChildren {
+		stream, ok := child.LoadStream()
+		if !ok {
+			peer.Log.Errorf("load child %s peer stream failed", child.ID)
+			continue
+		}
+
+		if peer.Host.FreeUploadLoad() > 0 {
+			if err := stream.Send(constructSuccessPeerPacket(child, peer, nil)); err != nil {
+				peer.Log.Errorf("child %s peer stream send faied: %v", child.ID, err)
+				continue
+			}
+
+			child.ReplaceParent(peer)
+			children = append(children, child)
+			child.Log.Infof("child schedule succeeded, replace parent to %s", peer.ID)
+		}
+	}
+
+	return children
 }
 
-func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) (*entity.Peer, []*entity.Peer, bool) {
+func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) ([]*entity.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
 	// they have been scheduled
 	if !peer.FSM.Is(entity.PeerStateRunning) {
 		peer.Log.Infof("peer state is %s, can not schedule parent", peer.FSM.Current())
-		return nil, nil, false
+		return []*entity.Peer{}, false
 	}
 
 	// Find the parent that can be scheduled
 	parents := s.findParents(peer, blocklist)
 	if len(parents) == 0 {
 		peer.Log.Info("can not find parents")
-		return nil, nil, false
+		return []*entity.Peer{}, false
 	}
 
 	// Sort parents by evaluation score
@@ -101,7 +124,21 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, block
 		},
 	)
 
-	return parents[0], parents[1:], true
+	// Send scheduling success message
+	stream, ok := peer.LoadStream()
+	if !ok {
+		peer.Log.Error("load peer stream failed")
+		return []*entity.Peer{}, false
+	}
+
+	if err := stream.Send(constructSuccessPeerPacket(peer, parents[0], parents[1:])); err != nil {
+		peer.Log.Error(err)
+		return []*entity.Peer{}, false
+	}
+
+	peer.ReplaceParent(parents[0])
+	peer.Log.Infof("parent schedule succeeded, replace parent to %s", parents[0].ID)
+	return parents, true
 }
 
 func (s *scheduler) findChildren(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
@@ -199,4 +236,29 @@ func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*ent
 	})
 
 	return parents
+}
+
+func constructSuccessPeerPacket(peer *entity.Peer, parent *entity.Peer, candidateParents []*entity.Peer) *rpcscheduler.PeerPacket {
+	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
+	for _, candidateParent := range candidateParents {
+		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
+			Ip:      candidateParent.Host.IP,
+			RpcPort: candidateParent.Host.Port,
+			PeerId:  candidateParent.ID,
+		})
+	}
+
+	return &rpcscheduler.PeerPacket{
+		TaskId: peer.Task.ID,
+		SrcPid: peer.ID,
+		// TODO(gaius-qi) Configure ParallelCount parameter in manager service
+		ParallelCount: 1,
+		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+			Ip:      parent.Host.IP,
+			RpcPort: parent.Host.Port,
+			PeerId:  parent.ID,
+		},
+		StealPeers: stealPeers,
+		Code:       base.Code_Success,
+	}
 }

@@ -106,9 +106,9 @@ func calculatePieceScore(parent *entity.Peer, child *entity.Peer, taskPieceCount
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
 func calculateFreeLoadScore(host *entity.Host) float64 {
-	load := host.CurrentUploadLoad.Load()
-	totalLoad := host.TotalUploadLoad
-	return float64(totalLoad-load) / float64(totalLoad)
+	load := host.LenPeers()
+	totalLoad := host.UploadLoadLimit.Load()
+	return float64(totalLoad-int32(load)) / float64(totalLoad)
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better
@@ -149,56 +149,6 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	return float64(score) / float64(maxElementLen)
-}
-
-func (eb *evaluatorBase) NeedAdjustParent(peer *entity.Peer) bool {
-	// CDN is the root node
-	if peer.Host.IsCDN {
-		return false
-	}
-
-	parent, ok := peer.GetParent()
-	// Peer has no parent and is not completed
-	if !ok && !peer.IsDone() {
-		logger.Infof("peer %s need adjust parent because it has not parent and status is %s", peer.ID, peer.GetStatus())
-		return true
-	}
-
-	// Peer has parent but parent can't be scheduled.
-	if ok && eb.IsBadNode(parent) {
-		logger.Infof("peer %s need adjust parent because parent can't be scheduled", peer.ID)
-		return true
-	}
-
-	// Determine whether to adjust parent based on piece download costs
-	rawCosts := peer.GetPieceCosts()
-	costs := stats.LoadRawData(rawCosts)
-	len := len(costs)
-	// Peer has not finished downloading enough piece
-	if len < minAvailableCostLen {
-		logger.Infof("peer %s has not finished downloading enough piece, it can't be adjusted parent", peer.ID)
-		return false
-	}
-
-	lastCost := costs[len-1]
-	mean, _ := stats.Mean(costs[:len-1]) // nolint: errcheck
-
-	// Download costs does not meet the normal distribution,
-	// if the last cost is five times more than mean, it need to be adjusted parent.
-	if len < normalDistributionLen {
-		isNeedAdjustParent := big.NewFloat(lastCost).Cmp(big.NewFloat(mean*5)) > 0
-		logger.Infof("peer %s does not meet the normal distribution and mean is %.2f, peer need adjust parent: %t", peer.ID, mean, isNeedAdjustParent)
-		return isNeedAdjustParent
-	}
-
-	// Download costs satisfies the normal distribution,
-	// last cost falling outside of three-sigma effect need to be adjusted parent,
-	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
-	stdev, _ := stats.StandardDeviation(costs[:len-2]) // nolint: errcheck
-	isNeedAdjustParent := big.NewFloat(lastCost).Cmp(big.NewFloat(mean+3*stdev)) > 0
-	logger.Infof("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer need adjust parent: %t",
-		peer.ID, mean, stdev, isNeedAdjustParent)
-	return isNeedAdjustParent
 }
 
 func (eb *evaluatorBase) IsBadNode(peer *entity.Peer) bool {
