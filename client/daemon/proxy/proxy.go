@@ -564,9 +564,8 @@ func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
 	}
 	if proxy.registry.UseProxies {
 		return proxy.shouldUseDragonfly(req)
-	} else {
-		return transport.NeedUseDragonfly(req)
 	}
+	return transport.NeedUseDragonfly(req)
 }
 
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an
