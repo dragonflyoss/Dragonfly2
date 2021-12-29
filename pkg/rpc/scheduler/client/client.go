@@ -20,17 +20,16 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var _ SchedulerClient = (*schedulerClient)(nil)
@@ -73,13 +72,13 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 // SchedulerClient see scheduler.SchedulerClient
 type SchedulerClient interface {
 	// RegisterPeerTask register peer task to scheduler
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
+	RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// ReportPieceResult IsMigrating of ptr will be set to true
-	ReportPieceResult(context.Context, string, *scheduler.PeerTaskRequest, ...grpc.CallOption) (PeerPacketStream, error)
+	ReportPieceResult(ctx context.Context, addr string, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
 
-	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error
+	ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) error
 
-	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
+	LeaveTask(ctx context.Context, in *scheduler.PeerTarget, opts ...grpc.CallOption) error
 
 	UpdateState(addrs []dfnet.NetAddr)
 
@@ -87,10 +86,8 @@ type SchedulerClient interface {
 }
 
 type schedulerClient struct {
-	ctx             context.Context
-	cancel          context.CancelFunc
 	schedulerClient scheduler.SchedulerClient
-	conn            *grpc.ClientConn
+	cc              *grpc.ClientConn
 	resolver        *rpc.d7yResolver
 }
 
@@ -106,6 +103,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	key := idgen.TaskID(ptr.Url, ptr.UrlMeta)
 	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
 		ptr.Url)
+	result, err := sc.schedulerClient.RegisterPeerTask(ctx, ptr, opts...)
 	reg := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		var err error

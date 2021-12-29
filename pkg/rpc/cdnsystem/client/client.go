@@ -64,11 +64,16 @@ type cdnClient struct {
 var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
+	ctx = context.WithValue(ctx, rpc.HashKey, rpc.PickerReq{
+		HashKey: req.TaskId,
+		Attempt: 0,
+	})
 	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, opts...)
 	if err == nil {
 		return seeder, err
 	}
-
+	rpc.TryMigrate(ctx, err)
+	cc.seederClient.ObtainSeeds(ctx)
 	status.FromContextError(err)
 	// try next CDN
 	return nil, nil

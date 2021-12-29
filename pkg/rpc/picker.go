@@ -38,6 +38,11 @@ const (
 	HashKey   = "d7yHashKey"
 )
 
+type PickerReq struct {
+	HashKey string
+	Attempt int
+}
+
 func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
 	if len(info.subConns) == 0 {
 		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
