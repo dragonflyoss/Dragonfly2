@@ -266,22 +266,24 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		if success {
 			pm.pushSuccessResult(pt, pt.GetPeerID(),
 				&base.PieceInfo{
-					PieceNum:    pieceNum,
-					RangeStart:  pieceOffset,
-					RangeSize:   size,
-					PieceMd5:    md5,
-					PieceOffset: pieceOffset,
-					PieceStyle:  0,
+					PieceNum:     pieceNum,
+					RangeStart:   pieceOffset,
+					RangeSize:    size,
+					PieceMd5:     md5,
+					PieceOffset:  pieceOffset,
+					PieceStyle:   0,
+					DownloadCost: uint64(end - start),
 				}, start, end)
 		} else {
 			pm.pushFailResult(pt, pt.GetPeerID(),
 				&base.PieceInfo{
-					PieceNum:    pieceNum,
-					RangeStart:  pieceOffset,
-					RangeSize:   size,
-					PieceMd5:    "",
-					PieceOffset: pieceOffset,
-					PieceStyle:  0,
+					PieceNum:     pieceNum,
+					RangeStart:   pieceOffset,
+					RangeSize:    size,
+					PieceMd5:     "",
+					PieceOffset:  pieceOffset,
+					PieceStyle:   0,
+					DownloadCost: uint64(end - start),
 				}, start, end, err, true)
 		}
 	}()
