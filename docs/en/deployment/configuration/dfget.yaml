@@ -221,6 +221,8 @@ proxy:
     certs: []
     # whether to request the remote registry directly
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
     # proxy all http image layer download requests with dfget

@@ -527,6 +527,9 @@ type RegistryMirror struct {
 
 	// Request the remote registry directly.
 	Direct bool `yaml:"direct" mapstructure:"direct"`
+
+	// Whether to use proxies to decide when to use dragonfly
+	UseProxies bool `yaml:"useProxies" mapstructure:"useProxies"`
 }
 
 // TLSConfig returns the tls.Config used to communicate with the mirror.

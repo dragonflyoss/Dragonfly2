@@ -56,7 +56,7 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 	return tc
 }
 
-func (tc *testCase) WithRegistryMirror(rawURL string, direct bool, dynamic bool) *testCase {
+func (tc *testCase) WithRegistryMirror(rawURL string, direct bool, dynamic bool, useProxies bool) *testCase {
 	if tc.Error != nil {
 		return tc
 	}
@@ -67,6 +67,7 @@ func (tc *testCase) WithRegistryMirror(rawURL string, direct bool, dynamic bool)
 		Remote:        &config.URL{URL: u},
 		DynamicRemote: dynamic,
 		Direct:        direct,
+		UseProxies:    useProxies,
 	}
 	return tc
 }
@@ -109,7 +110,7 @@ func (tc *testCase) TestMirror(t *testing.T) {
 	if !a.Nil(tc.Error) {
 		return
 	}
-	tp, err := NewProxy(WithRegistryMirror(tc.RegistryMirror))
+	tp, err := NewProxy(WithRegistryMirror(tc.RegistryMirror), WithRules(tc.Rules))
 	if !a.Nil(err) {
 		return
 	}
@@ -154,17 +155,39 @@ func TestMatch(t *testing.T) {
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", false, false).
+		WithRegistryMirror("http://index.docker.io", false, false, false).
 		WithTest("http://h/a", true, false, "").
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", false, false).
+		WithRegistryMirror("http://index.docker.io", false, false, false).
 		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", false, false, "").
 		TestMirror(t)
 
 	newTestCase().
-		WithRegistryMirror("http://index.docker.io", true, false).
+		WithRegistryMirror("http://index.docker.io", true, false, false).
+		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
+		TestMirror(t)
+}
+
+func TestMatchWithUseProxies(t *testing.T) {
+	// should direct as registry is set with direct=false and no proxies are defined
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", false, false, true).
+		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
+		TestMirror(t)
+
+	// should cache as registry is set with direct=false, and one proxy matches
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", false, false, true).
+		WithRule("/blobs/sha256/", false, false, "").
+		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", false, false, "").
+		TestMirror(t)
+
+	// should direct as registry is set with direct=true, even if one proxy matches
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", true, false, true).
+		WithRule("/blobs/sha256/", false, false, "").
 		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
 		TestMirror(t)
 }
