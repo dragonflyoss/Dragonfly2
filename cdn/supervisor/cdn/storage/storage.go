@@ -111,13 +111,15 @@ type PieceMetaRecord struct {
 	OriginRange *rangeutils.Range `json:"originRange"`
 	// 0: PlainUnspecified
 	PieceStyle int32 `json:"pieceStyle"`
+	// total time(millisecond) consumed
+	DownloadCost uint64 `json:"download_cost"`
 }
 
 const fieldSeparator = ":"
 
 func (record PieceMetaRecord) String() string {
 	return fmt.Sprint(record.PieceNum, fieldSeparator, record.PieceLen, fieldSeparator, record.Md5, fieldSeparator, record.Range, fieldSeparator,
-		record.OriginRange, fieldSeparator, record.PieceStyle)
+		record.OriginRange, fieldSeparator, record.PieceStyle, fieldSeparator, record.DownloadCost)
 }
 
 func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
@@ -148,13 +150,18 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceStyle: %s", fields[5])
 	}
+	downloadCost, err := strconv.ParseUint(fields[6], 10, 32)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid download cost: %s", fields[6])
+	}
 	return &PieceMetaRecord{
-		PieceNum:    uint32(pieceNum),
-		PieceLen:    uint32(pieceLen),
-		Md5:         md5,
-		Range:       pieceRange,
-		OriginRange: originRange,
-		PieceStyle:  int32(pieceStyle),
+		PieceNum:     uint32(pieceNum),
+		PieceLen:     uint32(pieceLen),
+		Md5:          md5,
+		Range:        pieceRange,
+		OriginRange:  originRange,
+		PieceStyle:   int32(pieceStyle),
+		DownloadCost: downloadCost,
 	}, nil
 }
 

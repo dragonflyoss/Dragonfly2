@@ -122,6 +122,8 @@ message PieceInfo{
   string piece_md5 = 4 [(validate.rules).string = {pattern:"([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})", ignore_empty:true}];
   uint64 piece_offset = 5 [(validate.rules).uint64.gte = 0];
   base.PieceStyle piece_style = 6;
+  // total time(millisecond) consumed
+  uint64 download_cost = 7 [(validate.rules).uint64.gte = 0];
 }
 
 message PiecePacket{

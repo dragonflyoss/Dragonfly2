@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -43,6 +44,7 @@ type piece struct {
 	pieceNum     uint32
 	pieceSize    uint32
 	pieceContent *bytes.Buffer
+	downloadCost uint64
 }
 
 type downloadMetadata struct {
@@ -126,6 +128,7 @@ loop:
 		case <-writeCtx.Done():
 			break loop
 		default:
+			start := time.Now()
 			var bb = bufPool.Get().(*bytes.Buffer)
 			bb.Reset()
 			limitReader := io.LimitReader(reader, int64(seedTask.PieceSize))
@@ -139,12 +142,12 @@ loop:
 				break loop
 			}
 			backSourceLength += n
-
 			jobCh <- &piece{
 				taskID:       seedTask.ID,
 				pieceNum:     uint32(curPieceNum),
 				pieceSize:    uint32(seedTask.PieceSize),
 				pieceContent: bb,
+				downloadCost: uint64(time.Now().Sub(start).Milliseconds()),
 			}
 			curPieceNum++
 			if n < int64(seedTask.PieceSize) {
@@ -197,7 +200,8 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 							StartIndex: start,
 							EndIndex:   end,
 						},
-						PieceStyle: pieceStyle,
+						PieceStyle:   pieceStyle,
+						DownloadCost: p.downloadCost,
 					}
 					// write piece meta to storage
 					if err = cw.metadataManager.appendPieceMetadata(p.taskID, pieceRecord); err != nil {

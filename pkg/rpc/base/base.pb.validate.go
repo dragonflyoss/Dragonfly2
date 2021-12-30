@@ -640,6 +640,17 @@ func (m *PieceInfo) validate(all bool) error {
 
 	// no validation rules for PieceStyle
 
+	if m.GetDownloadCost() < 0 {
+		err := PieceInfoValidationError{
+			field:  "DownloadCost",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		return PieceInfoMultiError(errors)
 	}
