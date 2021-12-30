@@ -18,23 +18,24 @@ package client
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"fmt"
-	"golang.org/x/net/http2"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/resolver/manual"
-	"google.golang.org/grpc/status"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 	"log"
 	"net"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/resolver/manual"
+	"google.golang.org/grpc/status"
+	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
 type tester struct{}
@@ -69,7 +70,8 @@ func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, server cdnsyste
 }
 
 func (s *testServer) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	return nil, nil
+	//TODO implement me
+	panic("implement me")
 }
 
 var _ cdnsystem.SeederServer = (*testServer)(nil)
@@ -123,7 +125,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 }
 
 func TestOneBackend(t *testing.T) {
-	r := manual.NewBuilderWithScheme("whatever")
+	r := manual.NewBuilderWithScheme("cdn")
 
 	test, err := startTestServers(1)
 	if err != nil {
@@ -131,7 +133,9 @@ func TestOneBackend(t *testing.T) {
 	}
 	defer test.cleanup()
 
-	cdnClient, err := Dial(r.Scheme()+":///test.server", grpc.WithResolvers(r), grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
+	cdnClient, err := Dial(r.Scheme()+":///test.server", grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithResolvers(r),
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
@@ -201,45 +205,5 @@ func (tester) TestMigration(t *testing.T) {
 		if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err != nil {
 			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
 		}
-	}
-}
-
-func TestDialWithTimeout(t *testing.T) {
-	lis, err := net.Listen("tcp", "localhost:8003")
-	if err != nil {
-		t.Fatalf("Error while listening. Err: %v", err)
-	}
-	defer lis.Close()
-	lisDone := make(chan struct{})
-	dialDone := make(chan struct{})
-	// 1st listener accepts the connection and then does nothing
-	go func() {
-		defer close(lisDone)
-
-		conn, err := lis.Accept()
-		if err != nil {
-			t.Errorf("Error while accepting. Err: %v", err)
-			return
-		}
-		framer := http2.NewFramer(conn, conn)
-		if err := framer.WriteSettings(http2.Setting{}); err != nil {
-			t.Errorf("Error while writing settings. Err: %v", err)
-			return
-		}
-		<-dialDone // Close conn only after dial returns.
-	}()
-
-	r := rpc.NewD7yResolverBuilder("whatever")
-	client, err := Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r))
-	close(dialDone)
-	if err != nil {
-		t.Fatalf("Dial failed. Err: %v", err)
-	}
-	defer client.Close()
-	timeout := time.After(1 * time.Second)
-	select {
-	case <-timeout:
-		t.Fatal("timed out waiting for server to finish")
-	case <-lisDone:
 	}
 }
