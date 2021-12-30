@@ -229,7 +229,8 @@ func (e peerDownloadPieceFailEvent) apply(s *state) {
 	switch e.pr.Code {
 	case base.Code_ClientWaitPieceReady:
 		return
-	case base.Code_PeerTaskNotFound:
+	// FIXME check dst peer healthy before delete the peer
+	case base.Code_ClientPieceRequestFail, base.Code_PeerTaskNotFound:
 		s.peerManager.Delete(e.pr.DstPid)
 	case base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		s.peerManager.Delete(e.pr.DstPid)

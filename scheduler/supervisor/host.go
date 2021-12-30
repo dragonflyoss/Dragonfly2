@@ -164,6 +164,10 @@ func (h *Host) GetPeer(id string) (*Peer, bool) {
 	return peer.(*Peer), ok
 }
 
+func (h *Host) GetPeers() *sync.Map {
+	return h.peers
+}
+
 func (h *Host) GetPeersLen() int {
 	length := 0
 	h.peers.Range(func(_, _ interface{}) bool {
