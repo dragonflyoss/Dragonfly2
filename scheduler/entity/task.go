@@ -103,14 +103,14 @@ type Task struct {
 }
 
 // New task instance
-func NewTask(id, url string, backToSourceLimit int32, meta *base.UrlMeta) *Task {
+func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
 		URLMeta:           meta,
 		ContentLength:     atomic.NewInt64(0),
 		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(backToSourceLimit),
+		BackToSourceLimit: atomic.NewInt32(int32(backToSourceLimit)),
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
 		Peers:             &sync.Map{},
@@ -130,12 +130,15 @@ func NewTask(id, url string, backToSourceLimit int32, meta *base.UrlMeta) *Task 
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
+				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventSucceeded: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
+				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 			TaskEventFailed: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
+				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
 		},
 	)

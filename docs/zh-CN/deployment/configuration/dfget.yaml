@@ -194,6 +194,8 @@ proxy:
     certs: []
     # 是否直连镜像中心，true 的话，流量不再走 p2p
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
     # 代理镜像 blobs 信息

@@ -20,17 +20,14 @@ import (
 	"context"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/entity"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
-)
-
-const (
-	defaultSchedulerParentInterval = 100 * time.Millisecond
-	defalutReschedulerLimit        = 10
 )
 
 type Callback interface {
@@ -52,10 +49,14 @@ type callback struct {
 
 	// Scheduler instance
 	scheduler scheduler.Scheduler
+
+	// Scheduelr service config
+	config *config.Config
 }
 
-func newCallback(manager *manager.Manager, scheduler scheduler.Scheduler) Callback {
+func newCallback(cfg *config.Config, manager *manager.Manager, scheduler scheduler.Scheduler) Callback {
 	return &callback{
+		config:    cfg,
 		manager:   manager,
 		scheduler: scheduler,
 	}
@@ -72,9 +73,9 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 		default:
 		}
 
-		if n > defalutReschedulerLimit {
+		if n >= c.config.Scheduler.RetryLimit {
 			if peer.Task.CanBackToSource() {
-				if ok := peer.StopStream(base.Code_SchedNeedBackSource); !ok {
+				if ok := peer.StopStream(dferrors.Newf(base.Code_SchedNeedBackSource, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
 					return
 				}
 
@@ -97,7 +98,7 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 			}
 
 			// Handle peer failed
-			if ok := peer.StopStream(base.Code_SchedTaskStatusError); !ok {
+			if ok := peer.StopStream(dferrors.Newf(base.Code_SchedTaskStatusError, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
 				peer.Log.Error("stop stream failed")
 			}
 
@@ -113,7 +114,7 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 			peer.Log.Infof("reschedule parent %d times failed", n)
 
 			// Sleep to avoid hot looping
-			time.Sleep(defaultSchedulerParentInterval)
+			time.Sleep(c.config.Scheduler.RetryInterval)
 			continue
 		}
 
@@ -149,6 +150,7 @@ func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {
 func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
 	// Failed to download piece back-to-source, switch peer status to PeerEventFinished
 	if peer.FSM.Is(entity.PeerStateBackToSource) {
+		peer.Log.Info("peer has been back-to-source")
 		if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
@@ -164,8 +166,8 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 	case base.Code_ClientWaitPieceReady:
 		peer.Log.Error("peer report error code Code_ClientWaitPieceReady")
 		return
-	case base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
-		peer.Log.Errorf("peer report cdn error code: %v", piece.Code)
+	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
+		peer.Log.Errorf("peer report error code: %v", piece.Code)
 		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok {
 			if err := parent.FSM.Event(entity.PeerEventFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -211,7 +213,6 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 	// Schedule children to peer
 	blocklist := set.NewSafeSet()
 	blocklist.Add(peer.ID)
-	go c.scheduler.ScheduleChildren(ctx, peer, blocklist)
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
@@ -236,7 +237,7 @@ func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
 			return true
 		}
 
-		go c.ScheduleParent(ctx, child, blocklist)
+		c.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
 }

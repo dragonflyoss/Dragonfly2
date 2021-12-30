@@ -66,7 +66,7 @@ type service struct {
 
 func New(cfg *config.Config, scheduler scheduler.Scheduler, manager *manager.Manager, dynconfig config.DynconfigInterface) (Service, error) {
 	// Initialize callback
-	callback := newCallback(manager, scheduler)
+	callback := newCallback(cfg, manager, scheduler)
 
 	return &service{
 		manager:   manager,

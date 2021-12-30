@@ -149,21 +149,40 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	ctx := stream.Context()
 
-	var (
-		initialized bool
-		peer        *entity.Peer
-		log         *logger.SugaredLoggerOnWith
-	)
+	// Handle begin of piece
+	beginOfPiece, err := stream.Recv()
+	if err != nil {
+		if err == io.EOF {
+			return nil
+		}
+		logger.Errorf("receive error: %v", err)
+		return err
+	}
+	log := logger.WithTaskAndPeerID(beginOfPiece.TaskId, beginOfPiece.SrcPid)
+	log.Infof("receive begin of piece: %#v", beginOfPiece)
+
+	// Get peer from peer manager
+	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
+	if !ok {
+		dferr := dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
+		log.Error("peer not found")
+		return dferr
+	}
 
 	// Peer setting stream
+	peer.StoreStream(stream)
+
+	// Handle begin of piece
+	s.service.HandlePiece(ctx, peer, beginOfPiece)
+
 	for {
 		select {
 		case <-ctx.Done():
 			log.Infof("context was done")
 			return ctx.Err()
-		case code := <-peer.StopChannel:
-			log.Errorf("stream stop code: %v", code)
-			return dferrors.New(code, "")
+		case dferr := <-peer.StopChannel:
+			log.Errorf("stream stop dferror: %v", dferr)
+			return dferr
 		default:
 		}
 
@@ -172,25 +191,8 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 			if err == io.EOF {
 				return nil
 			}
-			logger.Errorf("receive error: %v", err)
+			log.Errorf("receive error: %v", err)
 			return err
-		}
-
-		if !initialized {
-			initialized = true
-
-			// Initialize log
-			log = logger.WithTaskAndPeerID(piece.TaskId, piece.SrcPid)
-			log.Infof("receive begin of piece: %#v", piece)
-
-			// Get peer from peer manager
-			peer, ok := s.service.LoadPeer(piece.SrcPid)
-			if !ok {
-				err = dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", piece.SrcPid)
-				log.Error("peer not found")
-				return err
-			}
-			peer.StoreStream(stream)
 		}
 
 		log.Infof("receive piece: %#v", piece)

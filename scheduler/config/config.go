@@ -63,6 +63,8 @@ func New() *Config {
 		Scheduler: &SchedulerConfig{
 			Algorithm:       "default",
 			BackSourceCount: 3,
+			RetryLimit:      10,
+			RetryInterval:   1 * time.Second,
 			GC: &GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				PeerTTL:        5 * time.Minute,
@@ -115,6 +117,14 @@ func (c *Config) Validate() error {
 
 	if c.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
+	}
+
+	if c.Scheduler.RetryLimit == 0 {
+		return errors.New("scheduler requires parameter retryLimit")
+	}
+
+	if c.Scheduler.RetryInterval == 0 {
+		return errors.New("scheduler requires parameter retryInterval")
 	}
 
 	if c.Scheduler.GC.PeerGCInterval == 0 {
@@ -212,7 +222,13 @@ type SchedulerConfig struct {
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
 
 	// Single task allows the client to back-to-source count
-	BackSourceCount int32 `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
+
+	// Retry scheduling limit times
+	RetryLimit int `yaml:"retryLimit" mapstructure:"retryLimit"`
+
+	// Retry scheduling interval
+	RetryInterval time.Duration `yaml:"retryInterval" mapstructure:"retryInterval"`
 
 	// Task and peer gc configuration
 	GC *GCConfig `yaml:"gc" mapstructure:"gc"`

@@ -40,6 +40,8 @@ func TestSchedulerConfig_Load(t *testing.T) {
 		Scheduler: &SchedulerConfig{
 			Algorithm:       "default",
 			BackSourceCount: 3,
+			RetryLimit:      10,
+			RetryInterval:   1 * time.Second,
 			GC: &GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				PeerTTL:        5 * time.Minute,
