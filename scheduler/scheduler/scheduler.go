@@ -29,9 +29,6 @@ import (
 )
 
 type Scheduler interface {
-	// ScheduleChildren schedule children to a peer
-	ScheduleChildren(context.Context, *entity.Peer, set.SafeSet) []*entity.Peer
-
 	// ScheduleParent schedule a parent and candidates to a peer
 	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
 }
@@ -44,59 +41,6 @@ func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
 	return &scheduler{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 	}
-}
-
-func (s *scheduler) ScheduleChildren(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
-	// If the peer is bad, it is not allowed to be the parent of other peers
-	if s.evaluator.IsBadNode(peer) {
-		peer.Log.Info("peer is a bad node and cannot be scheduled")
-		return []*entity.Peer{}
-	}
-
-	// If the peer's host free upload is empty, it is not allowed to be the parent of other peers
-	if peer.Host.FreeUploadLoad() <= 0 {
-		peer.Log.Info("host free upload is empty and cannot be scheduled")
-		return []*entity.Peer{}
-	}
-
-	// Find the children that can be scheduled
-	candidateChildren := s.findChildren(peer, blocklist)
-	if len(candidateChildren) == 0 {
-		peer.Log.Info("can not find children")
-		return []*entity.Peer{}
-	}
-
-	// Sort children by evaluation score
-	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	sort.Slice(
-		candidateChildren,
-		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, candidateChildren[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, candidateChildren[j], taskTotalPieceCount)
-		},
-	)
-
-	// Send scheduling success message
-	var children []*entity.Peer
-	for _, child := range candidateChildren {
-		stream, ok := child.LoadStream()
-		if !ok {
-			peer.Log.Errorf("load child %s peer stream failed", child.ID)
-			continue
-		}
-
-		if peer.Host.FreeUploadLoad() > 0 {
-			if err := stream.Send(constructSuccessPeerPacket(child, peer, nil)); err != nil {
-				peer.Log.Errorf("child %s peer stream send faied: %v", child.ID, err)
-				continue
-			}
-
-			child.ReplaceParent(peer)
-			children = append(children, child)
-			child.Log.Infof("child schedule succeeded, replace parent to %s", peer.ID)
-		}
-	}
-
-	return children
 }
 
 func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) ([]*entity.Peer, bool) {

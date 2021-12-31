@@ -19,9 +19,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"reflect"
 	"sync"
 
@@ -36,6 +33,7 @@ import (
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/util"
 )
 
 type CDN interface {
@@ -118,7 +116,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 			// Handle tiny scope size task
 			if piece.ContentLength <= entity.TinyFileSize {
 				peer.Log.Info("peer type is tiny file")
-				data, err := downloadTinyFile(ctx, task, peer)
+				data, err := util.DownloadTinyFile(ctx, task, peer)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -183,27 +181,6 @@ func (c *cdn) initPeer(task *entity.Task, ps *cdnsystem.PieceSeed) (*entity.Peer
 	c.peerManager.Store(peer)
 	peer.Log.Info("cdn peer has been stored")
 	return peer, nil
-}
-
-// Download tiny file from cdn
-func downloadTinyFile(ctx context.Context, task *entity.Task, peer *entity.Peer) ([]byte, error) {
-	// download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
-	url := url.URL{
-		Scheme:   "http",
-		Host:     fmt.Sprintf("%s:%d", peer.Host.IP, peer.Host.DownloadPort),
-		Path:     fmt.Sprintf("download/%s/%s", task.ID[:3], task.ID),
-		RawQuery: "peerId=scheduler",
-	}
-
-	peer.Log.Infof("download tiny file url: %#v", url)
-
-	resp, err := http.Get(url.String())
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	return io.ReadAll(resp.Body)
 }
 
 // Client is cdn grpc client

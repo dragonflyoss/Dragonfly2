@@ -137,7 +137,9 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
 		return
 	}
 
-	c.ScheduleParent(ctx, peer, set.NewSafeSet())
+	blocklist := set.NewSafeSet()
+	blocklist.Add(peer.ID)
+	c.ScheduleParent(ctx, peer, blocklist)
 }
 
 func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {
@@ -209,10 +211,6 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
-
-	// Schedule children to peer
-	blocklist := set.NewSafeSet()
-	blocklist.Add(peer.ID)
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {

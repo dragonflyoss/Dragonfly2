@@ -158,14 +158,13 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		logger.Errorf("receive error: %v", err)
 		return err
 	}
-	log := logger.WithTaskAndPeerID(beginOfPiece.TaskId, beginOfPiece.SrcPid)
-	log.Infof("receive begin of piece: %#v", beginOfPiece)
+	logger.Infof("receive begin of piece from peer %s: %#v", beginOfPiece.SrcPid, beginOfPiece)
 
 	// Get peer from peer manager
 	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
 	if !ok {
 		dferr := dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
-		log.Error("peer not found")
+		logger.Errorf("peer %s not found", beginOfPiece.SrcPid)
 		return dferr
 	}
 
@@ -178,10 +177,10 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 	for {
 		select {
 		case <-ctx.Done():
-			log.Infof("context was done")
+			peer.Log.Infof("context was done")
 			return ctx.Err()
 		case dferr := <-peer.StopChannel:
-			log.Errorf("stream stop dferror: %v", dferr)
+			peer.Log.Errorf("stream stop dferror: %v", dferr)
 			return dferr
 		default:
 		}
@@ -191,11 +190,11 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 			if err == io.EOF {
 				return nil
 			}
-			log.Errorf("receive error: %v", err)
+			peer.Log.Errorf("receive error: %v", err)
 			return err
 		}
 
-		log.Infof("receive piece: %#v", piece)
+		peer.Log.Infof("receive piece: %#v", piece)
 		s.service.HandlePiece(ctx, peer, piece)
 	}
 }
