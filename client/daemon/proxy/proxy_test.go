@@ -100,7 +100,7 @@ func (tc *testCase) Test(t *testing.T) {
 			a.Equal(req.URL.Scheme, "http")
 		}
 		if item.Redirect != "" {
-			a.Equal(item.Redirect, req.Host)
+			a.Equal(item.Redirect, req.URL.String())
 		}
 	}
 }
@@ -121,6 +121,14 @@ func (tc *testCase) TestMirror(t *testing.T) {
 		}
 		if !a.Equal(tp.shouldUseDragonflyForMirror(req), !item.Direct) {
 			fmt.Println(item.URL)
+		}
+		if item.UseHTTPS {
+			a.Equal(req.URL.Scheme, "https")
+		} else {
+			a.Equal(req.URL.Scheme, "http")
+		}
+		if item.Redirect != "" {
+			a.Equal(item.Redirect, req.URL.String())
 		}
 	}
 }
@@ -147,7 +155,7 @@ func TestMatch(t *testing.T) {
 
 	newTestCase().
 		WithRule("/a/f", false, false, "r").
-		WithTest("http://h/a/f", false, false, "r"). // should match /a/f and redirect
+		WithTest("http://h/a/f", false, false, "http://r/a/f"). // should match /a/f and redirect
 		Test(t)
 
 	newTestCase().
@@ -174,20 +182,56 @@ func TestMatchWithUseProxies(t *testing.T) {
 	// should direct as registry is set with direct=false and no proxies are defined
 	newTestCase().
 		WithRegistryMirror("http://index.docker.io", false, false, true).
-		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
+		WithTest("http://index.docker.io/v2/blobs/sha256/1", true, false, "").
 		TestMirror(t)
 
 	// should cache as registry is set with direct=false, and one proxy matches
 	newTestCase().
 		WithRegistryMirror("http://index.docker.io", false, false, true).
 		WithRule("/blobs/sha256/", false, false, "").
-		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", false, false, "").
+		WithTest("http://index.docker.io/v2/blobs/sha256/2", false, false, "").
 		TestMirror(t)
 
 	// should direct as registry is set with direct=true, even if one proxy matches
 	newTestCase().
 		WithRegistryMirror("http://index.docker.io", true, false, true).
 		WithRule("/blobs/sha256/", false, false, "").
-		WithTest("http://index.docker.io/v2/blobs/sha256/xxx", true, false, "").
+		WithTest("http://index.docker.io/v2/blobs/sha256/3", true, false, "").
 		TestMirror(t)
+}
+
+func TestMatchWithRedirect(t *testing.T) {
+	// redirect as hostname, in direct mode
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", false, false, true).
+		WithRule("index.docker.io", false, false, "r").
+		WithTest("http://index.docker.io/1", false, false, "http://r/1").
+		TestMirror(t)
+
+	// redirect as hostname, in proxy mode
+	newTestCase().
+		WithRule("index.docker.io", false, false, "r").
+		WithTest("http://index.docker.io/2", false, false, "http://r/2").
+		Test(t)
+
+	// redirect as url, in direct mode
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", false, false, true).
+		WithRule("^http://index.docker.io/(.*)", false, false, "http://r/t/$1").
+		WithTest("http://index.docker.io/1", false, false, "http://r/t/1").
+		TestMirror(t)
+
+	// redirect as url, in proxy mode
+	newTestCase().
+		WithRule("^http://index.docker.io/(.*)", false, false, "http://r/t/$1").
+		WithTest("http://index.docker.io/2", false, false, "http://r/t/2").
+		Test(t)
+
+	// redirect as url, in direct mode, with HTTPS rewrite
+	newTestCase().
+		WithRegistryMirror("http://index.docker.io", false, false, true).
+		WithRule("^http://index.docker.io/(.*)", false, false, "https://r/t/$1").
+		WithTest("http://index.docker.io/1", false, true, "https://r/t/1").
+		TestMirror(t)
+
 }
