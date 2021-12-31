@@ -80,14 +80,21 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		span.SetAttributes(config.AttributeTaskSizeScope.String(sizeScope.String()))
 		switch sizeScope {
 		case base.SizeScope_TINY:
-			log.Info("task size scope is tiny and return piece content directly")
-			return &scheduler.RegisterResult{
-				TaskId:    taskID,
-				SizeScope: sizeScope,
-				DirectPiece: &scheduler.RegisterResult_PieceContent{
-					PieceContent: task.DirectPiece,
-				},
-			}, nil
+			// when task.DirectPiece length is 0, data is downloaded by common peers, is not cdn
+			if int64(len(task.DirectPiece)) == task.ContentLength.Load() {
+				log.Info("task size scope is tiny and return piece content directly")
+				return &scheduler.RegisterResult{
+					TaskId:    taskID,
+					SizeScope: sizeScope,
+					DirectPiece: &scheduler.RegisterResult_PieceContent{
+						PieceContent: task.DirectPiece,
+					},
+				}, nil
+			}
+			// fallback to base.SizeScope_SMALL
+			log.Warnf("task size scope is tiny, but task.DirectPiece length is %d, not %d",
+				len(task.DirectPiece), task.ContentLength.Load())
+			fallthrough
 		case base.SizeScope_SMALL:
 			log.Info("task size scope is small")
 			peer := s.service.RegisterTask(req, task)
