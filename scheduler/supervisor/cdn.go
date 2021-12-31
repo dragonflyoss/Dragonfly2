@@ -329,6 +329,7 @@ func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
 						peer.Log().Info("cdn peer left because cdn host was deleted")
 						peer.Leave()
 					}
+
 					return true
 				})
 				v.Log().Info("delete cdn host from host manager because cdn host was deleted")
