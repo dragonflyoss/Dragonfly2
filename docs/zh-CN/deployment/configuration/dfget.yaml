@@ -209,6 +209,9 @@ proxy:
     # 转发流量到指定地址
     - regx: some-registry
       redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
 
   hijackHTTPS:
     # https 劫持的证书和密钥

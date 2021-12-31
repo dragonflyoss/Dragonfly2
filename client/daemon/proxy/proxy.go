@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -546,7 +547,16 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			if rule.UseHTTPS {
 				req.URL.Scheme = schemaHTTPS
 			}
-			if rule.Redirect != "" {
+			if strings.Contains(rule.Redirect, "/") {
+				u, err := url.Parse(rule.Regx.ReplaceAllString(req.URL.String(), rule.Redirect))
+				if err != nil {
+					logger.Errorf("failed to rewrite url", err)
+					return false
+				}
+				req.URL = u
+				req.Host = req.URL.Host
+				req.RequestURI = req.URL.RequestURI()
+			} else if rule.Redirect != "" {
 				req.URL.Host = rule.Redirect
 				req.Host = rule.Redirect
 			}
