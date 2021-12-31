@@ -119,7 +119,8 @@ var peerHostConfig = DaemonOption{
 		TaskExpireTime: clientutil.Duration{
 			Duration: DefaultTaskExpireTime,
 		},
-		StoreStrategy: AdvanceLocalTaskStoreStrategy,
-		Multiplex:     false,
+		StoreStrategy:          AdvanceLocalTaskStoreStrategy,
+		Multiplex:              false,
+		DiskGCThresholdPercent: 95,
 	},
 }
