@@ -40,6 +40,37 @@ const (
 	dfdaemonCompatibilityTestMode = "dfdaemon"
 )
 
+var _ = AfterSuite(func() {
+	names := []string{"manager", "scheduler", "proxy", "cdn"}
+
+	// copy log files to artifact directory
+	for _, name := range names {
+		for i := 0; i < 3; i++ {
+			out, err := e2eutil.KubeCtlCommand("-n", dragonflyE2ENamespace, "get", "pod", "-l", fmt.Sprintf("statefulset.kubernetes.io/pod-name=%s-%d", name, i),
+				"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
+			if err != nil {
+				fmt.Printf("get pod error: %s\n", err)
+				continue
+			}
+			podName := strings.Trim(string(out), "'")
+			pod := e2eutil.NewPodExec(dragonflyE2ENamespace, podName, name)
+
+			if name == "proxy" {
+				name = "daemon"
+			}
+
+			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
+              set -x
+              cp /var/log/dragonfly/%s/core.log /tmp/artifact/%s/%s-%d-core.log
+              cp /var/log/dragonfly/%s/grpc.log /tmp/artifact/%s/%s-%d-grpc.log
+              `, name, name, name, i, name, name, name, i)).CombinedOutput()
+			if err != nil {
+				fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
+			}
+		}
+	}
+})
+
 var _ = BeforeSuite(func() {
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	if mode != "" {
