@@ -236,6 +236,9 @@ proxy:
     # proxy requests with redirect
     - regx: some-registry
       redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
 
   hijackHTTPS:
     # key pair used to hijack https requests
