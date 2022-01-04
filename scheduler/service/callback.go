@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/entity"
 	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/util"
 )
 
 type Callback interface {
@@ -101,11 +102,6 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 			if ok := peer.StopStream(dferrors.Newf(base.Code_SchedTaskStatusError, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
 				peer.Log.Error("stop stream failed")
 			}
-
-			if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
-				return
-			}
 			return
 		}
 
@@ -118,46 +114,44 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 			continue
 		}
 
-		peer.Log.Infof("reschedule parent %d times successfully", n)
+		peer.Log.Infof("reschedule parent %d times successfully", n+1)
 		return
 	}
 }
 
 func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
-	// Back to the source download process, peer directly returns
-	if peer.FSM.Is(entity.PeerStateBackToSource) {
+	switch peer.FSM.Current() {
+	case entity.PeerStateBackToSource:
+		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
-	}
-
-	// It’s not a case of back-to-source downloading,
-	// to help peer to schedule the parent node
-	if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
-		peer.Log.Errorf("peer fsm event failed: %v", err)
-		return
-	}
-
-	blocklist := set.NewSafeSet()
-	blocklist.Add(peer.ID)
-	c.ScheduleParent(ctx, peer, blocklist)
-}
-
-func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {
-	if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
-		peer.Log.Errorf("peer fsm event failed: %v", err)
-		return
-	}
-}
-
-func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
-	// Failed to download piece back-to-source, switch peer status to PeerEventFinished
-	if peer.FSM.Is(entity.PeerStateBackToSource) {
-		peer.Log.Info("peer has been back-to-source")
-		if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
+	case entity.PeerStateRegisterSmall:
+		// When the task is small,
+		// the peer has already returned to the parent when registering
+		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
+	case entity.PeerStateRegisterNormal:
+		// It’s not a case of back-to-source or small task downloading,
+		// to help peer to schedule the parent node
+		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
+		blocklist := set.NewSafeSet()
+		blocklist.Add(peer.ID)
+		c.ScheduleParent(ctx, peer, blocklist)
+	default:
+		peer.Log.Errorf("peer state is %s when receive the begin of piece", peer.FSM.Current())
+	}
+}
 
+func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {}
+
+func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
+	// Failed to download piece back-to-source
+	if peer.FSM.Is(entity.PeerStateBackToSource) {
 		peer.Log.Error("peer back to source finished with fail piece")
 		return
 	}
@@ -170,12 +164,14 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		peer.Log.Errorf("peer report error code: %v", piece.Code)
-		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok {
+		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok && parent.FSM.Can(entity.PeerEventFailed) {
 			if err := parent.FSM.Event(entity.PeerEventFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 				break
 			}
 		}
+	case base.Code_ClientPieceRequestFail:
+		peer.Log.Error("peer report error code Code_ClientPieceRequestFail")
 	default:
 		peer.Log.Warnf("unknow report code: %v", piece.Code)
 	}
@@ -207,6 +203,19 @@ func (c *callback) PieceSuccess(ctx context.Context, peer *entity.Peer, piece *r
 }
 
 func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
+	// If the peer type is tiny and back-to-source,
+	// it need to directly download the tiny file and store the data in task DirectPiece
+	if peer.FSM.Is(entity.PeerStateBackToSource) && peer.Task.SizeScope() == base.SizeScope_TINY {
+		peer.Log.Info("peer state is PeerStateBackToSource and type is tiny file")
+		data, err := util.DownloadTinyFile(ctx, peer.Task, peer)
+		if err == nil && len(data) == int(peer.Task.ContentLength.Load()) {
+			// Tiny file downloaded successfully
+			peer.Task.DirectPiece = data
+		} else {
+			peer.Log.Warnf("download tiny file length %d is failed: %v", len(data), err)
+		}
+	}
+
 	if err := peer.FSM.Event(entity.PeerEventSucceeded); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return

@@ -141,6 +141,7 @@ func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTas
 		host = entity.NewHost(rawHost, options...)
 		s.manager.Host.Store(host)
 		host.Log.Info("create host")
+		return host
 	}
 
 	host.Log.Info("host already exists")
@@ -160,6 +161,7 @@ func (s *service) LoadPeer(id string) (*entity.Peer, bool) {
 func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
 	// Handle piece download successfully
 	if piece.Success {
+		peer.Log.Infof("receive successful piece: %#v %#v", piece, piece.PieceInfo)
 		s.callback.PieceSuccess(ctx, peer, piece)
 
 		// Collect peer host traffic metrics
@@ -168,7 +170,7 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 			if p, ok := s.manager.Peer.Load(piece.DstPid); ok {
 				metrics.PeerHostTraffic.WithLabelValues("upload", p.Host.ID, p.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
-				peer.Log.Warnf("dst peer %s not found for piece %#v, pieceInfo %#v", piece.DstPid, piece, piece.PieceInfo)
+				peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
 			}
 		}
 		return
@@ -177,13 +179,13 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 	// Handle begin of piece and end of piece
 	if piece.PieceInfo != nil {
 		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			peer.Log.Infof("receive begin of piece: %#v", piece)
+			peer.Log.Infof("receive begin of piece: %#v %#v", piece, piece.PieceInfo)
 			s.callback.BeginOfPiece(ctx, peer)
 			return
 		}
 
 		if piece.PieceInfo.PieceNum == common.EndOfPiece {
-			peer.Log.Infof("receive end of piece: %#v", piece)
+			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
 			s.callback.EndOfPiece(ctx, peer)
 			return
 		}
@@ -191,21 +193,26 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 
 	// Handle piece download failed
 	if piece.Code != base.Code_Success {
-		peer.Log.Infof("receive piece error: %v", piece.Code)
+		peer.Log.Infof("receive failed piece: %#v", piece)
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}
+
+	// Handle unknow piece
+	peer.Log.Warnf("receive unknow piece: %#v", piece)
+	return
 }
 
 func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcscheduler.PeerResult) {
 	if !req.Success {
-		if peer.Task.BackToSourcePeers.Contains(peer) {
+		if peer.Task.BackToSourcePeers.Contains(peer) && peer.Task.FSM.Can(entity.TaskEventFailed) {
 			s.callback.TaskFail(ctx, peer.Task)
 		}
 		s.callback.PeerFail(ctx, peer)
+		return
 	}
 
-	if peer.Task.BackToSourcePeers.Contains(peer) {
+	if peer.Task.BackToSourcePeers.Contains(peer) && peer.Task.FSM.Can(entity.TaskEventSucceeded) {
 		s.callback.TaskSuccess(ctx, peer, peer.Task, req)
 	}
 	s.callback.PeerSuccess(ctx, peer)

@@ -124,16 +124,23 @@ func (p *peer) RunGC() error {
 		peer := value.(*entity.Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 
-		if elapsed > p.ttl {
-			if peer.FSM.Is(entity.PeerStateLeave) && peer.LenChildren() == 0 {
+		if elapsed > p.ttl && peer.LenChildren() == 0 {
+			// If the status is PeerStateLeave,
+			// clear peer information
+			if peer.FSM.Is(entity.PeerStateLeave) {
 				peer.DeleteParent()
 				p.Delete(peer.ID)
 				peer.Log.Info("peer gc succeeded")
+				return true
 			}
 
+			// If the peer is not leave,
+			// first change the state to PeerEventLeave
 			if err := peer.FSM.Event(entity.PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 			}
+
+			return true
 		}
 
 		return true

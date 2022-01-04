@@ -90,7 +90,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 			return nil, nil, err
 		}
 
-		task.Log.Infof("piece info: %#v", piece)
+		task.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
 
 		// Init cdn peer
 		if !initialized {
@@ -108,10 +108,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 
 		// Get end piece
 		if piece.Done {
-			peer.Log.Infof("receive end of piece: %#v", piece)
-			if err := peer.FSM.Event(entity.PeerEventFinished); err != nil {
-				return nil, nil, err
-			}
+			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
 
 			// Handle tiny scope size task
 			if piece.ContentLength <= entity.TinyFileSize {
@@ -180,6 +177,11 @@ func (c *cdn) initPeer(task *entity.Task, ps *cdnsystem.PieceSeed) (*entity.Peer
 	// Store cdn peer
 	c.peerManager.Store(peer)
 	peer.Log.Info("cdn peer has been stored")
+
+	if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+		return nil, err
+	}
+
 	return peer, nil
 }
 

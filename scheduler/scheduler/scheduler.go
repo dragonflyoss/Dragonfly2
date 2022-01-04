@@ -31,6 +31,9 @@ import (
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
 	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
+
+	// Find the parent that best matches the evaluation
+	FindParent(context.Context, *entity.Peer, set.SafeSet) (*entity.Peer, bool)
 }
 
 type scheduler struct {
@@ -81,59 +84,29 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, block
 	}
 
 	peer.ReplaceParent(parents[0])
-	peer.Log.Infof("parent schedule succeeded, replace parent to %s", parents[0].ID)
+	peer.Log.Infof("schedule parent successful, replace parent to %s", parents[0].ID)
 	return parents, true
 }
 
-func (s *scheduler) findChildren(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
-	var children []*entity.Peer
-	peer.Task.Peers.Range(func(_, value interface{}) bool {
-		child, ok := value.(*entity.Peer)
-		if !ok {
-			return true
-		}
+func (s *scheduler) FindParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) (*entity.Peer, bool) {
+	// Find the parent that can be scheduled
+	parents := s.findParents(peer, blocklist)
+	if len(parents) == 0 {
+		peer.Log.Info("can not find parents")
+		return nil, false
+	}
 
-		if blocklist.Contains(child.ID) {
-			peer.Log.Infof("child %s is not selected because it is in blocklist", child.ID)
-			return true
-		}
+	// Sort parents by evaluation score
+	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
+	sort.Slice(
+		parents,
+		func(i, j int) bool {
+			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+		},
+	)
 
-		if child == peer {
-			peer.Log.Info("child is not selected because it is same")
-			return true
-		}
-
-		if !child.FSM.Is(entity.PeerStateRunning) {
-			peer.Log.Infof("child %s is not selected because its state is %s", child.ID, child.FSM.Current())
-			return true
-		}
-
-		if child.IsAncestor(peer) {
-			peer.Log.Infof("child %s is not selected because it is ancestor", child.ID)
-			return true
-		}
-
-		if child.Host.IsCDN {
-			peer.Log.Infof("child %s is not selected because it is cdn", child.ID)
-			return true
-		}
-
-		if child.Pieces.Count() >= peer.Pieces.Count() {
-			peer.Log.Infof("child %s is not selected because its pieces count is greater than peer pieces count", child.ID)
-			return true
-		}
-
-		if parent, ok := child.LoadParent(); ok && !s.evaluator.IsBadNode(parent) {
-			peer.Log.Infof("child %s is not selected because its parent is not bad node", child.ID)
-			return true
-		}
-
-		children = append(children, child)
-		peer.Log.Infof("child %s is selected", child.ID)
-		return true
-	})
-
-	return children
+	peer.Log.Infof("find parent %s successful", parents[0].ID)
+	return parents[0], true
 }
 
 func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
@@ -150,7 +123,7 @@ func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*ent
 		}
 
 		if parent == peer {
-			peer.Log.Info("child is not selected because it is same")
+			peer.Log.Info("parent is not selected because it is same")
 			return true
 		}
 

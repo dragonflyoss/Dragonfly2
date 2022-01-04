@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/url"
 
 	"google.golang.org/grpc"
 
@@ -71,20 +70,31 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		switch sizeScope {
 		case base.SizeScope_TINY:
 			log.Info("task size scope is tiny and return piece content directly")
-			return &scheduler.RegisterResult{
-				TaskId:    task.ID,
-				SizeScope: sizeScope,
-				DirectPiece: &scheduler.RegisterResult_PieceContent{
-					PieceContent: task.DirectPiece,
-				},
-			}, nil
+			// When task.DirectPiece length is 0, data is downloaded by common peers failed
+			if int64(len(task.DirectPiece)) == task.ContentLength.Load() {
+				return &scheduler.RegisterResult{
+					TaskId:    task.ID,
+					SizeScope: sizeScope,
+					DirectPiece: &scheduler.RegisterResult_PieceContent{
+						PieceContent: task.DirectPiece,
+					},
+				}, nil
+			}
+
+			// Fallback to base.SizeScope_SMALL
+			log.Warnf("task size scope is tiny, but task.DirectPiece length is %d, not %d",
+				len(task.DirectPiece), task.ContentLength.Load())
+			fallthrough
 		case base.SizeScope_SMALL:
 			log.Info("task size scope is small")
 			host := s.service.LoadOrStoreHost(ctx, req)
 			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
-			parents, ok := s.service.Scheduler().ScheduleParent(ctx, peer, set.NewSafeSet())
+
+			// If the file is registered as a small type,
+			// there is no need to build a tree, just find the parent and return
+			parent, ok := s.service.Scheduler().FindParent(ctx, peer, set.NewSafeSet())
 			if !ok {
-				log.Warnf("task size scope is small and it can not select parent")
+				log.Warn("task size scope is small and it can not select parent")
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
 					SizeScope: sizeScope,
@@ -100,14 +110,16 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 				}, nil
 			}
 
-			dstURL := url.URL{
-				Scheme: "http",
-				Host:   fmt.Sprintf("%s:%d", parents[0].Host.IP, parents[0].Host.DownloadPort),
+			peer.ReplaceParent(parent)
+			if err := peer.FSM.Event(entity.PeerEventRegisterSmall); err != nil {
+				dferr := dferrors.New(base.Code_SchedError, err.Error())
+				log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+				return nil, dferr
 			}
 
 			singlePiece := &scheduler.SinglePiece{
-				DstPid:  parents[0].ID,
-				DstAddr: dstURL.String(),
+				DstPid:  parent.ID,
+				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
 				PieceInfo: &base.PieceInfo{
 					PieceNum:    firstPiece.PieceNum,
 					RangeStart:  firstPiece.RangeStart,
@@ -117,7 +129,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 					PieceStyle:  firstPiece.PieceStyle,
 				},
 			}
-			log.Infof("task size scope is small and return single piece %#v", sizeScope)
+
+			log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
 				SizeScope: sizeScope,
@@ -128,7 +141,13 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		default:
 			log.Info("task size scope is normal and needs to be register")
 			host := s.service.LoadOrStoreHost(ctx, req)
-			s.service.LoadOrStorePeer(ctx, req, task, host)
+			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
+			if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+				dferr := dferrors.New(base.Code_SchedError, err.Error())
+				log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+				return nil, dferr
+			}
+
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
 				SizeScope: sizeScope,
@@ -139,7 +158,13 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	// Task is unsuccessful
 	log.Info("task is unsuccessful and needs to be register")
 	host := s.service.LoadOrStoreHost(ctx, req)
-	s.service.LoadOrStorePeer(ctx, req, task, host)
+	peer := s.service.LoadOrStorePeer(ctx, req, task, host)
+	if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+		dferr := dferrors.New(base.Code_SchedError, err.Error())
+		log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+		return nil, dferr
+	}
+
 	return &scheduler.RegisterResult{
 		TaskId:    task.ID,
 		SizeScope: base.SizeScope_NORMAL,
@@ -158,7 +183,6 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		logger.Errorf("receive error: %v", err)
 		return err
 	}
-	logger.Infof("receive begin of piece from peer %s: %#v", beginOfPiece.SrcPid, beginOfPiece)
 
 	// Get peer from peer manager
 	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
@@ -194,7 +218,6 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 			return err
 		}
 
-		peer.Log.Infof("receive piece: %#v", piece)
 		s.service.HandlePiece(ctx, peer, piece)
 	}
 }

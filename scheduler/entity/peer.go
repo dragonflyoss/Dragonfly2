@@ -34,14 +34,20 @@ const (
 	// Peer has been created but did not start running
 	PeerStatePending = "Pending"
 
+	// Peer successfully registered as tiny scope size
+	PeerStateRegisterTiny = "RegisterTiny"
+
+	// Peer successfully registered as small scope size
+	PeerStateRegisterSmall = "RegisterSmall"
+
+	// Peer successfully registered as normal scope size
+	PeerStateRegisterNormal = "RegisterNormal"
+
 	// Peer is downloading resources from peer
 	PeerStateRunning = "Running"
 
 	// Peer is downloading resources from back-to-source
 	PeerStateBackToSource = "BackToSource"
-
-	// Peer is downloading resources finished
-	PeerStateFinished = "Finished"
 
 	// Peer has been downloaded successfully
 	PeerStateSucceeded = "Succeeded"
@@ -57,11 +63,14 @@ const (
 	// Peer is downloading
 	PeerEventDownload = "Download"
 
+	// Peer is registered as small scope size
+	PeerEventRegisterSmall = "RegisterSmall"
+
+	// Peer is registered as normal scope size
+	PeerEventRegisterNormal = "RegisterNormal"
+
 	// Peer is downloading from back-to-source
 	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
-
-	// Peer downloaded finished
-	PeerEventFinished = "Finished"
 
 	// Peer downloaded successfully
 	PeerEventSucceeded = "Succeeded"
@@ -139,15 +148,27 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 	p.FSM = fsm.NewFSM(
 		PeerStatePending,
 		fsm.Events{
-			{Name: PeerEventDownload, Src: []string{PeerStatePending}, Dst: PeerStateRunning},
+			{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateRegisterSmall},
+			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateRegisterNormal},
+			{Name: PeerEventDownload, Src: []string{PeerStateRegisterTiny, PeerStateRegisterSmall, PeerStateRegisterNormal}, Dst: PeerStateRunning},
 			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateRunning}, Dst: PeerStateBackToSource},
-			{Name: PeerEventFinished, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateFinished},
-			{Name: PeerEventSucceeded, Src: []string{PeerEventFinished}, Dst: PeerStateSucceeded},
-			{Name: PeerEventFailed, Src: []string{PeerStatePending, PeerStateRunning, PeerStateBackToSource, PeerEventFinished, PeerEventSucceeded}, Dst: PeerStateFailed},
-			{Name: PeerEventLeave, Src: []string{PeerEventFinished, PeerEventFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
+			{Name: PeerEventSucceeded, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateSucceeded},
+			{Name: PeerEventFailed, Src: []string{
+				PeerStatePending, PeerStateRegisterTiny, PeerStateRegisterSmall,
+				PeerStateRegisterNormal, PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
+			}, Dst: PeerStateFailed},
+			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
 			PeerEventDownload: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
+			PeerEventRegisterSmall: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
+			PeerEventRegisterNormal: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -156,15 +177,11 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
-			PeerEventFinished: func(e *fsm.Event) {
+			PeerEventSucceeded: func(e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.UpdateAt.Store(time.Now())
-				p.Log.Infof("peer state is %s", e.FSM.Current())
-			},
-			PeerEventSucceeded: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
