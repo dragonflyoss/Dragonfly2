@@ -18,9 +18,10 @@ package rpc
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"strconv"
 	"sync"
+
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/serialx/hashring"
@@ -144,7 +145,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	}
 	var targetAddress string
 	for _, targetAddr := range targetAddrs {
-		if !pickRequest.FailedNodes.Has(targetAddr) {
+		if pickRequest != nil && !pickRequest.FailedNodes.Has(targetAddr) {
 			targetAddress = targetAddr
 			break
 		}

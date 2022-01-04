@@ -125,13 +125,15 @@ func startTestServers(count int) (_ *testServerData, err error) {
 }
 
 func TestOneBackend(t *testing.T) {
-	r := manual.NewBuilderWithScheme("cdn")
-
 	test, err := startTestServers(1)
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)
 	}
 	defer test.cleanup()
+
+	r := manual.NewBuilderWithScheme("cdn")
+	//r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
+	r.InitialState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
 
 	cdnClient, err := Dial(r.Scheme()+":///test.server", grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithResolvers(r),
@@ -140,6 +142,7 @@ func TestOneBackend(t *testing.T) {
 		t.Fatalf("failed to dial: %v", err)
 	}
 	defer cdnClient.Close()
+
 	// The first RPC should fail because there's no address.
 	{
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -152,8 +155,6 @@ func TestOneBackend(t *testing.T) {
 			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
 		}
 	}
-
-	r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
 
 	// The second RPC should succeed.
 	{

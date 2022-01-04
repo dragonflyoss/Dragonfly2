@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/resolver/manual"
 	"google.golang.org/grpc/status"
 )
 
@@ -36,8 +35,7 @@ func Dial(target string, opts ...grpc.DialOption) (CDNClient, error) {
 func DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (CDNClient, error) {
 	dialOpts := append(
 		rpc.DefaultClientOpts,
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
-		grpc.WithResolvers(manual.NewBuilderWithScheme("cdn")))
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
 	clientConn, err := grpc.DialContext(ctx, target, append(dialOpts, opts...)...)
 	if err != nil {
 		return nil, err
