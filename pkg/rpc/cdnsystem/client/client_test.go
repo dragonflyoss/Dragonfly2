@@ -143,7 +143,6 @@ func TestOneBackend(t *testing.T) {
 	}
 	defer cdnClient.Close()
 
-	// The first RPC should fail because there's no address.
 	{
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()

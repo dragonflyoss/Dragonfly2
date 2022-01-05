@@ -131,33 +131,43 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			}
 			ret.SubConn = subConn
 			subConn.Connect()
-			return ret, nil
+			return
+		}
+		key := uuid.Generate().String()
+		if pickRequest.HashKey != "" {
+			key = pickRequest.HashKey
+		}
+		targetAddrs, ok := p.hashRing.GetNodes(key, p.hashRing.Size())
+		if !ok {
+			err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
+			return
+		}
+		var targetAddress string
+		for _, targetAddr := range targetAddrs {
+			if !pickRequest.FailedNodes.Has(targetAddr) {
+				targetAddress = targetAddr
+				break
+			}
+		}
+		if targetAddress == "" {
+			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried")
+			return
+		}
+		if pickRequest.HashKey != "" {
+			ret.SubConn = p.subConns[targetAddress]
+			p.balancer.pickHistory[key] = p.subConns[targetAddress]
+			ret.SubConn.Connect()
+			return
 		}
 	}
 	key := uuid.Generate().String()
-	if pickRequest != nil && pickRequest.HashKey != "" {
-		key = pickRequest.HashKey
-	}
-	targetAddrs, ok := p.hashRing.GetNodes(key, p.hashRing.Size())
+	targetAddr, ok := p.hashRing.GetNode(key)
 	if !ok {
 		err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
 		return
 	}
-	var targetAddress string
-	for _, targetAddr := range targetAddrs {
-		if pickRequest != nil && !pickRequest.FailedNodes.Has(targetAddr) {
-			targetAddress = targetAddr
-			break
-		}
-	}
-	if targetAddress == "" {
-		err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried")
-	}
-	if pickRequest != nil && pickRequest.HashKey != "" {
-		ret.SubConn = p.subConns[targetAddress]
-		p.balancer.pickHistory[key] = p.subConns[targetAddress]
-		ret.SubConn.Connect()
-	}
+	ret.SubConn = p.subConns[targetAddr]
+	ret.SubConn.Connect()
 	return
 }
 

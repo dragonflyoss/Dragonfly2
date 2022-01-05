@@ -27,7 +27,7 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-var logger = grpclog.Component("balancer")
+var balancerLogger = grpclog.Component("balancer")
 
 const (
 	D7yBalancerPolicy = "d7y_hash_policy"
@@ -41,20 +41,18 @@ var (
 	ErrResetSubConnFail = errors.New("reset SubConn fail")
 )
 
-func newD7yBalancerBuilder(name string) balancer.Builder {
+func newD7yBalancerBuilder() balancer.Builder {
 	return &d7yBalancerBuilder{
-		name:   name,
 		config: Config{HealthCheck: false},
 	}
 }
 
 func init() {
-	balancer.Register(newD7yBalancerBuilder("cdn"))
+	balancer.Register(newD7yBalancerBuilder())
 }
 
 // d7yBalancerBuilder is a struct with functions Build and Name, implemented from balancer.Builder
 type d7yBalancerBuilder struct {
-	name   string
 	config Config
 }
 
@@ -128,8 +126,8 @@ func (b *d7yBalancer) ResolverError(err error) {
 // UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
 // ClientConn will call it after Builder builds the balancer to pass the necessary data.
 func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
-	if logger.V(2) {
-		logger.Infof("d7yBalancer: got new ClientConn state: ", s)
+	if balancerLogger.V(2) {
+		balancerLogger.Infof("d7yBalancer: got new ClientConn state: ", s)
 	}
 	// Successful resolution; clear resolver error and ensure we return nil.
 	b.resolverErr = nil
@@ -140,7 +138,7 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 			// a is a new address (not existing in b.subConns)
 			newSC, err := b.cc.NewSubConn([]resolver.Address{a}, balancer.NewSubConnOptions{HealthCheckEnabled: b.config.HealthCheck})
 			if err != nil {
-				logger.Warningf("d7yBalancer: failed to create new SubConn: %v", err)
+				balancerLogger.Warningf("d7yBalancer: failed to create new SubConn: %v", err)
 				continue
 			}
 			b.subConns.Set(a, newSC)
@@ -220,13 +218,13 @@ func (b *d7yBalancer) mergeErrors() error {
 // UpdateSubConnState is implemented by balancer.Balancer, modified from baseBalancer
 func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	s := state.ConnectivityState
-	if logger.V(2) {
-		logger.Infof("base.baseBalancer: handle SubConn state change: %p, %v", sc, s)
+	if balancerLogger.V(2) {
+		balancerLogger.Infof("base.baseBalancer: handle SubConn state change: %p, %v", sc, s)
 	}
 	oldS, ok := b.scStates[sc]
 	if !ok {
-		if logger.V(2) {
-			logger.Infof("base.baseBalancer: got state changes for an unknown SubConn: %p, %v", sc, s)
+		if balancerLogger.V(2) {
+			balancerLogger.Infof("base.baseBalancer: got state changes for an unknown SubConn: %p, %v", sc, s)
 		}
 		return
 	}
