@@ -123,8 +123,8 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskEventFailed}, Dst: TaskStateRunning},
-			{Name: TaskEventSucceeded, Src: []string{TaskStateRunning}, Dst: TaskStateSucceeded},
+			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateFailed}, Dst: TaskStateRunning},
+			{Name: TaskEventSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
 			{Name: TaskEventFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
 		},
 		fsm.Callbacks{

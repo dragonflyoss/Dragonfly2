@@ -24,10 +24,12 @@ scheduler:
   # and the compiled `d7y-scheduler-plugin-evaluator.so` file is added to
   # the dragonfly working directory plugins
   algorithm: default
-  # workerNum is the number of goroutines that perform scheduling tasks
-  workerNum: 10
   # backSourceCount is the number of backsource clients when the CDN is unavailable
   backSourceCount: 3
+  # retry scheduling limit times
+  retryLimit: 10
+  # retry scheduling interval
+  retryInterval: 1s
   # gc metadata configuration
   gc:
     # peerGCInterval peer's gc interval

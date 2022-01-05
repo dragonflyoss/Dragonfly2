@@ -193,7 +193,7 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 
 	// Handle piece download failed
 	if piece.Code != base.Code_Success {
-		peer.Log.Infof("receive failed piece: %#v", piece)
+		peer.Log.Infof("receive failed piece: %#v %#v", piece, piece.PieceInfo)
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}

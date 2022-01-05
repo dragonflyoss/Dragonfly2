@@ -101,7 +101,7 @@ func (t *task) RunGC() error {
 		elapsed := time.Since(task.UpdateAt.Load())
 
 		if elapsed > t.ttl && task.LenPeers() == 0 {
-			task.Log.Info("task gc succeeded")
+			task.Log.Info("task has been reclaimed")
 			t.Delete(task.ID)
 		}
 

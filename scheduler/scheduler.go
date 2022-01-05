@@ -76,6 +76,19 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			return nil, err
 		}
 		s.managerClient = managerClient
+
+		// Register to manager
+		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
+			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+			HostName:           s.config.Server.Host,
+			Ip:                 s.config.Server.IP,
+			Port:               int32(s.config.Server.Port),
+			Idc:                s.config.Host.IDC,
+			Location:           s.config.Host.Location,
+			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+		}); err != nil {
+			logger.Fatalf("register to manager failed %v", err)
+		}
 	}
 
 	// Initialize dynconfig client
@@ -179,19 +192,6 @@ func (s *Server) Serve() error {
 	}
 
 	if s.managerClient != nil {
-		// Register to manager
-		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
-			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
-			HostName:           s.config.Server.Host,
-			Ip:                 s.config.Server.IP,
-			Port:               int32(s.config.Server.Port),
-			Idc:                s.config.Host.IDC,
-			Location:           s.config.Host.Location,
-			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-		}); err != nil {
-			logger.Fatalf("register to manager failed %v", err)
-		}
-
 		// scheduler keepalive with manager
 		go func() {
 			logger.Info("start keepalive to manager")

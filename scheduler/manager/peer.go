@@ -130,7 +130,7 @@ func (p *peer) RunGC() error {
 			if peer.FSM.Is(entity.PeerStateLeave) {
 				peer.DeleteParent()
 				p.Delete(peer.ID)
-				peer.Log.Info("peer gc succeeded")
+				peer.Log.Info("peer has been reclaimed")
 				return true
 			}
 
@@ -139,6 +139,7 @@ func (p *peer) RunGC() error {
 			if err := peer.FSM.Event(entity.PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 			}
+			peer.Log.Info("gc causes the peer to leave")
 
 			return true
 		}

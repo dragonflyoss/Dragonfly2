@@ -161,10 +161,10 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 	// to help peer to reschedule the parent node
 	switch piece.Code {
 	case base.Code_ClientWaitPieceReady:
-		peer.Log.Error("peer report error code Code_ClientWaitPieceReady")
+		peer.Log.Info("receive code Code_ClientWaitPieceReady")
 		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
-		peer.Log.Errorf("peer report error code: %v", piece.Code)
+		peer.Log.Errorf("receive error code: %v", piece.Code)
 		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok && parent.FSM.Can(entity.PeerEventFailed) {
 			if err := parent.FSM.Event(entity.PeerEventFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -172,7 +172,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 			}
 		}
 	case base.Code_ClientPieceRequestFail:
-		peer.Log.Error("peer report error code Code_ClientPieceRequestFail")
+		peer.Log.Error("receive error code Code_ClientPieceRequestFail")
 	default:
 		peer.Log.Warnf("unknow report code: %v", piece.Code)
 	}
