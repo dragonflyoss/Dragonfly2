@@ -42,7 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
-var tracer = otel.Tracer("sender")
+var tracer = otel.Tracer("manager")
 
 type PreheatType string
 

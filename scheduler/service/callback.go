@@ -126,14 +126,14 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
-	case entity.PeerStateRegisterSmall:
+	case entity.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
 		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
-	case entity.PeerStateRegisterNormal:
+	case entity.PeerStateReceivedNormal:
 		// It’s not a case of back-to-source or small task downloading,
 		// to help peer to schedule the parent node
 		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
@@ -165,8 +165,8 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		peer.Log.Errorf("receive error code: %v", piece.Code)
-		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok && parent.FSM.Can(entity.PeerEventFailed) {
-			if err := parent.FSM.Event(entity.PeerEventFailed); err != nil {
+		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok && parent.FSM.Can(entity.PeerEventDownloadFailed) {
+			if err := parent.FSM.Event(entity.PeerEventDownloadFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 				break
 			}
@@ -217,14 +217,14 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 		}
 	}
 
-	if err := peer.FSM.Event(entity.PeerEventSucceeded); err != nil {
+	if err := peer.FSM.Event(entity.PeerEventDownloadSucceeded); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
 }
 
 func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
-	if err := peer.FSM.Event(entity.PeerEventFailed); err != nil {
+	if err := peer.FSM.Event(entity.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
@@ -284,7 +284,7 @@ func (c *callback) PeerLeave(ctx context.Context, peer *entity.Peer) {
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
 func (c *callback) TaskSuccess(ctx context.Context, peer *entity.Peer, task *entity.Task, endOfPiece *rpcscheduler.PeerResult) {
-	if err := task.FSM.Event(entity.TaskEventSucceeded); err != nil {
+	if err := task.FSM.Event(entity.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
 	}
@@ -298,7 +298,7 @@ func (c *callback) TaskSuccess(ctx context.Context, peer *entity.Peer, task *ent
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
 func (c *callback) TaskFail(ctx context.Context, task *entity.Task) {
-	if err := task.FSM.Event(entity.TaskEventFailed); err != nil {
+	if err := task.FSM.Event(entity.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
 	}

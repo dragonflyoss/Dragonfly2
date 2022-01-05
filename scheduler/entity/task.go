@@ -52,10 +52,10 @@ const (
 	TaskEventDownload = "Download"
 
 	// Task downloaded successfully
-	TaskEventSucceeded = "Succeeded"
+	TaskEventDownloadSucceeded = "DownloadSucceeded"
 
 	// Task downloaded failed
-	TaskEventFailed = "Failed"
+	TaskEventDownloadFailed = "DownloadFailed"
 )
 
 type Task struct {
@@ -124,19 +124,19 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 		TaskStatePending,
 		fsm.Events{
 			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateFailed}, Dst: TaskStateRunning},
-			{Name: TaskEventSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
-			{Name: TaskEventFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
+			{Name: TaskEventDownloadSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
+			{Name: TaskEventDownloadFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
 		},
 		fsm.Callbacks{
 			TaskEventDownload: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventSucceeded: func(e *fsm.Event) {
+			TaskEventDownloadSucceeded: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},
-			TaskEventFailed: func(e *fsm.Event) {
+			TaskEventDownloadFailed: func(e *fsm.Event) {
 				t.UpdateAt.Store(time.Now())
 				t.Log.Infof("task state is %s", e.FSM.Current())
 			},

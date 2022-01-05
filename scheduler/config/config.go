@@ -56,9 +56,10 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:   iputils.IPv4,
-			Host: hostutils.FQDNHostname,
-			Port: 8002,
+			IP:          iputils.IPv4,
+			Host:        hostutils.FQDNHostname,
+			Port:        8002,
+			ListenLimit: 1000,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:       "default",
@@ -111,39 +112,43 @@ func (c *Config) Validate() error {
 		return errors.New("server requires parameter host")
 	}
 
-	if c.Server.Port == 0 {
+	if c.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
+	}
+
+	if c.Server.ListenLimit <= 0 {
+		return errors.New("server requires parameter listenLimit")
 	}
 
 	if c.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
 	}
 
-	if c.Scheduler.RetryLimit == 0 {
+	if c.Scheduler.RetryLimit <= 0 {
 		return errors.New("scheduler requires parameter retryLimit")
 	}
 
-	if c.Scheduler.RetryInterval == 0 {
+	if c.Scheduler.RetryInterval <= 0 {
 		return errors.New("scheduler requires parameter retryInterval")
 	}
 
-	if c.Scheduler.GC.PeerGCInterval == 0 {
+	if c.Scheduler.GC.PeerGCInterval <= 0 {
 		return errors.New("scheduler requires parameter peerGCInterval")
 	}
 
-	if c.Scheduler.GC.PeerTTL == 0 {
+	if c.Scheduler.GC.PeerTTL <= 0 {
 		return errors.New("scheduler requires parameter peerTTL")
 	}
 
-	if c.Scheduler.GC.TaskGCInterval == 0 {
+	if c.Scheduler.GC.TaskGCInterval <= 0 {
 		return errors.New("scheduler requires parameter taskGCInterval")
 	}
 
-	if c.Scheduler.GC.TaskTTL == 0 {
+	if c.Scheduler.GC.TaskTTL <= 0 {
 		return errors.New("scheduler requires parameter taskTTL")
 	}
 
-	if c.DynConfig.RefreshInterval == 0 {
+	if c.DynConfig.RefreshInterval <= 0 {
 		return errors.New("dynconfig requires parameter refreshInterval")
 	}
 
@@ -156,7 +161,7 @@ func (c *Config) Validate() error {
 			return errors.New("manager requires parameter schedulerClusterID")
 		}
 
-		if c.Manager.KeepAlive.Interval == 0 {
+		if c.Manager.KeepAlive.Interval <= 0 {
 			return errors.New("manager requires parameter keepAlive interval")
 		}
 	}
@@ -178,15 +183,15 @@ func (c *Config) Validate() error {
 			return errors.New("job requires parameter redis host")
 		}
 
-		if c.Job.Redis.Port == 0 {
+		if c.Job.Redis.Port <= 0 {
 			return errors.New("job requires parameter redis port")
 		}
 
-		if c.Job.Redis.BrokerDB == 0 {
+		if c.Job.Redis.BrokerDB <= 0 {
 			return errors.New("job requires parameter redis brokerDB")
 		}
 
-		if c.Job.Redis.BackendDB == 0 {
+		if c.Job.Redis.BackendDB <= 0 {
 			return errors.New("job requires parameter redis backendDB")
 		}
 	}
@@ -209,6 +214,9 @@ type ServerConfig struct {
 
 	// Server port
 	Port int `yaml:"port" mapstructure:"port"`
+
+	// Limit the number of requests
+	ListenLimit int `yaml:"listenLimit" mapstructure:"listenLimit"`
 
 	// Server dynamic config cache directory
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`

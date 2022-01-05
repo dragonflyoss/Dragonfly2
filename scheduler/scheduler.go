@@ -18,16 +18,18 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"net/http"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	rpcmanager "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -203,16 +205,17 @@ func (s *Server) Serve() error {
 		}()
 	}
 
-	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(s.config.Server.IP, s.config.Server.Port, s.config.Server.Port)
+	// Generate GRPC limit listener
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.IP, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
-	defer lis.Close()
+	defer listener.Close()
+	limitListener := netutil.LimitListener(listener, s.config.Server.ListenLimit)
 
 	// Started GRPC server
-	logger.Infof("started grpc server at %s://%s", lis.Addr().Network(), lis.Addr().String())
-	if err := s.grpcServer.Serve(lis); err != nil {
+	logger.Infof("started grpc server at %s://%s with max connection %d", limitListener.Addr().Network(), limitListener.Addr().String(), s.config.Server.ListenLimit)
+	if err := s.grpcServer.Serve(limitListener); err != nil {
 		logger.Errorf("stoped grpc server: %v", err)
 		return err
 	}

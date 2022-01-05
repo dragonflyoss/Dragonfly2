@@ -4,8 +4,10 @@ server:
   # ip: 127.0.0.1
   # # host
   # host: localhost
-  # ListenPort is the ip and port scheduler server listens on.
+  # port is the ip and port scheduler server listens on.
   port: 8002
+  # limit the number of requests
+  listenLimit: 1000
   # cacheDir is dynconfig cache storage directory
   # in linux, default value is /var/cache/dragonfly
   # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
