@@ -19,6 +19,7 @@ package e2e
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -29,16 +30,54 @@ import (
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
 )
 
-const (
-	proxy                 = "localhost:65001"
-	hostnameFilePath      = "/etc/hostname"
-	dragonflyNamespace    = "dragonfly-system"
-	dragonflyE2ENamespace = "dragonfly-e2e"
-)
+var _ = AfterSuite(func() {
+	for _, server := range servers {
+		for i := 0; i < server.replicas; i++ {
+			out, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+				"-o", fmt.Sprintf("jsonpath='{.items[%d].metadata.name}'", i)).CombinedOutput()
+			if err != nil {
+				fmt.Printf("get pod error: %s\n", err)
+				continue
+			}
+			podName := strings.Trim(string(out), "'")
+			pod := e2eutil.NewPodExec(server.namespace, podName, server.name)
 
-const (
-	dfdaemonCompatibilityTestMode = "dfdaemon"
-)
+			countOut, err := e2eutil.KubeCtlCommand("-n", server.namespace, "get", "pod", "-l", fmt.Sprintf("component=%s", server.name),
+				"-o", fmt.Sprintf("jsonpath='{.items[%d].status.containerStatuses[0].restartCount}'", i)).CombinedOutput()
+			if err != nil {
+				fmt.Printf("get pod %s restart count error: %s\n", podName, err)
+				continue
+			}
+			rawCount := strings.Trim(string(countOut), "'")
+			count, err := strconv.Atoi(rawCount)
+			if err != nil {
+				fmt.Printf("atoi error: %s\n", err)
+				continue
+			}
+			fmt.Printf("pod %s restart count: %d\n", podName, count)
+
+			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
+              set -x
+              cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
+							find /tmp/artifact -type d -exec chmod 777 {} \;
+              `, server.logDirName, server.name, i)).CombinedOutput()
+			if err != nil {
+				fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
+			}
+
+			if count > 0 {
+				if err := e2eutil.UploadArtifactPrevStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+					fmt.Printf("upload pod %s artifact stdout file error: %v\n", podName, err)
+				}
+			}
+
+			if err := e2eutil.UploadArtifactStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
+				fmt.Printf("upload pod %s artifact prev stdout file error: %v\n", podName, err)
+			}
+
+		}
+	}
+})
 
 var _ = BeforeSuite(func() {
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")

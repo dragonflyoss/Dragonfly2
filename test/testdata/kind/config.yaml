@@ -10,11 +10,5 @@ nodes:
     extraMounts:
       - hostPath: ./test/testdata/containerd/config.toml
         containerPath: /etc/containerd/config.toml
-      - hostPath: /tmp/artifact/manager
-        containerPath: /tmp/artifact/manager
-      - hostPath: /tmp/artifact/daemon
-        containerPath: /tmp/artifact/daemon
-      - hostPath: /tmp/artifact/scheduler
-        containerPath: /tmp/artifact/scheduler
-      - hostPath: /tmp/artifact/cdn
-        containerPath: /tmp/artifact/cdn
+      - hostPath: /tmp/artifact
+        containerPath: /tmp/artifact

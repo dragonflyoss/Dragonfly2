@@ -3,10 +3,10 @@ name: E2E Test
 on:
   push:
     branches: [main, release-*]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   pull_request:
     branches: [main, release-*]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
 
 env:
   GO_VERSION: 1.17
@@ -78,7 +78,4 @@ jobs:
         with:
           name: e2e-tests-logs
           path: |
-            /tmp/artifact/manager/*.log
-            /tmp/artifact/daemon/*.log
-            /tmp/artifact/scheduler/*.log
-            /tmp/artifact/cdn/*.log
+            /tmp/artifact/**/*.log

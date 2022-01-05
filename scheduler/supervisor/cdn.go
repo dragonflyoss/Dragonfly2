@@ -253,12 +253,14 @@ type CDNDynmaicClient interface {
 
 type cdnDynmaicClient struct {
 	cdnclient.CdnClient
-	data  *config.DynconfigData
-	hosts map[string]*Host
-	lock  sync.RWMutex
+	data        *config.DynconfigData
+	hosts       map[string]*Host
+	lock        sync.RWMutex
+	peerManager PeerManager
+	hostManager HostManager
 }
 
-func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDNDynmaicClient, error) {
+func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, peerManager PeerManager, hostManager HostManager, opts []grpc.DialOption) (CDNDynmaicClient, error) {
 	config, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
@@ -270,9 +272,11 @@ func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOp
 	}
 
 	dc := &cdnDynmaicClient{
-		CdnClient: client,
-		data:      config,
-		hosts:     cdnsToHosts(config.CDNs),
+		CdnClient:   client,
+		data:        config,
+		hosts:       cdnsToHosts(config.CDNs),
+		peerManager: peerManager,
+		hostManager: hostManager,
 	}
 
 	dynConfig.Register(dc)
@@ -299,8 +303,45 @@ func (dc *cdnDynmaicClient) OnNotify(data *config.DynconfigData) {
 	dc.lock.Lock()
 	defer dc.lock.Unlock()
 
+	// If cdn is deleted, clear cdn related information
+	hosts := cdnsToHosts(data.CDNs)
+	logger.Infof("cdn hosts %#v update to %#v", dc.hosts, hosts)
+
+	for _, v := range dc.hosts {
+		id := idgen.CDNHostID(v.HostName, v.RPCPort)
+		for _, host := range hosts {
+			if v.HostName != host.HostName {
+				continue
+			}
+
+			if v.RPCPort != host.RPCPort {
+				continue
+			}
+
+			if v.IP == host.IP {
+				continue
+			}
+
+			v.Log().Info("host has been deleted")
+			if host, ok := dc.hostManager.Get(id); ok {
+				host.GetPeers().Range(func(_, value interface{}) bool {
+					if peer, ok := value.(*Peer); ok {
+						peer.Log().Info("cdn peer left because cdn host was deleted")
+						peer.Leave()
+					}
+
+					return true
+				})
+				v.Log().Info("delete cdn host from host manager because cdn host was deleted")
+				dc.hostManager.Delete(id)
+			} else {
+				v.Log().Warn("can not found host from host manager")
+			}
+		}
+	}
+
 	dc.data = data
-	dc.hosts = cdnsToHosts(data.CDNs)
+	dc.hosts = hosts
 	dc.UpdateState(cdnsToNetAddrs(data.CDNs))
 }
 

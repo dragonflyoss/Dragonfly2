@@ -42,29 +42,6 @@ var _ = Describe("Download with dfget and proxy", func() {
 	})
 })
 
-var _ = AfterSuite(func() {
-	// copy log files to artifact directory
-	for i := 0; i < 3; i++ {
-		out, err := e2eutil.KubeCtlCommand("-n", dragonflyE2ENamespace, "get", "pod", "-l", fmt.Sprintf("statefulset.kubernetes.io/pod-name=proxy-%d", i),
-			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
-		if err != nil {
-			fmt.Printf("get pod error: %s\n", err)
-			continue
-		}
-		podName := strings.Trim(string(out), "'")
-		pod := e2eutil.NewPodExec(dragonflyE2ENamespace, podName, "proxy")
-
-		out, err = pod.Command("sh", "-c", fmt.Sprintf(`
-              set -x
-              cp /var/log/dragonfly/daemon/core.log /tmp/artifact/daemon/proxy-%d-core.log
-              cp /var/log/dragonfly/daemon/grpc.log /tmp/artifact/daemon/proxy-%d-grpc.log
-              `, i, i)).CombinedOutput()
-		if err != nil {
-			fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
-		}
-	}
-})
-
 func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 	It(name, func() {
 		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
