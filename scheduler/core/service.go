@@ -131,7 +131,7 @@ func NewSchedulerService(cfg *config.SchedulerConfig, pluginDir string, metricsC
 		if ops.openTel {
 			opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 		}
-		client, err := supervisor.NewCDNDynmaicClient(dynConfig, opts)
+		client, err := supervisor.NewCDNDynmaicClient(dynConfig, peerManager, hostManager, opts)
 		if err != nil {
 			return nil, errors.Wrap(err, "new refreshable cdn client")
 		}

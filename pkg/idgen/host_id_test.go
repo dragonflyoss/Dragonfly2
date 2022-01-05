@@ -35,7 +35,7 @@ func TestHostID(t *testing.T) {
 			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 8)
+				assert.Equal(d, "foo-8000")
 			},
 		},
 		{
@@ -44,7 +44,7 @@ func TestHostID(t *testing.T) {
 			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 5)
+				assert.Equal(d, "-8000")
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func TestHostID(t *testing.T) {
 			port:     0,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 5)
+				assert.Equal(d, "foo-0")
 			},
 		},
 	}
@@ -78,16 +78,16 @@ func TestCDNHostID(t *testing.T) {
 			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 12)
+				assert.Equal(d, "foo-8000_CDN")
 			},
 		},
 		{
-			name:     "generate CDNHostID with empty string",
+			name:     "generate CDNHostID with empty host",
 			hostname: "",
 			port:     8000,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 9)
+				assert.Equal(d, "-8000_CDN")
 			},
 		},
 		{
@@ -96,7 +96,7 @@ func TestCDNHostID(t *testing.T) {
 			port:     0,
 			expect: func(t *testing.T, d string) {
 				assert := assert.New(t)
-				assert.Len(d, 9)
+				assert.Equal(d, "foo-0_CDN")
 			},
 		},
 	}
