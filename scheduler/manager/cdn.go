@@ -55,7 +55,7 @@ type cdn struct {
 
 // New cdn interface
 func newCDN(peerManager Peer, hostManager Host, dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
-	client, err := newCDNClient(dynConfig, opts)
+	client, err := newCDNClient(dynConfig, hostManager, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -202,6 +202,9 @@ type CDNClient interface {
 }
 
 type cdnClient struct {
+	// hostManager is host manager
+	hostManager Host
+
 	// cdnClient is cdn grpc client instance
 	cdnclient.CdnClient
 
@@ -216,7 +219,7 @@ type cdnClient struct {
 }
 
 // New cdn client interface
-func newCDNClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDNClient, error) {
+func newCDNClient(dynConfig config.DynconfigInterface, hostManager Host, opts []grpc.DialOption) (CDNClient, error) {
 	config, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
@@ -228,9 +231,10 @@ func newCDNClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (
 	}
 
 	dc := &cdnClient{
-		CdnClient: client,
-		data:      config,
-		hosts:     cdnsToHosts(config.CDNs),
+		hostManager: hostManager,
+		CdnClient:   client,
+		data:        config,
+		hosts:       cdnsToHosts(config.CDNs),
 	}
 
 	dynConfig.Register(dc)
@@ -238,11 +242,11 @@ func newCDNClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (
 }
 
 // LoadHost return host entity for a key
-func (dc *cdnClient) LoadHost(key string) (*entity.Host, bool) {
-	dc.mu.RLock()
-	defer dc.mu.RUnlock()
+func (c *cdnClient) LoadHost(key string) (*entity.Host, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	host, ok := dc.hosts[key]
+	host, ok := c.hosts[key]
 	if !ok {
 		return nil, false
 	}
@@ -251,20 +255,30 @@ func (dc *cdnClient) LoadHost(key string) (*entity.Host, bool) {
 }
 
 // Dynamic config notify function
-func (dc *cdnClient) OnNotify(data *config.DynconfigData) {
+func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 	ips := getCDNIPs(data.CDNs)
-	if reflect.DeepEqual(dc.data, data) {
+	if reflect.DeepEqual(c.data, data) {
 		logger.Infof("cdn addresses deep equal: %v", ips)
 		return
 	}
 
-	dc.mu.Lock()
-	defer dc.mu.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	dc.data = data
-	dc.hosts = cdnsToHosts(data.CDNs)
-	dc.UpdateState(cdnsToNetAddrs(data.CDNs))
+	c.data = data
+	c.hosts = cdnsToHosts(data.CDNs)
+
+	// Update host manager
+	for _, host := range c.hosts {
+		c.hostManager.Store(host)
+	}
+
+	// Update grpc cdn addresses
+	c.UpdateState(cdnsToNetAddrs(data.CDNs))
 	logger.Infof("cdn addresses have been updated: %v", ips)
+}
+
+func (c *cdnClient) updateCDNHost(hosts map[string]*entity.Host) {
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
@@ -280,15 +294,14 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*entity.Host {
 
 		id := idgen.CDNHostID(cdn.HostName, cdn.Port)
 		hosts[id] = entity.NewHost(&rpcscheduler.PeerHost{
-			Uuid:           id,
-			Ip:             cdn.IP,
-			HostName:       cdn.HostName,
-			RpcPort:        cdn.Port,
-			DownPort:       cdn.DownloadPort,
-			SecurityDomain: cdn.SecurityGroup,
-			Idc:            cdn.IDC,
-			Location:       cdn.Location,
-			NetTopology:    netTopology,
+			Uuid:        id,
+			Ip:          cdn.IP,
+			RpcPort:     cdn.Port,
+			DownPort:    cdn.DownloadPort,
+			HostName:    cdn.HostName,
+			Idc:         cdn.IDC,
+			Location:    cdn.Location,
+			NetTopology: netTopology,
 		}, options...)
 	}
 	return hosts
