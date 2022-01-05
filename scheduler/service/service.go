@@ -205,14 +205,14 @@ func (s *service) HandlePiece(ctx context.Context, peer *entity.Peer, piece *rpc
 
 func (s *service) HandlePeer(ctx context.Context, peer *entity.Peer, req *rpcscheduler.PeerResult) {
 	if !req.Success {
-		if peer.Task.BackToSourcePeers.Contains(peer) && peer.Task.FSM.Can(entity.TaskEventFailed) {
+		if peer.Task.BackToSourcePeers.Contains(peer) {
 			s.callback.TaskFail(ctx, peer.Task)
 		}
 		s.callback.PeerFail(ctx, peer)
 		return
 	}
 
-	if peer.Task.BackToSourcePeers.Contains(peer) && peer.Task.FSM.Can(entity.TaskEventSucceeded) {
+	if peer.Task.BackToSourcePeers.Contains(peer) {
 		s.callback.TaskSuccess(ctx, peer, peer.Task, req)
 	}
 	s.callback.PeerSuccess(ctx, peer)

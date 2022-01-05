@@ -74,6 +74,7 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 		default:
 		}
 
+		// Peer scheduling exceeds retry limit
 		if n >= c.config.Scheduler.RetryLimit {
 			if peer.Task.CanBackToSource() {
 				if ok := peer.StopStream(dferrors.Newf(base.Code_SchedNeedBackSource, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
