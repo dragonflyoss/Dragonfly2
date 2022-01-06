@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sync"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -186,9 +185,6 @@ type CDNClient interface {
 
 	// Observer is dynconfig observer interface
 	config.Observer
-
-	// LoadHost return host entity for a key
-	LoadHost(string) (*entity.Host, bool)
 }
 
 type cdnClient struct {
@@ -200,12 +196,6 @@ type cdnClient struct {
 
 	// data is dynconfig data
 	data *config.DynconfigData
-
-	// hosts is host entity map
-	hosts map[string]*entity.Host
-
-	// mu is rwmutex
-	mu sync.RWMutex
 }
 
 // New cdn client interface
@@ -224,24 +214,10 @@ func newCDNClient(dynConfig config.DynconfigInterface, hostManager Host, opts []
 		hostManager: hostManager,
 		CdnClient:   client,
 		data:        config,
-		hosts:       cdnsToHosts(config.CDNs),
 	}
 
 	dynConfig.Register(dc)
 	return dc, nil
-}
-
-// LoadHost return host entity for a key
-func (c *cdnClient) LoadHost(key string) (*entity.Host, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	host, ok := c.hosts[key]
-	if !ok {
-		return nil, false
-	}
-
-	return host, true
 }
 
 // Dynamic config notify function
@@ -252,23 +228,17 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		return
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
+	// Update dynamic data
 	c.data = data
-	c.hosts = cdnsToHosts(data.CDNs)
 
 	// Update host manager
-	for _, host := range c.hosts {
+	for _, host := range cdnsToHosts(data.CDNs) {
 		c.hostManager.Store(host)
 	}
 
 	// Update grpc cdn addresses
 	c.UpdateState(cdnsToNetAddrs(data.CDNs))
 	logger.Infof("cdn addresses have been updated: %v", ips)
-}
-
-func (c *cdnClient) updateCDNHost(hosts map[string]*entity.Host) {
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
