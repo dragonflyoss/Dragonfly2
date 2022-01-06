@@ -34,8 +34,8 @@ import (
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
-	"d7y.io/dragonfly/v2/scheduler/manager"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -123,8 +123,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		)
 	}
 
-	// Initialize manager
-	manager, err := manager.New(cfg, s.gc, dynConfig, dialOptions)
+	// Initialize resource
+	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
 
 	// Initialize scheduler service
-	service, err := service.New(cfg, scheduler, manager, dynConfig)
+	service, err := service.New(cfg, scheduler, resource, dynConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -16,15 +16,15 @@
 
 package main
 
-import "d7y.io/dragonfly/v2/scheduler/entity"
+import "d7y.io/dragonfly/v2/scheduler/resource"
 
 type evaluator struct{}
 
-func (e *evaluator) Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64 {
+func (e *evaluator) Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64 {
 	return float64(1)
 }
 
-func (e *evaluator) IsBadNode(peer *entity.Peer) bool {
+func (e *evaluator) IsBadNode(peer *resource.Peer) bool {
 	return true
 }
 

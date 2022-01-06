@@ -24,16 +24,16 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(context.Context, *entity.Peer, set.SafeSet) ([]*entity.Peer, bool)
+	ScheduleParent(context.Context, *resource.Peer, set.SafeSet) ([]*resource.Peer, bool)
 
 	// Find the parent that best matches the evaluation
-	FindParent(context.Context, *entity.Peer, set.SafeSet) (*entity.Peer, bool)
+	FindParent(context.Context, *resource.Peer, set.SafeSet) (*resource.Peer, bool)
 }
 
 type scheduler struct {
@@ -46,20 +46,20 @@ func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
 	}
 }
 
-func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) ([]*entity.Peer, bool) {
+func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) ([]*resource.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
 	// they have been scheduled
-	if !peer.FSM.Is(entity.PeerStateRunning) {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
 		peer.Log.Infof("peer state is %s, can not schedule parent", peer.FSM.Current())
-		return []*entity.Peer{}, false
+		return []*resource.Peer{}, false
 	}
 
 	// Find the parent that can be scheduled
 	parents := s.findParents(peer, blocklist)
 	if len(parents) == 0 {
 		peer.Log.Info("can not find parents")
-		return []*entity.Peer{}, false
+		return []*resource.Peer{}, false
 	}
 
 	// Sort parents by evaluation score
@@ -75,12 +75,12 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, block
 	stream, ok := peer.LoadStream()
 	if !ok {
 		peer.Log.Error("load peer stream failed")
-		return []*entity.Peer{}, false
+		return []*resource.Peer{}, false
 	}
 
 	if err := stream.Send(constructSuccessPeerPacket(peer, parents[0], parents[1:])); err != nil {
 		peer.Log.Error(err)
-		return []*entity.Peer{}, false
+		return []*resource.Peer{}, false
 	}
 
 	peer.ReplaceParent(parents[0])
@@ -88,7 +88,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *entity.Peer, block
 	return parents, true
 }
 
-func (s *scheduler) FindParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) (*entity.Peer, bool) {
+func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) (*resource.Peer, bool) {
 	// Find the parent that can be scheduled
 	parents := s.findParents(peer, blocklist)
 	if len(parents) == 0 {
@@ -109,10 +109,10 @@ func (s *scheduler) FindParent(ctx context.Context, peer *entity.Peer, blocklist
 	return parents[0], true
 }
 
-func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*entity.Peer {
-	var parents []*entity.Peer
+func (s *scheduler) findParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
+	var parents []*resource.Peer
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
-		parent, ok := value.(*entity.Peer)
+		parent, ok := value.(*resource.Peer)
 		if !ok {
 			return true
 		}
@@ -155,7 +155,7 @@ func (s *scheduler) findParents(peer *entity.Peer, blocklist set.SafeSet) []*ent
 	return parents
 }
 
-func constructSuccessPeerPacket(peer *entity.Peer, parent *entity.Peer, candidateParents []*entity.Peer) *rpcscheduler.PeerPacket {
+func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
 		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{

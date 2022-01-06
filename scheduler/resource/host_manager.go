@@ -14,58 +14,56 @@
  * limitations under the License.
  */
 
-package manager
+package resource
 
 import (
 	"sync"
-
-	"d7y.io/dragonfly/v2/scheduler/entity"
 )
 
-type Host interface {
-	// Load return host entity for a key
-	Load(string) (*entity.Host, bool)
+type HostManager interface {
+	// Load return host for a key
+	Load(string) (*Host, bool)
 
-	// Store set host entity
-	Store(*entity.Host)
+	// Store set host
+	Store(*Host)
 
-	// LoadOrStore returns host entity the key if present.
-	// Otherwise, it stores and returns the given host entity.
-	// The loaded result is true if the host entity was loaded, false if stored.
-	LoadOrStore(*entity.Host) (*entity.Host, bool)
+	// LoadOrStore returns host the key if present.
+	// Otherwise, it stores and returns the given host.
+	// The loaded result is true if the host was loaded, false if stored.
+	LoadOrStore(*Host) (*Host, bool)
 
-	// Delete deletes host entity for a key
+	// Delete deletes host for a key
 	Delete(string)
 }
 
-type host struct {
+type hostManager struct {
 	// Host sync map
 	*sync.Map
 }
 
-// New host interface
-func newHost() Host {
-	return &host{&sync.Map{}}
+// New host manager interface
+func newHostManager() HostManager {
+	return &hostManager{&sync.Map{}}
 }
 
-func (h *host) Load(key string) (*entity.Host, bool) {
+func (h *hostManager) Load(key string) (*Host, bool) {
 	rawHost, ok := h.Map.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rawHost.(*entity.Host), ok
+	return rawHost.(*Host), ok
 }
 
-func (h *host) Store(host *entity.Host) {
+func (h *hostManager) Store(host *Host) {
 	h.Map.Store(host.ID, host)
 }
 
-func (h *host) LoadOrStore(host *entity.Host) (*entity.Host, bool) {
+func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 	rawHost, loaded := h.Map.LoadOrStore(host.ID, host)
-	return rawHost.(*entity.Host), loaded
+	return rawHost.(*Host), loaded
 }
 
-func (h *host) Delete(key string) {
+func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
 }

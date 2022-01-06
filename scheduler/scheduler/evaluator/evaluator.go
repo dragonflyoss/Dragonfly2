@@ -17,7 +17,7 @@
 package evaluator
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
@@ -33,10 +33,10 @@ const (
 
 type Evaluator interface {
 	// Evaluate todo Normalization
-	Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64
+	Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64
 
 	// IsBadNode determine if peer is a failed node
-	IsBadNode(peer *entity.Peer) bool
+	IsBadNode(peer *resource.Peer) bool
 }
 
 func New(algorithm string, pluginDir string) Evaluator {

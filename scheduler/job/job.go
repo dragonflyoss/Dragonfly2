@@ -161,7 +161,7 @@ func (t *job) preheat(ctx context.Context, req string) error {
 	// Trigger CDN download seeds
 	plogger := logger.WithTaskIDAndURL(taskID, request.URL)
 	plogger.Info("ready to preheat")
-	stream, err := t.service.Manager().CDN.Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	stream, err := t.service.CDN().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  taskID,
 		Url:     request.URL,
 		UrlMeta: meta,

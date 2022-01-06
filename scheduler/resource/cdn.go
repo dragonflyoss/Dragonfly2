@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package resource
 
 import (
 	"context"
@@ -31,13 +31,11 @@ import (
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
-	"d7y.io/dragonfly/v2/scheduler/util"
 )
 
 type CDN interface {
 	// TriggerTask start to trigger cdn task
-	TriggerTask(context.Context, *entity.Task) (*entity.Peer, *rpcscheduler.PeerResult, error)
+	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
 
 	// Client is cdn grpc client
 	Client() CDNClient
@@ -47,13 +45,13 @@ type cdn struct {
 	// client is cdn dynamic client
 	client CDNClient
 	// peerManager is peer manager
-	peerManager Peer
+	peerManager PeerManager
 	// hostManager is host manager
-	hostManager Host
+	hostManager HostManager
 }
 
 // New cdn interface
-func newCDN(peerManager Peer, hostManager Host, dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
+func newCDN(peerManager PeerManager, hostManager HostManager, dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
 	client, err := newCDNClient(dynConfig, hostManager, opts)
 	if err != nil {
 		return nil, err
@@ -67,7 +65,7 @@ func newCDN(peerManager Peer, hostManager Host, dynConfig config.DynconfigInterf
 }
 
 // TriggerTask start to trigger cdn task
-func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer, *rpcscheduler.PeerResult, error) {
+func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
 	stream, err := c.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,
@@ -79,7 +77,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 
 	var (
 		initialized bool
-		peer        *entity.Peer
+		peer        *Peer
 	)
 
 	// Receive pieces from cdn
@@ -100,7 +98,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 				return nil, nil, err
 			}
 
-			if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
+			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
 		}
@@ -110,9 +108,9 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
 
 			// Handle tiny scope size task
-			if piece.ContentLength <= entity.TinyFileSize {
+			if piece.ContentLength <= TinyFileSize {
 				peer.Log.Info("peer type is tiny file")
-				data, err := util.DownloadTinyFile(ctx, task, peer)
+				data, err := peer.DownloadTinyFile(ctx)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -144,7 +142,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 }
 
 // Initialize cdn peer
-func (c *cdn) initPeer(task *entity.Task, ps *cdnsystem.PieceSeed) (*entity.Peer, error) {
+func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 	// Load peer from manager
 	peer, ok := c.peerManager.Load(ps.PeerId)
 	if ok {
@@ -160,14 +158,14 @@ func (c *cdn) initPeer(task *entity.Task, ps *cdnsystem.PieceSeed) (*entity.Peer
 	}
 
 	// New cdn peer
-	peer = entity.NewPeer(ps.PeerId, task, host)
+	peer = NewPeer(ps.PeerId, task, host)
 	peer.Log.Info("new cdn peer successfully")
 
 	// Store cdn peer
 	c.peerManager.Store(peer)
 	peer.Log.Info("cdn peer has been stored")
 
-	if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+	if err := peer.FSM.Event(PeerEventRegisterNormal); err != nil {
 		return nil, err
 	}
 
@@ -189,7 +187,7 @@ type CDNClient interface {
 
 type cdnClient struct {
 	// hostManager is host manager
-	hostManager Host
+	hostManager HostManager
 
 	// cdnClient is cdn grpc client instance
 	cdnclient.CdnClient
@@ -199,15 +197,21 @@ type cdnClient struct {
 }
 
 // New cdn client interface
-func newCDNClient(dynConfig config.DynconfigInterface, hostManager Host, opts []grpc.DialOption) (CDNClient, error) {
+func newCDNClient(dynConfig config.DynconfigInterface, hostManager HostManager, opts []grpc.DialOption) (CDNClient, error) {
 	config, err := dynConfig.Get()
 	if err != nil {
 		return nil, err
 	}
 
+	// Initialize cdn grpc client
 	client, err := cdnclient.GetClientByAddr(cdnsToNetAddrs(config.CDNs), opts...)
 	if err != nil {
 		return nil, err
+	}
+
+	// Initialize cdn hosts
+	for _, host := range cdnsToHosts(config.CDNs) {
+		hostManager.Store(host)
 	}
 
 	dc := &cdnClient{
@@ -242,18 +246,18 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
-func cdnsToHosts(cdns []*config.CDN) map[string]*entity.Host {
-	hosts := map[string]*entity.Host{}
+func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
+	hosts := map[string]*Host{}
 	for _, cdn := range cdns {
 		var netTopology string
-		options := []entity.HostOption{entity.WithIsCDN(true)}
+		options := []HostOption{WithIsCDN(true)}
 		if config, ok := cdn.GetCDNClusterConfig(); ok {
-			options = append(options, entity.WithUploadLoadLimit(int32(config.LoadLimit)))
+			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
 			netTopology = config.NetTopology
 		}
 
 		id := idgen.CDNHostID(cdn.HostName, cdn.Port)
-		hosts[id] = entity.NewHost(&rpcscheduler.PeerHost{
+		hosts[id] = NewHost(&rpcscheduler.PeerHost{
 			Uuid:        id,
 			Ip:          cdn.IP,
 			RpcPort:     cdn.Port,

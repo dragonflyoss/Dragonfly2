@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package entity
+package resource
 
 import (
 	"sync"
@@ -146,7 +146,7 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 	return t
 }
 
-// LoadPeer return peer entity for a key
+// LoadPeer return peer for a key
 func (t *Task) LoadPeer(key string) (*Peer, bool) {
 	rawPeer, ok := t.Peers.Load(key)
 	if !ok {
@@ -156,20 +156,20 @@ func (t *Task) LoadPeer(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), ok
 }
 
-// StorePeer set peer entity
+// StorePeer set peer
 func (t *Task) StorePeer(peer *Peer) {
 	t.Peers.Store(peer.ID, peer)
 }
 
-// LoadOrStorePeer returns peer entity the key if present.
-// Otherwise, it stores and returns the given peer entity.
-// The loaded result is true if the peer entity was loaded, false if stored.
+// LoadOrStorePeer returns peer the key if present.
+// Otherwise, it stores and returns the given peer.
+// The loaded result is true if the peer was loaded, false if stored.
 func (t *Task) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	rawPeer, loaded := t.Peers.LoadOrStore(peer.ID, peer)
 	return rawPeer.(*Peer), loaded
 }
 
-// DeletePeer deletes peer entity for a key
+// DeletePeer deletes peer for a key
 func (t *Task) DeletePeer(key string) {
 	t.Peers.Delete(key)
 }

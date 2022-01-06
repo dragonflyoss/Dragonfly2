@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package resource
 
 import (
 	"sync"
@@ -22,7 +22,6 @@ import (
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
 )
 
 const (
@@ -30,23 +29,23 @@ const (
 	GCPeerID = "peer"
 )
 
-type Peer interface {
-	// Load return peer entity for a key
-	Load(string) (*entity.Peer, bool)
+type PeerManager interface {
+	// Load return peer for a key
+	Load(string) (*Peer, bool)
 
-	// Store set peer entity
-	Store(*entity.Peer)
+	// Store set peer
+	Store(*Peer)
 
-	// LoadOrStore returns peer entity the key if present.
-	// Otherwise, it stores and returns the given peer entity.
-	// The loaded result is true if the peer entity was loaded, false if stored.
-	LoadOrStore(*entity.Peer) (*entity.Peer, bool)
+	// LoadOrStore returns peer the key if present.
+	// Otherwise, it stores and returns the given peer.
+	// The loaded result is true if the peer was loaded, false if stored.
+	LoadOrStore(*Peer) (*Peer, bool)
 
-	// Delete deletes peer entity for a key
+	// Delete deletes peer for a key
 	Delete(string)
 }
 
-type peer struct {
+type peerManager struct {
 	// Peer sync map
 	*sync.Map
 
@@ -57,9 +56,9 @@ type peer struct {
 	mu *sync.Mutex
 }
 
-// New peer interface
-func newPeer(cfg *config.GCConfig, gc pkggc.GC) (Peer, error) {
-	p := &peer{
+// New peer manager interface
+func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
+	p := &peerManager{
 		Map: &sync.Map{},
 		ttl: cfg.PeerTTL,
 		mu:  &sync.Mutex{},
@@ -77,16 +76,16 @@ func newPeer(cfg *config.GCConfig, gc pkggc.GC) (Peer, error) {
 	return p, nil
 }
 
-func (p *peer) Load(key string) (*entity.Peer, bool) {
+func (p *peerManager) Load(key string) (*Peer, bool) {
 	rawPeer, ok := p.Map.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rawPeer.(*entity.Peer), ok
+	return rawPeer.(*Peer), ok
 }
 
-func (p *peer) Store(peer *entity.Peer) {
+func (p *peerManager) Store(peer *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -95,7 +94,7 @@ func (p *peer) Store(peer *entity.Peer) {
 	peer.Task.StorePeer(peer)
 }
 
-func (p *peer) LoadOrStore(peer *entity.Peer) (*entity.Peer, bool) {
+func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -105,10 +104,10 @@ func (p *peer) LoadOrStore(peer *entity.Peer) (*entity.Peer, bool) {
 		peer.Task.StorePeer(peer)
 	}
 
-	return rawPeer.(*entity.Peer), loaded
+	return rawPeer.(*Peer), loaded
 }
 
-func (p *peer) Delete(key string) {
+func (p *peerManager) Delete(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -119,15 +118,15 @@ func (p *peer) Delete(key string) {
 	}
 }
 
-func (p *peer) RunGC() error {
+func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value interface{}) bool {
-		peer := value.(*entity.Peer)
+		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 
 		if elapsed > p.ttl && peer.LenChildren() == 0 {
 			// If the status is PeerStateLeave,
 			// clear peer information
-			if peer.FSM.Is(entity.PeerStateLeave) {
+			if peer.FSM.Is(PeerStateLeave) {
 				peer.DeleteParent()
 				p.Delete(peer.ID)
 				peer.Log.Info("peer has been reclaimed")
@@ -136,7 +135,7 @@ func (p *peer) RunGC() error {
 
 			// If the peer is not leave,
 			// first change the state to PeerEventLeave
-			if err := peer.FSM.Event(entity.PeerEventLeave); err != nil {
+			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 			}
 			peer.Log.Info("gc causes the peer to leave")

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package manager
+package resource
 
 import (
 	"sync"
@@ -22,7 +22,6 @@ import (
 
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
 )
 
 const (
@@ -30,23 +29,23 @@ const (
 	GCTaskID = "task"
 )
 
-type Task interface {
-	// Load return task entity for a key
-	Load(string) (*entity.Task, bool)
+type TaskManager interface {
+	// Load return task for a key
+	Load(string) (*Task, bool)
 
-	// Store set task entity
-	Store(*entity.Task)
+	// Store set task
+	Store(*Task)
 
-	// LoadOrStore returns task entity the key if present.
-	// Otherwise, it stores and returns the given task entity.
-	// The loaded result is true if the task entity was loaded, false if stored.
-	LoadOrStore(*entity.Task) (*entity.Task, bool)
+	// LoadOrStore returns task the key if present.
+	// Otherwise, it stores and returns the given task.
+	// The loaded result is true if the task was loaded, false if stored.
+	LoadOrStore(*Task) (*Task, bool)
 
-	// Delete deletes task entity for a key
+	// Delete deletes task for a key
 	Delete(string)
 }
 
-type task struct {
+type taskManager struct {
 	// Task sync map
 	*sync.Map
 
@@ -54,9 +53,9 @@ type task struct {
 	ttl time.Duration
 }
 
-// New task interface
-func newTask(cfg *config.GCConfig, gc pkggc.GC) (Task, error) {
-	t := &task{
+// New task manager interface
+func newTaskManager(cfg *config.GCConfig, gc pkggc.GC) (TaskManager, error) {
+	t := &taskManager{
 		Map: &sync.Map{},
 		ttl: cfg.TaskTTL,
 	}
@@ -73,31 +72,31 @@ func newTask(cfg *config.GCConfig, gc pkggc.GC) (Task, error) {
 	return t, nil
 }
 
-func (t *task) Load(key string) (*entity.Task, bool) {
+func (t *taskManager) Load(key string) (*Task, bool) {
 	rawTask, ok := t.Map.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rawTask.(*entity.Task), ok
+	return rawTask.(*Task), ok
 }
 
-func (t *task) Store(task *entity.Task) {
+func (t *taskManager) Store(task *Task) {
 	t.Map.Store(task.ID, task)
 }
 
-func (t *task) LoadOrStore(task *entity.Task) (*entity.Task, bool) {
+func (t *taskManager) LoadOrStore(task *Task) (*Task, bool) {
 	rawTask, loaded := t.Map.LoadOrStore(task.ID, task)
-	return rawTask.(*entity.Task), loaded
+	return rawTask.(*Task), loaded
 }
 
-func (t *task) Delete(key string) {
+func (t *taskManager) Delete(key string) {
 	t.Map.Delete(key)
 }
 
-func (t *task) RunGC() error {
+func (t *taskManager) RunGC() error {
 	t.Map.Range(func(_, value interface{}) bool {
-		task := value.(*entity.Task)
+		task := value.(*Task)
 		elapsed := time.Since(task.UpdateAt.Load())
 
 		if elapsed > t.ttl && task.LenPeers() == 0 {

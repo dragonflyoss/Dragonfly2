@@ -25,46 +25,44 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
-	"d7y.io/dragonfly/v2/scheduler/manager"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
-	"d7y.io/dragonfly/v2/scheduler/util"
 )
 
 type Callback interface {
-	ScheduleParent(context.Context, *entity.Peer, set.SafeSet)
-	BeginOfPiece(context.Context, *entity.Peer)
-	EndOfPiece(context.Context, *entity.Peer)
-	PieceSuccess(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
-	PieceFail(context.Context, *entity.Peer, *rpcscheduler.PieceResult)
-	PeerSuccess(context.Context, *entity.Peer)
-	PeerFail(context.Context, *entity.Peer)
-	PeerLeave(context.Context, *entity.Peer)
-	TaskSuccess(context.Context, *entity.Peer, *entity.Task, *rpcscheduler.PeerResult)
-	TaskFail(context.Context, *entity.Task)
+	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
+	BeginOfPiece(context.Context, *resource.Peer)
+	EndOfPiece(context.Context, *resource.Peer)
+	PieceSuccess(context.Context, *resource.Peer, *rpcscheduler.PieceResult)
+	PieceFail(context.Context, *resource.Peer, *rpcscheduler.PieceResult)
+	PeerSuccess(context.Context, *resource.Peer)
+	PeerFail(context.Context, *resource.Peer)
+	PeerLeave(context.Context, *resource.Peer)
+	TaskSuccess(context.Context, *resource.Peer, *resource.Task, *rpcscheduler.PeerResult)
+	TaskFail(context.Context, *resource.Task)
 }
 
 type callback struct {
-	// Manager entity instance
-	manager *manager.Manager
+	// Resource interface
+	resource resource.Resource
 
-	// Scheduler instance
+	// Scheduler interface
 	scheduler scheduler.Scheduler
 
 	// Scheduelr service config
 	config *config.Config
 }
 
-func newCallback(cfg *config.Config, manager *manager.Manager, scheduler scheduler.Scheduler) Callback {
+func newCallback(cfg *config.Config, resource resource.Resource, scheduler scheduler.Scheduler) Callback {
 	return &callback{
 		config:    cfg,
-		manager:   manager,
+		resource:  resource,
 		scheduler: scheduler,
 	}
 }
 
 // Repeat schedule parent for peer
-func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blocklist set.SafeSet) {
+func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) {
 	var n int
 	for {
 		select {
@@ -81,13 +79,13 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 					return
 				}
 
-				if err := peer.FSM.Event(entity.PeerEventDownloadFromBackToSource); err != nil {
+				if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %v", err)
 					return
 				}
 
-				if peer.Task.FSM.Is(entity.PeerStatePending) {
-					if err := peer.Task.FSM.Event(entity.TaskEventDownload); err != nil {
+				if peer.Task.FSM.Is(resource.PeerStatePending) {
+					if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
 						peer.Task.Log.Errorf("task fsm event failed: %v", err)
 						return
 					}
@@ -120,23 +118,23 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *entity.Peer, blockl
 	}
 }
 
-func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
+func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	switch peer.FSM.Current() {
-	case entity.PeerStateBackToSource:
+	case resource.PeerStateBackToSource:
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
-	case entity.PeerStateReceivedSmall:
+	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
-		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
-	case entity.PeerStateReceivedNormal:
+	case resource.PeerStateReceivedNormal:
 		// It’s not a case of back-to-source or small task downloading,
 		// to help peer to schedule the parent node
-		if err := peer.FSM.Event(entity.PeerEventDownload); err != nil {
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
@@ -148,11 +146,11 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *entity.Peer) {
 	}
 }
 
-func (c *callback) EndOfPiece(ctx context.Context, peer *entity.Peer) {}
+func (c *callback) EndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
-func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
+func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Failed to download piece back-to-source
-	if peer.FSM.Is(entity.PeerStateBackToSource) {
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		peer.Log.Error("peer back to source finished with fail piece")
 		return
 	}
@@ -165,8 +163,8 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		peer.Log.Errorf("receive error code: %v", piece.Code)
-		if parent, ok := c.manager.Peer.Load(piece.DstPid); ok && parent.FSM.Can(entity.PeerEventDownloadFailed) {
-			if err := parent.FSM.Event(entity.PeerEventDownloadFailed); err != nil {
+		if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok && parent.FSM.Can(resource.PeerEventDownloadFailed) {
+			if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 				break
 			}
@@ -178,37 +176,37 @@ func (c *callback) PieceFail(ctx context.Context, peer *entity.Peer, piece *rpcs
 	}
 
 	// Peer state is PeerStateRunning will be rescheduled
-	if !peer.FSM.Is(entity.PeerStateRunning) {
+	if !peer.FSM.Is(resource.PeerStateRunning) {
 		peer.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
 		return
 	}
 
 	blocklist := set.NewSafeSet()
-	if parent, ok := c.manager.Peer.Load(piece.DstPid); ok {
+	if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok {
 		blocklist.Add(parent.ID)
 	}
 
 	c.ScheduleParent(ctx, peer, blocklist)
 }
 
-func (c *callback) PieceSuccess(ctx context.Context, peer *entity.Peer, piece *rpcscheduler.PieceResult) {
+func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.PieceCosts.Add(piece.EndTime - piece.BeginTime)
 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info
-	if peer.FSM.Is(entity.PeerStateBackToSource) {
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		peer.Task.StorePiece(piece.PieceInfo)
 	}
 }
 
-func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
+func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
-	if peer.FSM.Is(entity.PeerStateBackToSource) && peer.Task.SizeScope() == base.SizeScope_TINY {
+	if peer.FSM.Is(resource.PeerStateBackToSource) && peer.Task.SizeScope() == base.SizeScope_TINY {
 		peer.Log.Info("peer state is PeerStateBackToSource and type is tiny file")
-		data, err := util.DownloadTinyFile(ctx, peer.Task, peer)
+		data, err := peer.DownloadTinyFile(ctx)
 		if err == nil && len(data) == int(peer.Task.ContentLength.Load()) {
 			// Tiny file downloaded successfully
 			peer.Task.DirectPiece = data
@@ -217,14 +215,14 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *entity.Peer) {
 		}
 	}
 
-	if err := peer.FSM.Event(entity.PeerEventDownloadSucceeded); err != nil {
+	if err := peer.FSM.Event(resource.PeerEventDownloadSucceeded); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
 }
 
-func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
-	if err := peer.FSM.Event(entity.PeerEventDownloadFailed); err != nil {
+func (c *callback) PeerFail(ctx context.Context, peer *resource.Peer) {
+	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
@@ -234,13 +232,13 @@ func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
 	blocklist.Add(peer.ID)
 
 	peer.Children.Range(func(_, value interface{}) bool {
-		child, ok := value.(*entity.Peer)
+		child, ok := value.(*resource.Peer)
 		if !ok {
 			return true
 		}
 
 		// Children state is PeerStateRunning will be rescheduled
-		if !child.FSM.Is(entity.PeerStateRunning) {
+		if !child.FSM.Is(resource.PeerStateRunning) {
 			child.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
 			return true
 		}
@@ -250,20 +248,20 @@ func (c *callback) PeerFail(ctx context.Context, peer *entity.Peer) {
 	})
 }
 
-func (c *callback) PeerLeave(ctx context.Context, peer *entity.Peer) {
-	if err := peer.FSM.Event(entity.PeerEventLeave); err != nil {
+func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
+	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
 	}
 
 	peer.Children.Range(func(_, value interface{}) bool {
-		child, ok := value.(*entity.Peer)
+		child, ok := value.(*resource.Peer)
 		if !ok {
 			return true
 		}
 
 		// Children state is PeerStateRunning will be rescheduled
-		if !child.FSM.Is(entity.PeerStateRunning) {
+		if !child.FSM.Is(resource.PeerStateRunning) {
 			child.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
 			return true
 		}
@@ -277,14 +275,14 @@ func (c *callback) PeerLeave(ctx context.Context, peer *entity.Peer) {
 	})
 
 	peer.DeleteParent()
-	c.manager.Peer.Delete(peer.ID)
+	c.resource.PeerManager().Delete(peer.ID)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
-func (c *callback) TaskSuccess(ctx context.Context, peer *entity.Peer, task *entity.Task, endOfPiece *rpcscheduler.PeerResult) {
-	if err := task.FSM.Event(entity.TaskEventDownloadSucceeded); err != nil {
+func (c *callback) TaskSuccess(ctx context.Context, peer *resource.Peer, task *resource.Task, endOfPiece *rpcscheduler.PeerResult) {
+	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
 	}
@@ -297,8 +295,8 @@ func (c *callback) TaskSuccess(ctx context.Context, peer *entity.Peer, task *ent
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
-func (c *callback) TaskFail(ctx context.Context, task *entity.Task) {
-	if err := task.FSM.Event(entity.TaskEventDownloadFailed); err != nil {
+func (c *callback) TaskFail(ctx context.Context, task *resource.Task) {
+	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
 	}

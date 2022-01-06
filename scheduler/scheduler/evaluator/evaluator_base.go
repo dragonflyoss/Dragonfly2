@@ -24,7 +24,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
-	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 const (
@@ -72,7 +72,7 @@ func NewEvaluatorBase() Evaluator {
 }
 
 // The larger the value after evaluation, the higher the priority
-func (eb *evaluatorBase) Evaluate(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64 {
+func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64 {
 	// If the SecurityDomain of hosts exists but is not equal,
 	// it cannot be scheduled as a parent
 	if parent.Host.SecurityDomain != "" &&
@@ -89,7 +89,7 @@ func (eb *evaluatorBase) Evaluate(parent *entity.Peer, child *entity.Peer, taskP
 }
 
 // calculatePieceScore 0.0~unlimited larger and better
-func calculatePieceScore(parent *entity.Peer, child *entity.Peer, taskPieceCount int32) float64 {
+func calculatePieceScore(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node
 	if taskPieceCount > 0 {
@@ -105,14 +105,14 @@ func calculatePieceScore(parent *entity.Peer, child *entity.Peer, taskPieceCount
 }
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
-func calculateFreeLoadScore(host *entity.Host) float64 {
+func calculateFreeLoadScore(host *resource.Host) float64 {
 	load := host.LenPeers()
 	totalLoad := host.UploadLoadLimit.Load()
 	return float64(totalLoad-int32(load)) / float64(totalLoad)
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better
-func calculateIDCAffinityScore(dst, src *entity.Host) float64 {
+func calculateIDCAffinityScore(dst, src *resource.Host) float64 {
 	if dst.IDC != "" && src.IDC != "" && strings.Compare(dst.IDC, src.IDC) == 0 {
 		return maxScore
 	}
@@ -151,8 +151,8 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	return float64(score) / float64(maxElementLen)
 }
 
-func (eb *evaluatorBase) IsBadNode(peer *entity.Peer) bool {
-	if peer.FSM.Is(entity.PeerStateFailed) || peer.FSM.Is(entity.PeerStateLeave) || peer.FSM.Is(entity.PeerStatePending) {
+func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
+	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) {
 		peer.Log.Infof("peer is bad node because peer status is %s", peer.FSM.Current())
 		return true
 	}

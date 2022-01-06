@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
@@ -31,12 +31,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	if score := e.Evaluate(&entity.Peer{}, &entity.Peer{}, int32(0)); score != float64(1) {
+	if score := e.Evaluate(&resource.Peer{}, &resource.Peer{}, int32(0)); score != float64(1) {
 		fmt.Println("Evaluate failed")
 		os.Exit(1)
 	}
 
-	if ok := e.IsBadNode(&entity.Peer{}); !ok {
+	if ok := e.IsBadNode(&resource.Peer{}); !ok {
 		fmt.Println("IsBadNode failed")
 		os.Exit(1)
 	}

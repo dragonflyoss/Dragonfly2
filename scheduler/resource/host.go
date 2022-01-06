@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package entity
+package resource
 
 import (
 	"sync"
@@ -126,7 +126,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	return h
 }
 
-// LoadPeer return peer entity for a key
+// LoadPeer return peer for a key
 func (h *Host) LoadPeer(key string) (*Peer, bool) {
 	rawPeer, ok := h.Peers.Load(key)
 	if !ok {
@@ -136,20 +136,20 @@ func (h *Host) LoadPeer(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), ok
 }
 
-// StorePeer set peer entity
+// StorePeer set peer
 func (h *Host) StorePeer(peer *Peer) {
 	h.Peers.Store(peer.ID, peer)
 }
 
-// LoadOrStorePeer returns peer entity the key if present.
-// Otherwise, it stores and returns the given peer entity.
-// The loaded result is true if the peer entity was loaded, false if stored.
+// LoadOrStorePeer returns peer the key if present.
+// Otherwise, it stores and returns the given peer.
+// The loaded result is true if the peer was loaded, false if stored.
 func (h *Host) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	rawPeer, loaded := h.Peers.LoadOrStore(peer.ID, peer)
 	return rawPeer.(*Peer), loaded
 }
 
-// DeletePeer deletes peer entity for a key
+// DeletePeer deletes peer for a key
 func (h *Host) DeletePeer(key string) {
 	h.Peers.Delete(key)
 }

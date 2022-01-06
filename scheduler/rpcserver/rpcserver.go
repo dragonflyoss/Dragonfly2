@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/entity"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
@@ -64,7 +64,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	log.Infof("register peer task request: %#v", req)
 
 	// Task has been successful
-	if task.FSM.Is(entity.TaskStateSucceeded) {
+	if task.FSM.Is(resource.TaskStateSucceeded) {
 		log.Info("task has been successful")
 		sizeScope := task.SizeScope()
 		switch sizeScope {
@@ -111,7 +111,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}
 
 			peer.ReplaceParent(parent)
-			if err := peer.FSM.Event(entity.PeerEventRegisterSmall); err != nil {
+			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
 				dferr := dferrors.New(base.Code_SchedError, err.Error())
 				log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 				return nil, dferr
@@ -142,7 +142,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			log.Info("task size scope is normal and needs to be register")
 			host := s.service.LoadOrStoreHost(ctx, req)
 			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
-			if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				dferr := dferrors.New(base.Code_SchedError, err.Error())
 				log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 				return nil, dferr
@@ -159,7 +159,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	log.Info("task is unsuccessful and needs to be register")
 	host := s.service.LoadOrStoreHost(ctx, req)
 	peer := s.service.LoadOrStorePeer(ctx, req, task, host)
-	if err := peer.FSM.Event(entity.PeerEventRegisterNormal); err != nil {
+	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 		dferr := dferrors.New(base.Code_SchedError, err.Error())
 		log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 		return nil, dferr

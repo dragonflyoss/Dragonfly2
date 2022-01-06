@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-package entity
+package resource
 
 import (
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -373,4 +378,25 @@ func (p *Peer) StopStream(dferr *dferrors.DfError) bool {
 	}
 
 	return true
+}
+
+// Download tiny file from peer
+func (p *Peer) DownloadTinyFile(ctx context.Context) ([]byte, error) {
+	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler;
+	url := url.URL{
+		Scheme:   "http",
+		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
+		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
+		RawQuery: "peerId=scheduler",
+	}
+
+	p.Log.Infof("download tiny file url: %#v", url)
+
+	resp, err := http.Get(url.String())
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
