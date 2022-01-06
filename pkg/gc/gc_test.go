@@ -35,7 +35,7 @@ func TestGCAdd(t *testing.T) {
 		expect func(t *testing.T, err error)
 	}{
 		{
-			name: "new GC instance succeeded",
+			name: "new GC",
 			task: Task{
 				ID:       "gc",
 				Interval: 2 * time.Second,
@@ -109,7 +109,7 @@ func TestGCRun(t *testing.T) {
 		run  func(gc GC, id string, ml *mocks.MockLogger, mr *mocks.MockRunner, t *testing.T)
 	}{
 		{
-			name: "run task succeeded",
+			name: "run task",
 			task: Task{
 				ID:       "foo",
 				Interval: 2 * time.Hour,
@@ -199,7 +199,7 @@ func TestGCRunAll(t *testing.T) {
 		run   func(gc GC, ml *mocks.MockLogger, mr *mocks.MockRunner)
 	}{
 		{
-			name: "run task succeeded",
+			name: "run task",
 			task1: Task{
 				ID:       "foo",
 				Interval: 2 * time.Hour,

@@ -17,7 +17,6 @@
 package resource
 
 // import (
-// "reflect"
 // "testing"
 
 // "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -26,13 +25,14 @@ package resource
 
 // func TestHost_NewHost(t *testing.T) {
 // tests := []struct {
-// name      string
+// name    string
 // rawHost *scheduler.PeerHost
 // options []HostOption
-// expect    func(t *testing.T, host *Host)
+// expect  func(t *testing.T, host *Host)
 // }{
 // {
-// name:      "new host ",
+// name: "new host ",
+
 // expect: func(t *testing.T, host *Host) {
 // assert := assert.New(t)
 // },

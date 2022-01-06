@@ -30,7 +30,7 @@ func TestJobGetSchedulerQueue(t *testing.T) {
 		expect    func(t *testing.T, result Queue, err error)
 	}{
 		{
-			name:      "get scheduler queue succeeded",
+			name:      "get scheduler queue",
 			clusterID: 1,
 			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
@@ -74,7 +74,7 @@ func TestJobGetCDNQueue(t *testing.T) {
 		expect    func(t *testing.T, result Queue, err error)
 	}{
 		{
-			name:      "get cdn queue succeeded",
+			name:      "get cdn queue",
 			clusterID: 1,
 			hostname:  "foo",
 			expect: func(t *testing.T, result Queue, err error) {
