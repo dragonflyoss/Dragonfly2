@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
-func TestDynconfigGet_ManagerSourceType(t *testing.T) {
+func TestDynconfig_GetManagerSourceType(t *testing.T) {
 	mockCacheDir := t.TempDir()
 	mockConfig := &Config{
 		DynConfig: &DynConfig{},
@@ -137,7 +137,7 @@ func TestDynconfigGet_ManagerSourceType(t *testing.T) {
 	}
 }
 
-func TestDynconfigGetCDNFromDirPath(t *testing.T) {
+func TestDynconfig_GetCDNFromDirPath(t *testing.T) {
 	mockCacheDir := t.TempDir()
 
 	tests := []struct {

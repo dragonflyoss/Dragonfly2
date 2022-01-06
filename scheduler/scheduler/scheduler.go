@@ -56,7 +56,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 	}
 
 	// Find the parent that can be scheduled
-	parents := s.findParents(peer, blocklist)
+	parents := s.filterParents(peer, blocklist)
 	if len(parents) == 0 {
 		peer.Log.Info("can not find parents")
 		return []*resource.Peer{}, false
@@ -89,8 +89,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 }
 
 func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) (*resource.Peer, bool) {
-	// Find the parent that can be scheduled
-	parents := s.findParents(peer, blocklist)
+	// Filter the parent that can be scheduled
+	parents := s.filterParents(peer, blocklist)
 	if len(parents) == 0 {
 		peer.Log.Info("can not find parents")
 		return nil, false
@@ -109,7 +109,8 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	return parents[0], true
 }
 
-func (s *scheduler) findParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
+// Filter the parent that can be scheduled
+func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
 	var parents []*resource.Peer
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
 		parent, ok := value.(*resource.Peer)

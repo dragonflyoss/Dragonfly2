@@ -26,7 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestSchedulerConfig_Load(t *testing.T) {
+func TestConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{

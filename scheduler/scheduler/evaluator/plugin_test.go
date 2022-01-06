@@ -25,7 +25,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 )
 
-func TestLoadPlugin(t *testing.T) {
+func TestPlugin_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 	defer func() {
 		os.Remove("./testdata/d7y-scheduler-plugin-evaluator.so")

@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEvaluatorNew(t *testing.T) {
+func TestEvaluator_New(t *testing.T) {
 	pluginDir := "."
 	tests := []struct {
 		name      string
