@@ -146,28 +146,18 @@ func (c *cdn) TriggerTask(ctx context.Context, task *entity.Task) (*entity.Peer,
 
 // Initialize cdn peer
 func (c *cdn) initPeer(task *entity.Task, ps *cdnsystem.PieceSeed) (*entity.Peer, error) {
-	var (
-		peer *entity.Peer
-		host *entity.Host
-		ok   bool
-	)
-
 	// Load peer from manager
-	peer, ok = c.peerManager.Load(ps.PeerId)
+	peer, ok := c.peerManager.Load(ps.PeerId)
 	if ok {
 		return peer, nil
 	}
-
 	task.Log.Infof("can not find cdn peer: %s", ps.PeerId)
-	if host, ok = c.hostManager.Load(ps.HostUuid); !ok {
-		if host, ok = c.client.LoadHost(ps.HostUuid); !ok {
-			task.Log.Errorf("can not find cdn host uuid: %s", ps.HostUuid)
-			return nil, errors.Errorf("can not find host uuid: %s", ps.HostUuid)
-		}
 
-		// Store cdn host
-		c.hostManager.Store(host)
-		task.Log.Infof("new host %s successfully", host.ID)
+	// Load host from manager
+	host, ok := c.hostManager.Load(ps.HostUuid)
+	if !ok {
+		task.Log.Errorf("can not find cdn host uuid: %s", ps.HostUuid)
+		return nil, errors.Errorf("can not find host uuid: %s", ps.HostUuid)
 	}
 
 	// New cdn peer
