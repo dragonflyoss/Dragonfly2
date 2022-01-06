@@ -44,7 +44,7 @@ type DynconfigData struct {
 
 type CDN struct {
 	ID           uint        `yaml:"id" mapstructure:"id" json:"id"`
-	HostName     string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	Hostname     string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
 	IP           string      `yaml:"ip" mapstructure:"ip" json:"ip"`
 	Port         int32       `yaml:"port" mapstructure:"port" json:"port"`
 	DownloadPort int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`

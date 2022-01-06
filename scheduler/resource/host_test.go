@@ -16,32 +16,387 @@
 
 package resource
 
-// import (
-// "testing"
+import (
+	"testing"
 
-// "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-// "github.com/stretchr/testify/assert"
-// )
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 
-// func TestHost_NewHost(t *testing.T) {
-// tests := []struct {
-// name    string
-// rawHost *scheduler.PeerHost
-// options []HostOption
-// expect  func(t *testing.T, host *Host)
-// }{
-// {
-// name: "new host ",
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+)
 
-// expect: func(t *testing.T, host *Host) {
-// assert := assert.New(t)
-// },
-// },
-// }
+var (
+	mockRawHost = &scheduler.PeerHost{
+		Uuid:           uuid.New().String(),
+		Ip:             "127.0.0.1",
+		RpcPort:        8003,
+		DownPort:       8001,
+		HostName:       "hostname",
+		SecurityDomain: "security_domain",
+		Location:       "location",
+		Idc:            "idc",
+		NetTopology:    "net_topology",
+	}
 
-// for _, tc := range tests {
-// t.Run(tc.name, func(t *testing.T) {
-// tc.expect(t, NewHost(tc.rawHost, tc.options...))
-// })
-// }
-// }
+	mockRawCDNHost = &scheduler.PeerHost{
+		Uuid:           idgen.CDNHostID("hostname", 8001),
+		Ip:             "127.0.0.1",
+		RpcPort:        8003,
+		DownPort:       8001,
+		HostName:       "hostname",
+		SecurityDomain: "security_domain",
+		Location:       "location",
+		Idc:            "idc",
+		NetTopology:    "net_topology",
+	}
+)
+
+func TestHost_NewHost(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		options []HostOption
+		expect  func(t *testing.T, host *Host)
+	}{
+		{
+			name:    "new host",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.IP, mockRawHost.Ip)
+				assert.Equal(host.Port, mockRawHost.RpcPort)
+				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
+				assert.Equal(host.Hostname, mockRawHost.HostName)
+				assert.Equal(host.SecurityDomain, mockRawHost.SecurityDomain)
+				assert.Equal(host.Location, mockRawHost.Location)
+				assert.Equal(host.IDC, mockRawHost.Idc)
+				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
+				assert.Equal(host.UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
+				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.IsCDN, false)
+				assert.NotEqual(host.CreateAt.Load(), 0)
+				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotNil(host.Log)
+			},
+		},
+		{
+			name:    "new cdn host",
+			rawHost: mockRawCDNHost,
+			options: []HostOption{WithIsCDN(true)},
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				assert.Equal(host.ID, mockRawCDNHost.Uuid)
+				assert.Equal(host.IP, mockRawCDNHost.Ip)
+				assert.Equal(host.Port, mockRawCDNHost.RpcPort)
+				assert.Equal(host.DownloadPort, mockRawCDNHost.DownPort)
+				assert.Equal(host.Hostname, mockRawCDNHost.HostName)
+				assert.Equal(host.SecurityDomain, mockRawCDNHost.SecurityDomain)
+				assert.Equal(host.Location, mockRawCDNHost.Location)
+				assert.Equal(host.IDC, mockRawCDNHost.Idc)
+				assert.Equal(host.NetTopology, mockRawCDNHost.NetTopology)
+				assert.Equal(host.UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
+				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.IsCDN, true)
+				assert.NotEqual(host.CreateAt.Load(), 0)
+				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotNil(host.Log)
+			},
+		},
+		{
+			name:    "new host and set upload loadlimit",
+			rawHost: mockRawHost,
+			options: []HostOption{WithUploadLoadLimit(200)},
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.IP, mockRawHost.Ip)
+				assert.Equal(host.Port, mockRawHost.RpcPort)
+				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
+				assert.Equal(host.Hostname, mockRawHost.HostName)
+				assert.Equal(host.SecurityDomain, mockRawHost.SecurityDomain)
+				assert.Equal(host.Location, mockRawHost.Location)
+				assert.Equal(host.IDC, mockRawHost.Idc)
+				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
+				assert.Equal(host.UploadLoadLimit.Load(), int32(200))
+				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.IsCDN, false)
+				assert.NotEqual(host.CreateAt.Load(), 0)
+				assert.NotEqual(host.UpdateAt.Load(), 0)
+				assert.NotNil(host.Log)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, NewHost(tc.rawHost, tc.options...))
+		})
+	}
+}
+
+func TestHost_LoadPeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		peerID  string
+		options []HostOption
+		expect  func(t *testing.T, peer *Peer, ok bool)
+	}{
+		{
+			name:    "load peer",
+			rawHost: mockRawHost,
+			peerID:  mockPeerID,
+			expect: func(t *testing.T, peer *Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(ok, true)
+				assert.Equal(peer.ID, mockPeerID)
+			},
+		},
+		{
+			name:    "peer does not exist",
+			rawHost: mockRawHost,
+			peerID:  idgen.PeerID("0.0.0.0"),
+			expect: func(t *testing.T, peer *Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(ok, false)
+			},
+		},
+		{
+			name:    "load key is empty",
+			rawHost: mockRawHost,
+			peerID:  "",
+			expect: func(t *testing.T, peer *Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(ok, false)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			host.StorePeer(mockPeer)
+			peer, ok := host.LoadPeer(tc.peerID)
+			tc.expect(t, peer, ok)
+		})
+	}
+}
+
+func TestHost_StorePeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		peerID  string
+		options []HostOption
+		expect  func(t *testing.T, peer *Peer, ok bool)
+	}{
+		{
+			name:    "store peer",
+			rawHost: mockRawHost,
+			peerID:  mockPeerID,
+			expect: func(t *testing.T, peer *Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(ok, true)
+				assert.Equal(peer.ID, mockPeerID)
+			},
+		},
+		{
+			name:    "store key is empty",
+			rawHost: mockRawHost,
+			peerID:  "",
+			expect: func(t *testing.T, peer *Peer, ok bool) {
+				assert := assert.New(t)
+				assert.Equal(ok, true)
+				assert.Equal(peer.ID, "")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(tc.peerID, mockTask, host)
+
+			host.StorePeer(mockPeer)
+			peer, ok := host.LoadPeer(tc.peerID)
+			tc.expect(t, peer, ok)
+		})
+	}
+}
+
+func TestHost_LoadOrStorePeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		peerID  string
+		options []HostOption
+		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+	}{
+		{
+			name:    "load peer exist",
+			rawHost: mockRawHost,
+			peerID:  mockPeerID,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				peer, ok := host.LoadOrStorePeer(mockPeer)
+
+				assert.Equal(ok, true)
+				assert.Equal(peer.ID, mockPeerID)
+			},
+		},
+		{
+			name:    "load peer does not exist",
+			rawHost: mockRawHost,
+			peerID:  mockPeerID,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				peer, ok := host.LoadOrStorePeer(mockPeer)
+
+				assert.Equal(ok, false)
+				assert.Equal(peer.ID, mockPeer.ID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			host.StorePeer(mockPeer)
+			tc.expect(t, host, mockPeer)
+		})
+	}
+}
+
+func TestHost_DeletePeer(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		peerID  string
+		options []HostOption
+		expect  func(t *testing.T, host *Host)
+	}{
+		{
+			name:    "delete peer",
+			rawHost: mockRawHost,
+			peerID:  mockPeerID,
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				_, ok := host.LoadPeer(mockPeerID)
+				assert.Equal(ok, false)
+			},
+		},
+		{
+			name:    "delete key is empty",
+			rawHost: mockRawHost,
+			peerID:  "",
+			expect: func(t *testing.T, host *Host) {
+				assert := assert.New(t)
+				peer, ok := host.LoadPeer(mockPeerID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.ID, mockPeerID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			host.StorePeer(mockPeer)
+			host.DeletePeer(tc.peerID)
+			tc.expect(t, host)
+		})
+	}
+}
+
+func TestHost_LenPeers(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		options []HostOption
+		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+	}{
+		{
+			name:    "len peers",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				host.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				host.StorePeer(mockPeer)
+				assert.Equal(host.LenPeers(), 2)
+				host.StorePeer(mockPeer)
+				assert.Equal(host.LenPeers(), 2)
+			},
+		},
+		{
+			name:    "peer does not exist",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(host.LenPeers(), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			tc.expect(t, host, mockPeer)
+		})
+	}
+}
+
+func TestHost_FreeUploadLoad(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		options []HostOption
+		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+	}{
+		{
+			name:    "get free upload load",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				host.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				host.StorePeer(mockPeer)
+				assert.Equal(host.FreeUploadLoad(), int32(defaultUploadLoadLimit-2))
+			},
+		},
+		{
+			name:    "upload peer does not exist",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(host.FreeUploadLoad(), int32(defaultUploadLoadLimit))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			tc.expect(t, host, mockPeer)
+		})
+	}
+}

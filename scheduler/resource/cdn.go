@@ -256,13 +256,13 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 			netTopology = config.NetTopology
 		}
 
-		id := idgen.CDNHostID(cdn.HostName, cdn.Port)
+		id := idgen.CDNHostID(cdn.Hostname, cdn.Port)
 		hosts[id] = NewHost(&rpcscheduler.PeerHost{
 			Uuid:        id,
 			Ip:          cdn.IP,
 			RpcPort:     cdn.Port,
 			DownPort:    cdn.DownloadPort,
-			HostName:    cdn.HostName,
+			HostName:    cdn.Hostname,
 			Idc:         cdn.IDC,
 			Location:    cdn.Location,
 			NetTopology: netTopology,

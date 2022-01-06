@@ -57,8 +57,8 @@ type Host struct {
 	// IP is host ip
 	IP string
 
-	// HostName is host name
-	HostName string
+	// Hostname is host name
+	Hostname string
 
 	// Port is grpc service port
 	Port int32
@@ -104,7 +104,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	h := &Host{
 		ID:              rawHost.Uuid,
 		IP:              rawHost.Ip,
-		HostName:        rawHost.HostName,
+		Hostname:        rawHost.HostName,
 		Port:            rawHost.RpcPort,
 		DownloadPort:    rawHost.DownPort,
 		SecurityDomain:  rawHost.SecurityDomain,

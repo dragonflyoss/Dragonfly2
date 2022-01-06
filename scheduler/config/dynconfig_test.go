@@ -74,7 +74,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(data.CDNs[0].HostName, "foo")
+				assert.Equal(data.CDNs[0].Hostname, "foo")
 				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
 				assert.Equal(data.CDNs[0].Port, int32(8001))
 				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
@@ -108,7 +108,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(data.CDNs[0].HostName, "foo")
+				assert.Equal(data.CDNs[0].Hostname, "foo")
 				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
 				assert.Equal(data.CDNs[0].Port, int32(8001))
 				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
@@ -150,8 +150,8 @@ func TestDynconfig_GetCDNFromDirPath(t *testing.T) {
 			cdnDirPath: filepath.Join("./testdata", "dynconfig", "cdn"),
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(data.CDNs[0].HostName, "foo")
-				assert.Equal(data.CDNs[1].HostName, "bar")
+				assert.Equal(data.CDNs[0].Hostname, "foo")
+				assert.Equal(data.CDNs[1].Hostname, "bar")
 				assert.Equal(data.CDNs[0].Port, int32(8001))
 				assert.Equal(data.CDNs[1].Port, int32(8001))
 				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
