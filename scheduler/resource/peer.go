@@ -338,11 +338,6 @@ func isDescendant(ancestor, descendant *Peer) bool {
 	return false
 }
 
-// StoreStream set grpc stream
-func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
-	p.Stream.Store(stream)
-}
-
 // LoadStream return grpc stream
 func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
 	rawStream := p.Stream.Load()
@@ -351,6 +346,11 @@ func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) 
 	}
 
 	return rawStream.(scheduler.Scheduler_ReportPieceResultServer), true
+}
+
+// StoreStream set grpc stream
+func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
+	p.Stream.Store(stream)
 }
 
 // DeleteStream deletes grpc stream
@@ -389,10 +389,14 @@ func (p *Peer) DownloadTinyFile(ctx context.Context) ([]byte, error) {
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: "peerId=scheduler",
 	}
-
 	p.Log.Infof("download tiny file url: %#v", url)
 
-	resp, err := http.Get(url.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

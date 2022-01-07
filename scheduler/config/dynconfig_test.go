@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/scheduler/config/mocks"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
 func TestDynconfig_GetManagerSourceType(t *testing.T) {
