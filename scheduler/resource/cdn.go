@@ -51,8 +51,8 @@ type cdn struct {
 }
 
 // New cdn interface
-func newCDN(peerManager PeerManager, hostManager HostManager, dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
-	client, err := newCDNClient(dynConfig, hostManager, opts)
+func newCDN(peerManager PeerManager, hostManager HostManager, dynconfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
+	client, err := newCDNClient(dynconfig, hostManager, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +197,8 @@ type cdnClient struct {
 }
 
 // New cdn client interface
-func newCDNClient(dynConfig config.DynconfigInterface, hostManager HostManager, opts []grpc.DialOption) (CDNClient, error) {
-	config, err := dynConfig.Get()
+func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, opts []grpc.DialOption) (CDNClient, error) {
+	config, err := dynconfig.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func newCDNClient(dynConfig config.DynconfigInterface, hostManager HostManager, 
 		data:        config,
 	}
 
-	dynConfig.Register(dc)
+	dynconfig.Register(dc)
 	return dc, nil
 }
 

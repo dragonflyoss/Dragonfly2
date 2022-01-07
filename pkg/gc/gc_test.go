@@ -24,8 +24,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-
-	"d7y.io/dragonfly/v2/pkg/gc/mocks"
 )
 
 func TestGCAdd(t *testing.T) {
@@ -87,8 +85,8 @@ func TestGCAdd(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			mockLogger := mocks.NewMockLogger(ctl)
-			mockRunner := mocks.NewMockRunner(ctl)
+			mockLogger := NewMockLogger(ctl)
+			mockRunner := NewMockRunner(ctl)
 
 			gc := New(WithLogger(mockLogger))
 
@@ -106,7 +104,7 @@ func TestGCRun(t *testing.T) {
 	tests := []struct {
 		name string
 		task Task
-		run  func(gc GC, id string, ml *mocks.MockLogger, mr *mocks.MockRunner, t *testing.T)
+		run  func(gc GC, id string, ml *MockLogger, mr *MockRunner, t *testing.T)
 	}{
 		{
 			name: "run task",
@@ -115,7 +113,7 @@ func TestGCRun(t *testing.T) {
 				Interval: 2 * time.Hour,
 				Timeout:  1 * time.Hour,
 			},
-			run: func(gc GC, id string, ml *mocks.MockLogger, mr *mocks.MockRunner, t *testing.T) {
+			run: func(gc GC, id string, ml *MockLogger, mr *MockRunner, t *testing.T) {
 				var wg sync.WaitGroup
 				wg.Add(3)
 				defer wg.Wait()
@@ -138,7 +136,7 @@ func TestGCRun(t *testing.T) {
 				Interval: 2 * time.Hour,
 				Timeout:  1 * time.Hour,
 			},
-			run: func(gc GC, id string, ml *mocks.MockLogger, mr *mocks.MockRunner, t *testing.T) {
+			run: func(gc GC, id string, ml *MockLogger, mr *MockRunner, t *testing.T) {
 				var wg sync.WaitGroup
 				wg.Add(4)
 				defer wg.Wait()
@@ -163,9 +161,9 @@ func TestGCRun(t *testing.T) {
 				Interval: 2 * time.Hour,
 				Timeout:  1 * time.Hour,
 			},
-			run: func(gc GC, id string, ml *mocks.MockLogger, mr *mocks.MockRunner, t *testing.T) {
+			run: func(gc GC, id string, ml *MockLogger, mr *MockRunner, t *testing.T) {
 				assert := assert.New(t)
-				assert.EqualError(gc.Run("bar"), "can not find the task")
+				assert.EqualError(gc.Run("bar"), "can not find task bar")
 			},
 		},
 	}
@@ -173,8 +171,8 @@ func TestGCRun(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			mockLogger := mocks.NewMockLogger(ctl)
-			mockRunner := mocks.NewMockRunner(ctl)
+			mockLogger := NewMockLogger(ctl)
+			mockRunner := NewMockRunner(ctl)
 
 			gc := New(WithLogger(mockLogger))
 			if err := gc.Add(Task{
@@ -196,7 +194,7 @@ func TestGCRunAll(t *testing.T) {
 		name  string
 		task1 Task
 		task2 Task
-		run   func(gc GC, ml *mocks.MockLogger, mr *mocks.MockRunner)
+		run   func(gc GC, ml *MockLogger, mr *MockRunner)
 	}{
 		{
 			name: "run task",
@@ -210,7 +208,7 @@ func TestGCRunAll(t *testing.T) {
 				Interval: 2 * time.Hour,
 				Timeout:  1 * time.Hour,
 			},
-			run: func(gc GC, ml *mocks.MockLogger, mr *mocks.MockRunner) {
+			run: func(gc GC, ml *MockLogger, mr *MockRunner) {
 				var wg sync.WaitGroup
 				wg.Add(3)
 				defer wg.Wait()
@@ -236,7 +234,7 @@ func TestGCRunAll(t *testing.T) {
 				Interval: 2 * time.Hour,
 				Timeout:  1 * time.Hour,
 			},
-			run: func(gc GC, ml *mocks.MockLogger, mr *mocks.MockRunner) {
+			run: func(gc GC, ml *MockLogger, mr *MockRunner) {
 				var wg sync.WaitGroup
 				wg.Add(4)
 				defer wg.Wait()
@@ -257,8 +255,8 @@ func TestGCRunAll(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
-			mockLogger := mocks.NewMockLogger(ctl)
-			mockRunner := mocks.NewMockRunner(ctl)
+			mockLogger := NewMockLogger(ctl)
+			mockRunner := NewMockRunner(ctl)
 
 			gc := New(WithLogger(mockLogger))
 
@@ -278,8 +276,8 @@ func TestGCRunAll(t *testing.T) {
 
 func TestGCServe(t *testing.T) {
 	ctl := gomock.NewController(t)
-	mockLogger := mocks.NewMockLogger(ctl)
-	mockRunner := mocks.NewMockRunner(ctl)
+	mockLogger := NewMockLogger(ctl)
+	mockRunner := NewMockRunner(ctl)
 
 	var wg sync.WaitGroup
 	wg.Add(1)

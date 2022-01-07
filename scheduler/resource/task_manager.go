@@ -43,6 +43,9 @@ type TaskManager interface {
 
 	// Delete deletes task for a key
 	Delete(string)
+
+	// Try to reclaim task
+	RunGC() error
 }
 
 type taskManager struct {
@@ -99,7 +102,7 @@ func (t *taskManager) RunGC() error {
 		task := value.(*Task)
 		elapsed := time.Since(task.UpdateAt.Load())
 
-		if elapsed > t.ttl && task.LenPeers() == 0 {
+		if elapsed > t.ttl && task.LenPeers() == 0 && !task.FSM.Is(TaskStateRunning) {
 			task.Log.Info("task has been reclaimed")
 			t.Delete(task.ID)
 		}

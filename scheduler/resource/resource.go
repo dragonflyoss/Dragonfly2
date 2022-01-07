@@ -51,15 +51,9 @@ type resource struct {
 	taskManager TaskManager
 }
 
-func New(cfg *config.Config, gc gc.GC, dynConfig config.DynconfigInterface, opts []grpc.DialOption) (Resource, error) {
+func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts []grpc.DialOption) (Resource, error) {
 	// Initialize host manager interface
 	hostManager := newHostManager()
-
-	// Initialize peer manager interface
-	peerManager, err := newPeerManager(cfg.Scheduler.GC, gc)
-	if err != nil {
-		return nil, err
-	}
 
 	// Initialize task manager interface
 	taskManager, err := newTaskManager(cfg.Scheduler.GC, gc)
@@ -67,8 +61,14 @@ func New(cfg *config.Config, gc gc.GC, dynConfig config.DynconfigInterface, opts
 		return nil, err
 	}
 
+	// Initialize peer manager interface
+	peerManager, err := newPeerManager(cfg.Scheduler.GC, gc)
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize cdn interface
-	cdn, err := newCDN(peerManager, hostManager, dynConfig, opts)
+	cdn, err := newCDN(peerManager, hostManager, dynconfig, opts)
 	if err != nil {
 		return nil, err
 	}

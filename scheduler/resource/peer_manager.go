@@ -43,6 +43,9 @@ type PeerManager interface {
 
 	// Delete deletes peer for a key
 	Delete(string)
+
+	// Try to reclaim peer
+	RunGC() error
 }
 
 type peerManager struct {
@@ -138,8 +141,8 @@ func (p *peerManager) RunGC() error {
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
 			}
-			peer.Log.Info("gc causes the peer to leave")
 
+			peer.Log.Info("gc causes the peer to leave")
 			return true
 		}
 

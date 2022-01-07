@@ -514,8 +514,10 @@ func TestPeer_ReplaceParent(t *testing.T) {
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 				child, ok = mockNewParentPeer.Task.LoadPeer(peer.ID)
+				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 				child, ok = mockNewParentPeer.Host.LoadPeer(peer.ID)
+				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 			},
 		},
@@ -541,8 +543,10 @@ func TestPeer_ReplaceParent(t *testing.T) {
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 				child, ok = mockNewParentPeer.Task.LoadPeer(peer.ID)
+				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 				child, ok = mockNewParentPeer.Host.LoadPeer(peer.ID)
+				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 			},
 		},
@@ -803,9 +807,8 @@ func TestPeer_StopStream(t *testing.T) {
 			name: "stop stream with scheduling error",
 			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				errMsg := "scheduling error"
 				peer.StoreStream(stream)
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, errMsg))
+				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
 				assert.Equal(ok, true)
 				_, ok = peer.LoadStream()
 				assert.Equal(ok, false)
@@ -813,7 +816,7 @@ func TestPeer_StopStream(t *testing.T) {
 				select {
 				case dferr := <-peer.StopChannel:
 					assert.Equal(dferr.Code, base.Code_SchedError)
-					assert.Equal(dferr.Message, errMsg)
+					assert.Equal(dferr.Message, "")
 				default:
 					assert.Fail("stop channel can not receive error")
 				}
@@ -823,8 +826,7 @@ func TestPeer_StopStream(t *testing.T) {
 			name: "stop stream with empty stream",
 			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				errMsg := "scheduling error"
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, errMsg))
+				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
 				assert.Equal(ok, false)
 			},
 		},
@@ -832,10 +834,9 @@ func TestPeer_StopStream(t *testing.T) {
 			name: "stop stream with channel busy",
 			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
-				errMsg := "scheduling error"
 				peer.StoreStream(stream)
-				peer.StopChannel <- dferrors.New(base.Code_SchedError, errMsg)
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, errMsg))
+				peer.StopChannel <- dferrors.New(base.Code_SchedError, "")
+				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
 				assert.Equal(ok, false)
 				_, ok = peer.LoadStream()
 				assert.Equal(ok, false)
