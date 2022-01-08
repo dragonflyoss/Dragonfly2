@@ -33,11 +33,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var (
-	_ balancer.Picker = (*d7yHashPicker)(nil)
-)
-
-// PickRequest contains the information of the subConn pick info
+// PickRequest contains the clues to pick subConn
 type PickRequest struct {
 	HashKey     string
 	FailedNodes sets.String
@@ -47,25 +43,21 @@ type PickRequest struct {
 
 type pickKey struct{}
 
-// NewContext creates a new context with pick information attached.
+// NewContext creates a new context with pick clues attached.
 func NewContext(ctx context.Context, p *PickRequest) context.Context {
 	return context.WithValue(ctx, pickKey{}, p)
 }
 
-// FromContext returns the pickReq information in ctx if it exists.
+// FromContext returns the pickReq clues in ctx if it exists.
 func FromContext(ctx context.Context) (p *PickRequest, ok bool) {
 	p, ok = ctx.Value(pickKey{}).(*PickRequest)
 	return
 }
 
-type D7yContextKey string
-
-type D7yContextValue struct {
-}
-
-type PickerReq struct {
-	HashKey string
-	Attempt int
+type d7yPickerBuildInfo struct {
+	subConns map[resolver.Address]balancer.SubConn
+	balancer *d7yBalancer
+	scStates map[balancer.SubConn]connectivity.State
 }
 
 func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
@@ -86,11 +78,9 @@ func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
 	}
 }
 
-type d7yPickerBuildInfo struct {
-	subConns map[resolver.Address]balancer.SubConn
-	balancer *d7yBalancer
-	scStates map[balancer.SubConn]connectivity.State
-}
+var (
+	_ balancer.Picker = (*d7yHashPicker)(nil)
+)
 
 type d7yHashPicker struct {
 	mu       sync.Mutex
@@ -106,16 +96,16 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 
 	var pickRequest *PickRequest
 	pickRequest, ok := FromContext(info.Ctx)
-	if ok {
+	if ok && pickRequest != nil {
 		// target address is specified
 		if pickRequest.TargetAddr != "" {
-			subConn, ok := p.subConns[pickRequest.TargetAddr]
+			sc, ok := p.subConns[pickRequest.TargetAddr]
 			if !ok {
 				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
-			ret.SubConn = subConn
-			subConn.Connect()
+			ret.SubConn = sc
+			sc.Connect()
 			return
 		}
 		// rpc call is required to stick to hashKey
@@ -124,15 +114,16 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
-			subConn, ok := p.balancer.pickHistory[pickRequest.HashKey]
+			sc, ok := p.balancer.pickHistory[pickRequest.HashKey]
 			if !ok {
-				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot found history")
+				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history")
 				return
 			}
-			ret.SubConn = subConn
-			subConn.Connect()
+			ret.SubConn = sc
+			sc.Connect()
 			return
 		}
+		// not require stick
 		key := uuid.Generate().String()
 		if pickRequest.HashKey != "" {
 			key = pickRequest.HashKey
@@ -150,16 +141,18 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			}
 		}
 		if targetAddress == "" {
-			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried")
+			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried but failed")
 			return
 		}
+		// mark history
 		if pickRequest.HashKey != "" {
 			ret.SubConn = p.subConns[targetAddress]
-			p.balancer.pickHistory[key] = p.subConns[targetAddress]
+			p.balancer.pickHistory[key] = ret.SubConn
 			ret.SubConn.Connect()
 			return
 		}
 	}
+	// pickRequest is not specified, select a node random and no need mark history
 	key := uuid.Generate().String()
 	targetAddr, ok := p.hashRing.GetNode(key)
 	if !ok {

@@ -19,7 +19,6 @@ package rpc
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/connectivity"
@@ -36,9 +35,6 @@ const (
 var (
 	_ balancer.Builder  = (*d7yBalancerBuilder)(nil)
 	_ balancer.Balancer = (*d7yBalancer)(nil)
-
-	ErrSubConnNotFound  = errors.New("SubConn not found")
-	ErrResetSubConnFail = errors.New("reset SubConn fail")
 )
 
 func newD7yBalancerBuilder() balancer.Builder {
@@ -56,14 +52,15 @@ type d7yBalancerBuilder struct {
 	config Config
 }
 
-// Build creates a d7yBalancer, and starts its scManager.
 func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
-		cc:       cc,
-		config:   dbb.config,
-		subConns: resolver.NewAddressMap(),
-		scStates: make(map[balancer.SubConn]connectivity.State),
-		csEvltr:  &balancer.ConnectivityStateEvaluator{},
+		cc: cc,
+
+		subConns:    resolver.NewAddressMap(),
+		scStates:    make(map[balancer.SubConn]connectivity.State),
+		csEvltr:     &balancer.ConnectivityStateEvaluator{},
+		pickHistory: make(map[string]balancer.SubConn),
+		config:      dbb.config,
 	}
 	b.picker = base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	return b
@@ -80,14 +77,14 @@ type d7yBalancer struct {
 	cc balancer.ClientConn
 
 	csEvltr *balancer.ConnectivityStateEvaluator
-	// state indicates the state of the whole ClientConn from the perspective of the balancer, it will be changed during regeneratePicker.
-	state connectivity.State
+	state   connectivity.State
 
 	subConns *resolver.AddressMap
 	scStates map[balancer.SubConn]connectivity.State
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
-	picker      balancer.Picker
-	config      Config
+	picker balancer.Picker
+	config Config
+
 	pickHistory map[string]balancer.SubConn
 
 	resolverErr error // last error reported by the resolver; cleared on successful resolution.
@@ -116,6 +113,7 @@ func (b *d7yBalancer) ResolverError(err error) {
 		// report an error.
 		return
 	}
+	// regenerate picker
 	b.regeneratePicker()
 	b.cc.UpdateState(balancer.State{
 		ConnectivityState: b.state,
@@ -158,6 +156,10 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 		}
 	}
 
+	// If resolver state contains no addresses, return an error so ClientConn
+	// will trigger re-resolve. Also records this as an resolver error, so when
+	// the overall state turns transient failure, the error message will have
+	// the zero address information.
 	if len(s.ResolverState.Addresses) == 0 {
 		b.ResolverError(fmt.Errorf("produced zero addresses"))
 		return balancer.ErrBadResolverState
@@ -185,8 +187,6 @@ func (b *d7yBalancer) regeneratePicker() {
 	for _, addr := range b.subConns.Keys() {
 		sci, _ := b.subConns.Get(addr)
 		sc := sci.(balancer.SubConn)
-		// The next line may not be safe, but we have to use subConns without check,
-		// for we have not set up connections with any SubConn, all of them are Idle.
 		if st, ok := b.scStates[sc]; ok && st != connectivity.Shutdown {
 			availableSubConns[addr] = sc
 			scStates[sc] = st
@@ -230,7 +230,7 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 	}
 	if oldS == connectivity.TransientFailure &&
 		(s == connectivity.Connecting || s == connectivity.Idle) {
-		// Once a subconn enters TRANSIENT_FAILURE, ignore subsequent IDLE or
+		// Once a subConn enters TRANSIENT_FAILURE, ignore subsequent IDLE or
 		// CONNECTING transitions to prevent the aggregated state from being
 		// always CONNECTING when many backends exist but are all down.
 		return

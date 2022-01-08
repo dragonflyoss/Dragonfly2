@@ -19,8 +19,10 @@
 package rpc
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -36,12 +38,6 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/serviceconfig"
 )
-
-type pickerTester struct{}
-
-func PickerTest(t *testing.T) {
-	RunSubTests(t, pickerTester{})
-}
 
 type testConfigBalancerBuilder struct {
 	balancer.Builder
@@ -128,15 +124,15 @@ var (
 const testBackendAddrsCount = 12
 
 func init() {
-	balancer.Register(newTestConfigBalancerBuilder())
-	for i := 0; i < testBackendAddrsCount; i++ {
-		testBackendAddrStrs = append(testBackendAddrStrs, fmt.Sprintf("%d.%d.%d.%d:%d", i, i, i, i, i))
-	}
-	wtbBuilder = balancer.Get(Name)
-	wtbParser = wtbBuilder.(balancer.ConfigParser)
-
-	balancergroup.DefaultSubBalancerCloseTimeout = time.Millisecond
-	NewRandomWRR = testutils.NewTestWRR
+	//balancer.Register(newTestConfigBalancerBuilder())
+	//for i := 0; i < testBackendAddrsCount; i++ {
+	//	testBackendAddrStrs = append(testBackendAddrStrs, fmt.Sprintf("%d.%d.%d.%d:%d", i, i, i, i, i))
+	//}
+	//wtbBuilder = balancer.Get(Name)
+	//wtbParser = wtbBuilder.(balancer.ConfigParser)
+	//
+	//balancergroup.DefaultSubBalancerCloseTimeout = time.Millisecond
+	//NewRandomWRR = testutils.NewTestWRR
 }
 
 // TestWeightedTarget covers the cases that a sub-balancer is added and a
@@ -458,7 +454,7 @@ func (pickerTester) TestWeightedTarget_TwoSubBalancers_OneBackend(t *testing.T) 
 // TestWeightedTarget_TwoSubBalancers_MoreBackends tests the case where we have
 // a weighted target balancer with two sub-balancers, each with more than one
 // backend.
-func (pickerTester) TestWeightedTarget_TwoSubBalancers_MoreBackends(t *testing.T) {
+func (s) TestWeightedTarget_TwoSubBalancers_MoreBackends(t *testing.T) {
 	cc := testutils.NewTestClientConn(t)
 	wtb := wtbBuilder.Build(cc, balancer.BuildOptions{})
 	defer wtb.Close()
@@ -951,7 +947,7 @@ func (pickerTester) TestWeightedTarget_TwoSubBalancers_ChangeWeight_MoreBackends
 // time, with two sub-balancers, if one sub-balancer reports transient_failure,
 // the picks won't fail with transient_failure, and should instead wait for the
 // other sub-balancer.
-func (s) TestWeightedTarget_InitOneSubBalancerTransientFailure(t *testing.T) {
+func TestWeightedTarget_InitOneSubBalancerTransientFailure(t *testing.T) {
 	cc := testutils.NewTestClientConn(t)
 	wtb := wtbBuilder.Build(cc, balancer.BuildOptions{})
 	defer wtb.Close()
@@ -1173,4 +1169,25 @@ func init() {
 			})
 		},
 	})
+}
+
+func TestNewContext(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		p   *PickRequest
+	}
+	tests := []struct {
+		name string
+		args args
+		want context.Context
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := NewContext(tt.args.ctx, tt.args.p); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("NewContext() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
