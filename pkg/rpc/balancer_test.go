@@ -19,23 +19,19 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net"
 	"testing"
 	"time"
 
-	testpb "google.golang.org/grpc/test/grpc_testing"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
 	"google.golang.org/grpc/status"
-)
-
-const (
-	testPickKey = "balancer_test"
+	testpb "google.golang.org/grpc/test/grpc_testing"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 type testServer struct {
@@ -116,13 +112,13 @@ func TestOneBackend(t *testing.T) {
 	testc := testpb.NewTestServiceClient(cc)
 
 	// The first RPC should fail because there's no address.
-	//{
-	//	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	//	defer cancel()
-	//	if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
-	//		t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
-	//	}
-	//}
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
+			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+		}
+	}
 
 	r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
 
@@ -156,10 +152,10 @@ func TestMigration(t *testing.T) {
 	// The first RPC should succeed.
 	{
 		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
-			HashKey:     testPickKey,
+			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
-			TargetAddr:  "",
+			TargetAddr:  test.addresses[0],
 		}), 5*time.Second)
 		defer cancel()
 		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err != nil {
@@ -170,10 +166,10 @@ func TestMigration(t *testing.T) {
 	// Because each testServer is disposable, the second RPC should fail.
 	{
 		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
-			HashKey:     testPickKey,
+			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
-			TargetAddr:  "",
+			TargetAddr:  test.addresses[0],
 		}), 5*time.Second)
 		defer cancel()
 		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
@@ -181,16 +177,29 @@ func TestMigration(t *testing.T) {
 		}
 	}
 
-	// The third RPC change the Attempt in PickReq, so it should succeed.
+	// The third RPC change the targetAddr in PickReq, so it should succeed.
 	{
 		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
-			HashKey:     testPickKey,
-			FailedNodes: nil,
+			HashKey:     "testPickKey",
+			FailedNodes: sets.NewString(test.addresses[0]),
 			IsStick:     false,
 			TargetAddr:  "",
 		}), 5*time.Second)
 		defer cancel()
 		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err != nil {
+			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
+	}
+	// The forth RPC should fail because all server nodes in FailedNodes
+	{
+		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+			HashKey:     "testPickKey",
+			FailedNodes: sets.NewString(test.addresses[0], test.addresses[1]),
+			IsStick:     false,
+			TargetAddr:  "",
+		}), 5*time.Second)
+		defer cancel()
+		if _, err := testc.EmptyCall(ctx, &testpb.Empty{}); err == nil || status.Code(err) != codes.FailedPrecondition {
 			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
 		}
 	}

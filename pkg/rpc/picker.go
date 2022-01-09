@@ -133,20 +133,20 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
 			return
 		}
-		var targetAddress string
-		for _, targetAddr := range targetAddrs {
-			if !pickRequest.FailedNodes.Has(targetAddr) {
-				targetAddress = targetAddr
+		var targetAddr string
+		for _, addr := range targetAddrs {
+			if !pickRequest.FailedNodes.Has(addr) {
+				targetAddr = addr
 				break
 			}
 		}
-		if targetAddress == "" {
+		if targetAddr == "" {
 			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried but failed")
 			return
 		}
 		// mark history
 		if pickRequest.HashKey != "" {
-			ret.SubConn = p.subConns[targetAddress]
+			ret.SubConn = p.subConns[targetAddr]
 			p.pickHistory[key] = ret.SubConn
 			ret.SubConn.Connect()
 			return
