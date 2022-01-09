@@ -57,7 +57,7 @@ func FromContext(ctx context.Context) (p *PickRequest, ok bool) {
 type d7yPickerBuildInfo struct {
 	subConns    map[resolver.Address]balancer.SubConn
 	scStates    map[balancer.SubConn]connectivity.State
-	pickHistory map[string]balancer.SubConn
+	pickHistory map[string]string
 }
 
 func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
@@ -85,7 +85,7 @@ var (
 type d7yHashPicker struct {
 	mu          sync.Mutex
 	subConns    map[string]balancer.SubConn // target address string -> balancer.SubConn
-	pickHistory map[string]balancer.SubConn
+	pickHistory map[string]string           // hashKey -> target address
 	scStates    map[balancer.SubConn]connectivity.State
 	hashRing    *hashring.HashRing
 }
@@ -97,8 +97,20 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	var pickRequest *PickRequest
 	pickRequest, ok := FromContext(info.Ctx)
 	if ok && pickRequest != nil {
+		var targetAddr string
+		// mark history
+		defer func() {
+			if targetAddr != "" && pickRequest.HashKey != "" {
+				p.pickHistory[pickRequest.HashKey] = targetAddr
+			}
+		}()
+
 		// target address is specified
 		if pickRequest.TargetAddr != "" {
+			if pickRequest.FailedNodes.Has(pickRequest.TargetAddr) {
+				err = status.Errorf(codes.FailedPrecondition, "targetAddr %s is in failedNodes: %s", pickRequest.TargetAddr, pickRequest.FailedNodes)
+				return
+			}
 			sc, ok := p.subConns[pickRequest.TargetAddr]
 			if !ok {
 				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
@@ -114,9 +126,18 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
-			sc, ok := p.pickHistory[pickRequest.HashKey]
+			targetAddr, ok := p.pickHistory[pickRequest.HashKey]
 			if !ok {
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history", pickRequest.HashKey)
+				return
+			}
+			if pickRequest.FailedNodes.Has(targetAddr) {
+				err = status.Errorf(codes.FailedPrecondition, "stick targetAddr %s is in failedNodes: %s", targetAddr, pickRequest.FailedNodes)
+				return
+			}
+			sc, ok := p.subConns[targetAddr]
+			if !ok {
+				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
 			ret.SubConn = sc
@@ -124,6 +145,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			return
 		}
 		// not require stick
+		// TODO filter out tf state sc
 		key := uuid.Generate().String()
 		if pickRequest.HashKey != "" {
 			key = pickRequest.HashKey
@@ -133,7 +155,6 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
 			return
 		}
-		var targetAddr string
 		for _, addr := range targetAddrs {
 			if !pickRequest.FailedNodes.Has(addr) {
 				targetAddr = addr
@@ -144,13 +165,9 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried but failed")
 			return
 		}
-		// mark history
-		if pickRequest.HashKey != "" {
-			ret.SubConn = p.subConns[targetAddr]
-			p.pickHistory[key] = ret.SubConn
-			ret.SubConn.Connect()
-			return
-		}
+		ret.SubConn = p.subConns[targetAddr]
+		ret.SubConn.Connect()
+		return
 	}
 	// pickRequest is not specified, select a node random and no need mark history
 	key := uuid.Generate().String()

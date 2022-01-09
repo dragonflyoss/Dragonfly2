@@ -59,7 +59,7 @@ func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, _ balancer.BuildOpt
 		subConns:    resolver.NewAddressMap(),
 		scStates:    make(map[balancer.SubConn]connectivity.State),
 		csEvltr:     &balancer.ConnectivityStateEvaluator{},
-		pickHistory: make(map[string]balancer.SubConn),
+		pickHistory: make(map[string]string),
 		config:      dbb.config,
 	}
 	b.picker = base.NewErrPicker(balancer.ErrNoSubConnAvailable)
@@ -81,7 +81,7 @@ type d7yBalancer struct {
 
 	subConns    *resolver.AddressMap
 	scStates    map[balancer.SubConn]connectivity.State
-	pickHistory map[string]balancer.SubConn
+	pickHistory map[string]string
 
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
 	picker balancer.Picker
