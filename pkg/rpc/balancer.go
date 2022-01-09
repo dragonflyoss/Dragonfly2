@@ -125,7 +125,7 @@ func (b *d7yBalancer) ResolverError(err error) {
 // ClientConn will call it after Builder builds the balancer to pass the necessary data.
 func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	if balancerLogger.V(2) {
-		balancerLogger.Infof("d7yBalancer: got new ClientConn state: ", s)
+		balancerLogger.Info("d7yBalancer: got new ClientConn state: ", s)
 	}
 	// Successful resolution; clear resolver error and ensure we return nil.
 	b.resolverErr = nil
@@ -196,10 +196,10 @@ func (b *d7yBalancer) regeneratePicker() {
 	if len(availableSubConns) == 0 {
 		b.picker = base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	} else {
-		b.state = connectivity.Ready
 		b.picker = newD7yPicker(d7yPickerBuildInfo{
-			subConns: availableSubConns,
-			scStates: scStates,
+			subConns:    availableSubConns,
+			scStates:    scStates,
+			pickHistory: b.pickHistory,
 		})
 	}
 }
@@ -219,12 +219,12 @@ func (b *d7yBalancer) mergeErrors() error {
 func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	s := state.ConnectivityState
 	if balancerLogger.V(2) {
-		balancerLogger.Infof("base.baseBalancer: handle SubConn state change: %p, %v", sc, s)
+		balancerLogger.Infof("d7yBalancer: handle SubConn state change: %p, %v", sc, s)
 	}
 	oldS, ok := b.scStates[sc]
 	if !ok {
 		if balancerLogger.V(2) {
-			balancerLogger.Infof("base.baseBalancer: got state changes for an unknown SubConn: %p, %v", sc, s)
+			balancerLogger.Infof("d7yBalancer: got state changes for an unknown SubConn: %p, %v", sc, s)
 		}
 		return
 	}
@@ -259,7 +259,6 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 	b.cc.UpdateState(balancer.State{ConnectivityState: b.state, Picker: b.picker})
 }
 
-// Close is implemented by balancer.Balancer, copied from baseBalancer.
 func (b *d7yBalancer) Close() {}
 
 func (b *d7yBalancer) ExitIdle() {

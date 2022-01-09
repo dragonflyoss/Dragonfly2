@@ -55,9 +55,9 @@ func FromContext(ctx context.Context) (p *PickRequest, ok bool) {
 }
 
 type d7yPickerBuildInfo struct {
-	subConns map[resolver.Address]balancer.SubConn
-	balancer *d7yBalancer
-	scStates map[balancer.SubConn]connectivity.State
+	subConns    map[resolver.Address]balancer.SubConn
+	scStates    map[balancer.SubConn]connectivity.State
+	pickHistory map[string]balancer.SubConn
 }
 
 func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
@@ -71,10 +71,10 @@ func newD7yPicker(info d7yPickerBuildInfo) balancer.Picker {
 		subConns[addr.Addr] = subConn
 	}
 	return &d7yHashPicker{
-		subConns: subConns,
-		balancer: info.balancer,
-		scStates: info.scStates,
-		hashRing: hashring.NewWithWeights(weights),
+		subConns:    subConns,
+		pickHistory: info.pickHistory,
+		scStates:    info.scStates,
+		hashRing:    hashring.NewWithWeights(weights),
 	}
 }
 
@@ -83,11 +83,11 @@ var (
 )
 
 type d7yHashPicker struct {
-	mu       sync.Mutex
-	subConns map[string]balancer.SubConn // target address string -> balancer.SubConn
-	balancer *d7yBalancer
-	scStates map[balancer.SubConn]connectivity.State
-	hashRing *hashring.HashRing
+	mu          sync.Mutex
+	subConns    map[string]balancer.SubConn // target address string -> balancer.SubConn
+	pickHistory map[string]balancer.SubConn
+	scStates    map[balancer.SubConn]connectivity.State
+	hashRing    *hashring.HashRing
 }
 
 func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, err error) {
@@ -114,9 +114,9 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
-			sc, ok := p.balancer.pickHistory[pickRequest.HashKey]
+			sc, ok := p.pickHistory[pickRequest.HashKey]
 			if !ok {
-				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history")
+				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history", pickRequest.HashKey)
 				return
 			}
 			ret.SubConn = sc
@@ -147,7 +147,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 		// mark history
 		if pickRequest.HashKey != "" {
 			ret.SubConn = p.subConns[targetAddress]
-			p.balancer.pickHistory[key] = ret.SubConn
+			p.pickHistory[key] = ret.SubConn
 			ret.SubConn.Connect()
 			return
 		}
