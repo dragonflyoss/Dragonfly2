@@ -52,7 +52,7 @@ type d7yBalancerBuilder struct {
 	config Config
 }
 
-func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, opts balancer.BuildOptions) balancer.Balancer {
+func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, _ balancer.BuildOptions) balancer.Balancer {
 	b := &d7yBalancer{
 		cc: cc,
 
@@ -79,20 +79,16 @@ type d7yBalancer struct {
 	csEvltr *balancer.ConnectivityStateEvaluator
 	state   connectivity.State
 
-	subConns *resolver.AddressMap
-	scStates map[balancer.SubConn]connectivity.State
+	subConns    *resolver.AddressMap
+	scStates    map[balancer.SubConn]connectivity.State
+	pickHistory map[string]balancer.SubConn
+
 	// picker is a balancer.Picker created by the balancer but used by the ClientConn.
 	picker balancer.Picker
 	config Config
 
-	pickHistory map[string]balancer.SubConn
-
 	resolverErr error // last error reported by the resolver; cleared on successful resolution.
 	connErr     error // the last connection error; cleared upon leaving TransientFailure
-}
-
-type SubConnInfo struct {
-	Address resolver.Address // the address used to create this SubConn
 }
 
 // Config contains the config info about the base balancer builder.
@@ -101,7 +97,6 @@ type Config struct {
 	HealthCheck bool
 }
 
-// ResolverError is implemented from balancer.Balancer, modified from baseBalancer, and update the state of the balancer.
 func (b *d7yBalancer) ResolverError(err error) {
 	b.resolverErr = err
 	if b.subConns.Len() == 0 {
@@ -121,8 +116,6 @@ func (b *d7yBalancer) ResolverError(err error) {
 	})
 }
 
-// UpdateClientConnState is implemented from balancer.Balancer, modified from the baseBalancer,
-// ClientConn will call it after Builder builds the balancer to pass the necessary data.
 func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	if balancerLogger.V(2) {
 		balancerLogger.Info("d7yBalancer: got new ClientConn state: ", s)
@@ -130,34 +123,34 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 	// Successful resolution; clear resolver error and ensure we return nil.
 	b.resolverErr = nil
 	addrsSet := resolver.NewAddressMap()
-	for _, a := range s.ResolverState.Addresses {
-		addrsSet.Set(a, nil)
-		if _, ok := b.subConns.Get(a); !ok {
+	for _, addr := range s.ResolverState.Addresses {
+		addrsSet.Set(addr, nil)
+		if _, ok := b.subConns.Get(addr); !ok {
 			// a is a new address (not existing in b.subConns)
-			newSC, err := b.cc.NewSubConn([]resolver.Address{a}, balancer.NewSubConnOptions{HealthCheckEnabled: b.config.HealthCheck})
+			newSC, err := b.cc.NewSubConn([]resolver.Address{addr}, balancer.NewSubConnOptions{HealthCheckEnabled: b.config.HealthCheck})
 			if err != nil {
 				balancerLogger.Warningf("d7yBalancer: failed to create new SubConn: %v", err)
 				continue
 			}
-			b.subConns.Set(a, newSC)
+			b.subConns.Set(addr, newSC)
 			b.scStates[newSC] = connectivity.Idle
-			b.csEvltr.RecordTransition(connectivity.Shutdown, connectivity.Idle)
+			b.state = b.csEvltr.RecordTransition(connectivity.Shutdown, connectivity.Idle)
 		}
 	}
-	for _, a := range b.subConns.Keys() {
-		sci, _ := b.subConns.Get(a)
+	for _, addr := range b.subConns.Keys() {
+		sci, _ := b.subConns.Get(addr)
 		sc := sci.(balancer.SubConn)
-		// a was removed by resolver.
-		if _, ok := addrsSet.Get(a); !ok {
+		// addr was removed by resolver.
+		if _, ok := addrsSet.Get(addr); !ok {
 			b.cc.RemoveSubConn(sc)
-			b.subConns.Delete(a)
+			b.subConns.Delete(addr)
 			// Keep the state of this sc in b.scStates until sc's state becomes Shutdown.
 			// The entry will be deleted in UpdateSubConnState.
 		}
 	}
 
 	// If resolver state contains no addresses, return an error so ClientConn
-	// will trigger re-resolve. Also records this as an resolver error, so when
+	// will trigger re-resolve. Also records this as a resolver error, so when
 	// the overall state turns transient failure, the error message will have
 	// the zero address information.
 	if len(s.ResolverState.Addresses) == 0 {
