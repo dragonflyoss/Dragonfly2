@@ -19,7 +19,9 @@ package client
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -29,21 +31,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func Dial(target string, opts ...grpc.DialOption) (CDNClient, error) {
-	return DialContext(context.Background(), target, opts...)
-}
-
-func DialContext(ctx context.Context, target string, opts ...grpc.DialOption) (CDNClient, error) {
-	dialOpts := append(
+func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("address list of cdn is empty")
+	}
+	r := rpc.NewD7yResolver("cdn", addrs)
+	dialOpts := append(append(
 		rpc.DefaultClientOpts,
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
-	clientConn, err := grpc.DialContext(ctx, target, append(dialOpts, opts...)...)
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
+		grpc.WithResolvers(r)),
+		opts...)
+
+	clientConn, err := grpc.Dial(
+		// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
+		fmt.Sprintf("%s:///%s", "cdn", "cdnsystem.Seeder"),
+		dialOpts...)
 	if err != nil {
 		return nil, err
 	}
+
 	return &cdnClient{
 		cc:           clientConn,
 		seederClient: cdnsystem.NewSeederClient(clientConn),
+		resolver:     r,
 	}, nil
 }
 
@@ -52,13 +62,17 @@ type CDNClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
+	UpdateState(addrs []dfnet.NetAddr)
+
 	Close() error
 }
 
 type cdnClient struct {
+	ctx          context.Context
+	cancel       context.CancelFunc
 	cc           *grpc.ClientConn
 	seederClient cdnsystem.SeederClient
-	d7yResolver  *rpc.Res
+	resolver     resolver.Resolver
 }
 
 var _ CDNClient = (*cdnClient)(nil)
@@ -82,6 +96,10 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		TargetAddr: addr.String(),
 	})
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
+}
+
+func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {
+
 }
 
 func (cc *cdnClient) Close() error {

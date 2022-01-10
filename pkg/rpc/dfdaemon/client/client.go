@@ -19,13 +19,13 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/resolver"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -39,7 +39,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of dfdaemon is empty")
 	}
-	resolver := rpc.NewD7yResolver(rpc.DaemonScheme, addrs)
+	resolver := rpc.NewD7yResolver("daemon", addrs)
 
 	dialOpts := append(append(append(
 		rpc.DefaultClientOpts,
@@ -47,24 +47,18 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 		grpc.WithResolvers(resolver)),
 		opts...)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	conn, err := grpc.DialContext(
-		ctx,
+	conn, err := grpc.Dial(
 		// "dfdaemon.Daemon" is the dfdaemon._Daemon_serviceDesc.ServiceName
-		fmt.Sprintf("%s:///%s", rpc.DaemonScheme, "dfdaemon.Daemon"),
+		fmt.Sprintf("%s:///%s", "daemon", "dfdaemon.Daemon"),
 		dialOpts...,
 	)
 	if err != nil {
-		cancel()
 		return nil, err
 	}
 
 	cc := &daemonClient{
-		ctx:          ctx,
-		cancel:       cancel,
+		cc:           conn,
 		daemonClient: dfdaemon.NewDaemonClient(conn),
-		conn:         conn,
 		resolver:     resolver,
 	}
 	return cc, nil
@@ -79,10 +73,8 @@ func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (Daemon
 	}
 
 	return &daemonClient{
-		ctx:          ctx,
-		cancel:       cancel,
 		daemonClient: dfdaemon.NewDaemonClient(conn),
-		conn:         conn,
+		cc:           conn,
 	}, nil
 }
 
@@ -93,7 +85,7 @@ func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialO
 
 // DaemonClient see dfdaemon.DaemonClient
 type DaemonClient interface {
-	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error)
+	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
@@ -103,11 +95,9 @@ type DaemonClient interface {
 }
 
 type daemonClient struct {
-	ctx          context.Context
-	cancel       context.CancelFunc
+	cc           *grpc.ClientConn
 	daemonClient dfdaemon.DaemonClient
-	conn         *grpc.ClientConn
-	resolver     *rpc.D7yResolver
+	resolver     resolver.Resolver
 }
 
 func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, error) {
@@ -122,7 +112,7 @@ func (dc *daemonClient) getDaemonClientByAddr(addr dfnet.NetAddr) (dfdaemon.Daem
 	return dfdaemon.NewDaemonClient(conn), nil
 }
 
-func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*DownResultStream, error) {
+func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
 	req.Uuid = uuid.New().String()
 	// generate taskID
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
@@ -131,36 +121,21 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientByAddr(target)
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, ptr, opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.WithTaskID(ptr.TaskId).Infof("GetPieceTasks: invoke daemon node %s GetPieceTasks failed: %v", target, err)
-		return nil, err
-	}
-	return res.(*base.PiecePacket), nil
+	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+		TargetAddr: target.String(),
+	})
+	return dc.daemonClient.GetPieceTasks(ctx, ptr, opts...)
+
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
-	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientByAddr(target)
-		if err != nil {
-			return nil, err
-		}
-		return client.CheckHealth(ctx, new(empty.Empty), opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.Infof("CheckHealth: invoke daemon node %s CheckHealth failed: %v", target, err)
-		return
-	}
+	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+		TargetAddr: target.String(),
+	})
+	_, err = dc.daemonClient.CheckHealth(ctx, new(empty.Empty), opts...)
 	return
 }
 
 func (dc *daemonClient) Close() error {
-	dc.cancel()
-	return nil
+	return dc.cc.Close()
 }

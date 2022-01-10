@@ -89,7 +89,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 
 	var (
 		start     = time.Now()
-		stream    *daemonclient.DownResultStream
+		stream    dfdaemon.Daemon_DownloadClient
 		result    *dfdaemon.DownResult
 		pb        *progressbar.ProgressBar
 		request   = newDownRequest(cfg, hdr)

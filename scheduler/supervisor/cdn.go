@@ -20,6 +20,7 @@ package supervisor
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"io"
 	"net/http"
 	"reflect"
@@ -121,7 +122,7 @@ func (c *cdn) StartSeedTask(ctx context.Context, task *Task) (*Peer, error) {
 	return c.receivePiece(ctx, task, stream)
 }
 
-func (c *cdn) receivePiece(ctx context.Context, task *Task, stream *cdnclient.PieceSeedStream) (*Peer, error) {
+func (c *cdn) receivePiece(ctx context.Context, task *Task, stream cdnsystem.Seeder_ObtainSeedsClient) (*Peer, error) {
 	span := trace.SpanFromContext(ctx)
 	var initialized bool
 	var cdnPeer *Peer
@@ -241,19 +242,40 @@ func downloadTinyFile(ctx context.Context, task *Task, cdnHost *Host) ([]byte, e
 }
 
 type CDNDynmaicClient interface {
-	// cdnclient is cdn grpc client
-	cdnclient.CdnClient
+	// CDNClient is cdn grpc client
+	cdnclient.CDNClient
 	// Observer is dynconfig observer
 	config.Observer
-	// Get cdn host
+	// GetHost cdn host
 	GetHost(hostID string) (*Host, bool)
 }
 
 type cdnDynmaicClient struct {
-	cdnclient.CdnClient
+	cdnclient.CDNClient
 	data  *config.DynconfigData
 	hosts map[string]*Host
 	lock  sync.RWMutex
+}
+
+func NewCDNDynmaicClient(dynConfig config.DynconfigInterface, opts []grpc.DialOption) (CDNDynmaicClient, error) {
+	config, err := dynConfig.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := cdnclient.GetClientByAddrs(cdnsToNetAddrs(config.CDNs), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	dc := &cdnDynmaicClient{
+		CDNClient: client,
+		data:      config,
+		hosts:     cdnsToHosts(config.CDNs),
+	}
+
+	dynConfig.Register(dc)
+	return dc, nil
 }
 
 func (dc *cdnDynmaicClient) GetHost(id string) (*Host, bool) {

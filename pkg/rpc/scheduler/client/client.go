@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/resolver"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -38,7 +39,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of scheduler is empty")
 	}
-	resolver := rpc.NewD7yResolver(rpc.SchedulerScheme, addrs)
+	resolver := rpc.NewD7yResolver("scheduler", addrs)
 
 	dialOpts := append(append(append(
 		rpc.DefaultClientOpts,
@@ -51,7 +52,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	conn, err := grpc.DialContext(
 		ctx,
 		// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
-		fmt.Sprintf("%s:///%s", rpc.SchedulerScheme, "scheduler.Scheduler"),
+		fmt.Sprintf("%s:///%s", "scheduler", "scheduler.Scheduler"),
 		dialOpts...,
 	)
 	if err != nil {
@@ -59,14 +60,12 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 		return nil, err
 	}
 
-	cc := &schedulerClient{
-		ctx:             ctx,
-		cancel:          cancel,
+	sc := &schedulerClient{
+		cc:              conn,
 		schedulerClient: scheduler.NewSchedulerClient(conn),
-		conn:            conn,
 		resolver:        resolver,
 	}
-	return cc, nil
+	return sc, nil
 }
 
 // SchedulerClient see scheduler.SchedulerClient
@@ -88,7 +87,7 @@ type SchedulerClient interface {
 type schedulerClient struct {
 	schedulerClient scheduler.SchedulerClient
 	cc              *grpc.ClientConn
-	resolver        *rpc.d7yResolver
+	resolver        resolver.Resolver
 }
 
 func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, error) {
@@ -244,6 +243,5 @@ func (sc *schedulerClient) UpdateState(addrs []dfnet.NetAddr) {
 }
 
 func (sc *schedulerClient) Close() error {
-	sc.cancel()
-	return nil
+	return sc.cc.Close()
 }
