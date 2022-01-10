@@ -134,6 +134,27 @@ message KeepAliveRequest {
   uint64 cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
+message Application {
+  uint64 id = 1;
+  string name = 2;
+  string download_ratelimit = 3;
+  string url = 4;
+  string state = 5;
+  string bio = 7;
+  int32 port = 8;
+  uint  user_id = 9;
+  string state = 10;
+  bytes user = 11;
+  repeated SchedulerCluster scheduler_cluster = 12;
+  repeated CDNCluster cdn_clusters = 13;
+}
+
+message GetApplicationRequest {
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  string name = 2 [(validate.rules).string.name = true];
+  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+}
+
 // Manager RPC Service 
 service Manager {
   // Get CDN and CDN cluster configuration
@@ -148,4 +169,6 @@ service Manager {
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
   // KeepAlive with manager
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
+  // Get Application configuration
+  rpc GetApplication(GetApplicaitonRequest)returns(Application);
 }
