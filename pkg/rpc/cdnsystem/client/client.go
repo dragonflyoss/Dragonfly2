@@ -57,6 +57,7 @@ type CDNClient interface {
 type cdnClient struct {
 	cc           *grpc.ClientConn
 	seederClient cdnsystem.SeederClient
+	d7yResolver  *rpc.Res
 }
 
 var _ CDNClient = (*cdnClient)(nil)
