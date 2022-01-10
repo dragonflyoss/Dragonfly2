@@ -40,6 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -57,6 +58,7 @@ type componentsOption struct {
 	pieceSize          uint32
 	pieceParallelCount int32
 	peerPacketDelay    []time.Duration
+	backSource         bool
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
@@ -112,7 +114,11 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		func(pr *scheduler.PieceResult) error {
 			return nil
 		})
-	var delayCount int
+	var (
+		delayCount int
+		sent       = make(chan struct{}, 1)
+	)
+	sent <- struct{}{}
 	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
 		func() (*scheduler.PeerPacket, error) {
 			if len(opt.peerPacketDelay) > delayCount {
@@ -120,6 +126,10 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					time.Sleep(delay)
 				}
 				delayCount++
+			}
+			<-sent
+			if opt.backSource {
+				return nil, dferrors.Newf(base.Code_SchedNeedBackSource, "fake back source error")
 			}
 			return &scheduler.PeerPacket{
 				Code:          base.Code_Success,
@@ -210,6 +220,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:  storageManager,
@@ -292,6 +303,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:  storageManager,
@@ -364,6 +376,7 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:   storageManager,

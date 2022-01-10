@@ -32,12 +32,22 @@ import (
 )
 
 type DownloadPieceRequest struct {
+	piece      *base.PieceInfo
+	log        *logger.SugaredLoggerOnWith
 	TaskID     string
+	PeerID     string
 	DstPid     string
 	DstAddr    string
 	CalcDigest bool
-	piece      *base.PieceInfo
-	log        *logger.SugaredLoggerOnWith
+}
+
+type DownloadPieceResult struct {
+	// Size of piece
+	Size int64
+	// BeginTime nanosecond
+	BeginTime int64
+	// FinishTime nanosecond
+	FinishTime int64
 }
 
 type PieceDownloader interface {
@@ -107,7 +117,7 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, d *DownloadPieceReq
 	r := resp.Body.(io.Reader)
 	c := resp.Body.(io.Closer)
 	if d.CalcDigest {
-		d.log.Debugf("calculate digest for piece %d, md5: %s", d.piece.PieceNum, d.piece.PieceMd5)
+		d.log.Debugf("calculate digest for piece %d, digest: %s", d.piece.PieceNum, d.piece.PieceMd5)
 		r = digestutils.NewDigestReader(d.log, io.LimitReader(resp.Body, int64(d.piece.RangeSize)), d.piece.PieceMd5)
 	}
 	return r, c, nil

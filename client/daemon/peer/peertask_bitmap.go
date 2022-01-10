@@ -16,7 +16,9 @@
 
 package peer
 
-import "go.uber.org/atomic"
+import (
+	"go.uber.org/atomic"
+)
 
 type Bitmap struct {
 	bits    []byte
@@ -50,9 +52,6 @@ func (b *Bitmap) Set(i int32) {
 		b.bits = append(b.bits, make([]byte, b.cap/8)...)
 		b.cap *= 2
 	}
-	//if b.IsSet(i) {
-	//	return
-	//}
 	b.settled.Inc()
 	b.bits[i/8] |= 1 << uint(7-i%8)
 }
@@ -61,16 +60,8 @@ func (b *Bitmap) Settled() int32 {
 	return b.settled.Load()
 }
 
-//func (b *Bitmap) Clear(i int) {
-//	b.bits[i/8] &^= 1 << uint(7-i%8)
-//}
-
 func (b *Bitmap) Sets(xs ...int32) {
 	for _, x := range xs {
 		b.Set(x)
 	}
 }
-
-//func (b Bitmap) String() string {
-//	return hex.EncodeToString(b.bits[:])
-//}

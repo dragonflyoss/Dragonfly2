@@ -8,11 +8,9 @@ import (
 	context "context"
 	io "io"
 	reflect "reflect"
-	time "time"
 
 	peer "d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -124,7 +122,7 @@ func (m *MockTask) EXPECT() *MockTaskMockRecorder {
 }
 
 // AddTraffic mocks base method.
-func (m *MockTask) AddTraffic(arg0 int64) {
+func (m *MockTask) AddTraffic(arg0 uint64) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "AddTraffic", arg0)
 }
@@ -177,6 +175,20 @@ func (mr *MockTaskMockRecorder) GetPeerID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeerID", reflect.TypeOf((*MockTask)(nil).GetPeerID))
 }
 
+// GetPieceMd5Sign mocks base method.
+func (m *MockTask) GetPieceMd5Sign() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPieceMd5Sign")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetPieceMd5Sign indicates an expected call of GetPieceMd5Sign.
+func (mr *MockTaskMockRecorder) GetPieceMd5Sign() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceMd5Sign", reflect.TypeOf((*MockTask)(nil).GetPieceMd5Sign))
+}
+
 // GetTaskID mocks base method.
 func (m *MockTask) GetTaskID() string {
 	m.ctrl.T.Helper()
@@ -206,10 +218,10 @@ func (mr *MockTaskMockRecorder) GetTotalPieces() *gomock.Call {
 }
 
 // GetTraffic mocks base method.
-func (m *MockTask) GetTraffic() int64 {
+func (m *MockTask) GetTraffic() uint64 {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTraffic")
-	ret0, _ := ret[0].(int64)
+	ret0, _ := ret[0].(uint64)
 	return ret0
 }
 
@@ -233,38 +245,34 @@ func (mr *MockTaskMockRecorder) Log() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockTask)(nil).Log))
 }
 
-// ReportPieceResult mocks base method.
-func (m *MockTask) ReportPieceResult(pieceTask *base.PieceInfo, pieceResult *scheduler.PieceResult) error {
+// PublishPieceInfo mocks base method.
+func (m *MockTask) PublishPieceInfo(pieceNum int32, size uint32) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReportPieceResult", pieceTask, pieceResult)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "PublishPieceInfo", pieceNum, size)
+}
+
+// PublishPieceInfo indicates an expected call of PublishPieceInfo.
+func (mr *MockTaskMockRecorder) PublishPieceInfo(pieceNum, size interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublishPieceInfo", reflect.TypeOf((*MockTask)(nil).PublishPieceInfo), pieceNum, size)
+}
+
+// ReportPieceResult mocks base method.
+func (m *MockTask) ReportPieceResult(request *peer.DownloadPieceRequest, result *peer.DownloadPieceResult, success bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ReportPieceResult", request, result, success)
 }
 
 // ReportPieceResult indicates an expected call of ReportPieceResult.
-func (mr *MockTaskMockRecorder) ReportPieceResult(pieceTask, pieceResult interface{}) *gomock.Call {
+func (mr *MockTaskMockRecorder) ReportPieceResult(request, result, success interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), pieceTask, pieceResult)
-}
-
-// SetCallback mocks base method.
-func (m *MockTask) SetCallback(arg0 peer.TaskCallback) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetCallback", arg0)
-}
-
-// SetCallback indicates an expected call of SetCallback.
-func (mr *MockTaskMockRecorder) SetCallback(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetCallback", reflect.TypeOf((*MockTask)(nil).SetCallback), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), request, result, success)
 }
 
 // SetContentLength mocks base method.
-func (m *MockTask) SetContentLength(arg0 int64) error {
+func (m *MockTask) SetContentLength(arg0 int64) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetContentLength", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
+	m.ctrl.Call(m, "SetContentLength", arg0)
 }
 
 // SetContentLength indicates an expected call of SetContentLength.
@@ -273,95 +281,63 @@ func (mr *MockTaskMockRecorder) SetContentLength(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetContentLength", reflect.TypeOf((*MockTask)(nil).SetContentLength), arg0)
 }
 
-// MockTaskCallback is a mock of TaskCallback interface.
-type MockTaskCallback struct {
+// SetPieceMd5Sign mocks base method.
+func (m *MockTask) SetPieceMd5Sign(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetPieceMd5Sign", arg0)
+}
+
+// SetPieceMd5Sign indicates an expected call of SetPieceMd5Sign.
+func (mr *MockTaskMockRecorder) SetPieceMd5Sign(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPieceMd5Sign", reflect.TypeOf((*MockTask)(nil).SetPieceMd5Sign), arg0)
+}
+
+// SetTotalPieces mocks base method.
+func (m *MockTask) SetTotalPieces(arg0 int32) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTotalPieces", arg0)
+}
+
+// SetTotalPieces indicates an expected call of SetTotalPieces.
+func (mr *MockTaskMockRecorder) SetTotalPieces(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTotalPieces", reflect.TypeOf((*MockTask)(nil).SetTotalPieces), arg0)
+}
+
+// MockLogger is a mock of Logger interface.
+type MockLogger struct {
 	ctrl     *gomock.Controller
-	recorder *MockTaskCallbackMockRecorder
+	recorder *MockLoggerMockRecorder
 }
 
-// MockTaskCallbackMockRecorder is the mock recorder for MockTaskCallback.
-type MockTaskCallbackMockRecorder struct {
-	mock *MockTaskCallback
+// MockLoggerMockRecorder is the mock recorder for MockLogger.
+type MockLoggerMockRecorder struct {
+	mock *MockLogger
 }
 
-// NewMockTaskCallback creates a new mock instance.
-func NewMockTaskCallback(ctrl *gomock.Controller) *MockTaskCallback {
-	mock := &MockTaskCallback{ctrl: ctrl}
-	mock.recorder = &MockTaskCallbackMockRecorder{mock}
+// NewMockLogger creates a new mock instance.
+func NewMockLogger(ctrl *gomock.Controller) *MockLogger {
+	mock := &MockLogger{ctrl: ctrl}
+	mock.recorder = &MockLoggerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockTaskCallback) EXPECT() *MockTaskCallbackMockRecorder {
+func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 	return m.recorder
 }
 
-// Done mocks base method.
-func (m *MockTaskCallback) Done(pt peer.Task) error {
+// Log mocks base method.
+func (m *MockLogger) Log() *logger.SugaredLoggerOnWith {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Done", pt)
-	ret0, _ := ret[0].(error)
+	ret := m.ctrl.Call(m, "Log")
+	ret0, _ := ret[0].(*logger.SugaredLoggerOnWith)
 	return ret0
 }
 
-// Done indicates an expected call of Done.
-func (mr *MockTaskCallbackMockRecorder) Done(pt interface{}) *gomock.Call {
+// Log indicates an expected call of Log.
+func (mr *MockLoggerMockRecorder) Log() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Done", reflect.TypeOf((*MockTaskCallback)(nil).Done), pt)
-}
-
-// Fail mocks base method.
-func (m *MockTaskCallback) Fail(pt peer.Task, code base.Code, reason string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Fail", pt, code, reason)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Fail indicates an expected call of Fail.
-func (mr *MockTaskCallbackMockRecorder) Fail(pt, code, reason interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Fail", reflect.TypeOf((*MockTaskCallback)(nil).Fail), pt, code, reason)
-}
-
-// GetStartTime mocks base method.
-func (m *MockTaskCallback) GetStartTime() time.Time {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetStartTime")
-	ret0, _ := ret[0].(time.Time)
-	return ret0
-}
-
-// GetStartTime indicates an expected call of GetStartTime.
-func (mr *MockTaskCallbackMockRecorder) GetStartTime() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStartTime", reflect.TypeOf((*MockTaskCallback)(nil).GetStartTime))
-}
-
-// Init mocks base method.
-func (m *MockTaskCallback) Init(pt peer.Task) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Init", pt)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Init indicates an expected call of Init.
-func (mr *MockTaskCallbackMockRecorder) Init(pt interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockTaskCallback)(nil).Init), pt)
-}
-
-// Update mocks base method.
-func (m *MockTaskCallback) Update(pt peer.Task) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", pt)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockTaskCallbackMockRecorder) Update(pt interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockTaskCallback)(nil).Update), pt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockLogger)(nil).Log))
 }

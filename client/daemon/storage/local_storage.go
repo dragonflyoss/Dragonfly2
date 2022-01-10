@@ -51,6 +51,9 @@ type localTaskStore struct {
 
 	// when digest not match, invalid will be set
 	invalid atomic.Bool
+
+	// content stores tiny file which length less than 128 bytes
+	content []byte
 }
 
 var _ TaskStorageDriver = (*localTaskStore)(nil)
@@ -263,7 +266,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetadat
 }
 
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
-	// Store is be called in callback.Done, mark local task store done, for fast search
+	// Store is called in callback.Done, mark local task store done, for fast search
 	t.Done = true
 	t.touch()
 	if req.TotalPieces > 0 {
