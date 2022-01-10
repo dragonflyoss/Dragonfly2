@@ -18,10 +18,15 @@ package rpc
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"time"
 )
 
 type messageType attribute.KeyValue
@@ -41,4 +46,26 @@ func (m messageType) Event(ctx context.Context, id int, message interface{}) {
 			semconv.RPCMessageUncompressedSizeKey.String(string(content)),
 		))
 	}
+}
+
+func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
+	var res interface{}
+	for i := 0; i < maxAttempts; i++ {
+		if _, ok := cause.(*dferrors.DfError); ok {
+			return res, cause
+		}
+		if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
+			return res, cause
+		}
+		if i > 0 {
+			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+		}
+
+		res, cause = f()
+		if cause == nil {
+			break
+		}
+	}
+
+	return res, cause
 }

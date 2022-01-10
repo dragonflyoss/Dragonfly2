@@ -86,6 +86,11 @@ func (r *d7yResolver) start() {
 	}
 }
 
+// UpdateState calls CC.UpdateState.
+func (r *d7yResolver) UpdateState(s resolver.State) {
+	r.cc.UpdateState(s)
+}
+
 //func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
 //	if len(addrs) == 0 {
 //		return nil

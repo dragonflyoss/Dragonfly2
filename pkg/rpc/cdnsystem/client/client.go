@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc/peer"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -63,15 +64,12 @@ type cdnClient struct {
 var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Errorf("ddd")
-		}
-	}()
-	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, opts...)
-	//if err == nil {
-	//	return seeder, err
-	//}
+	var temp peer.Peer
+
+	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, append(opts, grpc.Peer(&temp))...)
+	if err == nil {
+		return seeder, err
+	}
 	_, err = seeder.Recv()
 	rpc.FromContext(ctx)
 	status.FromContextError(err)
