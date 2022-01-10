@@ -59,7 +59,7 @@ func TestPeerManager_newPeerManager(t *testing.T) {
 			},
 			expect: func(t *testing.T, peerManager PeerManager, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "foo")
+				assert.EqualError(err, "foo")
 			},
 		},
 	}

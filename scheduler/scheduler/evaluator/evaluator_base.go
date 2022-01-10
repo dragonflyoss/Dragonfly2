@@ -29,10 +29,13 @@ import (
 
 const (
 	// Finished piece weight
-	finishedPieceWeight float64 = 0.4
+	finishedPieceWeight float64 = 0.3
 
 	// Free load weight
-	freeLoadWeight = 0.3
+	freeLoadWeight = 0.25
+
+	// host type affinity weight
+	hostTypeAffinityWeight = 0.15
 
 	// IDC affinity weight
 	idcAffinityWeight = 0.15
@@ -72,36 +75,37 @@ func NewEvaluatorBase() Evaluator {
 }
 
 // The larger the value after evaluation, the higher the priority
-func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64 {
+func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the SecurityDomain of hosts exists but is not equal,
 	// it cannot be scheduled as a parent
 	if parent.Host.SecurityDomain != "" &&
 		child.Host.SecurityDomain != "" &&
-		strings.Compare(parent.Host.SecurityDomain, child.Host.SecurityDomain) != 0 {
+		parent.Host.SecurityDomain != child.Host.SecurityDomain {
 		return minScore
 	}
 
-	return finishedPieceWeight*calculatePieceScore(parent, child, taskPieceCount) +
+	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
 		freeLoadWeight*calculateFreeLoadScore(parent.Host) +
+		hostTypeAffinityWeight*calculateHostTypeAffinityScore(parent.Host) +
 		idcAffinityWeight*calculateIDCAffinityScore(parent.Host, child.Host) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parent.Host.NetTopology, child.Host.NetTopology) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(parent.Host.Location, child.Host.Location)
 }
 
 // calculatePieceScore 0.0~unlimited larger and better
-func calculatePieceScore(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64 {
+func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
 	// pieces downloaded by the parent node
-	if taskPieceCount > 0 {
+	if totalPieceCount > 0 {
 		finishedPieceCount := parent.Pieces.Count()
-		return float64(finishedPieceCount) / float64(taskPieceCount)
+		return float64(finishedPieceCount) / float64(totalPieceCount)
 	}
 
 	// Use the difference between the parent node and the child node to
 	// download the piece to roughly represent the piece score
 	parentFinishedPieceCount := parent.Pieces.Count()
 	childFinishedPieceCount := child.Pieces.Count()
-	return float64(parentFinishedPieceCount - childFinishedPieceCount)
+	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
 }
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
@@ -111,9 +115,20 @@ func calculateFreeLoadScore(host *resource.Host) float64 {
 	return float64(totalLoad-int32(load)) / float64(totalLoad)
 }
 
+// calculateHostTypeAffinityScore 0.0~1.0 larger and better
+func calculateHostTypeAffinityScore(host *resource.Host) float64 {
+	// The selected priority of CDN is lower,
+	// because CDN download resources are reserved for the first download as much as possible
+	if host.IsCDN {
+		return minScore
+	}
+
+	return maxScore
+}
+
 // calculateIDCAffinityScore 0.0~1.0 larger and better
 func calculateIDCAffinityScore(dst, src *resource.Host) float64 {
-	if dst.IDC != "" && src.IDC != "" && strings.Compare(dst.IDC, src.IDC) == 0 {
+	if dst.IDC != "" && src.IDC != "" && dst.IDC == src.IDC {
 		return maxScore
 	}
 
@@ -126,7 +141,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return minScore
 	}
 
-	if strings.Compare(dst, src) == 0 {
+	if dst == src {
 		return maxScore
 	}
 
@@ -142,7 +157,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	}
 
 	for i := 0; i < elementLen; i++ {
-		if strings.Compare(dstElements[i], srcElements[i]) != 0 {
+		if dstElements[i] != srcElements[i] {
 			break
 		}
 		score++
@@ -158,8 +173,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	}
 
 	// Determine whether to bad node based on piece download costs
-	rawCosts := peer.PieceCosts.Values()
-	costs := stats.LoadRawData(rawCosts)
+	costs := stats.LoadRawData(peer.PieceCosts())
 	len := len(costs)
 	// Peer has not finished downloading enough piece
 	if len < minAvailableCostLen {
@@ -181,7 +195,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	// Download costs satisfies the normal distribution,
 	// last cost falling outside of three-sigma effect need to be adjusted parent,
 	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
-	stdev, _ := stats.StandardDeviation(costs[:len-2]) // nolint: errcheck
+	stdev, _ := stats.StandardDeviation(costs[:len-1]) // nolint: errcheck
 	isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean+3*stdev)) > 0
 	logger.Infof("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer is bad node: %t",
 		peer.ID, mean, stdev, isBadNode)

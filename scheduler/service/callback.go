@@ -84,7 +84,9 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 					return
 				}
 
-				if peer.Task.FSM.Is(resource.PeerStatePending) {
+				// If the task state is TaskStateFailed,
+				// peer back-to-source and reset task state to TaskStateRunning
+				if peer.Task.FSM.Is(resource.TaskStateFailed) {
 					if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
 						peer.Task.Log.Errorf("task fsm event failed: %v", err)
 						return
@@ -142,7 +144,7 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		blocklist.Add(peer.ID)
 		c.ScheduleParent(ctx, peer, blocklist)
 	default:
-		peer.Log.Errorf("peer state is %s when receive the begin of piece", peer.FSM.Current())
+		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}
 }
 
@@ -192,7 +194,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-	peer.PieceCosts.Add(piece.EndTime - piece.BeginTime)
+	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))
 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info

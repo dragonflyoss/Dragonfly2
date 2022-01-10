@@ -124,7 +124,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize resource
-	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions)
+	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions...)
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,6 @@ import (
 
 var (
 	mockPeerID = idgen.PeerID("127.0.0.1")
-	// mockCDNPeerID = idgen.CDNPeerID("127.0.0.1")
 )
 
 func TestPeer_NewPeer(t *testing.T) {
@@ -54,7 +53,7 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
 				assert.Empty(peer.Pieces)
-				assert.Equal(peer.PieceCosts.Len(), uint(0))
+				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.Stream)
 				assert.Empty(peer.StopChannel)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
@@ -693,6 +692,76 @@ func TestPeer_IsAncestor(t *testing.T) {
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.expect(t, peer, mockChildPeer)
+		})
+	}
+}
+
+func TestPeer_AppendPieceCost(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer)
+	}{
+		{
+			name: "append piece cost",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.AppendPieceCost(1)
+				costs := peer.PieceCosts()
+				assert.Equal(costs[0], int64(1))
+			},
+		},
+		{
+			name: "piece costs slice is empty",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				costs := peer.PieceCosts()
+				assert.Equal(len(costs), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
+			tc.expect(t, peer)
+		})
+	}
+}
+
+func TestPeer_PieceCosts(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer)
+	}{
+		{
+			name: "piece costs slice is not empty",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.AppendPieceCost(1)
+				costs := peer.PieceCosts()
+				assert.Equal(costs[0], int64(1))
+			},
+		},
+		{
+			name: "piece costs slice is empty",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				costs := peer.PieceCosts()
+				assert.Equal(len(costs), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
+			tc.expect(t, peer)
 		})
 	}
 }

@@ -19,7 +19,6 @@ package resource
 import (
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -28,7 +27,7 @@ import (
 
 var (
 	mockRawHost = &scheduler.PeerHost{
-		Uuid:           uuid.New().String(),
+		Uuid:           idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -40,7 +39,7 @@ var (
 	}
 
 	mockRawCDNHost = &scheduler.PeerHost{
-		Uuid:           idgen.CDNHostID("hostname", 8001),
+		Uuid:           idgen.CDNHostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,

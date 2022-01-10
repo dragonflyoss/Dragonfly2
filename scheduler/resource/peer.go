@@ -31,7 +31,6 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -91,8 +90,8 @@ type Peer struct {
 	// Pieces is piece bitset
 	Pieces *bitset.BitSet
 
-	// PieceCosts is piece downloaded time
-	PieceCosts set.SafeSet
+	// pieceCosts is piece downloaded time
+	pieceCosts []int64
 
 	// Stream is grpc stream instance
 	Stream *atomic.Value
@@ -122,7 +121,7 @@ type Peer struct {
 	UpdateAt *atomic.Time
 
 	// Peer mutex
-	mu *sync.Mutex
+	mu *sync.RWMutex
 
 	// Peer log
 	Log *logger.SugaredLoggerOnWith
@@ -133,7 +132,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 	p := &Peer{
 		ID:          id,
 		Pieces:      &bitset.BitSet{},
-		PieceCosts:  set.NewSafeSet(),
+		pieceCosts:  []int64{},
 		Stream:      &atomic.Value{},
 		StopChannel: make(chan *dferrors.DfError, 1),
 		Task:        task,
@@ -142,7 +141,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Children:    &sync.Map{},
 		CreateAt:    atomic.NewTime(time.Now()),
 		UpdateAt:    atomic.NewTime(time.Now()),
-		mu:          &sync.Mutex{},
+		mu:          &sync.RWMutex{},
 		Log:         logger.WithTaskAndPeerID(task.ID, id),
 	}
 
@@ -336,6 +335,22 @@ func isDescendant(ancestor, descendant *Peer) bool {
 	}
 
 	return false
+}
+
+// AppendPieceCost append piece cost to costs slice
+func (p *Peer) AppendPieceCost(cost int64) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.pieceCosts = append(p.pieceCosts, cost)
+}
+
+// PieceCosts return piece costs slice
+func (p *Peer) PieceCosts() []int64 {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	return p.pieceCosts
 }
 
 // LoadStream return grpc stream

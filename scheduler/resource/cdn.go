@@ -51,8 +51,8 @@ type cdn struct {
 }
 
 // New cdn interface
-func newCDN(peerManager PeerManager, hostManager HostManager, dynconfig config.DynconfigInterface, opts []grpc.DialOption) (CDN, error) {
-	client, err := newCDNClient(dynconfig, hostManager, opts)
+func newCDN(peerManager PeerManager, hostManager HostManager, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (CDN, error) {
+	client, err := newCDNClient(dynconfig, hostManager, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		// Update piece info
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 		// TODO(244372610) CDN should set piece cost
-		peer.PieceCosts.Add(0)
+		peer.AppendPieceCost(0)
 		task.StorePiece(piece.PieceInfo)
 	}
 }
@@ -197,7 +197,7 @@ type cdnClient struct {
 }
 
 // New cdn client interface
-func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, opts []grpc.DialOption) (CDNClient, error) {
+func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, opts ...grpc.DialOption) (CDNClient, error) {
 	config, err := dynconfig.Get()
 	if err != nil {
 		return nil, err

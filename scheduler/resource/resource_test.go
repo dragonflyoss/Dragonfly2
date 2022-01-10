@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -33,18 +32,18 @@ import (
 func TestResource_New(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder)
+		mock   func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, resource Resource, err error)
 	}{
 		{
 			name: "new resource",
-			mock: func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gcMock.Add(gomock.Any()).Return(nil).Times(2),
-					dynconfigMock.Get().Return(&config.DynconfigData{
+					gc.Add(gomock.Any()).Return(nil).Times(2),
+					dynconfig.Get().Return(&config.DynconfigData{
 						CDNs: []*config.CDN{{ID: 1}},
 					}, nil).Times(1),
-					dynconfigMock.Register(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
@@ -55,55 +54,55 @@ func TestResource_New(t *testing.T) {
 		},
 		{
 			name: "new resource failed because of task manager error",
-			mock: func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gcMock.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
+					gc.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "foo")
+				assert.EqualError(err, "foo")
 			},
 		},
 		{
 			name: "new resource failed because of peer manager error",
-			mock: func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gcMock.Add(gomock.Any()).Return(nil).Times(1),
-					gcMock.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
+					gc.Add(gomock.Any()).Return(nil).Times(1),
+					gc.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "foo")
+				assert.EqualError(err, "foo")
 			},
 		},
 		{
 			name: "new resource faild because of dynconfig get error",
-			mock: func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gcMock.Add(gomock.Any()).Return(nil).Times(2),
-					dynconfigMock.Get().Return(nil, errors.New("foo")).Times(1),
+					gc.Add(gomock.Any()).Return(nil).Times(2),
+					dynconfig.Get().Return(nil, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "foo")
+				assert.EqualError(err, "foo")
 			},
 		},
 		{
 			name: "new resource faild because of cdn list is empty",
-			mock: func(gcMock *gc.MockGCMockRecorder, dynconfigMock *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gcMock.Add(gomock.Any()).Return(nil).Times(2),
-					dynconfigMock.Get().Return(&config.DynconfigData{
+					gc.Add(gomock.Any()).Return(nil).Times(2),
+					dynconfig.Get().Return(&config.DynconfigData{
 						CDNs: []*config.CDN{},
 					}, nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "address list of cdn is empty")
+				assert.EqualError(err, "address list of cdn is empty")
 			},
 		},
 	}
@@ -116,7 +115,7 @@ func TestResource_New(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			tc.mock(gc.EXPECT(), dynconfig.EXPECT())
 
-			resource, err := New(config.New(), gc, dynconfig, []grpc.DialOption{})
+			resource, err := New(config.New(), gc, dynconfig)
 			tc.expect(t, resource, err)
 		})
 	}

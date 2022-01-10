@@ -15,3 +15,390 @@
  */
 
 package resource
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"testing"
+
+	gomock "github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
+	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
+)
+
+func TestCDN_newCDN(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name: "new cdn",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{{ID: 1}},
+					}, nil).Times(1),
+					hostManager.Store(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "new cdn failed because of dynconfig get error data",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				dynconfig.Get().Return(nil, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+		{
+			name: "new cdn failed because of cdn list is empty",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{},
+					}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "address list of cdn is empty")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			hostManager := NewMockHostManager(ctl)
+			peerManager := NewMockPeerManager(ctl)
+			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
+
+			_, err := newCDN(peerManager, hostManager, dynconfig)
+			tc.expect(t, err)
+		})
+	}
+}
+
+func TestCDNClient_newCDNClient(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
+		expect func(t *testing.T, err error)
+	}{
+		{
+			name: "new cdn client",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{{ID: 1}},
+					}, nil).Times(1),
+					hostManager.Store(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+			},
+		},
+		{
+			name: "new cdn client failed because of dynconfig get error data",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				dynconfig.Get().Return(nil, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+		{
+			name: "new cdn client failed because of cdn list is empty",
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{},
+					}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "address list of cdn is empty")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			hostManager := NewMockHostManager(ctl)
+			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
+
+			_, err := newCDNClient(dynconfig, hostManager)
+			tc.expect(t, err)
+		})
+	}
+}
+
+func TestCDNClient_OnNotify(t *testing.T) {
+	tests := []struct {
+		name string
+		data *config.DynconfigData
+		mock func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
+	}{
+		{
+			name: "notify client",
+			data: &config.DynconfigData{
+				CDNs: []*config.CDN{{
+					ID: 1,
+					IP: "0.0.0.0",
+				}},
+			},
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{{
+							ID: 1,
+							IP: "127.0.0.1",
+						}},
+					}, nil).Times(1),
+					hostManager.Store(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					hostManager.Store(gomock.Any()).Return().Times(1),
+				)
+			},
+		},
+		{
+			name: "cdn list is deep equal",
+			data: &config.DynconfigData{
+				CDNs: []*config.CDN{{
+					ID: 1,
+					IP: "127.0.0.1",
+				}},
+			},
+			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
+				gomock.InOrder(
+					dynconfig.Get().Return(&config.DynconfigData{
+						CDNs: []*config.CDN{{
+							ID: 1,
+							IP: "127.0.0.1",
+						}},
+					}, nil).Times(1),
+					hostManager.Store(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+				)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			hostManager := NewMockHostManager(ctl)
+			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
+
+			client, err := newCDNClient(dynconfig, hostManager)
+			if err != nil {
+				t.Fatal(err)
+			}
+			client.OnNotify(tc.data)
+		})
+	}
+}
+
+func TestCDNClient_cdnsToHosts(t *testing.T) {
+	mockCDNClusterConfig, err := json.Marshal(&types.CDNClusterConfig{
+		LoadLimit:   10,
+		NetTopology: "foo",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name   string
+		cdns   []*config.CDN
+		expect func(t *testing.T, hosts map[string]*Host)
+	}{
+		{
+			name: "cdns covert to hosts",
+			cdns: []*config.CDN{
+				{
+					ID:           1,
+					Hostname:     mockRawCDNHost.HostName,
+					IP:           mockRawCDNHost.Ip,
+					Port:         mockRawCDNHost.RpcPort,
+					DownloadPort: mockRawCDNHost.DownPort,
+					Location:     mockRawCDNHost.Location,
+					IDC:          mockRawCDNHost.Idc,
+					CDNCluster: &config.CDNCluster{
+						Config: mockCDNClusterConfig,
+					},
+				},
+			},
+			expect: func(t *testing.T, hosts map[string]*Host) {
+				assert := assert.New(t)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].ID, mockRawCDNHost.Uuid)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IP, mockRawCDNHost.Ip)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Hostname, mockRawCDNHost.HostName)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Port, mockRawCDNHost.RpcPort)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].DownloadPort, mockRawCDNHost.DownPort)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IDC, mockRawCDNHost.Idc)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].NetTopology, "foo")
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Location, mockRawCDNHost.Location)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(10))
+				assert.Empty(hosts[mockRawCDNHost.Uuid].Peers)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IsCDN, true)
+				assert.NotEqual(hosts[mockRawCDNHost.Uuid].CreateAt.Load(), 0)
+				assert.NotEqual(hosts[mockRawCDNHost.Uuid].UpdateAt.Load(), 0)
+				assert.NotNil(hosts[mockRawCDNHost.Uuid].Log)
+			},
+		},
+		{
+			name: "cdns covert to hosts without cluster config",
+			cdns: []*config.CDN{
+				{
+					ID:           1,
+					Hostname:     mockRawCDNHost.HostName,
+					IP:           mockRawCDNHost.Ip,
+					Port:         mockRawCDNHost.RpcPort,
+					DownloadPort: mockRawCDNHost.DownPort,
+					Location:     mockRawCDNHost.Location,
+					IDC:          mockRawCDNHost.Idc,
+				},
+			},
+			expect: func(t *testing.T, hosts map[string]*Host) {
+				assert := assert.New(t)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].ID, mockRawCDNHost.Uuid)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IP, mockRawCDNHost.Ip)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Hostname, mockRawCDNHost.HostName)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Port, mockRawCDNHost.RpcPort)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].DownloadPort, mockRawCDNHost.DownPort)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IDC, mockRawCDNHost.Idc)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].NetTopology, "")
+				assert.Equal(hosts[mockRawCDNHost.Uuid].Location, mockRawCDNHost.Location)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
+				assert.Empty(hosts[mockRawCDNHost.Uuid].Peers)
+				assert.Equal(hosts[mockRawCDNHost.Uuid].IsCDN, true)
+				assert.NotEqual(hosts[mockRawCDNHost.Uuid].CreateAt.Load(), 0)
+				assert.NotEqual(hosts[mockRawCDNHost.Uuid].UpdateAt.Load(), 0)
+				assert.NotNil(hosts[mockRawCDNHost.Uuid].Log)
+			},
+		},
+		{
+			name: "cdns is empty",
+			cdns: []*config.CDN{},
+			expect: func(t *testing.T, hosts map[string]*Host) {
+				assert := assert.New(t)
+				assert.Equal(len(hosts), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, cdnsToHosts(tc.cdns))
+		})
+	}
+}
+
+func TestCDNClient_cdnsToNetAddrs(t *testing.T) {
+	tests := []struct {
+		name   string
+		cdns   []*config.CDN
+		expect func(t *testing.T, netAddrs []dfnet.NetAddr)
+	}{
+		{
+			name: "cdns covert to netAddr",
+			cdns: []*config.CDN{
+				{
+					ID:           1,
+					Hostname:     mockRawCDNHost.HostName,
+					IP:           mockRawCDNHost.Ip,
+					Port:         mockRawCDNHost.RpcPort,
+					DownloadPort: mockRawCDNHost.DownPort,
+					Location:     mockRawCDNHost.Location,
+					IDC:          mockRawCDNHost.Idc,
+				},
+			},
+			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
+				assert := assert.New(t)
+				assert.Equal(netAddrs[0].Type, dfnet.TCP)
+				assert.Equal(netAddrs[0].Addr, fmt.Sprintf("%s:%d", mockRawCDNHost.Ip, mockRawCDNHost.RpcPort))
+			},
+		},
+		{
+			name: "cdns is empty",
+			cdns: []*config.CDN{},
+			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
+				assert := assert.New(t)
+				assert.Equal(len(netAddrs), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, cdnsToNetAddrs(tc.cdns))
+		})
+	}
+}
+
+func TestCDNClient_getCDNIPs(t *testing.T) {
+	tests := []struct {
+		name   string
+		cdns   []*config.CDN
+		expect func(t *testing.T, ips []string)
+	}{
+		{
+			name: "cdns covert to hosts",
+			cdns: []*config.CDN{
+				{
+					ID:           1,
+					Hostname:     mockRawCDNHost.HostName,
+					IP:           mockRawCDNHost.Ip,
+					Port:         mockRawCDNHost.RpcPort,
+					DownloadPort: mockRawCDNHost.DownPort,
+					Location:     mockRawCDNHost.Location,
+					IDC:          mockRawCDNHost.Idc,
+				},
+			},
+			expect: func(t *testing.T, ips []string) {
+				assert := assert.New(t)
+				assert.Equal(ips[0], mockRawCDNHost.Ip)
+			},
+		},
+		{
+			name: "cdns is empty",
+			cdns: []*config.CDN{},
+			expect: func(t *testing.T, ips []string) {
+				assert := assert.New(t)
+				assert.Equal(len(ips), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.expect(t, getCDNIPs(tc.cdns))
+		})
+	}
+}

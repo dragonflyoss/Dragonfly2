@@ -59,7 +59,7 @@ func TestTaskManager_newTaskManager(t *testing.T) {
 			},
 			expect: func(t *testing.T, taskManager TaskManager, err error) {
 				assert := assert.New(t)
-				assert.Errorf(err, "foo")
+				assert.EqualError(err, "foo")
 			},
 		},
 	}
