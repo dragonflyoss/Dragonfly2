@@ -89,7 +89,6 @@ const (
 
 // ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
-
 	// GetContentLength get length of resource content
 	// return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(request *Request) (int64, error)

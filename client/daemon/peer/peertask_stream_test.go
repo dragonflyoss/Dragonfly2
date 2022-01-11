@@ -54,8 +54,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		mockContentLength = len(testBytes)
 		//mockPieceCount    = int(math.Ceil(float64(mockContentLength) / float64(pieceSize)))
 
-		peerID = "peer-back-source-out-content-length"
-		taskID = "task-back-source-out-content-length"
+		peerID = "peer-back-source-with-content-length"
+		taskID = "task-back-source-with-content-length"
 
 		url = "http://localhost/test/data"
 	)
@@ -63,6 +63,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		ctrl,
 		componentsOption{
 			taskID:             taskID,
+			backSource:         true,
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
@@ -98,6 +99,7 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:  storageManager,
@@ -121,15 +123,8 @@ func TestStreamPeerTask_BackSource_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
+	pt, err := ptm.newStreamTask(ctx, req)
 	assert.Nil(err, "new stream peer task")
-	pt.SetCallback(&streamPeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: time.Now(),
-	})
-	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
@@ -166,6 +161,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			backSource:         true,
 		})
 	defer storageManager.CleanUp()
 
@@ -198,6 +194,7 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			storageManager:  storageManager,
@@ -221,15 +218,8 @@ func TestStreamPeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
+	pt, err := ptm.newStreamTask(ctx, req)
 	assert.Nil(err, "new stream peer task")
-	pt.SetCallback(&streamPeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: time.Now(),
-	})
-	pt.needBackSource = true
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")

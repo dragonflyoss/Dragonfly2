@@ -94,7 +94,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		DoneCallback:    func() {},
 	}
 
-	// make a new buffered channel, because we did not need to call newFilePeerTask
+	// make a new buffered channel, because we did not need to call newFileTask
 	progressCh := make(chan *FilePeerTaskProgress, 1)
 	progressCh <- pg
 
@@ -114,7 +114,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	log := logger.With("peer", request.PeerId, "task", taskID, "component", "reuseStreamPeerTask")
 	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
 
-	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))

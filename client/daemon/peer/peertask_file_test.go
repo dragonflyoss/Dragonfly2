@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -71,6 +70,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			backSource:         true,
 		})
 	defer storageManager.CleanUp()
 
@@ -106,11 +106,14 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:   storageManager,
-			pieceDownloader:  downloader,
-			computePieceSize: util.ComputePieceSize,
+			storageManager:  storageManager,
+			pieceDownloader: downloader,
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
+			},
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -130,22 +133,8 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	_, pt, _, err := newFilePeerTask(ctx,
-		ptm.host,
-		ptm.pieceManager,
-		req,
-		ptm.schedulerClient,
-		ptm.schedulerOption,
-		0, 10)
+	_, pt, err := ptm.newFileTask(ctx, req, 0)
 	assert.Nil(err, "new file peer task")
-	pt.needBackSource = true
-
-	pt.SetCallback(&filePeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: time.Now(),
-	})
 
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")
@@ -196,6 +185,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			backSource:         true,
 		})
 	defer storageManager.CleanUp()
 
@@ -210,6 +200,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		})
 
 	sourceClient := sourceMock.NewMockResourceClient(ctrl)
+	source.UnRegister("http")
 	require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
 	sourceClient.EXPECT().GetContentLength(gomock.Any()).DoAndReturn(
@@ -231,11 +222,14 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
-			storageManager:   storageManager,
-			pieceDownloader:  downloader,
-			computePieceSize: util.ComputePieceSize,
+			storageManager:  storageManager,
+			pieceDownloader: downloader,
+			computePieceSize: func(contentLength int64) uint32 {
+				return uint32(pieceSize)
+			},
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
@@ -255,22 +249,8 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		Output: output,
 	}
 	ctx := context.Background()
-	_, pt, _, err := newFilePeerTask(ctx,
-		ptm.host,
-		ptm.pieceManager,
-		req,
-		ptm.schedulerClient,
-		ptm.schedulerOption,
-		0, 10)
+	_, pt, err := ptm.newFileTask(ctx, req, 0)
 	assert.Nil(err, "new file peer task")
-	pt.needBackSource = true
-
-	pt.SetCallback(&filePeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: time.Now(),
-	})
 
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")

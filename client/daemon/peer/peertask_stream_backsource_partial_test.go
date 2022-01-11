@@ -33,6 +33,7 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -105,12 +106,19 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 
 	// 2. setup a scheduler
 	pps := mock_scheduler.NewMockPeerPacketStream(ctrl)
-	wg := sync.WaitGroup{}
+	var (
+		wg             = sync.WaitGroup{}
+		backSourceSent = atomic.Bool{}
+	)
 	wg.Add(1)
+
 	pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(
 		func(pr *scheduler.PieceResult) error {
 			if pr.PieceInfo.PieceNum == 0 && pr.Success {
-				wg.Done()
+				if !backSourceSent.Load() {
+					wg.Done()
+					backSourceSent.Store(true)
+				}
 			}
 			return nil
 		})
@@ -239,6 +247,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
+		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager:     pm,
 		storageManager:   storageManager,
@@ -256,14 +265,8 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	_, pt, _, err := newStreamPeerTask(ctx, ptm, req)
+	pt, err := ptm.newStreamTask(ctx, req)
 	assert.Nil(err, "new stream peer task")
-	pt.SetCallback(&streamPeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: time.Now(),
-	})
 
 	rc, _, err := pt.Start(ctx)
 	assert.Nil(err, "start stream peer task")
