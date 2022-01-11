@@ -88,11 +88,12 @@ func (mr *MockServiceMockRecorder) HandlePiece(arg0, arg1, arg2 interface{}) *go
 }
 
 // LoadOrStoreHost mocks base method.
-func (m *MockService) LoadOrStoreHost(arg0 context.Context, arg1 *scheduler.PeerTaskRequest) *resource.Host {
+func (m *MockService) LoadOrStoreHost(arg0 context.Context, arg1 *scheduler.PeerTaskRequest) (*resource.Host, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrStoreHost", arg0, arg1)
 	ret0, _ := ret[0].(*resource.Host)
-	return ret0
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // LoadOrStoreHost indicates an expected call of LoadOrStoreHost.
@@ -102,11 +103,12 @@ func (mr *MockServiceMockRecorder) LoadOrStoreHost(arg0, arg1 interface{}) *gomo
 }
 
 // LoadOrStorePeer mocks base method.
-func (m *MockService) LoadOrStorePeer(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 *resource.Task, arg3 *resource.Host) *resource.Peer {
+func (m *MockService) LoadOrStorePeer(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 *resource.Task, arg3 *resource.Host) (*resource.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrStorePeer", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*resource.Peer)
-	return ret0
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // LoadOrStorePeer indicates an expected call of LoadOrStorePeer.

@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
@@ -33,8 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/mocks"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestService_New(t *testing.T) {
@@ -292,7 +293,7 @@ func TestService_LoadOrStoreHost(t *testing.T) {
 		name   string
 		req    *rpcscheduler.PeerTaskRequest
 		mock   func(mockHost *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
-		expect func(t *testing.T, host *resource.Host)
+		expect func(t *testing.T, host *resource.Host, loaded bool)
 	}{
 		{
 			name: "host already exists",
@@ -307,9 +308,10 @@ func TestService_LoadOrStoreHost(t *testing.T) {
 					mh.Load(gomock.Eq(mockRawHost.Uuid)).Return(mockHost, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, host *resource.Host) {
+			expect: func(t *testing.T, host *resource.Host, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.True(loaded)
 			},
 		},
 		{
@@ -328,10 +330,11 @@ func TestService_LoadOrStoreHost(t *testing.T) {
 					mh.Store(gomock.Any()).Return().Times(1),
 				)
 			},
-			expect: func(t *testing.T, host *resource.Host) {
+			expect: func(t *testing.T, host *resource.Host, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Uuid)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(10))
+				assert.False(loaded)
 			},
 		},
 		{
@@ -350,9 +353,10 @@ func TestService_LoadOrStoreHost(t *testing.T) {
 					mh.Store(gomock.Any()).Return().Times(1),
 				)
 			},
-			expect: func(t *testing.T, host *resource.Host) {
+			expect: func(t *testing.T, host *resource.Host, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.False(loaded)
 			},
 		},
 	}
@@ -369,7 +373,8 @@ func TestService_LoadOrStoreHost(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
 
 			tc.mock(mockHost, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
-			tc.expect(t, svc.LoadOrStoreHost(context.Background(), tc.req))
+			host, loaded := svc.LoadOrStoreHost(context.Background(), tc.req)
+			tc.expect(t, host, loaded)
 		})
 	}
 }
@@ -379,7 +384,7 @@ func TestService_LoadOrStorePeer(t *testing.T) {
 		name   string
 		req    *rpcscheduler.PeerTaskRequest
 		mock   func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
-		expect func(t *testing.T, peer *resource.Peer)
+		expect func(t *testing.T, peer *resource.Peer, loaded bool)
 	}{
 		{
 			name: "peer already exists",
@@ -392,9 +397,10 @@ func TestService_LoadOrStorePeer(t *testing.T) {
 					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, peer *resource.Peer) {
+			expect: func(t *testing.T, peer *resource.Peer, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
+				assert.True(loaded)
 			},
 		},
 		{
@@ -408,9 +414,10 @@ func TestService_LoadOrStorePeer(t *testing.T) {
 					mp.LoadOrStore(gomock.Any()).Return(mockPeer, false).Times(1),
 				)
 			},
-			expect: func(t *testing.T, peer *resource.Peer) {
+			expect: func(t *testing.T, peer *resource.Peer, loaded bool) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
+				assert.False(loaded)
 			},
 		},
 	}
@@ -429,7 +436,8 @@ func TestService_LoadOrStorePeer(t *testing.T) {
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.mock(mockPeer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			tc.expect(t, svc.LoadOrStorePeer(context.Background(), tc.req, mockTask, mockHost))
+			peer, loaded := svc.LoadOrStorePeer(context.Background(), tc.req, mockTask, mockHost)
+			tc.expect(t, peer, loaded)
 		})
 	}
 }

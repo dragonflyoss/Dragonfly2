@@ -245,19 +245,6 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "parent pieces count is less than peer pieces count",
-			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				mockPeer.FSM.SetState(resource.PeerStateRunning)
-				peer.Task.StorePeer(mockPeer)
-				peer.Pieces.Set(0)
-			},
-			expect: func(t *testing.T, parents []*resource.Peer, ok bool) {
-				assert := assert.New(t)
-				assert.False(ok)
-			},
-		},
-		{
 			name: "peer stream is empty",
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -393,19 +380,6 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
 				mockPeer.Host.UploadLoadLimit.Store(0)
-			},
-			expect: func(t *testing.T, parent *resource.Peer, ok bool) {
-				assert := assert.New(t)
-				assert.False(ok)
-			},
-		},
-		{
-			name: "parent pieces count is less than peer pieces count",
-			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				mockPeer.FSM.SetState(resource.PeerStateRunning)
-				peer.Task.StorePeer(mockPeer)
-				peer.Pieces.Set(0)
 			},
 			expect: func(t *testing.T, parent *resource.Peer, ok bool) {
 				assert := assert.New(t)

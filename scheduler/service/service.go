@@ -35,8 +35,8 @@ type Service interface {
 	Scheduler() scheduler.Scheduler
 	CDN() resource.CDN
 	RegisterTask(context.Context, *rpcscheduler.PeerTaskRequest) (*resource.Task, error)
-	LoadOrStoreHost(context.Context, *rpcscheduler.PeerTaskRequest) *resource.Host
-	LoadOrStorePeer(context.Context, *rpcscheduler.PeerTaskRequest, *resource.Task, *resource.Host) *resource.Peer
+	LoadOrStoreHost(context.Context, *rpcscheduler.PeerTaskRequest) (*resource.Host, bool)
+	LoadOrStorePeer(context.Context, *rpcscheduler.PeerTaskRequest, *resource.Task, *resource.Host) (*resource.Peer, bool)
 	LoadPeer(string) (*resource.Peer, bool)
 	HandlePiece(context.Context, *resource.Peer, *rpcscheduler.PieceResult)
 	HandlePeer(context.Context, *resource.Peer, *rpcscheduler.PeerResult)
@@ -132,7 +132,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	return task, nil
 }
 
-func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *resource.Host {
+func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Host, bool) {
 	rawHost := req.PeerHost
 	host, ok := s.resource.HostManager().Load(rawHost.Uuid)
 	if !ok {
@@ -145,17 +145,16 @@ func (s *service) LoadOrStoreHost(ctx context.Context, req *rpcscheduler.PeerTas
 		host = resource.NewHost(rawHost, options...)
 		s.resource.HostManager().Store(host)
 		host.Log.Info("create host")
-		return host
+		return host, false
 	}
 
 	host.Log.Info("host already exists")
-	return host
+	return host, true
 }
 
-func (s *service) LoadOrStorePeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) *resource.Peer {
+func (s *service) LoadOrStorePeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) (*resource.Peer, bool) {
 	peer := resource.NewPeer(req.PeerId, task, host)
-	peer, _ = s.resource.PeerManager().LoadOrStore(peer)
-	return peer
+	return s.resource.PeerManager().LoadOrStore(peer)
 }
 
 func (s *service) LoadPeer(id string) (*resource.Peer, bool) {
@@ -197,7 +196,13 @@ func (s *service) HandlePiece(ctx context.Context, peer *resource.Peer, piece *r
 
 	// Handle piece download failed
 	if piece.Code != base.Code_Success {
-		peer.Log.Infof("receive failed piece: %#v %#v", piece, piece.PieceInfo)
+
+		// Wait for the client piece to be ready
+		// to prevent redundant logs from being printed
+		if piece.Code != base.Code_ClientWaitPieceReady {
+			peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
+		}
+
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}

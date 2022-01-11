@@ -136,11 +136,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	service := service.New(cfg, resource, scheduler, dynConfig)
 
 	// Initialize grpc service
-	grpcServer, err := rpcserver.New(cfg, service, serverOptions...)
-	if err != nil {
-		return nil, err
-	}
-	s.grpcServer = grpcServer
+	svr := rpcserver.New(service, serverOptions...)
+	s.grpcServer = svr.Server
 
 	// Initialize job service
 	if cfg.Job.Enable {
@@ -152,7 +149,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize metrics
 	if cfg.Metrics.Enable {
-		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
+		s.metricsServer = metrics.New(cfg.Metrics, s.grpcServer)
 	}
 
 	return s, nil

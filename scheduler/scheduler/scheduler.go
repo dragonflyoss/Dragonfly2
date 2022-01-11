@@ -143,11 +143,6 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
-		if parent.Pieces.Count() <= peer.Pieces.Count() {
-			peer.Log.Infof("parent %s is not selected because its pieces count is less than peer pieces count", parent.ID)
-			return true
-		}
-
 		parents = append(parents, parent)
 		peer.Log.Infof("parent %s is selected", parent.ID)
 		return true

@@ -29,29 +29,26 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
-	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
-type server struct {
+type Server struct {
 	*grpc.Server
 	service service.Service
-	config  *config.Config
 }
 
 // New returns a new transparent scheduler server from the given options
-func New(cfg *config.Config, service service.Service, opts ...grpc.ServerOption) (*grpc.Server, error) {
-	svr := &server{
+func New(service service.Service, opts ...grpc.ServerOption) *Server {
+	svr := &Server{
 		service: service,
-		config:  cfg,
 	}
 
 	svr.Server = schedulerserver.New(svr, opts...)
-	return svr.Server, nil
+	return svr
 }
 
-func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	// Get task or add new task
 	task, err := s.service.RegisterTask(ctx, req)
 	if err != nil {
@@ -82,13 +79,13 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}
 
 			// Fallback to base.SizeScope_SMALL
-			log.Warnf("task size scope is tiny, but task.DirectPiece length is %d, not %d",
+			log.Warnf("task size scope is tiny, but task.DirectPiece length is %d, not %d. fall through to size scope small",
 				len(task.DirectPiece), task.ContentLength.Load())
 			fallthrough
 		case base.SizeScope_SMALL:
 			log.Info("task size scope is small")
-			host := s.service.LoadOrStoreHost(ctx, req)
-			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
+			host, _ := s.service.LoadOrStoreHost(ctx, req)
+			peer, _ := s.service.LoadOrStorePeer(ctx, req, task, host)
 
 			// If the file is registered as a small type,
 			// there is no need to build a tree, just find the parent and return
@@ -140,8 +137,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}, nil
 		default:
 			log.Info("task size scope is normal and needs to be register")
-			host := s.service.LoadOrStoreHost(ctx, req)
-			peer := s.service.LoadOrStorePeer(ctx, req, task, host)
+			host, _ := s.service.LoadOrStoreHost(ctx, req)
+			peer, _ := s.service.LoadOrStorePeer(ctx, req, task, host)
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				dferr := dferrors.New(base.Code_SchedError, err.Error())
 				log.Errorf("peer %s register is failed: %v", req.PeerId, err)
@@ -157,8 +154,8 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 	// Task is unsuccessful
 	log.Info("task is unsuccessful and needs to be register")
-	host := s.service.LoadOrStoreHost(ctx, req)
-	peer := s.service.LoadOrStorePeer(ctx, req, task, host)
+	host, _ := s.service.LoadOrStoreHost(ctx, req)
+	peer, _ := s.service.LoadOrStorePeer(ctx, req, task, host)
 	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 		dferr := dferrors.New(base.Code_SchedError, err.Error())
 		log.Errorf("peer %s register is failed: %v", req.PeerId, err)
@@ -171,7 +168,7 @@ func (s *server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	}, nil
 }
 
-func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	ctx := stream.Context()
 
 	// Handle begin of piece
@@ -222,7 +219,7 @@ func (s *server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 	}
 }
 
-func (s *server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (err error) {
+func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (err error) {
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("report peer result: peer %s is not exists", req.PeerId)
@@ -234,7 +231,7 @@ func (s *server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 	return nil
 }
 
-func (s *server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err error) {
+func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err error) {
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
