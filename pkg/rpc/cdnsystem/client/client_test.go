@@ -18,67 +18,88 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"os"
 	"reflect"
-	"strings"
 	"testing"
-	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/resolver/manual"
-	"google.golang.org/grpc/status"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 )
-
-type tester struct{}
-
-func Test(t *testing.T) {
-	RunSubTests(t, tester{})
-}
-
-func RunSubTests(t *testing.T, x tester) {
-	xt := reflect.TypeOf(x)
-	xv := reflect.ValueOf(x)
-
-	for i := 0; i < xt.NumMethod(); i++ {
-		methodName := xt.Method(i).Name
-		if !strings.HasPrefix(methodName, "Test") {
-			continue
-		}
-		tfunc := xv.MethodByName(methodName).Interface().(func(*testing.T))
-		t.Run(strings.TrimPrefix(methodName, "Test"), func(t *testing.T) {
-			tfunc(t)
-		})
-	}
-}
 
 type testServer struct {
 	cdnsystem.UnimplementedSeederServer
+	seedPieces map[string][]*cdnsystem.PieceSeed
 }
 
-func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, server cdnsystem.Seeder_ObtainSeedsServer) error {
-	//TODO implement me
-	panic("implement me")
+func (s *testServer) loadPieces() {
+	data, err := os.ReadFile("../testdata/seed_piece_info.json")
+	if err != nil {
+		log.Fatalf("failed to load seed piece info: %v", err)
+	}
+	if err := json.Unmarshal(data, &s.seedPieces); err != nil {
+		log.Fatalf("failed to load piece info: %v", err)
+	}
 }
 
-func (s *testServer) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
+	pieceInfos, ok := s.seedPieces[request.TaskId]
+	if !ok {
+		return nil
+	}
+	for _, info := range pieceInfos {
+		if err := stream.Send(info); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	pieces, ok := s.seedPieces[req.TaskId]
+	if !ok {
+
+	}
+	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
+	var count uint32 = 0
+	for _, info := range pieces {
+		if uint32(info.PieceInfo.PieceNum) >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
+			p := &base.PieceInfo{
+				PieceNum:    info.PieceInfo.PieceNum,
+				RangeStart:  info.PieceInfo.RangeStart,
+				RangeSize:   info.PieceInfo.RangeSize,
+				PieceMd5:    info.PieceInfo.PieceMd5,
+				PieceOffset: info.PieceInfo.PieceOffset,
+				PieceStyle:  info.PieceInfo.PieceStyle,
+			}
+			pieceInfos = append(pieceInfos, p)
+			count++
+		}
+	}
+	pp := &base.PiecePacket{
+		TaskId:        req.TaskId,
+		DstPid:        req.DstPid,
+		DstAddr:       fmt.Sprintf("%s:%s", "127.0.0.1", "8080"),
+		PieceInfos:    pieceInfos,
+		TotalPiece:    pieces[len(pieces)-1].TotalPieceCount,
+		ContentLength: pieces[len(pieces)-1].ContentLength,
+		PieceMd5Sign:  "",
+	}
+	return pp, nil
 }
 
 var _ cdnsystem.SeederServer = (*testServer)(nil)
 
 func newTestServer() *testServer {
-	// Each testServer is disposable.
-	return &testServer{}
+	s := &testServer{}
+	s.loadPieces()
+	return s
 }
 
 type testServerData struct {
@@ -131,79 +152,83 @@ func TestOneBackend(t *testing.T) {
 	}
 	defer test.cleanup()
 
-	r := manual.NewBuilderWithScheme("cdn")
-	//r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
-	r.InitialState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}}})
-
-	cdnClient, err := Dial(r.Scheme()+":///test.server", grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithResolvers(r),
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
+	cdnClient, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}})
 	if err != nil {
-		t.Fatalf("failed to dial: %v", err)
+		t.Fatalf("failed to get cdn client: %v", err)
 	}
 	defer cdnClient.Close()
 
+	var testTask = "task1"
+	verifyPieces := test.serverImpls[0].seedPieces[testTask]
 	{
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if _, err := cdnClient.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
-			TaskId:  "test1",
+		stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+			TaskId:  testTask,
 			Url:     "https://dragonfly.com",
 			UrlMeta: nil,
-		}); err == nil || status.Code(err) != codes.DeadlineExceeded {
+		})
+		if err != nil {
 			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+		}
+		var count int32
+		for {
+			piece, err := stream.Recv()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("recv got error: %v", err)
+			}
+			if !reflect.DeepEqual(piece, verifyPieces[count]) {
+				//t.Fatalf("failed to verify piece")
+			}
+			count++
 		}
 	}
 
-	// The second RPC should succeed.
 	{
-		if _, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
-			TaskId:  "",
-			Url:     "",
-			UrlMeta: nil,
+		if _, err := cdnClient.GetPieceTasks(context.Background(), dfnet.NetAddr{Addr: test.addresses[0]}, &base.PieceTaskRequest{
+			TaskId:   testTask,
+			SrcPid:   "peer1",
+			DstPid:   "peer2",
+			StartNum: 0,
+			Limit:    1,
 		}); err != nil {
 			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
 		}
 	}
 }
 
-func (tester) TestMigration(t *testing.T) {
-	r := manual.NewBuilderWithScheme("whatever")
-
+func TestMigration(t *testing.T) {
 	test, err := startTestServers(2)
 	if err != nil {
-		t.Fatalf("failed to start servers: %v", err)
+		t.Fatalf("failed to get cdn client: %v", err)
 	}
 	defer test.cleanup()
 
-	cc, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r),
-		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)))
+	cdnClient, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}})
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
-	defer cc.Close()
-
-	r.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}}})
-	testc := testpb.NewTestServiceClient(cc)
+	defer cdnClient.Close()
 
 	// The first RPC should succeed.
 	{
-		if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err != nil {
-			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
-		}
+		//if _, err := cdnClient.ObtainSeeds(context.Background(), &testpb.Empty{}); err != nil {
+		//	t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		//}
 	}
 
 	// Because each testServer is disposable, the second RPC should fail.
 	{
-		if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
-			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
-		}
+		//if _, err := cdnClient.ObtainSeeds(context.Background(), &testpb.Empty{}); err == nil || status.Code(err) != codes.DeadlineExceeded {
+		//	t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+		//}
 	}
 
 	// The third RPC change the Attempt in PickReq, so it should succeed.
 	{
-		if _, err := testc.EmptyCall(context.Background(), &testpb.Empty{}); err != nil {
-			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
-		}
+		//if _, err := cdnClient.ObtainSeeds(context.Background(), &testpb.Empty{}); err != nil {
+		//	t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		//}
 	}
 }

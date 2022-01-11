@@ -1,0 +1,66 @@
+{
+  "task1": [
+    {
+      "peer_id": "peer1",
+      "host_uuid": "host1",
+      "piece_info": {
+        "piece_num": 3,
+        "range_start": 3,
+        "range_size": 3,
+        "piece_md5": "ddd",
+        "piece_offset": 3,
+        "piece_style": 1
+      },
+      "done": true,
+      "content_length": 122,
+      "total_piece_count": 2
+    },
+    {
+      "peer_id": "peer1",
+      "host_uuid": "host1",
+      "piece_info": {
+        "piece_num": 3,
+        "range_start": 3,
+        "range_size": 3,
+        "piece_md5": "ddd",
+        "piece_offset": 3,
+        "piece_style": 1
+      },
+      "done": true,
+      "content_length": 122,
+      "total_piece_count": 2
+    }
+  ],
+  "Task2": [
+    {
+      "peer_id": "peer2",
+      "host_uuid": "host2",
+      "piece_info": {
+        "piece_num": 3,
+        "range_start": 3,
+        "range_size": 3,
+        "piece_md5": "ddd",
+        "piece_offset": 3,
+        "piece_style": 1
+      },
+      "done": true,
+      "content_length": 122,
+      "total_piece_count": 2
+    },
+    {
+      "peer_id": "peer2",
+      "host_uuid": "host2",
+      "piece_info": {
+        "piece_num": 3,
+        "range_start": 3,
+        "range_size": 3,
+        "piece_md5": "ddd",
+        "piece_offset": 3,
+        "piece_style": 1
+      },
+      "done": true,
+      "content_length": 122,
+      "total_piece_count": 2
+    }
+  ]
+}

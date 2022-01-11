@@ -20,16 +20,15 @@ import (
 	"context"
 	"fmt"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/status"
 )
 
 func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient, error) {
@@ -66,7 +65,7 @@ type CDNClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
-	UpdateState(addrs []dfnet.NetAddr)
+	UpdateAddresses(addrs []dfnet.NetAddr)
 
 	Close() error
 }
@@ -74,34 +73,30 @@ type CDNClient interface {
 type cdnClient struct {
 	cc           *grpc.ClientConn
 	seederClient cdnsystem.SeederClient
-	resolver     resolver.Resolver
+	resolver     *rpc.D7yResolver
 }
 
 var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
-	var temp peer.Peer
-
-	seeder, err := cc.seederClient.ObtainSeeds(ctx, req, append(opts, grpc.Peer(&temp))...)
-	if err == nil {
-		return seeder, err
-	}
-	_, err = seeder.Recv()
-	rpc.FromContext(ctx)
-	status.FromContextError(err)
-	// try next CDN
-	return nil, nil
+	opts = append([]grpc.CallOption{
+		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
+	}, opts...)
+	return cc.seederClient.ObtainSeeds(ctx, req, opts...)
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
 		TargetAddr: addr.String(),
 	})
+	opts = append([]grpc.CallOption{
+		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
+	}, opts...)
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
 }
 
-func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {
-	cc.resolver.
+func (cc *cdnClient) UpdateAddresses(addrs []dfnet.NetAddr) {
+	cc.resolver.UpdateAddresses(addrs)
 }
 
 func (cc *cdnClient) Close() error {

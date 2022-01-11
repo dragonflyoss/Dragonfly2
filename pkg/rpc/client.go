@@ -32,7 +32,7 @@ import (
 
 var DefaultClientOpts = []grpc.DialOption{
 	grpc.FailOnNonTempDialError(true),
-	grpc.WithBlock(),
+	//grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{

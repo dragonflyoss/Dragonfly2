@@ -41,7 +41,7 @@ func (n NetAddr) GetEndpoint() string {
 	case UNIX:
 		return "unix://" + n.Addr
 	default:
-		return "dns:///" + n.Addr
+		return n.Addr
 	}
 }
 
