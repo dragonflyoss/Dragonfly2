@@ -20,11 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"net"
 	"os"
-	"reflect"
 	"testing"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -51,7 +54,7 @@ func (s *testServer) loadPieces() {
 func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
 	pieceInfos, ok := s.seedPieces[request.TaskId]
 	if !ok {
-		return nil
+		return status.Errorf(codes.FailedPrecondition, "task not found")
 	}
 	for _, info := range pieceInfos {
 		if err := stream.Send(info); err != nil {
@@ -64,7 +67,7 @@ func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsyste
 func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	pieces, ok := s.seedPieces[req.TaskId]
 	if !ok {
-
+		return nil, status.Errorf(codes.FailedPrecondition, "task not found")
 	}
 	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
 	var count uint32 = 0
@@ -167,7 +170,7 @@ func TestOneBackend(t *testing.T) {
 			UrlMeta: nil,
 		})
 		if err != nil {
-			t.Fatalf("EmptyCall() = _, %v, want _, DeadlineExceeded", err)
+			t.Fatalf("failed to call ObtainSeeds: %v", err)
 		}
 		var count int32
 		for {
@@ -176,10 +179,10 @@ func TestOneBackend(t *testing.T) {
 				break
 			}
 			if err != nil {
-				t.Fatalf("recv got error: %v", err)
+				t.Fatalf("failed to recv piece: %v", err)
 			}
-			if !reflect.DeepEqual(piece, verifyPieces[count]) {
-				//t.Fatalf("failed to verify piece")
+			if !cmp.Equal(piece, verifyPieces[count], cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+				t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count], piece)
 			}
 			count++
 		}
