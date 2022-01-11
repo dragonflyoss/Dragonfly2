@@ -59,7 +59,7 @@ var _ = AfterSuite(func() {
 			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
               set -x
               cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
-							find /tmp/artifact -type d -exec chmod 777 {} \;
+              find /tmp/artifact -type d -exec chmod 777 {} \;
               `, server.logDirName, server.name, i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
@@ -73,6 +73,13 @@ var _ = AfterSuite(func() {
 
 			if err := e2eutil.UploadArtifactStdout(server.namespace, podName, fmt.Sprintf("%s-%d", server.name, i), server.name); err != nil {
 				fmt.Printf("upload pod %s artifact prev stdout file error: %v\n", podName, err)
+			}
+
+			if server.pprofPort > 0 {
+				if out, err := e2eutil.UploadArtifactPProf(server.namespace, podName,
+					fmt.Sprintf("%s-%d", server.name, i), server.name, server.pprofPort); err != nil {
+					fmt.Printf("upload pod %s artifact pprof error: %v, output: %s\n", podName, err, out)
+				}
 			}
 
 		}
