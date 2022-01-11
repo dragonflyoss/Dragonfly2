@@ -160,6 +160,10 @@ func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err erro
 		resp, err = rt.baseRoundTripper.RoundTrip(req)
 	}
 
+	if err != nil {
+		return resp, err
+	}
+
 	if resp.ContentLength > 0 {
 		metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(resp.ContentLength))
 	}
