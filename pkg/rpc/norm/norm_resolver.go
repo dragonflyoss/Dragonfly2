@@ -18,10 +18,11 @@ package norm
 
 import (
 	"context"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"sync"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"github.com/patrickmn/go-cache"
@@ -92,48 +93,6 @@ func (r *d7yResolver) UpdateState(s resolver.State) {
 func (r *d7yResolver) Add() {
 
 }
-
-//func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
-//	if len(addrs) == 0 {
-//		return nil
-//	}
-//
-//	updateFlag := false
-//	if len(addrs) != len(r.addrs) {
-//		updateFlag = true
-//	} else {
-//		for i := 0; i < len(addrs); i++ {
-//			if addrs[i] != r.addrs[i] {
-//				updateFlag = true
-//				break
-//			}
-//		}
-//	}
-//
-//	if !updateFlag {
-//		return nil
-//	}
-//
-//	return r.updateAddrs(addrs)
-//}
-
-//func (r *d7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
-//	addresses := make([]resolver.Address, len(addrs))
-//	for i, addr := range addrs {
-//		if addr.Type == dfnet.UNIX {
-//			addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
-//		} else {
-//			addresses[i] = resolver.Address{Addr: addr.Addr}
-//		}
-//	}
-//	r.addrs = addrs
-//
-//	log.Printf("resolver update addresses: %v", addresses)
-//	if r.cc == nil {
-//		return nil
-//	}
-//	return r.cc.UpdateState(resolver.State{Addresses: addresses})
-//}
 
 func (r *d7yResolver) ResolveNow(resolver.ResolveNowOptions) {
 	select {

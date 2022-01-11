@@ -17,14 +17,9 @@
 package rpc
 
 import (
-	"context"
-	"d7y.io/dragonfly/v2/internal/dfnet"
-	"log"
 	"sync"
-	"time"
 
-	"github.com/patrickmn/go-cache"
-	"google.golang.org/grpc"
+	"d7y.io/dragonfly/v2/internal/dfnet"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
 )
@@ -37,23 +32,26 @@ var (
 var resolverLogger = grpclog.Component("resolver")
 
 func NewD7yResolver(scheme string, addrs []dfnet.NetAddr) *d7yResolver {
-	return &d7yResolver{scheme: scheme, addrs: addrs}
+	return &d7yResolver{
+		scheme: scheme,
+		addrs:  cloneAddresses(addrs),
+	}
 }
 
 type d7yResolver struct {
 	scheme string
-	addrs  []dfnet.NetAddr
-	config Config
+
+	mu     sync.Mutex
 	target resolver.Target
 	cc     resolver.ClientConn
-	wg     sync.WaitGroup
+	addrs  []dfnet.NetAddr
 }
 
 func (r *d7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	r.target = target
 	r.cc = cc
 	if r.addrs != nil {
-		r.UpdateState(r.addrs)
+		r.UpdateAddresses(r.addrs)
 	}
 	return r, nil
 }
@@ -64,35 +62,58 @@ func (r *d7yResolver) Scheme() string {
 
 // UpdateState calls CC.UpdateState.
 func (r *d7yResolver) UpdateState(s resolver.State) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.cc.UpdateState(s)
 }
 
-func (r *d7yResolver) Add() {
+func (r *d7yResolver) AddAddresses(addrs []dfnet.NetAddr) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if len(addrs) == 0 {
+		return
+	}
 
 }
 
-func (r *d7yResolver) UpdateAddrs(addrs []dfnet.NetAddr) error {
+func (r *d7yResolver) UpdateAddresses(addrs []dfnet.NetAddr) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if len(addrs) == 0 {
 		return nil
 	}
-
-	updateFlag := false
-	if len(addrs) != len(r.addrs) {
-		updateFlag = true
-	} else {
-		for i := 0; i < len(addrs); i++ {
-			if addrs[i] != r.addrs[i] {
-				updateFlag = true
-				break
-			}
-		}
-	}
-
-	if !updateFlag {
+	if isSameAddresses(addrs, r.addrs) {
 		return nil
 	}
 
-	return r.updateAddrs(addrs)
+	return r.updateAddrs(cloneAddresses(addrs))
+}
+
+func cloneAddresses(in []dfnet.NetAddr) []dfnet.NetAddr {
+	out := make([]dfnet.NetAddr, len(in))
+	for i := 0; i < len(in); i++ {
+		out[i] = in[i]
+	}
+	return out
+}
+
+func isSameAddresses(addresses1, addresses2 []dfnet.NetAddr) bool {
+	if len(addresses1) != len(addresses2) {
+		return false
+	}
+	for _, addr1 := range addresses1 {
+		found := false
+		for _, addr2 := range addresses2 {
+			if addr1.Addr == addr2.Addr {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *d7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
@@ -106,10 +127,8 @@ func (r *d7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
 	}
 	r.addrs = addrs
 
-	log.Printf("resolver update addresses: %v", addresses)
-	if r.cc == nil {
-		return nil
-	}
+	resolverLogger.Infof("resolver update addresses: %s", addresses)
+
 	return r.cc.UpdateState(resolver.State{Addresses: addresses})
 }
 
@@ -117,34 +136,4 @@ func (r *d7yResolver) ResolveNow(resolver.ResolveNowOptions) {
 }
 
 func (r *d7yResolver) Close() {
-}
-
-type Watcher struct {
-	config    WatchConfig
-	conn      *grpc.ClientConn
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
-	lastAddrs []resolver.Address
-	// rn channel is used by ResolveNow() to force an immediate resolution of the target.
-	rn    chan struct{}
-	cache *cache.Cache
-}
-
-type WatchConfig struct {
-	configServer string
-	interval     time.Duration
-	path         string
-}
-
-func newWatcher(clientConn *grpc.ClientConn, config WatchConfig) *Watcher {
-	ctx, cancel := context.WithCancel(context.Background())
-	w := &Watcher{
-		config: config,
-		conn:   clientConn,
-		ctx:    ctx,
-		cancel: cancel,
-		cache:  cache.New(cache.DefaultExpiration, time.Minute),
-	}
-	return w
 }
