@@ -19,6 +19,7 @@ package client
 import (
 	"context"
 	"fmt"
+
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/resolver"
@@ -35,17 +36,20 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of cdn is empty")
 	}
+
 	r := rpc.NewD7yResolver("cdn", addrs)
+
 	dialOpts := append(append(
 		rpc.DefaultClientOpts,
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
 		grpc.WithResolvers(r)),
 		opts...)
 
+	// target is "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
 	clientConn, err := grpc.Dial(
-		// "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
 		fmt.Sprintf("%s:///%s", "cdn", "cdnsystem.Seeder"),
 		dialOpts...)
+
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +72,6 @@ type CDNClient interface {
 }
 
 type cdnClient struct {
-	ctx          context.Context
-	cancel       context.CancelFunc
 	cc           *grpc.ClientConn
 	seederClient cdnsystem.SeederClient
 	resolver     resolver.Resolver
@@ -99,7 +101,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 }
 
 func (cc *cdnClient) UpdateState(addrs []dfnet.NetAddr) {
-
+	cc.resolver.
 }
 
 func (cc *cdnClient) Close() error {

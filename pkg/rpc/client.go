@@ -26,13 +26,11 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
 
 var DefaultClientOpts = []grpc.DialOption{
-	grpc.WithUserAgent("Dragonfly2"),
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
@@ -50,7 +48,7 @@ var DefaultClientOpts = []grpc.DialOption{
 		grpc_validator.UnaryClientInterceptor(),
 		grpc_retry.UnaryClientInterceptor(
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
-			grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
+			//grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
 			grpc_retry.WithMax(3),
 		),
 	),
@@ -61,7 +59,7 @@ var DefaultClientOpts = []grpc.DialOption{
 		}),
 		grpc_retry.StreamClientInterceptor(
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
-			grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
+			//grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
 			grpc_retry.WithMax(3),
 		),
 	),
