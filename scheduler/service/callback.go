@@ -38,7 +38,7 @@ type Callback interface {
 	PeerSuccess(context.Context, *resource.Peer)
 	PeerFail(context.Context, *resource.Peer)
 	PeerLeave(context.Context, *resource.Peer)
-	TaskSuccess(context.Context, *resource.Peer, *resource.Task, *rpcscheduler.PeerResult)
+	TaskSuccess(context.Context, *resource.Task, *rpcscheduler.PeerResult)
 	TaskFail(context.Context, *resource.Task)
 }
 
@@ -150,6 +150,18 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 
 func (c *callback) EndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
+func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
+	// Update peer piece info
+	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
+	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))
+
+	// When the peer downloads back-to-source,
+	// piece downloads successfully updates the task piece info
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
+		peer.Task.StorePiece(piece.PieceInfo)
+	}
+}
+
 func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Failed to download piece back-to-source
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -191,18 +203,6 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	c.ScheduleParent(ctx, peer, blocklist)
 }
 
-func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
-	// Update peer piece info
-	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))
-
-	// When the peer downloads back-to-source,
-	// piece downloads successfully updates the task piece info
-	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		peer.Task.StorePiece(piece.PieceInfo)
-	}
-}
-
 func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
@@ -213,7 +213,7 @@ func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
 			// Tiny file downloaded successfully
 			peer.Task.DirectPiece = data
 		} else {
-			peer.Log.Warnf("download tiny file length %d is failed: %v", len(data), err)
+			peer.Log.Warnf("download tiny file length is %d, task content length is %d, download is failed: %v", len(data), peer.Task.ContentLength.Load(), err)
 		}
 	}
 
@@ -239,12 +239,6 @@ func (c *callback) PeerFail(ctx context.Context, peer *resource.Peer) {
 			return true
 		}
 
-		// Children state is PeerStateRunning will be rescheduled
-		if !child.FSM.Is(resource.PeerStateRunning) {
-			child.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
-			return true
-		}
-
 		c.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
@@ -259,12 +253,6 @@ func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
 	peer.Children.Range(func(_, value interface{}) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
-			return true
-		}
-
-		// Children state is PeerStateRunning will be rescheduled
-		if !child.FSM.Is(resource.PeerStateRunning) {
-			child.Log.Infof("peer can not be rescheduled because peer state is %s", peer.FSM.Current())
 			return true
 		}
 
@@ -283,15 +271,15 @@ func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
-func (c *callback) TaskSuccess(ctx context.Context, peer *resource.Peer, task *resource.Task, endOfPiece *rpcscheduler.PeerResult) {
+func (c *callback) TaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
 	}
 
 	// Update task's resource total piece count and content length
-	task.TotalPieceCount.Store(endOfPiece.TotalPieceCount)
-	task.ContentLength.Store(endOfPiece.ContentLength)
+	task.TotalPieceCount.Store(result.TotalPieceCount)
+	task.ContentLength.Store(result.ContentLength)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:

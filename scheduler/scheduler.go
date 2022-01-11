@@ -133,10 +133,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
 
 	// Initialize scheduler service
-	service, err := service.New(cfg, scheduler, resource, dynConfig)
-	if err != nil {
-		return nil, err
-	}
+	service := service.New(cfg, resource, scheduler, dynConfig)
 
 	// Initialize grpc service
 	grpcServer, err := rpcserver.New(cfg, service, serverOptions...)

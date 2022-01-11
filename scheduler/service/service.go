@@ -65,10 +65,10 @@ type service struct {
 
 func New(
 	cfg *config.Config,
-	scheduler scheduler.Scheduler,
 	resource resource.Resource,
+	scheduler scheduler.Scheduler,
 	dynconfig config.DynconfigInterface,
-) (Service, error) {
+) Service {
 	// Initialize callback
 	callback := newCallback(cfg, resource, scheduler)
 
@@ -79,7 +79,7 @@ func New(
 		config:    cfg,
 		dynconfig: dynconfig,
 		kmu:       pkgsync.NewKrwmutex(),
-	}, nil
+	}
 }
 
 func (s *service) Scheduler() scheduler.Scheduler {
@@ -125,7 +125,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		}
 
 		// Update the task status first to help peer scheduling evaluation and scoring
-		s.callback.TaskSuccess(ctx, peer, task, endOfPiece)
+		s.callback.TaskSuccess(ctx, task, endOfPiece)
 		s.callback.PeerSuccess(ctx, peer)
 	}()
 
@@ -217,7 +217,7 @@ func (s *service) HandlePeer(ctx context.Context, peer *resource.Peer, req *rpcs
 	}
 
 	if peer.Task.BackToSourcePeers.Contains(peer) {
-		s.callback.TaskSuccess(ctx, peer, peer.Task, req)
+		s.callback.TaskSuccess(ctx, peer.Task, req)
 	}
 	s.callback.PeerSuccess(ctx, peer)
 }

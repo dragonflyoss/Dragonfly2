@@ -18,7 +18,12 @@ package service
 
 import (
 	"context"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -37,8 +42,9 @@ import (
 
 var (
 	mockSchedulerConfig = &config.SchedulerConfig{
-		RetryLimit:    3,
-		RetryInterval: 10 * time.Millisecond,
+		RetryLimit:      3,
+		RetryInterval:   10 * time.Millisecond,
+		BackSourceCount: mockTaskBackToSourceLimit,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
 		Uuid:           idgen.HostID("hostname", 8003),
@@ -257,6 +263,80 @@ func TestCallback_BeginOfPiece(t *testing.T) {
 			tc.mock(peer, scheduler.EXPECT())
 			callback.BeginOfPiece(context.Background(), peer)
 			tc.expect(t, peer)
+		})
+	}
+}
+
+func TestCallback_PieceSuccess(t *testing.T) {
+	mockHost := resource.NewHost(mockRawHost)
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+	tests := []struct {
+		name   string
+		piece  *rpcscheduler.PieceResult
+		peer   *resource.Peer
+		mock   func(peer *resource.Peer)
+		expect func(t *testing.T, peer *resource.Peer)
+	}{
+		{
+			name: "piece success",
+			piece: &rpcscheduler.PieceResult{
+				PieceInfo: &base.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
+				},
+				BeginTime: uint64(time.Now().Unix()),
+				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+			},
+			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Equal(peer.Pieces.Count(), uint(1))
+				assert.Equal(peer.PieceCosts(), []int64{1})
+			},
+		},
+		{
+			name: "piece state is PeerStateBackToSource",
+			piece: &rpcscheduler.PieceResult{
+				PieceInfo: &base.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
+				},
+				BeginTime: uint64(time.Now().Unix()),
+				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+			},
+			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Equal(peer.Pieces.Count(), uint(1))
+				assert.Equal(peer.PieceCosts(), []int64{1})
+				piece, ok := peer.Task.LoadPiece(0)
+				assert.True(ok)
+				assert.EqualValues(piece, &base.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+
+			tc.mock(tc.peer)
+			callback.PieceSuccess(context.Background(), tc.peer, tc.piece)
+			tc.expect(t, tc.peer)
 		})
 	}
 }
@@ -500,6 +580,523 @@ func TestCallback_PieceFail(t *testing.T) {
 			tc.mock(tc.peer, tc.parent, peerManager, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT())
 			callback.PieceFail(context.Background(), tc.peer, tc.piece)
 			tc.expect(t, tc.peer, tc.parent)
+		})
+	}
+}
+
+func TestCallback_PeerSuccess(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte{1}); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	tests := []struct {
+		name   string
+		mock   func(peer *resource.Peer)
+		expect func(t *testing.T, peer *resource.Peer)
+	}{
+		{
+			name: "peer is tiny type and download piece success",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.ContentLength.Store(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Equal(peer.Task.DirectPiece, []byte{1})
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "peer is tiny type and download piece failed",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Empty(peer.Task.DirectPiece)
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "peer is small and state is PeerStateBackToSource",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.ContentLength.Store(resource.TinyFileSize + 1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Empty(peer.Task.DirectPiece)
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "peer is small and state is PeerStateRunning",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.ContentLength.Store(resource.TinyFileSize + 1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Empty(peer.Task.DirectPiece)
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+
+			url, err := url.Parse(s.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ip, rawPort, err := net.SplitHostPort(url.Host)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			port, err := strconv.ParseInt(rawPort, 10, 32)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			mockRawHost.Ip = ip
+			mockRawHost.DownPort = int32(port)
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+
+			tc.mock(peer)
+			callback.PeerSuccess(context.Background(), peer)
+			tc.expect(t, peer)
+		})
+	}
+}
+
+func TestCallback_PeerFail(t *testing.T) {
+	mockHost := resource.NewHost(mockRawHost)
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+	tests := []struct {
+		name   string
+		peer   *resource.Peer
+		child  *resource.Peer
+		mock   func(peer *resource.Peer, child *resource.Peer, ms *mocks.MockSchedulerMockRecorder)
+		expect func(t *testing.T, peer *resource.Peer, child *resource.Peer)
+	}{
+		{
+			name:  "peer state is PeerStateFailed",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, ms *mocks.MockSchedulerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateFailed)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateFailed))
+			},
+		},
+		{
+			name:  "peer state is PeerStateLeave",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, ms *mocks.MockSchedulerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateLeave)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+		{
+			name:  "peer state is PeerStateRunning and children need to be scheduled",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, ms *mocks.MockSchedulerMockRecorder) {
+				peer.StoreChild(child)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				child.FSM.SetState(resource.PeerStateRunning)
+
+				blocklist := set.NewSafeSet()
+				blocklist.Add(peer.ID)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return(nil, true).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateFailed))
+			},
+		},
+		{
+			name:  "peer state is PeerStateRunning and it has no children",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, ms *mocks.MockSchedulerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateFailed))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+
+			tc.mock(tc.peer, tc.child, scheduler.EXPECT())
+			callback.PeerFail(context.Background(), tc.peer)
+			tc.expect(t, tc.peer, tc.child)
+		})
+	}
+}
+
+func TestCallback_PeerLeave(t *testing.T) {
+	mockHost := resource.NewHost(mockRawHost)
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+	tests := []struct {
+		name   string
+		peer   *resource.Peer
+		child  *resource.Peer
+		mock   func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
+		expect func(t *testing.T, peer *resource.Peer)
+	}{
+		{
+			name:  "peer state is PeerStatePending",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStatePending)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStatePending))
+			},
+		},
+		{
+			name:  "peer state is PeerStateReceivedSmall",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedSmall)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedSmall))
+			},
+		},
+		{
+			name:  "peer state is PeerStateReceivedNormal",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+			},
+		},
+		{
+			name:  "peer state is PeerStateRunning",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+			},
+		},
+		{
+			name:  "peer state is PeerStateBackToSource",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+			},
+		},
+		{
+			name:  "peer state is PeerStateLeave",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateLeave)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+		{
+			name:  "peer state is PeerStateSucceeded and children need to be scheduled",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.StoreChild(child)
+				peer.FSM.SetState(resource.PeerStateSucceeded)
+				child.FSM.SetState(resource.PeerStateRunning)
+
+				blocklist := set.NewSafeSet()
+				blocklist.Add(peer.ID)
+				gomock.InOrder(
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return(nil, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+		{
+			name:  "peer state is PeerStateSucceeded and it has no children",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateSucceeded)
+
+				blocklist := set.NewSafeSet()
+				blocklist.Add(peer.ID)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+		{
+			name:  "peer state is PeerStateFailed and children need to be scheduled",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.StoreChild(child)
+				peer.FSM.SetState(resource.PeerStateFailed)
+				child.FSM.SetState(resource.PeerStateRunning)
+
+				blocklist := set.NewSafeSet()
+				blocklist.Add(peer.ID)
+				gomock.InOrder(
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return(nil, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+		{
+			name:  "peer state is PeerStateFailed and it has no children",
+			peer:  resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			child: resource.NewPeer(mockPeerID, mockTask, mockHost),
+			mock: func(peer *resource.Peer, child *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateFailed)
+
+				blocklist := set.NewSafeSet()
+				blocklist.Add(peer.ID)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateLeave))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			peerManager := resource.NewMockPeerManager(ctl)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+
+			tc.mock(tc.peer, tc.child, peerManager, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT())
+			callback.PeerLeave(context.Background(), tc.peer)
+			tc.expect(t, tc.peer)
+		})
+	}
+}
+
+func TestCallback_TaskSuccess(t *testing.T) {
+	tests := []struct {
+		name   string
+		result *rpcscheduler.PeerResult
+		mock   func(task *resource.Task)
+		expect func(t *testing.T, task *resource.Task)
+	}{
+		{
+			name:   "task state is TaskStatePending",
+			result: &rpcscheduler.PeerResult{},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStatePending)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStatePending))
+			},
+		},
+		{
+			name:   "task state is TaskStateSucceeded",
+			result: &rpcscheduler.PeerResult{},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateSucceeded)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+			},
+		},
+		{
+			name: "task state is TaskStateRunning",
+			result: &rpcscheduler.PeerResult{
+				TotalPieceCount: 1,
+				ContentLength:   1,
+			},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+				assert.Equal(task.TotalPieceCount.Load(), int32(1))
+				assert.Equal(task.ContentLength.Load(), int64(1))
+			},
+		},
+		{
+			name: "task state is TaskStateFailed",
+			result: &rpcscheduler.PeerResult{
+				TotalPieceCount: 1,
+				ContentLength:   1,
+			},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateFailed)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+				assert.Equal(task.TotalPieceCount.Load(), int32(1))
+				assert.Equal(task.ContentLength.Load(), int64(1))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+			tc.mock(task)
+			callback.TaskSuccess(context.Background(), task, tc.result)
+			tc.expect(t, task)
+		})
+	}
+}
+
+func TestCallback_TaskFail(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(task *resource.Task)
+		expect func(t *testing.T, task *resource.Task)
+	}{
+		{
+			name: "task state is TaskStatePending",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStatePending)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStatePending))
+			},
+		},
+		{
+			name: "task state is TaskStateSucceeded",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateSucceeded)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+			},
+		},
+		{
+			name: "task state is TaskStateRunning",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+		{
+			name: "task state is TaskStateFailed",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateFailed)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
+			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+			tc.mock(task)
+			callback.TaskFail(context.Background(), task)
+			tc.expect(t, task)
 		})
 	}
 }
