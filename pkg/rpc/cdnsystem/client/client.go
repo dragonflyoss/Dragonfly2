@@ -82,6 +82,9 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	opts = append([]grpc.CallOption{
 		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
 	}, opts...)
+	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+		HashKey: req.TaskId,
+	})
 	return cc.seederClient.ObtainSeeds(ctx, req, opts...)
 }
 

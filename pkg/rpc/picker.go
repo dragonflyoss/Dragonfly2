@@ -18,6 +18,7 @@ package rpc
 
 import (
 	"context"
+	"google.golang.org/grpc/grpclog"
 	"strconv"
 	"sync"
 
@@ -32,6 +33,8 @@ import (
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 )
+
+var pickerLogger = grpclog.Component("picker")
 
 // PickRequest contains the clues to pick subConn
 type PickRequest struct {
@@ -93,16 +96,16 @@ type d7yHashPicker struct {
 func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
 	var pickRequest *PickRequest
 	pickRequest, ok := FromContext(info.Ctx)
+	var targetAddr string
 	if ok && pickRequest != nil {
-		var targetAddr string
 		// mark history
 		defer func() {
 			if targetAddr != "" && pickRequest.HashKey != "" {
 				p.pickHistory[pickRequest.HashKey] = targetAddr
 			}
+			pickerLogger.Infof("d7yPicker: picker server %s for request: %v", targetAddr, pickRequest)
 		}()
 
 		// target address is specified
@@ -171,7 +174,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	}
 	// pickRequest is not specified, select a node random and no need mark history
 	key := uuid.Generate().String()
-	targetAddr, ok := p.hashRing.GetNode(key)
+	targetAddr, ok = p.hashRing.GetNode(key)
 	if !ok {
 		err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
 		return

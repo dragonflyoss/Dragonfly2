@@ -23,6 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"io"
 	"log"
@@ -39,6 +40,7 @@ import (
 type testServer struct {
 	cdnsystem.UnimplementedSeederServer
 	seedPieces map[string][]*cdnsystem.PieceSeed
+	addr       string
 }
 
 func (s *testServer) loadPieces() {
@@ -52,6 +54,7 @@ func (s *testServer) loadPieces() {
 }
 
 func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
+	log.Printf("server %s receive request %v", s.addr, request)
 	pieceInfos, ok := s.seedPieces[request.TaskId]
 	if !ok {
 		return status.Errorf(codes.FailedPrecondition, "task not found")
@@ -99,8 +102,8 @@ func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskReque
 
 var _ cdnsystem.SeederServer = (*testServer)(nil)
 
-func newTestServer() *testServer {
-	s := &testServer{}
+func newTestServer(addr string) *testServer {
+	s := &testServer{addr: addr}
 	s.loadPieces()
 	return s
 }
@@ -132,7 +135,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 		}
 
 		s := grpc.NewServer()
-		sImpl := newTestServer()
+		sImpl := newTestServer(lis.Addr().String())
 		cdnsystem.RegisterSeederServer(s, sImpl)
 		t.servers = append(t.servers, s)
 		t.serverImpls = append(t.serverImpls, sImpl)
@@ -189,16 +192,141 @@ func TestOneBackend(t *testing.T) {
 	}
 
 	{
-		if _, err := cdnClient.GetPieceTasks(context.Background(), dfnet.NetAddr{Addr: test.addresses[0]}, &base.PieceTaskRequest{
+		req := &base.PieceTaskRequest{
 			TaskId:   testTask,
 			SrcPid:   "peer1",
 			DstPid:   "peer2",
 			StartNum: 0,
 			Limit:    1,
-		}); err != nil {
-			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
+		piecePacket, err := cdnClient.GetPieceTasks(context.Background(), dfnet.NetAddr{Addr: test.addresses[0]}, req)
+		if err != nil {
+			t.Fatalf("failed to call GetPieceTasks: %v", err)
+		}
+		if len(piecePacket.PieceInfos) != int(req.Limit) {
+			t.Fatalf("piece: %v", err)
+		}
+		var count = 0
+		for {
+			if !cmp.Equal(piecePacket.PieceInfos[count], verifyPieces[count].PieceInfo, cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+				t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count].PieceInfo, piecePacket.PieceInfos[count])
+			}
+			count++
+			if count == int(req.Limit) {
+				break
+			}
 		}
 	}
+}
+
+func TestHash(t *testing.T) {
+	test, err := startTestServers(3)
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test.cleanup()
+
+	cdnClient, err := GetClientByAddrs([]dfnet.NetAddr{
+		{Addr: test.addresses[0]},
+		{Addr: test.addresses[1]},
+		{Addr: test.addresses[2]},
+	})
+	if err != nil {
+		t.Fatalf("failed to get cdn client: %v", err)
+	}
+	defer cdnClient.Close()
+
+	//g := errgroup.Group{}
+	//g.Go(func() error {
+	var serverPeer []peer.Peer
+	//wg := sync.WaitGroup{}
+	//wg.Add(100)
+	for i := 0; i < 100; i++ {
+		//go func() {
+		//	defer wg.Done()
+		var temp peer.Peer
+		if stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+			TaskId:  "task1",
+			Url:     "https://dragonfly.com",
+			UrlMeta: nil,
+		}, grpc.Peer(&temp)); err != nil {
+			t.Fatalf("failed to call ObtainSeeds: %v", err)
+		} else {
+			for {
+				_, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+			}
+		}
+
+		serverPeer = append(serverPeer, temp)
+		//}()
+	}
+	//wg.Wait()
+	if len(serverPeer) != 100 {
+		log.Fatalf("call obtainSeeds success count is wrong")
+	}
+	targetAddr := serverPeer[0].Addr.String()
+	for _, p := range serverPeer {
+		if targetAddr != p.Addr.String() {
+			log.Fatalf("failed to hash to same server, want %s, actual %s", targetAddr, p.Addr.String())
+		}
+	}
+	//return nil
+	//})
+	//g.Go(func() error {
+	//	stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+	//		TaskId:  "task2",
+	//		Url:     "https://dragonfly2.com",
+	//		UrlMeta: nil,
+	//	})
+	//	if err != nil {
+	//		t.Fatalf("failed to call ObtainSeeds: %v", err)
+	//	}
+	//	var count int32
+	//	for {
+	//		piece, err := stream.Recv()
+	//		if err == io.EOF {
+	//			break
+	//		}
+	//		if err != nil {
+	//			t.Fatalf("failed to recv piece: %v", err)
+	//		}
+	//		if !cmp.Equal(piece, verifyPieces[count], cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+	//			t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count], piece)
+	//		}
+	//		count++
+	//	}
+	//	return nil
+	//})
+	//g.Go(func() error {
+	//	stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+	//		TaskId:  "task2",
+	//		Url:     "https://dragonfly2.com",
+	//		UrlMeta: nil,
+	//	})
+	//	if err != nil {
+	//		t.Fatalf("failed to call ObtainSeeds: %v", err)
+	//	}
+	//	var count int32
+	//	for {
+	//		piece, err := stream.Recv()
+	//		if err == io.EOF {
+	//			break
+	//		}
+	//		if err != nil {
+	//			t.Fatalf("failed to recv piece: %v", err)
+	//		}
+	//		if !cmp.Equal(piece, verifyPieces[count], cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+	//			t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count], piece)
+	//		}
+	//		count++
+	//	}
+	//	return nil
+	//})
+	//if g.Wait()
+
 }
 
 func TestMigration(t *testing.T) {
