@@ -62,6 +62,20 @@ var (
 		Help:      "Counter of the total peer tasks.",
 	})
 
+	FileTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "file_task_total",
+		Help:      "Counter of the total file tasks.",
+	})
+
+	StreamTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "stream_task_total",
+		Help:      "Counter of the total stream tasks.",
+	})
+
 	PeerTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.DfdaemonMetricsName,

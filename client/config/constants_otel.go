@@ -44,8 +44,9 @@ const (
 	AttributeGetPieceRetry     = attribute.Key("d7y.peer.piece.retry")
 	AttributeWritePieceSuccess = attribute.Key("d7y.peer.piece.write.success")
 
-	SpanFilePeerTask      = "file-peer-task"
-	SpanStreamPeerTask    = "stream-peer-task"
+	SpanFileTask          = "file-task"
+	SpanStreamTask        = "stream-task"
+	SpanPeerTask          = "peer-task"
 	SpanReusePeerTask     = "reuse-peer-task"
 	SpanRegisterTask      = "register"
 	SpanReportPeerResult  = "report-peer-result"
