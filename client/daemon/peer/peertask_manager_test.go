@@ -44,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -207,6 +208,16 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 	)
 	defer os.Remove(output)
 
+	request := &scheduler.PeerTaskRequest{
+		Url: "http://localhost/test/data",
+		UrlMeta: &base.UrlMeta{
+			Tag: "d7y-test",
+		},
+		PeerId:   peerID,
+		PeerHost: &scheduler.PeerHost{},
+	}
+	taskID = idgen.TaskID(request.Url, request.UrlMeta)
+
 	schedulerClient, storageManager := setupPeerTaskManagerComponents(
 		ctrl,
 		componentsOption{
@@ -243,15 +254,6 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 		schedulerOption: config.SchedulerOption{
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
-	}
-
-	request := &scheduler.PeerTaskRequest{
-		Url: "http://localhost/test/data",
-		UrlMeta: &base.UrlMeta{
-			Tag: "d7y-test",
-		},
-		PeerId:   peerID,
-		PeerHost: &scheduler.PeerHost{},
 	}
 
 	ptc, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, request, rate.Limit(pieceSize*4))
@@ -302,6 +304,49 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 	for i, r := range result {
 		assert.True(r, fmt.Sprintf("task %d result should be true", i))
 	}
+
+	var taskCount int
+	ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
+		taskCount++
+		return true
+	})
+	assert.Equal(0, taskCount, "no running tasks")
+
+	// test reuse stream task
+	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(), request)
+	assert.True(ok, "reuse stream task")
+	defer rc.Close()
+
+	data, err := io.ReadAll(rc)
+	assert.Nil(err, "read all should be ok")
+	assert.Equal(testBytes, data, "stream output and desired output must match")
+
+	// test file task
+	progress, ok := ptm.tryReuseFilePeerTask(
+		context.Background(),
+		&FilePeerTaskRequest{
+			PeerTaskRequest: scheduler.PeerTaskRequest{
+				Url: "http://localhost/test/data",
+				UrlMeta: &base.UrlMeta{
+					Tag: "d7y-test",
+				},
+				PeerId:   peerID,
+				PeerHost: &scheduler.PeerHost{},
+			},
+			Output: output,
+		})
+
+	assert.True(ok, "reuse file task")
+	var p *FilePeerTaskProgress
+	select {
+	case p = <-progress:
+	default:
+	}
+
+	assert.NotNil(p, "progress should not be nil")
+	outputBytes, err := os.ReadFile(output)
+	assert.Nil(err, "load output file should be ok")
+	assert.Equal(testBytes, outputBytes, "file output and desired output must match")
 }
 
 func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {

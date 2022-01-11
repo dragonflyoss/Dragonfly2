@@ -1395,22 +1395,9 @@ func (pt *peerTaskConductor) fail() {
 	pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
 }
 
+// Validate stores metadata and validates digest
 func (pt *peerTaskConductor) Validate() error {
-	if !pt.peerTaskManager.calculateDigest {
-		return nil
-	}
-	err := pt.storageManager.ValidateDigest(
-		&storage.PeerTaskMetadata{
-			PeerID: pt.GetPeerID(),
-			TaskID: pt.GetTaskID(),
-		})
-	if err != nil {
-		pt.Errorf("validate digest error: %s", err)
-		return err
-	}
-	pt.Debugf("validate digest ok")
-
-	err = pt.peerTaskManager.storageManager.Store(pt.ctx,
+	err := pt.peerTaskManager.storageManager.Store(pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.peerID,
@@ -1423,6 +1410,21 @@ func (pt *peerTaskConductor) Validate() error {
 		pt.Errorf("store metadata error: %s", err)
 		return err
 	}
+
+	if !pt.peerTaskManager.calculateDigest {
+		return nil
+	}
+	err = pt.storageManager.ValidateDigest(
+		&storage.PeerTaskMetadata{
+			PeerID: pt.GetPeerID(),
+			TaskID: pt.GetTaskID(),
+		})
+	if err != nil {
+		pt.Errorf("validate digest error: %s", err)
+		return err
+	}
+	pt.Debugf("validate digest ok")
+
 	return err
 }
 
