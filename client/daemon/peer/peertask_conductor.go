@@ -191,8 +191,9 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		err = errors.Errorf("empty schedule result")
 		return nil, err
 	}
+	log := logger.With("peer", request.PeerId, "task", result.TaskId, "component", "PeerTask")
 	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
-	logger.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
+	log.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
 		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
 
 	var (
@@ -203,14 +204,14 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		switch result.SizeScope {
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
-			logger.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
+			log.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
-			logger.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
+			log.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				tinyData = &TinyData{
 					span:    span,
@@ -225,12 +226,12 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 			}
 		case base.SizeScope_NORMAL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
-			logger.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
+			log.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
 	peerPacketStream, err := ptm.schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
-	logger.Infof("step 2: start report peer %s piece result", request.PeerId)
+	log.Infof("step 2: start report peer %s piece result", request.PeerId)
 	if err != nil {
 		defer span.End()
 		span.RecordError(err)
@@ -271,7 +272,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
-		SugaredLoggerOnWith: logger.With("peer", request.PeerId, "task", result.TaskId, "component", "PeerTask"),
+		SugaredLoggerOnWith: log,
 	}
 	return cond, nil
 }
@@ -491,6 +492,7 @@ loop:
 				if de.Code == base.Code_SchedNeedBackSource {
 					pt.needBackSource = true
 					close(pt.peerPacketReady)
+					pt.Infof("receive back source code")
 					return
 				}
 				failedCode = de.Code
@@ -506,8 +508,14 @@ loop:
 			break loop
 		}
 
-		logger.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
+		pt.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
 		if peerPacket.Code != base.Code_Success {
+			if peerPacket.Code == base.Code_SchedNeedBackSource {
+				pt.needBackSource = true
+				close(pt.peerPacketReady)
+				pt.Infof("receive back source code")
+				return
+			}
 			pt.Errorf("receive peer packet with error: %d", peerPacket.Code)
 			if pt.isExitPeerPacketCode(peerPacket) {
 				pt.Errorf(pt.failedReason)
@@ -1061,9 +1069,14 @@ retry:
 		HostLoad:      nil,
 		FinishedCount: -1,
 	})
+	// error code should be sent to scheduler and the scheduler can schedule a new peer
 	if sendError != nil {
+		pt.failedCode = base.Code_SchedError
+		pt.failedReason = sendError.Error()
+		pt.Fail()
 		span.RecordError(sendError)
 		pt.Errorf("send piece result error: %s, code to send: %d", sendError, code)
+		return nil, sendError
 	}
 
 	if code == base.Code_CDNTaskNotFound && curPeerPacket == pt.peerPacket.Load().(*scheduler.PeerPacket) {
@@ -1132,8 +1145,12 @@ func (pt *peerTaskConductor) getPieceTasks(span trace.Span, curPeerPacket *sched
 			FinishedCount: pt.readyPieces.Settled(),
 		})
 		if sendError != nil {
+			pt.failedCode = base.Code_SchedError
+			pt.failedReason = sendError.Error()
+			pt.Fail()
 			span.RecordError(sendError)
 			pt.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
+			return nil, true, sendError
 		}
 		// fast way to exit retry
 		lastPeerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
@@ -1282,6 +1299,7 @@ func (pt *peerTaskConductor) Done() {
 }
 
 func (pt *peerTaskConductor) done() {
+	defer pt.span.End()
 	defer pt.broker.Stop()
 	var (
 		cost    = time.Now().Sub(pt.start).Milliseconds()
@@ -1362,15 +1380,22 @@ func (pt *peerTaskConductor) Fail() {
 
 func (pt *peerTaskConductor) fail() {
 	metrics.PeerTaskFailedCount.Add(1)
+	defer pt.span.End()
 	defer pt.broker.Stop()
 	defer close(pt.failCh)
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
+
+	// send EOF piece result to scheduler
+	err := pt.peerPacketStream.Send(
+		scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
+	pt.Debugf("end piece result sent: %v, peer task finished", err)
+
 	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(pt.ctx))
 	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
-	err := pt.schedulerClient.ReportPeerResult(
+	err = pt.schedulerClient.ReportPeerResult(
 		peerResultCtx,
 		&scheduler.PeerResult{
 			TaskId:          pt.GetTaskID(),
