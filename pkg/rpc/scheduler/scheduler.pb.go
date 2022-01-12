@@ -433,8 +433,10 @@ type PieceResult struct {
 	// piece info
 	PieceInfo *base.PieceInfo `protobuf:"bytes,4,opt,name=piece_info,json=pieceInfo,proto3" json:"piece_info,omitempty"`
 	// begin time for the piece downloading
+	// deprecated: Use base.PieceInfo.download_cost instead.
 	BeginTime uint64 `protobuf:"varint,5,opt,name=begin_time,json=beginTime,proto3" json:"begin_time,omitempty"`
 	// end time for the piece downloading
+	// deprecated: Use base.PieceInfo.download_cost instead.
 	EndTime uint64 `protobuf:"varint,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	// whether the piece downloading is successfully
 	Success bool `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
