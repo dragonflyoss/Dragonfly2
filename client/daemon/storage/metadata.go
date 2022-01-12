@@ -67,6 +67,8 @@ type WritePieceRequest struct {
 	PieceMetadata
 	UnknownLength bool
 	Reader        io.Reader
+	// GenPieceDigest is used after the last piece in back source case
+	GenPieceDigest func(n int64) bool
 }
 
 type StoreRequest struct {
@@ -86,8 +88,6 @@ type UpdateTaskRequest struct {
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string
-	// GenPieceDigest is used when back source
-	GenPieceDigest bool
 }
 
 type ReusePeerTask = UpdateTaskRequest
