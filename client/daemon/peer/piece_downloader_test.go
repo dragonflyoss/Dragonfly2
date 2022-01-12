@@ -128,8 +128,6 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 		factories := []func() (PieceDownloader, error){
 			func() (PieceDownloader, error) {
 				return NewPieceDownloader(pieceDownloadTimeout)
-			}, func() (PieceDownloader, error) {
-				return NewOptimizedPieceDownloader()
 			}}
 		for _, factory := range factories {
 			pd, _ := factory()
