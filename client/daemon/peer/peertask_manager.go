@@ -169,6 +169,8 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(ctx context.Context, ta
 	// double check
 	if p, ok := ptm.findPeerTaskConductor(taskID); ok {
 		ptm.conductorLock.Unlock()
+		logger.Debugf("same peer task found: %s/%s, cancel created peer task %s/%s",
+			p.taskID, p.peerID, ptc.taskID, ptc.peerID)
 		// cancel duplicate peer task
 		ptc.cancel(base.Code_ClientContextCanceled, reasonContextCanceled)
 		return p, nil
@@ -231,7 +233,7 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 }
 
 func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
-	logger.Debugf("delete task %s in running tasks", taskID)
+	logger.Debugf("delete done task %s in running tasks", taskID)
 	ptm.runningPeerTasks.Delete(taskID)
 }
 
