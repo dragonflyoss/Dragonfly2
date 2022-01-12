@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -82,14 +83,14 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest
 	opts = append([]grpc.CallOption{
 		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
 	}, opts...)
-	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: req.TaskId,
 	})
 	return cc.seederClient.ObtainSeeds(ctx, req, opts...)
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: addr.String(),
 	})
 	opts = append([]grpc.CallOption{

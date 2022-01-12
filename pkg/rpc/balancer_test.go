@@ -19,10 +19,12 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/peer"
 	"net"
 	"testing"
 	"time"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
+	"google.golang.org/grpc/peer"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -164,7 +166,7 @@ func TestBackends(t *testing.T) {
 
 	// The first RPC should succeed.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
@@ -182,7 +184,7 @@ func TestBackends(t *testing.T) {
 
 	// Because each testServer is one shot, the second RPC should fail.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
@@ -195,7 +197,7 @@ func TestBackends(t *testing.T) {
 	}
 	// Because stick is true, the third RPC should fail.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     true,
@@ -209,7 +211,7 @@ func TestBackends(t *testing.T) {
 
 	// The forth RPC change the targetAddr in PickReq, so it should succeed.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: sets.NewString(test.addresses[0]),
 			IsStick:     false,
@@ -247,7 +249,7 @@ func TestMigration(t *testing.T) {
 
 	// The first RPC should succeed.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
@@ -265,7 +267,7 @@ func TestMigration(t *testing.T) {
 
 	// Because each testServer is one shot, the second RPC should fail.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: nil,
 			IsStick:     false,
@@ -283,7 +285,7 @@ func TestMigration(t *testing.T) {
 
 	// The third RPC change the targetAddr in PickReq, so it should succeed.
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: sets.NewString(test.addresses[1]),
 			IsStick:     false,
@@ -300,7 +302,7 @@ func TestMigration(t *testing.T) {
 	}
 	// The forth RPC should fail because all server nodes in FailedNodes, and
 	{
-		ctx, cancel := context.WithTimeout(NewContext(context.Background(), &PickRequest{
+		ctx, cancel := context.WithTimeout(pickreq.NewContext(context.Background(), &pickreq.PickRequest{
 			HashKey:     "testPickKey",
 			FailedNodes: sets.NewString(test.addresses[0], test.addresses[1]),
 			IsStick:     true,

@@ -17,45 +17,22 @@
 package rpc
 
 import (
-	"context"
-	"google.golang.org/grpc/grpclog"
 	"strconv"
 	"sync"
 
-	"k8s.io/apimachinery/pkg/util/sets"
-
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 )
 
 var pickerLogger = grpclog.Component("picker")
-
-// PickRequest contains the clues to pick subConn
-type PickRequest struct {
-	HashKey     string
-	FailedNodes sets.String
-	IsStick     bool
-	TargetAddr  string
-}
-
-type pickKey struct{}
-
-// NewContext creates a new context with pick clues attached.
-func NewContext(ctx context.Context, p *PickRequest) context.Context {
-	return context.WithValue(ctx, pickKey{}, p)
-}
-
-// FromContext returns the pickReq clues in ctx if it exists.
-func FromContext(ctx context.Context) (p *PickRequest, ok bool) {
-	p, ok = ctx.Value(pickKey{}).(*PickRequest)
-	return
-}
 
 type d7yPickerBuildInfo struct {
 	subConns    map[resolver.Address]balancer.SubConn
@@ -96,8 +73,8 @@ type d7yHashPicker struct {
 func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, err error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	var pickRequest *PickRequest
-	pickRequest, ok := FromContext(info.Ctx)
+	var pickRequest *pickreq.PickRequest
+	pickRequest, ok := pickreq.FromContext(info.Ctx)
 	var targetAddr string
 	if ok && pickRequest != nil {
 		// mark history

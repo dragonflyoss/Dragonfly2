@@ -21,6 +21,7 @@ import (
 	"time"
 
 	d7yLogger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/migrate"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -51,6 +52,7 @@ var DefaultClientOpts = []grpc.DialOption{
 			//grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
 			grpc_retry.WithMax(3),
 		),
+		transfer.UnaryClientInterceptor(),
 	),
 	grpc.WithChainStreamInterceptor(
 		grpc_prometheus.StreamClientInterceptor,
@@ -62,5 +64,6 @@ var DefaultClientOpts = []grpc.DialOption{
 			//grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.ResourceExhausted, codes.Unavailable, codes.Unknown),
 			grpc_retry.WithMax(3),
 		),
+		transfer.StreamClientInterceptor(),
 	),
 }

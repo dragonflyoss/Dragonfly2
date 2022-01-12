@@ -31,6 +31,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
@@ -38,7 +39,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"google.golang.org/grpc"
 )
 
 type testServer struct {
@@ -47,7 +47,7 @@ type testServer struct {
 	addr       string
 }
 
-func (s *testServer) loadPieces() {
+func (s *testServer) loadPieces(addr string) {
 	data, err := os.ReadFile("../testdata/seed_piece_info.json")
 	if err != nil {
 		log.Fatalf("failed to load seed piece info: %v", err)
@@ -108,7 +108,7 @@ var _ cdnsystem.SeederServer = (*testServer)(nil)
 
 func newTestServer(addr string) *testServer {
 	s := &testServer{addr: addr}
-	s.loadPieces()
+	s.loadPieces(addr)
 	return s
 }
 
@@ -361,11 +361,14 @@ func TestMigration(t *testing.T) {
 	}
 	defer cdnClient.Close()
 
-	// The first RPC should succeed.
 	{
-		//if _, err := cdnClient.ObtainSeeds(context.Background(), &testpb.Empty{}); err != nil {
-		//	t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
-		//}
+		if _, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+			TaskId:  "task1",
+			Url:     "https://dragonfly.com",
+			UrlMeta: nil,
+		}); err != nil {
+			t.Fatalf("EmptyCall() = _, %v, want _, <nil>", err)
+		}
 	}
 
 	// Because each testServer is disposable, the second RPC should fail.
