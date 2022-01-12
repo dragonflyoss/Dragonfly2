@@ -44,7 +44,7 @@ scheduler:
 # 动态数据配置
 dynConfig:
   # 动态数据刷新间隔时间
-  refreshInterval: 5 * time.Minute
+  refreshInterval: 1m
 
 # 实例主机信息
 host:
