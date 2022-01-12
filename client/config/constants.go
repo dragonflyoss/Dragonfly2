@@ -60,7 +60,7 @@ const (
 	ServerPortLowerLimit = 15000
 	ServerPortUpperLimit = 65000
 
-	DefaultTaskExpireTime  = 3 * time.Minute
+	DefaultTaskExpireTime  = 6 * time.Hour
 	DefaultGCInterval      = 1 * time.Minute
 	DefaultDaemonAliveTime = 5 * time.Minute
 	DefaultScheduleTimeout = 5 * time.Minute
