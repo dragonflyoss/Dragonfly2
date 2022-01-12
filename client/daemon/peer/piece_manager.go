@@ -234,7 +234,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
-	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32) (
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32, isLastPiece func(n int64) bool) (
 	result *DownloadPieceResult, md5 string, err error) {
 	result = &DownloadPieceResult{
 		Size:       -1,
@@ -276,7 +276,8 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 					Length: int64(pieceSize),
 				},
 			},
-			Reader: reader,
+			Reader:         reader,
+			GenPieceDigest: isLastPiece,
 		})
 
 	result.FinishTime = time.Now().UnixNano()
@@ -372,7 +373,11 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		}
 
 		log.Debugf("download piece %d", pieceNum)
-		result, md5, err := pm.processPieceFromSource(pt, reader, contentLength, pieceNum, offset, size)
+		result, md5, err := pm.processPieceFromSource(
+			pt, reader, contentLength, pieceNum, offset, size,
+			func(int64) bool {
+				return pieceNum == maxPieceNum-1
+			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
@@ -405,9 +410,8 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 						PeerID: pt.GetPeerID(),
 						TaskID: pt.GetTaskID(),
 					},
-					ContentLength:  contentLength,
-					TotalPieces:    maxPieceNum,
-					GenPieceDigest: true,
+					ContentLength: contentLength,
+					TotalPieces:   maxPieceNum,
 				})
 			if err != nil {
 				log.Errorf("update task failed %s", err)
@@ -430,7 +434,11 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		size := pieceSize
 		offset := uint64(pieceNum) * uint64(pieceSize)
 		log.Debugf("download piece %d", pieceNum)
-		result, md5, err := pm.processPieceFromSource(pt, reader, contentLength, pieceNum, offset, size)
+		result, md5, err := pm.processPieceFromSource(
+			pt, reader, contentLength, pieceNum, offset, size,
+			func(n int64) bool {
+				return n < int64(pieceSize)
+			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
@@ -467,9 +475,8 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 					PeerID: pt.GetPeerID(),
 					TaskID: pt.GetTaskID(),
 				},
-				ContentLength:  contentLength,
-				TotalPieces:    pt.GetTotalPieces(),
-				GenPieceDigest: true,
+				ContentLength: contentLength,
+				TotalPieces:   pt.GetTotalPieces(),
 			})
 		if err != nil {
 			log.Errorf("update task failed %s", err)

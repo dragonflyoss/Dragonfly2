@@ -416,6 +416,9 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 			},
 			UnknownLength: false,
 			Reader:        bytes.NewBuffer(pt.tinyData.Content),
+			GenPieceDigest: func(n int64) bool {
+				return true
+			},
 		})
 	if err != nil {
 		logger.Errorf("write tiny data storage failed: %s", err)
@@ -428,7 +431,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		return
 	}
 
-	err = pt.UpdateStorage(true)
+	err = pt.UpdateStorage()
 	if err != nil {
 		logger.Errorf("update tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
@@ -690,21 +693,21 @@ loop:
 		// update total piece
 		if piecePacket.TotalPiece > pt.totalPiece {
 			pt.totalPiece = piecePacket.TotalPiece
-			_ = pt.UpdateStorage(false)
+			_ = pt.UpdateStorage()
 			pt.Debugf("update total piece count: %d", pt.totalPiece)
 		}
 
 		// update digest
 		if len(piecePacket.PieceMd5Sign) > 0 && len(pt.digest) == 0 {
 			pt.digest = piecePacket.PieceMd5Sign
-			_ = pt.UpdateStorage(false)
+			_ = pt.UpdateStorage()
 			pt.Debugf("update digest: %s", pt.digest)
 		}
 
 		// update content length
 		if piecePacket.ContentLength > 0 {
 			pt.SetContentLength(piecePacket.ContentLength)
-			_ = pt.UpdateStorage(false)
+			_ = pt.UpdateStorage()
 			pt.Debugf("update content length: %d", pt.GetContentLength())
 		}
 
@@ -832,6 +835,7 @@ func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadP
 	for _, piece := range piecePacket.PieceInfos {
 		pt.Infof("get piece %d from %s/%s, digest: %s, start: %d, size: %d",
 			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
+		// FIXME when set total piece but no total digest, fetch again
 		if !pt.requestedPieces.IsSet(piece.PieceNum) {
 			pt.requestedPieces.Set(piece.PieceNum)
 		}
@@ -1253,7 +1257,7 @@ func (pt *peerTaskConductor) InitStorage() error {
 	return err
 }
 
-func (pt *peerTaskConductor) UpdateStorage(genPieceDigest bool) error {
+func (pt *peerTaskConductor) UpdateStorage() error {
 	// update storage
 	err := pt.storageManager.UpdateTask(pt.ctx,
 		&storage.UpdateTaskRequest{
@@ -1261,10 +1265,9 @@ func (pt *peerTaskConductor) UpdateStorage(genPieceDigest bool) error {
 				PeerID: pt.GetPeerID(),
 				TaskID: pt.GetTaskID(),
 			},
-			ContentLength:  pt.GetContentLength(),
-			TotalPieces:    pt.GetTotalPieces(),
-			PieceMd5Sign:   pt.GetPieceMd5Sign(),
-			GenPieceDigest: genPieceDigest,
+			ContentLength: pt.GetContentLength(),
+			TotalPieces:   pt.GetTotalPieces(),
+			PieceMd5Sign:  pt.GetPieceMd5Sign(),
 		})
 	if err != nil {
 		pt.Log().Errorf("update task to storage manager failed: %s", err)
@@ -1288,7 +1291,7 @@ func (pt *peerTaskConductor) done() {
 	pt.Log().Infof("peer task done, cost: %dms", cost)
 	// TODO merge error handle
 	// update storage metadata
-	if err := pt.UpdateStorage(pt.needBackSource); err != nil {
+	if err := pt.UpdateStorage(); err != nil {
 		close(pt.failCh)
 		success = false
 		code = base.Code_ClientError
