@@ -67,10 +67,10 @@ func New() *Config {
 			RetryLimit:      10,
 			RetryInterval:   1 * time.Second,
 			GC: &GCConfig{
-				PeerGCInterval: 1 * time.Minute,
-				PeerTTL:        5 * time.Minute,
-				TaskGCInterval: 1 * time.Minute,
-				TaskTTL:        10 * time.Minute,
+				PeerGCInterval: 10 * time.Minute,
+				PeerTTL:        24 * time.Hour,
+				TaskGCInterval: 10 * time.Minute,
+				TaskTTL:        24 * time.Hour,
 			},
 		},
 		DynConfig: &DynConfig{
