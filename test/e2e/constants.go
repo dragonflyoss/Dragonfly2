@@ -40,6 +40,7 @@ type server struct {
 	namespace  string
 	logDirName string
 	replicas   int
+	pprofPort  int
 }
 
 var servers = map[string]server{
@@ -66,11 +67,13 @@ var servers = map[string]server{
 		namespace:  dragonflyNamespace,
 		logDirName: "daemon",
 		replicas:   1,
+		pprofPort:  9999,
 	},
 	proxyServerName: {
 		name:       proxyServerName,
 		namespace:  dragonflyE2ENamespace,
 		logDirName: "daemon",
 		replicas:   3,
+		pprofPort:  9999,
 	},
 }

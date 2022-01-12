@@ -33,6 +33,8 @@ dfdaemon:
     hostPath:
       path: /tmp/artifact
   config:
+    verbose: true
+    pprofPort: 9999
     scheduler:
       disableAutoBackSource: true
     proxy:
