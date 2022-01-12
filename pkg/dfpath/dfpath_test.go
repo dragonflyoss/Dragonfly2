@@ -29,7 +29,7 @@ func TestNew(t *testing.T) {
 		expect  func(t *testing.T, options []Option)
 	}{
 		{
-			name: "new dfpath succeeded",
+			name: "new dfpath",
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
 				d, err := New(options...)
@@ -41,7 +41,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath succeeded by workHome",
+			name:    "new dfpath by workHome",
 			options: []Option{WithWorkHome("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
@@ -54,7 +54,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath succeeded by cacheDir",
+			name:    "new dfpath by cacheDir",
 			options: []Option{WithCacheDir("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
@@ -67,7 +67,7 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath succeeded by logDir",
+			name:    "new dfpath by logDir",
 			options: []Option{WithLogDir("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)

@@ -1,55 +1,51 @@
-dynconfig:
-  type: local
-  expireTime: 1000
-  cdnDirPath: tmp
+server:
+  ip: 127.0.0.1
+  host: foo
+  port: 8002
+  listenLimit: 1000
+  cacheDir: foo
+  logDir: bar
 
 scheduler:
-  workerNum: 8
-  workerJobPoolSize: 10000
-  senderNum: 10
-  senderJobPoolSize: 10000
   algorithm: default
+  backSourceCount: 3
+  retryLimit: 10
+  retryInterval: 1000000000
+  gc:
+    peerGCInterval: 60000000000
+    peerTTL: 300000000000
+    taskGCInterval: 60000000000
+    taskTTL: 600000000000
 
-server:
-  ip: "127.0.0.1"
-  host: "foo"
-  port: 8002
-  cacheDir: "foo"
-  logDir: "foo"
-
-cdn:
-  servers:
-    - name: "cdn"
-      ip: "127.0.0.1"
-      rpcPort: 8003
-      downloadPort: 8001
-
-gc:
-  taskDelay: 3600000
-  peerTaskDelay: 3600000
-
-manager:
-  addr: 127.0.0.1:65003
-  schedulerClusterID: 1
-  keepAlive:
-    interval: 1000000000
+dynconfig:
+  refreshInterval: 300000000000
+  cdnDir: foo
 
 host:
   idc: foo
-  location: bar
+  netTopology: bar
+  location: baz
+
+manager:
+  enable: true
+  addr: 127.0.0.1:65003
+  schedulerClusterID: 1
+  keepAlive:
+    interval: 5000000000
 
 job:
+  enable: true
   globalWorkerNum: 1
   schedulerWorkerNum: 1
   localWorkerNum: 5
   redis:
-    host: "127.0.0.1"
+    host: 127.0.0.1
     port: 6379
-    password: "password"
+    password: foo
     brokerDB: 1
     backendDB: 2
 
 metrics:
+  enable: false
   addr: ":8000"
-
-disableCDN: true
+  enablePeerHost: false

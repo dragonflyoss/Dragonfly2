@@ -22,11 +22,12 @@
 package base
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
@@ -64,7 +65,7 @@ const (
 	Code_SchedNeedBackSource            Code = 5001 // client should try to download from source
 	Code_SchedPeerGone                  Code = 5002 // client should disconnect from scheduler
 	Code_SchedPeerNotFound              Code = 5004 // peer not found in scheduler
-	Code_SchedPeerPieceResultReportFail Code = 5005 // report piece
+	Code_SchedPeerPieceResultReportFail Code = 5005 // report piece failed
 	Code_SchedTaskStatusError           Code = 5006 // task status is fail
 	// cdnsystem response error 6000-6999
 	Code_CDNError            Code = 6000

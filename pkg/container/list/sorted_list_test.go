@@ -37,7 +37,7 @@ func TestSortedListInsert(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "insert values succeeded",
+			name: "insert values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {},
 			expect: func(t *testing.T, l SortedList, items ...Item) {
 				assert := assert.New(t)
@@ -47,7 +47,7 @@ func TestSortedListInsert(t *testing.T) {
 			},
 		},
 		{
-			name: "insert multi value succeeded",
+			name: "insert multi value",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -130,7 +130,7 @@ func TestSortedListRemove(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "remove values succeeded",
+			name: "remove values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -216,7 +216,7 @@ func TestSortedListContains(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "contains values succeeded",
+			name: "contains values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -288,7 +288,7 @@ func TestSortedListLen(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "get length succeeded",
+			name: "get length",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -360,7 +360,7 @@ func TestSortedListRange(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "range succeeded",
+			name: "range values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -382,7 +382,7 @@ func TestSortedListRange(t *testing.T) {
 			},
 		},
 		{
-			name: "range multi values succeeded",
+			name: "range multi values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				for i := range m {
 					m[i].SortedValue().Return(i).AnyTimes()
@@ -523,7 +523,7 @@ func TestSortedListReverseRange(t *testing.T) {
 		expect func(t *testing.T, l SortedList, items ...Item)
 	}{
 		{
-			name: "reverse range succeeded",
+			name: "reverse range values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
@@ -545,7 +545,7 @@ func TestSortedListReverseRange(t *testing.T) {
 			},
 		},
 		{
-			name: "reverse range multi values succeeded",
+			name: "reverse range multi values",
 			mock: func(m ...*mocks.MockItemMockRecorder) {
 				for i := range m {
 					m[i].SortedValue().Return(i).AnyTimes()
