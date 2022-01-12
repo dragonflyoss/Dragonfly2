@@ -20,16 +20,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/peer"
-	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"net"
 	"os"
+	"sync"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -219,7 +223,7 @@ func TestOneBackend(t *testing.T) {
 	}
 }
 
-func TestHash(t *testing.T) {
+func TestHashTask(t *testing.T) {
 	test, err := startTestServers(3)
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)
@@ -235,98 +239,113 @@ func TestHash(t *testing.T) {
 		t.Fatalf("failed to get cdn client: %v", err)
 	}
 	defer cdnClient.Close()
-
-	//g := errgroup.Group{}
-	//g.Go(func() error {
-	var serverPeer []peer.Peer
-	//wg := sync.WaitGroup{}
-	//wg.Add(100)
-	for i := 0; i < 100; i++ {
-		//go func() {
-		//	defer wg.Done()
-		var temp peer.Peer
-		if stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
-			TaskId:  "task1",
-			Url:     "https://dragonfly.com",
-			UrlMeta: nil,
-		}, grpc.Peer(&temp)); err != nil {
-			t.Fatalf("failed to call ObtainSeeds: %v", err)
-		} else {
+	{
+		// test hash same taskID to same server node
+		var serverPeerChan = make(chan peer.Peer)
+		eg := errgroup.Group{}
+		var totalCallCount = 100
+		for i := 0; i < totalCallCount; i++ {
+			eg.Go(func() error {
+				var temp peer.Peer
+				stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+					TaskId:  "task1",
+					Url:     "https://dragonfly.com",
+					UrlMeta: nil,
+				}, grpc.Peer(&temp))
+				if err != nil {
+					return errors.Errorf("failed to call ObtainSeeds: %v", err)
+				}
+				for {
+					_, err := stream.Recv()
+					if err == io.EOF {
+						break
+					}
+					if err != nil {
+						return errors.Errorf("failed to recv ObtainSeeds: %v", err)
+					}
+				}
+				serverPeerChan <- temp
+				return nil
+			})
+		}
+		var serverAddrs []string
+		serverPeerCount := 0
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for p := range serverPeerChan {
+				serverAddrs = append(serverAddrs, p.Addr.String())
+				serverPeerCount++
+			}
+		}()
+		if err := eg.Wait(); err != nil {
+			t.Fatalf("failed to call obtainSeeds: %v", err)
+		}
+		close(serverPeerChan)
+		wg.Wait()
+		if serverPeerCount != totalCallCount {
+			t.Fatalf("call obtainSeeds success count is wrong, expect %d actual %d", totalCallCount, serverPeerCount)
+		}
+		targetAddr := serverAddrs[0]
+		for _, addr := range serverAddrs {
+			if targetAddr != addr {
+				t.Fatalf("failed to hash to same server, want %s, actual %s", targetAddr, addr)
+			}
+		}
+	}
+	{
+		// test hash different taskID to different server node
+		var serverPeer1 peer.Peer
+		var serverPeer2 peer.Peer
+		eg := errgroup.Group{}
+		eg.Go(func() error {
+			stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+				TaskId:  "task1",
+				Url:     "https://dragonfly.com",
+				UrlMeta: nil,
+			}, grpc.Peer(&serverPeer1))
+			if err != nil {
+				return errors.Errorf("failed to call ObtainSeeds: %v", err)
+			}
 			for {
 				_, err := stream.Recv()
 				if err == io.EOF {
 					break
 				}
+				if err != nil {
+					return errors.Errorf("failed to recv ObtainSeeds: %v", err)
+				}
 			}
+			return nil
+		})
+		eg.Go(func() error {
+			stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
+				TaskId:  "task2",
+				Url:     "https://dragonfly2.com",
+				UrlMeta: nil,
+			}, grpc.Peer(&serverPeer2))
+			if err != nil {
+				return errors.Errorf("failed to call ObtainSeeds: %v", err)
+			}
+			for {
+				_, err := stream.Recv()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return errors.Errorf("failed to recv ObtainSeeds: %v", err)
+				}
+			}
+			return nil
+		})
+		if err := eg.Wait(); err != nil {
+			t.Fatalf("failed to call obtainSeeds: %v", err)
 		}
-
-		serverPeer = append(serverPeer, temp)
-		//}()
-	}
-	//wg.Wait()
-	if len(serverPeer) != 100 {
-		log.Fatalf("call obtainSeeds success count is wrong")
-	}
-	targetAddr := serverPeer[0].Addr.String()
-	for _, p := range serverPeer {
-		if targetAddr != p.Addr.String() {
-			log.Fatalf("failed to hash to same server, want %s, actual %s", targetAddr, p.Addr.String())
+		if serverPeer1.Addr.String() == serverPeer2.Addr.String() {
+			//t.Fatalf("failed to hash to same server, want %s, actual %s", "targetAddr", "p.Addr.String()")
 		}
 	}
-	//return nil
-	//})
-	//g.Go(func() error {
-	//	stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
-	//		TaskId:  "task2",
-	//		Url:     "https://dragonfly2.com",
-	//		UrlMeta: nil,
-	//	})
-	//	if err != nil {
-	//		t.Fatalf("failed to call ObtainSeeds: %v", err)
-	//	}
-	//	var count int32
-	//	for {
-	//		piece, err := stream.Recv()
-	//		if err == io.EOF {
-	//			break
-	//		}
-	//		if err != nil {
-	//			t.Fatalf("failed to recv piece: %v", err)
-	//		}
-	//		if !cmp.Equal(piece, verifyPieces[count], cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
-	//			t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count], piece)
-	//		}
-	//		count++
-	//	}
-	//	return nil
-	//})
-	//g.Go(func() error {
-	//	stream, err := cdnClient.ObtainSeeds(context.Background(), &cdnsystem.SeedRequest{
-	//		TaskId:  "task2",
-	//		Url:     "https://dragonfly2.com",
-	//		UrlMeta: nil,
-	//	})
-	//	if err != nil {
-	//		t.Fatalf("failed to call ObtainSeeds: %v", err)
-	//	}
-	//	var count int32
-	//	for {
-	//		piece, err := stream.Recv()
-	//		if err == io.EOF {
-	//			break
-	//		}
-	//		if err != nil {
-	//			t.Fatalf("failed to recv piece: %v", err)
-	//		}
-	//		if !cmp.Equal(piece, verifyPieces[count], cmpopts.IgnoreUnexported(cdnsystem.PieceSeed{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
-	//			t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[count], piece)
-	//		}
-	//		count++
-	//	}
-	//	return nil
-	//})
-	//if g.Wait()
-
 }
 
 func TestMigration(t *testing.T) {
