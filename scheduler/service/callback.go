@@ -80,6 +80,7 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 					return
 				}
 
+				// Notify peer back-to-source
 				if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
 					peer.Log.Errorf("send packet failed: %v", err)
 					return
@@ -113,6 +114,7 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 				return
 			}
 
+			// Notify peer schedule failed
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
