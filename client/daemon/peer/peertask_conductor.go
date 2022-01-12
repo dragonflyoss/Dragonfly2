@@ -747,8 +747,7 @@ func (pt *peerTaskConductor) init(piecePacket *base.PiecePacket, pieceBufferSize
 	}
 	if err := pt.InitStorage(); err != nil {
 		pt.span.RecordError(err)
-		pt.failedReason = err.Error()
-		pt.failedCode = base.Code_ClientError
+		pt.cancel(base.Code_ClientError, err.Error())
 		return nil, false
 	}
 	pc := pt.peerPacket.Load().(*scheduler.PeerPacket).ParallelCount
@@ -762,13 +761,6 @@ func (pt *peerTaskConductor) init(piecePacket *base.PiecePacket, pieceBufferSize
 func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) {
 	// wait first available peer
 	select {
-	case <-pt.ctx.Done():
-		err := pt.ctx.Err()
-		pt.Errorf("context done due to %s", err)
-		if pt.failedReason == failedReasonNotSet && err != nil {
-			pt.failedReason = err.Error()
-		}
-		pt.span.AddEvent(fmt.Sprintf("pulling pieces end due to %s", err))
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
@@ -784,11 +776,11 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		return false, true
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
-			pt.failedReason = reasonBackSourceDisabled
-			pt.failedCode = base.Code_ClientScheduleTimeout
+			pt.cancel(base.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
+			return false, false
 		} else {
 			pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
 			pt.span.AddEvent("back source due to schedule timeout")
@@ -797,7 +789,6 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 			return false, true
 		}
 	}
-	return false, false
 }
 
 func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
@@ -823,8 +814,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
 		if pt.schedulerOption.DisableAutoBackSource {
-			pt.failedReason = reasonReScheduleTimeout
-			pt.failedCode = base.Code_ClientScheduleTimeout
+			pt.cancel(base.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
 			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
@@ -1071,9 +1061,7 @@ retry:
 	})
 	// error code should be sent to scheduler and the scheduler can schedule a new peer
 	if sendError != nil {
-		pt.failedCode = base.Code_SchedError
-		pt.failedReason = sendError.Error()
-		pt.Fail()
+		pt.cancel(base.Code_SchedError, sendError.Error())
 		span.RecordError(sendError)
 		pt.Errorf("send piece result error: %s, code to send: %d", sendError, code)
 		return nil, sendError
@@ -1145,9 +1133,7 @@ func (pt *peerTaskConductor) getPieceTasks(span trace.Span, curPeerPacket *sched
 			FinishedCount: pt.readyPieces.Settled(),
 		})
 		if sendError != nil {
-			pt.failedCode = base.Code_SchedError
-			pt.failedReason = sendError.Error()
-			pt.Fail()
+			pt.cancel(base.Code_SchedError, sendError.Error())
 			span.RecordError(sendError)
 			pt.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
 			return nil, true, sendError
@@ -1309,21 +1295,12 @@ func (pt *peerTaskConductor) done() {
 	pt.Log().Infof("peer task done, cost: %dms", cost)
 	// TODO merge error handle
 	// update storage metadata
-	if err := pt.UpdateStorage(); err != nil {
-		close(pt.failCh)
-		success = false
-		code = base.Code_ClientError
-		pt.failedCode = base.Code_ClientError
-		pt.failedReason = err.Error()
-
-		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
-		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
-		pt.Errorf("update storage error: %v", err)
-		metrics.PeerTaskFailedCount.Add(1)
-	} else {
+	if err := pt.UpdateStorage(); err == nil {
 		// validate digest
-		if err = pt.Validate(); err != nil {
+		if err = pt.Validate(); err == nil {
+			close(pt.successCh)
+			pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+		} else {
 			close(pt.failCh)
 			success = false
 			code = base.Code_ClientError
@@ -1336,8 +1313,18 @@ func (pt *peerTaskConductor) done() {
 			pt.Errorf("validate digest failed: %s", err)
 			metrics.PeerTaskFailedCount.Add(1)
 		}
-		close(pt.successCh)
-		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	} else {
+		close(pt.failCh)
+		success = false
+		code = base.Code_ClientError
+		pt.failedCode = base.Code_ClientError
+		pt.failedReason = err.Error()
+
+		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
+		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
+		pt.Errorf("update storage error: %v", err)
+		metrics.PeerTaskFailedCount.Add(1)
 	}
 
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
