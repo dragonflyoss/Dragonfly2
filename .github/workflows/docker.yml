@@ -40,7 +40,7 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1 
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,7 +62,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/scheduler:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/scheduler:${{ steps.get_version.outputs.VERSION }}
+            ghcr.io/${{ env.IMAGE_REPOSITORY }}/scheduler:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_dfdaemon_to_registry:
@@ -99,7 +99,7 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1 
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -121,7 +121,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/dfdaemon:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/dfdaemon:${{ steps.get_version.outputs.VERSION }}
+            ghcr.io/${{ env.IMAGE_REPOSITORY }}/dfdaemon:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_cdn_to_registry:
@@ -158,7 +158,7 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1 
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -180,7 +180,7 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/cdn:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/cdn:${{ steps.get_version.outputs.VERSION }}
+            ghcr.io/${{ env.IMAGE_REPOSITORY }}/cdn:${{ steps.get_version.outputs.VERSION }}
           push: true
 
   push_manager_to_registry:
@@ -217,7 +217,7 @@ jobs:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1 
         with:
-          registry: docker.pkg.github.com
+          registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -239,5 +239,5 @@ jobs:
             VERSION=${{ steps.get_version.outputs.VERSION }}
           tags: |
             dragonflyoss/manager:${{ steps.get_version.outputs.VERSION }}
-            docker.pkg.github.com/${{ env.IMAGE_REPOSITORY }}/manager:${{ steps.get_version.outputs.VERSION }}
+            ghcr.io/${{ env.IMAGE_REPOSITORY }}/manager:${{ steps.get_version.outputs.VERSION }}
           push: true

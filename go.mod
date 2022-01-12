@@ -9,6 +9,7 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.3.0
 	github.com/aliyun/aliyun-oss-go-sdk v2.1.6+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.5-0.20210827121450-79689222c755
+	github.com/bits-and-blooms/bitset v1.2.1
 	github.com/casbin/casbin/v2 v2.34.1
 	github.com/casbin/gorm-adapter/v3 v3.3.2
 	github.com/colinmarc/hdfs/v2 v2.2.0
@@ -37,10 +38,10 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/jarcoal/httpmock v1.0.8
+	github.com/looplab/fsm v0.3.0
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.14.0
 	github.com/opencontainers/go-digest v1.0.0
@@ -81,7 +82,6 @@ require (
 	gorm.io/gorm v1.21.15
 	gorm.io/plugin/soft_delete v1.0.2
 	k8s.io/apimachinery v0.20.6
-	k8s.io/client-go v11.0.0+incompatible
 	moul.io/zapgorm2 v1.1.0
 )
 
@@ -105,7 +105,6 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.2.3 // indirect
-	github.com/go-logr/logr v0.2.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
@@ -205,5 +204,4 @@ require (
 	gorm.io/driver/postgres v1.0.8 // indirect
 	gorm.io/driver/sqlserver v1.0.4 // indirect
 	gorm.io/plugin/dbresolver v1.1.0 // indirect
-	k8s.io/klog/v2 v2.4.0 // indirect
 )

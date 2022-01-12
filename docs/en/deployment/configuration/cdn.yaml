@@ -1,5 +1,3 @@
-# This file is the template of cdn system configuration file.
-# You can configure your cdn system by change the parameter according your requirement.
 base:
   # listenPort is the port cdn server listens on.
   # default: 8003

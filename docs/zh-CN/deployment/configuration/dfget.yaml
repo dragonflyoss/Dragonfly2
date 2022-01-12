@@ -141,7 +141,7 @@ upload:
 storage:
   # task data 过期时间
   # 超过指定时间没有访问之后，缓存数据将会被清理
-  taskExpireTime: 3m0s
+  taskExpireTime: 6h
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -194,6 +194,8 @@ proxy:
     certs: []
     # 是否直连镜像中心，true 的话，流量不再走 p2p
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
     # 代理镜像 blobs 信息
@@ -207,6 +209,9 @@ proxy:
     # 转发流量到指定地址
     - regx: some-registry
       redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
 
   hijackHTTPS:
     # https 劫持的证书和密钥

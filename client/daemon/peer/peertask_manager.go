@@ -17,21 +17,16 @@
 package peer
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"sync"
-	"time"
 
-	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -57,33 +52,34 @@ type TaskManager interface {
 	Stop(ctx context.Context) error
 }
 
+//go:generate mockgen -source peertask_manager.go -package peer -self_package d7y.io/dragonfly/v2/client/daemon/peer -destination peertask_manager_mock_test.go
 // Task represents common interface to operate a peer task
 type Task interface {
+	Logger
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
-	ReportPieceResult(result *pieceTaskResult) error
+
 	GetPeerID() string
 	GetTaskID() string
+
 	GetTotalPieces() int32
 	SetTotalPieces(int32)
+
 	GetContentLength() int64
-	// SetContentLength will be called after download completed, when download from source without content length
-	SetContentLength(int64) error
-	SetCallback(TaskCallback)
+	SetContentLength(int64)
+
 	AddTraffic(uint64)
 	GetTraffic() uint64
+
 	SetPieceMd5Sign(string)
 	GetPieceMd5Sign() string
+
+	PublishPieceInfo(pieceNum int32, size uint32)
+	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool)
 }
 
-// TaskCallback inserts some operations for peer task download lifecycle
-type TaskCallback interface {
-	Init(pt Task) error
-	Done(pt Task) error
-	Update(pt Task) error
-	Fail(pt Task, code base.Code, reason string) error
-	GetStartTime() time.Time
-	ValidateDigest(pt Task) error
+type Logger interface {
+	Log() *logger.SugaredLoggerOnWith
 }
 
 type TinyData struct {
@@ -107,6 +103,7 @@ type peerTaskManager struct {
 	pieceManager    PieceManager
 	storageManager  storage.Manager
 
+	conductorLock    sync.Locker
 	runningPeerTasks sync.Map
 
 	perPeerRateLimit rate.Limit
@@ -135,6 +132,7 @@ func NewPeerTaskManager(
 	ptm := &peerTaskManager{
 		host:              host,
 		runningPeerTasks:  sync.Map{},
+		conductorLock:     &sync.Mutex{},
 		pieceManager:      pieceManager,
 		storageManager:    storageManager,
 		schedulerClient:   schedulerClient,
@@ -149,63 +147,61 @@ func NewPeerTaskManager(
 
 var _ TaskManager = (*peerTaskManager)(nil)
 
+func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskConductor, bool) {
+	pt, ok := ptm.runningPeerTasks.Load(taskID)
+	if !ok {
+		return nil, false
+	}
+	return pt.(*peerTaskConductor), true
+}
+
+func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(ctx context.Context, taskID string, request *scheduler.PeerTaskRequest, limit rate.Limit) (*peerTaskConductor, error) {
+	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
+		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
+		return ptc, nil
+	}
+	ptc, err := ptm.newPeerTaskConductor(ctx, request, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	ptm.conductorLock.Lock()
+	// double check
+	if p, ok := ptm.findPeerTaskConductor(taskID); ok {
+		ptm.conductorLock.Unlock()
+		logger.Debugf("same peer task found: %s/%s, cancel created peer task %s/%s",
+			p.taskID, p.peerID, ptc.taskID, ptc.peerID)
+		// cancel duplicate peer task
+		ptc.cancel(base.Code_ClientContextCanceled, reasonContextCanceled)
+		return p, nil
+	}
+	ptm.runningPeerTasks.Store(taskID, ptc)
+	ptm.conductorLock.Unlock()
+
+	ptc.run()
+	return ptc, nil
+}
+
 func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
+			metrics.PeerTaskReuseCount.Add(1)
 			return progress, nil, nil
 		}
 	}
 	// TODO ensure scheduler is ok first
-	start := time.Now()
-	limit := ptm.perPeerRateLimit
+	var limit = rate.Inf
+	if ptm.perPeerRateLimit > 0 {
+		limit = ptm.perPeerRateLimit
+	}
 	if req.Limit > 0 {
 		limit = rate.Limit(req.Limit)
 	}
-	ctx, pt, tiny, err := newFilePeerTask(ctx, ptm.host, ptm.pieceManager,
-		req, ptm.schedulerClient, ptm.schedulerOption, limit, ptm.getPiecesMaxRetry)
+	ctx, pt, err := ptm.newFileTask(ctx, req, limit)
 	if err != nil {
 		return nil, nil, err
 	}
-	// tiny file content is returned by scheduler, just write to output
-	if tiny != nil {
-		ptm.storeTinyPeerTask(ctx, tiny)
-		defer tiny.span.End()
-		log := logger.With("peer", tiny.PeerID, "task", tiny.TaskID, "component", "peerTaskManager")
-		_, err = os.Stat(req.Output)
-		if err == nil {
-			// remove exist file
-			log.Infof("destination file %q exists, purge it first", req.Output)
-			tiny.span.AddEvent("purge exist output")
-			os.Remove(req.Output)
-		}
-		dstFile, err := os.OpenFile(req.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
-		if err != nil {
-			tiny.span.RecordError(err)
-			tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			log.Errorf("open task destination file error: %s", err)
-			return nil, nil, err
-		}
-		defer dstFile.Close()
-		n, err := dstFile.Write(tiny.Content)
-		if err != nil {
-			tiny.span.RecordError(err)
-			tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			return nil, nil, err
-		}
-		log.Debugf("copied tasks data %d bytes to %s", n, req.Output)
-		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-		tiny.span.SetAttributes(config.AttributePeerTaskSize.Int(n))
-		return nil, tiny, nil
-	}
-	pt.SetCallback(&filePeerTaskCallback{
-		ptm:   ptm,
-		pt:    pt,
-		req:   req,
-		start: start,
-	})
-
-	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
 	progress, err := pt.Start(ctx)
@@ -216,34 +212,15 @@ func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *schedu
 	if ptm.enableMultiplex {
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
+			metrics.PeerTaskReuseCount.Add(1)
 			return r, attr, nil
 		}
 	}
 
-	start := time.Now()
-	ctx, pt, tiny, err := newStreamPeerTask(ctx, ptm, req)
+	pt, err := ptm.newStreamTask(ctx, req)
 	if err != nil {
 		return nil, nil, err
 	}
-	// tiny file content is returned by scheduler, just write to output
-	if tiny != nil {
-		ptm.storeTinyPeerTask(ctx, tiny)
-		logger.Infof("copied tasks data %d bytes to buffer", len(tiny.Content))
-		tiny.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
-		return io.NopCloser(bytes.NewBuffer(tiny.Content)), map[string]string{
-			headers.ContentLength: fmt.Sprintf("%d", len(tiny.Content)),
-		}, nil
-	}
-
-	pt.SetCallback(
-		&streamPeerTaskCallback{
-			ptm:   ptm,
-			pt:    pt,
-			req:   req,
-			start: start,
-		})
-
-	ptm.runningPeerTasks.Store(req.PeerId, pt)
 
 	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
 	readCloser, attribute, err := pt.Start(ctx)
@@ -255,71 +232,12 @@ func (ptm *peerTaskManager) Stop(ctx context.Context) error {
 	return nil
 }
 
-func (ptm *peerTaskManager) PeerTaskDone(peerID string) {
-	ptm.runningPeerTasks.Delete(peerID)
+func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
+	logger.Debugf("delete done task %s in running tasks", taskID)
+	ptm.runningPeerTasks.Delete(taskID)
 }
 
-func (ptm *peerTaskManager) IsPeerTaskRunning(peerID string) bool {
-	_, ok := ptm.runningPeerTasks.Load(peerID)
+func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) bool {
+	_, ok := ptm.runningPeerTasks.Load(taskID)
 	return ok
-}
-
-func (ptm *peerTaskManager) storeTinyPeerTask(ctx context.Context, tiny *TinyData) {
-	// TODO store tiny data asynchronous
-	l := int64(len(tiny.Content))
-	err := ptm.storageManager.RegisterTask(ctx,
-		storage.RegisterTaskRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID: tiny.PeerID,
-				TaskID: tiny.TaskID,
-			},
-			ContentLength: l,
-			TotalPieces:   1,
-			// TODO check md5 digest
-		})
-	if err != nil {
-		logger.Errorf("register tiny data storage failed: %s", err)
-		return
-	}
-	n, err := ptm.storageManager.WritePiece(ctx,
-		&storage.WritePieceRequest{
-			PeerTaskMetadata: storage.PeerTaskMetadata{
-				PeerID: tiny.PeerID,
-				TaskID: tiny.TaskID,
-			},
-			PieceMetadata: storage.PieceMetadata{
-				Num:    0,
-				Md5:    "",
-				Offset: 0,
-				Range: clientutil.Range{
-					Start:  0,
-					Length: l,
-				},
-				Style: 0,
-			},
-			UnknownLength: false,
-			Reader:        bytes.NewBuffer(tiny.Content),
-		})
-	if err != nil {
-		logger.Errorf("write tiny data storage failed: %s", err)
-		return
-	}
-	if n != l {
-		logger.Errorf("write tiny data storage failed", n, l)
-		return
-	}
-	err = ptm.storageManager.Store(ctx,
-		&storage.StoreRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID: tiny.PeerID,
-				TaskID: tiny.TaskID,
-			},
-			MetadataOnly: true,
-			TotalPieces:  1,
-		})
-	if err != nil {
-		logger.Errorf("store tiny data failed: %s", err)
-	} else {
-		logger.Debugf("store tiny data, len: %d", l)
-	}
 }
