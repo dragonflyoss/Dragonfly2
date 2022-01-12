@@ -702,7 +702,7 @@ loop:
 		}
 
 		// update content length
-		if piecePacket.ContentLength > 0 {
+		if piecePacket.ContentLength > -1 {
 			pt.SetContentLength(piecePacket.ContentLength)
 			_ = pt.UpdateStorage(false)
 			pt.Debugf("update content length: %d", pt.GetContentLength())
@@ -731,7 +731,7 @@ loop:
 
 func (pt *peerTaskConductor) init(piecePacket *base.PiecePacket, pieceBufferSize uint32) (chan *DownloadPieceRequest, bool) {
 	pt.contentLength.Store(piecePacket.ContentLength)
-	if piecePacket.ContentLength > 0 {
+	if piecePacket.ContentLength > -1 {
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
 	}
 	if err := pt.InitStorage(); err != nil {

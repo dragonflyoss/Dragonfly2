@@ -7,9 +7,9 @@ data:
   dfget.yaml: |-
     aliveTime: 0s
     gcInterval: 1m0s
-    keepStorage: false
+    keepStorage: true
     verbose: true
-    pprof-port: 0
+    pprof-port: 9999
     scheduler:
       manager:
         enable: true
