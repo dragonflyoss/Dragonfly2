@@ -46,7 +46,7 @@ scheduler:
 # dynamic data configuration
 dynConfig:
   # dynamic config refresh interval
-  refreshInterval: 5 * time.Minute
+  refreshInterval: 1m
 
 # scheduler host configuration
 host:
