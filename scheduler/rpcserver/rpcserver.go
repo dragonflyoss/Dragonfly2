@@ -191,6 +191,7 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 
 	// Peer setting stream
 	peer.StoreStream(stream)
+	defer peer.DeleteStream()
 
 	// Handle begin of piece
 	s.service.HandlePiece(ctx, peer, beginOfPiece)
@@ -200,9 +201,6 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 		case <-ctx.Done():
 			peer.Log.Infof("context was done")
 			return ctx.Err()
-		case dferr := <-peer.StopChannel:
-			peer.Log.Errorf("stream stop dferror: %v", dferr)
-			return dferr
 		default:
 		}
 

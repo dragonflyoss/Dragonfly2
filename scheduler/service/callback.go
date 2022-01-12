@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -75,9 +74,17 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 		// Peer scheduling exceeds retry limit
 		if n >= c.config.Scheduler.RetryLimit {
 			if peer.Task.CanBackToSource() {
-				if ok := peer.StopStream(dferrors.Newf(base.Code_SchedNeedBackSource, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
+				stream, ok := peer.LoadStream()
+				if !ok {
+					peer.Log.Error("load stream failed")
 					return
 				}
+
+				if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+					peer.Log.Errorf("send packet failed: %v", err)
+					return
+				}
+				peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedNeedBackSource)
 
 				if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -100,9 +107,17 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 			}
 
 			// Handle peer failed
-			if ok := peer.StopStream(dferrors.Newf(base.Code_SchedTaskStatusError, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
-				peer.Log.Error("stop stream failed")
+			stream, ok := peer.LoadStream()
+			if !ok {
+				peer.Log.Error("load stream failed")
+				return
 			}
+
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
+				peer.Log.Errorf("send packet failed: %v", err)
+				return
+			}
+			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedTaskStatusError)
 			return
 		}
 

@@ -35,13 +35,13 @@ scheduler:
   # gc metadata configuration
   gc:
     # peerGCInterval peer's gc interval
-    peerGCInterval: 1m
+    peerGCInterval: 10m
     # peerTTL peer's TTL duration
-    peerTTL: 5m
+    peerTTL: 24h
     # taskGCInterval task's gc interval
-    taskGCInterval: 1m
+    taskGCInterval: 10m
     # taskTTL task's TTL duration
-    taskTTL: 10m
+    taskTTL: 24h
 
 # dynamic data configuration
 dynConfig:

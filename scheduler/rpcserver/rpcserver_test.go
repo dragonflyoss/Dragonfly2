@@ -434,26 +434,6 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			},
 		},
 		{
-			name: "stream stop with dferr",
-			mock: func(mockPeer *resource.Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockServiceMockRecorder, mstream *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
-				gomock.InOrder(
-					mstream.Context().Return(context.Background()).Times(1),
-					mstream.Recv().Return(&rpcscheduler.PieceResult{
-						SrcPid: mockPeerID,
-					}, nil).Times(1),
-					ms.LoadPeer(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.HandlePiece(gomock.Any(), gomock.Any(), gomock.Any()).Return().Times(1),
-				)
-				mockPeer.StopStream(dferrors.New(base.Code_SchedError, ""))
-			},
-			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
-			},
-		},
-		{
 			name: "receive piece failed",
 			mock: func(mockPeer *resource.Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockServiceMockRecorder, mstream *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				gomock.InOrder(

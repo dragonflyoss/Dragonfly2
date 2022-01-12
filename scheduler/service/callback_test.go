@@ -136,13 +136,10 @@ func TestCallback_ScheduleParent(t *testing.T) {
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-
-				dferr := <-peer.StopChannel
-				assert.Equal(dferr.Code, base.Code_SchedTaskStatusError)
 			},
 		},
 		{
@@ -164,13 +161,11 @@ func TestCallback_ScheduleParent(t *testing.T) {
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-
-				dferr := <-peer.StopChannel
-				assert.Equal(dferr.Code, base.Code_SchedNeedBackSource)
 				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
 				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
 			},

@@ -29,7 +29,6 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -96,9 +95,6 @@ type Peer struct {
 	// Stream is grpc stream instance
 	Stream *atomic.Value
 
-	// Record peer report piece grpc interface stop code
-	StopChannel chan *dferrors.DfError
-
 	// Task state machine
 	FSM *fsm.FSM
 
@@ -130,19 +126,18 @@ type Peer struct {
 // New Peer instance
 func NewPeer(id string, task *Task, host *Host) *Peer {
 	p := &Peer{
-		ID:          id,
-		Pieces:      &bitset.BitSet{},
-		pieceCosts:  []int64{},
-		Stream:      &atomic.Value{},
-		StopChannel: make(chan *dferrors.DfError, 1),
-		Task:        task,
-		Host:        host,
-		Parent:      &atomic.Value{},
-		Children:    &sync.Map{},
-		CreateAt:    atomic.NewTime(time.Now()),
-		UpdateAt:    atomic.NewTime(time.Now()),
-		mu:          &sync.RWMutex{},
-		Log:         logger.WithTaskAndPeerID(task.ID, id),
+		ID:         id,
+		Pieces:     &bitset.BitSet{},
+		pieceCosts: []int64{},
+		Stream:     &atomic.Value{},
+		Task:       task,
+		Host:       host,
+		Parent:     &atomic.Value{},
+		Children:   &sync.Map{},
+		CreateAt:   atomic.NewTime(time.Now()),
+		UpdateAt:   atomic.NewTime(time.Now()),
+		mu:         &sync.RWMutex{},
+		Log:        logger.WithTaskAndPeerID(task.ID, id),
 	}
 
 	// Initialize state machine
@@ -371,28 +366,6 @@ func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
 // DeleteStream deletes grpc stream
 func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
-}
-
-// StopStream stops grpc stream with error code
-func (p *Peer) StopStream(dferr *dferrors.DfError) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if _, ok := p.LoadStream(); !ok {
-		p.Log.Error("stop stream failed: can not find peer stream")
-		return false
-	}
-	p.DeleteStream()
-
-	select {
-	case p.StopChannel <- dferr:
-		p.Log.Infof("send stop channel %#v", dferr)
-	default:
-		p.Log.Error("stop channel busy")
-		return false
-	}
-
-	return true
 }
 
 // Download tiny file from peer
