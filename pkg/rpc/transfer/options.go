@@ -57,3 +57,14 @@ func reuseOrNewWithCallOptions(opt *options, callOptions []CallOption) *options 
 	}
 	return optCopy
 }
+
+func filterCallOptions(callOptions []grpc.CallOption) (grpcOptions []grpc.CallOption, retryOptions []CallOption) {
+	for _, opt := range callOptions {
+		if co, ok := opt.(CallOption); ok {
+			retryOptions = append(retryOptions, co)
+		} else {
+			grpcOptions = append(grpcOptions, opt)
+		}
+	}
+	return grpcOptions, retryOptions
+}
