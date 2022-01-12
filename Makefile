@@ -83,7 +83,7 @@ docker-push-dfdaemon: docker-build-dfdaemon
 
 # Push scheduler image
 docker-push-scheduler: docker-build-scheduler
-	@echo "Begin to push dfdaemon docker image."
+	@echo "Begin to push scheduler docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
