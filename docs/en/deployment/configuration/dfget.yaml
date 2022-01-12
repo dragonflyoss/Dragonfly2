@@ -163,7 +163,7 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  taskExpireTime: 3m0s
+  taskExpireTime: 6h
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
