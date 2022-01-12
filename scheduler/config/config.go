@@ -74,7 +74,7 @@ func New() *Config {
 			},
 		},
 		DynConfig: &DynConfig{
-			RefreshInterval: 5 * time.Minute,
+			RefreshInterval: 1 * time.Minute,
 		},
 		Host: &HostConfig{},
 		Manager: &ManagerConfig{
