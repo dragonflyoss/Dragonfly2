@@ -162,15 +162,6 @@ func SetupQuitSignalHandler(handler func()) {
 	}()
 }
 
-func GetConfigPath(name string) string {
-	cfgFile := viper.GetString("config")
-	if cfgFile != "" {
-		return cfgFile
-	}
-
-	return filepath.Join(dfpath.DefaultConfigDir, fmt.Sprintf("%s.yaml", name))
-}
-
 // initConfig reads in config file and ENV variables if set.
 func initConfig(useConfigFile bool, name string, config interface{}) {
 	// Use config file and read once.

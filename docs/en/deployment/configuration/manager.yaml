@@ -1,6 +1,3 @@
-# This file is the template of manager configuration file.
-# You can configure your manager by change the parameter according your requirement.
----
 # current server info used for server
 server:
   # grpc server configure
@@ -34,7 +31,6 @@ database:
     host: dragonfly
     port: 6379
     db: 0
-
 # manager server cache
 # cache:
 #   # redis cache configure

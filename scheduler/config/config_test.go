@@ -18,64 +18,73 @@ package config
 
 import (
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
-
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 )
 
-func TestSchedulerConfig_Load(t *testing.T) {
+func TestConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		DynConfig: &DynConfig{
-			Type:       dc.LocalSourceType,
-			ExpireTime: 1000,
-			CDNDirPath: "tmp",
+		Server: &ServerConfig{
+			IP:          "127.0.0.1",
+			Host:        "foo",
+			Port:        8002,
+			ListenLimit: 1000,
+			CacheDir:    "foo",
+			LogDir:      "bar",
 		},
 		Scheduler: &SchedulerConfig{
-			Algorithm: "default",
-			WorkerNum: 8,
+			Algorithm:       "default",
+			BackSourceCount: 3,
+			RetryLimit:      10,
+			RetryInterval:   1 * time.Second,
+			GC: &GCConfig{
+				PeerGCInterval: 1 * time.Minute,
+				PeerTTL:        5 * time.Minute,
+				TaskGCInterval: 1 * time.Minute,
+				TaskTTL:        10 * time.Minute,
+			},
 		},
-		Server: &ServerConfig{
-			IP:       "127.0.0.1",
-			Host:     "foo",
-			Port:     8002,
-			CacheDir: "foo",
-			LogDir:   "foo",
+		DynConfig: &DynConfig{
+			RefreshInterval: 5 * time.Minute,
+			CDNDir:          "foo",
+		},
+		Host: &HostConfig{
+			IDC:         "foo",
+			NetTopology: "bar",
+			Location:    "baz",
 		},
 		Manager: &ManagerConfig{
+			Enable:             true,
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
-				Interval: 1 * time.Second,
+				Interval: 5 * time.Second,
 			},
 		},
-		Host: &HostConfig{
-			IDC:      "foo",
-			Location: "bar",
-		},
 		Job: &JobConfig{
+			Enable:             true,
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
 			Redis: &RedisConfig{
 				Host:      "127.0.0.1",
 				Port:      6379,
-				Password:  "password",
+				Password:  "foo",
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
 		},
 		Metrics: &MetricsConfig{
-			Addr: ":8000",
+			Enable:         false,
+			Addr:           ":8000",
+			EnablePeerHost: false,
 		},
-		DisableCDN: true,
 	}
 
 	schedulerConfigYAML := &Config{}
@@ -88,106 +97,6 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
 		t.Fatal(err)
 	}
-	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
-}
 
-func TestConvert(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  *Config
-		expect func(t *testing.T, cfg *Config, err error)
-	}{
-		{
-			name: "convert common config",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "127.0.0.1:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("127.0.0.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when host not empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "127.0.0.1:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "111.111.11.1",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager addr is empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "111.111.11.1",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager host is empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: ":65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager host is localhost",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "localhost:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("localhost", cfg.Job.Redis.Host)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.value.Convert()
-			tc.expect(t, tc.value, err)
-		})
-	}
+	assert.EqualValues(config, schedulerConfigYAML)
 }

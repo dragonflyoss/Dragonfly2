@@ -43,7 +43,7 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 		expect         func(t *testing.T, err error)
 	}{
 		{
-			name:   "new dynconfig succeeded",
+			name:   "new dynconfig",
 			expire: 10 * time.Second,
 			hostOption: HostOption{
 				Hostname: "foo",
@@ -135,7 +135,7 @@ func TestDynconfigGet(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get dynconfig cache data succeeded",
+			name:   "get dynconfig cache data",
 			expire: 10 * time.Second,
 			hostOption: HostOption{
 				Hostname: "foo",
@@ -172,7 +172,7 @@ func TestDynconfigGet(t *testing.T) {
 			},
 		},
 		{
-			name:   "get dynconfig data succeeded",
+			name:   "get dynconfig data",
 			expire: 10 * time.Millisecond,
 			hostOption: HostOption{
 				Hostname: "foo",
@@ -317,7 +317,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
 	}{
 		{
-			name:   "get cache schedulers succeeded",
+			name:   "get cache schedulers",
 			expire: 10 * time.Second,
 			hostOption: HostOption{
 				Hostname: "foo",
@@ -354,7 +354,7 @@ func TestDynconfigGetSchedulers(t *testing.T) {
 			},
 		},
 		{
-			name:   "get schedulers succeeded",
+			name:   "get schedulers",
 			expire: 10 * time.Millisecond,
 			hostOption: HostOption{
 				Hostname: "foo",

@@ -232,7 +232,7 @@ const (
 )
 
 func (tm *manager) GC() error {
-	logger.MetaGCLogger.Info("start the task meta gc job")
+	logger.GCLogger.Info("start the task meta gc job")
 	startTime := time.Now()
 	var gcTasks []string
 	var remainingTasks []string
@@ -247,17 +247,17 @@ func (tm *manager) GC() error {
 		}
 		gcTasks = append(gcTasks, taskID)
 		// gc task memory data
-		logger.MetaGCLogger.With("type", "meta").Infof("gc task: %s", taskID)
+		logger.GCLogger.With("type", "meta").Infof("gc task: %s", taskID)
 		tm.deleteTask(taskID)
 		return true
 	})
 
 	// slow GC detected, report it with a log warning
 	if timeDuring := time.Since(startTime); timeDuring > gcTasksTimeout {
-		logger.MetaGCLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", len(gcTasks), timeDuring.Seconds())
+		logger.GCLogger.With("type", "meta").Warnf("gc tasks: %d cost: %.3f", len(gcTasks), timeDuring.Seconds())
 	}
-	logger.MetaGCLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", len(gcTasks),
+	logger.GCLogger.With("type", "meta").Infof("%d tasks were successfully cleared, leaving %d tasks remaining", len(gcTasks),
 		len(remainingTasks))
-	logger.MetaGCLogger.With("type", "meta").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
+	logger.GCLogger.With("type", "meta").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
 	return nil
 }

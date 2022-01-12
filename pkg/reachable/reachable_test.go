@@ -39,7 +39,7 @@ func TestReachableCheck(t *testing.T) {
 		expect  func(t *testing.T, err error)
 	}{
 		{
-			name:    "check address succeeded",
+			name:    "check address",
 			address: ":3000",
 			network: "tcp",
 			timeout: 1 * time.Second,
