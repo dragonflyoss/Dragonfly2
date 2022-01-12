@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -37,6 +38,7 @@ import (
 	"golang.org/x/sync/semaphore"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -232,6 +234,10 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 
 // ServeHTTP implements http.Handler.ServeHTTP
 func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	metrics.ProxyRequestCount.WithLabelValues(r.Method).Add(1)
+	metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Add(1)
+	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
+
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
 	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
@@ -264,8 +270,11 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// check direct request
+	directRequest := r.Method != http.MethodConnect && r.URL.Scheme == ""
+
 	// check whiteList
-	if !proxy.checkWhiteList(r) {
+	if !directRequest && !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
 		http.Error(w, http.StatusText(status), status)
 		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
@@ -293,7 +302,6 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// handle http proxy requests
 		proxy.handleHTTP(span, w, r)
 	}
-
 }
 
 func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
@@ -335,10 +343,20 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
-		logger.Errorf("failed to write http body: %v", err)
+		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
+			logger.Errorf("failed to write http body: %v, peer: %s, task: %s",
+				err, peerID, resp.Header.Get(config.HeaderDragonflyTask))
+		} else {
+			logger.Errorf("failed to write http body: %v", err)
+		}
 		span.RecordError(err)
 	} else {
 		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
+		// when resp.ContentLength == -1 or 0, byte count can not be updated by transport
+		// TODO how to handle byte count for https ?
+		if resp.ContentLength == -1 {
+			metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(n))
+		}
 	}
 }
 
@@ -534,7 +552,16 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			if rule.UseHTTPS {
 				req.URL.Scheme = schemaHTTPS
 			}
-			if rule.Redirect != "" {
+			if strings.Contains(rule.Redirect, "/") {
+				u, err := url.Parse(rule.Regx.ReplaceAllString(req.URL.String(), rule.Redirect))
+				if err != nil {
+					logger.Errorf("failed to rewrite url", err)
+					return false
+				}
+				req.URL = u
+				req.Host = req.URL.Host
+				req.RequestURI = req.URL.RequestURI()
+			} else if rule.Redirect != "" {
 				req.URL.Host = rule.Redirect
 				req.Host = rule.Redirect
 			}
@@ -547,7 +574,13 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 // shouldUseDragonflyForMirror returns whether we should use dragonfly to proxy a request
 // when we use registry mirror.
 func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
-	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseDragonfly(req)
+	if proxy.registry == nil || proxy.registry.Direct {
+		return false
+	}
+	if proxy.registry.UseProxies {
+		return proxy.shouldUseDragonfly(req)
+	}
+	return transport.NeedUseDragonfly(req)
 }
 
 // tunnelHTTPS handles a CONNECT request and proxy an https request through an

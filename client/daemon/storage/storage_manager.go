@@ -539,8 +539,8 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 					Warnf("load task from disk error: %s", err0)
 				continue
 			}
-			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %s, expire time: %s",
-				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, t.lastAccess, t.expireTime)
+			logger.Debugf("load task %s/%s from disk, metadata %s, last access: %v, expire time: %s",
+				t.persistentMetadata.TaskID, t.persistentMetadata.PeerID, t.metadataFilePath, time.Unix(0, t.lastAccess.Load()), t.expireTime)
 			s.tasks.Store(PeerTaskMetadata{
 				PeerID: peerID,
 				TaskID: taskID,
@@ -716,6 +716,9 @@ func (s *storageManager) forceGC() (bool, error) {
 }
 
 func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
+	if s.storeOption.DiskGCThresholdPercent <= 0 {
+		return false, 0
+	}
 	usage, err := disk.Usage(s.storeOption.DataPath)
 	if err != nil {
 		logger.Warnf("get %s disk usage error: %s", s.storeOption.DataPath, err)

@@ -59,6 +59,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		}
 
 		for url, path := range urls {
+			fmt.Printf("--------------------------------------------------------------------------------\n\n")
 			fmt.Println("download url: " + url)
 			// get original file digest
 			out, err = e2eutil.DockerCommand("sha256sum", path).CombinedOutput()

@@ -163,7 +163,7 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  taskExpireTime: 3m0s
+  taskExpireTime: 6h
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -221,6 +221,8 @@ proxy:
     certs: []
     # whether to request the remote registry directly
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
     # proxy all http image layer download requests with dfget
@@ -234,6 +236,9 @@ proxy:
     # proxy requests with redirect
     - regx: some-registry
       redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
 
   hijackHTTPS:
     # key pair used to hijack https requests
