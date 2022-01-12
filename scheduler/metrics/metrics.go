@@ -96,8 +96,8 @@ var (
 	})
 )
 
-func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
-	grpc_prometheus.Register(grpcServer)
+func New(cfg *config.MetricsConfig, svr *grpc.Server) *http.Server {
+	grpc_prometheus.Register(svr)
 
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())

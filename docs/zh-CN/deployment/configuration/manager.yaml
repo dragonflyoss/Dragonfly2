@@ -1,6 +1,4 @@
-# 此文件是 manager 的配置文件模板，你可以通过根据需要改变对应的值来配置 manager 服务。
----
-# 当前的服务配置
+# 服务配置
 server:
   # grpc 服务配置
   grpc:
@@ -32,7 +30,6 @@ database:
     host: dragonfly
     port: 6379
     db: 0
-
 # 缓存配置
 # cache:
 #   # redis 缓存配置

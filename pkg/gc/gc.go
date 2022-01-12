@@ -17,7 +17,7 @@
 package gc
 
 import (
-	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -86,7 +86,7 @@ func (g gc) Add(t Task) error {
 func (g gc) Run(id string) error {
 	v, ok := g.tasks.Load(id)
 	if !ok {
-		return errors.New("can not find the task")
+		return fmt.Errorf("can not find task %s", id)
 	}
 
 	go g.run(v.(Task))
