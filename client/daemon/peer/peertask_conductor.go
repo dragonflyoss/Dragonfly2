@@ -100,7 +100,7 @@ type peerTaskConductor struct {
 	tinyData    *TinyData
 
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
-	peerPacketStream schedulerclient.PeerPacketStream
+	peerPacketStream scheduler.Scheduler_ReportPieceResultClient
 	// peerPacket is the latest available peers from peerPacketCh
 	peerPacket atomic.Value // *scheduler.PeerPacket
 	// peerPacketReady will receive a ready signal for peerPacket ready
