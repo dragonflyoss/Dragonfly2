@@ -16,6 +16,8 @@ scheduler:
     peerTTL: 300000000000
     taskGCInterval: 60000000000
     taskTTL: 600000000000
+    hostGCInterval: 60000000000
+    hostTTL: 600000000000
 
 dynconfig:
   refreshInterval: 300000000000

@@ -48,6 +48,8 @@ func TestConfig_Load(t *testing.T) {
 				PeerTTL:        5 * time.Minute,
 				TaskGCInterval: 1 * time.Minute,
 				TaskTTL:        10 * time.Minute,
+				HostGCInterval: 1 * time.Minute,
+				HostTTL:        10 * time.Minute,
 			},
 		},
 		DynConfig: &DynConfig{
