@@ -65,6 +65,8 @@ var _ Task = (*peerTaskConductor)(nil)
 // peerTaskConductor will fetch all pieces from other peers and send pieces info to broker
 type peerTaskConductor struct {
 	*logger.SugaredLoggerOnWith
+	// ctx is with span info for tracing
+	// we did not use cancel with ctx, use successCh and failCh instead
 	ctx context.Context
 
 	// host info about current host
@@ -453,13 +455,20 @@ func (pt *peerTaskConductor) receivePeerPacket() {
 		if !firstSpanDone {
 			firstPeerSpan.End()
 		}
+		if pt.needBackSource {
+			return
+		}
+		select {
+		case <-pt.successCh:
+		case <-pt.failCh:
+		default:
+			pt.Errorf("receivePeerPacket exit, but peer task not success or fail")
+			pt.Fail()
+		}
 	}()
 loop:
 	for {
 		select {
-		case <-pt.ctx.Done():
-			pt.Infof("context done due to %s", pt.ctx.Err())
-			break loop
 		case <-pt.successCh:
 			pt.Infof("peer task success, stop wait peer packet from scheduler")
 			break loop
@@ -475,30 +484,7 @@ loop:
 			break loop
 		}
 		if err != nil {
-			// when successCh, context will be cancelled, check if pt.successCh is closed
-			select {
-			case <-pt.successCh:
-				return
-			default:
-			}
-			var (
-				failedCode   = base.Code_UnknownError
-				failedReason string
-			)
-			if de, ok := err.(*dferrors.DfError); ok {
-				if de.Code == base.Code_SchedNeedBackSource {
-					pt.needBackSource = true
-					close(pt.peerPacketReady)
-					pt.Infof("receive back source code")
-					return
-				}
-				failedCode = de.Code
-				failedReason = de.Message
-				pt.Errorf("receive peer packet failed: %s", pt.failedReason)
-			} else {
-				pt.Errorf("receive peer packet failed: %s", err)
-			}
-			pt.cancel(failedCode, failedReason)
+			pt.confirmReceivePeerPacketError(err)
 			if !firstSpanDone {
 				firstPeerSpan.RecordError(err)
 			}
@@ -547,17 +533,48 @@ loop:
 
 		pt.peerPacket.Store(peerPacket)
 		pt.pieceParallelCount.Store(peerPacket.ParallelCount)
+
+		// send peerPacketReady
 		select {
 		case pt.peerPacketReady <- true:
-		case <-pt.ctx.Done():
-			pt.Infof("context done due to %s", pt.ctx.Err())
-			break loop
 		case <-pt.successCh:
-			pt.Infof("peer task done, stop wait peer packet from scheduler")
+			pt.Infof("peer task success, stop wait peer packet from scheduler")
+			break loop
+		case <-pt.failCh:
+			pt.Errorf("peer task fail, stop wait peer packet from scheduler")
 			break loop
 		default:
 		}
 	}
+}
+
+func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
+	select {
+	case <-pt.successCh:
+		return
+	case <-pt.failCh:
+		return
+	default:
+	}
+	var (
+		failedCode   = base.Code_UnknownError
+		failedReason string
+	)
+	if de, ok := err.(*dferrors.DfError); ok {
+		if de.Code == base.Code_SchedNeedBackSource {
+			pt.needBackSource = true
+			close(pt.peerPacketReady)
+			pt.Infof("receive back source code")
+			return
+		}
+		failedCode = de.Code
+		failedReason = de.Message
+		pt.Errorf("receive peer packet failed: %s", pt.failedReason)
+	} else {
+		pt.Errorf("receive peer packet failed: %s", err)
+	}
+	pt.cancel(failedCode, failedReason)
+	return
 }
 
 func (pt *peerTaskConductor) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool {
@@ -847,14 +864,6 @@ func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadP
 			pt.Infof("peer task success, stop dispatch piece request")
 		case <-pt.failCh:
 			pt.Warnf("peer task fail, stop dispatch piece request")
-			//case <-pt.ctx.Done():
-			//	pt.Warnf("context done due to %s", pt.ctx.Err())
-			//	if !pt.success {
-			//		if pt.failedCode == failedCodeNotSet {
-			//			pt.failedReason = reasonContextCanceled
-			//			pt.failedCode = base.Code_ClientContextCanceled
-			//		}
-			//	}
 		}
 	}
 }
@@ -1324,8 +1333,7 @@ func (pt *peerTaskConductor) done() {
 	}
 
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
-	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(pt.ctx))
-	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
+	peerResultCtx, peerResultSpan := tracer.Start(pt.ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 
 	// send EOF piece result to scheduler
