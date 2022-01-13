@@ -182,44 +182,39 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 		return
 	}
 
+	// If parent can not found, reschedule parent.
+	parent, ok := c.resource.PeerManager().Load(piece.DstPid)
+	if !ok {
+		peer.Log.Errorf("can not found parent %s and reschedule", piece.DstPid)
+		c.ScheduleParent(ctx, peer, set.NewSafeSet())
+		return
+	}
+
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node
 	switch piece.Code {
 	case base.Code_ClientWaitPieceReady:
 		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
-		if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok && parent.FSM.Can(resource.PeerEventDownloadFailed) {
-			if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
-				break
-			}
+		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			break
 		}
 	case base.Code_ClientPieceNotFound:
 		// Dfdaemon downloading piece data from parent returns http error code 404.
 		// If the parent is not a CDN, reschedule parent for peer.
 		// If the parent is a CDN, scheduler need to trigger CDN to download again.
-		parent, ok := c.resource.PeerManager().Load(piece.DstPid)
-		if !ok {
-			peer.Log.Errorf("can not found parent %s", piece.DstPid)
-			break
-		}
-
 		if !parent.Host.IsCDN {
-			peer.Log.Errorf("parent %s is not cdn", piece.DstPid)
+			peer.Log.Infof("parent %s is not cdn", piece.DstPid)
 			break
 		}
 
+		peer.Log.Infof("parent %s is cdn", piece.DstPid)
 		fallthrough
 	case base.Code_CDNTaskNotFound:
 		// CDN peer exists in the scheduler, but the peer information in the cdn service has been recycled.
 		// Scheduler need to redownload cdn peer.
-		parent, ok := c.resource.PeerManager().Load(piece.DstPid)
-		if !ok {
-			peer.Log.Errorf("can not found parent %s", piece.DstPid)
-			break
-		}
-
-		if err := parent.FSM.Event(resource.PeerEventRedownload); err != nil {
+		if err := parent.FSM.Event(resource.PeerEventRestart); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			break
 		}
@@ -248,9 +243,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	}
 
 	blocklist := set.NewSafeSet()
-	if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok {
-		blocklist.Add(parent.ID)
-	}
+	blocklist.Add(parent.ID)
 
 	c.ScheduleParent(ctx, peer, blocklist)
 }

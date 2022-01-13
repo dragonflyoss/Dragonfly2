@@ -29,9 +29,7 @@ scheduler:
   # backSourceCount is the number of backsource clients when the CDN is unavailable
   backSourceCount: 3
   # retry scheduling limit times
-  retryLimit: 10
-  # retry scheduling interval
-  retryInterval: 1s
+  retryLimit: 5
   # gc metadata configuration
   gc:
     # peerGCInterval peer's gc interval
