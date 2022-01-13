@@ -4,7 +4,7 @@ LINT_DIR=/data
 MARKDOWNLINT_IMAGE=avtodev/markdown-lint:v1
 
 docker run --rm \
-    -v "$(PWD):${LINT_DIR}:ro" \
+    -v "$(pwd):${LINT_DIR}:ro" \
     ${MARKDOWNLINT_IMAGE} \
     -c "${LINT_DIR}/.markdownlint.yml" /data/**/*.md \
     -i "${LINT_DIR}/CHANGELOG.md" \
