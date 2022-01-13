@@ -17,66 +17,54 @@
 package transfer
 
 import (
-	"context"
-	"io"
-	"sync"
-	"testing"
-	"time"
-
-	grpc_testing "github.com/grpc-ecosystem/go-grpc-middleware/testing"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	testpb "google.golang.org/grpc/test/grpc_testing"
 )
 
 var (
 	unTransferableErrors = []codes.Code{codes.Unavailable, codes.DataLoss}
 )
 
-func TestTransferSuite(t *testing.T) {
-	service := &testService{}
-	unaryInterceptor := UnaryClientInterceptor(WithCodes(unTransferableErrors...))
-
-	streamInterceptor := StreamClientInterceptor(WithCodes(unTransferableErrors...))
-	s := &TransferSuite{
-		srv: service,
-		InterceptorTestSuite: &grpc_testing.InterceptorTestSuite{
-			TestService: service,
-			ClientOpts: []grpc.DialOption{
-				grpc.WithStreamInterceptor(streamInterceptor),
-				grpc.WithUnaryInterceptor(unaryInterceptor),
-			},
-		},
-	}
-	suite.Run(t, s)
-}
-
-type TransferSuite struct {
-	suite.Suite
-	client testpb.TestServiceClient
-	srv    *testService
-}
-
-func (s *TransferSuite) SetupTest() {
-	s.srv.resetFailingConfiguration( /* don't fail */ 0, codes.OK, noSleep)
-}
-
-func (s *TransferSuite) TestUnary_FailsOnNonRetriableError() {
-	startTestServers(s.T(), 3)
-	s.srv.resetFailingConfiguration(5, codes.Internal, noSleep)
-	_, err := s.client.EmptyCall(context.Background(), &testpb.Empty{})
-	require.Error(s.T(), err, "error must occur from the failing service")
-	require.Equal(s.T(), codes.Internal, status.Code(err), "failure code must come from retrier")
-	require.EqualValues(s.T(), 1, s.srv.requestCount(), "one request should have been made")
-}
-
-func (s *TransferSuite) TestUnary_FailsOnNonRetriableContextError() {
-	s.srv.resetFailingConfiguration(5, codes.Canceled, noSleep)
-	_, err := s.client.EmptyCall(s.SimpleCtx(), goodPing)
-	require.Error(s.T(), err, "error must occur from the failing service")
-	require.Equal(s.T(), codes.Canceled, status.Code(err), "failure code must come from retrier")
-	require.EqualValues(s.T(), 1, s.srv.requestCount(), "one request should have been made")
-}
+//func TestTransferSuite(t *testing.T) {
+//	service := &testService{}
+//	unaryInterceptor := UnaryClientInterceptor(WithCodes(unTransferableErrors...))
+//
+//	streamInterceptor := StreamClientInterceptor(WithCodes(unTransferableErrors...))
+//	s := &TransferSuite{
+//		srv: service,
+//		InterceptorTestSuite: &grpc_testing.InterceptorTestSuite{
+//			TestService: service,
+//			ClientOpts: []grpc.DialOption{
+//				grpc.WithStreamInterceptor(streamInterceptor),
+//				grpc.WithUnaryInterceptor(unaryInterceptor),
+//			},
+//		},
+//	}
+//	suite.Run(t, s)
+//}
+//
+//type TransferSuite struct {
+//	suite.Suite
+//	client testpb.TestServiceClient
+//	srv    *testService
+//}
+//
+//func (s *TransferSuite) SetupTest() {
+//	s.srv.resetFailingConfiguration( /* don't fail */ 0, codes.OK, noSleep)
+//}
+//
+//func (s *TransferSuite) TestUnary_FailsOnNonRetriableError() {
+//	startTestServers(s.T(), 3)
+//	s.srv.resetFailingConfiguration(5, codes.Internal, noSleep)
+//	_, err := s.client.EmptyCall(context.Background(), &testpb.Empty{})
+//	require.Error(s.T(), err, "error must occur from the failing service")
+//	require.Equal(s.T(), codes.Internal, status.Code(err), "failure code must come from retrier")
+//	require.EqualValues(s.T(), 1, s.srv.requestCount(), "one request should have been made")
+//}
+//
+//func (s *TransferSuite) TestUnary_FailsOnNonRetriableContextError() {
+//	s.srv.resetFailingConfiguration(5, codes.Canceled, noSleep)
+//	_, err := s.client.EmptyCall(s.SimpleCtx(), goodPing)
+//	require.Error(s.T(), err, "error must occur from the failing service")
+//	require.Equal(s.T(), codes.Canceled, status.Code(err), "failure code must come from retrier")
+//	require.EqualValues(s.T(), 1, s.srv.requestCount(), "one request should have been made")
+//}

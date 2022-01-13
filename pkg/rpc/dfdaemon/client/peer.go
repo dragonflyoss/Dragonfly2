@@ -21,38 +21,68 @@ import (
 	"fmt"
 	"strings"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
-	peerID := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
-	var err error
-	netAddr := dfnet.NetAddr{
-		Type: dfnet.TCP,
-		Addr: destAddr,
-	}
-	client, err := getClient(netAddr, toCdn)
+func GetElasticClientByAddr(opts ...grpc.DialOption) (ElasticClient, error) {
+	resolver := rpc.NewD7yResolver("elastic", []dfnet.NetAddr{})
+
+	dialOpts := append(append(append(
+		rpc.DefaultClientOpts,
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy))),
+		grpc.WithResolvers(resolver)),
+		opts...)
+
+	conn, err := grpc.Dial(
+		fmt.Sprintf("%s:///%s", "elastic", "elastic.GetPieceTasks"),
+		dialOpts...,
+	)
+
 	if err != nil {
 		return nil, err
 	}
-	if toCdn {
-		return client.(cdnclient.CdnClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
-	}
-	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+
+	return &elasticClient{
+		cc:           conn,
+		daemonClient: dfdaemon.NewDaemonClient(conn),
+		cdnClient:    cdnsystem.NewSeederClient(conn),
+		resolver:     resolver,
+	}, nil
 }
 
-func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
+type elasticClient struct {
+	cc           *grpc.ClientConn
+	daemonClient dfdaemon.DaemonClient
+	cdnClient    cdnsystem.SeederClient
+	resolver     *rpc.D7yResolver
+}
+
+type ElasticClient interface {
+	GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+}
+
+func (dc *elasticClient) GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
+	error) {
+	targetAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
+	dc.resolver.AddAddresses([]dfnet.NetAddr{{
+		Addr: targetAddr,
+	}})
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
+		TargetAddr: targetAddr,
+	})
+	peerID := destPeer.PeerId
+	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
 	if toCdn {
-		return cdnclient.GetElasticClientByAddr(netAddr)
+		return dc.cdnClient.GetPieceTasks(ctx, ptr, opts...)
 	}
-	return GetElasticClientByAddr(netAddr)
+	return dc.daemonClient.GetPieceTasks(ctx, ptr, opts...)
 }

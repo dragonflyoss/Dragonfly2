@@ -19,13 +19,13 @@ package client
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/resolver"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -35,10 +35,11 @@ import (
 
 var _ SchedulerClient = (*schedulerClient)(nil)
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
+func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of scheduler is empty")
 	}
+
 	resolver := rpc.NewD7yResolver("scheduler", addrs)
 
 	dialOpts := append(append(append(
@@ -49,9 +50,9 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
 	conn, err := grpc.DialContext(
 		ctx,
-		// "scheduler.Scheduler" is the scheduler._Scheduler_serviceDesc.ServiceName
 		fmt.Sprintf("%s:///%s", "scheduler", "scheduler.Scheduler"),
 		dialOpts...,
 	)
@@ -73,13 +74,13 @@ type SchedulerClient interface {
 	// RegisterPeerTask register peer task to scheduler
 	RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// ReportPieceResult IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, addr string, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
+	ReportPieceResult(ctx context.Context, taskID string, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
 
 	ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) error
 
 	LeaveTask(ctx context.Context, in *scheduler.PeerTarget, opts ...grpc.CallOption) error
 
-	UpdateState(addrs []dfnet.NetAddr)
+	UpdateAddresses(addrs []dfnet.NetAddr)
 
 	Close() error
 }
@@ -87,7 +88,7 @@ type SchedulerClient interface {
 type schedulerClient struct {
 	schedulerClient scheduler.SchedulerClient
 	cc              *grpc.ClientConn
-	resolver        resolver.Resolver
+	resolver        *rpc.D7yResolver
 }
 
 func (sc *schedulerClient) getSchedulerClient() (scheduler.SchedulerClient, error) {
@@ -102,6 +103,7 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	key := idgen.TaskID(ptr.Url, ptr.UrlMeta)
 	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
 		ptr.Url)
+
 	result, err := sc.schedulerClient.RegisterPeerTask(ctx, ptr, opts...)
 	reg := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
@@ -173,12 +175,13 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
-	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: pr.TaskId,
 		IsStick: true,
 	})
 
 	_, err := sc.schedulerClient.ReportPeerResult(ctx, pr, opts...)
+	// TODO report to manager
 	return err
 }
 
@@ -213,13 +216,8 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 }
 
 func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (err error) {
-	var (
-		suc bool
-	)
-	defer func() {
-		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result: %t for taskId: %s, err:%v", suc, pt.TaskId, err)
-	}()
-
+	ctx =
+	return sc.schedulerClient.LeaveTask(ctx, pt, opts...)
 	leaveFun := func() (interface{}, error) {
 		var client scheduler.SchedulerClient
 		client, err = sc.getSchedulerClient()
@@ -228,15 +226,10 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 		}
 		return client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
 	}
-	_, err = rpc.ExecuteWithRetry(leaveFun, 0.2, 2.0, 3, nil)
-	if err == nil {
-		suc = true
-	}
-	return
 }
 
-func (sc *schedulerClient) UpdateState(addrs []dfnet.NetAddr) {
-	if err := sc.resolver.UpdateAddrs(addrs); err != nil {
+func (sc *schedulerClient) UpdateAddresses(addrs []dfnet.NetAddr) {
+	if err := sc.resolver.UpdateAddresses(addrs); err != nil {
 		// TODO(zzy987) modify log
 		logger.Errorf("update resolver error: %v\n", err)
 	}

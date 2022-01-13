@@ -81,7 +81,7 @@ var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
 	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
+		grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
 	}, opts...)
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: req.TaskId,
@@ -94,7 +94,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		TargetAddr: addr.String(),
 	})
 	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(codes.ResourceExhausted, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
+		grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
 	}, opts...)
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
 }

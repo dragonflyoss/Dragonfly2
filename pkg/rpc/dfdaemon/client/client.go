@@ -19,10 +19,8 @@ package client
 import (
 	"context"
 	"fmt"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/resolver"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -37,7 +35,7 @@ import (
 
 var _ DaemonClient = (*daemonClient)(nil)
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
+func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of dfdaemon is empty")
 	}
@@ -68,23 +66,6 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 	return cc, nil
 }
 
-func GetElasticClientByAddr(addr dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClient, error) {
-	conn, err := getClientByAddr(addr, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return &daemonClient{
-		daemonClient: dfdaemon.NewDaemonClient(conn),
-		cc:           conn,
-	}, nil
-}
-
-func getClientByAddr(ctx context.Context, addr dfnet.NetAddr, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	dialOpts := append(append(rpc.DefaultClientOpts, grpc.WithDisableServiceConfig()), opts...)
-	return grpc.DialContext(ctx, addr.GetEndpoint(), dialOpts...)
-}
-
 // DaemonClient see dfdaemon.DaemonClient
 type DaemonClient interface {
 	Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error)
@@ -99,41 +80,31 @@ type DaemonClient interface {
 type daemonClient struct {
 	cc           *grpc.ClientConn
 	daemonClient dfdaemon.DaemonClient
-	resolver     resolver.Resolver
-}
-
-func (dc *daemonClient) getDaemonClient() (dfdaemon.DaemonClient, error) {
-	return dc.daemonClient, nil
+	resolver     *rpc.D7yResolver
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
 	req.Uuid = uuid.New().String()
 	// generate taskID
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
-	return
-	dc.daemonClient.Download(ctx, req, opts...)
-	return newDownResultStream(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: taskID, Attempt: 1}), dc, taskID, req, opts)
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
+		HashKey: taskID,
+	})
+	return dc.daemonClient.Download(ctx, req, opts...)
 }
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
-	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: target.String(),
 	})
-	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(codes.NotFound, codes.Aborted, codes.Unavailable, codes.Unknown, codes.Internal),
-	}, opts...)
 	return dc.daemonClient.GetPieceTasks(ctx, ptr, opts...)
-
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
-	ctx = rpc.NewContext(ctx, &rpc.PickRequest{
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: target.String(),
 	})
-	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(codes.Unavailable, codes.Unknown, codes.Internal),
-	}, opts...)
 	_, err = dc.daemonClient.CheckHealth(ctx, new(empty.Empty), opts...)
 	return
 }

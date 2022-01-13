@@ -41,6 +41,11 @@ type testService struct {
 	reqError   codes.Code
 }
 
+func newTestServer(addr string) *testService {
+	// Each testServer is disposable.
+	return &testService{}
+}
+
 func (s *testService) resetFailingConfiguration(modulo uint, errorCode codes.Code, sleepTime time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

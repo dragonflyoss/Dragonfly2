@@ -18,9 +18,10 @@ package transfer
 
 import (
 	"context"
-	"google.golang.org/grpc/metadata"
 	"io"
 	"sync"
+
+	"google.golang.org/grpc/metadata"
 
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
@@ -80,7 +81,7 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 					parentCtx:    parentCtx,
 					serverPeer:   &p,
 					streamerCall: func(ctx context.Context) (grpc.ClientStream, error) {
-						return streamer(ctx, desc, cc, method, grpcOpts...)
+						return streamer(ctx, desc, cc, method, append(grpcOpts, grpc.Peer(&p))...)
 					},
 				}
 				return transferStreamer, nil
@@ -101,7 +102,7 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 
 // type serverStreamingTransferStream is the implementation of grpc.ClientStream that acts as a
 // proxy to the underlying call. If any of the RecvMsg() calls fail, it will try to reestablish
-// a new ClientStream according to the retry policy.
+// a new ClientStream according to the transfer policy.
 type serverStreamingTransferStream struct {
 	grpc.ClientStream
 	bufferedSends []interface{} // single message that the client can sen
@@ -147,32 +148,27 @@ func (s *serverStreamingTransferStream) Trailer() metadata.MD {
 	return s.getStream().Trailer()
 }
 
-// TODO
 func (s *serverStreamingTransferStream) RecvMsg(m interface{}) error {
 	attemptTransfer, lastErr := s.receiveMsgAndIndicateTransfer(m)
 	if !attemptTransfer {
 		return lastErr // success or hard failure
 	}
-	// We start off from attempt 1, because zeroth was already made on normal SendMsg().
+	callCtx := s.parentCtx
 	for {
-		callCtx := callContext(s.parentCtx, *s.serverPeer)
+		callCtx = callContext(callCtx, *s.serverPeer)
 		newStream, err := s.reestablishStreamAndResendBuffer(callCtx)
 		if err != nil {
-			// Retry dial and transport errors of establishing stream as grpc doesn't retry.
 			if isUnTransferableError(err, s.callOpts) {
-				continue
+				return err
 			}
-			return err
+			continue
 		}
-
 		s.setStream(newStream)
 		attemptTransfer, lastErr = s.receiveMsgAndIndicateTransfer(m)
-		//fmt.Printf("Received message and indicate: %v  %v\n", attemptRetry, lastErr)
 		if !attemptTransfer {
 			return lastErr
 		}
 	}
-	return lastErr
 }
 
 func (s *serverStreamingTransferStream) receiveMsgAndIndicateTransfer(m interface{}) (bool, error) {
@@ -188,25 +184,23 @@ func (s *serverStreamingTransferStream) receiveMsgAndIndicateTransfer(m interfac
 	return true, err
 }
 
-func (s *serverStreamingTransferStream) reestablishStreamAndResendBuffer(
-	callCtx context.Context,
-) (grpc.ClientStream, error) {
+func (s *serverStreamingTransferStream) reestablishStreamAndResendBuffer(callCtx context.Context) (grpc.ClientStream, error) {
 	s.mu.RLock()
 	bufferedSends := s.bufferedSends
 	s.mu.RUnlock()
 	newStream, err := s.streamerCall(callCtx)
 	if err != nil {
-		logTrace(callCtx, "grpc_retry failed redialing new stream: %v", err)
+		logTrace(callCtx, "grpc_transfer failed redialing new stream: %v", err)
 		return nil, err
 	}
 	for _, msg := range bufferedSends {
 		if err := newStream.SendMsg(msg); err != nil {
-			logTrace(callCtx, "grpc_retry failed resending message: %v", err)
+			logTrace(callCtx, "grpc_transfer failed resending message: %v", err)
 			return nil, err
 		}
 	}
 	if err := newStream.CloseSend(); err != nil {
-		logTrace(callCtx, "grpc_retry failed CloseSend on new stream %v", err)
+		logTrace(callCtx, "grpc_transfer failed CloseSend on new stream %v", err)
 		return nil, err
 	}
 	return newStream, nil

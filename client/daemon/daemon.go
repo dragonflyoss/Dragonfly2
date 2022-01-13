@@ -136,7 +136,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if opt.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
 	}
-	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
+	sched, err := schedulerclient.GetClientByAddrs(addrs, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
@@ -544,7 +544,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
 
 	// Update scheduler client addresses
-	cd.schedulerClient.UpdateState(addrs)
+	cd.schedulerClient.UpdateAddresses(addrs)
 	cd.schedulers = data.Schedulers
 
 	logger.Infof("scheduler addresses have been updated: %v", ips)
