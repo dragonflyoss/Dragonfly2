@@ -27,6 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -44,8 +45,8 @@ func TestTransport_RoundTrip(t *testing.T) {
 
 	var url = "http://x/y"
 	peerTaskManager := mock_peer.NewMockTaskManager(ctrl)
-	peerTaskManager.EXPECT().StartStreamPeerTask(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
+	peerTaskManager.EXPECT().StartStreamTask(gomock.Any(), gomock.Any()).DoAndReturn(
+		func(ctx context.Context, req *peer.StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 			assert.Equal(req.Url, url)
 			return io.NopCloser(bytes.NewBuffer(testData)), nil, nil
 		},

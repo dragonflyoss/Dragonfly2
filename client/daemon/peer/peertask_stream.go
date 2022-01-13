@@ -30,8 +30,18 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
+
+type StreamTaskRequest struct {
+	// universal resource locator for different kind of storage
+	Url string
+	// url meta info
+	UrlMeta *base.UrlMeta
+	// peer's id and must be global uniqueness
+	PeerId string
+}
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io
 type StreamTask interface {
