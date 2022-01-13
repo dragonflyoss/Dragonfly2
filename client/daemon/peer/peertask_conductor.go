@@ -571,7 +571,7 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
-	case base.Code_SchedError, base.Code_SchedTaskStatusError:
+	case base.Code_SchedError, base.Code_SchedTaskStatusError, base.Code_SchedPeerNotFound:
 		// 5xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
@@ -781,13 +781,12 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 			pt.span.RecordError(err)
 			pt.Errorf(err.Error())
 			return false, false
-		} else {
-			pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
-			pt.span.AddEvent("back source due to schedule timeout")
-			pt.needBackSource = true
-			pt.backSource()
-			return false, true
 		}
+		pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
+		pt.span.AddEvent("back source due to schedule timeout")
+		pt.needBackSource = true
+		pt.backSource()
+		return false, true
 	}
 }
 
