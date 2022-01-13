@@ -392,13 +392,13 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		}
 		if err != nil {
 			log.Errorf("download piece %d error: %s", pieceNum, err)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
 
 		if result.Size != int64(size) {
 			log.Errorf("download piece %d size not match, desired: %d, actual: %d", pieceNum, size, result.Size)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return storage.ErrShortRead
 		}
 
@@ -415,12 +415,12 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 				})
 			if err != nil {
 				log.Errorf("update task failed %s", err)
-				pt.ReportPieceResult(request, result, false)
+				pt.ReportPieceResult(request, result, err)
 				return err
 			}
 		}
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
-		pt.ReportPieceResult(request, result, true)
+		pt.ReportPieceResult(request, result, nil)
 	}
 
 	log.Infof("download from source ok")
@@ -452,7 +452,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			},
 		}
 		if err != nil {
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			log.Errorf("download piece %d error: %s", pieceNum, err)
 			return err
 		}
@@ -462,7 +462,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		} else if result.Size > int64(size) {
 			err = fmt.Errorf("piece %d size %d should not great than %d", pieceNum, result.Size, size)
 			log.Errorf(err.Error())
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
 
@@ -480,11 +480,11 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			})
 		if err != nil {
 			log.Errorf("update task failed %s", err)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
-		pt.ReportPieceResult(request, result, true)
+		pt.ReportPieceResult(request, result, nil)
 		break
 	}
 
