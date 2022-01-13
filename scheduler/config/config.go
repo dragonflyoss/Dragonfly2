@@ -71,6 +71,8 @@ func New() *Config {
 				PeerTTL:        24 * time.Hour,
 				TaskGCInterval: 10 * time.Minute,
 				TaskTTL:        24 * time.Hour,
+				HostGCInterval: 30 * time.Minute,
+				HostTTL:        48 * time.Hour,
 			},
 		},
 		DynConfig: &DynConfig{
@@ -254,6 +256,12 @@ type GCConfig struct {
 
 	// Task time to live
 	TaskTTL time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
+
+	// Host gc interval
+	HostGCInterval time.Duration `yaml:"hostGCInterval" mapstructure:"hostGCInterval"`
+
+	// Host time to live
+	HostTTL time.Duration `yaml:"hostTTL" mapstructure:"hostTTL"`
 }
 
 type DynConfig struct {
