@@ -74,7 +74,7 @@ type SchedulerClient interface {
 	// RegisterPeerTask register peer task to scheduler
 	RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// ReportPieceResult IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, taskID string, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error)
+	ReportPieceResult(ctx context.Context, taskID string, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
 
 	ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) error
 
@@ -216,16 +216,7 @@ func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *schedu
 }
 
 func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (err error) {
-	ctx =
 	return sc.schedulerClient.LeaveTask(ctx, pt, opts...)
-	leaveFun := func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		client, err = sc.getSchedulerClient()
-		if err != nil {
-			return nil, err
-		}
-		return client.LeaveTask(context.WithValue(ctx, rpc.PickKey{}, &rpc.PickReq{Key: pt.TaskId, Attempt: 1}), pt, opts...)
-	}
 }
 
 func (sc *schedulerClient) UpdateAddresses(addrs []dfnet.NetAddr) {
