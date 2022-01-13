@@ -1,5 +1,5 @@
 {
-  "task1": [
+  "aaaaaaaaaaaaaaa": [
     {
       "peer_id": "peer1",
       "host_uuid": "host1",
@@ -91,7 +91,7 @@
       "total_piece_count": 6
     }
   ],
-  "task2": [
+  "bbbbbbbbbbbbbbb": [
     {
       "peer_id": "peer2",
       "host_uuid": "host2",

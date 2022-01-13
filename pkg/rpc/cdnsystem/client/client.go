@@ -66,7 +66,7 @@ type CDNClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
-	UpdateAddresses(addrs []dfnet.NetAddr)
+	UpdateAddresses(addrs []dfnet.NetAddr) error
 
 	Close() error
 }
@@ -99,8 +99,8 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
 }
 
-func (cc *cdnClient) UpdateAddresses(addrs []dfnet.NetAddr) {
-	cc.resolver.UpdateAddresses(addrs)
+func (cc *cdnClient) UpdateAddresses(addrs []dfnet.NetAddr) error {
+	return cc.resolver.UpdateAddresses(addrs)
 }
 
 func (cc *cdnClient) Close() error {

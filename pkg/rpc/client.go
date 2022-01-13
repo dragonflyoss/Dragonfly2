@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/transfer"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -47,23 +47,24 @@ var DefaultClientOpts = []grpc.DialOption{
 			return true
 		}),
 		grpc_validator.UnaryClientInterceptor(),
+		// attention order
+		transfer.UnaryClientInterceptor(),
 		grpc_retry.UnaryClientInterceptor(
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
 			//grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
 			grpc_retry.WithMax(3),
 		),
-		transfer.UnaryClientInterceptor(),
 	),
 	grpc.WithChainStreamInterceptor(
 		grpc_prometheus.StreamClientInterceptor,
 		grpc_zap.PayloadStreamClientInterceptor(d7yLogger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
 			return true
 		}),
+		transfer.StreamClientInterceptor(),
 		grpc_retry.StreamClientInterceptor(
 			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(100*time.Millisecond)),
 			//grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
 			grpc_retry.WithMax(3),
 		),
-		transfer.StreamClientInterceptor(),
 	),
 }

@@ -75,7 +75,7 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 			var p peer.Peer
 			newStreamer, currentErr := streamer(callCtx, desc, cc, method, append(grpcOpts, grpc.Peer(&p))...)
 			if currentErr == nil {
-				transferStreamer := &serverStreamingTransferStream{
+				transferStreamer := &clientTransferStream{
 					ClientStream: newStreamer,
 					callOpts:     callOpts,
 					parentCtx:    parentCtx,
@@ -100,13 +100,13 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 	}
 }
 
-// type serverStreamingTransferStream is the implementation of grpc.ClientStream that acts as a
+// type clientTransferStream is the implementation of grpc.ClientStream that acts as a
 // proxy to the underlying call. If any of the RecvMsg() calls fail, it will try to reestablish
 // a new ClientStream according to the transfer policy.
-type serverStreamingTransferStream struct {
+type clientTransferStream struct {
 	grpc.ClientStream
-	bufferedSends []interface{} // single message that the client can sen
-	wasClosedSend bool          // indicates that CloseSend was closed
+	bufferedSends []interface{}
+	wasClosedSend bool
 	parentCtx     context.Context
 	callOpts      *options
 	streamerCall  func(ctx context.Context) (grpc.ClientStream, error)
@@ -114,41 +114,41 @@ type serverStreamingTransferStream struct {
 	mu            sync.RWMutex
 }
 
-func (s *serverStreamingTransferStream) setStream(clientStream grpc.ClientStream) {
+func (s *clientTransferStream) setStream(clientStream grpc.ClientStream) {
 	s.mu.Lock()
 	s.ClientStream = clientStream
 	s.mu.Unlock()
 }
 
-func (s *serverStreamingTransferStream) getStream() grpc.ClientStream {
+func (s *clientTransferStream) getStream() grpc.ClientStream {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.ClientStream
 }
 
-func (s *serverStreamingTransferStream) SendMsg(m interface{}) error {
+func (s *clientTransferStream) SendMsg(m interface{}) error {
 	s.mu.Lock()
 	s.bufferedSends = append(s.bufferedSends, m)
 	s.mu.Unlock()
 	return s.getStream().SendMsg(m)
 }
 
-func (s *serverStreamingTransferStream) CloseSend() error {
+func (s *clientTransferStream) CloseSend() error {
 	s.mu.Lock()
 	s.wasClosedSend = true
 	s.mu.Unlock()
 	return s.getStream().CloseSend()
 }
 
-func (s *serverStreamingTransferStream) Header() (metadata.MD, error) {
+func (s *clientTransferStream) Header() (metadata.MD, error) {
 	return s.getStream().Header()
 }
 
-func (s *serverStreamingTransferStream) Trailer() metadata.MD {
+func (s *clientTransferStream) Trailer() metadata.MD {
 	return s.getStream().Trailer()
 }
 
-func (s *serverStreamingTransferStream) RecvMsg(m interface{}) error {
+func (s *clientTransferStream) RecvMsg(m interface{}) error {
 	attemptTransfer, lastErr := s.receiveMsgAndIndicateTransfer(m)
 	if !attemptTransfer {
 		return lastErr // success or hard failure
@@ -159,7 +159,7 @@ func (s *serverStreamingTransferStream) RecvMsg(m interface{}) error {
 		newStream, err := s.reestablishStreamAndResendBuffer(callCtx)
 		if err != nil {
 			if isUnTransferableError(err, s.callOpts) {
-				return err
+				return lastErr
 			}
 			continue
 		}
@@ -171,7 +171,7 @@ func (s *serverStreamingTransferStream) RecvMsg(m interface{}) error {
 	}
 }
 
-func (s *serverStreamingTransferStream) receiveMsgAndIndicateTransfer(m interface{}) (bool, error) {
+func (s *clientTransferStream) receiveMsgAndIndicateTransfer(m interface{}) (bool, error) {
 	err := s.getStream().RecvMsg(m)
 	if err == nil || err == io.EOF {
 		return false, err
@@ -184,7 +184,7 @@ func (s *serverStreamingTransferStream) receiveMsgAndIndicateTransfer(m interfac
 	return true, err
 }
 
-func (s *serverStreamingTransferStream) reestablishStreamAndResendBuffer(callCtx context.Context) (grpc.ClientStream, error) {
+func (s *clientTransferStream) reestablishStreamAndResendBuffer(callCtx context.Context) (grpc.ClientStream, error) {
 	s.mu.RLock()
 	bufferedSends := s.bufferedSends
 	s.mu.RUnlock()

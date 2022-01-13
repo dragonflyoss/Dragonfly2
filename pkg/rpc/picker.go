@@ -82,7 +82,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			if targetAddr != "" && pickRequest.HashKey != "" {
 				p.pickHistory[pickRequest.HashKey] = targetAddr
 			}
-			pickerLogger.Infof("d7yPicker: picker server %s for request: %v", targetAddr, pickRequest)
+			pickerLogger.Infof("d7yPicker: pick out server: %s for request: %v", targetAddr, pickRequest)
 		}()
 
 		// target address is specified
