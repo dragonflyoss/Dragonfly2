@@ -643,7 +643,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 		span.End()
 
 		pt.Warnf("single piece download failed, switch to download from other peers")
-		pt.reportFailResult(request, result)
+		pt.ReportPieceResult(request, result, err)
 
 		go pt.receivePeerPacket()
 		pt.pullPiecesFromPeers()
@@ -920,7 +920,7 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 			if err != nil {
 				// send to fail chan and retry
 				pt.failedPieceCh <- request.piece.PieceNum
-				pt.reportFailResult(request, result)
+				pt.ReportPieceResult(request, result, err)
 				span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 				span.End()
 				continue
@@ -1194,17 +1194,23 @@ func (pt *peerTaskConductor) recoverFromPanic() {
 	}
 }
 
-func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool) {
-	if success {
+func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error) {
+	if err == nil {
 		pt.reportSuccessResult(request, result)
-	} else {
-		pt.reportFailResult(request, result)
+		return
 	}
+	code := base.Code_ClientPieceDownloadFail
+	if isConnectionError(err) {
+		code = base.Code_ClientConnectionError
+	} else if isPieceNotFound(err) {
+		code = base.Code_ClientPieceNotFound
+	}
+	pt.reportFailResult(request, result, code)
 }
 
 func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, result *DownloadPieceResult) {
-	_, rspan := tracer.Start(pt.ctx, config.SpanPushPieceResult)
-	rspan.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
+	_, span := tracer.Start(pt.ctx, config.SpanPushPieceResult)
+	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
 	err := pt.peerPacketStream.Send(
 		&scheduler.PieceResult{
@@ -1224,12 +1230,12 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 		pt.Errorf("report piece task error: %v", err)
 	}
 
-	rspan.End()
+	span.End()
 }
 
-func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, result *DownloadPieceResult) {
-	_, rspan := tracer.Start(pt.ctx, config.SpanPushPieceResult)
-	rspan.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
+func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, result *DownloadPieceResult, code base.Code) {
+	_, span := tracer.Start(pt.ctx, config.SpanPushPieceResult)
+	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
 	err := pt.peerPacketStream.Send(&scheduler.PieceResult{
 		TaskId:        pt.GetTaskID(),
@@ -1239,14 +1245,14 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 		BeginTime:     uint64(result.BeginTime),
 		EndTime:       uint64(result.FinishTime),
 		Success:       false,
-		Code:          base.Code_ClientPieceDownloadFail,
+		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: pt.readyPieces.Settled(),
 	})
 	if err != nil {
 		pt.Errorf("report piece task error: %v", err)
 	}
-	rspan.End()
+	span.End()
 }
 
 func (pt *peerTaskConductor) InitStorage() error {

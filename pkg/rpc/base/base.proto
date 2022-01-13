@@ -45,6 +45,8 @@ enum Code{
   ClientWaitPieceReady = 4004; // when target peer downloads from source slowly, should wait
   ClientPieceDownloadFail = 4005;
   ClientRequestLimitFail = 4006;
+  ClientConnectionError = 4007;
+  ClientPieceNotFound = 4404;
 
   // scheduler response error 5000-5999
   SchedError = 5000;

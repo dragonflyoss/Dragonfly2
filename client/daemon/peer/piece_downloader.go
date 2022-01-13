@@ -59,6 +59,35 @@ type pieceDownloader struct {
 	httpClient *http.Client
 }
 
+type pieceDownloadError struct {
+	connectionError bool
+	status          string
+	statusCode      int
+	target          string
+	err             error
+}
+
+func isConnectionError(err error) bool {
+	if e, ok := err.(*pieceDownloadError); ok {
+		return e.connectionError
+	}
+	return false
+}
+
+func isPieceNotFound(err error) bool {
+	if e, ok := err.(*pieceDownloadError); ok {
+		return e.statusCode == http.StatusNotFound
+	}
+	return false
+}
+
+func (e *pieceDownloadError) Error() string {
+	if e.connectionError {
+		return fmt.Sprintf("connect with %s with error: %s", e.target, e.err)
+	}
+	return fmt.Sprintf("download %s with error status: %s", e.target, e.status)
+}
+
 var _ PieceDownloader = (*pieceDownloader)(nil)
 
 var defaultTransport http.RoundTripper = &http.Transport{
@@ -107,12 +136,12 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, d *DownloadPieceReq
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
 			d.TaskID, d.piece.PieceNum, d.DstAddr, err)
-		return nil, nil, err
+		return nil, nil, &pieceDownloadError{err: err, connectionError: true}
 	}
 	if resp.StatusCode > 299 {
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
-		return nil, nil, fmt.Errorf("download piece failed with http code: %s", resp.Status)
+		return nil, nil, &pieceDownloadError{err: err, connectionError: false, status: resp.Status, statusCode: resp.StatusCode}
 	}
 	r := resp.Body.(io.Reader)
 	c := resp.Body.(io.Closer)

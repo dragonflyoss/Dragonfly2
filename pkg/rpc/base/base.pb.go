@@ -60,6 +60,8 @@ const (
 	Code_ClientWaitPieceReady    Code = 4004 // when target peer downloads from source slowly, should wait
 	Code_ClientPieceDownloadFail Code = 4005
 	Code_ClientRequestLimitFail  Code = 4006
+	Code_ClientConnectionError   Code = 4007
+	Code_ClientPieceNotFound     Code = 4404
 	// scheduler response error 5000-5999
 	Code_SchedError                     Code = 5000
 	Code_SchedNeedBackSource            Code = 5001 // client should try to download from source
