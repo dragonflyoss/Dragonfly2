@@ -152,7 +152,6 @@ message Application {
 message GetApplicationRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
   string name = 2 [(validate.rules).string.name = true];
-  uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
 // Manager RPC Service 
