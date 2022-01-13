@@ -46,6 +46,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 )
 
+var _ cdnsystem.SeederServer = (*testServer)(nil)
+
 type testServer struct {
 	cdnsystem.UnimplementedSeederServer
 
@@ -130,8 +132,6 @@ func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskReque
 	}
 	return pp, nil
 }
-
-var _ cdnsystem.SeederServer = (*testServer)(nil)
 
 func newTestServer(addr string, seedPieces map[string][]*cdnsystem.PieceSeed) *testServer {
 	s := &testServer{addr: addr, seedPieces: seedPieces}
