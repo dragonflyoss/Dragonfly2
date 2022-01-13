@@ -18,6 +18,15 @@ package resource
 
 import (
 	"sync"
+	"time"
+
+	pkggc "d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/scheduler/config"
+)
+
+const (
+	// GC host id
+	GCHostID = "host"
 )
 
 type HostManager interface {
@@ -34,16 +43,36 @@ type HostManager interface {
 
 	// Delete deletes host for a key
 	Delete(string)
+
+	// Try to reclaim host
+	RunGC() error
 }
 
 type hostManager struct {
 	// Host sync map
 	*sync.Map
+
+	// Host time to live
+	ttl time.Duration
 }
 
 // New host manager interface
-func newHostManager() HostManager {
-	return &hostManager{&sync.Map{}}
+func newHostManager(cfg *config.GCConfig, gc pkggc.GC) (HostManager, error) {
+	h := &hostManager{
+		Map: &sync.Map{},
+		ttl: cfg.HostTTL,
+	}
+
+	if err := gc.Add(pkggc.Task{
+		ID:       GCHostID,
+		Interval: cfg.HostGCInterval,
+		Timeout:  cfg.HostGCInterval,
+		Runner:   h,
+	}); err != nil {
+		return nil, err
+	}
+
+	return h, nil
 }
 
 func (h *hostManager) Load(key string) (*Host, bool) {
@@ -66,4 +95,20 @@ func (h *hostManager) LoadOrStore(host *Host) (*Host, bool) {
 
 func (h *hostManager) Delete(key string) {
 	h.Map.Delete(key)
+}
+
+func (h *hostManager) RunGC() error {
+	h.Map.Range(func(_, value interface{}) bool {
+		host := value.(*Host)
+		elapsed := time.Since(host.UpdateAt.Load())
+
+		if elapsed > h.ttl && host.LenPeers() == 0 {
+			host.Log.Info("host has been reclaimed")
+			h.Delete(host.ID)
+		}
+
+		return true
+	})
+
+	return nil
 }

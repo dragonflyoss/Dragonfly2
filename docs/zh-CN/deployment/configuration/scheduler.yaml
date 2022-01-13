@@ -40,6 +40,10 @@ scheduler:
     taskGCInterval: 10m
     # 不活跃的 task 的存活时间
     taskTTL: 24h
+    # host 的回收间隔
+    hostGCInterval: 30m
+    # 不活跃的 host 的存活时间
+    hostTTL: 48h
 
 # 动态数据配置
 dynConfig:

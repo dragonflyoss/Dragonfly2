@@ -34,14 +34,18 @@ scheduler:
   retryInterval: 1s
   # gc metadata configuration
   gc:
-    # peerGCInterval peer's gc interval
+    # peerGCInterval is peer's gc interval
     peerGCInterval: 10m
-    # peerTTL peer's TTL duration
+    # peerTTL is peer's TTL duration
     peerTTL: 24h
-    # taskGCInterval task's gc interval
+    # taskGCInterval is task's gc interval
     taskGCInterval: 10m
-    # taskTTL task's TTL duration
+    # taskTTL is task's TTL duration
     taskTTL: 24h
+    # hostGCInterval is host's gc interval
+    hostGCInterval: 30m
+    # hostTTL is host's TTL duration
+    hostTTL: 48h
 
 # dynamic data configuration
 dynConfig:
