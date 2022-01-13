@@ -196,13 +196,7 @@ func (s *service) HandlePiece(ctx context.Context, peer *resource.Peer, piece *r
 
 	// Handle piece download failed
 	if piece.Code != base.Code_Success {
-
-		// Wait for the client piece to be ready
-		// to prevent redundant logs from being printed
-		if piece.Code != base.Code_ClientWaitPieceReady {
-			peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
-		}
-
+		peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}

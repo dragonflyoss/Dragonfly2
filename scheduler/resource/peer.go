@@ -78,6 +78,9 @@ const (
 	// Peer downloaded failed
 	PeerEventDownloadFailed = "DownloadFailed"
 
+	// Peer redownloaded
+	PeerEventRedownload = "Redownload"
+
 	// Peer leaves
 	PeerEventLeave = "Leave"
 )
@@ -153,6 +156,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				PeerStatePending, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
+			{Name: PeerEventRedownload, Src: []string{PeerStateSucceeded}, Dst: PeerStateRunning},
 			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
@@ -186,6 +190,10 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.UpdateAt.Store(time.Now())
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
+			PeerEventRedownload: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},

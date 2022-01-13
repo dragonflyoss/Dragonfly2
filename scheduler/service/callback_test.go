@@ -43,7 +43,6 @@ import (
 var (
 	mockSchedulerConfig = &config.SchedulerConfig{
 		RetryLimit:      3,
-		RetryInterval:   10 * time.Millisecond,
 		BackSourceCount: mockTaskBackToSourceLimit,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
