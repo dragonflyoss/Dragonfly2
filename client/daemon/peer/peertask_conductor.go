@@ -75,7 +75,7 @@ type peerTaskConductor struct {
 	request *scheduler.PeerTaskRequest
 
 	// needBackSource indicates downloading resource from instead of other peers
-	needBackSource bool
+	needBackSource *atomic.Bool
 
 	// pieceManager will be used for downloading piece
 	pieceManager    PieceManager
@@ -242,7 +242,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		ctx:                 ctx,
 		broker:              newPieceBroker(),
 		host:                ptm.host,
-		needBackSource:      needBackSource,
+		needBackSource:      atomic.NewBool(needBackSource),
 		request:             request,
 		peerPacketStream:    peerPacketStream,
 		pieceManager:        ptm.pieceManager,
@@ -360,7 +360,7 @@ func (pt *peerTaskConductor) backSource() {
 }
 
 func (pt *peerTaskConductor) pullPieces() {
-	if pt.needBackSource {
+	if pt.needBackSource.Load() {
 		pt.backSource()
 		return
 	}
@@ -455,7 +455,7 @@ func (pt *peerTaskConductor) receivePeerPacket() {
 		if !firstSpanDone {
 			firstPeerSpan.End()
 		}
-		if pt.needBackSource {
+		if pt.needBackSource.Load() {
 			return
 		}
 		select {
@@ -494,7 +494,7 @@ loop:
 		pt.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
 		if peerPacket.Code != base.Code_Success {
 			if peerPacket.Code == base.Code_SchedNeedBackSource {
-				pt.needBackSource = true
+				pt.needBackSource.Store(true)
 				close(pt.peerPacketReady)
 				pt.Infof("receive back source code")
 				return
@@ -562,7 +562,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 	)
 	de, ok := err.(*dferrors.DfError)
 	if ok && de.Code == base.Code_SchedNeedBackSource {
-		pt.needBackSource = true
+		pt.needBackSource.Store(true)
 		close(pt.peerPacketReady)
 		pt.Infof("receive back source code")
 		return
@@ -787,7 +787,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
 		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source")
-		pt.needBackSource = true
+		pt.needBackSource.Store(true)
 		pt.backSource()
 		return false, true
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
@@ -800,7 +800,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		}
 		pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
 		pt.span.AddEvent("back source due to schedule timeout")
-		pt.needBackSource = true
+		pt.needBackSource.Store(true)
 		pt.backSource()
 		return false, true
 	}
@@ -824,7 +824,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
 		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source ")
-		pt.needBackSource = true
+		pt.needBackSource.Store(true)
 		// TODO optimize back source when already downloaded some pieces
 		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
@@ -836,7 +836,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		} else {
 			pt.Warnf("start download from source due to %s", reasonReScheduleTimeout)
 			pt.span.AddEvent("back source due to schedule timeout")
-			pt.needBackSource = true
+			pt.needBackSource.Store(true)
 			pt.backSource()
 		}
 	}
