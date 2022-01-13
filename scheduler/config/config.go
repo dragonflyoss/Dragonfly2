@@ -65,6 +65,7 @@ func New() *Config {
 			Algorithm:       "default",
 			BackSourceCount: 3,
 			RetryLimit:      5,
+			RetryInterval:   200 * time.Millisecond,
 			GC: &GCConfig{
 				PeerGCInterval: 10 * time.Minute,
 				PeerTTL:        24 * time.Hour,
@@ -125,6 +126,10 @@ func (c *Config) Validate() error {
 
 	if c.Scheduler.RetryLimit <= 0 {
 		return errors.New("scheduler requires parameter retryLimit")
+	}
+
+	if c.Scheduler.RetryInterval <= 0 {
+		return errors.New("scheduler requires parameter retryInterval")
 	}
 
 	if c.Scheduler.GC.PeerGCInterval <= 0 {
@@ -229,6 +234,9 @@ type SchedulerConfig struct {
 
 	// Retry scheduling limit times
 	RetryLimit int `yaml:"retryLimit" mapstructure:"retryLimit"`
+
+	// Retry scheduling interval
+	RetryInterval time.Duration `yaml:"retryInterval" mapstructure:"retryInterval"`
 
 	// Task and peer gc configuration
 	GC *GCConfig `yaml:"gc" mapstructure:"gc"`

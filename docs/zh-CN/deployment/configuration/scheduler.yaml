@@ -28,6 +28,8 @@ scheduler:
   backSourceCount: 3
   # 调度重试次数限制
   retryLimit: 5
+  # 调度重试时间间隔
+  retryInterval: 200ms
   # 数据回收策略
   gc:
     # peer 的回收间隔

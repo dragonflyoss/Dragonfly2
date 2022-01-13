@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -125,6 +126,9 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 		if _, ok := c.scheduler.ScheduleParent(ctx, peer, blocklist); !ok {
 			n++
 			peer.Log.Infof("reschedule parent %d times failed", n)
+
+			// Sleep to avoid hot looping
+			time.Sleep(c.config.Scheduler.RetryInterval)
 			continue
 		}
 

@@ -10,6 +10,7 @@ scheduler:
   algorithm: default
   backSourceCount: 3
   retryLimit: 10
+  retryInterval: 1000000000
   gc:
     peerGCInterval: 60000000000
     peerTTL: 300000000000

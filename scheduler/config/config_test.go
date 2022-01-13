@@ -42,6 +42,7 @@ func TestConfig_Load(t *testing.T) {
 			Algorithm:       "default",
 			BackSourceCount: 3,
 			RetryLimit:      10,
+			RetryInterval:   1 * time.Second,
 			GC: &GCConfig{
 				PeerGCInterval: 1 * time.Minute,
 				PeerTTL:        5 * time.Minute,
