@@ -39,7 +39,7 @@ func TestResource_New(t *testing.T) {
 			name: "new resource",
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gc.Add(gomock.Any()).Return(nil).Times(2),
+					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
 						CDNs: []*config.CDN{{ID: 1}},
 					}, nil).Times(1),
@@ -53,7 +53,7 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource failed because of task manager error",
+			name: "new resource failed because of host manager error",
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
@@ -65,7 +65,7 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource failed because of peer manager error",
+			name: "new resource failed because of task manager error",
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(1),
@@ -78,10 +78,23 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource faild because of dynconfig get error",
+			name: "new resource failed because of peer manager error",
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(2),
+					gc.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, resource Resource, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+		{
+			name: "new resource faild because of dynconfig get error",
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(nil, errors.New("foo")).Times(1),
 				)
 			},
@@ -94,7 +107,7 @@ func TestResource_New(t *testing.T) {
 			name: "new resource faild because of cdn list is empty",
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
-					gc.Add(gomock.Any()).Return(nil).Times(2),
+					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
 						CDNs: []*config.CDN{},
 					}, nil).Times(1),
