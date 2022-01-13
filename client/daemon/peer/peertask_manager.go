@@ -211,9 +211,9 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 
 func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 	peerTaskRequest := &scheduler.PeerTaskRequest{
-		Url:         req.Url,
-		UrlMeta:     req.UrlMeta,
-		PeerId:      req.PeerId,
+		Url:         req.URL,
+		UrlMeta:     req.URLMeta,
+		PeerId:      req.PeerID,
 		PeerHost:    ptm.host,
 		HostLoad:    nil,
 		IsMigrating: false,

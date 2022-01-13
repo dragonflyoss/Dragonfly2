@@ -211,9 +211,9 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	body, attr, err := rt.peerTaskManager.StartStreamTask(
 		req.Context(),
 		&peer.StreamTaskRequest{
-			Url:     url,
-			UrlMeta: meta,
-			PeerId:  peerID,
+			URL:     url,
+			URLMeta: meta,
+			PeerID:  peerID,
 		},
 	)
 	if err != nil {

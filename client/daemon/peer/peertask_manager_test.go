@@ -579,11 +579,11 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 	r, _, err := ptm.StartStreamTask(
 		context.Background(),
 		&StreamTaskRequest{
-			Url: "http://localhost/test/data",
-			UrlMeta: &base.UrlMeta{
+			URL: "http://localhost/test/data",
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId: peerID,
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 
@@ -643,11 +643,11 @@ func TestPeerTaskManager_StartStreamPeerTask_SizeScope_Tiny(t *testing.T) {
 	r, _, err := ptm.StartStreamTask(
 		context.Background(),
 		&StreamTaskRequest{
-			Url: "http://localhost/test/data",
-			UrlMeta: &base.UrlMeta{
+			URL: "http://localhost/test/data",
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId: peerID,
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 
@@ -718,11 +718,11 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 	r, _, err := ptm.StartStreamTask(
 		context.Background(),
 		&StreamTaskRequest{
-			Url: ts.URL,
-			UrlMeta: &base.UrlMeta{
+			URL: ts.URL,
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId: peerID,
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 

@@ -36,11 +36,11 @@ import (
 
 type StreamTaskRequest struct {
 	// universal resource locator for different kind of storage
-	Url string
+	URL string
 	// url meta info
-	UrlMeta *base.UrlMeta
+	URLMeta *base.UrlMeta
 	// peer's id and must be global uniqueness
-	PeerId string
+	PeerID string
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io

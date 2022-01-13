@@ -47,7 +47,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 	peerTaskManager := mock_peer.NewMockTaskManager(ctrl)
 	peerTaskManager.EXPECT().StartStreamTask(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, req *peer.StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
-			assert.Equal(req.Url, url)
+			assert.Equal(req.URL, url)
 			return io.NopCloser(bytes.NewBuffer(testData)), nil, nil
 		},
 	)
