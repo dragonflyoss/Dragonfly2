@@ -560,13 +560,13 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 		failedCode   = base.Code_UnknownError
 		failedReason string
 	)
-	if de, ok := err.(*dferrors.DfError); ok {
-		if de.Code == base.Code_SchedNeedBackSource {
-			pt.needBackSource = true
-			close(pt.peerPacketReady)
-			pt.Infof("receive back source code")
-			return
-		}
+	de, ok := err.(*dferrors.DfError)
+	if ok && de.Code == base.Code_SchedNeedBackSource {
+		pt.needBackSource = true
+		close(pt.peerPacketReady)
+		pt.Infof("receive back source code")
+		return
+	} else if ok && de.Code != base.Code_SchedNeedBackSource {
 		failedCode = de.Code
 		failedReason = de.Message
 		pt.Errorf("receive peer packet failed: %s", pt.failedReason)
@@ -743,14 +743,16 @@ loop:
 			limit = pieceBufferSize
 			continue
 		}
-		pt.Infof("all pieces requests send, just wait failed pieces")
-		// just need one piece
-		limit = 1
+
+		// 5. wait failed pieces
+		pt.Infof("all pieces requests sent, just wait failed pieces")
 		// get failed piece
 		if num, ok = pt.waitFailedPiece(); !ok {
 			// when ok == false, indicates than need break loop
 			break loop
 		}
+		// just need one piece
+		limit = 1
 	}
 }
 
