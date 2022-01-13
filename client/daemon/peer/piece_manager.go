@@ -234,7 +234,7 @@ func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceReq
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
-	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32, isLastPiece func(n int64) bool) (
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32, isLastPiece func(n int64) (int32, bool)) (
 	result *DownloadPieceResult, md5 string, err error) {
 	result = &DownloadPieceResult{
 		Size:       -1,
@@ -344,7 +344,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	reader := response.Body.(io.Reader)
 
 	// calc total
-	if pm.calculateDigest && request.UrlMeta.Digest != "" {
+	if pm.calculateDigest {
 		reader = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
 	}
 	// we must calculate piece size
@@ -375,8 +375,8 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		log.Debugf("download piece %d", pieceNum)
 		result, md5, err := pm.processPieceFromSource(
 			pt, reader, contentLength, pieceNum, offset, size,
-			func(int64) bool {
-				return pieceNum == maxPieceNum-1
+			func(int64) (int32, bool) {
+				return maxPieceNum, pieceNum == maxPieceNum-1
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
@@ -436,8 +436,16 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		log.Debugf("download piece %d", pieceNum)
 		result, md5, err := pm.processPieceFromSource(
 			pt, reader, contentLength, pieceNum, offset, size,
-			func(n int64) bool {
-				return n < int64(pieceSize)
+			func(n int64) (int32, bool) {
+				if n >= int64(pieceSize) {
+					return -1, false
+				}
+				// content length is aligned at pieceSize
+				// when n == 0, need ignore current piece
+				if n == 0 {
+					return pieceNum, true
+				}
+				return pieceNum + 1, true
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),

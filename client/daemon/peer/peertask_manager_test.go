@@ -52,6 +52,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type componentsOption struct {
@@ -62,7 +63,7 @@ type componentsOption struct {
 	peerPacketDelay    []time.Duration
 	backSource         bool
 	scope              base.SizeScope
-	tinyContent        []byte
+	content            []byte
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
@@ -70,6 +71,14 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
+
+	// calculate piece digest and total digest
+	r := bytes.NewBuffer(opt.content)
+	var pieces = make([]string, int(math.Ceil(float64(len(opt.content))/float64(opt.pieceSize))))
+	for i := range pieces {
+		pieces[i] = digestutils.Md5Reader(io.LimitReader(r, int64(opt.pieceSize)))
+	}
+	totalDigests := digestutils.Sha256(pieces...)
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {
@@ -86,7 +95,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					PieceNum:    int32(request.StartNum + i),
 					RangeStart:  uint64(start),
 					RangeSize:   size,
-					PieceMd5:    "",
+					PieceMd5:    pieces[request.StartNum+i],
 					PieceOffset: 0,
 					PieceStyle:  0,
 				})
@@ -97,6 +106,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 			PieceInfos:    tasks,
 			ContentLength: opt.contentLength,
 			TotalPiece:    int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize))),
+			PieceMd5Sign:  totalDigests,
 		}, nil
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
@@ -156,7 +166,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					TaskId:    opt.taskID,
 					SizeScope: base.SizeScope_TINY,
 					DirectPiece: &scheduler.RegisterResult_PieceContent{
-						PieceContent: opt.tinyContent,
+						PieceContent: opt.content,
 					},
 				}, nil
 			}
@@ -225,6 +235,7 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
@@ -240,12 +251,14 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 		})
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
@@ -378,6 +391,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
@@ -393,12 +407,14 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		})
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
@@ -470,17 +486,19 @@ func TestPeerTaskManager_StartFilePeerTask_SizeScope_Tiny(t *testing.T) {
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			scope:              base.SizeScope_TINY,
-			tinyContent:        testBytes,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: nil,
 		},
@@ -546,6 +564,7 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
@@ -560,12 +579,14 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		})
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 		},
@@ -620,17 +641,19 @@ func TestPeerTaskManager_StartStreamPeerTask_SizeScope_Tiny(t *testing.T) {
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			scope:              base.SizeScope_TINY,
-			tinyContent:        testBytes,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: nil,
 		},
@@ -696,16 +719,19 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			peerPacketDelay:    []time.Duration{time.Second},
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest:  true,
 			storageManager:   storageManager,
 			pieceDownloader:  NewMockPieceDownloader(ctrl),
 			computePieceSize: util.ComputePieceSize,
