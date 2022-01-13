@@ -75,7 +75,7 @@ type Task interface {
 	GetPieceMd5Sign() string
 
 	PublishPieceInfo(pieceNum int32, size uint32)
-	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool)
+	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error)
 }
 
 type Logger interface {

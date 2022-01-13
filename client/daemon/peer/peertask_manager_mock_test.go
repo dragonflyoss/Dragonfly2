@@ -257,15 +257,15 @@ func (mr *MockTaskMockRecorder) PublishPieceInfo(pieceNum, size interface{}) *go
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockTask) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool) {
+func (m *MockTask) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReportPieceResult", request, result, success)
+	m.ctrl.Call(m, "ReportPieceResult", request, result, err)
 }
 
 // ReportPieceResult indicates an expected call of ReportPieceResult.
-func (mr *MockTaskMockRecorder) ReportPieceResult(request, result, success interface{}) *gomock.Call {
+func (mr *MockTaskMockRecorder) ReportPieceResult(request, result, err interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), request, result, success)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), request, result, err)
 }
 
 // SetContentLength mocks base method.
