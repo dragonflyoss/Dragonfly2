@@ -193,8 +193,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	}
 	log := logger.With("peer", request.PeerId, "task", result.TaskId, "component", "PeerTask")
 	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
-	log.Infof("register task success, task id: %s, peer id: %s, SizeScope: %s",
-		result.TaskId, request.PeerId, base.SizeScope_name[int32(result.SizeScope)])
+	log.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 
 	var (
 		singlePiece *scheduler.SinglePiece
@@ -202,16 +201,16 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	)
 	if !needBackSource {
 		switch result.SizeScope {
+		case base.SizeScope_NORMAL:
+			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
 		case base.SizeScope_SMALL:
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
-			log.Debugf("%s/%s size scope: small", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
 			}
 		case base.SizeScope_TINY:
 			defer span.End()
 			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
-			log.Debugf("%s/%s size scope: tiny", result.TaskId, request.PeerId)
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
 				tinyData = &TinyData{
 					span:    span,
@@ -222,16 +221,14 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 			} else {
 				err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
 				span.RecordError(err)
+				log.Errorf("%s", err)
 				return nil, err
 			}
-		case base.SizeScope_NORMAL:
-			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
-			log.Debugf("%s/%s size scope: normal", result.TaskId, request.PeerId)
 		}
 	}
 
 	peerPacketStream, err := ptm.schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
-	log.Infof("step 2: start report peer %s piece result", request.PeerId)
+	log.Infof("step 2: start report piece result")
 	if err != nil {
 		defer span.End()
 		span.RecordError(err)
