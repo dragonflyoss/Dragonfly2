@@ -1,171 +1,78 @@
 {
-  "aaaaaaaaaaaaaaa": [
+  "https://www.dragonfly1.com": [
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 0,
-        "range_start": 0,
-        "range_size": 100,
-        "piece_md5": "ddd",
-        "piece_offset": 0,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 100,
+      "done": false
     },
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 1,
-        "range_start": 100,
-        "range_size": 100,
-        "piece_md5": "ddd",
-        "piece_offset": 100,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 200,
+      "done": false
     },
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 2,
-        "range_start": 200,
-        "range_size": 100,
-        "piece_md5": "ddd",
-        "piece_offset": 200,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 300,
+      "done": false
     },
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 3,
-        "range_start": 300,
-        "range_size": 100,
-        "piece_md5": "ddd",
-        "piece_offset": 300,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 400,
+      "done": false
     },
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 4,
-        "range_start": 400,
-        "range_size": 100,
-        "piece_md5": "ddd",
-        "piece_offset": 400,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 500,
+      "done": false
     },
     {
-      "peer_id": "peer1",
-      "host_uuid": "host1",
-      "piece_info": {
-        "piece_num": 5,
-        "range_start": 500,
-        "range_size": 1,
-        "piece_md5": "ddd",
-        "piece_offset": 500,
-        "piece_style": 1
-      },
-      "done": true,
-      "content_length": 501,
-      "total_piece_count": 6
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 555,
+      "done": true
     }
   ],
-  "bbbbbbbbbbbbbbb": [
+  "https://www.dragonfly2.com": [
     {
-      "peer_id": "peer2",
-      "host_uuid": "host2",
-      "piece_info": {
-        "piece_num": 0,
-        "range_start": 0,
-        "range_size": 1000,
-        "piece_md5": "ddd",
-        "piece_offset": 0,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 4500,
-      "total_piece_count": 5
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 100,
+      "done": false
     },
     {
-      "peer_id": "peer2",
-      "host_uuid": "host2",
-      "piece_info": {
-        "piece_num": 1,
-        "range_start": 1000,
-        "range_size": 1000,
-        "piece_md5": "ddd",
-        "piece_offset": 1000,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 4500,
-      "total_piece_count": 5
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 200,
+      "done": false
     },
     {
-      "peer_id": "peer2",
-      "host_uuid": "host2",
-      "piece_info": {
-        "piece_num": 2,
-        "range_start": 2000,
-        "range_size": 1000,
-        "piece_md5": "ddd",
-        "piece_offset": 2000,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 4500,
-      "total_piece_count": 5
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 300,
+      "done": false
     },
     {
-      "peer_id": "peer2",
-      "host_uuid": "host2",
-      "piece_info": {
-        "piece_num": 3,
-        "range_start": 3000,
-        "range_size": 1000,
-        "piece_md5": "ddd",
-        "piece_offset": 3000,
-        "piece_style": 1
-      },
-      "done": false,
-      "content_length": 4500,
-      "total_piece_count": 5
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 400,
+      "done": false
     },
     {
-      "peer_id": "peer2",
-      "host_uuid": "host2",
-      "piece_info": {
-        "piece_num": 4,
-        "range_start": 4000,
-        "range_size": 500,
-        "piece_md5": "ddd",
-        "piece_offset": 4000,
-        "piece_style": 1
-      },
-      "done": true,
-      "content_length": 4500,
-      "total_piece_count": 5
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 500,
+      "done": false
+    },
+    {
+      "task_id": "fa1ccba742463145d9920ce550479065b8e8a502d0a1ba313c97c1abc01ed8f0",
+      "peer_id": "peer_1",
+      "completed_length": 555,
+      "done": true
     }
   ]
 }
