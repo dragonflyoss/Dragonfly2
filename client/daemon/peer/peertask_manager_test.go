@@ -324,7 +324,7 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 	// test file task
 	progress, ok := ptm.tryReuseFilePeerTask(
 		context.Background(),
-		&FilePeerTaskRequest{
+		&FileTaskRequest{
 			PeerTaskRequest: scheduler.PeerTaskRequest{
 				Url: "http://localhost/test/data",
 				UrlMeta: &base.UrlMeta{
@@ -337,7 +337,7 @@ func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {
 		})
 
 	assert.True(ok, "reuse file task")
-	var p *FilePeerTaskProgress
+	var p *FileTaskProgress
 	select {
 	case p = <-progress:
 	default:
@@ -408,9 +408,9 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	progress, _, err := ptm.StartFilePeerTask(
+	progress, _, err := ptm.StartFileTask(
 		context.Background(),
-		&FilePeerTaskRequest{
+		&FileTaskRequest{
 			PeerTaskRequest: scheduler.PeerTaskRequest{
 				Url: "http://localhost/test/data",
 				UrlMeta: &base.UrlMeta{
@@ -423,7 +423,7 @@ func TestPeerTaskManager_StartFilePeerTask(t *testing.T) {
 		})
 	assert.Nil(err, "start file peer task")
 
-	var p *FilePeerTaskProgress
+	var p *FileTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
@@ -490,9 +490,9 @@ func TestPeerTaskManager_StartFilePeerTask_SizeScope_Tiny(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	progress, _, err := ptm.StartFilePeerTask(
+	progress, _, err := ptm.StartFileTask(
 		context.Background(),
-		&FilePeerTaskRequest{
+		&FileTaskRequest{
 			PeerTaskRequest: scheduler.PeerTaskRequest{
 				Url: "http://localhost/test/data",
 				UrlMeta: &base.UrlMeta{
@@ -505,7 +505,7 @@ func TestPeerTaskManager_StartFilePeerTask_SizeScope_Tiny(t *testing.T) {
 		})
 	assert.Nil(err, "start file peer task")
 
-	var p *FilePeerTaskProgress
+	var p *FileTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
@@ -576,15 +576,14 @@ func TestPeerTaskManager_StartStreamPeerTask(t *testing.T) {
 		},
 	}
 
-	r, _, err := ptm.StartStreamPeerTask(
+	r, _, err := ptm.StartStreamTask(
 		context.Background(),
-		&scheduler.PeerTaskRequest{
-			Url: "http://localhost/test/data",
-			UrlMeta: &base.UrlMeta{
+		&StreamTaskRequest{
+			URL: "http://localhost/test/data",
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId:   peerID,
-			PeerHost: &scheduler.PeerHost{},
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 
@@ -641,15 +640,14 @@ func TestPeerTaskManager_StartStreamPeerTask_SizeScope_Tiny(t *testing.T) {
 		},
 	}
 
-	r, _, err := ptm.StartStreamPeerTask(
+	r, _, err := ptm.StartStreamTask(
 		context.Background(),
-		&scheduler.PeerTaskRequest{
-			Url: "http://localhost/test/data",
-			UrlMeta: &base.UrlMeta{
+		&StreamTaskRequest{
+			URL: "http://localhost/test/data",
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId:   peerID,
-			PeerHost: &scheduler.PeerHost{},
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 
@@ -717,15 +715,14 @@ func TestPeerTaskManager_StartStreamPeerTask_BackSource(t *testing.T) {
 		},
 	}
 
-	r, _, err := ptm.StartStreamPeerTask(
+	r, _, err := ptm.StartStreamTask(
 		context.Background(),
-		&scheduler.PeerTaskRequest{
-			Url: ts.URL,
-			UrlMeta: &base.UrlMeta{
+		&StreamTaskRequest{
+			URL: ts.URL,
+			URLMeta: &base.UrlMeta{
 				Tag: "d7y-test",
 			},
-			PeerId:   peerID,
-			PeerHost: &scheduler.PeerHost{},
+			PeerID: peerID,
 		})
 	assert.Nil(err, "start stream peer task")
 
