@@ -415,8 +415,8 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 			},
 			UnknownLength: false,
 			Reader:        bytes.NewBuffer(pt.tinyData.Content),
-			GenPieceDigest: func(n int64) bool {
-				return true
+			GenPieceDigest: func(n int64) (int32, bool) {
+				return 1, true
 			},
 		})
 	if err != nil {
