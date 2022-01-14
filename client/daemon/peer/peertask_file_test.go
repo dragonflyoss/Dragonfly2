@@ -71,6 +71,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			backSource:         true,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
@@ -103,12 +104,14 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 		})
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 			computePieceSize: func(contentLength int64) uint32 {
@@ -186,6 +189,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
 			backSource:         true,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 
@@ -219,12 +223,14 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 		})
 
 	ptm := &peerTaskManager{
+		calculateDigest: true,
 		host: &scheduler.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
+			calculateDigest: true,
 			storageManager:  storageManager,
 			pieceDownloader: downloader,
 			computePieceSize: func(contentLength int64) uint32 {
