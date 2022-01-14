@@ -208,15 +208,12 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	meta.Tag = tag
 	meta.Filter = filter
 
-	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
+	body, attr, err := rt.peerTaskManager.StartStreamTask(
 		req.Context(),
-		&scheduler.PeerTaskRequest{
-			Url:         url,
-			UrlMeta:     meta,
-			PeerId:      peerID,
-			PeerHost:    rt.peerHost,
-			HostLoad:    nil,
-			IsMigrating: false,
+		&peer.StreamTaskRequest{
+			URL:     url,
+			URLMeta: meta,
+			PeerID:  peerID,
 		},
 	)
 	if err != nil {
