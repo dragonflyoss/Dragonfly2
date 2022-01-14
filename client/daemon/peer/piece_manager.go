@@ -181,54 +181,6 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 	return result, nil
 }
 
-//func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
-//	err := peerTask.ReportPieceResult(
-//		&pieceTaskResult{
-//			piece: piece,
-//			pieceResult: &scheduler.PieceResult{
-//				TaskId:        peerTask.GetTaskID(),
-//				SrcPid:        peerTask.GetPeerID(),
-//				DstPid:        dstPid,
-//				PieceInfo:     piece,
-//				BeginTime:     uint64(start),
-//				EndTime:       uint64(end),
-//				Success:       true,
-//				Code:          base.Code_Success,
-//				HostLoad:      nil,                // TODO(jim): update host load
-//				FinishedCount: piece.PieceNum + 1, // update by peer task
-//				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
-//			},
-//			err: nil,
-//		})
-//	if err != nil {
-//		peerTask.Log().Errorf("report piece task error: %v", err)
-//	}
-//}
-//
-//func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error, notRetry bool) {
-//	err = peerTask.ReportPieceResult(
-//		&pieceTaskResult{
-//			piece: piece,
-//			pieceResult: &scheduler.PieceResult{
-//				TaskId:        peerTask.GetTaskID(),
-//				SrcPid:        peerTask.GetPeerID(),
-//				DstPid:        dstPid,
-//				PieceInfo:     piece,
-//				BeginTime:     uint64(start),
-//				EndTime:       uint64(end),
-//				Success:       false,
-//				Code:          base.Code_ClientPieceDownloadFail,
-//				HostLoad:      nil,
-//				FinishedCount: 0, // update by peer task
-//			},
-//			err:      err,
-//			notRetry: notRetry,
-//		})
-//	if err != nil {
-//		peerTask.Log().Errorf("report piece task error: %v", err)
-//	}
-//}
-
 func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 	return pm.storageManager.ReadPiece(ctx, req)
 }

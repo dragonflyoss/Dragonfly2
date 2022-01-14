@@ -121,7 +121,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	req := &FilePeerTaskRequest{
+	req := &FileTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url: "http://localhost/test/data",
 			UrlMeta: &base.UrlMeta{
@@ -139,7 +139,7 @@ func TestFilePeerTask_BackSource_WithContentLength(t *testing.T) {
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")
 
-	var p *FilePeerTaskProgress
+	var p *FileTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {
@@ -237,7 +237,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	req := &FilePeerTaskRequest{
+	req := &FileTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url: "http://localhost/test/data",
 			UrlMeta: &base.UrlMeta{
@@ -255,7 +255,7 @@ func TestFilePeerTask_BackSource_WithoutContentLength(t *testing.T) {
 	progress, err := pt.Start(ctx)
 	assert.Nil(err, "start file peer task")
 
-	var p *FilePeerTaskProgress
+	var p *FileTaskProgress
 	for p = range progress {
 		assert.True(p.State.Success)
 		if p.PeerTaskDone {

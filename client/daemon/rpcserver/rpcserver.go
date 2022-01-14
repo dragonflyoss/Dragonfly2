@@ -136,7 +136,7 @@ func (m *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
 	m.Keep()
 	// init peer task request, peer uses different peer id to generate every request
-	peerTask := &peer.FilePeerTaskRequest{
+	peerTask := &peer.FileTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,
 			UrlMeta:  req.UrlMeta,
@@ -151,7 +151,7 @@ func (m *server) Download(ctx context.Context,
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
-	peerTaskProgress, tiny, err := m.peerTaskManager.StartFilePeerTask(ctx, peerTask)
+	peerTaskProgress, tiny, err := m.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
 		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
