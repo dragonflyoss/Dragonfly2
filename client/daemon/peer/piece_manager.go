@@ -443,6 +443,10 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			pt.ReportPieceResult(request, result, err)
 			return err
 		}
+		// content length is aligning at piece size
+		if result.Size == 0 {
+			break
+		}
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
 		pt.ReportPieceResult(request, result, nil)
 		break

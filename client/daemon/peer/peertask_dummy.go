@@ -58,6 +58,7 @@ type dummyPeerPacketStream struct {
 }
 
 func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
+	// TODO set base.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
 	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 }
 
