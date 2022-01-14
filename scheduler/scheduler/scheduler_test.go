@@ -352,7 +352,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			name: "peer is bad node",
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.FSM.SetState(resource.PeerStateFailed)
+				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				peer.Task.StorePeer(mockPeer)
 			},
 			expect: func(t *testing.T, parent *resource.Peer, ok bool) {

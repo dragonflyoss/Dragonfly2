@@ -193,7 +193,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
 				mockTask.ContentLength.Store(1)
 				mockTask.DirectPiece = []byte{1}
-				ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1)
+				gomock.InOrder(
+					ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1),
+					ms.LoadOrStoreHost(context.Background(), req).Return(mockHost, true).Times(1),
+					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
+				)
 			},
 			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)

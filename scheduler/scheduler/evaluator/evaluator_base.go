@@ -32,10 +32,10 @@ const (
 	finishedPieceWeight float64 = 0.3
 
 	// Free load weight
-	freeLoadWeight = 0.25
+	freeLoadWeight = 0.2
 
 	// host type affinity weight
-	hostTypeAffinityWeight = 0.15
+	hostTypeAffinityWeight = 0.2
 
 	// IDC affinity weight
 	idcAffinityWeight = 0.15
@@ -121,7 +121,8 @@ func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
 	// peer will be scheduled to cdn first,
 	// otherwise it will be scheduled to dfdaemon first
 	if peer.Host.IsCDN {
-		if peer.FSM.Is(resource.PeerStateRunning) {
+		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
+			peer.FSM.Is(resource.PeerStateRunning) {
 			return maxScore
 		}
 

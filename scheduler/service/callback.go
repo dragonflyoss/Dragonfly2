@@ -143,12 +143,28 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
+	case resource.PeerStateReceivedTiny:
+		// When the task is tiny,
+		// the peer data has already returned to the parent when registering
+		peer.Log.Info("file type is tiny, peer data has already returned to the parent when registering")
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
 		peer.Log.Info("file type is small, peer has already returned to the parent when registering")
-		return
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
 	case resource.PeerStateReceivedNormal:
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
+
 		// It’s not a case of back-to-source or small task downloading,
 		// to help peer to schedule the parent node
 		blocklist := set.NewSafeSet()
@@ -162,15 +178,6 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 func (c *callback) EndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
-	// When the first piece is downloaded successfully,
-	// peer state set to PeerEventDownload to be consistent with the CDN.
-	if peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedSmall) {
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			return
-		}
-	}
-
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))

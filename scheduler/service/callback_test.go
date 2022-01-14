@@ -210,13 +210,23 @@ func TestCallback_BeginOfPiece(t *testing.T) {
 			},
 		},
 		{
+			name: "peer state is PeerStateReceivedTiny",
+			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedTiny)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+			},
+		},
+		{
 			name: "peer state is PeerStateReceivedSmall",
 			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedSmall)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedSmall))
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 			},
 		},
 		{
@@ -229,7 +239,7 @@ func TestCallback_BeginOfPiece(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 			},
 		},
 		{
@@ -273,48 +283,6 @@ func TestCallback_PieceSuccess(t *testing.T) {
 		mock   func(peer *resource.Peer)
 		expect func(t *testing.T, peer *resource.Peer)
 	}{
-		{
-			name: "piece success and peer state is PeerStateReceivedNormal",
-			piece: &rpcscheduler.PieceResult{
-				PieceInfo: &base.PieceInfo{
-					PieceNum: 0,
-					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
-				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
-			},
-			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer) {
-				peer.FSM.SetState(resource.PeerStateReceivedNormal)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				assert.Equal(peer.Pieces.Count(), uint(1))
-				assert.Equal(peer.PieceCosts(), []int64{1})
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-			},
-		},
-		{
-			name: "piece success and peer state is PeerStateReceivedSmall",
-			piece: &rpcscheduler.PieceResult{
-				PieceInfo: &base.PieceInfo{
-					PieceNum: 0,
-					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
-				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
-			},
-			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer) {
-				peer.FSM.SetState(resource.PeerStateReceivedSmall)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				assert.Equal(peer.Pieces.Count(), uint(1))
-				assert.Equal(peer.PieceCosts(), []int64{1})
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-			},
-		},
 		{
 			name: "piece success",
 			piece: &rpcscheduler.PieceResult{
