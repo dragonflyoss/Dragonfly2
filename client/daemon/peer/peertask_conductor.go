@@ -630,8 +630,8 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	}
 
 	if result, err := pt.pieceManager.DownloadPiece(ctx, request); err == nil {
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 		pt.reportSuccessResult(request, result)
+		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 
 		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
 		span.End()
@@ -924,8 +924,8 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 				continue
 			} else {
 				// broadcast success piece
-				pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 				pt.reportSuccessResult(request, result)
+				pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 			}
 
 			span.SetAttributes(config.AttributePieceSuccess.Bool(true))

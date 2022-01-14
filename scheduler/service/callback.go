@@ -197,8 +197,6 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node
 	switch piece.Code {
-	case base.Code_ClientWaitPieceReady:
-		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)

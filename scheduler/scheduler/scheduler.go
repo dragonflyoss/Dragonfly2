@@ -144,10 +144,10 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		parents = append(parents, parent)
-		peer.Log.Infof("parent %s is selected", parent.ID)
 		return true
 	})
 
+	peer.Log.Infof("candidate parents include %#v", parents)
 	return parents
 }
 
