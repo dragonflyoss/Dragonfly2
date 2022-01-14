@@ -150,7 +150,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateReceivedSmall},
 			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
 			{Name: PeerEventDownload, Src: []string{PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
-			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateRunning}, Dst: PeerStateBackToSource},
+			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
 			{Name: PeerEventDownloadSucceeded, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateSucceeded},
 			{Name: PeerEventDownloadFailed, Src: []string{
 				PeerStatePending, PeerStateReceivedSmall, PeerStateReceivedNormal,

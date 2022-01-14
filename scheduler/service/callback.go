@@ -146,17 +146,11 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			return
-		}
+		peer.Log.Info("file type is small, peer has already returned to the parent when registering")
+		return
 	case resource.PeerStateReceivedNormal:
 		// It’s not a case of back-to-source or small task downloading,
 		// to help peer to schedule the parent node
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			return
-		}
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
 		c.ScheduleParent(ctx, peer, blocklist)
@@ -168,6 +162,15 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 func (c *callback) EndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 func (c *callback) PieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
+	// When the first piece is downloaded successfully,
+	// peer state set to PeerEventDownload to be consistent with the CDN.
+	if peer.FSM.Is(resource.PeerStateReceivedNormal) || peer.FSM.Is(resource.PeerStateReceivedSmall) {
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
+	}
+
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))
@@ -197,8 +200,6 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node
 	switch piece.Code {
-	case base.Code_ClientWaitPieceReady:
-		return
 	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)

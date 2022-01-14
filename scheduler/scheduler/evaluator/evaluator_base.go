@@ -86,7 +86,7 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 
 	return finishedPieceWeight*calculatePieceScore(parent, child, totalPieceCount) +
 		freeLoadWeight*calculateFreeLoadScore(parent.Host) +
-		hostTypeAffinityWeight*calculateHostTypeAffinityScore(parent.Host) +
+		hostTypeAffinityWeight*calculateHostTypeAffinityScore(parent) +
 		idcAffinityWeight*calculateIDCAffinityScore(parent.Host, child.Host) +
 		netTopologyAffinityWeight*calculateMultiElementAffinityScore(parent.Host.NetTopology, child.Host.NetTopology) +
 		locationAffinityWeight*calculateMultiElementAffinityScore(parent.Host.Location, child.Host.Location)
@@ -116,14 +116,19 @@ func calculateFreeLoadScore(host *resource.Host) float64 {
 }
 
 // calculateHostTypeAffinityScore 0.0~1.0 larger and better
-func calculateHostTypeAffinityScore(host *resource.Host) float64 {
-	// The selected priority of CDN is lower,
-	// because CDN download resources are reserved for the first download as much as possible
-	if host.IsCDN {
+func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
+	// When the task is downloaded for the first time,
+	// peer will be scheduled to cdn first,
+	// otherwise it will be scheduled to dfdaemon first
+	if peer.Host.IsCDN {
+		if peer.FSM.Is(resource.PeerStateRunning) {
+			return maxScore
+		}
+
 		return minScore
 	}
 
-	return maxScore
+	return maxScore * 0.5
 }
 
 // calculateIDCAffinityScore 0.0~1.0 larger and better

@@ -27,7 +27,7 @@ scheduler:
   # 单个任务允许客户端回源的数量
   backSourceCount: 3
   # 调度重试次数限制
-  retryLimit: 5
+  retryLimit: 20
   # 调度重试时间间隔
   retryInterval: 200ms
   # 数据回收策略

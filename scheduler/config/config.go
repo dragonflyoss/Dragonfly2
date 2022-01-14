@@ -64,7 +64,7 @@ func New() *Config {
 		Scheduler: &SchedulerConfig{
 			Algorithm:       "default",
 			BackSourceCount: 3,
-			RetryLimit:      5,
+			RetryLimit:      20,
 			RetryInterval:   200 * time.Millisecond,
 			GC: &GCConfig{
 				PeerGCInterval: 10 * time.Minute,
