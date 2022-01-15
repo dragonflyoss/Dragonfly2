@@ -17,13 +17,14 @@
 package transfer
 
 import (
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
 
 var (
 	// DefaultUnTransferableCodes is a set of codes that should not transfer server node.
-	DefaultUnTransferableCodes = []codes.Code{codes.FailedPrecondition}
+	DefaultUnTransferableCodes = []codes.Code{codes.Code(base.Code_ServerUnavailable)}
 
 	defaultOptions = &options{
 		codes: DefaultUnTransferableCodes,

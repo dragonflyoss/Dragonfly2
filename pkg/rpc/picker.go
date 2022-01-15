@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"sync"
 
+	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/serialx/hashring"
@@ -88,12 +89,13 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 		// target address is specified
 		if pickRequest.TargetAddr != "" {
 			if pickRequest.FailedNodes.Has(pickRequest.TargetAddr) {
-				err = status.Errorf(codes.FailedPrecondition, "targetAddr %s is in failedNodes: %s", pickRequest.TargetAddr, pickRequest.FailedNodes)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "targetAddr %s is in failedNodes: %s", pickRequest.TargetAddr,
+					pickRequest.FailedNodes)
 				return
 			}
 			sc, ok := p.subConns[pickRequest.TargetAddr]
 			if !ok {
-				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
 			if p.scStates[pickRequest.TargetAddr] == connectivity.TransientFailure {
@@ -108,21 +110,21 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 		// rpc call is required to stick to hashKey
 		if pickRequest.IsStick == true {
 			if pickRequest.HashKey == "" {
-				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty")
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
 			targetAddr, ok := p.pickHistory[pickRequest.HashKey]
 			if !ok {
-				err = status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history", pickRequest.HashKey)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "rpc call is required to stick to hashKey %s, but cannot find it in pick history", pickRequest.HashKey)
 				return
 			}
 			if pickRequest.FailedNodes.Has(targetAddr) {
-				err = status.Errorf(codes.FailedPrecondition, "stick targetAddr %s is in failedNodes: %s", targetAddr, pickRequest.FailedNodes)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "stick targetAddr %s is in failedNodes: %s", targetAddr, pickRequest.FailedNodes)
 				return
 			}
 			sc, ok := p.subConns[targetAddr]
 			if !ok {
-				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
 
@@ -143,7 +145,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 		}
 		targetAddrs, ok := p.hashRing.GetNodes(key, p.hashRing.Size())
 		if !ok {
-			err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
+			err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "failed to get available target nodes")
 			return
 		}
 		for _, addr := range targetAddrs {
@@ -153,7 +155,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			}
 		}
 		if targetAddr == "" {
-			err = status.Errorf(codes.FailedPrecondition, "all server nodes have tried but failed")
+			err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "all server nodes have tried but failed")
 			return
 		}
 		ret.SubConn = p.subConns[targetAddr]
@@ -164,7 +166,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	key := uuid.Generate().String()
 	targetAddr, ok = p.hashRing.GetNode(key)
 	if !ok {
-		err = status.Errorf(codes.FailedPrecondition, "failed to get available target nodes")
+		err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "failed to get available target nodes")
 		return
 	}
 	ret.SubConn = p.subConns[targetAddr]
