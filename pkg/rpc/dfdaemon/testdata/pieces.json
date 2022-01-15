@@ -1,8 +1,5 @@
 {
   "aaaaaaaaaaaaaaa": {
-    "task_id": "peer1",
-    "dst_pid": "host1",
-    "dst_addr": "dest_addr",
     "piece_infos": [
       {
         "piece_num": 0,
@@ -58,9 +55,6 @@
     "total_piece": 6
   },
   "bbbbbbbbbbbbbbb": {
-    "task_id": "peer2",
-    "dst_pid": "host2",
-    "dst_addr": "dest_addr",
     "piece_infos": [
       {
         "piece_num": 0,

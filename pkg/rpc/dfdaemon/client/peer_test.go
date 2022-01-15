@@ -23,6 +23,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -30,6 +31,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -74,6 +77,9 @@ func (s pieceTaskServer) GetPieceTasks(ctx context.Context, request *base.PieceT
 			count++
 		}
 	}
+	piecePacket.TaskId = request.TaskId
+	piecePacket.DstPid = request.DstPid
+	piecePacket.DstAddr = s.addr
 	pp := &base.PiecePacket{
 		TaskId:        request.TaskId,
 		DstPid:        request.DstPid,
@@ -103,9 +109,10 @@ func newTestPieceTaskServer(addr string, piecePacket map[string]*base.PiecePacke
 }
 
 type pieceTaskServerData struct {
-	servers     []*grpc.Server
-	serverImpls []*pieceTaskServer
-	addresses   []string
+	servers           []*grpc.Server
+	daemonServerImpls []*pieceTaskServer
+	cdnServerImpls    []*pieceTaskServer
+	addresses         []string
 }
 
 func (t *pieceTaskServerData) cleanup() {
@@ -122,6 +129,7 @@ func startTestPieceTaskServers(daemonServerCount, cdnServerCount int) (_ *pieceT
 			t.cleanup()
 		}
 	}()
+	// start daemonServerCount daemon server
 	for i := 0; i < daemonServerCount; i++ {
 		lis, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
@@ -132,7 +140,7 @@ func startTestPieceTaskServers(daemonServerCount, cdnServerCount int) (_ *pieceT
 		sImpl := newTestPieceTaskServer(lis.Addr().String(), piecePackets)
 		dfdaemon.RegisterDaemonServer(s, sImpl)
 		t.servers = append(t.servers, s)
-		t.serverImpls = append(t.serverImpls, sImpl)
+		t.daemonServerImpls = append(t.daemonServerImpls, sImpl)
 		t.addresses = append(t.addresses, lis.Addr().String())
 
 		go func(s *grpc.Server, l net.Listener) {
@@ -141,7 +149,7 @@ func startTestPieceTaskServers(daemonServerCount, cdnServerCount int) (_ *pieceT
 			}
 		}(s, lis)
 	}
-
+	// start cdnServerCount cdn server
 	for i := 0; i < cdnServerCount; i++ {
 		lis, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
@@ -152,7 +160,7 @@ func startTestPieceTaskServers(daemonServerCount, cdnServerCount int) (_ *pieceT
 		sImpl := newTestPieceTaskServer(lis.Addr().String(), piecePackets)
 		cdnsystem.RegisterSeederServer(s, sImpl)
 		t.servers = append(t.servers, s)
-		t.serverImpls = append(t.serverImpls, sImpl)
+		t.cdnServerImpls = append(t.cdnServerImpls, sImpl)
 		t.addresses = append(t.addresses, lis.Addr().String())
 
 		go func(s *grpc.Server, l net.Listener) {
@@ -178,46 +186,105 @@ func TestElasticClient(t *testing.T) {
 	}
 	defer client.Close()
 
-	testTaskID := "aaaaaaaaaaaaaaa"
-	req := &base.PieceTaskRequest{
+	var server *server
+	var testTaskID string
+	//
+	//// get piece tasks from valid cdn, should success
+	testTaskID = "aaaaaaaaaaaaaaa"
+	server = resolveServer(testServers.cdnServerImpls[0].addr)
+	var startNum, limit uint32 = 0, 3
+	piecePacket, err := client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
+		Ip:      server.ip,
+		RpcPort: server.port,
+		PeerId:  "xxx_CDN",
+	}, &base.PieceTaskRequest{
+		TaskId:   testTaskID,
+		SrcPid:   "peer1",
+		DstPid:   "peer2",
+		StartNum: startNum,
+		Limit:    limit,
+	})
+	if err != nil {
+		t.Fatalf("failed to get piece tasks from cdn %s, err: %v", server, err)
+	}
+	wantPiecePacket := testServers.cdnServerImpls[0].piecePacket[testTaskID]
+	if !cmp.Equal(piecePacket, wantPiecePacket, cmpopts.IgnoreUnexported(base.PiecePacket{}), cmpopts.IgnoreFields(base.PiecePacket{}, "PieceInfos")) {
+		t.Fatalf("piece tasks is not same with expected, expected piece tasks: %v, actual: %v", wantPiecePacket, piecePacket)
+	}
+	if !cmp.Equal(piecePacket.PieceInfos, wantPiecePacket.PieceInfos[startNum:limit], cmpopts.IgnoreTypes(base.PieceInfo{})) {
+		t.Fatalf("piece tasks is not same with expected, expected piece tasks: %v, actual: %v", wantPiecePacket.PieceInfos[startNum:limit], piecePacket.PieceInfos)
+	}
+
+	// get piece tasks from valid daemon, should success
+	testTaskID = "bbbbbbbbbbbbbbb"
+	server = resolveServer(testServers.daemonServerImpls[0].addr)
+	piecePacket, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
+		Ip:      server.ip,
+		RpcPort: server.port,
+		PeerId:  "xxxx",
+	}, &base.PieceTaskRequest{
+		TaskId:   testTaskID,
+		SrcPid:   "peer1",
+		DstPid:   "peer2",
+		StartNum: 0,
+		Limit:    0,
+	})
+	if err != nil {
+		t.Fatalf("failed to get piece tasks from dfdaemon %s, err: %v", server, err)
+	}
+	wantPiecePacket = testServers.daemonServerImpls[0].piecePacket[testTaskID]
+	if !cmp.Equal(piecePacket, wantPiecePacket, cmpopts.IgnoreUnexported(base.PiecePacket{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+		t.Fatalf("piece packet is not same with expected, expected piece tasks: %v, actual: %v", wantPiecePacket, piecePacket)
+	}
+
+	// get piece tasks from inValid cdn, should fail
+	_, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
+		Ip:      "1.1.1.1",
+		RpcPort: 80,
+		PeerId:  "xxx_CDN",
+	}, &base.PieceTaskRequest{
+		TaskId:   testTaskID,
+		SrcPid:   "peer1",
+		DstPid:   "peer2",
+		StartNum: 0,
+		Limit:    0,
+	})
+	if err == nil || status.Code(err) != codes.NotFound {
+		//t.Fatalf("")
+	}
+	_, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
+		Ip:      "1.1.1.1",
+		RpcPort: 80,
+		PeerId:  "xxx_CDN",
+	}, &base.PieceTaskRequest{
 		TaskId:   testTaskID,
 		SrcPid:   "peer1",
 		DstPid:   "peer2",
 		StartNum: 0,
 		Limit:    3,
-	}
-
-	//
-	_, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
-		Ip:      "1.1.1.1",
-		RpcPort: 80,
-		PeerId:  "xxx_CDN",
-	}, req)
+	})
 	if err == nil || status.Code(err) != codes.NotFound {
 		t.Fatalf("")
 	}
-	// get piece from CDN
-	//piecePacket, err := client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
-	//	Ip:      "",
-	//	RpcPort: 0,
-	//	PeerId:  "",
-	//}, req)
-	//
-	//if err != nil {
-	//	t.Fatalf("failed to call GetPieceTasks: %v", err)
-	//}
-	//if len(piecePacket.PieceInfos) != int(req.Limit) {
-	//	t.Fatalf("piece count is not same with req, want: %d, actual: %d", req.Limit, len(piecePacket.PieceInfos))
-	//}
-	//verifyPieces := test.serverImpls[0].piecePacket[testTaskID].PieceInfos
-	//var pieceIndex = 0
-	//for {
-	//	if !cmp.Equal(piecePacket.PieceInfos[pieceIndex], verifyPieces[pieceIndex], cmpopts.IgnoreUnexported(base.PieceInfo{})) {
-	//		t.Fatalf("failed to verify piece, want:%v, actual: %v", verifyPieces[pieceIndex], piecePacket.PieceInfos[pieceIndex])
-	//	}
-	//	pieceIndex++
-	//	if pieceIndex == int(req.Limit) {
-	//		break
-	//	}
-	//}
+}
+
+type server struct {
+	addr string
+	ip   string
+	port int32
+}
+
+func (s *server) String() string {
+	return s.addr
+}
+
+func resolveServer(addr string) *server {
+	host := strings.Split(addr, ":")
+	ip := host[0]
+	port, _ := strconv.Atoi(host[1])
+	return &server{
+		addr: addr,
+		ip:   ip,
+		port: int32(port),
+	}
 }

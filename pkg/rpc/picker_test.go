@@ -21,14 +21,16 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"testing"
+	"time"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
-	"testing"
-	"time"
 )
 
 // testSubConn contains a list of SubConns to be used in tests.
@@ -90,7 +92,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 	tests := []struct {
 		name            string
 		picker          balancer.Picker
-		pickReq         *PickRequest
+		pickReq         *pickreq.PickRequest
 		wantSC          balancer.SubConn
 		wantErr         error
 		wantSCToConnect balancer.SubConn
@@ -98,7 +100,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name:   "pick specified target success",
 			picker: newTestPicker([]connectivity.State{connectivity.Ready, connectivity.Idle}, map[string]string{}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "",
 				FailedNodes: nil,
 				IsStick:     false,
@@ -109,7 +111,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name:   "pick specified target not found",
 			picker: newTestPicker([]connectivity.State{connectivity.Ready, connectivity.Idle}, map[string]string{}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "",
 				FailedNodes: nil,
 				IsStick:     false,
@@ -122,7 +124,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 			picker: newTestPicker([]connectivity.State{connectivity.Connecting, connectivity.Idle}, map[string]string{
 				"test1": testSubConns[2].String(),
 			}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "test1",
 				FailedNodes: nil,
 				IsStick:     true,
@@ -133,7 +135,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name:   "pick stick is true and not found hashKey in history",
 			picker: newTestPicker([]connectivity.State{connectivity.Connecting, connectivity.Idle}, map[string]string{}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "test1",
 				FailedNodes: nil,
 				IsStick:     true,
@@ -144,7 +146,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name:   "pick stick is true and not specify hashKey",
 			picker: newTestPicker([]connectivity.State{connectivity.Connecting, connectivity.Idle}, map[string]string{}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "",
 				FailedNodes: nil,
 				IsStick:     true,
@@ -155,7 +157,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name:   "pick result filter out failedNodes",
 			picker: newTestPicker([]connectivity.State{connectivity.Connecting, connectivity.Idle}, map[string]string{}),
-			pickReq: &PickRequest{
+			pickReq: &pickreq.PickRequest{
 				HashKey:     "",
 				FailedNodes: sets.NewString(testSubConns[0].String()),
 				IsStick:     false,
@@ -167,7 +169,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.picker.Pick(balancer.PickInfo{
-				Ctx: NewContext(context.Background(), tt.pickReq),
+				Ctx: pickreq.NewContext(context.Background(), tt.pickReq),
 			})
 			if (err != nil || tt.wantErr != nil) && err.Error() != tt.wantErr.Error() {
 				t.Errorf("Pick() error = %v, wantErr %v", err, tt.wantErr)

@@ -58,7 +58,7 @@ func (dbb *d7yBalancerBuilder) Build(cc balancer.ClientConn, _ balancer.BuildOpt
 
 		subConns:    resolver.NewAddressMap(),
 		scStates:    make(map[balancer.SubConn]connectivity.State),
-		csEvltr:     &balancer.ConnectivityStateEvaluator{},
+		csEvltr:     &ConnectivityStateEvaluator{},
 		pickHistory: make(map[string]string),
 		config:      dbb.config,
 	}
@@ -76,7 +76,7 @@ type d7yBalancer struct {
 	// cc points to the balancer.ClientConn who creates the d7yBalancer.
 	cc balancer.ClientConn
 
-	csEvltr *balancer.ConnectivityStateEvaluator
+	csEvltr *ConnectivityStateEvaluator
 	state   connectivity.State
 
 	subConns    *resolver.AddressMap
@@ -171,18 +171,18 @@ func (b *d7yBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
 
 // regeneratePicker generates a new picker to replace the old one with new data.
 func (b *d7yBalancer) regeneratePicker() {
-	if b.state == connectivity.TransientFailure {
-		b.picker = base.NewErrPicker(b.mergeErrors())
-		return
-	}
+	//if b.state == connectivity.TransientFailure {
+	//	b.picker = base.NewErrPicker(b.mergeErrors())
+	//	return
+	//}
 	availableSubConns := make(map[resolver.Address]balancer.SubConn)
-	scStates := make(map[balancer.SubConn]connectivity.State)
+	scStates := make(map[string]connectivity.State)
 	for _, addr := range b.subConns.Keys() {
 		sci, _ := b.subConns.Get(addr)
 		sc := sci.(balancer.SubConn)
 		if st, ok := b.scStates[sc]; ok && st != connectivity.Shutdown {
 			availableSubConns[addr] = sc
-			scStates[sc] = st
+			scStates[addr.Addr] = st
 		}
 	}
 
@@ -221,9 +221,8 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		}
 		return
 	}
-	if oldS == connectivity.TransientFailure &&
-		(s == connectivity.Connecting || s == connectivity.Idle) {
-		// Once a subConn enters TRANSIENT_FAILURE, ignore subsequent IDLE or
+	if oldS == connectivity.TransientFailure && s == connectivity.Connecting {
+		// Once a subConn enters TRANSIENT_FAILURE, ignore subsequent
 		// CONNECTING transitions to prevent the aggregated state from being
 		// always CONNECTING when many backends exist but are all down.
 		return
@@ -242,10 +241,11 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 	b.state = b.csEvltr.RecordTransition(oldS, s)
 
 	// Regenerate picker when one of the following happens:
-	//  - this sc entered or left shutdown
+	//  - this sc entered or left shutdown/transientFailure/idle status
 	//  - the aggregated state of balancer is TransientFailure
 	//    (may need to update error message)
-	if (s == connectivity.Shutdown) != (oldS == connectivity.Shutdown) || b.state == connectivity.TransientFailure {
+	if (s == connectivity.Shutdown) != (oldS == connectivity.Shutdown) || (s == connectivity.TransientFailure) != (oldS == connectivity.
+		TransientFailure) || (s == connectivity.TransientFailure) != (oldS == connectivity.Idle) || b.state == connectivity.Idle {
 		b.regeneratePicker()
 	}
 
@@ -255,4 +255,57 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 func (b *d7yBalancer) Close() {}
 
 func (b *d7yBalancer) ExitIdle() {
+}
+
+// ConnectivityStateEvaluator takes the connectivity states of multiple SubConns
+// and returns one aggregated connectivity state.
+//
+// It's not thread safe.
+type ConnectivityStateEvaluator struct {
+	numReady            uint64 // Number of addrConns in ready state.
+	numConnecting       uint64 // Number of addrConns in connecting state.
+	numTransientFailure uint64 // Number of addrConns in transient failure state.
+	numIdle             uint64 // Number of addrConns in idle state.
+}
+
+// RecordTransition records state change happening in subConn and based on that
+// it evaluates what aggregated state should be.
+//
+//  - If at least one SubConn in Ready, the aggregated state is Ready;
+//  - Else if at least one SubConn in Connecting, the aggregated state is Connecting;
+//  - Else if at least one SubConn is Idle, the aggregated state is Idle;
+//  - Else if at least one SubConn is TransientFailure, the aggregated state is Transient Failure;
+//  - Else there are no subconns and the aggregated state is Transient Failure
+//
+// Shutdown is not considered.
+func (cse *ConnectivityStateEvaluator) RecordTransition(oldState, newState connectivity.State) connectivity.State {
+	// Update counters.
+	for idx, state := range []connectivity.State{oldState, newState} {
+		updateVal := 2*uint64(idx) - 1 // -1 for oldState and +1 for new.
+		switch state {
+		case connectivity.Ready:
+			cse.numReady += updateVal
+		case connectivity.Connecting:
+			cse.numConnecting += updateVal
+		case connectivity.TransientFailure:
+			cse.numTransientFailure += updateVal
+		case connectivity.Idle:
+			cse.numIdle += updateVal
+		}
+	}
+
+	// Evaluate.
+	if cse.numReady > 0 {
+		return connectivity.Ready
+	}
+	if cse.numConnecting > 0 {
+		return connectivity.Connecting
+	}
+	if cse.numIdle > 0 {
+		return connectivity.Idle
+	}
+	if cse.numTransientFailure > 0 {
+		return connectivity.TransientFailure
+	}
+	return connectivity.TransientFailure
 }

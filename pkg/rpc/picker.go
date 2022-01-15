@@ -36,7 +36,7 @@ var pickerLogger = grpclog.Component("picker")
 
 type d7yPickerBuildInfo struct {
 	subConns    map[resolver.Address]balancer.SubConn
-	scStates    map[balancer.SubConn]connectivity.State
+	scStates    map[string]connectivity.State
 	pickHistory map[string]string
 }
 
@@ -66,7 +66,7 @@ type d7yHashPicker struct {
 	mu          sync.Mutex
 	subConns    map[string]balancer.SubConn // target address string -> balancer.SubConn
 	pickHistory map[string]string           // hashKey -> target address
-	scStates    map[balancer.SubConn]connectivity.State
+	scStates    map[string]connectivity.State
 	hashRing    *hashring.HashRing
 }
 
@@ -96,6 +96,11 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
+			if p.scStates[pickRequest.TargetAddr] == connectivity.TransientFailure {
+				// ac.resetTransport() reset scStates to Idle
+				err = status.Errorf(codes.Unavailable, "cannot establish connection to server %s", pickRequest.TargetAddr)
+				return
+			}
 			ret.SubConn = sc
 			sc.Connect()
 			return
@@ -120,12 +125,18 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.FailedPrecondition, "cannot find target addr %s", pickRequest.TargetAddr)
 				return
 			}
+
+			if p.scStates[targetAddr] == connectivity.TransientFailure {
+				// ac.resetTransport() reset scStates to Idle
+				err = status.Errorf(codes.Unavailable, "cannot establish connection to server %s", pickRequest.TargetAddr)
+				return
+			}
 			ret.SubConn = sc
 			sc.Connect()
 			return
 		}
 		// not require stick
-		// TODO filter out tf state sc
+		// TODO filter out TransientFailure state sc
 		key := uuid.Generate().String()
 		if pickRequest.HashKey != "" {
 			key = pickRequest.HashKey
@@ -136,7 +147,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			return
 		}
 		for _, addr := range targetAddrs {
-			if !pickRequest.FailedNodes.Has(addr) {
+			if !pickRequest.FailedNodes.Has(addr) && p.scStates[addr] != connectivity.TransientFailure {
 				targetAddr = addr
 				break
 			}

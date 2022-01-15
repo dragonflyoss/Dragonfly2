@@ -487,7 +487,7 @@ func TestMigration(t *testing.T) {
 			TaskId:  taskID,
 			Url:     "https://dragonfly.com",
 			UrlMeta: nil,
-		})
+		}, grpc.Peer(&serverPeer))
 
 		if err != nil {
 			t.Fatalf("failed to call ObtainSeeds: %v", err)

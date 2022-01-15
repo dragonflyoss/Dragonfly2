@@ -52,6 +52,11 @@ func UnaryClientInterceptor(optFuncs ...CallOption) grpc.UnaryClientInterceptor 
 				lastErr = currentErr
 				firstErrSet = true
 			}
+			// cs.cc.getTransport failed / can not establish conn with server
+			if p.Addr == nil {
+				logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
+				return lastErr
+			}
 			if isUnTransferableError(currentErr, callOpts) {
 				logTrace(parentCtx, "grpc_transfer server addr: %s, got unable transfer err: %v", p.Addr, currentErr)
 				return lastErr
@@ -89,6 +94,10 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 			if !firstErrSet {
 				lastErr = currentErr
 				firstErrSet = true
+			}
+			if p.Addr == nil {
+				logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
+				return nil, lastErr
 			}
 			if isUnTransferableError(currentErr, callOpts) {
 				logTrace(parentCtx, "grpc_transfer server addr: %s, got unable transfer err: %v", p.Addr, currentErr)
@@ -174,6 +183,10 @@ func (s *clientTransferStream) RecvMsg(m interface{}) error {
 func (s *clientTransferStream) receiveMsgAndIndicateTransfer(m interface{}) (bool, error) {
 	err := s.getStream().RecvMsg(m)
 	if err == nil || err == io.EOF {
+		return false, err
+	}
+	if s.serverPeer.Addr == nil {
+		logTrace(s.parentCtx, "grpc_transfer server addr is empty: %v", err)
 		return false, err
 	}
 	if isUnTransferableError(err, s.callOpts) {

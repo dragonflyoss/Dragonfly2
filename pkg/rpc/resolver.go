@@ -33,25 +33,29 @@ var resolverLogger = grpclog.Component("resolver")
 
 func NewD7yResolver(scheme string, addrs []dfnet.NetAddr) *D7yResolver {
 	return &D7yResolver{
-		scheme: scheme,
-		addrs:  cloneAddresses(addrs),
+		scheme:         scheme,
+		bootstrapAddrs: cloneAddresses(addrs),
 	}
 }
 
 type D7yResolver struct {
 	scheme string
 
-	mu     sync.Mutex
-	target resolver.Target
-	cc     resolver.ClientConn
-	addrs  []dfnet.NetAddr
+	mu              sync.Mutex
+	target          resolver.Target
+	cc              resolver.ClientConn
+	addrs           []dfnet.NetAddr
+	bootstrapAddrs  []dfnet.NetAddr
+	lastResolverErr error
 }
 
 func (r *D7yResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
 	r.target = target
 	r.cc = cc
-	if r.addrs != nil {
-		r.updateAddrs(r.addrs)
+	if r.bootstrapAddrs != nil {
+		if err := r.updateAddrs(r.bootstrapAddrs); err != nil {
+			return nil, err
+		}
 	}
 	return r, nil
 }
@@ -61,17 +65,18 @@ func (r *D7yResolver) Scheme() string {
 }
 
 // UpdateState calls CC.UpdateState.
-func (r *D7yResolver) UpdateState(s resolver.State) {
+func (r *D7yResolver) UpdateState(s resolver.State) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.cc.UpdateState(s)
+	r.lastResolverErr = r.cc.UpdateState(s)
+	return r.lastResolverErr
 }
 
-func (r *D7yResolver) AddAddresses(addrs []dfnet.NetAddr) {
+func (r *D7yResolver) AddAddresses(addrs []dfnet.NetAddr) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if len(addrs) == 0 {
-		return
+		return nil
 	}
 	rAddrs := r.addrs
 	for _, addr := range addrs {
@@ -79,7 +84,7 @@ func (r *D7yResolver) AddAddresses(addrs []dfnet.NetAddr) {
 			rAddrs = append(rAddrs, addr)
 		}
 	}
-	r.updateAddrs(rAddrs)
+	return r.updateAddrs(rAddrs)
 }
 
 func (r *D7yResolver) UpdateAddresses(addrs []dfnet.NetAddr) error {
@@ -88,10 +93,6 @@ func (r *D7yResolver) UpdateAddresses(addrs []dfnet.NetAddr) error {
 	if len(addrs) == 0 {
 		return nil
 	}
-	if isSameAddresses(addrs, r.addrs) {
-		return nil
-	}
-
 	return r.updateAddrs(cloneAddresses(addrs))
 }
 
@@ -105,6 +106,9 @@ func (r *D7yResolver) containsAddr(addr dfnet.NetAddr) bool {
 }
 
 func (r *D7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
+	if isSameAddresses(addrs, r.addrs) {
+		return r.lastResolverErr
+	}
 	addresses := make([]resolver.Address, len(addrs))
 	for i, addr := range addrs {
 		addresses[i] = resolver.Address{Addr: addr.GetEndpoint()}
@@ -114,7 +118,8 @@ func (r *D7yResolver) updateAddrs(addrs []dfnet.NetAddr) error {
 
 	resolverLogger.Infof("resolver update addresses: %s", addresses)
 
-	return r.cc.UpdateState(resolver.State{Addresses: addresses})
+	r.lastResolverErr = r.cc.UpdateState(resolver.State{Addresses: addresses})
+	return r.lastResolverErr
 }
 
 func (r *D7yResolver) ResolveNow(resolver.ResolveNowOptions) {}
