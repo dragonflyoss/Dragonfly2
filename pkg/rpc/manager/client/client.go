@@ -45,6 +45,9 @@ type Client interface {
 	// Get Scheduler and Scheduler cluster configuration
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
 
+	// Get Application configuration
+	GetApplication(*manager.GetApplicationRequest) (*manager.Application, error)
+
 	// Update scheduler configuration
 	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 
@@ -112,6 +115,13 @@ func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Schedu
 	defer cancel()
 
 	return c.ManagerClient.GetScheduler(ctx, req)
+}
+
+func (c *client) GetApplication(req *manager.GetApplicationRequest) (*manager.Application, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.GetApplication(ctx, req)
 }
 
 func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {

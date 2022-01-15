@@ -212,6 +212,11 @@ install-e2e-test:
 	@./hack/install-e2e-test.sh
 .PHONY: install-e2e-test
 
+#  generate protoc
+generate-protoc:
+	@./hack/protoc.sh
+.PHONY: generate-protoc 
+
 # Run E2E tests
 e2e-test: install-e2e-test
 	@ginkgo -v -r --race --failFast test/e2e --trace --progress
@@ -329,4 +334,5 @@ help:
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make generate                       run go generate"
+	@echo "make generate-protoc                generate protoc"
 	@echo "make clean                          clean"

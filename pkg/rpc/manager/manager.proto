@@ -142,16 +142,15 @@ message Application {
   string state = 5;
   string bio = 7;
   int32 port = 8;
-  uint  user_id = 9;
-  string state = 10;
-  bytes user = 11;
-  repeated SchedulerCluster scheduler_cluster = 12;
-  repeated CDNCluster cdn_clusters = 13;
+  uint64  user_id = 9;
+  bytes user = 10;
+  repeated SchedulerCluster scheduler_cluster = 11;
+  repeated CDNCluster cdn_clusters = 12;
 }
 
 message GetApplicationRequest {
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string name = 2 [(validate.rules).string.name = true];
+  string name = 2 [(validate.rules).string = {min_len: 1, max_len: 256}];
 }
 
 // Manager RPC Service 
@@ -169,5 +168,5 @@ service Manager {
   // KeepAlive with manager
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
   // Get Application configuration
-  rpc GetApplication(GetApplicaitonRequest)returns(Application);
+  rpc GetApplication(GetApplicationRequest)returns(Application);
 }
