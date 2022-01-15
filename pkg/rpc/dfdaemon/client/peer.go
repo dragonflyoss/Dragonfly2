@@ -35,7 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func GetElasticClientByAddr(opts ...grpc.DialOption) (ElasticClient, error) {
+func GetElasticClient(opts ...grpc.DialOption) (ElasticClient, error) {
 	resolver := rpc.NewD7yResolver("elastic", []dfnet.NetAddr{})
 
 	dialOpts := append(append(append(
@@ -70,6 +70,8 @@ type elasticClient struct {
 
 type ElasticClient interface {
 	GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+
+	Close() error
 }
 
 func (dc *elasticClient) GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
@@ -87,4 +89,8 @@ func (dc *elasticClient) GetPieceTasks(ctx context.Context, destPeer *scheduler.
 		return dc.cdnClient.GetPieceTasks(ctx, ptr, opts...)
 	}
 	return dc.daemonClient.GetPieceTasks(ctx, ptr, opts...)
+}
+
+func (dc *elasticClient) Close() error {
+	return dc.cc.Close()
 }

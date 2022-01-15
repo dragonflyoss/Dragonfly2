@@ -485,7 +485,7 @@ func TestMigration(t *testing.T) {
 		}
 		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
 		stream, err := client.Download(ctx, &dfdaemon.DownRequest{
-			Url:     "https://dragonfly1.com",
+			Url:     "https://www.dragonfly1.com",
 			UrlMeta: nil,
 		}, grpc.Peer(&serverPeer))
 

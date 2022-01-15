@@ -44,7 +44,7 @@ func UnaryClientInterceptor(optFuncs ...CallOption) grpc.UnaryClientInterceptor 
 		callCtx := parentCtx
 		for {
 			var p peer.Peer
-			currentErr := invoker(parentCtx, method, req, reply, cc, append(grpcOpts, grpc.Peer(&p))...)
+			currentErr := invoker(callCtx, method, req, reply, cc, append(grpcOpts, grpc.Peer(&p))...)
 			if currentErr == nil {
 				return nil
 			}
@@ -240,6 +240,9 @@ func callContext(ctx context.Context, failedPeer peer.Peer) context.Context {
 	if pr.FailedNodes == nil {
 		pr.FailedNodes = sets.NewString()
 	}
-	pr.FailedNodes.Insert(failedPeer.Addr.String())
+	pr.FailedNodes.Insert(pr.TargetAddr)
+	if failedPeer.Addr != nil {
+		pr.FailedNodes.Insert(failedPeer.Addr.String())
+	}
 	return pickreq.NewContext(ctx, pr)
 }
