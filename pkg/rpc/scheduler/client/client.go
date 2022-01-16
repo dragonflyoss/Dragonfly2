@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -93,8 +94,9 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: taskID,
+		IsStick: true,
 	})
-	sc.schedulerClient.ReportPieceResult(ctx, opts...)
+	return sc.schedulerClient.ReportPieceResult(ctx, append(opts, grpc_retry.Disable())...)
 	//, taskID string, ptr *scheduler.PeerTaskRequest
 	//sc.schedulerClient.ReportPieceResult(ctx, opts...)
 	//pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
@@ -104,7 +106,7 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 	//logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
 	// trigger scheduling
-	return sc.schedulerClient.ReportPieceResult(ctx, opts...)
+	//return sc.schedulerClient.ReportPieceResult(ctx, opts...)
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {

@@ -78,6 +78,7 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 		var firstErrSet bool
 		callCtx := parentCtx
 		for {
+			// TODO avoid dead for
 			var p peer.Peer
 			newStreamer, currentErr := streamer(callCtx, desc, cc, method, append(grpcOpts, grpc.Peer(&p))...)
 			if currentErr == nil {
