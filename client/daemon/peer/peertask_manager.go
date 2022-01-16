@@ -60,6 +60,8 @@ type Task interface {
 	Context() context.Context
 	Log() *logger.SugaredLoggerOnWith
 
+	GetStorage() storage.TaskStorageDriver
+	
 	GetPeerID() string
 	GetTaskID() string
 

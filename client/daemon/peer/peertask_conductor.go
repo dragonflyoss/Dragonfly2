@@ -78,6 +78,8 @@ type peerTaskConductor struct {
 	storageManager  storage.Manager
 	peerTaskManager *peerTaskManager
 
+	storage storage.TaskStorageDriver
+
 	// schedule options
 	schedulerOption config.SchedulerOption
 	schedulerClient schedulerclient.SchedulerClient
@@ -288,6 +290,10 @@ func (pt *peerTaskConductor) GetTaskID() string {
 	return pt.taskID
 }
 
+func (pt *peerTaskConductor) GetStorage() storage.TaskStorageDriver {
+	return pt.storage
+}
+
 func (pt *peerTaskConductor) GetContentLength() int64 {
 	return pt.contentLength.Load()
 }
@@ -382,7 +388,8 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	pt.SetContentLength(l)
 	pt.SetTotalPieces(1)
 	ctx := pt.ctx
-	err := pt.peerTaskManager.storageManager.RegisterTask(ctx,
+	var err error
+	pt.storage, err = pt.peerTaskManager.storageManager.RegisterTask(ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.tinyData.PeerID,
@@ -397,7 +404,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
-	n, err := pt.peerTaskManager.storageManager.WritePiece(ctx,
+	n, err := pt.storage.WritePiece(ctx,
 		&storage.WritePieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.tinyData.PeerID,
@@ -621,6 +628,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	}
 
 	request := &DownloadPieceRequest{
+		storage: pt.storage,
 		piece:   pt.singlePiece.PieceInfo,
 		log:     pt.Log(),
 		TaskID:  pt.GetTaskID(),
@@ -1061,9 +1069,9 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	span.End()
 }
 
-func (pt *peerTaskConductor) InitStorage() error {
+func (pt *peerTaskConductor) InitStorage() (err error) {
 	// prepare storage
-	err := pt.storageManager.RegisterTask(pt.ctx,
+	pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
 		storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.GetPeerID(),
@@ -1081,7 +1089,7 @@ func (pt *peerTaskConductor) InitStorage() error {
 
 func (pt *peerTaskConductor) UpdateStorage() error {
 	// update storage
-	err := pt.storageManager.UpdateTask(pt.ctx,
+	err := pt.storage.UpdateTask(pt.ctx,
 		&storage.UpdateTaskRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
@@ -1230,7 +1238,7 @@ func (pt *peerTaskConductor) fail() {
 
 // Validate stores metadata and validates digest
 func (pt *peerTaskConductor) Validate() error {
-	err := pt.peerTaskManager.storageManager.Store(pt.ctx,
+	err := pt.storage.Store(pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.peerID,
@@ -1247,7 +1255,7 @@ func (pt *peerTaskConductor) Validate() error {
 	if !pt.peerTaskManager.calculateDigest {
 		return nil
 	}
-	err = pt.storageManager.ValidateDigest(
+	err = pt.storage.ValidateDigest(
 		&storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),
