@@ -34,12 +34,12 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient
 		return nil, errors.New("address list of cdn is empty")
 	}
 
-	r := rpc.NewD7yResolver("cdn", addrs)
+	resolver := rpc.NewD7yResolver("cdn", addrs)
 
 	dialOpts := append(append(
 		rpc.DefaultClientOpts,
 		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy": "%s"}`, rpc.D7yBalancerPolicy)),
-		grpc.WithResolvers(r)),
+		grpc.WithResolvers(resolver)),
 		opts...)
 
 	// target is "cdnsystem.Seeder" is the cdnsystem._Seeder_serviceDesc.ServiceName
@@ -54,7 +54,7 @@ func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient
 	return &cdnClient{
 		cc:           clientConn,
 		seederClient: cdnsystem.NewSeederClient(clientConn),
-		resolver:     r,
+		resolver:     resolver,
 	}, nil
 }
 
