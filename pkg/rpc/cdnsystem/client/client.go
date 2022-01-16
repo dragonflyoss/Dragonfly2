@@ -20,16 +20,13 @@ import (
 	"context"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 )
 
 func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient, error) {
@@ -80,9 +77,6 @@ type cdnClient struct {
 var _ CDNClient = (*cdnClient)(nil)
 
 func (cc *cdnClient) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_ObtainSeedsClient, error) {
-	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
-	}, opts...)
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: req.TaskId,
 	})
@@ -93,9 +87,6 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: addr.String(),
 	})
-	opts = append([]grpc.CallOption{
-		grpc_retry.WithCodes(append(grpc_retry.DefaultRetriableCodes, codes.Unknown, codes.Internal)...),
-	}, opts...)
 	return cc.seederClient.GetPieceTasks(ctx, req, opts...)
 }
 
