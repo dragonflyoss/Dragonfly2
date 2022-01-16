@@ -23,6 +23,7 @@ import (
 	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/distribution/distribution/v3/uuid"
+	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/balancer/base"
@@ -75,8 +76,8 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	var pickRequest *pickreq.PickRequest
-	pickRequest, ok := pickreq.FromContext(info.Ctx)
 	var targetAddr string
+	pickRequest, ok := pickreq.FromContext(info.Ctx)
 
 	defer func() {
 		if err != nil {
@@ -98,6 +99,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 
 		// target address is specified
 		if pickRequest.TargetAddr != "" {
+			targetAddr = pickRequest.TargetAddr
 			if pickRequest.FailedNodes.Has(pickRequest.TargetAddr) {
 				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "targetAddr %s is in failedNodes: %s", pickRequest.TargetAddr,
 					pickRequest.FailedNodes)
@@ -110,8 +112,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			}
 			if p.scStates[pickRequest.TargetAddr] == connectivity.TransientFailure {
 				// ac.resetTransport() reset scStates to Idle
-				//err = status.Errorf(codes.Unavailable, "cannot establish connection to server %s", pickRequest.TargetAddr)
-				err = status.Error(codes.Unavailable, pickRequest.TargetAddr)
+				err = newUnavailableErr(targetAddr)
 				return
 			}
 			ret.SubConn = sc
@@ -124,7 +125,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "rpc call is required to stick to hashKey, but hashKey is empty")
 				return
 			}
-			targetAddr, ok := p.pickHistory[pickRequest.HashKey]
+			targetAddr, ok = p.pickHistory[pickRequest.HashKey]
 			if !ok {
 				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "rpc call is required to stick to hashKey %s, but cannot find it in pick history", pickRequest.HashKey)
 				return
@@ -142,7 +143,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			if p.scStates[targetAddr] == connectivity.TransientFailure {
 				// ac.resetTransport() reset scStates to Idle
 				// TODO consider change p.scStates[targetAddr] for retry
-				err = status.Error(codes.Unavailable, targetAddr)
+				err = newUnavailableErr(targetAddr)
 				return
 			}
 			ret.SubConn = sc
@@ -171,7 +172,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 		}
 		if p.scStates[targetAddr] == connectivity.TransientFailure {
 			// ac.resetTransport() reset scStates to Idle
-			err = status.Error(codes.Unavailable, targetAddr)
+			err = newUnavailableErr(targetAddr)
 			return
 		}
 		ret.SubConn = p.subConns[targetAddr]
@@ -187,12 +188,22 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 	}
 	if p.scStates[targetAddr] == connectivity.TransientFailure {
 		// ac.resetTransport() reset scStates to Idle
-		err = status.Error(codes.Unavailable, targetAddr)
+		err = newUnavailableErr(targetAddr)
 		return
 	}
 	ret.SubConn = p.subConns[targetAddr]
 	ret.SubConn.Connect()
 	return
+}
+
+func newUnavailableErr(targetAddr string) error {
+	var err error
+	st := status.Newf(codes.Unavailable, "can not establish connection to %s", targetAddr)
+	st, err = st.WithDetails(&anypb.Any{Value: []byte(targetAddr)})
+	if err != nil {
+		return err
+	}
+	return st.Err()
 }
 
 const (

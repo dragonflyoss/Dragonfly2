@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
@@ -258,8 +259,10 @@ func callContext(ctx context.Context, failedPeer peer.Peer, err error) context.C
 		pr.FailedNodes.Insert(failedPeer.Addr.String())
 	}
 	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
-		if st.Message() != "" {
-			pr.FailedNodes.Insert(st.Message())
+		if len(st.Details()) == 1 {
+			if addr, ok := st.Details()[0].(*anypb.Any); ok {
+				pr.FailedNodes.Insert(string(addr.Value))
+			}
 		}
 	}
 	return pickreq.NewContext(ctx, pr)

@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -174,13 +175,15 @@ func startTestPieceTaskServers(daemonServerCount, cdnServerCount int) (_ *pieceT
 }
 
 func TestElasticClient(t *testing.T) {
-	testServers, err := startTestPieceTaskServers(10, 10)
+	testServers, err := startTestPieceTaskServers(5, 5)
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)
 	}
 	defer testServers.cleanup()
 
-	client, err := GetElasticClient()
+	client, err := GetElasticClient(grpc.WithConnectParams(grpc.ConnectParams{
+		MinConnectTimeout: 1 * time.Second,
+	}))
 	if err != nil {
 		t.Fatalf("failed to get daemon client: %v", err)
 	}
@@ -188,8 +191,8 @@ func TestElasticClient(t *testing.T) {
 
 	var server *server
 	var testTaskID string
-	//
-	//// get piece tasks from valid cdn, should success
+
+	// get piece tasks from valid cdn, should success
 	testTaskID = "aaaaaaaaaaaaaaa"
 	server = resolveServer(testServers.cdnServerImpls[0].addr)
 	var startNum, limit uint32 = 0, 3
@@ -237,7 +240,7 @@ func TestElasticClient(t *testing.T) {
 		t.Fatalf("piece packet is not same with expected, expected piece tasks: %v, actual: %v", wantPiecePacket, piecePacket)
 	}
 
-	// get piece tasks from inValid cdn, should fail
+	// get piece tasks from a nonexistent cdn, should fail
 	_, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
 		Ip:      "1.1.1.1",
 		RpcPort: 80,
@@ -249,11 +252,13 @@ func TestElasticClient(t *testing.T) {
 		StartNum: 0,
 		Limit:    0,
 	})
-	if err == nil || status.Code(err) != codes.NotFound {
-		//t.Fatalf("")
+	if err == nil || status.Code(err) != codes.Unavailable {
+		t.Fatalf("get piece tasks should return unavailable error, but got: %v", err)
 	}
+
+	// get piece tasks from a nonexistent cdn, should fail
 	_, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
-		Ip:      "1.1.1.1",
+		Ip:      "2.2.2.2",
 		RpcPort: 80,
 		PeerId:  "xxx_CDN",
 	}, &base.PieceTaskRequest{
@@ -263,8 +268,30 @@ func TestElasticClient(t *testing.T) {
 		StartNum: 0,
 		Limit:    3,
 	})
-	if err == nil || status.Code(err) != codes.NotFound {
-		t.Fatalf("")
+	if err == nil || status.Code(err) != codes.Unavailable {
+		t.Fatalf("get piece tasks should return unavailable error, but got: %v", err)
+	}
+
+	// get piece tasks from valid daemon, should success
+	testTaskID = "bbbbbbbbbbbbbbb"
+	server = resolveServer(testServers.daemonServerImpls[3].addr)
+	piecePacket, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
+		Ip:      server.ip,
+		RpcPort: server.port,
+		PeerId:  "xxxx",
+	}, &base.PieceTaskRequest{
+		TaskId:   testTaskID,
+		SrcPid:   "peer1",
+		DstPid:   "peer2",
+		StartNum: 0,
+		Limit:    0,
+	})
+	if err != nil {
+		t.Fatalf("failed to get piece tasks from dfdaemon %s, err: %v", server, err)
+	}
+	wantPiecePacket = testServers.daemonServerImpls[0].piecePacket[testTaskID]
+	if !cmp.Equal(piecePacket, wantPiecePacket, cmpopts.IgnoreUnexported(base.PiecePacket{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+		t.Fatalf("piece packet is not same with expected, expected piece tasks: %v, actual: %v", wantPiecePacket, piecePacket)
 	}
 }
 
