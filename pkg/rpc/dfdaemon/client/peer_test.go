@@ -50,7 +50,7 @@ type pieceTaskServer struct {
 	addr        string
 }
 
-func (s pieceTaskServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *pieceTaskServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	log.Printf("server %s receive get piece task request %v", s.addr, request)
 	if strings.HasPrefix(request.TaskId, "aaaaaaaaaaaaaaa") {
 		request.TaskId = "aaaaaaaaaaaaaaa"

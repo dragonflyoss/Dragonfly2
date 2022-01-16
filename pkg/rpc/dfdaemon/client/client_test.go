@@ -57,7 +57,7 @@ type testServer struct {
 	addr        string
 }
 
-func (s testServer) Download(request *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) error {
+func (s *testServer) Download(request *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) error {
 	log.Printf("server %s receive Download request %v", s.addr, request)
 	md2, ok := metadata.FromIncomingContext(stream.Context())
 	if ok && md2.Get("excludeaddrs") != nil {
@@ -84,7 +84,7 @@ func (s testServer) Download(request *dfdaemon.DownRequest, stream dfdaemon.Daem
 	return nil
 }
 
-func (s testServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *testServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	log.Printf("server %s receive get piece task request %v", s.addr, request)
 	if strings.HasPrefix(request.TaskId, "aaaaaaaaaaaaaaa") {
 		request.TaskId = "aaaaaaaaaaaaaaa"
@@ -124,7 +124,7 @@ func (s testServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRe
 	return pp, nil
 }
 
-func (s testServer) CheckHealth(ctx context.Context, empty *emptypb.Empty) (*emptypb.Empty, error) {
+func (s *testServer) CheckHealth(ctx context.Context, empty *emptypb.Empty) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
 

@@ -66,7 +66,7 @@ type SchedulerClient interface {
 	// RegisterPeerTask register peer task to scheduler
 	RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// ReportPieceResult IsMigrating of ptr will be set to true
-	ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
+	ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
 
 	ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) error
 
@@ -90,7 +90,11 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	return sc.schedulerClient.RegisterPeerTask(ctx, ptr, opts...)
 }
 
-func (sc *schedulerClient) ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
+		HashKey: taskID,
+	})
+	sc.schedulerClient.ReportPieceResult(ctx, opts...)
 	//, taskID string, ptr *scheduler.PeerTaskRequest
 	//sc.schedulerClient.ReportPieceResult(ctx, opts...)
 	//pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
