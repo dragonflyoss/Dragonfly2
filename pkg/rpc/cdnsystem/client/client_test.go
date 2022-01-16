@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -409,7 +410,10 @@ func TestMigration(t *testing.T) {
 	cdnClient, err := GetClientByAddrs([]dfnet.NetAddr{
 		{Addr: test.addresses[0]},
 		{Addr: test.addresses[1]},
-		{Addr: test.addresses[2]}})
+		{Addr: test.addresses[2]}},
+		grpc.WithConnectParams(grpc.ConnectParams{
+			MinConnectTimeout: 1 * time.Second,
+		}))
 	if err != nil {
 		t.Fatalf("failed to dial: %v", err)
 	}
@@ -473,6 +477,40 @@ func TestMigration(t *testing.T) {
 		}
 	}
 	{
+		// all server node failed
+		var taskID = "aaaaaaaaaaaaaaa"
+		serverHashRing := hashring.New(test.addresses)
+		candidateAddrs, _ := serverHashRing.GetNodes(taskID, len(test.servers))
+		var serverPeer peer.Peer
+		var excludeAddrs []string
+		for _, addr := range candidateAddrs {
+			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
+		}
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
+		stream, err := cdnClient.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+			TaskId:  taskID,
+			Url:     "https://dragonfly.com",
+			UrlMeta: nil,
+		}, grpc.Peer(&serverPeer))
+
+		if err != nil {
+			t.Fatalf("failed to call ObtainSeeds: %v", err)
+		}
+		_, err = stream.Recv()
+		if err == nil || !cmp.Equal(err.Error(), status.Errorf(codes.NotFound, "task not found").Error()) {
+			t.Fatalf("obtain seeds want err task not found, but got %v", err)
+		}
+		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+		}
+	}
+	{
+		// add some unavailable servers
+		cdnClient.UpdateAddresses(append([]dfnet.NetAddr{
+			{Addr: test.addresses[0]},
+			{Addr: test.addresses[1]},
+			{Addr: test.addresses[2]},
+			{Addr: "2.2.2.2:88"}, {Addr: "4.4.4.4:88"}}))
 		// all server node failed
 		var taskID = "aaaaaaaaaaaaaaa"
 		serverHashRing := hashring.New(test.addresses)

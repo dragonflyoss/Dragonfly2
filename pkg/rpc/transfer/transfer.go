@@ -53,15 +53,15 @@ func UnaryClientInterceptor(optFuncs ...CallOption) grpc.UnaryClientInterceptor 
 				firstErrSet = true
 			}
 			// cs.cc.getTransport failed / can not establish conn with server
-			if p.Addr == nil {
-				logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
-				return lastErr
-			}
+			//if p.Addr == nil {
+			//	logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
+			//	return lastErr
+			//}
 			if isUnTransferableError(currentErr, callOpts) {
 				logTrace(parentCtx, "grpc_transfer server addr: %s, got unable transfer err: %v", p.Addr, currentErr)
 				return lastErr
 			}
-			callCtx = callContext(callCtx, p)
+			callCtx = callContext(callCtx, p, currentErr)
 			lastErr = currentErr
 		}
 	}
@@ -95,15 +95,15 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 				lastErr = currentErr
 				firstErrSet = true
 			}
-			if p.Addr == nil {
-				logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
-				return nil, lastErr
-			}
+			//if p.Addr == nil {
+			//	logTrace(parentCtx, "grpc_transfer server addr is empty: %v", currentErr)
+			//	return nil, lastErr
+			//}
 			if isUnTransferableError(currentErr, callOpts) {
 				logTrace(parentCtx, "grpc_transfer server addr: %s, got unable transfer err: %v", p.Addr, currentErr)
 				return nil, lastErr
 			}
-			callCtx = callContext(callCtx, p)
+			callCtx = callContext(callCtx, p, currentErr)
 			lastErr = currentErr
 		}
 	}
@@ -164,12 +164,13 @@ func (s *clientTransferStream) RecvMsg(m interface{}) error {
 	}
 	callCtx := s.parentCtx
 	for {
-		callCtx = callContext(callCtx, *s.serverPeer)
+		callCtx = callContext(callCtx, *s.serverPeer, lastErr)
 		newStream, err := s.reestablishStreamAndResendBuffer(callCtx)
 		if err != nil {
 			if isUnTransferableError(err, s.callOpts) {
 				return lastErr
 			}
+			lastErr = err
 			continue
 		}
 		s.setStream(newStream)
@@ -185,10 +186,10 @@ func (s *clientTransferStream) receiveMsgAndIndicateTransfer(m interface{}) (boo
 	if err == nil || err == io.EOF {
 		return false, err
 	}
-	if s.serverPeer.Addr == nil {
-		logTrace(s.parentCtx, "grpc_transfer server addr is empty: %v", err)
-		return false, err
-	}
+	//if s.serverPeer.Addr == nil {
+	//	logTrace(s.parentCtx, "grpc_transfer server addr is empty: %v", err)
+	//	return false, err
+	//}
 	if isUnTransferableError(err, s.callOpts) {
 		logTrace(s.parentCtx, "grpc_transfer parent context error: %v", s.parentCtx.Err())
 		return false, err
@@ -245,7 +246,7 @@ func isUnTransferableError(err error, callOpts *options) bool {
 	return false
 }
 
-func callContext(ctx context.Context, failedPeer peer.Peer) context.Context {
+func callContext(ctx context.Context, failedPeer peer.Peer, err error) context.Context {
 	pr, ok := pickreq.FromContext(ctx)
 	if !ok {
 		pr = new(pickreq.PickRequest)
@@ -253,9 +254,13 @@ func callContext(ctx context.Context, failedPeer peer.Peer) context.Context {
 	if pr.FailedNodes == nil {
 		pr.FailedNodes = sets.NewString()
 	}
-	pr.FailedNodes.Insert(pr.TargetAddr)
 	if failedPeer.Addr != nil {
 		pr.FailedNodes.Insert(failedPeer.Addr.String())
+	}
+	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
+		if st.Message() != "" {
+			pr.FailedNodes.Insert(st.Message())
+		}
 	}
 	return pickreq.NewContext(ctx, pr)
 }
