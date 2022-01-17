@@ -90,6 +90,15 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece, hint register success
+	psc <- &cdnsystem.PieceSeed{
+		PeerId:          peerID,
+		HostUuid:        hostID,
+		PieceInfo:       nil,
+		Done:            false,
+		ContentLength:   registeredTask.SourceFileLength,
+		TotalPieceCount: registeredTask.TotalPieceCount,
+	}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
