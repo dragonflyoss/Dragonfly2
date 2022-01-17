@@ -232,6 +232,19 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
+			name: "parent is peer's ancestor",
+			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(mockPeer)
+				mockPeer.StoreChild(peer)
+			},
+			expect: func(t *testing.T, parents []*resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+		{
 			name: "parent free upload load is zero",
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)

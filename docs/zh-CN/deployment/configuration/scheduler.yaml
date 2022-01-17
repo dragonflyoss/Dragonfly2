@@ -7,7 +7,7 @@ server:
   # 服务监听端口
   port:
   # 限制请求并发数
-  listenLimit: 1000
+  listenLimit: 10000
   # daemon 动态配置缓存目录
   # linux 上默认目录 /var/cache/dragonfly
   # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
