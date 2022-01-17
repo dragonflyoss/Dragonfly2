@@ -33,6 +33,7 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
@@ -248,8 +249,8 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		span.End()
 	}()
-	// update ctx for transfer trace id
-	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
+
+	// update ctx to transfer trace id
 	r = r.WithContext(ctx)
 
 	// check authenticity
@@ -316,7 +317,7 @@ func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
 // "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
 func parseBasicAuth(auth string) (username, password string, ok bool) {
 	const prefix = "Basic "
-	// Case insensitive prefix match. See Issue 22736.
+	// Case-insensitive prefix match. See Issue 22736.
 	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
 		return
 	}
@@ -333,6 +334,7 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
+	// FIXME did not need create a transport per request
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -425,6 +427,8 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	rp := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			// we can not change req.ctx in Director, so inject trace with header
+			propagation.TraceContext{}.Inject(r.Context(), propagation.HeaderCarrier(req.Header))
 			req.URL.Host = req.Host
 			req.URL.Scheme = schemaHTTPS
 			if proxy.dumpHTTPContent {
