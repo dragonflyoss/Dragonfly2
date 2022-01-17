@@ -34,7 +34,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -338,7 +340,6 @@ func TestUpdateAddress(t *testing.T) {
 	}
 	defer client.Close()
 	var taskURL = normalTaskURL
-
 	var taskID = idgen.TaskID(taskURL, nil)
 	serverHashRing := hashring.New(test.addresses[0:2])
 	expectedServer, ok := serverHashRing.GetNode(taskID)
@@ -375,8 +376,7 @@ func TestUpdateAddress(t *testing.T) {
 		{Addr: test.addresses[0]},
 		{Addr: test.addresses[1]},
 		{Addr: test.addresses[2]},
-		{Addr: test.addresses[3]},
-		{Addr: test.addresses[4]}}); err != nil {
+		{Addr: test.addresses[3]}}); err != nil {
 		t.Fatalf("failed to update address: %v", err)
 	}
 	serverHashRing = hashring.New(test.addresses)
@@ -462,7 +462,55 @@ func TestUpdateAddress(t *testing.T) {
 			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)
 		}
 	}
-
+	// remove server2 and add server 4 should hash to same server node
+	if err := client.UpdateAddresses([]dfnet.NetAddr{
+		{Addr: test.addresses[0]},
+		{Addr: test.addresses[1]},
+		{Addr: test.addresses[3]},
+		{Addr: test.addresses[4]}}); err != nil {
+		t.Fatalf("failed to update address: %v", err)
+	}
+	serverHashRing = hashring.New(test.addresses)
+	xxx, _ = serverHashRing.GetNode(taskID)
+	log.Printf("updated server node: %s, previous server node: %s", xxx, expectedServer)
+	{
+		var calledServer peer.Peer
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		err := client.ReportPeerResult(ctx, &scheduler.PeerResult{
+			TaskId:          taskID,
+			PeerId:          "test_peer",
+			SrcIp:           "1.1.1.1",
+			Url:             taskURL,
+			ContentLength:   0,
+			Traffic:         0,
+			Cost:            0,
+			Success:         true,
+			Code:            base.Code_Success,
+			TotalPieceCount: 0,
+		}, grpc.Peer(&calledServer))
+		if err != nil {
+			t.Fatalf("failed to call reportPeerResult: %v", err)
+		}
+		if calledServer.Addr.String() != expectedServer {
+			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)
+		}
+	}
+	// remove all server nodes,and add an invalid addr, leave method call should failed
+	if err := client.UpdateAddresses([]dfnet.NetAddr{{Addr: "1.1.1.1:8080"}}); err != nil {
+		t.Fatalf("failed to update address: %v", err)
+	}
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		err := client.LeaveTask(ctx, &scheduler.PeerTarget{
+			TaskId: taskID,
+			PeerId: "test_peer",
+		})
+		if status.Code(err) != codes.Code(base.Code_ServerUnavailable) {
+			t.Fatalf("leave task call should return base.Code_ServerUnavailable but got: %v", err)
+		}
+	}
 }
 
 var normalTaskURL = "https://www.dragonfly.com"

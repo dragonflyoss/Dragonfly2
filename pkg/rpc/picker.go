@@ -136,7 +136,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			}
 			sc, ok := p.subConns[targetAddr]
 			if !ok {
-				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "cannot find target addr %s", pickRequest.TargetAddr)
+				err = status.Errorf(codes.Code(rpcbase.Code_ServerUnavailable), "cannot find target addr %s", targetAddr)
 				return
 			}
 
