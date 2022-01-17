@@ -18,6 +18,7 @@ package resource
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -354,6 +355,71 @@ func TestTask_LenPeers(t *testing.T) {
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, task, mockPeer)
+		})
+	}
+}
+
+func TestTask_CDNPeers(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer)
+	}{
+		{
+			name: "load cdn peer",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				task.StorePeer(mockCDNPeer)
+				peers := task.CDNPeers()
+				assert.Equal(len(peers), 1)
+				assert.Equal(peers[0].ID, mockCDNPeer.ID)
+			},
+		},
+		{
+			name: "load cdn peers",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				mockPeer.Host.IsCDN = true
+				task.StorePeer(mockPeer)
+				task.StorePeer(mockCDNPeer)
+
+				mockPeer.UpdateAt.Store(time.Now())
+				mockCDNPeer.UpdateAt.Store(time.Now().Add(1 * time.Second))
+
+				peers := task.CDNPeers()
+				assert.Equal(len(peers), 2)
+				assert.Equal(peers[0].ID, mockCDNPeer.ID)
+				assert.Equal(peers[1].ID, mockPeer.ID)
+			},
+		},
+		{
+			name: "peers is empty",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				peers := task.CDNPeers()
+				assert.Equal(len(peers), 0)
+			},
+		},
+		{
+			name: "cdn peers is empty",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				peers := task.CDNPeers()
+				assert.Equal(len(peers), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+			mockCDNPeer := NewPeer(mockCDNPeerID, task, mockCDNHost)
+
+			tc.expect(t, task, mockPeer, mockCDNPeer)
 		})
 	}
 }

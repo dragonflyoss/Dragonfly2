@@ -72,42 +72,43 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 		}
 
 		// Peer scheduling exceeds retry limit
-		if n >= c.config.Scheduler.RetryLimit {
-			if peer.Task.CanBackToSource() {
-				stream, ok := peer.LoadStream()
-				if !ok {
-					peer.Log.Error("load stream failed")
-					return
-				}
-
-				// Notify peer back-to-source
-				if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
-					peer.Log.Errorf("send packet failed: %v", err)
-					return
-				}
-				peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedNeedBackSource)
-
-				if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
-					peer.Log.Errorf("peer fsm event failed: %v", err)
-					return
-				}
-
-				// If the task state is TaskStateFailed,
-				// peer back-to-source and reset task state to TaskStateRunning
-				if peer.Task.FSM.Is(resource.TaskStateFailed) {
-					if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
-						peer.Task.Log.Errorf("task fsm event failed: %v", err)
-						return
-					}
-				}
-
-				// If the peer downloads back-to-source, its parent needs to be deleted
-				peer.DeleteParent()
-				peer.Task.Log.Info("peer back to source successfully")
+		cdnPeers := peer.Task.CDNPeers()
+		if (n >= c.config.Scheduler.RetryBackSourceLimit || (len(cdnPeers) > 0 && cdnPeers[0].FSM.Is(resource.PeerStateFailed))) && peer.Task.CanBackToSource() {
+			stream, ok := peer.LoadStream()
+			if !ok {
+				peer.Log.Error("load stream failed")
 				return
 			}
 
-			// Handle peer failed
+			// Notify peer back-to-source
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+				peer.Log.Errorf("send packet failed: %v", err)
+				return
+			}
+			peer.Log.Infof("peer scheduling exceeds the back-to-source limit %d times and return code %d", c.config.Scheduler.RetryBackSourceLimit, base.Code_SchedNeedBackSource)
+
+			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %v", err)
+				return
+			}
+
+			// If the task state is TaskStateFailed,
+			// peer back-to-source and reset task state to TaskStateRunning
+			if peer.Task.FSM.Is(resource.TaskStateFailed) {
+				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
+					peer.Task.Log.Errorf("task fsm event failed: %v", err)
+					return
+				}
+			}
+
+			// If the peer downloads back-to-source, its parent needs to be deleted
+			peer.DeleteParent()
+			peer.Task.Log.Info("peer back to source successfully")
+			return
+		}
+
+		// Handle peer schedule failed
+		if n >= c.config.Scheduler.RetryLimit {
 			stream, ok := peer.LoadStream()
 			if !ok {
 				peer.Log.Error("load stream failed")

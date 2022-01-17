@@ -234,6 +234,9 @@ type SchedulerConfig struct {
 	// Single task allows the client to back-to-source count
 	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 
+	// Retry scheduling back-to-source limit times
+	RetryBackSourceLimit int `yaml:"retryBackSourceLimit" mapstructure:"retryBackSourceLimit"`
+
 	// Retry scheduling limit times
 	RetryLimit int `yaml:"retryLimit" mapstructure:"retryLimit"`
 
