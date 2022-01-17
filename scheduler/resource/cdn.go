@@ -98,6 +98,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
+			continue
 		}
 
 		// Get end piece
