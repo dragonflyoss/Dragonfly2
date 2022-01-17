@@ -92,14 +92,14 @@ type Task struct {
 	// Peer sync map
 	Peers *sync.Map
 
+	// Task mutex
+	MU *sync.Mutex
+
 	// CreateAt is task create time
 	CreateAt *atomic.Time
 
 	// UpdateAt is task update time
 	UpdateAt *atomic.Time
-
-	// Task mutex
-	MU *sync.Mutex
 
 	// Task log
 	Log *logger.SugaredLoggerOnWith
