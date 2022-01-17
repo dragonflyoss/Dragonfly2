@@ -453,6 +453,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 
 	for _, _tc := range testCases {
 		t.Run(_tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			require := testifyrequire.New(t)
 			for _, typ := range taskTypes {
 				// dup a new test case with the task type
 				tc := _tc
@@ -492,20 +494,23 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 						sourceClient = tc.mockHTTPSourceClient(ctrl, tc.taskData, tc.url)
 					}
 
-					mm := setupMockManager(
-						ctrl, &tc,
-						componentsOption{
-							taskID:             taskID,
-							contentLength:      int64(mockContentLength),
-							pieceSize:          uint32(tc.pieceSize),
-							pieceParallelCount: tc.pieceParallelCount,
-							pieceDownloader:    downloader,
-							sourceClient:       sourceClient,
-							content:            tc.taskData,
-							scope:              tc.sizeScope,
-							peerPacketDelay:    tc.peerPacketDelay,
-							backSource:         tc.backSource,
-						})
+					option := componentsOption{
+						taskID:             taskID,
+						contentLength:      int64(mockContentLength),
+						pieceSize:          uint32(tc.pieceSize),
+						pieceParallelCount: tc.pieceParallelCount,
+						pieceDownloader:    downloader,
+						sourceClient:       sourceClient,
+						content:            tc.taskData,
+						scope:              tc.sizeScope,
+						peerPacketDelay:    tc.peerPacketDelay,
+						backSource:         tc.backSource,
+					}
+					// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
+					if tc.taskType == taskTypeConductor {
+						option.peerPacketDelay = []time.Duration{time.Second}
+					}
+					mm := setupMockManager(ctrl, &tc, option)
 					defer mm.CleanUp()
 
 					tc.run(assert, require, mm, urlMeta)
@@ -652,8 +657,8 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	}
 
 	var (
-		runningTaskCount int
-		success          bool
+		noRunningTask = true
+		success       bool
 	)
 	select {
 	case <-ptc.successCh:
@@ -663,11 +668,17 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	}
 	assert.True(success, "task should success")
 
-	ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
-		runningTaskCount++
-		return true
-	})
-	assert.Equal(0, runningTaskCount, "no running tasks")
+	for i := 0; i < 3; i++ {
+		ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
+			noRunningTask = false
+			return false
+		})
+		if noRunningTask {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.True(noRunningTask, "no running tasks")
 
 	// test reuse stream task
 	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(), request)

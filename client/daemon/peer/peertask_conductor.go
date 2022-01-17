@@ -160,7 +160,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	defer cancel()
 	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
-	result, err := ptm.schedulerClient.RegisterPeerTask(regCtx, request)
+	schedulerClient := ptm.schedulerClient
+	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -178,7 +179,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
-		ptm.schedulerClient = &dummySchedulerClient{}
+		schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: idgen.TaskID(request.Url, request.UrlMeta)}
 		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
@@ -243,7 +244,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		}
 	}
 
-	peerPacketStream, err := ptm.schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	log.Infof("step 2: start report piece result")
 	if err != nil {
 		defer span.End()
@@ -280,7 +281,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		pieceParallelCount:  atomic.NewInt32(0),
 		totalPiece:          -1,
 		schedulerOption:     ptm.schedulerOption,
-		schedulerClient:     ptm.schedulerClient,
+		schedulerClient:     schedulerClient,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
