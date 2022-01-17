@@ -380,30 +380,6 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			},
 		},
 		{
-			name:               "normal size scope - schedule timeout - auto back source",
-			taskData:           testBytes,
-			pieceParallelCount: 4,
-			pieceSize:          1024,
-			peerID:             "peer-0",
-			peerPacketDelay:    []time.Duration{time.Second},
-			scheduleTimeout:    time.Nanosecond,
-			urlGenerator: func(ts *testSpec) string {
-				server := httptest.NewServer(http.HandlerFunc(
-					func(w http.ResponseWriter, r *http.Request) {
-						n, err := w.Write(testBytes)
-						assert.Nil(err)
-						assert.Equal(len(ts.taskData), n)
-					}))
-				ts.cleanUp = append(ts.cleanUp, func() {
-					server.Close()
-				})
-				return server.URL
-			},
-			sizeScope:            base.SizeScope_NORMAL,
-			mockPieceDownloader:  nil,
-			mockHTTPSourceClient: nil,
-		},
-		{
 			name:                "normal size scope - back source - no content length",
 			taskData:            testBytes,
 			pieceParallelCount:  4,
@@ -448,6 +424,30 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					})
 				return sourceClient
 			},
+		},
+		{
+			name:               "normal size scope - schedule timeout - auto back source",
+			taskData:           testBytes,
+			pieceParallelCount: 4,
+			pieceSize:          1024,
+			peerID:             "peer-0",
+			peerPacketDelay:    []time.Duration{time.Second},
+			scheduleTimeout:    time.Nanosecond,
+			urlGenerator: func(ts *testSpec) string {
+				server := httptest.NewServer(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						n, err := w.Write(testBytes)
+						assert.Nil(err)
+						assert.Equal(len(ts.taskData), n)
+					}))
+				ts.cleanUp = append(ts.cleanUp, func() {
+					server.Close()
+				})
+				return server.URL
+			},
+			sizeScope:            base.SizeScope_NORMAL,
+			mockPieceDownloader:  nil,
+			mockHTTPSourceClient: nil,
 		},
 	}
 
@@ -656,7 +656,18 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		assert.True(r, fmt.Sprintf("task %d result should be true", i))
 	}
 
-	var noRunningTask = true
+	var (
+		noRunningTask = true
+		success          bool
+	)
+	select {
+	case <-ptc.successCh:
+		success = true
+	case <-ptc.failCh:
+	case <-time.After(10 * time.Minute):
+	}
+	assert.True(success, "task should success")
+
 	for i := 0; i < 3; i++ {
 		ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
 			noRunningTask = false
