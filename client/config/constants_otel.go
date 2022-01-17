@@ -59,6 +59,5 @@ const (
 	SpanWritePiece        = "write-piece"
 	SpanWriteBackPiece    = "write-back-piece"
 	SpanWaitPieceLimit    = "wait-limit"
-	SpanPushPieceResult   = "push-result"
 	SpanPeerGC            = "peer-gc"
 )
