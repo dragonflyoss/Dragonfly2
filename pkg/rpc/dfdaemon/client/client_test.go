@@ -426,7 +426,7 @@ func TestHashTask(t *testing.T) {
 func TestMigration(t *testing.T) {
 	test, err := startTestServers(3)
 	if err != nil {
-		t.Fatalf("failed to get cdn client: %v", err)
+		t.Fatalf("failed to get start servers: %v", err)
 	}
 	defer test.cleanup()
 
@@ -435,7 +435,7 @@ func TestMigration(t *testing.T) {
 		{Addr: test.addresses[1]},
 		{Addr: test.addresses[2]}})
 	if err != nil {
-		t.Fatalf("failed to dial: %v", err)
+		t.Fatalf("failed to get dfdaemon client: %v", err)
 	}
 	defer client.Close()
 	{

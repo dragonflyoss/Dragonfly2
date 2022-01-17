@@ -23,6 +23,7 @@ import (
 	"log"
 	"net"
 	"testing"
+	"time"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -31,7 +32,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
@@ -153,6 +156,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 	for s, _ := range registerResult {
 		taskUrls = append(taskUrls, s)
 	}
+	//serverHashRing := hashring.New(t.addresses)
 	for i := 0; i < count; i++ {
 		lis, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
@@ -160,15 +164,15 @@ func startTestServers(count int) (_ *testServerData, err error) {
 		}
 
 		s := grpc.NewServer()
-		var rs map[string]*scheduler.RegisterResult
-		if count != 1 {
-			rs = map[string]*scheduler.RegisterResult{
-				taskUrls[i%len(taskUrls)]: registerResult[taskUrls[i%len(taskUrls)]],
-			}
-		} else {
-			rs = registerResult
-		}
-		sImpl := newTestServer(lis.Addr().String(), rs)
+		//var rs map[string]*scheduler.RegisterResult
+		//if count != 1 {
+		//	rs = map[string]*scheduler.RegisterResult{
+		//		taskUrls[i%len(taskUrls)]: registerResult[taskUrls[i%len(taskUrls)]],
+		//	}
+		//} else {
+		//	rs = registerResult
+		//}
+		sImpl := newTestServer(lis.Addr().String(), registerResult)
 		scheduler.RegisterSchedulerServer(s, sImpl)
 		t.servers = append(t.servers, s)
 		t.serverImpls = append(t.serverImpls, sImpl)
@@ -322,6 +326,139 @@ func TestOneBackend(t *testing.T) {
 }
 
 func TestUpdateAddress(t *testing.T) {
+	test, err := startTestServers(5)
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test.cleanup()
+
+	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}})
+	if err != nil {
+		t.Fatalf("failed to get daemon client: %v", err)
+	}
+	defer client.Close()
+	var taskURL = normalTaskURL
+
+	var taskID = idgen.TaskID(taskURL, nil)
+	serverHashRing := hashring.New(test.addresses[0:2])
+	expectedServer, ok := serverHashRing.GetNode(taskID)
+	if !ok {
+		t.Fatalf("failed to get server node")
+	}
+	{
+		var calledServer peer.Peer
+		// register
+		taskRequest := &scheduler.PeerTaskRequest{
+			Url:         taskURL,
+			UrlMeta:     nil,
+			PeerId:      "test_peer",
+			PeerHost:    nil,
+			HostLoad:    nil,
+			IsMigrating: false,
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		result, err := client.RegisterPeerTask(ctx, taskRequest, grpc.Peer(&calledServer))
+		if err != nil {
+			t.Fatalf("failed to call Download: %v", err)
+		}
+		if !cmp.Equal(result, test.serverImpls[0].registerResult[taskURL], cmpopts.IgnoreUnexported(scheduler.RegisterResult{}),
+			cmpopts.IgnoreUnexported(scheduler.SinglePiece{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+			t.Fatalf("registerResult is not same as expected, expected: %s, actual %s", test.serverImpls[0].registerResult[taskURL], result)
+		}
+		if calledServer.Addr.String() != expectedServer {
+			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)
+		}
+	}
+	// update address should hash to same server node
+	if err := client.UpdateAddresses([]dfnet.NetAddr{
+		{Addr: test.addresses[0]},
+		{Addr: test.addresses[1]},
+		{Addr: test.addresses[2]},
+		{Addr: test.addresses[3]},
+		{Addr: test.addresses[4]}}); err != nil {
+		t.Fatalf("failed to update address: %v", err)
+	}
+	{
+		var calledServer peer.Peer
+		taskRequest := &scheduler.PeerTaskRequest{
+			Url:         taskURL,
+			UrlMeta:     nil,
+			PeerId:      "test_peer",
+			PeerHost:    nil,
+			HostLoad:    nil,
+			IsMigrating: false,
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		stream, err := client.ReportPieceResult(ctx, taskID, taskRequest, grpc.Peer(&calledServer))
+		if err != nil {
+			t.Fatalf("failed to call ReportPieceResult: %v", err)
+		}
+		waitClose := make(chan struct{})
+		go func() {
+			for {
+				peerPacket, err := stream.Recv()
+				if err == io.EOF {
+					close(waitClose)
+					return
+				}
+				if err != nil {
+					t.Fatalf("failed to recive a peer packet: %v", err)
+				}
+				log.Printf("received a peer packet: %s", peerPacket)
+			}
+		}()
+		pieceResults := []*scheduler.PieceResult{
+			{
+				TaskId: taskID,
+				SrcPid: "test_peer",
+				DstPid: "dstPeer",
+				PieceInfo: &base.PieceInfo{
+					PieceNum:    0,
+					RangeStart:  0,
+					RangeSize:   0,
+					PieceMd5:    "xxx",
+					PieceOffset: 0,
+					PieceStyle:  0,
+				},
+				BeginTime:     0,
+				EndTime:       0,
+				Success:       true,
+				Code:          base.Code_Success,
+				HostLoad:      nil,
+				FinishedCount: 1,
+			}, {
+				TaskId: taskID,
+				SrcPid: "test_peer",
+				DstPid: "dstPeer",
+				PieceInfo: &base.PieceInfo{
+					PieceNum:    0,
+					RangeStart:  0,
+					RangeSize:   0,
+					PieceMd5:    "xxx",
+					PieceOffset: 0,
+					PieceStyle:  0,
+				},
+				BeginTime:     0,
+				EndTime:       0,
+				Success:       true,
+				Code:          base.Code_Success,
+				HostLoad:      nil,
+				FinishedCount: 2,
+			},
+		}
+		for _, pieceResult := range pieceResults {
+			if err := stream.Send(pieceResult); err != nil {
+				t.Fatalf("failed to send a piece result: %v", err)
+			}
+		}
+		stream.CloseSend()
+		<-waitClose
+		if calledServer.Addr.String() != expectedServer {
+			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)
+		}
+	}
 
 }
 
@@ -411,3 +548,82 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 	}
 	return taskRegisterResult, taskInfos, taskUrl2Id
 }
+
+//func TestMigration(t *testing.T) {
+//	test, err := startTestServers(3)
+//	if err != nil {
+//		t.Fatalf("failed to start servers: %v", err)
+//	}
+//	defer test.cleanup()
+//
+//	client, err := GetClientByAddrs([]dfnet.NetAddr{
+//		{Addr: test.addresses[0]},
+//		{Addr: test.addresses[1]},
+//		{Addr: test.addresses[2]}})
+//	if err != nil {
+//		t.Fatalf("failed to get scheduler client: %v", err)
+//	}
+//	defer client.Close()
+//	{
+//		// exclude len(serverHashRing)-1 server nodes, only left one
+//		var testTaskURL = "https://www.dragonfly1.com"
+//		testTaskID := idgen.TaskID(testTaskURL, nil)
+//		serverHashRing := hashring.New(test.addresses)
+//		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
+//		var excludeAddrs []string
+//		for _, addr := range candidateAddrs[0 : len(candidateAddrs)-1] {
+//			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
+//		}
+//		var serverPeer peer.Peer
+//		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
+//		stream, err := client.RegisterPeerTask(ctx, &scheduler.PeerTaskRequest{
+//			Url:     testTaskURL,
+//			UrlMeta: nil,
+//		}, grpc.Peer(&serverPeer))
+//
+//		if err != nil {
+//			t.Fatalf("failed to call Download: %v", err)
+//		}
+//		for {
+//			_, err := stream.Recv()
+//			if err == io.EOF {
+//				break
+//			}
+//			if err != nil {
+//				t.Fatalf("failed to recieve Download: %v", err)
+//			}
+//		}
+//		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+//			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+//		}
+//	}
+//
+//	{
+//		// all server node failed
+//		var testTaskURL = "https://www.dragonfly1.com"
+//		testTaskID := idgen.TaskID(testTaskURL, nil)
+//		serverHashRing := hashring.New(test.addresses)
+//		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
+//		var serverPeer peer.Peer
+//		var excludeAddrs []string
+//		for _, addr := range candidateAddrs {
+//			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
+//		}
+//		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
+//		stream, err := client.Download(ctx, &dfdaemon.DownRequest{
+//			Url:     "https://www.dragonfly1.com",
+//			UrlMeta: nil,
+//		}, grpc.Peer(&serverPeer))
+//
+//		if err != nil {
+//			t.Fatalf("failed to call Download: %v", err)
+//		}
+//		_, err = stream.Recv()
+//		if err == nil || !cmp.Equal(err.Error(), status.Errorf(codes.NotFound, "task not found").Error()) {
+//			t.Fatalf("download want err task not found, but got %v", err)
+//		}
+//		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+//			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+//		}
+//	}
+//}
