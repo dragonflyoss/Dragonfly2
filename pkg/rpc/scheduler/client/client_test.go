@@ -24,6 +24,7 @@ import (
 	"net"
 	"testing"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -31,9 +32,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 var _ scheduler.SchedulerServer = (*testServer)(nil)
@@ -43,16 +43,18 @@ type testServer struct {
 
 	registerResult map[string]*scheduler.RegisterResult // url->registerResult
 	taskInfo       map[string][]*scheduler.PeerPacket   // taskID-> peerPacket
-	taskUrl2Id     map[string]string                    //url->taskID
+	taskUrl2Id     map[string]string                    // url->taskID
 	taskID2Url     map[string]string
+	peerIds        sets.String
 	addr           string
 }
 
 // RegisterPeerTask registers a peer into one task.
 func (s *testServer) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	if rs, ok := s.registerResult[req.Url]; !ok {
-		return nil, status.Error(codes.NotFound, "wrong server")
+		return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "wrong server")
 	} else {
+		s.peerIds.Insert(req.PeerId)
 		s.taskUrl2Id[req.Url] = idgen.TaskID(req.Url, nil)
 		s.taskID2Url[idgen.TaskID(req.Url, nil)] = req.Url
 		return rs, nil
@@ -71,11 +73,28 @@ func (s *testServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceRes
 		if err != nil {
 			return err
 		}
-		_, ok := s.taskID2Url[in.TaskId]
+		_, ok := s.peerIds[in.SrcPid]
 		if !ok {
-			return status.Error(codes.NotFound, "task not found")
+			return dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
 		}
-		if err := stream.Send(&scheduler.PeerPacket{}); err != nil {
+		if err := stream.Send(&scheduler.PeerPacket{
+			TaskId:        in.TaskId,
+			SrcPid:        in.SrcPid,
+			ParallelCount: 1,
+			MainPeer: &scheduler.PeerPacket_DestPeer{
+				Ip:      "1.1.1.1",
+				RpcPort: 0,
+				PeerId:  "dest_peer",
+			},
+			StealPeers: []*scheduler.PeerPacket_DestPeer{
+				{
+					Ip:      "2.2.2.2",
+					RpcPort: 0,
+					PeerId:  "dest_peer2",
+				},
+			},
+			Code: base.Code_Success,
+		}); err != nil {
 			return err
 		}
 	}
@@ -84,16 +103,16 @@ func (s *testServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceRes
 
 // ReportPeerResult reports downloading result for the peer task.
 func (s *testServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (*emptypb.Empty, error) {
-	if _, ok := s.taskUrl2Id[result.TaskId]; !ok {
-		return nil, status.Error(codes.NotFound, "wrong server")
+	if _, ok := s.peerIds[result.PeerId]; !ok {
+		return nil, dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
 	}
 	return &emptypb.Empty{}, nil
 }
 
 // LeaveTask makes the peer leaving from scheduling overlay for the task.
 func (s *testServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (*emptypb.Empty, error) {
-	if _, ok := s.taskInfo[target.TaskId]; !ok {
-		return nil, status.Error(codes.NotFound, "wrong server")
+	if _, ok := s.peerIds[target.PeerId]; !ok {
+		return nil, dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -104,6 +123,7 @@ func newTestServer(addr string, registerResult map[string]*scheduler.RegisterRes
 		taskInfo:       make(map[string][]*scheduler.PeerPacket),
 		taskUrl2Id:     make(map[string]string),
 		taskID2Url:     make(map[string]string),
+		peerIds:        sets.NewString(),
 		addr:           addr,
 	}
 	return s
@@ -176,11 +196,12 @@ func TestOneBackend(t *testing.T) {
 		t.Fatalf("failed to get daemon client: %v", err)
 	}
 	defer client.Close()
-
-	var testURL = "https://www.dragonfly1.com"
+	var taskURL = normalTaskURL
+	var taskID = idgen.TaskID(taskURL, nil)
 	{
+		// register
 		taskRequest := &scheduler.PeerTaskRequest{
-			Url:         testURL,
+			Url:         taskURL,
 			UrlMeta:     nil,
 			PeerId:      "test_peer",
 			PeerHost:    nil,
@@ -191,61 +212,124 @@ func TestOneBackend(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to call Download: %v", err)
 		}
-		if !cmp.Equal(result, test.serverImpls[0].registerResult[testURL], cmpopts.IgnoreUnexported(scheduler.RegisterResult{}),
+		if !cmp.Equal(result, test.serverImpls[0].registerResult[taskURL], cmpopts.IgnoreUnexported(scheduler.RegisterResult{}),
 			cmpopts.IgnoreUnexported(scheduler.SinglePiece{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
-			t.Fatalf("registerResult is not same as expected, expected: %s, actual %s", test.serverImpls[0].registerResult[testURL], result)
+			t.Fatalf("registerResult is not same as expected, expected: %s, actual %s", test.serverImpls[0].registerResult[taskURL], result)
 		}
 	}
 	{
+		// start report
 		taskRequest := &scheduler.PeerTaskRequest{
-			Url:         testURL,
+			Url:         taskURL,
 			UrlMeta:     nil,
 			PeerId:      "test_peer",
 			PeerHost:    nil,
 			HostLoad:    nil,
 			IsMigrating: false,
 		}
-		stream, err := client.ReportPieceResult(context.Background(), "", taskRequest)
+		stream, err := client.ReportPieceResult(context.Background(), taskID, taskRequest)
 		if err != nil {
 			t.Fatalf("failed to call ReportPieceResult: %v", err)
 		}
-		for {
-			stream.Recv()
+		waitClose := make(chan struct{})
+		go func() {
+			for {
+				peerPacket, err := stream.Recv()
+				if err == io.EOF {
+					close(waitClose)
+					return
+				}
+				if err != nil {
+					t.Fatalf("failed to recive a peer packet: %v", err)
+				}
+				log.Printf("received a peer packet: %s", peerPacket)
+			}
+		}()
+		pieceResults := []*scheduler.PieceResult{
+			{
+				TaskId: taskID,
+				SrcPid: "test_peer",
+				DstPid: "dstPeer",
+				PieceInfo: &base.PieceInfo{
+					PieceNum:    0,
+					RangeStart:  0,
+					RangeSize:   0,
+					PieceMd5:    "xxx",
+					PieceOffset: 0,
+					PieceStyle:  0,
+				},
+				BeginTime:     0,
+				EndTime:       0,
+				Success:       true,
+				Code:          base.Code_Success,
+				HostLoad:      nil,
+				FinishedCount: 1,
+			}, {
+				TaskId: taskID,
+				SrcPid: "test_peer",
+				DstPid: "dstPeer",
+				PieceInfo: &base.PieceInfo{
+					PieceNum:    0,
+					RangeStart:  0,
+					RangeSize:   0,
+					PieceMd5:    "xxx",
+					PieceOffset: 0,
+					PieceStyle:  0,
+				},
+				BeginTime:     0,
+				EndTime:       0,
+				Success:       true,
+				Code:          base.Code_Success,
+				HostLoad:      nil,
+				FinishedCount: 2,
+			},
 		}
+		for _, pieceResult := range pieceResults {
+			if err := stream.Send(pieceResult); err != nil {
+				t.Fatalf("failed to send a piece result: %v", err)
+			}
+		}
+		stream.CloseSend()
+		<-waitClose
 	}
 	{
 		peerResult := &scheduler.PeerResult{
-			TaskId:          "",
-			PeerId:          "",
-			SrcIp:           "",
+			TaskId:          taskID,
+			PeerId:          "test_peer",
+			SrcIp:           "1.1.1.1",
 			SecurityDomain:  "",
 			Idc:             "",
-			Url:             "",
-			ContentLength:   0,
-			Traffic:         0,
-			Cost:            0,
-			Success:         false,
-			Code:            0,
-			TotalPieceCount: 0,
+			Url:             taskURL,
+			ContentLength:   1000,
+			Traffic:         1000,
+			Cost:            100,
+			Success:         true,
+			Code:            base.Code_Success,
+			TotalPieceCount: 2,
 		}
-		client.ReportPeerResult(context.Background(), peerResult)
+		if err := client.ReportPeerResult(context.Background(), peerResult); err != nil {
+			t.Fatalf("failed to report peer result: %v", err)
+		}
 	}
 	{
-		client.LeaveTask(context.Background(), &scheduler.PeerTarget{
-			TaskId: "",
-			PeerId: "",
-		})
+		if err := client.LeaveTask(context.Background(), &scheduler.PeerTarget{
+			TaskId: taskID,
+			PeerId: "test_peer",
+		}); err != nil {
+			t.Fatalf("failed to leave task: %v", err)
+		}
 	}
 }
 
 func TestUpdateAddress(t *testing.T) {
+
 }
 
-func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*scheduler.PeerPacket, map[string]string) {
-	var normalTaskURL = "https://www.dragonfly.com"
-	var smallTaskURL = "https://www.dragonfly1.com"
-	var tinyTaskURL = "https://www.dragonfly2.com"
+var normalTaskURL = "https://www.dragonfly.com"
+var smallTaskURL = "https://www.dragonfly1.com"
+var tinyTaskURL = "https://www.dragonfly2.com"
 
+func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*scheduler.PeerPacket, map[string]string) {
 	var normalTaskID = idgen.TaskID(normalTaskURL, nil)
 	var smallTaskID = idgen.TaskID(smallTaskURL, nil)
 	var tinyTaskID = idgen.TaskID(tinyTaskURL, nil)

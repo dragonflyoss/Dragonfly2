@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
@@ -84,7 +85,7 @@ func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsyste
 	}
 	pieceInfos, ok := s.seedPieces[request.TaskId]
 	if !ok {
-		return status.Errorf(codes.NotFound, "task not found")
+		return dferrors.New(base.Code_CDNTaskDownloadFail, "task download failed")
 	}
 	for _, info := range pieceInfos {
 		if err := stream.Send(info); err != nil {
@@ -104,7 +105,7 @@ func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskReque
 	}
 	pieces, ok := s.seedPieces[req.TaskId]
 	if !ok {
-		return nil, status.Errorf(codes.NotFound, "task not found")
+		return nil, dferrors.New(base.Code_CDNTaskNotFound, "task not found")
 	}
 	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
 	var count uint32 = 0

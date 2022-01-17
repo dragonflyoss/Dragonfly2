@@ -96,7 +96,12 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 		HashKey: taskID,
 		IsStick: true,
 	})
-	return sc.schedulerClient.ReportPieceResult(ctx, append(opts, grpc_retry.Disable())...)
+
+	reportStream, err := sc.schedulerClient.ReportPieceResult(ctx, append(opts, grpc_retry.Disable())...)
+	if err == nil {
+		err = reportStream.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
+	}
+	return reportStream, err
 	//, taskID string, ptr *scheduler.PeerTaskRequest
 	//sc.schedulerClient.ReportPieceResult(ctx, opts...)
 	//pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
