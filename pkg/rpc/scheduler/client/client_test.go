@@ -35,6 +35,7 @@ import (
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -56,6 +57,13 @@ type testServer struct {
 
 // RegisterPeerTask registers a peer into one task.
 func (s *testServer) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	log.Printf("server %s receive Download request %v", s.addr, req)
+	md2, ok := metadata.FromIncomingContext(ctx)
+	if ok && md2.Get("excludeaddrs") != nil {
+		if sets.NewString(md2.Get("excludeaddrs")...).Has(s.addr) {
+			return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "hit exclude server")
+		}
+	}
 	if rs, ok := s.registerResult[req.Url]; !ok {
 		return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "wrong server")
 	} else {
@@ -349,7 +357,7 @@ func TestUpdateAddress(t *testing.T) {
 	{
 		var calledServer peer.Peer
 		// register
-		taskRequest := &scheduler.PeerTaskRequest{
+		registerRequest := &scheduler.PeerTaskRequest{
 			Url:         taskURL,
 			UrlMeta:     nil,
 			PeerId:      "test_peer",
@@ -359,7 +367,7 @@ func TestUpdateAddress(t *testing.T) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		result, err := client.RegisterPeerTask(ctx, taskRequest, grpc.Peer(&calledServer))
+		result, err := client.RegisterPeerTask(ctx, registerRequest, grpc.Peer(&calledServer))
 		if err != nil {
 			t.Fatalf("failed to call Download: %v", err)
 		}
@@ -513,6 +521,98 @@ func TestUpdateAddress(t *testing.T) {
 	}
 }
 
+func TestMigration(t *testing.T) {
+	test, err := startTestServers(3)
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test.cleanup()
+
+	client, err := GetClientByAddrs([]dfnet.NetAddr{
+		{Addr: test.addresses[0]},
+		{Addr: test.addresses[1]},
+		{Addr: test.addresses[2]}})
+	if err != nil {
+		t.Fatalf("failed to get scheduler client: %v", err)
+	}
+	defer client.Close()
+	{
+		// exclude len(serverHashRing)-1 server nodes, only left one
+		var testTaskURL = normalTaskURL
+		testTaskID := idgen.TaskID(testTaskURL, nil)
+		serverHashRing := hashring.New(test.addresses)
+		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
+		var excludeAddrs []string
+		for _, addr := range candidateAddrs[0 : len(candidateAddrs)-1] {
+			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
+		}
+		var serverPeer peer.Peer
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
+		result, err := client.RegisterPeerTask(ctx, &scheduler.PeerTaskRequest{
+			Url:         testTaskURL,
+			UrlMeta:     nil,
+			PeerId:      "test_peer",
+			PeerHost:    nil,
+			HostLoad:    nil,
+			IsMigrating: false,
+		}, grpc.Peer(&serverPeer))
+		if err != nil {
+			t.Fatalf("failed to call Download: %v", err)
+		}
+		if !cmp.Equal(result, test.serverImpls[0].registerResult[testTaskURL], cmpopts.IgnoreUnexported(scheduler.RegisterResult{}),
+			cmpopts.IgnoreUnexported(scheduler.SinglePiece{}), cmpopts.IgnoreUnexported(base.PieceInfo{})) {
+			t.Fatalf("registerResult is not same as expected, expected: %s, actual %s", test.serverImpls[0].registerResult[testTaskURL], result)
+		}
+		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+		}
+
+		// report peer should hit migrated server node
+		err = client.ReportPeerResult(context.Background(), &scheduler.PeerResult{
+			TaskId:  testTaskID,
+			PeerId:  "test_peer",
+			SrcIp:   "1.1.1.1",
+			Url:     testTaskURL,
+			Success: true,
+			Code:    base.Code_Success,
+		}, grpc.Peer(&serverPeer))
+		if err != nil {
+			t.Fatalf("failed to call ReportPeerResult: %v", err)
+		}
+		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+		}
+	}
+
+	{
+		// all server node failed
+		var testTaskURL = normalTaskURL
+		testTaskID := idgen.TaskID(testTaskURL, nil)
+		serverHashRing := hashring.New(test.addresses)
+		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
+		var serverPeer peer.Peer
+		var excludeAddrs []string
+		for _, addr := range candidateAddrs {
+			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
+		}
+		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
+		_, err := client.RegisterPeerTask(ctx, &scheduler.PeerTaskRequest{
+			Url:         testTaskURL,
+			UrlMeta:     nil,
+			PeerId:      "test_peer",
+			PeerHost:    nil,
+			HostLoad:    nil,
+			IsMigrating: false,
+		}, grpc.Peer(&serverPeer))
+		if err == nil || !cmp.Equal(err.Error(), status.New(codes.Unknown, dferrors.New(base.Code_CDNTaskRegistryFail, "hit exclude server").Error()).String()) {
+			t.Fatalf("RegisterPeerTask want err hit exclude server, but got %v", err)
+		}
+		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
+			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
+		}
+	}
+}
+
 var normalTaskURL = "https://www.dragonfly.com"
 var smallTaskURL = "https://www.dragonfly1.com"
 var tinyTaskURL = "https://www.dragonfly2.com"
@@ -599,82 +699,3 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 	}
 	return taskRegisterResult, taskInfos, taskUrl2Id
 }
-
-//func TestMigration(t *testing.T) {
-//	test, err := startTestServers(3)
-//	if err != nil {
-//		t.Fatalf("failed to start servers: %v", err)
-//	}
-//	defer test.cleanup()
-//
-//	client, err := GetClientByAddrs([]dfnet.NetAddr{
-//		{Addr: test.addresses[0]},
-//		{Addr: test.addresses[1]},
-//		{Addr: test.addresses[2]}})
-//	if err != nil {
-//		t.Fatalf("failed to get scheduler client: %v", err)
-//	}
-//	defer client.Close()
-//	{
-//		// exclude len(serverHashRing)-1 server nodes, only left one
-//		var testTaskURL = "https://www.dragonfly1.com"
-//		testTaskID := idgen.TaskID(testTaskURL, nil)
-//		serverHashRing := hashring.New(test.addresses)
-//		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
-//		var excludeAddrs []string
-//		for _, addr := range candidateAddrs[0 : len(candidateAddrs)-1] {
-//			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
-//		}
-//		var serverPeer peer.Peer
-//		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
-//		stream, err := client.RegisterPeerTask(ctx, &scheduler.PeerTaskRequest{
-//			Url:     testTaskURL,
-//			UrlMeta: nil,
-//		}, grpc.Peer(&serverPeer))
-//
-//		if err != nil {
-//			t.Fatalf("failed to call Download: %v", err)
-//		}
-//		for {
-//			_, err := stream.Recv()
-//			if err == io.EOF {
-//				break
-//			}
-//			if err != nil {
-//				t.Fatalf("failed to recieve Download: %v", err)
-//			}
-//		}
-//		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
-//			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
-//		}
-//	}
-//
-//	{
-//		// all server node failed
-//		var testTaskURL = "https://www.dragonfly1.com"
-//		testTaskID := idgen.TaskID(testTaskURL, nil)
-//		serverHashRing := hashring.New(test.addresses)
-//		candidateAddrs, _ := serverHashRing.GetNodes(testTaskID, len(test.servers))
-//		var serverPeer peer.Peer
-//		var excludeAddrs []string
-//		for _, addr := range candidateAddrs {
-//			excludeAddrs = append(excludeAddrs, "excludeAddrs", addr)
-//		}
-//		ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs(excludeAddrs...))
-//		stream, err := client.Download(ctx, &dfdaemon.DownRequest{
-//			Url:     "https://www.dragonfly1.com",
-//			UrlMeta: nil,
-//		}, grpc.Peer(&serverPeer))
-//
-//		if err != nil {
-//			t.Fatalf("failed to call Download: %v", err)
-//		}
-//		_, err = stream.Recv()
-//		if err == nil || !cmp.Equal(err.Error(), status.Errorf(codes.NotFound, "task not found").Error()) {
-//			t.Fatalf("download want err task not found, but got %v", err)
-//		}
-//		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
-//			t.Fatalf("target server addr is not same as expected, want: %s, actual: %s", candidateAddrs[len(candidateAddrs)-1], serverPeer.Addr.String())
-//		}
-//	}
-//}
