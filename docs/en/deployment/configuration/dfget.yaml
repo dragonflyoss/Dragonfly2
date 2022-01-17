@@ -33,7 +33,7 @@ keepStorage: true
 # console shows log on console
 console: false
 
-# Whether to enable debug level logger and enable pprof
+# whether to enable debug level logger and enable pprof
 verbose: false
 
 # listen port for pprof, only valid when the verbose option is true
