@@ -77,7 +77,8 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 	}
 
 	var (
-		peer *Peer
+		initialized bool
+		peer        *Peer
 	)
 
 	// Receive pieces from cdn
@@ -99,6 +100,18 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 				return nil, nil, err
 			}
 			continue
+		} else if !initialized {
+			// reserve for compatibility test, will remove later
+			initialized = true
+
+			peer, err = c.initPeer(task, piece)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if err := peer.FSM.Event(PeerEventDownload); err != nil {
+				return nil, nil, err
+			}
 		}
 
 		// Get end piece
