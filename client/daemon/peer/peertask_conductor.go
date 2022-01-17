@@ -859,6 +859,7 @@ func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadP
 			pt.requestedPieces.Set(piece.PieceNum)
 		}
 		req := &DownloadPieceRequest{
+			storage: pt.storage,
 			piece:   piece,
 			log:     pt.Log(),
 			TaskID:  pt.GetTaskID(),

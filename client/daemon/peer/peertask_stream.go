@@ -198,6 +198,7 @@ func (s *streamTask) writeToPipe(firstPiece *pieceInfo, pw *io.PipeWriter) {
 			}
 			return
 		case cur = <-s.pieceCh:
+			// FIXME check missing piece for non-block broker channel
 			continue
 		case <-s.peerTaskConductor.failCh:
 			ptError := fmt.Errorf("context done due to peer task fail: %d/%s",
