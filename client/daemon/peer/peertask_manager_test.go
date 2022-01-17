@@ -492,20 +492,23 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 						sourceClient = tc.mockHTTPSourceClient(ctrl, tc.taskData, tc.url)
 					}
 
-					mm := setupMockManager(
-						ctrl, &tc,
-						componentsOption{
-							taskID:             taskID,
-							contentLength:      int64(mockContentLength),
-							pieceSize:          uint32(tc.pieceSize),
-							pieceParallelCount: tc.pieceParallelCount,
-							pieceDownloader:    downloader,
-							sourceClient:       sourceClient,
-							content:            tc.taskData,
-							scope:              tc.sizeScope,
-							peerPacketDelay:    tc.peerPacketDelay,
-							backSource:         tc.backSource,
-						})
+					option := componentsOption{
+						taskID:             taskID,
+						contentLength:      int64(mockContentLength),
+						pieceSize:          uint32(tc.pieceSize),
+						pieceParallelCount: tc.pieceParallelCount,
+						pieceDownloader:    downloader,
+						sourceClient:       sourceClient,
+						content:            tc.taskData,
+						scope:              tc.sizeScope,
+						peerPacketDelay:    tc.peerPacketDelay,
+						backSource:         tc.backSource,
+					}
+					// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
+					if tc.taskType == taskTypeConductor {
+						option.peerPacketDelay = []time.Duration{time.Second}
+					}
+					mm := setupMockManager(ctrl, &tc, option)
 					defer mm.CleanUp()
 
 					tc.run(assert, require, mm, urlMeta)
