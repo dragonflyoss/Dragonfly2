@@ -156,7 +156,11 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 	return pt.(*peerTaskConductor), true
 }
 
-func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(ctx context.Context, taskID string, request *scheduler.PeerTaskRequest, limit rate.Limit) (*peerTaskConductor, error) {
+func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
+	ctx context.Context,
+	taskID string,
+	request *scheduler.PeerTaskRequest,
+	limit rate.Limit) (*peerTaskConductor, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, nil
