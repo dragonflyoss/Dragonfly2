@@ -92,9 +92,6 @@ type Task struct {
 	// Peer sync map
 	Peers *sync.Map
 
-	// Task mutex
-	MU *sync.Mutex
-
 	// CreateAt is task create time
 	CreateAt *atomic.Time
 
@@ -119,7 +116,6 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 		Peers:             &sync.Map{},
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
-		MU:                &sync.Mutex{},
 		Log:               logger.WithTaskIDAndURL(id, url),
 	}
 

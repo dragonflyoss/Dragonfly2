@@ -28,6 +28,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
+// when scheduler is not available, use dummySchedulerClient to back source
 type dummySchedulerClient struct {
 }
 
