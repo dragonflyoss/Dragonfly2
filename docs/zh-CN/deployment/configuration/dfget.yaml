@@ -30,6 +30,19 @@ dataDir: ""
 # 默认为 false
 keepStorage: true
 
+# Console 是否在控制台程序中显示日志
+console: false
+
+# verbose 是否使用调试级别的日志、是否启用 pprof。
+verbose: false
+
+# pprofPort pprof 监听的端口，仅在 verbose 为 true 时可用
+pprof-port: -1
+
+# jaeger 地址
+# 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""
+
 # 调度器地址
 # 尽量使用同一个地区的调度器.
 # daemon 将会根据 task id 来进行一致性 hash 来选择所有配置的调度器
@@ -51,13 +64,6 @@ scheduler:
   netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002
-
-# 是否开启 verbose 日志模式
-verbose: true
-
-# 遥测配置
-# jaeger 地址, 例如: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ""
 
 # 用于注册到调度器的 daemon 信息
 host:
