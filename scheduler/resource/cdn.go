@@ -92,6 +92,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Init cdn peer
 		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
+			initialized = true // reserve for compatibility test, will remove later
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
