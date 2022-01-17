@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
@@ -76,8 +77,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 	}
 
 	var (
-		initialized bool
-		peer        *Peer
+		peer *Peer
 	)
 
 	// Receive pieces from cdn
@@ -90,14 +90,11 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		task.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
 
 		// Init cdn peer
-		if !initialized {
-			initialized = true
-
+		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
-
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
