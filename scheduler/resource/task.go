@@ -98,6 +98,9 @@ type Task struct {
 	// UpdateAt is task update time
 	UpdateAt *atomic.Time
 
+	// Task mutex
+	MU *sync.Mutex
+
 	// Task log
 	Log *logger.SugaredLoggerOnWith
 }
@@ -116,6 +119,7 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 		Peers:             &sync.Map{},
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
+		MU:                &sync.Mutex{},
 		Log:               logger.WithTaskIDAndURL(id, url),
 	}
 
