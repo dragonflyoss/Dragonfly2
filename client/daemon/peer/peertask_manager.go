@@ -61,7 +61,7 @@ type Task interface {
 	Log() *logger.SugaredLoggerOnWith
 
 	GetStorage() storage.TaskStorageDriver
-	
+
 	GetPeerID() string
 	GetTaskID() string
 
