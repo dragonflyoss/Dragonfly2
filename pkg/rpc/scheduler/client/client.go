@@ -102,16 +102,6 @@ func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string,
 		err = reportStream.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
 	}
 	return reportStream, err
-	//, taskID string, ptr *scheduler.PeerTaskRequest
-	//sc.schedulerClient.ReportPieceResult(ctx, opts...)
-	//pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
-	//if err != nil {
-	//	return pps, err
-	//}
-	//logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
-
-	// trigger scheduling
-	//return sc.schedulerClient.ReportPieceResult(ctx, opts...)
 }
 
 func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
