@@ -112,6 +112,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
 	var parents []*resource.Peer
+	var parentIDs []string
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
 		parent, ok := value.(*resource.Peer)
 		if !ok {
@@ -138,16 +139,22 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
+		if parent.IsAncestor(peer) {
+			peer.Log.Infof("parent %s is not selected because it is ancestor", parent.ID)
+			return true
+		}
+
 		if parent.Host.FreeUploadLoad() <= 0 {
 			peer.Log.Infof("parent %s is not selected because its free upload is empty", parent.ID)
 			return true
 		}
 
 		parents = append(parents, parent)
-		peer.Log.Infof("parent %s is selected", parent.ID)
+		parentIDs = append(parentIDs, parent.ID)
 		return true
 	})
 
+	peer.Log.Infof("candidate parents include %#v", parentIDs)
 	return parents
 }
 

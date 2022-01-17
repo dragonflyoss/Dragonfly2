@@ -7,7 +7,7 @@ server:
   # port is the ip and port scheduler server listens on.
   port: 8002
   # limit the number of requests
-  listenLimit: 1000
+  listenLimit: 10000
   # cacheDir is dynconfig cache storage directory
   # in linux, default value is /var/cache/dragonfly
   # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
@@ -29,9 +29,9 @@ scheduler:
   # backSourceCount is the number of backsource clients when the CDN is unavailable
   backSourceCount: 3
   # retry scheduling limit times
-  retryLimit: 10
+  retryLimit: 20
   # retry scheduling interval
-  retryInterval: 1s
+  retryInterval: 500ms
   # gc metadata configuration
   gc:
     # peerGCInterval is peer's gc interval

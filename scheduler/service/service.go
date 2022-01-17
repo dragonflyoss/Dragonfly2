@@ -194,15 +194,16 @@ func (s *service) HandlePiece(ctx context.Context, peer *resource.Peer, piece *r
 		}
 	}
 
-	// Handle piece download failed
+	// Handle piece download code
 	if piece.Code != base.Code_Success {
-
-		// Wait for the client piece to be ready
-		// to prevent redundant logs from being printed
-		if piece.Code != base.Code_ClientWaitPieceReady {
-			peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
+		// FIXME(244372610) When dfdaemon download peer return empty, retry later.
+		if piece.Code == base.Code_ClientWaitPieceReady {
+			peer.Log.Infof("receive piece code %d and wait for dfdaemon piece ready", piece.Code)
+			return
 		}
 
+		// Handle piece download failed
+		peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}
