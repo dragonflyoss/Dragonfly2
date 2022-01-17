@@ -453,6 +453,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 
 	for _, _tc := range testCases {
 		t.Run(_tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			require := testifyrequire.New(t)
 			for _, typ := range taskTypes {
 				// dup a new test case with the task type
 				tc := _tc
@@ -654,12 +656,18 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		assert.True(r, fmt.Sprintf("task %d result should be true", i))
 	}
 
-	var taskCount int
-	ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
-		taskCount++
-		return true
-	})
-	assert.Equal(0, taskCount, "no running tasks")
+	var noRunningTask = true
+	for i := 0; i < 3; i++ {
+		ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
+			noRunningTask = false
+			return false
+		})
+		if noRunningTask {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.True(noRunningTask, "no running tasks")
 
 	// test reuse stream task
 	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(), request)
