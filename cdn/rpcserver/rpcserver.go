@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -92,9 +93,11 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
 	// begin piece, hint register success
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:          peerID,
-		HostUuid:        hostID,
-		PieceInfo:       nil,
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
 		Done:            false,
 		ContentLength:   registeredTask.SourceFileLength,
 		TotalPieceCount: registeredTask.TotalPieceCount,
