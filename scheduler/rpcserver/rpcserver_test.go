@@ -193,7 +193,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
 				mockTask.ContentLength.Store(1)
 				mockTask.DirectPiece = []byte{1}
-				ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1)
+				gomock.InOrder(
+					ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1),
+					ms.LoadOrStoreHost(context.Background(), req).Return(mockHost, true).Times(1),
+					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
+				)
 			},
 			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
@@ -431,26 +435,6 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "context canceled")
-			},
-		},
-		{
-			name: "stream stop with dferr",
-			mock: func(mockPeer *resource.Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockServiceMockRecorder, mstream *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
-				gomock.InOrder(
-					mstream.Context().Return(context.Background()).Times(1),
-					mstream.Recv().Return(&rpcscheduler.PieceResult{
-						SrcPid: mockPeerID,
-					}, nil).Times(1),
-					ms.LoadPeer(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.HandlePiece(gomock.Any(), gomock.Any(), gomock.Any()).Return().Times(1),
-				)
-				mockPeer.StopStream(dferrors.New(base.Code_SchedError, ""))
-			},
-			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
 			},
 		},
 		{

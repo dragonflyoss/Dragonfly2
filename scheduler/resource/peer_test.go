@@ -29,9 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
@@ -55,7 +53,6 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.Empty(peer.Pieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.Stream)
-				assert.Empty(peer.StopChannel)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
 				assert.EqualValues(peer.Task, mockTask)
 				assert.EqualValues(peer.Host, mockHost)
@@ -848,66 +845,6 @@ func TestPeer_DeleteStream(t *testing.T) {
 				peer.StoreStream(stream)
 				peer.DeleteStream()
 				_, ok := peer.LoadStream()
-				assert.Equal(ok, false)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
-
-			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
-			tc.expect(t, peer, stream)
-		})
-	}
-}
-
-func TestPeer_StopStream(t *testing.T) {
-	tests := []struct {
-		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
-	}{
-		{
-			name: "stop stream with scheduling error",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
-				assert := assert.New(t)
-				peer.StoreStream(stream)
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
-				assert.Equal(ok, true)
-				_, ok = peer.LoadStream()
-				assert.Equal(ok, false)
-
-				select {
-				case dferr := <-peer.StopChannel:
-					assert.Equal(dferr.Code, base.Code_SchedError)
-					assert.Equal(dferr.Message, "")
-				default:
-					assert.Fail("stop channel can not receive error")
-				}
-			},
-		},
-		{
-			name: "stop stream with empty stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
-				assert := assert.New(t)
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
-				assert.Equal(ok, false)
-			},
-		},
-		{
-			name: "stop stream with channel busy",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
-				assert := assert.New(t)
-				peer.StoreStream(stream)
-				peer.StopChannel <- dferrors.New(base.Code_SchedError, "")
-				ok := peer.StopStream(dferrors.New(base.Code_SchedError, ""))
-				assert.Equal(ok, false)
-				_, ok = peer.LoadStream()
 				assert.Equal(ok, false)
 			},
 		},
