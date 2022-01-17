@@ -102,7 +102,9 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 			ContentLength:   registeredTask.SourceFileLength,
 			TotalPieceCount: registeredTask.TotalPieceCount,
 		}
-		stream.Send(pieceSeed)
+		if err := stream.Send(pieceSeed); err != nil {
+			logger.Errorf("failed to send a piece result: %v", err)
+		}
 		jsonPiece, err := json.Marshal(pieceSeed)
 		if err != nil {
 			logger.Errorf("failed to json marshal seed piece: %v", err)

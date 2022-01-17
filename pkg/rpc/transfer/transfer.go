@@ -21,14 +21,13 @@ import (
 	"io"
 	"sync"
 
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/anypb"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"

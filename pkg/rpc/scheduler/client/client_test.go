@@ -49,7 +49,7 @@ type testServer struct {
 
 	registerResult map[string]*scheduler.RegisterResult // url->registerResult
 	taskInfo       map[string][]*scheduler.PeerPacket   // taskID-> peerPacket
-	taskUrl2Id     map[string]string                    // url->taskID
+	taskURL2ID     map[string]string                    // url->taskID
 	taskID2Url     map[string]string
 	peerIds        sets.String
 	addr           string
@@ -64,14 +64,14 @@ func (s *testServer) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTa
 			return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "hit exclude server")
 		}
 	}
-	if rs, ok := s.registerResult[req.Url]; !ok {
+	rs, ok := s.registerResult[req.Url]
+	if !ok {
 		return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "wrong server")
-	} else {
-		s.peerIds.Insert(req.PeerId)
-		s.taskUrl2Id[req.Url] = idgen.TaskID(req.Url, nil)
-		s.taskID2Url[idgen.TaskID(req.Url, nil)] = req.Url
-		return rs, nil
 	}
+	s.peerIds.Insert(req.PeerId)
+	s.taskURL2ID[req.Url] = idgen.TaskID(req.Url, nil)
+	s.taskID2Url[idgen.TaskID(req.Url, nil)] = req.Url
+	return rs, nil
 }
 
 // ReportPieceResult reports piece results and receives peer packets.
@@ -111,7 +111,6 @@ func (s *testServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceRes
 			return err
 		}
 	}
-	return nil
 }
 
 // ReportPeerResult reports downloading result for the peer task.
@@ -134,7 +133,7 @@ func newTestServer(addr string, registerResult map[string]*scheduler.RegisterRes
 	s := &testServer{
 		registerResult: registerResult,
 		taskInfo:       make(map[string][]*scheduler.PeerPacket),
-		taskUrl2Id:     make(map[string]string),
+		taskURL2ID:     make(map[string]string),
 		taskID2Url:     make(map[string]string),
 		peerIds:        sets.NewString(),
 		addr:           addr,
@@ -162,10 +161,10 @@ func startTestServers(count int) (_ *testServerData, err error) {
 			t.cleanup()
 		}
 	}()
-	var taskUrls []string
-	for s, _ := range registerResult {
-		taskUrls = append(taskUrls, s)
-	}
+	//var taskUrls []string
+	//for s, _ := range registerResult {
+	//	taskUrls = append(taskUrls, s)
+	//}
 	//serverHashRing := hashring.New(t.addresses)
 	for i := 0; i < count; i++ {
 		lis, err := net.Listen("tcp", "localhost:0")
@@ -243,7 +242,7 @@ func TestOneBackend(t *testing.T) {
 		}
 		stream, err := client.ReportPieceResult(context.Background(), taskID, taskRequest)
 		if err != nil {
-			t.Fatalf("failed to call ReportPieceResult: %v", err)
+			log.Fatalf("failed to call ReportPieceResult: %v", err)
 		}
 		waitClose := make(chan struct{})
 		go func() {
@@ -254,7 +253,7 @@ func TestOneBackend(t *testing.T) {
 					return
 				}
 				if err != nil {
-					t.Fatalf("failed to recive a peer packet: %v", err)
+					log.Fatalf("failed to recive a peer packet: %v", err)
 				}
 				log.Printf("received a peer packet: %s", peerPacket)
 			}
@@ -303,7 +302,9 @@ func TestOneBackend(t *testing.T) {
 				t.Fatalf("failed to send a piece result: %v", err)
 			}
 		}
-		stream.CloseSend()
+		if err := stream.CloseSend(); err != nil {
+			t.Fatalf("failed to close send stream: %v", err)
+		}
 		<-waitClose
 	}
 	{
@@ -464,7 +465,9 @@ func TestUpdateAddress(t *testing.T) {
 				t.Fatalf("failed to send a piece result: %v", err)
 			}
 		}
-		stream.CloseSend()
+		if err := stream.CloseSend(); err != nil {
+			t.Fatalf("failed to close send stream: %v", err)
+		}
 		<-waitClose
 		if calledServer.Addr.String() != expectedServer {
 			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)

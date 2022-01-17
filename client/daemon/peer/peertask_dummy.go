@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 type dummySchedulerClient struct {
@@ -35,7 +34,8 @@ func (d *dummySchedulerClient) RegisterPeerTask(ctx context.Context, request *sc
 	panic("should not call this function")
 }
 
-func (d *dummySchedulerClient) ReportPieceResult(ctx context.Context, s string, request *scheduler.PeerTaskRequest, option ...grpc.CallOption) (schedulerclient.PeerPacketStream, error) {
+func (d *dummySchedulerClient) ReportPieceResult(ctx context.Context, s string, request *scheduler.PeerTaskRequest, option ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient,
+	error) {
 	return &dummyPeerPacketStream{}, nil
 }
 
@@ -51,10 +51,12 @@ func (d *dummySchedulerClient) Close() error {
 	return nil
 }
 
-func (d *dummySchedulerClient) UpdateState(addrs []dfnet.NetAddr) {
+func (d *dummySchedulerClient) UpdateAddresses(addrs []dfnet.NetAddr) error {
+	return nil
 }
 
 type dummyPeerPacketStream struct {
+	grpc.ClientStream
 }
 
 func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {

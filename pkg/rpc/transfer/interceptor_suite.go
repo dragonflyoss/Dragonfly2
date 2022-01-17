@@ -64,7 +64,7 @@ func (s *testService) requestCount() uint {
 
 func (s *testService) maybeFailRequest() error {
 	s.mu.Lock()
-	s.reqCounter += 1
+	s.reqCounter++
 	reqModulo := s.reqModulo
 	reqCounter := s.reqCounter
 	reqSleep := s.reqSleep
@@ -110,7 +110,7 @@ func (s *testService) FullDuplexCall(stream testpb.TestService_FullDuplexCallSer
 		stream.Send(&testpb.StreamingOutputCallResponse{
 			Payload: req.Payload,
 		})
-		count += 1
+		count++
 	}
 	return nil
 }

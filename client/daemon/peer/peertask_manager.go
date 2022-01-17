@@ -21,6 +21,7 @@ import (
 	"io"
 	"sync"
 
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
@@ -99,6 +100,7 @@ func init() {
 type peerTaskManager struct {
 	host            *scheduler.PeerHost
 	schedulerClient schedulerclient.SchedulerClient
+	peerTaskClient  dfclient.ElasticClient
 	schedulerOption config.SchedulerOption
 	pieceManager    PieceManager
 	storageManager  storage.Manager
@@ -123,6 +125,7 @@ func NewPeerTaskManager(
 	pieceManager PieceManager,
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.SchedulerClient,
+	peerTaskClient dfclient.ElasticClient,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
 	multiplex bool,
@@ -136,6 +139,7 @@ func NewPeerTaskManager(
 		pieceManager:      pieceManager,
 		storageManager:    storageManager,
 		schedulerClient:   schedulerClient,
+		peerTaskClient:    peerTaskClient,
 		schedulerOption:   schedulerOption,
 		perPeerRateLimit:  perPeerRateLimit,
 		enableMultiplex:   multiplex,

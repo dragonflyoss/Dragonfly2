@@ -464,7 +464,7 @@ func TestMigration(t *testing.T) {
 				break
 			}
 			if err != nil {
-				t.Fatalf("failed to recieve Download: %v", err)
+				t.Fatalf("failed to receive Download: %v", err)
 			}
 		}
 		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {

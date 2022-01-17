@@ -17,9 +17,10 @@
 package transfer
 
 import (
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 var (

@@ -74,7 +74,7 @@ func (tsc *testSubConn) String() string {
 
 func newTestPicker(cStats []connectivity.State, pickHistory map[string]string) balancer.Picker {
 	var subConns = make(map[resolver.Address]balancer.SubConn)
-	var scStates = make(map[balancer.SubConn]connectivity.State)
+	var scStates = make(map[string]connectivity.State)
 	var info = d7yPickerBuildInfo{
 		subConns:    subConns,
 		scStates:    scStates,
@@ -83,7 +83,7 @@ func newTestPicker(cStats []connectivity.State, pickHistory map[string]string) b
 	for i, st := range cStats {
 		testSC := testSubConns[i]
 		subConns[resolver.Address{Addr: testSC.String()}] = testSC
-		scStates[testSC] = st
+		scStates[testSC.String()] = st
 	}
 	return newD7yPicker(info)
 }

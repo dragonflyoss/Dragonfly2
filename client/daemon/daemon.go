@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -140,6 +141,10 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get schedulers")
 	}
+	peerTaskClient, err := dfclient.GetElasticClient(opts...)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get peer task client")
+	}
 
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
@@ -168,7 +173,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	if err != nil {
 		return nil, err
 	}
-	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
+	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, peerTaskClient, opt.Scheduler,
 		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
 	if err != nil {
 		return nil, err

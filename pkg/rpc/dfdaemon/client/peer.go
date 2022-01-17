@@ -77,9 +77,11 @@ type ElasticClient interface {
 func (dc *elasticClient) GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
 	targetAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
-	dc.resolver.AddAddresses([]dfnet.NetAddr{{
+	if err := dc.resolver.AddAddresses([]dfnet.NetAddr{{
 		Addr: targetAddr,
-	}})
+	}}); err != nil {
+		return nil, err
+	}
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: targetAddr,
 	})

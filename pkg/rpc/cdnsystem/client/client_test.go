@@ -446,7 +446,7 @@ func TestMigration(t *testing.T) {
 				break
 			}
 			if err != nil {
-				t.Fatalf("failed to recieve ObtainSeeds: %v", err)
+				t.Fatalf("failed to receive ObtainSeeds: %v", err)
 			}
 		}
 		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {
@@ -507,11 +507,14 @@ func TestMigration(t *testing.T) {
 	}
 	{
 		// add some unavailable servers
-		cdnClient.UpdateAddresses(append([]dfnet.NetAddr{
+		err := cdnClient.UpdateAddresses(append([]dfnet.NetAddr{
 			{Addr: test.addresses[0]},
 			{Addr: test.addresses[1]},
 			{Addr: test.addresses[2]},
 			{Addr: "2.2.2.2:88"}, {Addr: "4.4.4.4:88"}}))
+		if err != nil {
+			t.Fatalf("failed to update address: %v", err)
+		}
 		// all server node failed
 		var taskID = "aaaaaaaaaaaaaaa"
 		serverHashRing := hashring.New(test.addresses)

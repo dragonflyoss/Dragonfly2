@@ -10,7 +10,6 @@ import (
 
 	dfnet "d7y.io/dragonfly/v2/internal/dfnet"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -111,14 +110,14 @@ func (mr *MockSchedulerClientMockRecorder) ReportPeerResult(arg0, arg1 interface
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockSchedulerClient) ReportPieceResult(arg0 context.Context, arg1 string, arg2 *scheduler.PeerTaskRequest, arg3 ...grpc.CallOption) (client.PeerPacketStream, error) {
+func (m *MockSchedulerClient) ReportPieceResult(arg0 context.Context, arg1 string, arg2 *scheduler.PeerTaskRequest, arg3 ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ReportPieceResult", varargs...)
-	ret0, _ := ret[0].(client.PeerPacketStream)
+	ret0, _ := ret[0].(scheduler.Scheduler_ReportPieceResultClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

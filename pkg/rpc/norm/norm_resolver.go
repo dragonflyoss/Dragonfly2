@@ -80,7 +80,9 @@ func (r *d7yResolver) start() {
 		r.cc.ReportError(err)
 	} else {
 		for addr := range out {
-			r.cc.UpdateState(resolver.State{Addresses: addr})
+			if err := r.cc.UpdateState(resolver.State{Addresses: addr}); err != nil {
+				logger.Errorf("failed to update state: %v", err)
+			}
 		}
 	}
 }
@@ -228,7 +230,7 @@ func (w *Watcher) getAllAddresses() ([]resolver.Address, error) {
 		}
 		w.cache.Set("servers", addresses, cache.NoExpiration)
 		if err := w.cache.SaveFile(w.config.path); err != nil {
-
+			logger.Errorf("failed to save cache file: %v", err)
 		}
 		return addresses, nil
 	}

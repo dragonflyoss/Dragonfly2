@@ -83,6 +83,7 @@ type peerTaskConductor struct {
 	// schedule options
 	schedulerOption config.SchedulerOption
 	schedulerClient schedulerclient.SchedulerClient
+	peerTaskClient  dfclient.ElasticClient
 
 	// peer task meta info
 	peerID          string
@@ -268,6 +269,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		getPiecesMaxRetry:   ptm.getPiecesMaxRetry,
 		schedulerOption:     ptm.schedulerOption,
 		schedulerClient:     ptm.schedulerClient,
+		peerTaskClient:      ptm.peerTaskClient,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
@@ -1079,7 +1081,7 @@ func (pt *peerTaskConductor) getPieceTasks(span trace.Span, curPeerPacket *sched
 		count             int
 	)
 	p, _, err := retry.Run(pt.ctx, func() (interface{}, bool, error) {
-		piecePacket, getError := dfclient.GetPieceTasks(pt.ctx, peer, request)
+		piecePacket, getError := pt.peerTaskClient.GetPieceTasks(pt.ctx, peer, request)
 		// when GetPieceTasks returns err, exit retry
 		if getError != nil {
 			pt.Errorf("get piece tasks with error: %s", getError)
