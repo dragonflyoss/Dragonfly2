@@ -658,7 +658,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 
 	var (
 		noRunningTask = true
-		success          bool
+		success       bool
 	)
 	select {
 	case <-ptc.successCh:
