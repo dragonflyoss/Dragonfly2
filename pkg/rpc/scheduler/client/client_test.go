@@ -379,6 +379,9 @@ func TestUpdateAddress(t *testing.T) {
 		{Addr: test.addresses[4]}}); err != nil {
 		t.Fatalf("failed to update address: %v", err)
 	}
+	serverHashRing = hashring.New(test.addresses)
+	xxx, _ := serverHashRing.GetNode(taskID)
+	log.Printf("updated server node: %s, previous server node: %s", xxx, expectedServer)
 	{
 		var calledServer peer.Peer
 		taskRequest := &scheduler.PeerTaskRequest{
