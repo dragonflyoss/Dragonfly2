@@ -21,18 +21,17 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
-	"k8s.io/apimachinery/pkg/util/sets"
-
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 
 // testSubConn contains a list of SubConns to be used in tests.
@@ -124,7 +123,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 		{
 			name: "pick stick is true and success",
 			picker: newTestPicker([]connectivity.State{connectivity.Connecting, connectivity.Idle}, map[string]string{
-				"test1": testSubConns[2].String(),
+				"test1": testSubConns[1].String(),
 			}),
 			pickReq: &pickreq.PickRequest{
 				HashKey:     "test1",
@@ -132,7 +131,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 				IsStick:     true,
 				TargetAddr:  "",
 			},
-			wantSC: testSubConns[2],
+			wantSC: testSubConns[1],
 		},
 		{
 			name:   "pick stick is true and not found hashKey in history",
@@ -143,7 +142,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 				IsStick:     true,
 				TargetAddr:  "",
 			},
-			wantErr: status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey %s, but cannot find it in pick history", "test1"),
+			wantErr: status.Errorf(codes.Code(base.Code_ServerUnavailable), "rpc call is required to stick to hashKey %s, but cannot find it in pick history", "test1"),
 		},
 		{
 			name:   "pick stick is true and not specify hashKey",
@@ -154,7 +153,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 				IsStick:     true,
 				TargetAddr:  "",
 			},
-			wantErr: status.Errorf(codes.FailedPrecondition, "rpc call is required to stick to hashKey, but hashKey is empty"),
+			wantErr: status.Errorf(codes.Code(base.Code_ServerUnavailable), "rpc call is required to stick to hashKey, but hashKey is empty"),
 		},
 		{
 			name:   "pick result filter out failedNodes",
@@ -177,7 +176,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 				t.Errorf("Pick() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if got.SubConn != tt.wantSC {
+			if tt.wantErr == nil && got.SubConn != tt.wantSC {
 				t.Errorf("Pick() got = %v, want picked SubConn: %v", got, tt.wantSC)
 			}
 			if sc := tt.wantSCToConnect; sc != nil {
