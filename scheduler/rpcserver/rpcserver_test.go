@@ -504,7 +504,7 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			mockPeer.StoreStream(stream)
 			tc.mock(mockPeer, stream, svc.EXPECT(), stream.EXPECT())
 			svr := New(svc)
-			tc.expect(t, mockPeer, svr.ReportPieceResult(stream))
+			tc.expect(t, mockPeer, svr.ReportPieceResult(stream.Context(), stream))
 		})
 	}
 }

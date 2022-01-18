@@ -85,12 +85,14 @@ func (s *testServer) Download(request *dfdaemon.DownRequest, stream dfdaemon.Dae
 }
 
 func (s *testServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var aPrefix = "aaaaaaaaaaaaaaa"
+	var bPrefix = "bbbbbbbbbbbbbbb"
 	log.Printf("server %s receive get piece task request %v", s.addr, request)
-	if strings.HasPrefix(request.TaskId, "aaaaaaaaaaaaaaa") {
-		request.TaskId = "aaaaaaaaaaaaaaa"
+	if strings.HasPrefix(request.TaskId, aPrefix) {
+		request.TaskId = aPrefix
 	}
-	if strings.HasPrefix(request.TaskId, "bbbbbbbbbbbbbbb") {
-		request.TaskId = "bbbbbbbbbbbbbbb"
+	if strings.HasPrefix(request.TaskId, bPrefix) {
+		request.TaskId = bPrefix
 	}
 	piecePacket, ok := s.piecePacket[request.TaskId]
 	if !ok {

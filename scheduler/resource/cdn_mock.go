@@ -11,7 +11,6 @@ import (
 	dfnet "d7y.io/dragonfly/v2/internal/dfnet"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	cdnsystem "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	client "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
@@ -129,14 +128,14 @@ func (mr *MockCDNClientMockRecorder) GetPieceTasks(ctx, addr, req interface{}, o
 }
 
 // ObtainSeeds mocks base method.
-func (m *MockCDNClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*client.PieceSeedStream, error) {
+func (m *MockCDNClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*cdnsystem.Seeder_ObtainSeedsClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, sr}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ObtainSeeds", varargs...)
-	ret0, _ := ret[0].(*client.PieceSeedStream)
+	ret0, _ := ret[0].(*cdnsystem.Seeder_ObtainSeedsClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

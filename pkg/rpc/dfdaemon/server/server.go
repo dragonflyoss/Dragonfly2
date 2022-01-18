@@ -18,27 +18,24 @@ package server
 
 import (
 	"context"
-	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
 // DaemonServer refer to dfdaemon.DaemonServer
 type DaemonServer interface {
-	// Trigger client to download file
-	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
-	// Get piece tasks from other peers
+	// Download trigger client to download file
+	Download(context.Context, *dfdaemon.DownRequest, dfdaemon.Daemon_DownloadServer) error
+	// GetPieceTasks get piece tasks from other peers
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
-	// Check daemon health
+	// CheckHealth check daemon health
 	CheckHealth(context.Context) error
 }
 
@@ -54,35 +51,14 @@ func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-
+	ctx := stream.Context()
 	peerAddr := "unknown"
 	if pe, ok := peer.FromContext(ctx); ok {
 		peerAddr = pe.Addr.String()
 	}
 	logger.Infof("trigger download for url: %s, from: %s, uuid: %s", req.Url, peerAddr, req.Uuid)
 
-	errChan := make(chan error, 10)
-	drc := make(chan *dfdaemon.DownResult, 4)
-
-	once := new(sync.Once)
-	closeDrc := func() {
-		once.Do(func() {
-			close(drc)
-		})
-	}
-	defer closeDrc()
-
-	go call(ctx, drc, p, req, errChan)
-
-	go send(drc, closeDrc, stream, errChan)
-
-	if err = <-errChan; dferrors.IsEndOfStream(err) {
-		err = nil
-	}
-
-	return
+	return p.server.Download(ctx, req, stream)
 }
 
 func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
@@ -91,39 +67,4 @@ func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (
 
 func (p *proxy) CheckHealth(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
 	return new(empty.Empty), p.server.CheckHealth(ctx)
-}
-
-func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {
-	err := safe.Call(func() {
-		defer closeDrc()
-
-		for v := range drc {
-			if err := stream.Send(v); err != nil {
-				errChan <- err
-				return
-			}
-
-			if v.Done {
-				break
-			}
-		}
-
-		errChan <- dferrors.ErrEndOfStream
-	})
-
-	if err != nil {
-		errChan <- err
-	}
-}
-
-func call(ctx context.Context, drc chan *dfdaemon.DownResult, p *proxy, req *dfdaemon.DownRequest, errChan chan error) {
-	err := safe.Call(func() {
-		if err := p.server.Download(ctx, req, drc); err != nil {
-			errChan <- err
-		}
-	})
-
-	if err != nil {
-		errChan <- err
-	}
 }

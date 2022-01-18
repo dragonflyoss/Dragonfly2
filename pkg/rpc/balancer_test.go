@@ -19,6 +19,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"testing"
 	"time"
@@ -96,7 +97,7 @@ func startTestServers(t *testing.T, numServers int) (_ *testServerData, err erro
 
 		go func(s *grpc.Server, l net.Listener) {
 			if err := s.Serve(l); err != nil {
-				t.Fatalf("failed to serve %v", err)
+				log.Fatalf("failed to serve %v", err)
 			}
 		}(s, lis)
 	}

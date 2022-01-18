@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/serialx/hashring"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -244,20 +245,20 @@ func TestOneBackend(t *testing.T) {
 		if err != nil {
 			log.Fatalf("failed to call ReportPieceResult: %v", err)
 		}
-		waitClose := make(chan struct{})
-		go func() {
+		g := errgroup.Group{}
+		g.Go(func() error {
 			for {
 				peerPacket, err := stream.Recv()
 				if err == io.EOF {
-					close(waitClose)
-					return
+					return nil
 				}
 				if err != nil {
-					log.Fatalf("failed to recive a peer packet: %v", err)
+					return err
 				}
 				log.Printf("received a peer packet: %s", peerPacket)
 			}
-		}()
+		})
+
 		pieceResults := []*scheduler.PieceResult{
 			{
 				TaskId: taskID,
@@ -305,7 +306,9 @@ func TestOneBackend(t *testing.T) {
 		if err := stream.CloseSend(); err != nil {
 			t.Fatalf("failed to close send stream: %v", err)
 		}
-		<-waitClose
+		if err := g.Wait(); err != nil {
+			log.Fatalf("failed to recive a peer packet: %v", err)
+		}
 	}
 	{
 		peerResult := &scheduler.PeerResult{
@@ -407,20 +410,19 @@ func TestUpdateAddress(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to call ReportPieceResult: %v", err)
 		}
-		waitClose := make(chan struct{})
-		go func() {
+		g := errgroup.Group{}
+		g.Go(func() error {
 			for {
 				peerPacket, err := stream.Recv()
 				if err == io.EOF {
-					close(waitClose)
-					return
+					return nil
 				}
 				if err != nil {
-					t.Fatalf("failed to recive a peer packet: %v", err)
+					return err
 				}
 				log.Printf("received a peer packet: %s", peerPacket)
 			}
-		}()
+		})
 		pieceResults := []*scheduler.PieceResult{
 			{
 				TaskId: taskID,
@@ -468,7 +470,9 @@ func TestUpdateAddress(t *testing.T) {
 		if err := stream.CloseSend(); err != nil {
 			t.Fatalf("failed to close send stream: %v", err)
 		}
-		<-waitClose
+		if err := g.Wait(); err != nil {
+			t.Fatalf("failed to recive a peer packet: %v", err)
+		}
 		if calledServer.Addr.String() != expectedServer {
 			t.Fatalf("hash taskID failed, expected server: %s, actual: %s", expectedServer, calledServer.Addr)
 		}
@@ -664,7 +668,7 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 		tinyTaskURL:   tinyRegisterResult,
 	}
 
-	var taskUrl2Id = map[string]string{
+	var taskURL2ID = map[string]string{
 		normalTaskURL: normalTaskID,
 		smallTaskURL:  smallTaskID,
 		tinyTaskURL:   tinyTaskID,
@@ -700,5 +704,5 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 	var taskInfos = map[string][]*scheduler.PeerPacket{
 		normalTaskID: normalPeerPacket,
 	}
-	return taskRegisterResult, taskInfos, taskUrl2Id
+	return taskRegisterResult, taskInfos, taskURL2ID
 }

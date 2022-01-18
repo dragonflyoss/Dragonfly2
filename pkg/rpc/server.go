@@ -18,10 +18,10 @@ package rpc
 
 import (
 	"context"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"

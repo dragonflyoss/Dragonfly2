@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package transfer
+package interceptor
 
 import (
 	"google.golang.org/grpc"

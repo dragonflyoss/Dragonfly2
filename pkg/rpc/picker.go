@@ -20,8 +20,6 @@ import (
 	"strconv"
 	"sync"
 
-	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/distribution/distribution/v3/uuid"
 	anypb "github.com/golang/protobuf/ptypes/any"
 	"github.com/serialx/hashring"
@@ -32,6 +30,9 @@ import (
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
+
+	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 
 var pickerLogger = grpclog.Component("picker")

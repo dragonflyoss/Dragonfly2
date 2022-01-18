@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
@@ -53,9 +54,7 @@ func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOpt
 		config:  config,
 		service: cdnService,
 	}
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
-	svr.Server = grpcServer
-	cdnsystem.RegisterSeederServer(grpcServer, svr)
+	svr.Server = cdnserver.New(svr, opts...)
 	return svr, nil
 }
 
@@ -102,7 +101,7 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 			TotalPieceCount: registeredTask.TotalPieceCount,
 		}
 		if err := stream.Send(pieceSeed); err != nil {
-			logger.Errorf("failed to send a piece result: %v", err)
+			return err
 		}
 		jsonPiece, err := json.Marshal(pieceSeed)
 		if err != nil {
@@ -134,7 +133,9 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 		ContentLength:   seedTask.SourceFileLength,
 		TotalPieceCount: seedTask.TotalPieceCount,
 	}
-	stream.Send(pieceSeed)
+	if err := stream.Send(pieceSeed); err != nil {
+		return err
+	}
 	jsonPiece, err := json.Marshal(pieceSeed)
 	if err != nil {
 		logger.Errorf("failed to json marshal seed piece: %v", err)
@@ -143,13 +144,16 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 	return nil
 }
 
-func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest) (piecePacket *base.PiecePacket, err error) {
 	var span trace.Span
 	_, span = tracer.Start(ctx, constants.SpanGetPieceTasks, trace.WithSpanKind(trace.SpanKindServer))
 	defer span.End()
 	span.SetAttributes(constants.AttributeGetPieceTasksRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
 	logger.Infof("get piece tasks: %#v", req)
+	defer func() {
+		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
+	}()
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {
 		if task.IsTaskNotFound(err) {

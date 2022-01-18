@@ -19,9 +19,10 @@ package rpc
 import (
 	"sync"
 
-	"d7y.io/dragonfly/v2/internal/dfnet"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
+
+	"d7y.io/dragonfly/v2/internal/dfnet"
 )
 
 var (

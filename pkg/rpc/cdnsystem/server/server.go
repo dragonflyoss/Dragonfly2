@@ -22,6 +22,7 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -35,7 +36,7 @@ import (
 // SeederServer  refer to cdnsystem.SeederServer
 type SeederServer interface {
 	// ObtainSeeds generate seeds and return to scheduler
-	ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error
+	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, cdnsystem.Seeder_ObtainSeedsServer) error
 	// GetPieceTasks get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
@@ -51,12 +52,19 @@ func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 	return grpcServer
 }
 
-func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
+func (p *proxy) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
 	metrics.DownloadCount.Inc()
 	metrics.ConcurrentDownloadGauge.Inc()
 	defer metrics.ConcurrentDownloadGauge.Dec()
 
-	err = p.server.ObtainSeeds(sr, stream)
+	ctx := stream.Context()
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("trigger obtainSeed from scheduler: %s, req: %s", peerAddr, req.Url)
+
+	err = p.server.ObtainSeeds(ctx, req, stream)
 
 	if err != nil {
 		metrics.DownloadFailureCount.Inc()

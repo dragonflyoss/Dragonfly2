@@ -88,8 +88,8 @@ func (r *d7yResolver) start() {
 }
 
 // UpdateState calls CC.UpdateState.
-func (r *d7yResolver) UpdateState(s resolver.State) {
-	r.cc.UpdateState(s)
+func (r *d7yResolver) UpdateState(s resolver.State) error {
+	return r.cc.UpdateState(s)
 }
 
 func (r *d7yResolver) Add() {

@@ -168,9 +168,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	}, nil
 }
 
-func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
-	ctx := stream.Context()
-
+func (s *Server) ReportPieceResult(ctx context.Context, stream scheduler.Scheduler_ReportPieceResultServer) error {
 	// Handle begin of piece
 	beginOfPiece, err := stream.Recv()
 	if err != nil {
