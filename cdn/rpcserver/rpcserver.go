@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -38,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
