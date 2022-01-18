@@ -19,6 +19,7 @@ package peer
 import (
 	"bytes"
 	"context"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"fmt"
 	"io"
 	"math"
@@ -71,7 +72,7 @@ type componentsOption struct {
 }
 
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
-	schedulerclient.SchedulerClient, storage.Manager) {
+	schedulerclient.SchedulerClient, dfclient.ElasticClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
@@ -218,7 +219,8 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
-	return schedulerClient, storageManager
+	peerTaskClient, _ := dfclient.GetElasticClient()
+	return schedulerClient, peerTaskClient, storageManager
 }
 
 type mockManager struct {
@@ -236,7 +238,7 @@ func (m *mockManager) CleanUp() {
 }
 
 func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOption) *mockManager {
-	schedulerClient, storageManager := setupPeerTaskManagerComponents(ctrl, opt)
+	schedulerClient, peerTaskClient, storageManager := setupPeerTaskManagerComponents(ctrl, opt)
 	scheduleTimeout := clientutil.Duration{Duration: 10 * time.Minute}
 	if ts.scheduleTimeout > 0 {
 		scheduleTimeout = clientutil.Duration{Duration: ts.scheduleTimeout}
@@ -258,6 +260,7 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 		},
 		storageManager:  storageManager,
 		schedulerClient: schedulerClient,
+		peerTaskClient:  peerTaskClient,
 		schedulerOption: config.SchedulerOption{
 			ScheduleTimeout: scheduleTimeout,
 		},
