@@ -85,7 +85,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_TINY,
 					DirectPiece: &scheduler.RegisterResult_PieceContent{
 						PieceContent: task.DirectPiece,
 					},
@@ -111,7 +111,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -126,7 +126,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -153,7 +153,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			peer.Log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
-				SizeScope: sizeScope,
+				SizeScope: base.SizeScope_SMALL,
 				DirectPiece: &scheduler.RegisterResult_SinglePiece{
 					SinglePiece: singlePiece,
 				},
@@ -168,7 +168,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
-				SizeScope: sizeScope,
+				SizeScope: base.SizeScope_NORMAL,
 			}, nil
 		}
 	}
