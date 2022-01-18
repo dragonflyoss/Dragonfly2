@@ -108,7 +108,7 @@ func (cm *manager) TriggerCDN(ctx context.Context, seedTask *task.SeedTask) (*ta
 		// todo source not reach error SOURCE_ERROR
 		updateTaskInfo = getUpdateTaskInfoWithStatusOnly(seedTask, task.StatusFailed)
 	}
-	if updateTaskInfo.IsDone() {
+	if !updateTaskInfo.IsDone() {
 		seedTask.Log().Errorf("task status is not final state, current is %s", updateTaskInfo.CdnStatus)
 		updateTaskInfo = getUpdateTaskInfoWithStatusOnly(seedTask, task.StatusFailed)
 	}
