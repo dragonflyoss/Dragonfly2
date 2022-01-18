@@ -646,7 +646,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	for i := 0; i < ptcCount; i++ {
 		p, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, request, rate.Limit(pieceSize*3))
 		assert.Nil(err, fmt.Sprintf("load peerTaskConductor %d", i))
-		assert.Equal(ptc, p, fmt.Sprintf("ptc %d should be same with ptc", i))
+		assert.Equal(ptc.peerID, p.GetPeerID(), fmt.Sprintf("ptc %d should be same with ptc", i))
 		go syncFunc(i, p)
 	}
 
