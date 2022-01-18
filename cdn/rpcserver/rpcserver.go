@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -30,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -74,11 +75,11 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
 		if supervisor.IsResourcesLacked(err) {
-			err = dferrors.Newf(base.Code_ResourceLacked, "resources lacked for task(%s): %v", req.TaskId, err)
+			err = status.Errorf(codes.Code(base.Code_ResourceLacked), "resources lacked for task(%s): %v", req.TaskId, err)
 			span.RecordError(err)
 			return err
 		}
-		err = dferrors.Newf(base.Code_CDNTaskRegistryFail, "failed to register seed task(%s): %v", req.TaskId, err)
+		err = status.Errorf(codes.Code(base.Code_CDNTaskRegistryFail), "failed to register seed task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return err
 	}
@@ -112,18 +113,18 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {
-		err = dferrors.Newf(base.Code_CDNError, "failed to get task(%s): %v", req.TaskId, err)
+		err = status.Errorf(codes.Code(base.Code_CDNError), "failed to get task(%s): %v", req.TaskId, err)
 		if task.IsTaskNotFound(err) {
-			err = dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s): %v", req.TaskId, err)
+			err = status.Errorf(codes.Code(base.Code_CDNTaskNotFound), "failed to get task(%s): %v", req.TaskId, err)
 			span.RecordError(err)
 			return err
 		}
-		err = dferrors.Newf(base.Code_CDNError, "failed to get task(%s): %v", req.TaskId, err)
+		err = status.Errorf(codes.Code(base.Code_CDNError), "failed to get task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return err
 	}
 	if !seedTask.IsSuccess() {
-		err = dferrors.Newf(base.Code_CDNTaskDownloadFail, "task(%s) status error , status: %s", req.TaskId, seedTask.CdnStatus)
+		err = status.Errorf(codes.Code(base.Code_CDNTaskDownloadFail), "task(%s) status error , status: %s", req.TaskId, seedTask.CdnStatus)
 		span.RecordError(err)
 		return err
 	}
@@ -159,22 +160,22 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {
 		if task.IsTaskNotFound(err) {
-			err = dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s): %v", req.TaskId, err)
+			err = status.Errorf(codes.Code(base.Code_CDNTaskNotFound), "failed to get task(%s): %v", req.TaskId, err)
 			span.RecordError(err)
 			return nil, err
 		}
-		err = dferrors.Newf(base.Code_CDNError, "failed to get task(%s): %v", req.TaskId, err)
+		err = status.Errorf(codes.Code(base.Code_CDNError), "failed to get task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return nil, err
 	}
 	if seedTask.IsError() {
-		err = dferrors.Newf(base.Code_CDNTaskDownloadFail, "task(%s) status is FAIL, cdnStatus: %s", seedTask.ID, seedTask.CdnStatus)
+		err = status.Errorf(codes.Code(base.Code_CDNTaskDownloadFail), "task(%s) status is FAIL, cdnStatus: %s", seedTask.ID, seedTask.CdnStatus)
 		span.RecordError(err)
 		return nil, err
 	}
 	pieces, err := css.service.GetSeedPieces(req.TaskId)
 	if err != nil {
-		err = dferrors.Newf(base.Code_CDNError, "failed to get pieces of task(%s) from cdn: %v", seedTask.ID, err)
+		err = status.Errorf(codes.Code(base.Code_CDNError), "failed to get pieces of task(%s) from cdn: %v", seedTask.ID, err)
 		span.RecordError(err)
 		return nil, err
 	}
