@@ -380,30 +380,6 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			},
 		},
 		{
-			name:               "normal size scope - schedule timeout - auto back source",
-			taskData:           testBytes,
-			pieceParallelCount: 4,
-			pieceSize:          1024,
-			peerID:             "peer-0",
-			peerPacketDelay:    []time.Duration{time.Second},
-			scheduleTimeout:    time.Nanosecond,
-			urlGenerator: func(ts *testSpec) string {
-				server := httptest.NewServer(http.HandlerFunc(
-					func(w http.ResponseWriter, r *http.Request) {
-						n, err := w.Write(testBytes)
-						assert.Nil(err)
-						assert.Equal(len(ts.taskData), n)
-					}))
-				ts.cleanUp = append(ts.cleanUp, func() {
-					server.Close()
-				})
-				return server.URL
-			},
-			sizeScope:            base.SizeScope_NORMAL,
-			mockPieceDownloader:  nil,
-			mockHTTPSourceClient: nil,
-		},
-		{
 			name:                "normal size scope - back source - no content length",
 			taskData:            testBytes,
 			pieceParallelCount:  4,
@@ -449,10 +425,36 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 				return sourceClient
 			},
 		},
+		{
+			name:               "normal size scope - schedule timeout - auto back source",
+			taskData:           testBytes,
+			pieceParallelCount: 4,
+			pieceSize:          1024,
+			peerID:             "peer-0",
+			peerPacketDelay:    []time.Duration{time.Second},
+			scheduleTimeout:    time.Nanosecond,
+			urlGenerator: func(ts *testSpec) string {
+				server := httptest.NewServer(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						n, err := w.Write(testBytes)
+						assert.Nil(err)
+						assert.Equal(len(ts.taskData), n)
+					}))
+				ts.cleanUp = append(ts.cleanUp, func() {
+					server.Close()
+				})
+				return server.URL
+			},
+			sizeScope:            base.SizeScope_NORMAL,
+			mockPieceDownloader:  nil,
+			mockHTTPSourceClient: nil,
+		},
 	}
 
 	for _, _tc := range testCases {
 		t.Run(_tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			require := testifyrequire.New(t)
 			for _, typ := range taskTypes {
 				// dup a new test case with the task type
 				tc := _tc
@@ -492,20 +494,23 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 						sourceClient = tc.mockHTTPSourceClient(ctrl, tc.taskData, tc.url)
 					}
 
-					mm := setupMockManager(
-						ctrl, &tc,
-						componentsOption{
-							taskID:             taskID,
-							contentLength:      int64(mockContentLength),
-							pieceSize:          uint32(tc.pieceSize),
-							pieceParallelCount: tc.pieceParallelCount,
-							pieceDownloader:    downloader,
-							sourceClient:       sourceClient,
-							content:            tc.taskData,
-							scope:              tc.sizeScope,
-							peerPacketDelay:    tc.peerPacketDelay,
-							backSource:         tc.backSource,
-						})
+					option := componentsOption{
+						taskID:             taskID,
+						contentLength:      int64(mockContentLength),
+						pieceSize:          uint32(tc.pieceSize),
+						pieceParallelCount: tc.pieceParallelCount,
+						pieceDownloader:    downloader,
+						sourceClient:       sourceClient,
+						content:            tc.taskData,
+						scope:              tc.sizeScope,
+						peerPacketDelay:    tc.peerPacketDelay,
+						backSource:         tc.backSource,
+					}
+					// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
+					if tc.taskType == taskTypeConductor {
+						option.peerPacketDelay = []time.Duration{time.Second}
+					}
+					mm := setupMockManager(ctrl, &tc, option)
 					defer mm.CleanUp()
 
 					tc.run(assert, require, mm, urlMeta)
@@ -641,7 +646,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	for i := 0; i < ptcCount; i++ {
 		p, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, request, rate.Limit(pieceSize*3))
 		assert.Nil(err, fmt.Sprintf("load peerTaskConductor %d", i))
-		assert.Equal(ptc, p, fmt.Sprintf("ptc %d should be same with ptc", i))
+		assert.Equal(ptc.peerID, p.GetPeerID(), fmt.Sprintf("ptc %d should be same with ptc", i))
 		go syncFunc(i, p)
 	}
 
@@ -651,12 +656,29 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		assert.True(r, fmt.Sprintf("task %d result should be true", i))
 	}
 
-	var taskCount int
-	ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
-		taskCount++
-		return true
-	})
-	assert.Equal(0, taskCount, "no running tasks")
+	var (
+		noRunningTask = true
+		success       bool
+	)
+	select {
+	case <-ptc.successCh:
+		success = true
+	case <-ptc.failCh:
+	case <-time.After(10 * time.Minute):
+	}
+	assert.True(success, "task should success")
+
+	for i := 0; i < 3; i++ {
+		ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
+			noRunningTask = false
+			return false
+		})
+		if noRunningTask {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	assert.True(noRunningTask, "no running tasks")
 
 	// test reuse stream task
 	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(), request)

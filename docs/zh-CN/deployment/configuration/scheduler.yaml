@@ -7,7 +7,7 @@ server:
   # 服务监听端口
   port:
   # 限制请求并发数
-  listenLimit: 1000
+  listenLimit: 10000
   # daemon 动态配置缓存目录
   # linux 上默认目录 /var/cache/dragonfly
   # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
@@ -27,9 +27,9 @@ scheduler:
   # 单个任务允许客户端回源的数量
   backSourceCount: 3
   # 调度重试次数限制
-  retryLimit: 10
+  retryLimit: 20
   # 调度重试时间间隔
-  retryInterval: 1s
+  retryInterval: 500ms
   # 数据回收策略
   gc:
     # peer 的回收间隔
@@ -104,14 +104,14 @@ metrics:
   # 开机收集 peer host 数据
   enablePeerHost: false
 
-# Console 是否在控制台程序中显示日志
+# console 是否在控制台程序中显示日志
 console: false
 
 # verbose 是否使用调试级别的日志、是否启用 pprof。
 verbose: false
 
-# pprofPort pprof 监听的端口，仅在 verbose 为 true 时可用
-pprofPort: -1
+# pprof-port pprof 监听的端口，仅在 verbose 为 true 时可用
+pprof-port: -1
 
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces

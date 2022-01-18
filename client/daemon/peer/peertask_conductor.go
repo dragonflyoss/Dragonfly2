@@ -160,7 +160,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	defer cancel()
 	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
 	logger.Infof("step 1: peer %s start to register", request.PeerId)
-	result, err := ptm.schedulerClient.RegisterPeerTask(regCtx, request)
+	schedulerClient := ptm.schedulerClient
+	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -178,7 +179,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
-		ptm.schedulerClient = &dummySchedulerClient{}
+		schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: idgen.TaskID(request.Url, request.UrlMeta)}
 		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
 	}
@@ -189,7 +190,25 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		err = errors.Errorf("empty schedule result")
 		return nil, err
 	}
-	log := logger.With("peer", request.PeerId, "task", result.TaskId, "component", "PeerTask")
+
+	var (
+		log     *logger.SugaredLoggerOnWith
+		traceID = span.SpanContext().TraceID()
+	)
+
+	if traceID.IsValid() {
+		log = logger.With(
+			"peer", request.PeerId,
+			"task", result.TaskId,
+			"component", "PeerTask",
+			"trace", traceID.String())
+	} else {
+		log = logger.With(
+			"peer", request.PeerId,
+			"task", result.TaskId,
+			"component", "PeerTask")
+	}
+
 	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
 	log.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 
@@ -225,7 +244,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		}
 	}
 
-	peerPacketStream, err := ptm.schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
+	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
 	log.Infof("step 2: start report piece result")
 	if err != nil {
 		defer span.End()
@@ -262,7 +281,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		pieceParallelCount:  atomic.NewInt32(0),
 		totalPiece:          -1,
 		schedulerOption:     ptm.schedulerOption,
-		schedulerClient:     ptm.schedulerClient,
+		schedulerClient:     schedulerClient,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
@@ -630,8 +649,8 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	}
 
 	if result, err := pt.pieceManager.DownloadPiece(ctx, request); err == nil {
-		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 		pt.reportSuccessResult(request, result)
+		pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 
 		span.SetAttributes(config.AttributePieceSuccess.Bool(true))
 		span.End()
@@ -924,8 +943,8 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 				continue
 			} else {
 				// broadcast success piece
-				pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 				pt.reportSuccessResult(request, result)
+				pt.PublishPieceInfo(request.piece.PieceNum, request.piece.RangeSize)
 			}
 
 			span.SetAttributes(config.AttributePieceSuccess.Bool(true))
@@ -1015,7 +1034,7 @@ func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, re
 }
 
 func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, result *DownloadPieceResult) {
-	_, span := tracer.Start(pt.ctx, config.SpanPushPieceResult)
+	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
 	err := pt.peerPacketStream.Send(
@@ -1040,7 +1059,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 }
 
 func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, result *DownloadPieceResult, code base.Code) {
-	_, span := tracer.Start(pt.ctx, config.SpanPushPieceResult)
+	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
 	err := pt.peerPacketStream.Send(&scheduler.PieceResult{
