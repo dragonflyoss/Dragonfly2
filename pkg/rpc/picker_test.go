@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -32,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 

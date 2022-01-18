@@ -23,7 +23,6 @@ import (
 	"log"
 	"net"
 	"sync"
-	"testing"
 	"time"
 
 	"google.golang.org/grpc"
@@ -133,7 +132,7 @@ func (t *testServerData) cleanup() {
 }
 
 // startTestServers
-func startTestServers(t *testing.T, numServers int) (_ *testServerData, err error) {
+func startTestServers(numServers int) (_ *testServerData, err error) {
 	testData := &testServerData{}
 
 	defer func() {

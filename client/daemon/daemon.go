@@ -549,7 +549,9 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
 
 	// Update scheduler client addresses
-	cd.schedulerClient.UpdateAddresses(addrs)
+	if err := cd.schedulerClient.UpdateAddresses(addrs); err != nil {
+		logger.Errorf("failed to update address: %v", err)
+	}
 	cd.schedulers = data.Schedulers
 
 	logger.Infof("scheduler addresses have been updated: %v", ips)

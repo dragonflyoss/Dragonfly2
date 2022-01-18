@@ -22,13 +22,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CDNClient, error) {

@@ -22,14 +22,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 var _ SchedulerClient = (*schedulerClient)(nil)
