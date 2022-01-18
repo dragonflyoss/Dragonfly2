@@ -40,7 +40,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -69,7 +68,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
+	var daemon = daemonserver.NewMockDaemonServer(ctrl)
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {

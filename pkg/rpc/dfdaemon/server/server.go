@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/mock_server.go -package mocks d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server DaemonServer
+
 package server
 
 import (

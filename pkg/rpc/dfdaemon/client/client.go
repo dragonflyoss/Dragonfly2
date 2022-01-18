@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ../mocks/dfdaemon_mock.go -package mocks d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client DaemonClient
+//go:generate mockgen -destination ./mocks/mock_client.go -package mocks d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client DaemonClient
 
 package client
 
