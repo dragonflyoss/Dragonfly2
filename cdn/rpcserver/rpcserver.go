@@ -217,7 +217,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		PieceInfos:    pieceInfos,
 		TotalPiece:    seedTask.TotalPieceCount,
 		ContentLength: seedTask.SourceFileLength,
-		PieceMd5Sign:  seedTask.PieceMd5Sign,
+		PieceMd5Sign:  pieceMd5Sign,
 	}
 	span.SetAttributes(constants.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil
