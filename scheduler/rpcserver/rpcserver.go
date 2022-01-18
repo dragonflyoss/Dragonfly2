@@ -76,9 +76,16 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 					return nil, dferr
 				}
 
+				// Dfdaemon does not report piece info when scope size is SizeScope_TINY
+				if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+					return nil, dferr
+				}
+
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_TINY,
 					DirectPiece: &scheduler.RegisterResult_PieceContent{
 						PieceContent: task.DirectPiece,
 					},
@@ -96,18 +103,30 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			parent, ok := s.service.Scheduler().FindParent(ctx, peer, set.NewSafeSet())
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not select parent")
+				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+					return nil, dferr
+				}
+
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
 
 			firstPiece, ok := task.LoadPiece(0)
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not get first piece")
+				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+					return nil, dferr
+				}
+
 				return &scheduler.RegisterResult{
 					TaskId:    task.ID,
-					SizeScope: sizeScope,
+					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -134,7 +153,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			peer.Log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
-				SizeScope: sizeScope,
+				SizeScope: base.SizeScope_SMALL,
 				DirectPiece: &scheduler.RegisterResult_SinglePiece{
 					SinglePiece: singlePiece,
 				},
@@ -149,7 +168,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 			return &scheduler.RegisterResult{
 				TaskId:    task.ID,
-				SizeScope: sizeScope,
+				SizeScope: base.SizeScope_NORMAL,
 			}, nil
 		}
 	}

@@ -145,14 +145,6 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
-	case resource.PeerStateReceivedTiny:
-		// When the task is tiny,
-		// the peer data has already returned to the parent when registering
-		peer.Log.Info("file type is tiny, peer data has already returned to the parent when registering")
-		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			return
-		}
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
