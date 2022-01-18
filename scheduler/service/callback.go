@@ -20,7 +20,6 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -75,9 +74,18 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 		// Peer scheduling exceeds retry limit
 		if n >= c.config.Scheduler.RetryLimit {
 			if peer.Task.CanBackToSource() {
-				if ok := peer.StopStream(dferrors.Newf(base.Code_SchedNeedBackSource, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
+				stream, ok := peer.LoadStream()
+				if !ok {
+					peer.Log.Error("load stream failed")
 					return
 				}
+
+				// Notify peer back-to-source
+				if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+					peer.Log.Errorf("send packet failed: %v", err)
+					return
+				}
+				peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedNeedBackSource)
 
 				if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 					peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -100,9 +108,18 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 			}
 
 			// Handle peer failed
-			if ok := peer.StopStream(dferrors.Newf(base.Code_SchedTaskStatusError, "peer scheduling exceeds the limit %d times", c.config.Scheduler.RetryLimit)); !ok {
-				peer.Log.Error("stop stream failed")
+			stream, ok := peer.LoadStream()
+			if !ok {
+				peer.Log.Error("load stream failed")
+				return
 			}
+
+			// Notify peer schedule failed
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
+				peer.Log.Errorf("send packet failed: %v", err)
+				return
+			}
+			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedTaskStatusError)
 			return
 		}
 
@@ -129,17 +146,19 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
+		peer.Log.Info("file type is small, peer has already returned to the parent when registering")
 		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
 	case resource.PeerStateReceivedNormal:
-		// It’s not a case of back-to-source or small task downloading,
-		// to help peer to schedule the parent node
 		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			return
 		}
+
+		// It’s not a case of back-to-source or small task downloading,
+		// to help peer to schedule the parent node
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
 		c.ScheduleParent(ctx, peer, blocklist)
@@ -169,24 +188,56 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 		return
 	}
 
+	// If parent can not found, reschedule parent.
+	parent, ok := c.resource.PeerManager().Load(piece.DstPid)
+	if !ok {
+		peer.Log.Errorf("can not found parent %s and reschedule", piece.DstPid)
+		c.ScheduleParent(ctx, peer, set.NewSafeSet())
+		return
+	}
+
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node
 	switch piece.Code {
-	case base.Code_ClientWaitPieceReady:
-		peer.Log.Info("receive code Code_ClientWaitPieceReady")
-		return
-	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
-		peer.Log.Errorf("receive error code: %v", piece.Code)
-		if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok && parent.FSM.Can(resource.PeerEventDownloadFailed) {
-			if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
-				break
-			}
+	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
+		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			break
 		}
-	case base.Code_ClientPieceRequestFail:
-		peer.Log.Error("receive error code Code_ClientPieceRequestFail")
+	case base.Code_ClientPieceNotFound:
+		// Dfdaemon downloading piece data from parent returns http error code 404.
+		// If the parent is not a CDN, reschedule parent for peer.
+		// If the parent is a CDN, scheduler need to trigger CDN to download again.
+		if !parent.Host.IsCDN {
+			peer.Log.Infof("parent %s is not cdn", piece.DstPid)
+			break
+		}
+
+		peer.Log.Infof("parent %s is cdn", piece.DstPid)
+		fallthrough
+	case base.Code_CDNTaskNotFound:
+		// CDN peer exists in the scheduler, but the peer information in the cdn service has been recycled.
+		// Scheduler need to redownload cdn peer.
+		if err := parent.FSM.Event(resource.PeerEventRestart); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			break
+		}
+
+		go func() {
+			parent.Log.Info("cdn restart seed task")
+			parent, endOfPiece, err := c.resource.CDN().TriggerTask(context.Background(), parent.Task)
+			if err != nil {
+				peer.Log.Errorf("retrigger task failed: %v", err)
+
+				c.TaskFail(ctx, parent.Task)
+				c.PeerFail(ctx, parent)
+				return
+			}
+
+			c.TaskSuccess(ctx, parent.Task, endOfPiece)
+			c.PeerSuccess(ctx, parent)
+		}()
 	default:
-		peer.Log.Warnf("unknow report code: %v", piece.Code)
 	}
 
 	// Peer state is PeerStateRunning will be rescheduled
@@ -196,9 +247,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	}
 
 	blocklist := set.NewSafeSet()
-	if parent, ok := c.resource.PeerManager().Load(piece.DstPid); ok {
-		blocklist.Add(parent.ID)
-	}
+	blocklist.Add(parent.ID)
 
 	c.ScheduleParent(ctx, peer, blocklist)
 }

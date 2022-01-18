@@ -29,7 +29,6 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -37,6 +36,9 @@ import (
 const (
 	// Peer has been created but did not start running
 	PeerStatePending = "Pending"
+
+	// Peer successfully registered as tiny scope size
+	PeerStateReceivedTiny = "ReceivedTiny"
 
 	// Peer successfully registered as small scope size
 	PeerStateReceivedSmall = "ReceivedSmall"
@@ -61,14 +63,17 @@ const (
 )
 
 const (
-	// Peer is downloading
-	PeerEventDownload = "Download"
+	// Peer is registered as tiny scope size
+	PeerEventRegisterTiny = "RegisterTiny"
 
 	// Peer is registered as small scope size
 	PeerEventRegisterSmall = "RegisterSmall"
 
 	// Peer is registered as normal scope size
 	PeerEventRegisterNormal = "RegisterNormal"
+
+	// Peer is downloading
+	PeerEventDownload = "Download"
 
 	// Peer is downloading from back-to-source
 	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
@@ -78,6 +83,9 @@ const (
 
 	// Peer downloaded failed
 	PeerEventDownloadFailed = "DownloadFailed"
+
+	// Peer back to initial pending state
+	PeerEventRestart = "Restart"
 
 	// Peer leaves
 	PeerEventLeave = "Leave"
@@ -95,9 +103,6 @@ type Peer struct {
 
 	// Stream is grpc stream instance
 	Stream *atomic.Value
-
-	// Record peer report piece grpc interface stop code
-	StopChannel chan *dferrors.DfError
 
 	// Task state machine
 	FSM *fsm.FSM
@@ -130,38 +135,39 @@ type Peer struct {
 // New Peer instance
 func NewPeer(id string, task *Task, host *Host) *Peer {
 	p := &Peer{
-		ID:          id,
-		Pieces:      &bitset.BitSet{},
-		pieceCosts:  []int64{},
-		Stream:      &atomic.Value{},
-		StopChannel: make(chan *dferrors.DfError, 1),
-		Task:        task,
-		Host:        host,
-		Parent:      &atomic.Value{},
-		Children:    &sync.Map{},
-		CreateAt:    atomic.NewTime(time.Now()),
-		UpdateAt:    atomic.NewTime(time.Now()),
-		mu:          &sync.RWMutex{},
-		Log:         logger.WithTaskAndPeerID(task.ID, id),
+		ID:         id,
+		Pieces:     &bitset.BitSet{},
+		pieceCosts: []int64{},
+		Stream:     &atomic.Value{},
+		Task:       task,
+		Host:       host,
+		Parent:     &atomic.Value{},
+		Children:   &sync.Map{},
+		CreateAt:   atomic.NewTime(time.Now()),
+		UpdateAt:   atomic.NewTime(time.Now()),
+		mu:         &sync.RWMutex{},
+		Log:        logger.WithTaskAndPeerID(task.ID, id),
 	}
 
 	// Initialize state machine
 	p.FSM = fsm.NewFSM(
 		PeerStatePending,
 		fsm.Events{
+			{Name: PeerEventRegisterTiny, Src: []string{PeerStatePending}, Dst: PeerStateReceivedTiny},
 			{Name: PeerEventRegisterSmall, Src: []string{PeerStatePending}, Dst: PeerStateReceivedSmall},
 			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
-			{Name: PeerEventDownload, Src: []string{PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
-			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateRunning}, Dst: PeerStateBackToSource},
+			{Name: PeerEventDownload, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
+			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
 			{Name: PeerEventDownloadSucceeded, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateSucceeded},
 			{Name: PeerEventDownloadFailed, Src: []string{
-				PeerStatePending, PeerStateReceivedSmall, PeerStateReceivedNormal,
+				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
+			{Name: PeerEventRestart, Src: []string{PeerStateSucceeded}, Dst: PeerStatePending},
 			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
-			PeerEventDownload: func(e *fsm.Event) {
+			PeerEventRegisterTiny: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -170,6 +176,10 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventRegisterNormal: func(e *fsm.Event) {
+				p.UpdateAt.Store(time.Now())
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
+			PeerEventDownload: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -191,6 +201,10 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.UpdateAt.Store(time.Now())
+				p.Log.Infof("peer state is %s", e.FSM.Current())
+			},
+			PeerEventRestart: func(e *fsm.Event) {
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -371,28 +385,6 @@ func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
 // DeleteStream deletes grpc stream
 func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
-}
-
-// StopStream stops grpc stream with error code
-func (p *Peer) StopStream(dferr *dferrors.DfError) bool {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if _, ok := p.LoadStream(); !ok {
-		p.Log.Error("stop stream failed: can not find peer stream")
-		return false
-	}
-	p.DeleteStream()
-
-	select {
-	case p.StopChannel <- dferr:
-		p.Log.Infof("send stop channel %#v", dferr)
-	default:
-		p.Log.Error("stop channel busy")
-		return false
-	}
-
-	return true
 }
 
 // Download tiny file from peer

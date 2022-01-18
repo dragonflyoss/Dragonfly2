@@ -136,13 +136,10 @@ func TestCallback_ScheduleParent(t *testing.T) {
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-
-				dferr := <-peer.StopChannel
-				assert.Equal(dferr.Code, base.Code_SchedTaskStatusError)
 			},
 		},
 		{
@@ -164,13 +161,11 @@ func TestCallback_ScheduleParent(t *testing.T) {
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-
-				dferr := <-peer.StopChannel
-				assert.Equal(dferr.Code, base.Code_SchedNeedBackSource)
 				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
 				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
 			},
@@ -350,33 +345,38 @@ func TestCallback_PieceFail(t *testing.T) {
 		piece  *rpcscheduler.PieceResult
 		peer   *resource.Peer
 		parent *resource.Peer
-		mock   func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder)
-		expect func(t *testing.T, peer *resource.Peer, parent *resource.Peer)
+		run    func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder)
 	}{
 		{
 			name:   "peer state is PeerStateBackToSource",
 			piece:  &rpcscheduler.PieceResult{},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateBackToSource)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
 			},
 		},
 		{
-			name: "piece result code is Code_ClientWaitPieceReady",
+			name: "can not found parent",
 			piece: &rpcscheduler.PieceResult{
-				Code: base.Code_ClientWaitPieceReady,
+				Code:   base.Code_ClientWaitPieceReady,
+				DstPid: mockCDNPeerID,
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(parent.ID)).Return(nil, false).Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet())).Return(nil, true).Times(1),
+				)
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 			},
@@ -389,7 +389,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -397,12 +397,10 @@ func TestCallback_PieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateFailed))
@@ -416,7 +414,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -424,42 +422,37 @@ func TestCallback_PieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateFailed))
 			},
 		},
 		{
-			name: "piece result code is Code_CDNTaskNotFound and parent state set PeerEventDownloadFailed",
+			name: "piece result code is Code_ClientPieceNotFound and parent is not CDN",
 			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_CDNTaskNotFound,
+				Code:   base.Code_ClientPieceNotFound,
 				DstPid: mockCDNPeerID,
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
+				peer.Host.IsCDN = false
 				blocklist := set.NewSafeSet()
 				blocklist.Add(parent.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
 			},
 		},
 		{
@@ -470,7 +463,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -478,12 +471,10 @@ func TestCallback_PieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateFailed))
@@ -497,7 +488,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -505,12 +496,10 @@ func TestCallback_PieceFail(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateFailed))
@@ -524,7 +513,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -534,8 +523,8 @@ func TestCallback_PieceFail(t *testing.T) {
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateRunning))
@@ -549,7 +538,7 @@ func TestCallback_PieceFail(t *testing.T) {
 			},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			mock: func(peer *resource.Peer, parent *resource.Peer, peerManager resource.PeerManager, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			run: func(t *testing.T, callback Callback, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
 				blocklist := set.NewSafeSet()
@@ -559,8 +548,8 @@ func TestCallback_PieceFail(t *testing.T) {
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, true).Times(1),
 				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer, parent *resource.Peer) {
+
+				callback.PieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateRunning))
@@ -575,11 +564,10 @@ func TestCallback_PieceFail(t *testing.T) {
 			scheduler := mocks.NewMockScheduler(ctl)
 			res := resource.NewMockResource(ctl)
 			peerManager := resource.NewMockPeerManager(ctl)
+			cdn := resource.NewMockCDN(ctl)
 			callback := newCallback(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler)
 
-			tc.mock(tc.peer, tc.parent, peerManager, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT())
-			callback.PieceFail(context.Background(), tc.peer, tc.piece)
-			tc.expect(t, tc.peer, tc.parent)
+			tc.run(t, callback, tc.peer, tc.parent, tc.piece, peerManager, cdn, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT(), cdn.EXPECT())
 		})
 	}
 }

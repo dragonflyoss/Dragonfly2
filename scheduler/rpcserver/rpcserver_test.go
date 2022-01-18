@@ -95,7 +95,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 		name   string
 		req    *rpcscheduler.PeerTaskRequest
 		mock   func(req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, scheduler scheduler.Scheduler, ms *mocks.MockServiceMockRecorder, msched *schedulermocks.MockSchedulerMockRecorder)
-		expect func(t *testing.T, result *rpcscheduler.RegisterResult, err error)
+		expect func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error)
 	}{
 		{
 			name: "service register failed",
@@ -103,7 +103,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			mock: func(req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, scheduler scheduler.Scheduler, ms *mocks.MockServiceMockRecorder, msched *schedulermocks.MockSchedulerMockRecorder) {
 				ms.RegisterTask(context.Background(), req).Return(nil, errors.New("foo"))
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
@@ -122,7 +122,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
@@ -141,7 +141,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
@@ -160,7 +160,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
@@ -179,7 +179,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
@@ -193,15 +193,20 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
 				mockTask.ContentLength.Store(1)
 				mockTask.DirectPiece = []byte{1}
-				ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1)
+				gomock.InOrder(
+					ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1),
+					ms.LoadOrStoreHost(context.Background(), req).Return(mockHost, true).Times(1),
+					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
+				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
 				assert.Equal(result.SizeScope, base.SizeScope_TINY)
 				assert.Equal(result.DirectPiece, &rpcscheduler.RegisterResult_PieceContent{
 					PieceContent: []byte{1},
 				})
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 			},
 		},
 		{
@@ -218,10 +223,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_TINY)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
 		{
@@ -239,10 +245,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
 		{
@@ -261,10 +268,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
 		{
@@ -286,7 +294,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
 				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
@@ -299,6 +307,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 						},
 					},
 				})
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedSmall))
 			},
 		},
 		{
@@ -315,10 +324,11 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
 		{
@@ -336,11 +346,12 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
 				)
 			},
-			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.True(peer.FSM.Is(resource.PeerStateFailed))
 			},
 		},
 	}
@@ -356,9 +367,10 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(tc.req, mockPeer, mockHost, mockTask, scheduler, svc.EXPECT(), scheduler.EXPECT())
+
 			svr := New(svc)
 			result, err := svr.RegisterPeerTask(context.Background(), tc.req)
-			tc.expect(t, result, err)
+			tc.expect(t, mockPeer, result, err)
 		})
 	}
 }
@@ -431,26 +443,6 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "context canceled")
-			},
-		},
-		{
-			name: "stream stop with dferr",
-			mock: func(mockPeer *resource.Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *mocks.MockServiceMockRecorder, mstream *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
-				gomock.InOrder(
-					mstream.Context().Return(context.Background()).Times(1),
-					mstream.Recv().Return(&rpcscheduler.PieceResult{
-						SrcPid: mockPeerID,
-					}, nil).Times(1),
-					ms.LoadPeer(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.HandlePiece(gomock.Any(), gomock.Any(), gomock.Any()).Return().Times(1),
-				)
-				mockPeer.StopStream(dferrors.New(base.Code_SchedError, ""))
-			},
-			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
 			},
 		},
 		{

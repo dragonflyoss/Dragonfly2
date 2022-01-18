@@ -139,19 +139,21 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, ok := t.Pieces[req.Num]; ok {
 		return n, nil
 	}
-	t.genDigest(n, req)
 	t.Pieces[req.Num] = req.PieceMetadata
+	t.genDigest(n, req)
 	return n, nil
 }
 
 func (t *localTaskStore) genDigest(n int64, req *WritePieceRequest) {
-	if req.GenPieceDigest == nil {
+	if req.GenPieceDigest == nil || t.PieceMd5Sign != "" {
 		return
 	}
 
-	if !req.GenPieceDigest(n) || t.PieceMd5Sign != "" {
+	total, gen := req.GenPieceDigest(n)
+	if !gen {
 		return
 	}
+	t.TotalPieces = total
 
 	var pieceDigests []string
 	for i := int32(0); i < t.TotalPieces; i++ {
@@ -210,7 +212,7 @@ func (t *localTaskStore) IsInvalid(*PeerTaskMetadata) (bool, error) {
 	return t.invalid.Load(), nil
 }
 
-// ReadPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
+// ReadPiece get a LimitReadCloser from task data with sought, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")

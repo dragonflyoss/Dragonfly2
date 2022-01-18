@@ -116,7 +116,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(score, float64(0.9))
 			},
 		},
 		{
@@ -131,7 +131,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(score, float64(0.9))
 			},
 		},
 		{
@@ -146,7 +146,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(score, float64(0.9))
 			},
 		},
 	}
@@ -317,34 +317,48 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *resource.Host)
+		mock   func(peer *resource.Peer)
 		expect func(t *testing.T, score float64)
 	}{
 		{
 			name: "host is normal peer",
-			mock: func(host *resource.Host) {},
+			mock: func(peer *resource.Peer) {},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(score, float64(0.5))
 			},
 		},
 		{
-			name: "host is cdn",
-			mock: func(host *resource.Host) {
-				host.IsCDN = true
+			name: "host is cdn but peer state is PeerStateSucceeded",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateSucceeded)
+				peer.Host.IsCDN = true
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
 				assert.Equal(score, float64(0))
 			},
 		},
+		{
+			name: "host is cdn but peer state is PeerStateRunning",
+			mock: func(peer *resource.Peer) {
+				peer.Host.IsCDN = true
+				peer.FSM.SetState(resource.PeerStateRunning)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(score, float64(1))
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			host := resource.NewHost(mockRawHost)
-			tc.mock(host)
-			tc.expect(t, calculateHostTypeAffinityScore(host))
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			tc.mock(peer)
+			tc.expect(t, calculateHostTypeAffinityScore(peer))
 		})
 	}
 }
@@ -573,18 +587,6 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateLeave)
-			},
-			expect: func(t *testing.T, isBadNode bool) {
-				assert := assert.New(t)
-				assert.True(isBadNode)
-			},
-		},
-		{
-			name:            "peer state is PeerStatePending",
-			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
-			totalPieceCount: 1,
-			mock: func(peer *resource.Peer) {
-				peer.FSM.SetState(resource.PeerStatePending)
 			},
 			expect: func(t *testing.T, isBadNode bool) {
 				assert := assert.New(t)

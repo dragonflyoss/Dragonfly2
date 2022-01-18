@@ -37,23 +37,24 @@ import (
 
 // TaskManager processes all peer tasks request
 type TaskManager interface {
-	// StartFilePeerTask starts a peer task to download a file
+	// StartFileTask starts a peer task to download a file
 	// return a progress channel for request download progress
 	// tiny stands task file is tiny and task is done
-	StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (
-		progress chan *FilePeerTaskProgress, tiny *TinyData, err error)
-	// StartStreamPeerTask starts a peer task with stream io
+	StartFileTask(ctx context.Context, req *FileTaskRequest) (
+		progress chan *FileTaskProgress, tiny *TinyData, err error)
+	// StartStreamTask starts a peer task with stream io
 	// tiny stands task file is tiny and task is done
-	StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (
+	StartStreamTask(ctx context.Context, req *StreamTaskRequest) (
 		readCloser io.ReadCloser, attribute map[string]string, err error)
 
-	IsPeerTaskRunning(pid string) bool
+	IsPeerTaskRunning(id string) bool
 
 	// Stop stops the PeerTaskManager
 	Stop(ctx context.Context) error
 }
 
 //go:generate mockgen -source peertask_manager.go -package peer -self_package d7y.io/dragonfly/v2/client/daemon/peer -destination peertask_manager_mock_test.go
+//go:generate mockgen -source peertask_manager.go -destination ../test/mock/peer/peertask_manager.go
 // Task represents common interface to operate a peer task
 type Task interface {
 	Logger
@@ -76,7 +77,7 @@ type Task interface {
 	GetPieceMd5Sign() string
 
 	PublishPieceInfo(pieceNum int32, size uint32)
-	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool)
+	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error)
 }
 
 type Logger interface {
@@ -159,7 +160,11 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 	return pt.(*peerTaskConductor), true
 }
 
-func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(ctx context.Context, taskID string, request *scheduler.PeerTaskRequest, limit rate.Limit) (*peerTaskConductor, error) {
+func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
+	ctx context.Context,
+	taskID string,
+	request *scheduler.PeerTaskRequest,
+	limit rate.Limit) (*peerTaskConductor, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, nil
@@ -186,7 +191,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(ctx context.Context, ta
 	return ptc, nil
 }
 
-func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
+func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
@@ -212,16 +217,25 @@ func (ptm *peerTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeer
 	return progress, nil, err
 }
 
-func (ptm *peerTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
+func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
+	peerTaskRequest := &scheduler.PeerTaskRequest{
+		Url:         req.URL,
+		UrlMeta:     req.URLMeta,
+		PeerId:      req.PeerID,
+		PeerHost:    ptm.host,
+		HostLoad:    nil,
+		IsMigrating: false,
+	}
+
 	if ptm.enableMultiplex {
-		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
+		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, peerTaskRequest)
 		if ok {
 			metrics.PeerTaskReuseCount.Add(1)
 			return r, attr, nil
 		}
 	}
 
-	pt, err := ptm.newStreamTask(ctx, req)
+	pt, err := ptm.newStreamTask(ctx, peerTaskRequest)
 	if err != nil {
 		return nil, nil, err
 	}

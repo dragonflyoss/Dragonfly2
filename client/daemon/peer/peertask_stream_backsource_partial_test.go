@@ -209,6 +209,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 			contentLength:      int64(mockContentLength),
 			pieceSize:          uint32(pieceSize),
 			pieceParallelCount: pieceParallelCount,
+			content:            testBytes,
 		})
 	defer storageManager.CleanUp()
 

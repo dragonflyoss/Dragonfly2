@@ -24,7 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	pkgsync "d7y.io/dragonfly/v2/pkg/sync"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -58,9 +57,6 @@ type service struct {
 
 	// Dynamic config
 	dynconfig config.DynconfigInterface
-
-	// Key map mutex
-	kmu *pkgsync.Krwmutex
 }
 
 func New(
@@ -78,7 +74,6 @@ func New(
 		callback:  callback,
 		config:    cfg,
 		dynconfig: dynconfig,
-		kmu:       pkgsync.NewKrwmutex(),
 	}
 }
 
@@ -92,9 +87,6 @@ func (s *service) CDN() resource.CDN {
 
 func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
-
-	s.kmu.Lock(task.ID)
-	defer s.kmu.Unlock(task.ID)
 	task, ok := s.resource.TaskManager().LoadOrStore(task)
 	if ok && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) {
 		// Task is healthy and can be reused
@@ -194,15 +186,16 @@ func (s *service) HandlePiece(ctx context.Context, peer *resource.Peer, piece *r
 		}
 	}
 
-	// Handle piece download failed
+	// Handle piece download code
 	if piece.Code != base.Code_Success {
-
-		// Wait for the client piece to be ready
-		// to prevent redundant logs from being printed
-		if piece.Code != base.Code_ClientWaitPieceReady {
-			peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
+		// FIXME(244372610) When dfdaemon download peer return empty, retry later.
+		if piece.Code == base.Code_ClientWaitPieceReady {
+			peer.Log.Infof("receive piece code %d and wait for dfdaemon piece ready", piece.Code)
+			return
 		}
 
+		// Handle piece download failed
+		peer.Log.Errorf("receive failed piece: %#v %#v", piece, piece.PieceInfo)
 		s.callback.PieceFail(ctx, peer, piece)
 		return
 	}

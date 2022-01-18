@@ -17,6 +17,7 @@
 package transport
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -27,6 +28,7 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel/propagation"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -42,7 +44,8 @@ var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 var (
 	// layerReg the regex to determine if it is an image download
-	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
+	layerReg     = regexp.MustCompile("^.+/blobs/sha256.*$")
+	traceContext = propagation.TraceContext{}
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -150,9 +153,10 @@ func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err erro
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
+		ctx := traceContext.Extract(req.Context(), propagation.HeaderCarrier(req.Header))
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
 		metrics.ProxyRequestViaDragonflyCount.Add(1)
-		resp, err = rt.download(req)
+		resp, err = rt.download(ctx, req)
 	} else {
 		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
 		req.Host = req.URL.Host
@@ -182,7 +186,8 @@ func NeedUseDragonfly(req *http.Request) bool {
 }
 
 // download uses dragonfly to download.
-func (rt *transport) download(req *http.Request) (*http.Response, error) {
+// the ctx has span info from transport, did not use the ctx from request
+func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	peerID := idgen.PeerID(rt.peerHost.Ip)
 	log := logger.With("peer", peerID, "component", "transport")
@@ -208,15 +213,12 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	meta.Tag = tag
 	meta.Filter = filter
 
-	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
-		req.Context(),
-		&scheduler.PeerTaskRequest{
-			Url:         url,
-			UrlMeta:     meta,
-			PeerId:      peerID,
-			PeerHost:    rt.peerHost,
-			HostLoad:    nil,
-			IsMigrating: false,
+	body, attr, err := rt.peerTaskManager.StartStreamTask(
+		ctx,
+		&peer.StreamTaskRequest{
+			URL:     url,
+			URLMeta: meta,
+			PeerID:  peerID,
 		},
 	)
 	if err != nil {
@@ -295,6 +297,8 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 // obsoleted RFC 2616 (section 13.5.1) and are used for backward
 // compatibility.
 // copy from net/http/httputil/reverseproxy.go
+
+// dragonfly need generate task id with header, need to remove some other headers
 var hopHeaders = []string{
 	"Connection",
 	"Proxy-Connection", // non-standard but still sent by libcurl and rejected by e.g. google
@@ -305,11 +309,20 @@ var hopHeaders = []string{
 	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
 	"Transfer-Encoding",
 	"Upgrade",
+
+	// remove by dragonfly
+	"Accept",
+	"User-Agent",
+	"X-Forwarded-For",
 }
 
 // delHopHeaders delete hop-by-hop headers.
 func delHopHeaders(header http.Header) {
 	for _, h := range hopHeaders {
+		header.Del(h)
+	}
+	// remove correlation with trace header
+	for _, h := range traceContext.Fields() {
 		header.Del(h)
 	}
 }

@@ -10,7 +10,6 @@ import (
 	reflect "reflect"
 
 	dflog "d7y.io/dragonfly/v2/internal/dflog"
-	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -38,49 +37,49 @@ func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 }
 
 // IsPeerTaskRunning mocks base method.
-func (m *MockTaskManager) IsPeerTaskRunning(pid string) bool {
+func (m *MockTaskManager) IsPeerTaskRunning(id string) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPeerTaskRunning", pid)
+	ret := m.ctrl.Call(m, "IsPeerTaskRunning", id)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // IsPeerTaskRunning indicates an expected call of IsPeerTaskRunning.
-func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(pid interface{}) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), pid)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), id)
 }
 
-// StartFilePeerTask mocks base method.
-func (m *MockTaskManager) StartFilePeerTask(ctx context.Context, req *FilePeerTaskRequest) (chan *FilePeerTaskProgress, *TinyData, error) {
+// StartFileTask mocks base method.
+func (m *MockTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartFilePeerTask", ctx, req)
-	ret0, _ := ret[0].(chan *FilePeerTaskProgress)
+	ret := m.ctrl.Call(m, "StartFileTask", ctx, req)
+	ret0, _ := ret[0].(chan *FileTaskProgress)
 	ret1, _ := ret[1].(*TinyData)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// StartFilePeerTask indicates an expected call of StartFilePeerTask.
-func (mr *MockTaskManagerMockRecorder) StartFilePeerTask(ctx, req interface{}) *gomock.Call {
+// StartFileTask indicates an expected call of StartFileTask.
+func (mr *MockTaskManagerMockRecorder) StartFileTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartFilePeerTask", reflect.TypeOf((*MockTaskManager)(nil).StartFilePeerTask), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartFileTask", reflect.TypeOf((*MockTaskManager)(nil).StartFileTask), ctx, req)
 }
 
-// StartStreamPeerTask mocks base method.
-func (m *MockTaskManager) StartStreamPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, error) {
+// StartStreamTask mocks base method.
+func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "StartStreamPeerTask", ctx, req)
+	ret := m.ctrl.Call(m, "StartStreamTask", ctx, req)
 	ret0, _ := ret[0].(io.ReadCloser)
 	ret1, _ := ret[1].(map[string]string)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
 
-// StartStreamPeerTask indicates an expected call of StartStreamPeerTask.
-func (mr *MockTaskManagerMockRecorder) StartStreamPeerTask(ctx, req interface{}) *gomock.Call {
+// StartStreamTask indicates an expected call of StartStreamTask.
+func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamPeerTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamPeerTask), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamTask), ctx, req)
 }
 
 // Stop mocks base method.
@@ -257,15 +256,15 @@ func (mr *MockTaskMockRecorder) PublishPieceInfo(pieceNum, size interface{}) *go
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockTask) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, success bool) {
+func (m *MockTask) ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ReportPieceResult", request, result, success)
+	m.ctrl.Call(m, "ReportPieceResult", request, result, err)
 }
 
 // ReportPieceResult indicates an expected call of ReportPieceResult.
-func (mr *MockTaskMockRecorder) ReportPieceResult(request, result, success interface{}) *gomock.Call {
+func (mr *MockTaskMockRecorder) ReportPieceResult(request, result, err interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), request, result, success)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockTask)(nil).ReportPieceResult), request, result, err)
 }
 
 // SetContentLength mocks base method.

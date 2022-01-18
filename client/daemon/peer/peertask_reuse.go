@@ -37,7 +37,7 @@ import (
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
-	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
+	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
@@ -80,7 +80,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	var cost = time.Now().Sub(start).Milliseconds()
 	log.Infof("reuse file peer task done, cost: %dms", cost)
 
-	pg := &FilePeerTaskProgress{
+	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: true,
 			Code:    base.Code_Success,
@@ -95,7 +95,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	}
 
 	// make a new buffered channel, because we did not need to call newFileTask
-	progressCh := make(chan *FilePeerTaskProgress, 1)
+	progressCh := make(chan *FileTaskProgress, 1)
 	progressCh <- pg
 
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))

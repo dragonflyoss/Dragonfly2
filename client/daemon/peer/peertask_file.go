@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-type FilePeerTaskRequest struct {
+type FileTaskRequest struct {
 	scheduler.PeerTaskRequest
 	Output            string
 	Limit             float64
@@ -42,7 +42,7 @@ type FilePeerTaskRequest struct {
 
 // FileTask represents a peer task to download a file
 type FileTask interface {
-	Start(ctx context.Context) (chan *FilePeerTaskProgress, error)
+	Start(ctx context.Context) (chan *FileTaskProgress, error)
 }
 
 type fileTask struct {
@@ -52,9 +52,9 @@ type fileTask struct {
 	peerTaskConductor *peerTaskConductor
 	pieceCh           chan *pieceInfo
 
-	request *FilePeerTaskRequest
+	request *FileTaskRequest
 	// progressCh holds progress status
-	progressCh     chan *FilePeerTaskProgress
+	progressCh     chan *FileTaskProgress
 	progressStopCh chan bool
 
 	// disableBackSource indicates not back source when failed
@@ -69,7 +69,7 @@ type ProgressState struct {
 	Msg     string
 }
 
-type FilePeerTaskProgress struct {
+type FileTaskProgress struct {
 	State           *ProgressState
 	TaskID          string
 	PeerID          string
@@ -81,7 +81,7 @@ type FilePeerTaskProgress struct {
 
 func (ptm *peerTaskManager) newFileTask(
 	ctx context.Context,
-	request *FilePeerTaskRequest,
+	request *FileTaskRequest,
 	limit rate.Limit) (context.Context, *fileTask, error) {
 	metrics.FileTaskCount.Add(1)
 	ptc, err := ptm.getOrCreatePeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), &request.PeerTaskRequest, limit)
@@ -98,7 +98,7 @@ func (ptm *peerTaskManager) newFileTask(
 		pieceCh:             ptc.broker.Subscribe(),
 		request:             request,
 
-		progressCh:        make(chan *FilePeerTaskProgress),
+		progressCh:        make(chan *FileTaskProgress),
 		progressStopCh:    make(chan bool),
 		disableBackSource: request.DisableBackSource,
 		pattern:           request.Pattern,
@@ -107,7 +107,7 @@ func (ptm *peerTaskManager) newFileTask(
 	return ctx, pt, nil
 }
 
-func (f *fileTask) Start(ctx context.Context) (chan *FilePeerTaskProgress, error) {
+func (f *fileTask) Start(ctx context.Context) (chan *FileTaskProgress, error) {
 	go f.syncProgress()
 	// return a progress channel for request download progress
 	return f.progressCh, nil
@@ -127,7 +127,7 @@ func (f *fileTask) syncProgress() {
 			if piece.finished {
 				continue
 			}
-			pg := &FilePeerTaskProgress{
+			pg := &FileTaskProgress{
 				State: &ProgressState{
 					Success: true,
 					Code:    base.Code_Success,
@@ -173,7 +173,7 @@ func (f *fileTask) storeToOutput() {
 
 func (f *fileTask) sendSuccessProgress() {
 	var progressDone bool
-	pg := &FilePeerTaskProgress{
+	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: true,
 			Code:    base.Code_Success,
@@ -212,7 +212,7 @@ func (f *fileTask) sendSuccessProgress() {
 
 func (f *fileTask) sendFailProgress(code base.Code, msg string) {
 	var progressDone bool
-	pg := &FilePeerTaskProgress{
+	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: false,
 			Code:    code,

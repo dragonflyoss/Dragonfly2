@@ -181,60 +181,12 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 	return result, nil
 }
 
-//func (pm *pieceManager) pushSuccessResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64) {
-//	err := peerTask.ReportPieceResult(
-//		&pieceTaskResult{
-//			piece: piece,
-//			pieceResult: &scheduler.PieceResult{
-//				TaskId:        peerTask.GetTaskID(),
-//				SrcPid:        peerTask.GetPeerID(),
-//				DstPid:        dstPid,
-//				PieceInfo:     piece,
-//				BeginTime:     uint64(start),
-//				EndTime:       uint64(end),
-//				Success:       true,
-//				Code:          base.Code_Success,
-//				HostLoad:      nil,                // TODO(jim): update host load
-//				FinishedCount: piece.PieceNum + 1, // update by peer task
-//				// TODO range_start, range_size, piece_md5, piece_offset, piece_style
-//			},
-//			err: nil,
-//		})
-//	if err != nil {
-//		peerTask.Log().Errorf("report piece task error: %v", err)
-//	}
-//}
-//
-//func (pm *pieceManager) pushFailResult(peerTask Task, dstPid string, piece *base.PieceInfo, start int64, end int64, err error, notRetry bool) {
-//	err = peerTask.ReportPieceResult(
-//		&pieceTaskResult{
-//			piece: piece,
-//			pieceResult: &scheduler.PieceResult{
-//				TaskId:        peerTask.GetTaskID(),
-//				SrcPid:        peerTask.GetPeerID(),
-//				DstPid:        dstPid,
-//				PieceInfo:     piece,
-//				BeginTime:     uint64(start),
-//				EndTime:       uint64(end),
-//				Success:       false,
-//				Code:          base.Code_ClientPieceDownloadFail,
-//				HostLoad:      nil,
-//				FinishedCount: 0, // update by peer task
-//			},
-//			err:      err,
-//			notRetry: notRetry,
-//		})
-//	if err != nil {
-//		peerTask.Log().Errorf("report piece task error: %v", err)
-//	}
-//}
-
 func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 	return pm.storageManager.ReadPiece(ctx, req)
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
-	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32, isLastPiece func(n int64) bool) (
+	reader io.Reader, contentLength int64, pieceNum int32, pieceOffset uint64, pieceSize uint32, isLastPiece func(n int64) (int32, bool)) (
 	result *DownloadPieceResult, md5 string, err error) {
 	result = &DownloadPieceResult{
 		Size:       -1,
@@ -344,7 +296,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	reader := response.Body.(io.Reader)
 
 	// calc total
-	if pm.calculateDigest && request.UrlMeta.Digest != "" {
+	if pm.calculateDigest {
 		reader = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
 	}
 	// we must calculate piece size
@@ -375,8 +327,8 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		log.Debugf("download piece %d", pieceNum)
 		result, md5, err := pm.processPieceFromSource(
 			pt, reader, contentLength, pieceNum, offset, size,
-			func(int64) bool {
-				return pieceNum == maxPieceNum-1
+			func(int64) (int32, bool) {
+				return maxPieceNum, pieceNum == maxPieceNum-1
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
@@ -392,13 +344,13 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		}
 		if err != nil {
 			log.Errorf("download piece %d error: %s", pieceNum, err)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
 
 		if result.Size != int64(size) {
 			log.Errorf("download piece %d size not match, desired: %d, actual: %d", pieceNum, size, result.Size)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return storage.ErrShortRead
 		}
 
@@ -415,12 +367,12 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 				})
 			if err != nil {
 				log.Errorf("update task failed %s", err)
-				pt.ReportPieceResult(request, result, false)
+				pt.ReportPieceResult(request, result, err)
 				return err
 			}
 		}
+		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
-		pt.ReportPieceResult(request, result, true)
 	}
 
 	log.Infof("download from source ok")
@@ -436,8 +388,16 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		log.Debugf("download piece %d", pieceNum)
 		result, md5, err := pm.processPieceFromSource(
 			pt, reader, contentLength, pieceNum, offset, size,
-			func(n int64) bool {
-				return n < int64(pieceSize)
+			func(n int64) (int32, bool) {
+				if n >= int64(pieceSize) {
+					return -1, false
+				}
+				// content length is aligned at pieceSize
+				// when n == 0, need ignore current piece
+				if n == 0 {
+					return pieceNum, true
+				}
+				return pieceNum + 1, true
 			})
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
@@ -452,17 +412,18 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			},
 		}
 		if err != nil {
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			log.Errorf("download piece %d error: %s", pieceNum, err)
 			return err
 		}
 		if result.Size == int64(size) {
+			pt.ReportPieceResult(request, result, nil)
 			pt.PublishPieceInfo(pieceNum, uint32(result.Size))
 			continue
 		} else if result.Size > int64(size) {
 			err = fmt.Errorf("piece %d size %d should not great than %d", pieceNum, result.Size, size)
 			log.Errorf(err.Error())
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
 
@@ -480,11 +441,15 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			})
 		if err != nil {
 			log.Errorf("update task failed %s", err)
-			pt.ReportPieceResult(request, result, false)
+			pt.ReportPieceResult(request, result, err)
 			return err
 		}
+		// content length is aligning at piece size
+		if result.Size == 0 {
+			break
+		}
+		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
-		pt.ReportPieceResult(request, result, true)
 		break
 	}
 

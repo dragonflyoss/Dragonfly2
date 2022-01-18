@@ -512,7 +512,7 @@ func TestService_HandlePiece(t *testing.T) {
 		expect func(t *testing.T, peer *resource.Peer)
 	}{
 		{
-			name: "piece success",
+			name: "piece success and peer state is PeerStatePending",
 			piece: &rpcscheduler.PieceResult{
 				DstPid: mockCDNPeerID,
 				PieceInfo: &base.PieceInfo{
@@ -523,6 +523,7 @@ func TestService_HandlePiece(t *testing.T) {
 				Success:   true,
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockPeer.FSM.SetState(resource.PeerStatePending)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockCDNPeerID)).Return(mockPeer, true).Times(1),
@@ -531,8 +532,7 @@ func TestService_HandlePiece(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.Pieces.Count(), uint(1))
-				assert.Equal(peer.PieceCosts(), []int64{1})
+				assert.True(peer.FSM.Is(resource.PeerStatePending))
 			},
 		},
 		{
@@ -560,7 +560,7 @@ func TestService_HandlePiece(t *testing.T) {
 			},
 		},
 		{
-			name: "receive begin of piece",
+			name: "receive begin of piece and peer state is PeerStateBackToSource",
 			piece: &rpcscheduler.PieceResult{
 				PieceInfo: &base.PieceInfo{
 					PieceNum: common.BeginOfPiece,
@@ -576,18 +576,17 @@ func TestService_HandlePiece(t *testing.T) {
 			},
 		},
 		{
-			name: "receive begin of piece",
+			name: "receive code is Code_ClientWaitPieceReady",
 			piece: &rpcscheduler.PieceResult{
-				PieceInfo: &base.PieceInfo{
-					PieceNum: common.EndOfPiece,
-				},
+				Code: base.Code_ClientWaitPieceReady,
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockPeer.FSM.SetState(resource.PeerStateBackToSource)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.True(peer.FSM.Is(resource.PeerStatePending))
+				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
 			},
 		},
 		{
