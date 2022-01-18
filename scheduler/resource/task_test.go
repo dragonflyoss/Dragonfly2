@@ -370,13 +370,13 @@ func TestTask_CDNPeers(t *testing.T) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
 				task.StorePeer(mockCDNPeer)
-				peers := task.CDNPeers()
-				assert.Equal(len(peers), 1)
-				assert.Equal(peers[0].ID, mockCDNPeer.ID)
+				peer, ok := task.LoadCDNPeer()
+				assert.True(ok)
+				assert.Equal(peer.ID, mockCDNPeer.ID)
 			},
 		},
 		{
-			name: "load cdn peers",
+			name: "load latest cdn peer",
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
 				assert := assert.New(t)
 				mockPeer.Host.IsCDN = true
@@ -386,18 +386,17 @@ func TestTask_CDNPeers(t *testing.T) {
 				mockPeer.UpdateAt.Store(time.Now())
 				mockCDNPeer.UpdateAt.Store(time.Now().Add(1 * time.Second))
 
-				peers := task.CDNPeers()
-				assert.Equal(len(peers), 2)
-				assert.Equal(peers[0].ID, mockCDNPeer.ID)
-				assert.Equal(peers[1].ID, mockPeer.ID)
+				peer, ok := task.LoadCDNPeer()
+				assert.True(ok)
+				assert.Equal(peer.ID, mockCDNPeer.ID)
 			},
 		},
 		{
 			name: "peers is empty",
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
 				assert := assert.New(t)
-				peers := task.CDNPeers()
-				assert.Equal(len(peers), 0)
+				_, ok := task.LoadCDNPeer()
+				assert.False(ok)
 			},
 		},
 		{
@@ -405,8 +404,8 @@ func TestTask_CDNPeers(t *testing.T) {
 			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				peers := task.CDNPeers()
-				assert.Equal(len(peers), 0)
+				_, ok := task.LoadCDNPeer()
+				assert.False(ok)
 			},
 		},
 	}

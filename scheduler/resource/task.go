@@ -186,8 +186,8 @@ func (t *Task) LenPeers() int {
 	return len
 }
 
-// CDNPeers return cdn peers in peers sync map
-func (t *Task) CDNPeers() []*Peer {
+// LoadCDNPeer return latest cdn peer in peers sync map
+func (t *Task) LoadCDNPeer() (*Peer, bool) {
 	var peers []*Peer
 	t.Peers.Range(func(_, v interface{}) bool {
 		peer, ok := v.(*Peer)
@@ -209,7 +209,11 @@ func (t *Task) CDNPeers() []*Peer {
 		},
 	)
 
-	return peers
+	if len(peers) > 0 {
+		return peers[0], true
+	}
+
+	return nil, false
 }
 
 // LoadPiece return piece for a key

@@ -71,10 +71,12 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 		default:
 		}
 
-		// When peer scheduling exceeds retry back-to-source limit or cdn download failed,
+		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
 		// peer will download the task back-to-source
-		cdnPeers := peer.Task.CDNPeers()
-		if (n >= c.config.Scheduler.RetryBackSourceLimit || len(cdnPeers) > 0 && cdnPeers[0].FSM.Is(resource.PeerStateFailed)) && peer.Task.CanBackToSource() {
+		cdnPeer, ok := peer.Task.LoadCDNPeer()
+		if (n >= c.config.Scheduler.RetryBackSourceLimit ||
+			ok && cdnPeer.FSM.Is(resource.PeerStateFailed)) &&
+			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
 				peer.Log.Error("load stream failed")
