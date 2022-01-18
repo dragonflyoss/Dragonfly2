@@ -22,7 +22,6 @@ import (
 	"context"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -33,6 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 
 var _ DaemonClient = (*daemonClient)(nil)

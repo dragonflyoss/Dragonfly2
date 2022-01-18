@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	"github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 
-	d7yLogger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var DefaultServerOptions = []grpc.ServerOption{
@@ -46,7 +46,7 @@ var DefaultServerOptions = []grpc.ServerOption{
 	grpc.ConnectionTimeout(5 * time.Second),
 	grpc.ChainStreamInterceptor(
 		grpc_prometheus.StreamServerInterceptor,
-		grpc_zap.PayloadStreamServerInterceptor(d7yLogger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+		grpc_zap.PayloadStreamServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
 			return true
 		}),
 		grpc_validator.StreamServerInterceptor(),
@@ -56,7 +56,7 @@ var DefaultServerOptions = []grpc.ServerOption{
 	),
 	grpc.ChainUnaryInterceptor(
 		grpc_prometheus.UnaryServerInterceptor,
-		grpc_zap.PayloadUnaryServerInterceptor(d7yLogger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+		grpc_zap.PayloadUnaryServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
 			return true
 		}),
 		grpc_validator.UnaryServerInterceptor(),

@@ -90,7 +90,9 @@ func (s *testService) StreamingOutputCall(in *testpb.StreamingOutputCallRequest,
 		return err
 	}
 	for i := 0; i < 100; i++ {
-		stream.Send(&testpb.StreamingOutputCallResponse{})
+		if err := stream.Send(&testpb.StreamingOutputCallResponse{}); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -108,9 +110,11 @@ func (s *testService) FullDuplexCall(stream testpb.TestService_FullDuplexCallSer
 		if err != nil {
 			return err
 		}
-		stream.Send(&testpb.StreamingOutputCallResponse{
+		if err := stream.Send(&testpb.StreamingOutputCallResponse{
 			Payload: req.Payload,
-		})
+		}); err != nil {
+			return err
+		}
 		count++
 	}
 	return nil
@@ -128,6 +132,7 @@ func (t *testServerData) cleanup() {
 	}
 }
 
+// startTestServers
 func startTestServers(t *testing.T, numServers int) (_ *testServerData, err error) {
 	testData := &testServerData{}
 

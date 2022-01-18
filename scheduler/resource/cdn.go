@@ -241,7 +241,9 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 	}
 
 	// Update grpc cdn addresses
-	c.UpdateAddresses(cdnsToNetAddrs(data.CDNs))
+	if err := c.UpdateAddresses(cdnsToNetAddrs(data.CDNs)); err != nil {
+		logger.Errorf("failed to update addresses: %v", err)
+	}
 	logger.Infof("cdn addresses have been updated: %v", ips)
 }
 

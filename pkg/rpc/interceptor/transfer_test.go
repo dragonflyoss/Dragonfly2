@@ -16,13 +16,9 @@
 
 package interceptor
 
-import (
-	"google.golang.org/grpc/codes"
-)
-
-var (
-	unTransferableErrors = []codes.Code{codes.Unavailable, codes.DataLoss}
-)
+//var (
+//unTransferableErrors = []codes.Code{codes.Unavailable, codes.DataLoss}
+//)
 
 //func TestTransferSuite(t *testing.T) {
 //	service := &testService{}

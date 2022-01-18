@@ -24,17 +24,17 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
-	"google.golang.org/grpc/peer"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
 	"google.golang.org/grpc/status"
 	testpb "google.golang.org/grpc/test/grpc_testing"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 
 func errorDesc(err error) string {

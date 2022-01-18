@@ -58,8 +58,7 @@ func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOpt
 	return svr, nil
 }
 
-func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
-	ctx := stream.Context()
+func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
 	clientAddr := "unknown"
 	if pe, ok := peer.FromContext(ctx); ok {
 		clientAddr = pe.Addr.String()

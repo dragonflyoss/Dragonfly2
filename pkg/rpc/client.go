@@ -22,13 +22,13 @@ import (
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	"github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 
-	d7yLogger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/interceptor"
 )
 
@@ -44,7 +44,7 @@ var DefaultClientOpts = []grpc.DialOption{
 	}),
 	grpc.WithChainUnaryInterceptor(
 		grpc_prometheus.UnaryClientInterceptor,
-		grpc_zap.PayloadUnaryClientInterceptor(d7yLogger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
+		grpc_zap.PayloadUnaryClientInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
 			return true
 		}),
 		grpc_validator.UnaryClientInterceptor(),
@@ -58,7 +58,7 @@ var DefaultClientOpts = []grpc.DialOption{
 	),
 	grpc.WithChainStreamInterceptor(
 		grpc_prometheus.StreamClientInterceptor,
-		grpc_zap.PayloadStreamClientInterceptor(d7yLogger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
+		grpc_zap.PayloadStreamClientInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string) bool {
 			return true
 		}),
 		interceptor.StreamClientInterceptor(),
