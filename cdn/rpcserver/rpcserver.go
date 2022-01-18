@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
@@ -199,6 +200,15 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 			pieceInfos = append(pieceInfos, p)
 			count++
 		}
+	}
+	pieceMd5Sign := seedTask.PieceMd5Sign
+	if len(seedTask.Pieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
+		taskPieces := seedTask.Pieces
+		var pieceMd5s []string
+		for i := 0; i < len(taskPieces); i++ {
+			pieceMd5s = append(pieceMd5s, taskPieces[uint32(i)].PieceMd5)
+		}
+		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
 	}
 	pp := &base.PiecePacket{
 		TaskId:        req.TaskId,
