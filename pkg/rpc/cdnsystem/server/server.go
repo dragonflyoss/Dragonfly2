@@ -17,15 +17,56 @@
 package server
 
 import (
+	"context"
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
+
+// SeederServer  refer to cdnsystem.SeederServer
+type SeederServer interface {
+	// ObtainSeeds generate seeds and return to scheduler
+	ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error
+	// GetPieceTasks get piece tasks from cdn
+	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+}
+
+type proxy struct {
+	server SeederServer
+	cdnsystem.UnimplementedSeederServer
+}
+
+func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	cdnsystem.RegisterSeederServer(grpcServer, &proxy{server: seederServer})
+	return grpcServer
+}
+
+func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
+	metrics.DownloadCount.Inc()
+	metrics.ConcurrentDownloadGauge.Inc()
+	defer metrics.ConcurrentDownloadGauge.Dec()
+
+	err = p.server.ObtainSeeds(sr, stream)
+
+	if err != nil {
+		metrics.DownloadFailureCount.Inc()
+	}
+	return
+}
+
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	return p.server.GetPieceTasks(ctx, ptr)
+}
 
 func StatSeedStart(taskID, url string) {
 	logger.StatSeedLogger.Info("Start Seed",

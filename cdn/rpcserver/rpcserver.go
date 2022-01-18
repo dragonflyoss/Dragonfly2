@@ -45,7 +45,6 @@ type Server struct {
 	*grpc.Server
 	config  Config
 	service supervisor.CDNService
-	cdnsystem.UnimplementedSeederServer
 }
 
 // New returns a new Manager Object.
