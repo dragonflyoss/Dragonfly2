@@ -91,7 +91,8 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		task.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
 
 		// Init cdn peer
-		if piece.PieceInfo.PieceNum == common.BeginOfPiece {
+		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
+			task.Log.Infof("receive begin piece: %#v %#v", piece, piece.PieceInfo)
 			initialized = true // reserve for compatibility test, will remove later
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
@@ -101,8 +102,10 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 				return nil, nil, err
 			}
 			continue
-		} else if !initialized {
+		}
+		if !initialized {
 			// reserve for compatibility test, will remove later
+			task.Log.Infof("receive first piece: %#v %#v", piece, piece.PieceInfo)
 			initialized = true
 
 			peer, err = c.initPeer(task, piece)
