@@ -21,7 +21,6 @@ package rpc
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"testing"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
