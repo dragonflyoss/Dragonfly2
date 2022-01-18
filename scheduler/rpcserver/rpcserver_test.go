@@ -226,7 +226,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_TINY)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
@@ -248,7 +248,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
@@ -271,7 +271,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
 			},
 		},
@@ -367,6 +367,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(tc.req, mockPeer, mockHost, mockTask, scheduler, svc.EXPECT(), scheduler.EXPECT())
+
 			svr := New(svc)
 			result, err := svr.RegisterPeerTask(context.Background(), tc.req)
 			tc.expect(t, mockPeer, result, err)
