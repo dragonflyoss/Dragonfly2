@@ -247,7 +247,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 			context.Background(),
 			dfnet.NetAddr{
 				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("127.0.0.1:%d", port),
+				Addr: fmt.Sprintf(":%d", port),
 			},
 			tc.request)
 		assert.Nil(err, "client get piece tasks grpc call should be ok")

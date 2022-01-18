@@ -29,7 +29,7 @@ import (
 	"testing"
 	"time"
 
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -40,15 +40,17 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	schedulerclientMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
+	schedulerMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 )
@@ -68,8 +70,8 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = daemonserver.NewMockDaemonServer(ctrl)
-	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
+	daemonServer.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {
 			start := opt.pieceSize * (request.StartNum + i)
@@ -104,7 +106,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	})
 
 	go func() {
-		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+		if err := daemonserver.New(daemonServer).Serve(ln); err != nil {
 			panic(err)
 		}
 	}()
@@ -112,7 +114,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	pps := mock_scheduler.NewMockPeerPacketStream(ctrl)
+	pps := schedulerMock.NewMockScheduler_ReportPieceResultClient(ctrl)
 	pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(
 		func(pr *scheduler.PieceResult) error {
 			return nil
@@ -147,8 +149,8 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				StealPeers: nil,
 			}, nil
 		})
-	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient := schedulerclientMock.NewMockSchedulerClient(ctrl)
+	schedulerClient.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			if opt.scope == base.SizeScope_TINY {
 				return &scheduler.RegisterResult{
@@ -165,11 +167,11 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				DirectPiece: nil,
 			}, nil
 		})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
@@ -182,7 +184,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
-	return sched, storageManager
+	return schedulerClient, storageManager
 }
 
 func TestPeerTaskManager_getOrCreatePeerTaskConductor(t *testing.T) {

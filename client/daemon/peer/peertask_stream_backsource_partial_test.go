@@ -40,15 +40,16 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
-	mock_scheduler "d7y.io/dragonfly/v2/client/daemon/test/mock/scheduler"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	schedulerclientMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
+	schedulerMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
@@ -59,7 +60,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
+	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
 
 	var piecesMd5 []string
 	pieceCount := int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize)))
@@ -70,7 +71,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			piecesMd5 = append(piecesMd5, digestutils.Md5Bytes(testBytes[int(i)*int(opt.pieceSize):int(i+1)*int(opt.pieceSize)]))
 		}
 	}
-	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	daemonServer.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var tasks []*base.PieceInfo
 		// only return first piece
 		if request.StartNum == 0 {
@@ -97,15 +98,15 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go func(daemon *mock_daemon.MockDaemonServer, ln net.Listener) {
+	go func(daemon *daemonserverMock.MockDaemonServer, ln net.Listener) {
 		if err := daemonserver.New(daemon).Serve(ln); err != nil {
 			log.Fatal(err)
 		}
-	}(daemon, ln)
+	}(daemonServer, ln)
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	pps := mock_scheduler.NewMockPeerPacketStream(ctrl)
+	pps := schedulerMock.NewMockScheduler_ReportPieceResultClient(ctrl)
 	var (
 		wg             = sync.WaitGroup{}
 		backSourceSent = atomic.Bool{}
@@ -153,8 +154,8 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				StealPeers: nil,
 			}, nil
 		})
-	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
-	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient := schedulerclientMock.NewMockSchedulerClient(ctrl)
+	schedulerClient.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			return &scheduler.RegisterResult{
 				TaskId:      opt.taskID,
@@ -162,11 +163,11 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				DirectPiece: nil,
 			}, nil
 		})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
-	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+	schedulerClient.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
@@ -179,7 +180,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
-	return sched, storageManager
+	return schedulerClient, storageManager
 }
 
 func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {

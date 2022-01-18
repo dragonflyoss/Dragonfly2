@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -118,7 +119,7 @@ func TestPickerPickFirstTwo(t *testing.T) {
 				IsStick:     false,
 				TargetAddr:  "unknown",
 			},
-			wantErr: status.Error(codes.FailedPrecondition, "cannot find target addr unknown"),
+			wantErr: status.Error(codes.Code(base.Code_ServerUnavailable), "cannot find target addr unknown"),
 		},
 		{
 			name: "pick stick is true and success",

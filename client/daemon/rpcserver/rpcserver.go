@@ -133,7 +133,7 @@ func (m *server) CheckHealth(context.Context) error {
 }
 
 func (m *server) Download(ctx context.Context,
-	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	req *dfdaemongrpc.DownRequest, stream dfdaemongrpc.Daemon_DownloadServer) error {
 	m.Keep()
 	// init peer task request, peer uses different peer id to generate every request
 	peerTask := &peer.FilePeerTaskRequest{
@@ -156,12 +156,12 @@ func (m *server) Download(ctx context.Context,
 		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
-		results <- &dfdaemongrpc.DownResult{
+		stream.Send(&dfdaemongrpc.DownResult{
 			TaskId:          tiny.TaskID,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
-		}
+		})
 		log.Infof("tiny file, wrote to output")
 		if req.Uid != 0 && req.Gid != 0 {
 			if err = os.Chown(req.Output, int(req.Uid), int(req.Gid)); err != nil {
@@ -184,12 +184,12 @@ func (m *server) Download(ctx context.Context,
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
-			results <- &dfdaemongrpc.DownResult{
+			stream.Send(&dfdaemongrpc.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
-			}
+			})
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
 				p.DoneCallback()
@@ -204,10 +204,10 @@ func (m *server) Download(ctx context.Context,
 				return nil
 			}
 		case <-ctx.Done():
-			results <- &dfdaemongrpc.DownResult{
+			stream.Send(&dfdaemongrpc.DownResult{
 				CompletedLength: 0,
 				Done:            true,
-			}
+			})
 			log.Infof("context done due to %s", ctx.Err())
 			return status.Error(codes.Canceled, ctx.Err().Error())
 		}
