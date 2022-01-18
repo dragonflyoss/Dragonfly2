@@ -225,7 +225,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_TINY)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 			},
 		},
 		{
@@ -246,7 +246,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 			},
 		},
 		{
@@ -268,7 +268,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			expect: func(t *testing.T, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
 				assert.Equal(result.TaskId, mockTaskID)
-				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 			},
 		},
 		{
