@@ -47,3 +47,16 @@ database:
 # metrics:
 #  # 数据服务地址
 #  addr: ":8000"
+
+# console 是否在控制台程序中显示日志
+console: false
+
+# verbose 是否使用调试级别的日志、是否启用 pprof。
+verbose: false
+
+# pprof-port pprof 监听的端口，仅在 verbose 为 true 时可用
+pprof-port: -1
+
+# jaeger 地址
+# 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""

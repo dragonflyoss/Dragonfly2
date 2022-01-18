@@ -105,7 +105,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 				pprofPort, _ = freeport.GetFreePort()
 			}
 
-			debugAddr := fmt.Sprintf("%s:%d", iputils.IPv4, pprofPort)
+			debugAddr := fmt.Sprintf(":%d", pprofPort)
 			viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugAddr),
