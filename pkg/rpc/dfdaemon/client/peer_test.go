@@ -28,15 +28,16 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var _ dfdaemon.DaemonServer = (*pieceTaskServer)(nil)
