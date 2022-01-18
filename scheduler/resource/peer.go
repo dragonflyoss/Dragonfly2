@@ -63,9 +63,6 @@ const (
 )
 
 const (
-	// Peer is downloading
-	PeerEventDownload = "Download"
-
 	// Peer is registered as tiny scope size
 	PeerEventRegisterTiny = "RegisterTiny"
 
@@ -74,6 +71,9 @@ const (
 
 	// Peer is registered as normal scope size
 	PeerEventRegisterNormal = "RegisterNormal"
+
+	// Peer is downloading
+	PeerEventDownload = "Download"
 
 	// Peer is downloading from back-to-source
 	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
