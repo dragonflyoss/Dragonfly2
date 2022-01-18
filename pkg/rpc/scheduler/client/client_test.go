@@ -25,11 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/serialx/hashring"
@@ -41,6 +36,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var _ scheduler.SchedulerServer = (*testServer)(nil)

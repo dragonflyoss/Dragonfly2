@@ -28,10 +28,6 @@ import (
 	"sync"
 	"testing"
 
-	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
@@ -45,6 +41,11 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
+
+	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 )
 
 var _ dfdaemon.DaemonServer = (*testServer)(nil)
@@ -85,14 +86,12 @@ func (s *testServer) Download(request *dfdaemon.DownRequest, stream dfdaemon.Dae
 }
 
 func (s *testServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	var aPrefix = "aaaaaaaaaaaaaaa"
-	var bPrefix = "bbbbbbbbbbbbbbb"
 	log.Printf("server %s receive get piece task request %v", s.addr, request)
-	if strings.HasPrefix(request.TaskId, aPrefix) {
-		request.TaskId = aPrefix
+	if strings.HasPrefix(request.TaskId, testATaskID) {
+		request.TaskId = testATaskID
 	}
-	if strings.HasPrefix(request.TaskId, bPrefix) {
-		request.TaskId = bPrefix
+	if strings.HasPrefix(request.TaskId, testBTaskID) {
+		request.TaskId = testBTaskID
 	}
 	piecePacket, ok := s.piecePacket[request.TaskId]
 	if !ok {

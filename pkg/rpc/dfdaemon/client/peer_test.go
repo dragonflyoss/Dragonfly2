@@ -52,11 +52,11 @@ type pieceTaskServer struct {
 
 func (s *pieceTaskServer) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	log.Printf("server %s receive get piece task request %v", s.addr, request)
-	if strings.HasPrefix(request.TaskId, "aaaaaaaaaaaaaaa") {
-		request.TaskId = "aaaaaaaaaaaaaaa"
+	if strings.HasPrefix(request.TaskId, testATaskID) {
+		request.TaskId = testATaskID
 	}
-	if strings.HasPrefix(request.TaskId, "bbbbbbbbbbbbbbb") {
-		request.TaskId = "bbbbbbbbbbbbbbb"
+	if strings.HasPrefix(request.TaskId, testBTaskID) {
+		request.TaskId = testBTaskID
 	}
 	piecePacket, ok := s.piecePacket[request.TaskId]
 	if !ok {
@@ -193,7 +193,7 @@ func TestElasticClient(t *testing.T) {
 	var testTaskID string
 
 	// get piece tasks from valid cdn, should success
-	testTaskID = "aaaaaaaaaaaaaaa"
+	testTaskID = testATaskID
 	server = resolveServer(testServers.cdnServerImpls[0].addr)
 	var startNum, limit uint32 = 0, 3
 	piecePacket, err := client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
@@ -219,7 +219,7 @@ func TestElasticClient(t *testing.T) {
 	}
 
 	// get piece tasks from valid daemon, should success
-	testTaskID = "bbbbbbbbbbbbbbb"
+	testTaskID = testBTaskID
 	server = resolveServer(testServers.daemonServerImpls[0].addr)
 	piecePacket, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
 		Ip:      server.ip,
@@ -273,7 +273,7 @@ func TestElasticClient(t *testing.T) {
 	}
 
 	// get piece tasks from valid daemon, should success
-	testTaskID = "bbbbbbbbbbbbbbb"
+	testTaskID = testBTaskID
 	server = resolveServer(testServers.daemonServerImpls[3].addr)
 	piecePacket, err = client.GetPieceTasks(context.Background(), &scheduler.PeerPacket_DestPeer{
 		Ip:      server.ip,
@@ -315,3 +315,8 @@ func resolveServer(addr string) *server {
 		port: int32(port),
 	}
 }
+
+var (
+	testATaskID = "aaaaaaaaaaaaaaa"
+	testBTaskID = "bbbbbbbbbbbbbbb"
+)
