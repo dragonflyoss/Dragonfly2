@@ -124,7 +124,7 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 }
 
 func (s *streamTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
-	pr, pc, err := s.peerTaskConductor.pieceManager.ReadPiece(s.ctx, &storage.ReadPieceRequest{
+	pr, pc, err := s.peerTaskConductor.storage.ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: s.peerTaskConductor.peerID,
 			TaskID: s.peerTaskConductor.taskID,
@@ -198,6 +198,7 @@ func (s *streamTask) writeToPipe(firstPiece *pieceInfo, pw *io.PipeWriter) {
 			}
 			return
 		case cur = <-s.pieceCh:
+			// FIXME check missing piece for non-block broker channel
 			continue
 		case <-s.peerTaskConductor.failCh:
 			ptError := fmt.Errorf("context done due to peer task fail: %d/%s",

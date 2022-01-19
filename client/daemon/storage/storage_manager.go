@@ -43,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
+//go:generate mockgen -source storage_manager.go -destination ../test/mock/storage/manager.go
 type TaskStorageDriver interface {
 	// WritePiece put a piece of a task to storage
 	WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error)
@@ -83,7 +84,7 @@ type Manager interface {
 	// KeepAlive tests if storage is used in given time duration
 	clientutil.KeepAlive
 	// RegisterTask registers a task in storage driver
-	RegisterTask(ctx context.Context, req RegisterTaskRequest) error
+	RegisterTask(ctx context.Context, req RegisterTaskRequest) (TaskStorageDriver, error)
 	// FindCompletedTask try to find a completed task for fast path
 	FindCompletedTask(taskID string) *ReusePeerTask
 	// CleanUp cleans all storage data
@@ -191,27 +192,28 @@ func WithGCInterval(gcInterval time.Duration) func(*storageManager) error {
 	}
 }
 
-func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) error {
-	if _, ok := s.LoadTask(
+func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) (TaskStorageDriver, error) {
+	ts, ok := s.LoadTask(
 		PeerTaskMetadata{
 			PeerID: req.PeerID,
 			TaskID: req.TaskID,
-		}); !ok {
-		// double check if task store exists
-		// if ok, just unlock and return
-		s.Lock()
-		defer s.Unlock()
-		if _, ok := s.LoadTask(
-			PeerTaskMetadata{
-				PeerID: req.PeerID,
-				TaskID: req.TaskID,
-			}); ok {
-			return nil
-		}
-		// still not exist, create a new task store
-		return s.CreateTask(req)
+		})
+	if ok {
+		return ts, nil
 	}
-	return nil
+	// double check if task store exists
+	// if ok, just unlock and return
+	s.Lock()
+	defer s.Unlock()
+	if ts, ok = s.LoadTask(
+		PeerTaskMetadata{
+			PeerID: req.PeerID,
+			TaskID: req.TaskID,
+		}); ok {
+		return ts, nil
+	}
+	// still not exist, create a new task store
+	return s.CreateTask(req)
 }
 
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -298,7 +300,7 @@ func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	return t.(TaskStorageDriver).UpdateTask(ctx, req)
 }
 
-func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
+func (s *storageManager) CreateTask(req RegisterTaskRequest) (TaskStorageDriver, error) {
 	s.Keep()
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
@@ -322,12 +324,12 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
 	if err := os.MkdirAll(t.dataDir, defaultDirectoryMode); err != nil && !os.IsExist(err) {
-		return err
+		return nil, err
 	}
 	t.touch()
 	metadata, err := os.OpenFile(t.metadataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	t.metadataFile = metadata
 
@@ -341,20 +343,20 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 		t.DataFilePath = data
 		f, err := os.OpenFile(t.DataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		f.Close()
 	case string(config.AdvanceLocalTaskStoreStrategy):
 		dir, file := path.Split(req.Destination)
 		dirStat, err := os.Stat(dir)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		t.DataFilePath = path.Join(dir, fmt.Sprintf(".%s.dfget.cache.%s", file, req.PeerID))
 		f, err := os.OpenFile(t.DataFilePath, os.O_CREATE|os.O_RDWR, defaultFileMode)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		f.Close()
 
@@ -367,7 +369,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 				// fallback to symbol link
 				if err := os.Symlink(t.DataFilePath, data); err != nil {
 					logger.Errorf("symbol link failed: %s", err)
-					return err
+					return nil, err
 				}
 			}
 		} else {
@@ -375,7 +377,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 			// make symbol link for reload error gc
 			if err := os.Symlink(t.DataFilePath, data); err != nil {
 				logger.Errorf("symbol link failed: %s", err)
-				return err
+				return nil, err
 			}
 		}
 	}
@@ -393,7 +395,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) error {
 		s.indexTask2PeerTask[req.TaskID] = []*localTaskStore{t}
 	}
 	s.indexRWMutex.Unlock()
-	return nil
+	return t, nil
 }
 
 func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
