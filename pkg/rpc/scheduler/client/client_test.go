@@ -529,7 +529,7 @@ func TestUpdateAddress(t *testing.T) {
 	}
 }
 
-func TestMigration(t *testing.T) {
+func TestTransferSchedulerClient(t *testing.T) {
 	test, err := startTestServers(3)
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)

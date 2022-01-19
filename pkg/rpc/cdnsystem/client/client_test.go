@@ -401,7 +401,7 @@ func TestHashTask(t *testing.T) {
 	}
 }
 
-func TestMigration(t *testing.T) {
+func TestTransferCdnClient(t *testing.T) {
 	test, err := startTestServers(3)
 	if err != nil {
 		t.Fatalf("failed to get cdn client: %v", err)

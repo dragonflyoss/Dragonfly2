@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -57,7 +58,7 @@ import (
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
-	schedulerclient.SchedulerClient, storage.Manager) {
+	schedulerclient.SchedulerClient, dfclient.ElasticClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
@@ -180,7 +181,8 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
-	return schedulerClient, storageManager
+	peerTaskClient, _ := dfclient.GetElasticClient()
+	return schedulerClient, peerTaskClient, storageManager
 }
 
 func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
@@ -202,7 +204,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 
 		url = "http://localhost/test/data"
 	)
-	schedulerClient, storageManager := setupBackSourcePartialComponents(
+	schedulerClient, peerTaskClient, storageManager := setupBackSourcePartialComponents(
 		ctrl, testBytes,
 		componentsOption{
 			taskID:             taskID,
@@ -254,6 +256,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		pieceManager:     pm,
 		storageManager:   storageManager,
 		schedulerClient:  schedulerClient,
+		peerTaskClient:   peerTaskClient,
 		schedulerOption: config.SchedulerOption{
 			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
 		},

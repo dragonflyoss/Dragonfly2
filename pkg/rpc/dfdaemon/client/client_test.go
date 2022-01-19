@@ -424,7 +424,7 @@ func TestHashTask(t *testing.T) {
 	}
 }
 
-func TestMigration(t *testing.T) {
+func TestTransferDfDaemonClient(t *testing.T) {
 	test, err := startTestServers(3)
 	if err != nil {
 		t.Fatalf("failed to get start servers: %v", err)
