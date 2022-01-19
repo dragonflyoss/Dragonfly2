@@ -29,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -45,6 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
