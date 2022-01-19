@@ -153,7 +153,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	defer span.End()
 	span.SetAttributes(constants.AttributeGetPieceTasksRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
-	logger.Infof("get piece tasks: %#v", req)
+	logger.Infof("get piece tasks: %#s", req)
 	defer func() {
 		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
 	}()
