@@ -42,7 +42,13 @@ func UnaryClientInterceptor(optFuncs ...CallOption) grpc.UnaryClientInterceptor 
 		var lastErr error
 		var firstErrSet bool
 		callCtx := parentCtx
+		var iterator = 0
 		for {
+			if iterator > callOpts.maxIterator {
+				logTrace(parentCtx, "grpc_transfer reach max iterator, lastErr: %v", lastErr)
+				return lastErr
+			}
+			iterator++
 			var p peer.Peer
 			currentErr := invoker(callCtx, method, req, reply, cc, append(grpcOpts, grpc.Peer(&p))...)
 			if currentErr == nil {
@@ -76,7 +82,13 @@ func StreamClientInterceptor(optFuncs ...CallOption) grpc.StreamClientIntercepto
 		var lastErr error
 		var firstErrSet bool
 		callCtx := parentCtx
+		var iterator = 0
 		for {
+			if iterator > callOpts.maxIterator {
+				logTrace(parentCtx, "grpc_transfer reach max iterator, lastErr: %v", lastErr)
+				return nil, lastErr
+			}
+			iterator++
 			// TODO avoid dead for
 			var p peer.Peer
 			newStreamer, currentErr := streamer(callCtx, desc, cc, method, append(grpcOpts, grpc.Peer(&p))...)
@@ -164,7 +176,13 @@ func (s *clientTransferStream) RecvMsg(m interface{}) error {
 		return lastErr // success or hard failure
 	}
 	callCtx := s.parentCtx
+	var iterator = 0
 	for {
+		if iterator > s.callOpts.maxIterator {
+			logTrace(callCtx, "grpc_transfer reach max iterator, lastErr: %v", lastErr)
+			return lastErr
+		}
+		iterator++
 		callCtx = callContext(callCtx, *s.serverPeer, lastErr)
 		newStream, err := s.reestablishStreamAndResendBuffer(callCtx)
 		if err != nil {

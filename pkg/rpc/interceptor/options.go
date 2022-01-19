@@ -28,12 +28,14 @@ var (
 	DefaultUnTransferableCodes = []codes.Code{codes.Code(base.Code_ServerUnavailable)}
 
 	defaultOptions = &options{
-		codes: DefaultUnTransferableCodes,
+		codes:       DefaultUnTransferableCodes,
+		maxIterator: 100,
 	}
 )
 
 type options struct {
-	codes []codes.Code
+	codes       []codes.Code
+	maxIterator int
 }
 
 // CallOption is a grpc.CallOption that is local to grpc_migrate.
@@ -45,6 +47,12 @@ type CallOption struct {
 func WithCodes(unTransferableCodes ...codes.Code) CallOption {
 	return CallOption{applyFunc: func(opt *options) {
 		opt.codes = append(unTransferableCodes, DefaultUnTransferableCodes...)
+	}}
+}
+
+func WithMaxIterator(maxIterator int) CallOption {
+	return CallOption{applyFunc: func(opt *options) {
+		opt.maxIterator = maxIterator
 	}}
 }
 
