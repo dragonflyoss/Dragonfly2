@@ -30,12 +30,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -582,15 +583,15 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 		failedCode   = base.Code_UnknownError
 		failedReason string
 	)
-	de, ok := err.(*dferrors.DfError)
-	if ok && de.Code == base.Code_SchedNeedBackSource {
+	st, ok := status.FromError(err)
+	if ok && st.Code() == codes.Code(base.Code_SchedNeedBackSource) {
 		pt.needBackSource.Store(true)
 		close(pt.peerPacketReady)
 		pt.Infof("receive back source code")
 		return
-	} else if ok && de.Code != base.Code_SchedNeedBackSource {
-		failedCode = de.Code
-		failedReason = de.Message
+	} else if ok && st.Code() != codes.Code(base.Code_SchedNeedBackSource) {
+		failedCode = base.Code(st.Code())
+		failedReason = st.Message()
 		pt.Errorf("receive peer packet failed: %s", pt.failedReason)
 	} else {
 		pt.Errorf("receive peer packet failed: %s", err)

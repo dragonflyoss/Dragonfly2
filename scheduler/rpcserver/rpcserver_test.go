@@ -26,8 +26,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -105,9 +105,9 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedTaskStatusError)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedTaskStatusError)
 			},
 		},
 		{
@@ -143,9 +143,9 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedError)
 			},
 		},
 		{
@@ -181,9 +181,9 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedError)
 			},
 		},
 		{
@@ -348,9 +348,9 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedError)
 				assert.True(peer.FSM.Is(resource.PeerStateFailed))
 			},
 		},
@@ -420,9 +420,9 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			},
 			expect: func(t *testing.T, mockPeer *resource.Peer, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedPeerNotFound)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedPeerNotFound)
 			},
 		},
 		{
@@ -518,9 +518,9 @@ func TestRPCServer_ReportPeerResult(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedPeerNotFound)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedPeerNotFound)
 			},
 		},
 		{
@@ -574,9 +574,9 @@ func TestRPCServer_LeaveTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
+				dferr, ok := status.FromError(err)
 				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedPeerNotFound)
+				assert.Equal(base.Code(dferr.Code()), base.Code_SchedPeerNotFound)
 			},
 		},
 		{

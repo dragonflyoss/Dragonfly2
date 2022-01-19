@@ -42,7 +42,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -85,7 +84,7 @@ func (s *testServer) ObtainSeeds(request *cdnsystem.SeedRequest, stream cdnsyste
 	}
 	pieceInfos, ok := s.seedPieces[request.TaskId]
 	if !ok {
-		return dferrors.New(base.Code_CDNTaskDownloadFail, "task download failed")
+		return status.Error(codes.Code(base.Code_CDNTaskDownloadFail), "task download failed")
 	}
 	for _, info := range pieceInfos {
 		if err := stream.Send(info); err != nil {
@@ -105,7 +104,7 @@ func (s *testServer) GetPieceTasks(ctx context.Context, req *base.PieceTaskReque
 	}
 	pieces, ok := s.seedPieces[req.TaskId]
 	if !ok {
-		return nil, dferrors.New(base.Code_CDNTaskNotFound, "task not found")
+		return nil, status.Error(codes.Code(base.Code_CDNTaskNotFound), "task not found")
 	}
 	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
 	var count uint32 = 0

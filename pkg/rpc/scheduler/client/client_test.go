@@ -37,7 +37,6 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -63,12 +62,12 @@ func (s *testServer) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTa
 	md2, ok := metadata.FromIncomingContext(ctx)
 	if ok && md2.Get("excludeaddrs") != nil {
 		if sets.NewString(md2.Get("excludeaddrs")...).Has(s.addr) {
-			return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "hit exclude server")
+			return nil, status.Error(codes.Code(base.Code_CDNTaskRegistryFail), "hit exclude server")
 		}
 	}
 	rs, ok := s.registerResult[req.Url]
 	if !ok {
-		return nil, dferrors.New(base.Code_CDNTaskRegistryFail, "wrong server")
+		return nil, status.Error(codes.Code(base.Code_CDNTaskRegistryFail), "wrong server")
 	}
 	s.peerIds.Insert(req.PeerId)
 	s.taskURL2ID[req.Url] = idgen.TaskID(req.Url, nil)
@@ -90,7 +89,7 @@ func (s *testServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceRes
 		}
 		_, ok := s.peerIds[in.SrcPid]
 		if !ok {
-			return dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
+			return status.Error(codes.Code(base.Code_SchedPeerNotFound), "peer not found")
 		}
 		if err := stream.Send(&scheduler.PeerPacket{
 			TaskId:        in.TaskId,
@@ -118,7 +117,7 @@ func (s *testServer) ReportPieceResult(stream scheduler.Scheduler_ReportPieceRes
 // ReportPeerResult reports downloading result for the peer task.
 func (s *testServer) ReportPeerResult(ctx context.Context, result *scheduler.PeerResult) (*emptypb.Empty, error) {
 	if _, ok := s.peerIds[result.PeerId]; !ok {
-		return nil, dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
+		return nil, status.Error(codes.Code(base.Code_SchedPeerNotFound), "peer not found")
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -126,7 +125,7 @@ func (s *testServer) ReportPeerResult(ctx context.Context, result *scheduler.Pee
 // LeaveTask makes the peer leaving from scheduling overlay for the task.
 func (s *testServer) LeaveTask(ctx context.Context, target *scheduler.PeerTarget) (*emptypb.Empty, error) {
 	if _, ok := s.peerIds[target.PeerId]; !ok {
-		return nil, dferrors.New(base.Code_SchedPeerNotFound, "peer not found")
+		return nil, status.Error(codes.Code(base.Code_SchedPeerNotFound), "peer not found")
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -612,7 +611,7 @@ func TestTransferSchedulerClient(t *testing.T) {
 			HostLoad:    nil,
 			IsMigrating: false,
 		}, grpc.Peer(&serverPeer))
-		if err == nil || !cmp.Equal(err.Error(), status.New(codes.Unknown, dferrors.New(base.Code_CDNTaskRegistryFail, "hit exclude server").Error()).String()) {
+		if err == nil || !cmp.Equal(err.Error(), status.Error(codes.Code(base.Code_CDNTaskRegistryFail), "hit exclude server").Error()) {
 			t.Fatalf("RegisterPeerTask want err hit exclude server, but got %v", err)
 		}
 		if serverPeer.Addr.String() != candidateAddrs[len(candidateAddrs)-1] {

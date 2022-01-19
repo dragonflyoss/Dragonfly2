@@ -35,12 +35,13 @@ import (
 	testifyrequire "github.com/stretchr/testify/require"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -149,7 +150,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 			}
 			<-sent
 			if opt.backSource {
-				return nil, dferrors.Newf(base.Code_SchedNeedBackSource, "fake back source error")
+				return nil, status.Error(codes.Code(base.Code_SchedNeedBackSource), "fake back source error")
 			}
 			return &scheduler.PeerPacket{
 				Code:          base.Code_Success,

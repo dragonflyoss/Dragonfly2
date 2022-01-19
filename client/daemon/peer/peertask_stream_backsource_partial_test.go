@@ -35,12 +35,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -139,7 +140,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			if schedPeerPacket {
 				// send back source after piece 0 is done
 				wg.Wait()
-				return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
+				return nil, status.Error(codes.Code(base.Code_SchedNeedBackSource), "")
 			}
 			schedPeerPacket = true
 			return &scheduler.PeerPacket{

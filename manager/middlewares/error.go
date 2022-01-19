@@ -25,9 +25,9 @@ import (
 	redigo "github.com/gomodule/redigo/redis"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
@@ -55,8 +55,8 @@ func Error() gin.HandlerFunc {
 		}
 
 		// RPC error handler
-		if err, ok := errors.Cause(err.Err).(*dferrors.DfError); ok {
-			switch err.Code {
+		if err, ok := status.FromError(errors.Cause(err.Err)); ok {
+			switch base.Code(err.Code()) {
 			case base.Code_InvalidResourceType:
 				c.JSON(http.StatusBadRequest, ErrorResponse{
 					Message: http.StatusText(http.StatusBadRequest),

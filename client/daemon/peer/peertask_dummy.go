@@ -20,8 +20,9 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -62,7 +63,7 @@ type dummyPeerPacketStream struct {
 
 func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
 	// TODO set base.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
-	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
+	return nil, status.Error(codes.Code(base.Code_SchedNeedBackSource), "")
 }
 
 func (d *dummyPeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {

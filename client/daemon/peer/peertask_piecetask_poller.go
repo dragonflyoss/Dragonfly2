@@ -118,8 +118,8 @@ retry:
 	code := base.Code_ClientPieceRequestFail
 	// not grpc error
 	if st, ok := status.FromError(err); ok && uint32(st.Code()) > uint32(codes.Unauthenticated) {
-		ptc.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, st.Code)
-		code = st.Code()
+		ptc.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, st.Code())
+		code = base.Code(st.Code())
 	}
 	ptc.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
 	sendError := ptc.peerPacketStream.Send(&scheduler.PieceResult{
