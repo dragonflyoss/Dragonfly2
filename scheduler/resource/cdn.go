@@ -52,17 +52,12 @@ type cdn struct {
 }
 
 // New cdn interface
-func newCDN(peerManager PeerManager, hostManager HostManager, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (CDN, error) {
-	client, err := newCDNClient(dynconfig, hostManager, opts...)
-	if err != nil {
-		return nil, err
-	}
-
+func newCDN(peerManager PeerManager, hostManager HostManager, client CDNClient) CDN {
 	return &cdn{
 		client:      client,
 		peerManager: peerManager,
 		hostManager: hostManager,
-	}, nil
+	}
 }
 
 // TriggerTask start to trigger cdn task
