@@ -1132,8 +1132,10 @@ func (pt *peerTaskConductor) Done() {
 }
 
 func (pt *peerTaskConductor) done() {
-	defer pt.span.End()
-	defer pt.broker.Stop()
+	defer func() {
+		pt.broker.Stop()
+		pt.span.End()
+	}()
 	var (
 		cost    = time.Now().Sub(pt.start).Milliseconds()
 		success = true
@@ -1213,9 +1215,11 @@ func (pt *peerTaskConductor) Fail() {
 
 func (pt *peerTaskConductor) fail() {
 	metrics.PeerTaskFailedCount.Add(1)
-	defer pt.span.End()
-	defer pt.broker.Stop()
-	defer close(pt.failCh)
+	defer func() {
+		close(pt.failCh)
+		pt.broker.Stop()
+		pt.span.End()
+	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
