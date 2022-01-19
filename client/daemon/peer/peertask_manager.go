@@ -167,6 +167,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, nil
 	}
+	// FIXME merge register peer tasks
 	ptc, err := ptm.newPeerTaskConductor(ctx, request, limit)
 	if err != nil {
 		return nil, err

@@ -402,7 +402,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			},
 		},
 		{
-			name:                "normal size scope - back source - content length - aligning",
+			name:                "normal size scope - back source - no content length - aligning",
 			taskData:            testBytes[:8192],
 			pieceParallelCount:  4,
 			pieceSize:           1024,
@@ -663,7 +663,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	case <-ptc.successCh:
 		success = true
 	case <-ptc.failCh:
-	case <-time.After(10 * time.Minute):
+	case <-time.After(5 * time.Minute):
 	}
 	assert.True(success, "task should success")
 
@@ -675,6 +675,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		if noRunningTask {
 			break
 		}
+		noRunningTask = true
 		time.Sleep(100 * time.Millisecond)
 	}
 	assert.True(noRunningTask, "no running tasks")
