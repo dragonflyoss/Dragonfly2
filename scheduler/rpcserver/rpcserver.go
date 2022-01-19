@@ -22,8 +22,9 @@ import (
 	"io"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -52,7 +53,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	// Get task or add new task
 	task, err := s.service.RegisterTask(ctx, req)
 	if err != nil {
-		dferr := dferrors.New(base.Code_SchedTaskStatusError, "register task is fail")
+		dferr := status.Error(codes.Code(base.Code_SchedTaskStatusError), "register task is fail")
 		logger.Errorf("peer %s register is failed: %v", req.PeerId, err)
 		return nil, dferr
 	}
@@ -71,14 +72,14 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			// When task.DirectPiece length is 0, data is downloaded by common peers failed
 			if int64(len(task.DirectPiece)) == task.ContentLength.Load() {
 				if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
-					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 					return nil, dferr
 				}
 
 				// Dfdaemon does not report piece info when scope size is SizeScope_TINY
 				if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
-					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 					return nil, dferr
 				}
@@ -104,7 +105,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not select parent")
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 					return nil, dferr
 				}
@@ -119,7 +120,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not get first piece")
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 					return nil, dferr
 				}
@@ -132,7 +133,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 
 			peer.ReplaceParent(parent)
 			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
-				dferr := dferrors.New(base.Code_SchedError, err.Error())
+				dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 				peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 				return nil, dferr
 			}
@@ -161,7 +162,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		default:
 			peer.Log.Info("task size scope is normal and needs to be register")
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-				dferr := dferrors.New(base.Code_SchedError, err.Error())
+				dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 				peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 				return nil, dferr
 			}
@@ -176,7 +177,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	// Task is unsuccessful
 	peer.Log.Info("task is unsuccessful and needs to be register")
 	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
-		dferr := dferrors.New(base.Code_SchedError, err.Error())
+		dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 		peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 		return nil, dferr
 	}
@@ -201,7 +202,7 @@ func (s *Server) ReportPieceResult(ctx context.Context, stream scheduler.Schedul
 	// Get peer from peer manager
 	peer, ok := s.service.LoadPeer(beginOfPiece.SrcPid)
 	if !ok {
-		dferr := dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", beginOfPiece.SrcPid)
+		dferr := status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", beginOfPiece.SrcPid)
 		logger.Errorf("peer %s not found", beginOfPiece.SrcPid)
 		return dferr
 	}
@@ -238,7 +239,7 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("report peer result: peer %s is not exists", req.PeerId)
-		return dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
+		return status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
 	}
 
 	peer.Log.Infof("report peer result request: %#v", req)
@@ -250,7 +251,7 @@ func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err 
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
-		return dferrors.Newf(base.Code_SchedPeerNotFound, "peer %s not found", req.PeerId)
+		return status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
 	}
 
 	peer.Log.Infof("leave task request: %#v", req)

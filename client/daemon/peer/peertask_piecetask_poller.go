@@ -117,9 +117,9 @@ retry:
 	}
 	code := base.Code_ClientPieceRequestFail
 	// not grpc error
-	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
-		ptc.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
-		code = de.Code
+	if st, ok := status.FromError(err); ok && uint32(st.Code()) > uint32(codes.Unauthenticated) {
+		ptc.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, st.Code)
+		code = st.Code()
 	}
 	ptc.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
 	sendError := ptc.peerPacketStream.Send(&scheduler.PieceResult{
@@ -166,10 +166,10 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			span.RecordError(getError)
 
 			// fast way 1 to exit retry
-			if de, ok := getError.(*dferrors.DfError); ok {
-				ptc.Debugf("get piece task with grpc error, code: %d", de.Code)
+			if st, ok := status.FromError(getError); ok {
+				ptc.Debugf("get piece task with grpc error, code: %d", st.Code())
 				// bad request, like invalid piece num, just exit
-				if de.Code == base.Code_BadRequest {
+				if st.Code() == codes.Code(base.Code_BadRequest) {
 					span.AddEvent("bad request")
 					ptc.Warnf("get piece task from peer %s canceled: %s", peer.PeerId, getError)
 					return nil, true, getError

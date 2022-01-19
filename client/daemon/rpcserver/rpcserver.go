@@ -94,14 +94,14 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		if err != storage.ErrTaskNotFound {
 			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
-			return nil, dferrors.New(code, err.Error())
+			return nil, status.Error(codes.Code(code), err.Error())
 		}
 		// dst peer is not running
 		if !m.peerTaskManager.IsPeerTaskRunning(request.TaskId) {
 			code = base.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
-			return nil, dferrors.New(code, err.Error())
+			return nil, status.Error(codes.Code(code), err.Error())
 		}
 
 		logger.Infof("try to get piece tasks, "+
@@ -153,7 +153,7 @@ func (m *server) Download(ctx context.Context,
 
 	peerTaskProgress, tiny, err := m.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
-		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
+		return status.Error(codes.Code(base.Code_UnknownError), fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
 		if err := stream.Send(&dfdaemongrpc.DownResult{
@@ -181,11 +181,11 @@ func (m *server) Download(ctx context.Context,
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				log.Errorf(err.Error())
-				return dferrors.New(base.Code_UnknownError, err.Error())
+				return status.Error(codes.Code(base.Code_UnknownError), err.Error())
 			}
 			if !p.State.Success {
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
-				return dferrors.New(p.State.Code, p.State.Msg)
+				return status.Error(codes.Code(p.State.Code), p.State.Msg)
 			}
 			if err := stream.Send(&dfdaemongrpc.DownResult{
 				TaskId:          p.TaskID,
