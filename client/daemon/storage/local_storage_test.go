@@ -70,7 +70,7 @@ func TestLocalTaskStore_PutAndGetPiece_Simple(t *testing.T) {
 
 	var s = sm.(*storageManager)
 
-	err = s.CreateTask(
+	_, err = s.CreateTask(
 		RegisterTaskRequest{
 			CommonTaskRequest: CommonTaskRequest{
 				PeerID:      peerID,
@@ -243,7 +243,7 @@ func TestLocalTaskStore_PutAndGetPiece_Advance(t *testing.T) {
 
 	var s = sm.(*storageManager)
 
-	err = s.CreateTask(
+	_, err = s.CreateTask(
 		RegisterTaskRequest{
 			CommonTaskRequest: CommonTaskRequest{
 				PeerID:      peerID,
