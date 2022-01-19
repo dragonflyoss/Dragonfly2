@@ -19,7 +19,6 @@ package peer
 import (
 	"bytes"
 	"context"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"fmt"
 	"io"
 	"math"
@@ -46,6 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
