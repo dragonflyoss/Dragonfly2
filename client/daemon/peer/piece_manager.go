@@ -41,12 +41,10 @@ import (
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error
 	DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (*DownloadPieceResult, error)
-	ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error)
 }
 
 type pieceManager struct {
 	*rate.Limiter
-	storageManager   storage.TaskStorageDriver
 	pieceDownloader  PieceDownloader
 	computePieceSize func(contentLength int64) uint32
 
@@ -57,7 +55,6 @@ var _ PieceManager = (*pieceManager)(nil)
 
 func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
-		storageManager:   s,
 		computePieceSize: util.ComputePieceSize,
 		calculateDigest:  true,
 	}
@@ -169,7 +166,7 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 		},
 	}
 
-	result.Size, err = pm.storageManager.WritePiece(ctx, writePieceRequest)
+	result.Size, err = request.storage.WritePiece(ctx, writePieceRequest)
 	result.FinishTime = time.Now().UnixNano()
 
 	span.RecordError(err)
@@ -179,10 +176,6 @@ func (pm *pieceManager) DownloadPiece(ctx context.Context, request *DownloadPiec
 		return result, err
 	}
 	return result, nil
-}
-
-func (pm *pieceManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
-	return pm.storageManager.ReadPiece(ctx, req)
 }
 
 func (pm *pieceManager) processPieceFromSource(pt Task,
@@ -210,7 +203,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		reader = digestutils.NewDigestReader(pt.Log(), reader)
 	}
 	var n int64
-	result.Size, err = pm.storageManager.WritePiece(
+	result.Size, err = pt.GetStorage().WritePiece(
 		pt.Context(),
 		&storage.WritePieceRequest{
 			UnknownLength: unknownLength,
@@ -270,7 +263,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
 	} else {
-		err = pm.storageManager.UpdateTask(ctx,
+		err = pt.GetStorage().UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),
@@ -356,7 +349,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 
 		if pieceNum == maxPieceNum-1 {
 			// last piece
-			err = pm.storageManager.UpdateTask(ctx,
+			err = pt.GetStorage().UpdateTask(ctx,
 				&storage.UpdateTaskRequest{
 					PeerTaskMetadata: storage.PeerTaskMetadata{
 						PeerID: pt.GetPeerID(),
@@ -430,7 +423,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		// last piece, piece size maybe 0
 		contentLength = int64(pieceSize)*int64(pieceNum) + result.Size
 		pt.SetTotalPieces(int32(math.Ceil(float64(contentLength) / float64(pieceSize))))
-		err = pm.storageManager.UpdateTask(ctx,
+		err = pt.GetStorage().UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),

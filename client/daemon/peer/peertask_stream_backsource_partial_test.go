@@ -241,7 +241,6 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 
 	pm := &pieceManager{
 		calculateDigest: true,
-		storageManager:  storageManager,
 		pieceDownloader: downloader,
 		computePieceSize: func(contentLength int64) uint32 {
 			return uint32(pieceSize)

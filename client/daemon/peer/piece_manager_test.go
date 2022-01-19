@@ -130,7 +130,10 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			/********** prepare test start **********/
 			mockPeerTask := NewMockTask(ctrl)
-			var totalPieces = &atomic.Int32{}
+			var (
+				totalPieces = &atomic.Int32{}
+				taskStorage storage.TaskStorageDriver
+			)
 			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
@@ -151,6 +154,10 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func() string {
 					return taskID
 				})
+			mockPeerTask.EXPECT().GetStorage().AnyTimes().DoAndReturn(
+				func() storage.TaskStorageDriver {
+					return taskStorage
+				})
 			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 uint64) {})
 			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 				func(*DownloadPieceRequest, *DownloadPieceResult, error) {
@@ -166,7 +173,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			mockPeerTask.EXPECT().Log().AnyTimes().DoAndReturn(func() *logger.SugaredLoggerOnWith {
 				return logger.With("test case", tc.name)
 			})
-			err = storageManager.RegisterTask(context.Background(),
+			taskStorage, err = storageManager.RegisterTask(context.Background(),
 				storage.RegisterTaskRequest{
 					CommonTaskRequest: storage.CommonTaskRequest{
 						PeerID:      mockPeerTask.GetPeerID(),
