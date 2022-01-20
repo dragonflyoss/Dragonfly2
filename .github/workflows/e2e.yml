@@ -19,51 +19,35 @@ env:
   DRAGONFLY_PROXY_SERVER_PATH: test/testdata/k8s/proxy.yaml
 
 jobs:
-  code:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-    - name: Install Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    - name: Get dependencies
-      run: |
-        go mod download github.com/go-task/slim-sprig
-        go install github.com/onsi/ginkgo/ginkgo
-        mkdir -p /tmp/artifact
-        go mod vendor
-
-  images:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs:
-    - code
-    strategy:
-      matrix:
-        module: [ "manager", "scheduler", "cdn", "dfdaemon", "testing-tools"]
-    steps:
-    - name: Build images - ${{ matrix.module }}
-      run: make docker-build-${{ matrix.module }}
-
   e2e_tests:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs:
-    - images
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Get dependencies
+        run: |
+          go mod download github.com/go-task/slim-sprig
+          go install github.com/onsi/ginkgo/ginkgo
+          mkdir -p /tmp/artifact
+          go mod vendor
+
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
         with:
           version: ${{ env.KIND_VERSION }}
           config: ${{ env.KIND_CONFIG_PATH }}
 
-      - name: Verify images
-        run: docker images
+      - name: Build images
+        run: make -j 5 docker-build docker-build-testing-tools
 
       - name: Prepare kind environment
         run: make kind-load
