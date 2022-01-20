@@ -84,7 +84,7 @@ func (ptm *peerTaskManager) newFileTask(
 	request *FileTaskRequest,
 	limit rate.Limit) (context.Context, *fileTask, error) {
 	metrics.FileTaskCount.Add(1)
-	ptc, err := ptm.getOrCreatePeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), &request.PeerTaskRequest, limit)
+	ptc, err := ptm.getPeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), &request.PeerTaskRequest, limit)
 	if err != nil {
 		return nil, nil, err
 	}
