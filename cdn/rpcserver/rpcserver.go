@@ -24,12 +24,14 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
+	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -37,9 +39,9 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var tracer = otel.Tracer("cdn-server")
@@ -48,6 +50,7 @@ type Server struct {
 	*grpc.Server
 	config  Config
 	service supervisor.CDNService
+	cdnsystem.UnimplementedSeederServer
 }
 
 // New returns a new Manager Object.
@@ -56,14 +59,28 @@ func New(config Config, cdnService supervisor.CDNService, opts ...grpc.ServerOpt
 		config:  config,
 		service: cdnService,
 	}
-	svr.Server = cdnserver.New(svr, opts...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	cdnsystem.RegisterSeederServer(grpcServer, svr)
+	svr.Server = grpcServer
 	return svr, nil
 }
 
-func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) error {
+func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seeder_ObtainSeedsServer) (err error) {
+	metrics.DownloadCount.Inc()
+	metrics.ConcurrentDownloadGauge.Inc()
+	defer func() {
+		metrics.ConcurrentDownloadGauge.Dec()
+		if err != nil {
+			metrics.DownloadFailureCount.Inc()
+		}
+	}()
+	ctx := stream.Context()
 	clientAddr := "unknown"
 	if pe, ok := peer.FromContext(ctx); ok {
 		clientAddr = pe.Addr.String()
+	}
+	if err != nil {
+		metrics.DownloadFailureCount.Inc()
 	}
 	logger.Infof("trigger obtain seed for taskID: %s, url: %s, urlMeta: %s client: %s", req.TaskId, req.Url, req.UrlMeta, clientAddr)
 	var span trace.Span
@@ -250,4 +267,28 @@ func (css *Server) Shutdown() error {
 
 func (css *Server) GetConfig() Config {
 	return css.config
+}
+
+func StatSeedStart(taskID, url string) {
+	logger.StatSeedLogger.Info("Start Seed",
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname))
+}
+
+func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
+	metrics.DownloadTraffic.Add(float64(traffic))
+
+	logger.StatSeedLogger.Info("Finish Seed",
+		zap.Bool("Success", success),
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname),
+		zap.Time("StartAt", startAt),
+		zap.Time("FinishAt", finishAt),
+		zap.Int64("Traffic", traffic),
+		zap.Int64("ContentLength", contentLength),
+		zap.Error(err))
 }

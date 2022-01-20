@@ -30,13 +30,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
+	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -159,12 +159,12 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	var downloadSpan trace.Span
 	ctx, downloadSpan = tracer.Start(ctx, constants.SpanDownloadSource)
 	downloadSpan.End()
-	server.StatSeedStart(seedTask.ID, seedTask.RawURL)
+	rpcserver.StatSeedStart(seedTask.ID, seedTask.RawURL)
 	respBody, err := cm.download(ctx, seedTask, detectResult.BreakPoint)
 	// download fail
 	if err != nil {
 		downloadSpan.RecordError(err)
-		server.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), 0, 0)
+		rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), 0, 0)
 		return nil, errors.Wrap(err, "download task file data")
 	}
 	defer respBody.Close()
@@ -173,11 +173,11 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint, cm.config.WriterRoutineLimit)
 	if err != nil {
-		server.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
+		rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)
 		return nil, errors.Wrap(err, "write task file data")
 	}
-	server.StatSeedFinish(seedTask.ID, seedTask.RawURL, true, nil, start, time.Now(), downloadMetadata.backSourceLength,
+	rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, true, nil, start, time.Now(), downloadMetadata.backSourceLength,
 		downloadMetadata.realSourceFileLength)
 	// fifth: handle CDN result
 	err = cm.handleCDNResult(seedTask, downloadMetadata)
