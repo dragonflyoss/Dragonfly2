@@ -13,7 +13,7 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
-  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.1-rc.10
+  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.2-beta.3
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml

@@ -17,9 +17,11 @@
 package resource
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	gomock "github.com/golang/mock/gomock"
@@ -27,6 +29,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/manager/types"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
@@ -34,47 +37,13 @@ import (
 func TestCDN_newCDN(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
-		expect func(t *testing.T, err error)
+		expect func(t *testing.T, cdn CDN)
 	}{
 		{
 			name: "new cdn",
-			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
-				gomock.InOrder(
-					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{ID: 1}},
-					}, nil).Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(1),
-					dynconfig.Register(gomock.Any()).Return().Times(1),
-				)
-			},
-			expect: func(t *testing.T, err error) {
+			expect: func(t *testing.T, cdn CDN) {
 				assert := assert.New(t)
-				assert.NoError(err)
-			},
-		},
-		{
-			name: "new cdn failed because of dynconfig get error data",
-			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
-				dynconfig.Get().Return(nil, errors.New("foo")).Times(1)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-		{
-			name: "new cdn failed because of cdn list is empty",
-			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
-				gomock.InOrder(
-					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{},
-					}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "address list of cdn is empty")
+				assert.Equal(reflect.TypeOf(cdn).Elem().Name(), "cdn")
 			},
 		},
 	}
@@ -83,13 +52,46 @@ func TestCDN_newCDN(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			hostManager := NewMockHostManager(ctl)
 			peerManager := NewMockPeerManager(ctl)
-			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
+			client := NewMockCDNClient(ctl)
 
-			_, err := newCDN(peerManager, hostManager, dynconfig)
-			tc.expect(t, err)
+			tc.expect(t, newCDN(peerManager, hostManager, client))
+		})
+	}
+}
+
+func TestCDN_TriggerTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mc *MockCDNClientMockRecorder)
+		expect func(t *testing.T, peer *Peer, result *rpcscheduler.PeerResult, err error)
+	}{
+		{
+			name: "start obtain seed stream failed",
+			mock: func(mc *MockCDNClientMockRecorder) {
+				mc.ObtainSeeds(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
+			},
+			expect: func(t *testing.T, peer *Peer, result *rpcscheduler.PeerResult, err error) {
+				assert := assert.New(t)
+				assert.EqualError(err, "foo")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			hostManager := NewMockHostManager(ctl)
+			peerManager := NewMockPeerManager(ctl)
+			client := NewMockCDNClient(ctl)
+			tc.mock(client.EXPECT())
+
+			cdn := newCDN(peerManager, hostManager, client)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer, result, err := cdn.TriggerTask(context.Background(), mockTask)
+			tc.expect(t, peer, result, err)
 		})
 	}
 }
