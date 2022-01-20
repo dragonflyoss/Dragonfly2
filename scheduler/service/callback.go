@@ -88,7 +88,8 @@ func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, bloc
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling exceeds the back-to-source limit %d times and return code %d", c.config.Scheduler.RetryBackSourceLimit, base.Code_SchedNeedBackSource)
+			peer.Log.Infof("peer scheduling %d times and back-to-source limit %d times, cdn peer is %#v, return code %d",
+				n, c.config.Scheduler.RetryBackSourceLimit, cdnPeer, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
