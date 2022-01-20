@@ -67,7 +67,7 @@ func (ptm *peerTaskManager) newStreamTask(
 	if ptm.perPeerRateLimit > 0 {
 		limit = ptm.perPeerRateLimit
 	}
-	ptc, err := ptm.getOrCreatePeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), request, limit)
+	ptc, err := ptm.getPeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), request, limit)
 	if err != nil {
 		return nil, err
 	}

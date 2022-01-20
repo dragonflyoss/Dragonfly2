@@ -296,7 +296,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	return ptc, nil
 }
 
-func (pt *peerTaskConductor) run() {
+func (pt *peerTaskConductor) startPullAndBroadcastPieces() {
 	go pt.broker.Start()
 	go pt.pullPieces()
 }
@@ -869,7 +869,15 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 }
 
 func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceRequest, piecePacket *base.PiecePacket) {
-	pt.Debugf("dispatch piece request, piece count: %d", len(piecePacket.PieceInfos))
+	pieceCount := len(piecePacket.PieceInfos)
+	pt.Debugf("dispatch piece request, piece count: %d", pieceCount)
+	// fix cdn return zero piece info, but with total piece count and content length
+	if pieceCount == 0 {
+		finished := pt.isCompleted()
+		if finished {
+			pt.Done()
+		}
+	}
 	for _, piece := range piecePacket.PieceInfos {
 		pt.Infof("get piece %d from %s/%s, digest: %s, start: %d, size: %d",
 			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
@@ -1132,8 +1140,10 @@ func (pt *peerTaskConductor) Done() {
 }
 
 func (pt *peerTaskConductor) done() {
-	defer pt.span.End()
-	defer pt.broker.Stop()
+	defer func() {
+		pt.broker.Stop()
+		pt.span.End()
+	}()
 	var (
 		cost    = time.Now().Sub(pt.start).Milliseconds()
 		success = true
@@ -1213,9 +1223,11 @@ func (pt *peerTaskConductor) Fail() {
 
 func (pt *peerTaskConductor) fail() {
 	metrics.PeerTaskFailedCount.Add(1)
-	defer pt.span.End()
-	defer pt.broker.Stop()
-	defer close(pt.failCh)
+	defer func() {
+		close(pt.failCh)
+		pt.broker.Stop()
+		pt.span.End()
+	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
 	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
