@@ -296,7 +296,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	return ptc, nil
 }
 
-func (pt *peerTaskConductor) run() {
+func (pt *peerTaskConductor) startPullAndBroadcastPieces() {
 	go pt.broker.Start()
 	go pt.pullPieces()
 }
@@ -869,7 +869,15 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 }
 
 func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadPieceRequest, piecePacket *base.PiecePacket) {
-	pt.Debugf("dispatch piece request, piece count: %d", len(piecePacket.PieceInfos))
+	pieceCount := len(piecePacket.PieceInfos)
+	pt.Debugf("dispatch piece request, piece count: %d", pieceCount)
+	// fix cdn return zero piece info, but with total piece count and content length
+	if pieceCount == 0 {
+		finished := pt.isCompleted()
+		if finished {
+			pt.Done()
+		}
+	}
 	for _, piece := range piecePacket.PieceInfos {
 		pt.Infof("get piece %d from %s/%s, digest: %s, start: %d, size: %d",
 			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
