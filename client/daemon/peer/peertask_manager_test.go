@@ -607,13 +607,6 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	assert.Nil(err, "load first peerTaskConductor")
 	assert.True(created, "should create a new peerTaskConductor")
 
-	switch ts.sizeScope {
-	case base.SizeScope_TINY:
-		require.NotNil(ptc.tinyData)
-	case base.SizeScope_SMALL:
-		require.NotNil(ptc.singlePiece)
-	}
-
 	var ptcCount = 100
 	var wg = &sync.WaitGroup{}
 	wg.Add(ptcCount + 1)
@@ -661,7 +654,15 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		go syncFunc(i, p)
 	}
 
-	ptc.startPullAndBroadcastPieces()
+	require.Nil(ptc.start(), "peerTaskConductor start should be ok")
+
+	switch ts.sizeScope {
+	case base.SizeScope_TINY:
+		require.NotNil(ptc.tinyData)
+	case base.SizeScope_SMALL:
+		require.NotNil(ptc.singlePiece)
+	}
+
 	wg.Wait()
 
 	for i, r := range result {
