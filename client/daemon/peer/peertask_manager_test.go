@@ -250,7 +250,6 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 		runningPeerTasks: sync.Map{},
 		pieceManager: &pieceManager{
 			calculateDigest: true,
-			storageManager:  storageManager,
 			pieceDownloader: opt.pieceDownloader,
 			computePieceSize: func(contentLength int64) uint32 {
 				return opt.pieceSize

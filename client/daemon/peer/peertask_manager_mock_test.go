@@ -9,6 +9,7 @@ import (
 	io "io"
 	reflect "reflect"
 
+	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	dflog "d7y.io/dragonfly/v2/internal/dflog"
 	gomock "github.com/golang/mock/gomock"
 )
@@ -185,6 +186,20 @@ func (m *MockTask) GetPieceMd5Sign() string {
 func (mr *MockTaskMockRecorder) GetPieceMd5Sign() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceMd5Sign", reflect.TypeOf((*MockTask)(nil).GetPieceMd5Sign))
+}
+
+// GetStorage mocks base method.
+func (m *MockTask) GetStorage() storage.TaskStorageDriver {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStorage")
+	ret0, _ := ret[0].(storage.TaskStorageDriver)
+	return ret0
+}
+
+// GetStorage indicates an expected call of GetStorage.
+func (mr *MockTaskMockRecorder) GetStorage() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStorage", reflect.TypeOf((*MockTask)(nil).GetStorage))
 }
 
 // GetTaskID mocks base method.
