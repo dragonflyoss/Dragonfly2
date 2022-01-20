@@ -496,7 +496,7 @@ func TestRPCServer_ReportPieceResult(t *testing.T) {
 			mockPeer.StoreStream(stream)
 			tc.mock(mockPeer, stream, svc.EXPECT(), stream.EXPECT())
 			svr := New(svc)
-			tc.expect(t, mockPeer, svr.ReportPieceResult(stream.Context(), stream))
+			tc.expect(t, mockPeer, svr.ReportPieceResult(stream))
 		})
 	}
 }
@@ -552,7 +552,8 @@ func TestRPCServer_ReportPeerResult(t *testing.T) {
 
 			tc.mock(mockPeer, svc.EXPECT())
 			svr := New(svc)
-			tc.expect(t, svr.ReportPeerResult(context.Background(), tc.req))
+			_, err := svr.ReportPeerResult(context.Background(), tc.req)
+			tc.expect(t, err)
 		})
 	}
 }
@@ -608,7 +609,8 @@ func TestRPCServer_LeaveTask(t *testing.T) {
 
 			tc.mock(mockPeer, svc.EXPECT())
 			svr := New(svc)
-			tc.expect(t, svr.LeaveTask(context.Background(), tc.req))
+			_, err := svr.LeaveTask(context.Background(), tc.req)
+			tc.expect(t, err)
 		})
 	}
 }

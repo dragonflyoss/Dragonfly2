@@ -71,13 +71,13 @@ type SchedulerClient interface {
 	RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error)
 	// ReportPieceResult IsMigrating of ptr will be set to true
 	ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
-
+	// ReportPeerResult reports peer download result
 	ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) error
-
+	// LeaveTask leaves p2p
 	LeaveTask(ctx context.Context, in *scheduler.PeerTarget, opts ...grpc.CallOption) error
-
+	// UpdateAddresses update addresses
 	UpdateAddresses(addrs []dfnet.NetAddr) error
-
+	// Close closes clientConn
 	Close() error
 }
 
@@ -117,12 +117,12 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 	return err
 }
 
-func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (err error) {
+func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) error {
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: pt.TaskId,
 		IsStick: true,
 	})
-	_, err = sc.schedulerClient.LeaveTask(ctx, pt, opts...)
+	_, err := sc.schedulerClient.LeaveTask(ctx, pt, opts...)
 	return err
 }
 

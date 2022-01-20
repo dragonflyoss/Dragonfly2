@@ -21,15 +21,18 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerserver "d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
+	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
@@ -37,6 +40,7 @@ import (
 type Server struct {
 	*grpc.Server
 	service service.Service
+	scheduler.UnimplementedSchedulerServer
 }
 
 // New returns a new transparent scheduler server from the given options
@@ -44,12 +48,22 @@ func New(service service.Service, opts ...grpc.ServerOption) *Server {
 	svr := &Server{
 		service: service,
 	}
-
-	svr.Server = schedulerserver.New(svr, opts...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	scheduler.RegisterSchedulerServer(grpcServer, svr)
+	svr.Server = grpcServer
 	return svr
 }
 
-func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	metrics.RegisterPeerTaskCount.Inc()
+	defer func() {
+		if err != nil {
+			metrics.RegisterPeerTaskFailureCount.Inc()
+		} else {
+			metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
+		}
+	}()
+
 	// Get task or add new task
 	task, err := s.service.RegisterTask(ctx, req)
 	if err != nil {
@@ -188,7 +202,15 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	}, nil
 }
 
-func (s *Server) ReportPieceResult(ctx context.Context, stream scheduler.Scheduler_ReportPieceResultServer) error {
+func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+	metrics.ConcurrentScheduleGauge.Inc()
+	defer metrics.ConcurrentScheduleGauge.Dec()
+	ctx := stream.Context()
+	peerAddr := "unknown"
+	if pe, ok := peer.FromContext(ctx); ok {
+		peerAddr = pe.Addr.String()
+	}
+	logger.Infof("start report piece from: %s", peerAddr)
 	// Handle begin of piece
 	beginOfPiece, err := stream.Recv()
 	if err != nil {
@@ -235,26 +257,33 @@ func (s *Server) ReportPieceResult(ctx context.Context, stream scheduler.Schedul
 	}
 }
 
-func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (err error) {
+func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
+	metrics.DownloadCount.Inc()
+	if req.Success {
+		metrics.P2PTraffic.Add(float64(req.Traffic))
+		metrics.PeerTaskDownloadDuration.Observe(float64(req.Cost))
+	} else {
+		metrics.DownloadFailureCount.Inc()
+	}
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("report peer result: peer %s is not exists", req.PeerId)
-		return status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
+		return nil, status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
 	}
 
 	peer.Log.Infof("report peer result request: %#v", req)
 	s.service.HandlePeer(ctx, peer, req)
-	return nil
+	return new(empty.Empty), nil
 }
 
-func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (err error) {
+func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
 	peer, ok := s.service.LoadPeer(req.PeerId)
 	if !ok {
 		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
-		return status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
+		return nil, status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
 	}
 
 	peer.Log.Infof("leave task request: %#v", req)
 	s.service.HandlePeerLeave(ctx, peer)
-	return nil
+	return new(empty.Empty), nil
 }
