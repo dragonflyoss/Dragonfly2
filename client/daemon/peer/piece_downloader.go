@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -34,6 +35,7 @@ import (
 type DownloadPieceRequest struct {
 	piece      *base.PieceInfo
 	log        *logger.SugaredLoggerOnWith
+	storage    storage.TaskStorageDriver
 	TaskID     string
 	PeerID     string
 	DstPid     string
@@ -50,6 +52,7 @@ type DownloadPieceResult struct {
 	FinishTime int64
 }
 
+//go:generate mockgen -source piece_downloader.go -destination ../test/mock/peer/piece_downloader.go
 type PieceDownloader interface {
 	DownloadPiece(context.Context, *DownloadPieceRequest) (io.Reader, io.Closer, error)
 }
