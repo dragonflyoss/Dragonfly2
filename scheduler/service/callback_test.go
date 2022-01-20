@@ -42,9 +42,10 @@ import (
 
 var (
 	mockSchedulerConfig = &config.SchedulerConfig{
-		RetryLimit:      3,
-		RetryInterval:   10 * time.Millisecond,
-		BackSourceCount: mockTaskBackToSourceLimit,
+		RetryLimit:           10,
+		RetryBackSourceLimit: 3,
+		RetryInterval:        10 * time.Millisecond,
+		BackSourceCount:      mockTaskBackToSourceLimit,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
 		Uuid:           idgen.HostID("hostname", 8003),
@@ -130,12 +131,12 @@ func TestCallback_ScheduleParent(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {},
 		},
 		{
-			name: "schedule parent failed and return error to client",
+			name: "schedule parent failed because of RetryInterval and return Code_SchedTaskStatusError to dfdaemon",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, ms *mocks.MockSchedulerMockRecorder) {
 				peer.Task.BackToSourceLimit.Store(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(10),
 					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1),
 				)
 			},
@@ -143,17 +144,17 @@ func TestCallback_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "schedule parent failed and load peer stream error",
+			name: "schedule parent failed because of RetryInterval and load peer stream error",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, ms *mocks.MockSchedulerMockRecorder) {
 				peer.Task.BackToSourceLimit.Store(0)
 				gomock.InOrder(
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(10),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {},
 		},
 		{
-			name: "schedule parent failed and peer back-to-source",
+			name: "schedule parent failed because of RetryBackSourceLimit and return Code_SchedNeedBackSource to dfdaemon",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, ms *mocks.MockSchedulerMockRecorder) {
 				peer.Task.BackToSourceLimit.Store(1)
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -161,6 +162,45 @@ func TestCallback_ScheduleParent(t *testing.T) {
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
+			},
+		},
+		{
+			name: "schedule parent failed because of RetryBackSourceLimit and load peer stream error",
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, ms *mocks.MockSchedulerMockRecorder) {
+				peer.Task.BackToSourceLimit.Store(1)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.FSM.SetState(resource.TaskStateFailed)
+				gomock.InOrder(
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return(nil, false).Times(3),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+				assert.True(peer.Task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+		{
+			name: "cdn peer state is PeerStateFailed and return Code_SchedNeedBackSource to dfdaemon",
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, ms *mocks.MockSchedulerMockRecorder) {
+				peer.Task.BackToSourceLimit.Store(1)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.FSM.SetState(resource.TaskStateFailed)
+				peer.StoreStream(stream)
+				mocCDNkHost := resource.NewHost(mockRawHost, resource.WithIsCDN(true))
+				mockCDNTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+				mockCDNPeer := resource.NewPeer(mockCDNPeerID, mockCDNTask, mocCDNkHost)
+				mockCDNPeer.FSM.SetState(resource.PeerStateFailed)
+				peer.Task.StorePeer(mockCDNPeer)
+
+				gomock.InOrder(
 					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
 				)
 			},

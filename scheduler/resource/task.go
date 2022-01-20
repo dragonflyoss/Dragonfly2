@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -183,6 +184,36 @@ func (t *Task) LenPeers() int {
 	})
 
 	return len
+}
+
+// LoadCDNPeer return latest cdn peer in peers sync map
+func (t *Task) LoadCDNPeer() (*Peer, bool) {
+	var peers []*Peer
+	t.Peers.Range(func(_, v interface{}) bool {
+		peer, ok := v.(*Peer)
+		if !ok {
+			return true
+		}
+
+		if peer.Host.IsCDN {
+			peers = append(peers, peer)
+		}
+
+		return true
+	})
+
+	sort.Slice(
+		peers,
+		func(i, j int) bool {
+			return peers[i].UpdateAt.Load().After(peers[j].UpdateAt.Load())
+		},
+	)
+
+	if len(peers) > 0 {
+		return peers[0], true
+	}
+
+	return nil, false
 }
 
 // LoadPiece return piece for a key
