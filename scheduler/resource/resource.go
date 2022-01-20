@@ -71,10 +71,11 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts
 	}
 
 	// Initialize cdn interface
-	cdn, err := newCDN(peerManager, hostManager, dynconfig, opts...)
+	client, err := newCDNClient(dynconfig, hostManager, opts...)
 	if err != nil {
 		return nil, err
 	}
+	cdn := newCDN(peerManager, hostManager, client)
 
 	return &resource{
 		cdn:         cdn,

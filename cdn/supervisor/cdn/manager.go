@@ -25,12 +25,15 @@ import (
 	"fmt"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/metrics"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
+	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
-	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
@@ -159,12 +162,12 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	var downloadSpan trace.Span
 	ctx, downloadSpan = tracer.Start(ctx, constants.SpanDownloadSource)
 	downloadSpan.End()
-	rpcserver.StatSeedStart(seedTask.ID, seedTask.RawURL)
+	StatSeedStart(seedTask.ID, seedTask.RawURL)
 	respBody, err := cm.download(ctx, seedTask, detectResult.BreakPoint)
 	// download fail
 	if err != nil {
 		downloadSpan.RecordError(err)
-		rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), 0, 0)
+		StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), 0, 0)
 		return nil, errors.Wrap(err, "download task file data")
 	}
 	defer respBody.Close()
@@ -173,11 +176,11 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	// forth: write to storage
 	downloadMetadata, err := cm.writer.startWriter(ctx, reader, seedTask, detectResult.BreakPoint, cm.config.WriterRoutineLimit)
 	if err != nil {
-		rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
+		StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), downloadMetadata.backSourceLength,
 			downloadMetadata.realSourceFileLength)
 		return nil, errors.Wrap(err, "write task file data")
 	}
-	rpcserver.StatSeedFinish(seedTask.ID, seedTask.RawURL, true, nil, start, time.Now(), downloadMetadata.backSourceLength,
+	StatSeedFinish(seedTask.ID, seedTask.RawURL, true, nil, start, time.Now(), downloadMetadata.backSourceLength,
 		downloadMetadata.realSourceFileLength)
 	// fifth: handle CDN result
 	err = cm.handleCDNResult(seedTask, downloadMetadata)
@@ -270,4 +273,28 @@ func getUpdateTaskInfo(seedTask *task.SeedTask, cdnStatus, realMD5, pieceMd5Sign
 	cloneTask.SourceRealDigest = realMD5
 	cloneTask.PieceMd5Sign = pieceMd5Sign
 	return cloneTask
+}
+
+func StatSeedStart(taskID, url string) {
+	logger.StatSeedLogger.Info("Start Seed",
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname))
+}
+
+func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
+	metrics.DownloadTraffic.Add(float64(traffic))
+
+	logger.StatSeedLogger.Info("Finish Seed",
+		zap.Bool("Success", success),
+		zap.String("TaskID", taskID),
+		zap.String("URL", url),
+		zap.String("SeederIP", iputils.IPv4),
+		zap.String("SeederHostname", hostutils.FQDNHostname),
+		zap.Time("StartAt", startAt),
+		zap.Time("FinishAt", finishAt),
+		zap.Int64("Traffic", traffic),
+		zap.Int64("ContentLength", contentLength),
+		zap.Error(err))
 }

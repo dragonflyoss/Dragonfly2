@@ -27,6 +27,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -51,17 +52,12 @@ type cdn struct {
 }
 
 // New cdn interface
-func newCDN(peerManager PeerManager, hostManager HostManager, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (CDN, error) {
-	client, err := newCDNClient(dynconfig, hostManager, opts...)
-	if err != nil {
-		return nil, err
-	}
-
+func newCDN(peerManager PeerManager, hostManager HostManager, client CDNClient) CDN {
 	return &cdn{
 		client:      client,
 		peerManager: peerManager,
 		hostManager: hostManager,
-	}, nil
+	}
 }
 
 // TriggerTask start to trigger cdn task
@@ -75,24 +71,16 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		return nil, nil, err
 	}
 
-	var (
-		initialized bool
-		peer        *Peer
-	)
-
-	// Receive pieces from cdn
+	var peer *Peer
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
 			return nil, nil, err
 		}
 
-		task.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
-
-		// Init cdn peer
-		if !initialized {
-			initialized = true
-
+		// Handle begin of piece
+		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
+			task.Log.Infof("receive begin o piece: %#v %#v", piece, piece.PieceInfo)
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
@@ -101,9 +89,10 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
+			continue
 		}
 
-		// Get end piece
+		// Handle end of piece
 		if piece.Done {
 			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
 
@@ -134,6 +123,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		}
 
 		// Update piece info
+		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 		// TODO(244372610) CDN should set piece cost
 		peer.AppendPieceCost(0)

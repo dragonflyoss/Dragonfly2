@@ -24,7 +24,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -38,10 +37,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var tracer = otel.Tracer("cdn-server")
@@ -102,6 +101,20 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 	}
 	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece, hint register success
+	if err := stream.Send(&cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done:            false,
+		ContentLength:   registeredTask.SourceFileLength,
+		TotalPieceCount: registeredTask.TotalPieceCount,
+	}); err != nil {
+		logger.Errorf("failed to send begin piece seed: %v", err)
+		return err
+	}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
@@ -267,28 +280,4 @@ func (css *Server) Shutdown() error {
 
 func (css *Server) GetConfig() Config {
 	return css.config
-}
-
-func StatSeedStart(taskID, url string) {
-	logger.StatSeedLogger.Info("Start Seed",
-		zap.String("TaskID", taskID),
-		zap.String("URL", url),
-		zap.String("SeederIP", iputils.IPv4),
-		zap.String("SeederHostname", hostutils.FQDNHostname))
-}
-
-func StatSeedFinish(taskID, url string, success bool, err error, startAt, finishAt time.Time, traffic, contentLength int64) {
-	metrics.DownloadTraffic.Add(float64(traffic))
-
-	logger.StatSeedLogger.Info("Finish Seed",
-		zap.Bool("Success", success),
-		zap.String("TaskID", taskID),
-		zap.String("URL", url),
-		zap.String("SeederIP", iputils.IPv4),
-		zap.String("SeederHostname", hostutils.FQDNHostname),
-		zap.Time("StartAt", startAt),
-		zap.Time("FinishAt", finishAt),
-		zap.Int64("Traffic", traffic),
-		zap.Int64("ContentLength", contentLength),
-		zap.Error(err))
 }
