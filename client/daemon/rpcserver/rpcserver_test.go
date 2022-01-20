@@ -25,10 +25,12 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/distribution/distribution/v3/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -39,7 +41,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -80,7 +81,9 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 		peerHost:        &scheduler.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
-	m.downloadServer = dfdaemonserver.New(m)
+	downloadServer := grpc.NewServer(rpc.DefaultServerOptions...)
+	dfdaemongrpc.RegisterDaemonServer(downloadServer, m)
+	m.downloadServer = downloadServer
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +172,9 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 		peerHost:       &scheduler.PeerHost{},
 		storageManager: mockStorageManger,
 	}
-	m.peerServer = dfdaemonserver.New(m)
+	peerServer := grpc.NewServer(rpc.DefaultServerOptions...)
+	dfdaemongrpc.RegisterDaemonServer(peerServer, m)
+	m.peerServer = peerServer
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)

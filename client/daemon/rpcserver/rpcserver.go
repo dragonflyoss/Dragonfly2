@@ -22,6 +22,8 @@ import (
 	"net"
 	"os"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -35,7 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -55,6 +56,7 @@ type server struct {
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
+	dfdaemongrpc.UnimplementedDaemonServer
 }
 
 func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
@@ -64,8 +66,12 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storage
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
 	}
-	svr.downloadServer = dfdaemonserver.New(svr, downloadOpts...)
-	svr.peerServer = dfdaemonserver.New(svr, peerOpts...)
+	peerServer := grpc.NewServer(append(rpc.DefaultServerOptions, peerOpts...)...)
+	dfdaemongrpc.RegisterDaemonServer(peerServer, svr)
+	downloadServer := grpc.NewServer(append(rpc.DefaultServerOptions, downloadOpts...)...)
+	dfdaemongrpc.RegisterDaemonServer(downloadServer, svr)
+	svr.peerServer = peerServer
+	svr.downloadServer = downloadServer
 	return svr, nil
 }
 
@@ -127,13 +133,13 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 	return p, nil
 }
 
-func (m *server) CheckHealth(context.Context) error {
+func (m *server) CheckHealth(context.Context, *empty.Empty) (*empty.Empty, error) {
 	m.Keep()
-	return nil
+	return new(empty.Empty), nil
 }
 
-func (m *server) Download(ctx context.Context,
-	req *dfdaemongrpc.DownRequest, stream dfdaemongrpc.Daemon_DownloadServer) error {
+func (m *server) Download(req *dfdaemongrpc.DownRequest, stream dfdaemongrpc.Daemon_DownloadServer) error {
+	ctx := stream.Context()
 	m.Keep()
 	// init peer task request, peer uses different peer id to generate every request
 	peerTask := &peer.FileTaskRequest{

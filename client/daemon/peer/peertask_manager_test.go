@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -49,8 +50,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
+	daemonMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	schedulerclientMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
@@ -78,7 +78,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	schedulerclient.SchedulerClient, dfclient.ElasticClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
+	var daemonServer = daemonMock.NewMockDaemonServer(ctrl)
 
 	// 1.1 calculate piece digest and total digest
 	r := bytes.NewBuffer(opt.content)
@@ -124,7 +124,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	})
 
 	go func() {
-		if err := daemonserver.New(daemonServer).Serve(ln); err != nil {
+		downloadServer := grpc.NewServer(rpc.DefaultServerOptions...)
+		dfdaemongrpc.RegisterDaemonServer(downloadServer, daemonServer)
+		if err := downloadServer.Serve(ln); err != nil {
 			panic(err)
 		}
 	}()

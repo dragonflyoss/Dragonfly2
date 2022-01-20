@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -46,8 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	daemonserverMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
+	daemonMock "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	schedulerclientMock "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
@@ -62,7 +62,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	schedulerclient.SchedulerClient, dfclient.ElasticClient, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemonServer = daemonserverMock.NewMockDaemonServer(ctrl)
+	var daemonServer = daemonMock.NewMockDaemonServer(ctrl)
 
 	var piecesMd5 []string
 	pieceCount := int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize)))
@@ -100,8 +100,10 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go func(daemon *daemonserverMock.MockDaemonServer, ln net.Listener) {
-		if err := daemonserver.New(daemon).Serve(ln); err != nil {
+	go func(daemon *daemonMock.MockDaemonServer, ln net.Listener) {
+		downloadServer := grpc.NewServer(rpc.DefaultServerOptions...)
+		dfdaemongrpc.RegisterDaemonServer(downloadServer, daemonServer)
+		if err := downloadServer.Serve(ln); err != nil {
 			log.Fatal(err)
 		}
 	}(daemonServer, ln)
