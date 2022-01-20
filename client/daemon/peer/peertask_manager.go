@@ -29,7 +29,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -86,8 +85,6 @@ type Logger interface {
 }
 
 type TinyData struct {
-	// span is used by peer task manager to record events without peer task
-	span    trace.Span
 	TaskID  string
 	PeerID  string
 	Content []byte
@@ -167,7 +164,9 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 		return nil, err
 	}
 	if created {
-		ptc.startPullAndBroadcastPieces()
+		if err = ptc.start(); err != nil {
+			return nil, err
+		}
 	}
 	return ptc, err
 }
@@ -183,20 +182,13 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	// FIXME merge register peer tasks
-	ptc, err := ptm.newPeerTaskConductor(ctx, request, limit)
-	if err != nil {
-		return nil, false, err
-	}
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit)
 
 	ptm.conductorLock.Lock()
 	// double check
 	if p, ok := ptm.findPeerTaskConductor(taskID); ok {
 		ptm.conductorLock.Unlock()
-		logger.Debugf("same peer task found: %s/%s, cancel created peer task %s/%s",
-			p.taskID, p.peerID, ptc.taskID, ptc.peerID)
-		// cancel duplicate peer task
-		ptc.cancel(base.Code_ClientContextCanceled, reasonContextCanceled)
+		logger.Debugf("peer task found: %s/%s", p.taskID, p.peerID)
 		return p, false, nil
 	}
 	ptm.runningPeerTasks.Store(taskID, ptc)
