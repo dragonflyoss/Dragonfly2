@@ -158,18 +158,35 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 	return pt.(*peerTaskConductor), true
 }
 
+func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
+	taskID string,
+	request *scheduler.PeerTaskRequest,
+	limit rate.Limit) (*peerTaskConductor, error) {
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit)
+	if err != nil {
+		return nil, err
+	}
+	if created {
+		ptc.startPullAndBroadcastPieces()
+	}
+	return ptc, err
+}
+
+// getOrCreatePeerTaskConductor will get or create a peerTaskConductor,
+// if created, return (ptc, true, nil), otherwise return (ptc, false, nil)
 func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ctx context.Context,
 	taskID string,
 	request *scheduler.PeerTaskRequest,
-	limit rate.Limit) (*peerTaskConductor, error) {
+	limit rate.Limit) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
-		return ptc, nil
+		return ptc, false, nil
 	}
+	// FIXME merge register peer tasks
 	ptc, err := ptm.newPeerTaskConductor(ctx, request, limit)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	ptm.conductorLock.Lock()
@@ -180,13 +197,11 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 			p.taskID, p.peerID, ptc.taskID, ptc.peerID)
 		// cancel duplicate peer task
 		ptc.cancel(base.Code_ClientContextCanceled, reasonContextCanceled)
-		return p, nil
+		return p, false, nil
 	}
 	ptm.runningPeerTasks.Store(taskID, ptc)
 	ptm.conductorLock.Unlock()
-
-	ptc.run()
-	return ptc, nil
+	return ptc, true, nil
 }
 
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
