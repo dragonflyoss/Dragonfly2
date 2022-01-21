@@ -41,7 +41,7 @@ func startLoggerSignalHandler() {
 		for {
 			select {
 			case <-signals:
-				level -= 1
+				level--
 				if level < zapcore.DebugLevel {
 					level = zapcore.FatalLevel
 				}
