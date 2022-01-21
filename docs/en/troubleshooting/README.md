@@ -9,6 +9,7 @@ kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
 ```
 
 stdout:
+
 ```text
 change log level to debug
 change log level to fatal
