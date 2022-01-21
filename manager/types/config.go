@@ -16,6 +16,11 @@
 
 package types
 
+const (
+	// Server is boot
+	IsBootConfigName = "is_boot"
+)
+
 type ConfigParams struct {
 	ID uint `uri:"id" binding:"required"`
 }
