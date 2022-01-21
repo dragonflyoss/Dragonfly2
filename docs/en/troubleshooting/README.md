@@ -1,5 +1,27 @@
 # Troubleshooting Guide
 
+## Change log level
+
+Send `SIGUSR1` signal to dragonfly process to change log level
+
+```shell
+kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
+```
+
+stdout:
+
+```text
+change log level to debug
+change log level to fatal
+change log level to panic
+change log level to dpanic
+change log level to error
+change log level to warn
+change log level to info
+```
+
+> The change log level event will print in stdout and `core.log` file, but if the level is greater than `info`, stdout only.
+
 ## Download slowly than without Dragonfly
 
 1. Confirm limit rate in [dfget.yaml](https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/deployment/configuration/dfget.yaml#L65)
