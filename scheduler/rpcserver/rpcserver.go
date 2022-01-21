@@ -55,6 +55,7 @@ func New(service service.Service, opts ...grpc.ServerOption) *Server {
 }
 
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (resp *scheduler.RegisterResult, err error) {
+	// TODO Remove metrics
 	metrics.RegisterPeerTaskCount.Inc()
 	defer func() {
 		if err != nil {
