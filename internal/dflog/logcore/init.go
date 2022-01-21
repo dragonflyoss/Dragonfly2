@@ -17,15 +17,10 @@
 package logcore
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
-	"syscall"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -34,35 +29,6 @@ type logInitMeta struct {
 	fileName             string
 	setSugaredLoggerFunc func(*zap.SugaredLogger)
 	setLoggerFunc        func(log *zap.Logger)
-}
-
-var (
-	levels []zap.AtomicLevel
-	level  = zapcore.InfoLevel
-)
-
-func startLoggerSignalHandler() {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGUSR1)
-
-	go func() {
-		for {
-			select {
-			case <-signals:
-				level -= 1
-				if level < zapcore.DebugLevel {
-					level = zapcore.FatalLevel
-				}
-
-				// use fmt.Printf print change log level event when log level is great then info level
-				fmt.Printf("change log level to %s\n", level.String())
-				logger.Infof("change log level to %s\n", level.String())
-				for _, l := range levels {
-					l.SetLevel(level)
-				}
-			}
-		}
-	}()
 }
 
 func createLogger(meta []logInitMeta, logDir string) error {
