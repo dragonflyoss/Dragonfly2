@@ -56,8 +56,6 @@ import (
 	"d7y.io/dragonfly/v2/version"
 )
 
-var logLevel = zapcore.InfoLevel
-
 // InitCobra initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
 func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
@@ -96,12 +94,9 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 	var fc = make(chan func(), 5)
 
 	if verbose {
-		logLevel = zapcore.DebugLevel
-		logcore.SetCoreLevel(logLevel)
-		logcore.SetGrpcLevel(logLevel)
+		logcore.SetCoreLevel(zapcore.DebugLevel)
+		logcore.SetGrpcLevel(zapcore.DebugLevel)
 	}
-
-	startLoggerSignalHandler()
 
 	if pprofPort >= 0 {
 		// Enable go pprof and statsview
@@ -162,27 +157,6 @@ func SetupQuitSignalHandler(handler func()) {
 					handler()
 					logger.Warnf("handle signal: %v finish", sig)
 				}
-			}
-		}
-	}()
-}
-
-func startLoggerSignalHandler() {
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGUSR1)
-
-	go func() {
-		for {
-			select {
-			case <-signals:
-				logLevel -= 1
-				if logLevel < zapcore.DebugLevel {
-					logLevel = zapcore.FatalLevel
-				}
-
-				logger.Infof("change log level to %s", logLevel.String())
-				logcore.SetGrpcLevel(logLevel)
-				logcore.SetCoreLevel(logLevel)
 			}
 		}
 	}()

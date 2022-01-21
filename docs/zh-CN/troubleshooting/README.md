@@ -8,9 +8,18 @@
 kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
 ```
 
+标准输出：
 ```text
-INFO    dependency/dependency.go:183    change log level to debug
+change log level to debug
+change log level to fatal
+change log level to panic
+change log level to dpanic
+change log level to error
+change log level to warn
+change log level to info
 ```
+
+> 修改日志级别的事件将记录在标准输出和 `core.log` 中，但是如果修改的级别高于 `info` 的话，则仅有标准输出
 
 ## 下载速度比不用蜻蜓的时候慢
 

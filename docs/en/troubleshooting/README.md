@@ -8,9 +8,18 @@ Send `SIGUSR1` signal to dragonfly process to change log level
 kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
 ```
 
+stdout:
 ```text
-INFO    dependency/dependency.go:183    change log level to debug
+change log level to debug
+change log level to fatal
+change log level to panic
+change log level to dpanic
+change log level to error
+change log level to warn
+change log level to info
 ```
+
+> The change log level event will print in stdout and `core.log` file, but if the level is greater than `info`, stdout only.
 
 ## Download slowly than without Dragonfly
 
