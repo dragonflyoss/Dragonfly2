@@ -147,13 +147,18 @@ func New(options ...Option) (http.RoundTripper, error) {
 }
 
 // RoundTrip only process first redirect at present
-// TODO: fix resource release
 func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
-		ctx := traceContext.Extract(req.Context(), propagation.HeaderCarrier(req.Header))
+
+		ctx := req.Context()
+		if req.URL.Scheme == "https" {
+			// for https, the trace info is in request header
+			ctx = traceContext.Extract(req.Context(), propagation.HeaderCarrier(req.Header))
+		}
+
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
 		metrics.ProxyRequestViaDragonflyCount.Add(1)
 		resp, err = rt.download(ctx, req)
@@ -161,6 +166,7 @@ func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err erro
 		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
 		req.Host = req.URL.Host
 		req.Header.Set("Host", req.Host)
+		metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 		resp, err = rt.baseRoundTripper.RoundTrip(req)
 	}
 

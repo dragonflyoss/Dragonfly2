@@ -45,7 +45,7 @@ import (
 )
 
 const (
-	reasonContextCanceled       = "context canceled"
+	//reasonContextCanceled       = "context canceled"
 	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
 	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
@@ -138,15 +138,10 @@ type peerTaskConductor struct {
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 
-	start time.Time
+	startTime time.Time
 }
 
-func (ptm *peerTaskManager) newPeerTaskConductor(
-	ctx context.Context,
-	request *scheduler.PeerTaskRequest,
-	limit rate.Limit) (*peerTaskConductor, error) {
-
-	metrics.PeerTaskCount.Add(1)
+func (ptm *peerTaskManager) newPeerTaskConductor(ctx context.Context, request *scheduler.PeerTaskRequest, limit rate.Limit) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 	ctx, span := tracer.Start(ctx, config.SpanPeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -155,43 +150,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
-	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
-		request.PeerId, request.Url, request.UrlMeta.Filter, request.UrlMeta, request.UrlMeta.Tag)
-	// trace register
-	regCtx, cancel := context.WithTimeout(ctx, ptm.schedulerOption.ScheduleTimeout.Duration)
-	defer cancel()
-	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
-	logger.Infof("step 1: peer %s start to register", request.PeerId)
-	schedulerClient := ptm.schedulerClient
-	result, err := schedulerClient.RegisterPeerTask(regCtx, request)
-	regSpan.RecordError(err)
-	regSpan.End()
-
-	var needBackSource bool
-	if err != nil {
-		if err == context.DeadlineExceeded {
-			logger.Errorf("scheduler did not response in %s", ptm.schedulerOption.ScheduleTimeout.Duration)
-		}
-		logger.Errorf("step 1: peer %s register failed: %s", request.PeerId, err)
-		if ptm.schedulerOption.DisableAutoBackSource {
-			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, request.PeerId)
-			span.RecordError(err)
-			span.End()
-			return nil, err
-		}
-		needBackSource = true
-		// can not detect source or scheduler error, create a new dummy scheduler client
-		schedulerClient = &dummySchedulerClient{}
-		result = &scheduler.RegisterResult{TaskId: idgen.TaskID(request.Url, request.UrlMeta)}
-		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, request.PeerId)
-	}
-
-	if result == nil {
-		defer span.End()
-		span.RecordError(err)
-		err = errors.Errorf("empty schedule result")
-		return nil, err
-	}
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 
 	var (
 		log     *logger.SugaredLoggerOnWith
@@ -201,76 +160,30 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	if traceID.IsValid() {
 		log = logger.With(
 			"peer", request.PeerId,
-			"task", result.TaskId,
+			"task", taskID,
 			"component", "PeerTask",
 			"trace", traceID.String())
 	} else {
 		log = logger.With(
 			"peer", request.PeerId,
-			"task", result.TaskId,
+			"task", taskID,
 			"component", "PeerTask")
 	}
 
-	span.SetAttributes(config.AttributeTaskID.String(result.TaskId))
-	log.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
-
-	var (
-		singlePiece *scheduler.SinglePiece
-		tinyData    *TinyData
-	)
-	if !needBackSource {
-		switch result.SizeScope {
-		case base.SizeScope_NORMAL:
-			span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
-		case base.SizeScope_SMALL:
-			span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
-			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
-				singlePiece = piece.SinglePiece
-			}
-		case base.SizeScope_TINY:
-			defer span.End()
-			span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
-			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
-				tinyData = &TinyData{
-					span:    span,
-					TaskID:  result.TaskId,
-					PeerID:  request.PeerId,
-					Content: piece.PieceContent,
-				}
-			} else {
-				err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
-				span.RecordError(err)
-				log.Errorf("%s", err)
-				return nil, err
-			}
-		}
-	}
-
-	peerPacketStream, err := schedulerClient.ReportPieceResult(ctx, result.TaskId, request)
-	log.Infof("step 2: start report piece result")
-	if err != nil {
-		defer span.End()
-		span.RecordError(err)
-		return nil, err
-	}
+	span.SetAttributes(config.AttributeTaskID.String(taskID))
 
 	ptc := &peerTaskConductor{
-		start:               time.Now(),
+		startTime:           time.Now(),
 		ctx:                 ctx,
 		broker:              newPieceBroker(),
 		host:                ptm.host,
-		needBackSource:      atomic.NewBool(needBackSource),
 		request:             request,
-		peerPacketStream:    peerPacketStream,
 		pieceManager:        ptm.pieceManager,
 		storageManager:      ptm.storageManager,
 		peerTaskManager:     ptm,
 		peerPacketReady:     make(chan bool, 1),
 		peerID:              request.PeerId,
-		taskID:              result.TaskId,
-		sizeScope:           result.SizeScope,
-		singlePiece:         singlePiece,
-		tinyData:            tinyData,
+		taskID:              taskID,
 		successCh:           make(chan struct{}),
 		failCh:              make(chan struct{}),
 		span:                span,
@@ -283,7 +196,6 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		pieceParallelCount:  atomic.NewInt32(0),
 		totalPiece:          -1,
 		schedulerOption:     ptm.schedulerOption,
-		schedulerClient:     schedulerClient,
 		limiter:             rate.NewLimiter(limit, int(limit)),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
@@ -293,12 +205,106 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		getPiecesMaxRetry: ptm.getPiecesMaxRetry,
 		peerTaskConductor: ptc,
 	}
-	return ptc, nil
+	return ptc
 }
 
-func (pt *peerTaskConductor) startPullAndBroadcastPieces() {
+// register to scheduler, if error and disable auto back source, return error, otherwise return nil
+func (pt *peerTaskConductor) register() error {
+	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
+		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta, pt.request.UrlMeta.Tag)
+	// trace register
+	regCtx, cancel := context.WithTimeout(pt.ctx, pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+	defer cancel()
+	regCtx, regSpan := tracer.Start(regCtx, config.SpanRegisterTask)
+
+	var (
+		needBackSource bool
+		sizeScope      base.SizeScope
+		singlePiece    *scheduler.SinglePiece
+		tinyData       *TinyData
+	)
+
+	logger.Infof("step 1: peer %s start to register", pt.request.PeerId)
+	schedulerClient := pt.peerTaskManager.schedulerClient
+
+	result, err := schedulerClient.RegisterPeerTask(regCtx, pt.request)
+	regSpan.RecordError(err)
+	regSpan.End()
+
+	if err != nil {
+		if err == context.DeadlineExceeded {
+			logger.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+		}
+		logger.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
+		if pt.peerTaskManager.schedulerOption.DisableAutoBackSource {
+			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
+			pt.span.RecordError(err)
+			pt.cancel(base.Code_SchedError, err.Error())
+			return err
+		}
+		needBackSource = true
+		// can not detect source or scheduler error, create a new dummy scheduler client
+		schedulerClient = &dummySchedulerClient{}
+		result = &scheduler.RegisterResult{TaskId: pt.taskID}
+		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
+	}
+
+	pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
+
+	if !needBackSource {
+		sizeScope = result.SizeScope
+		switch result.SizeScope {
+		case base.SizeScope_NORMAL:
+			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("normal"))
+		case base.SizeScope_SMALL:
+			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
+				singlePiece = piece.SinglePiece
+			}
+		case base.SizeScope_TINY:
+			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
+			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_PieceContent); ok {
+				tinyData = &TinyData{
+					TaskID:  result.TaskId,
+					PeerID:  pt.request.PeerId,
+					Content: piece.PieceContent,
+				}
+			} else {
+				err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
+				pt.span.RecordError(err)
+				pt.Errorf("%s", err)
+				pt.cancel(base.Code_SchedError, err.Error())
+				return err
+			}
+		}
+	}
+
+	peerPacketStream, err := schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
+	pt.Infof("step 2: start report piece result")
+	if err != nil {
+		pt.span.RecordError(err)
+		pt.cancel(base.Code_SchedError, err.Error())
+		return err
+	}
+
+	pt.peerPacketStream = peerPacketStream
+	pt.schedulerClient = schedulerClient
+	pt.sizeScope = sizeScope
+	pt.singlePiece = singlePiece
+	pt.tinyData = tinyData
+	pt.needBackSource = atomic.NewBool(needBackSource)
+	return nil
+}
+
+func (pt *peerTaskConductor) start() error {
+	// register to scheduler
+	if err := pt.register(); err != nil {
+		return err
+	}
+
 	go pt.broker.Start()
 	go pt.pullPieces()
+	return nil
 }
 
 func (pt *peerTaskConductor) GetPeerID() string {
@@ -806,7 +812,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
 			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-				time.Now().Sub(pt.start).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+				time.Now().Sub(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -1145,7 +1151,7 @@ func (pt *peerTaskConductor) done() {
 		pt.span.End()
 	}()
 	var (
-		cost    = time.Now().Sub(pt.start).Milliseconds()
+		cost    = time.Now().Sub(pt.startTime).Milliseconds()
 		success = true
 		code    = base.Code_Success
 	)
@@ -1252,7 +1258,7 @@ func (pt *peerTaskConductor) fail() {
 			ContentLength:   pt.GetContentLength(),
 			Traffic:         pt.GetTraffic(),
 			TotalPieceCount: pt.totalPiece,
-			Cost:            uint32(end.Sub(pt.start).Milliseconds()),
+			Cost:            uint32(end.Sub(pt.startTime).Milliseconds()),
 			Success:         false,
 			Code:            pt.failedCode,
 		})

@@ -18,14 +18,17 @@ package resource
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
@@ -35,7 +38,8 @@ import (
 )
 
 var (
-	mockPeerID = idgen.PeerID("127.0.0.1")
+	mockPeerID    = idgen.PeerID("127.0.0.1")
+	mockCDNPeerID = idgen.CDNPeerID("127.0.0.1")
 )
 
 func TestPeer_NewPeer(t *testing.T) {
@@ -866,6 +870,16 @@ func TestPeer_DeleteStream(t *testing.T) {
 
 func TestPeer_DownloadTinyFile(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if path.Base(r.URL.Path) == "foo" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if r.Header.Get(headers.Range) == "bytes=0-2" {
+			w.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer s.Close()
@@ -883,6 +897,19 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 
 				_, err := peer.DownloadTinyFile(ctx)
 				assert.NoError(err)
+			},
+		},
+		{
+			name: "download tiny file with range header",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.Task.ContentLength.Store(2)
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				defer cancel()
+
+				_, err := peer.DownloadTinyFile(ctx)
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 406 Not Acceptable",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
 			},
 		},
 		{
@@ -907,6 +934,19 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 
 				_, err := peer.DownloadTinyFile(ctx)
 				assert.Error(err)
+			},
+		},
+		{
+			name: "download tiny file failed because of http status code",
+			expect: func(t *testing.T, peer *Peer) {
+				assert := assert.New(t)
+				peer.Task.ID = "foo"
+				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+				defer cancel()
+
+				_, err := peer.DownloadTinyFile(ctx)
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 404 Not Found",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
 			},
 		},
 	}
