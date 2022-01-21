@@ -355,7 +355,6 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	} else {
 		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
 		// when resp.ContentLength == -1 or 0, byte count can not be updated by transport
-		// TODO how to handle byte count for https ?
 		if resp.ContentLength == -1 {
 			metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(n))
 		}
@@ -497,11 +496,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 	for _, h := range proxy.httpsHosts {
 		if h.Regx.MatchString(host) {
-			config := &tls.Config{InsecureSkipVerify: h.Insecure}
+			tlsConfig := &tls.Config{InsecureSkipVerify: h.Insecure}
 			if h.Certs != nil {
-				config.RootCAs = h.Certs.CertPool
+				tlsConfig.RootCAs = h.Certs.CertPool
 			}
-			return config
+			return tlsConfig
 		}
 	}
 	return nil
@@ -587,9 +586,9 @@ func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
 	return transport.NeedUseDragonfly(req)
 }
 
-// tunnelHTTPS handles a CONNECT request and proxy an https request through an
-// http tunnel.
+// tunnelHTTPS handles the CONNECT request and proxy the https request through http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
+	metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
