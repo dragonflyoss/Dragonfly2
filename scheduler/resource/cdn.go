@@ -222,13 +222,23 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		return
 	}
 
-	// Update dynamic data
-	c.data = data
+	// If only the ip of the cdn host is changed,
+	// the cdn peer needs to be cleared.
+	diff := diffCDNs(c.data.CDNs, data.CDNs)
+	for _, v := range diff {
+		id := idgen.CDNHostID(v.Hostname, v.Port)
+		if host, ok := c.hostManager.Load(id); ok {
+			host.LeavePeers()
+		}
+	}
 
 	// Update host manager
 	for _, host := range cdnsToHosts(data.CDNs) {
 		c.hostManager.Store(host)
 	}
+
+	// Update dynamic data
+	c.data = data
 
 	// Update grpc cdn addresses
 	c.UpdateState(cdnsToNetAddrs(data.CDNs))
@@ -272,6 +282,30 @@ func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
 	}
 
 	return netAddrs
+}
+
+// diffCDNs get cdns with the same HostID but different IP
+func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
+	var diff []*config.CDN
+	for _, x := range cx {
+		for _, y := range cy {
+			if x.Hostname != y.Hostname {
+				continue
+			}
+
+			if x.Port != y.Port {
+				continue
+			}
+
+			if x.IP == y.IP {
+				continue
+			}
+
+			diff = append(diff, x)
+		}
+	}
+
+	return diff
 }
 
 // getCDNIPs get ips by []*config.CDN.
