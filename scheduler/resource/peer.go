@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
+	"github.com/go-http-utils/headers"
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
@@ -402,12 +403,17 @@ func (p *Peer) DownloadTinyFile(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return []byte{}, fmt.Errorf("%v: %v", url.String(), resp.Status)
+	}
 
 	return io.ReadAll(resp.Body)
 }
