@@ -48,7 +48,7 @@ const (
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
 
-func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, error) {
+func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, zap.AtomicLevel, error) {
 	rotateConfig := &lumberjack.Logger{
 		Filename:   filePath,
 		MaxSize:    defaultRotateMaxSize,
@@ -80,7 +80,7 @@ func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, erro
 		opts = append(opts, zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	}
 
-	return zap.New(core, opts...), nil
+	return zap.New(core, opts...), level, nil
 }
 
 func SetCoreLevel(level zapcore.Level) {
