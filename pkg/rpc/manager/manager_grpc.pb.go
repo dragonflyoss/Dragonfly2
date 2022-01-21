@@ -12,6 +12,7 @@ import (
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // ManagerClient is the client API for Manager service.
@@ -86,7 +87,7 @@ func (c *managerClient) ListSchedulers(ctx context.Context, in *ListSchedulersRe
 }
 
 func (c *managerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (Manager_KeepAliveClient, error) {
-	stream, err := c.cc.NewStream(ctx, &_Manager_serviceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
+	stream, err := c.cc.NewStream(ctx, &Manager_ServiceDesc.Streams[0], "/manager.Manager/KeepAlive", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +171,7 @@ type UnsafeManagerServer interface {
 }
 
 func RegisterManagerServer(s grpc.ServiceRegistrar, srv ManagerServer) {
-	s.RegisterService(&_Manager_serviceDesc, srv)
+	s.RegisterService(&Manager_ServiceDesc, srv)
 }
 
 func _Manager_GetCDN_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -289,7 +290,10 @@ func (x *managerKeepAliveServer) Recv() (*KeepAliveRequest, error) {
 	return m, nil
 }
 
-var _Manager_serviceDesc = grpc.ServiceDesc{
+// Manager_ServiceDesc is the grpc.ServiceDesc for Manager service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var Manager_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "manager.Manager",
 	HandlerType: (*ManagerServer)(nil),
 	Methods: []grpc.MethodDesc{
