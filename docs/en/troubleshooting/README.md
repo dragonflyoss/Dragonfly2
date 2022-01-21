@@ -1,5 +1,17 @@
 # Troubleshooting Guide
 
+## Change log level
+
+Send `SIGUSR1` signal to dragonfly process to change log level
+
+```shell
+kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
+```
+
+```text
+INFO    dependency/dependency.go:183    change log level to debug
+```
+
 ## Download slowly than without Dragonfly
 
 1. Confirm limit rate in [dfget.yaml](https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/en/deployment/configuration/dfget.yaml#L65)

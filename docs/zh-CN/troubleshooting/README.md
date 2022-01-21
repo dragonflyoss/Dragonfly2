@@ -1,5 +1,17 @@
 # 问题排查
 
+## 修改日志级别
+
+发送 `SIGUSR1` 信号给蜻蜓进程即可修改日志级别
+
+```shell
+kill -s SIGUSR1 <pid of dfdaemon, scheduler, cdn, or manager>
+```
+
+```text
+INFO    dependency/dependency.go:183    change log level to debug
+```
+
 ## 下载速度比不用蜻蜓的时候慢
 
 1. 确认限速值是否合适 [dfget.yaml](https://github.com/dragonflyoss/Dragonfly2/blob/main/docs/zh-CN/config/dfget.yaml#L61)
