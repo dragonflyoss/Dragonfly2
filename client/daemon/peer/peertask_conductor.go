@@ -1237,7 +1237,7 @@ func (pt *peerTaskConductor) fail() {
 	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
-	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
+	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
 	// send EOF piece result to scheduler
 	err := pt.peerPacketStream.Send(
