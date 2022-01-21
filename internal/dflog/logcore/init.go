@@ -20,8 +20,34 @@ import (
 	"path"
 	"path/filepath"
 
+	"go.uber.org/zap"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
+
+type logInitMeta struct {
+	fileName             string
+	setSugaredLoggerFunc func(*zap.SugaredLogger)
+	setLoggerFunc        func(log *zap.Logger)
+}
+
+func createLogger(meta []logInitMeta, logDir string) error {
+	for _, m := range meta {
+		log, level, err := CreateLogger(path.Join(logDir, m.fileName), false, false)
+		if err != nil {
+			return err
+		}
+		if m.setSugaredLoggerFunc != nil {
+			m.setSugaredLoggerFunc(log.Sugar())
+		} else {
+			m.setLoggerFunc(log)
+		}
+
+		levels = append(levels, level)
+	}
+	startLoggerSignalHandler()
+	return nil
+}
 
 func InitManager(console bool, dir string) error {
 	if console {
@@ -30,31 +56,26 @@ func InitManager(console bool, dir string) error {
 
 	logDir := filepath.Join(dir, "manager")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
-	if err != nil {
-		return err
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: logger.SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: logger.SetGrpcLogger,
+		},
+		{
+			fileName:             GCLogFileName,
+			setSugaredLoggerFunc: logger.SetGCLogger,
+		},
+		{
+			fileName:             JobLogFileName,
+			setSugaredLoggerFunc: logger.SetJobLogger,
+		},
 	}
-	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGCLogger(gcLogger.Sugar())
-
-	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetJobLogger(jobLogger.Sugar())
-
-	return nil
+	return createLogger(meta, logDir)
 }
 
 func InitScheduler(console bool, dir string) error {
@@ -64,31 +85,26 @@ func InitScheduler(console bool, dir string) error {
 
 	logDir := filepath.Join(dir, "scheduler")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
-	if err != nil {
-		return err
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: logger.SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: logger.SetGrpcLogger,
+		},
+		{
+			fileName:             GCLogFileName,
+			setSugaredLoggerFunc: logger.SetGCLogger,
+		},
+		{
+			fileName:             JobLogFileName,
+			setSugaredLoggerFunc: logger.SetJobLogger,
+		},
 	}
-	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGCLogger(gcLogger.Sugar())
-
-	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetJobLogger(jobLogger.Sugar())
-
-	return nil
+	return createLogger(meta, logDir)
 }
 
 func InitCdnSystem(console bool, dir string) error {
@@ -97,55 +113,42 @@ func InitCdnSystem(console bool, dir string) error {
 	}
 
 	logDir := filepath.Join(dir, "cdn")
-
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
-	if err != nil {
-		return err
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: logger.SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: logger.SetGrpcLogger,
+		},
+		{
+			fileName:             GCLogFileName,
+			setSugaredLoggerFunc: logger.SetGCLogger,
+		},
+		{
+			fileName:             StorageGCLogFileName,
+			setSugaredLoggerFunc: logger.SetStorageGCLogger,
+		},
+		{
+			fileName:             JobLogFileName,
+			setSugaredLoggerFunc: logger.SetJobLogger,
+		},
+		{
+			fileName:      StatSeedLogFileName,
+			setLoggerFunc: logger.SetStatSeedLogger,
+		},
+		{
+			fileName:      DownloaderLogFileName,
+			setLoggerFunc: logger.SetDownloadLogger,
+		},
+		{
+			fileName:             KeepAliveLogFileName,
+			setSugaredLoggerFunc: logger.SetKeepAliveLogger,
+		},
 	}
-	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGCLogger(gcLogger.Sugar())
-
-	storageGCLogger, err := CreateLogger(path.Join(logDir, StorageGCLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGCLogger(storageGCLogger.Sugar())
-
-	jobLogger, err := CreateLogger(path.Join(logDir, JobLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetJobLogger(jobLogger.Sugar())
-
-	statSeedLogger, err := CreateLogger(path.Join(logDir, StatSeedLogFileName), true, true)
-	if err != nil {
-		return err
-	}
-	logger.SetStatSeedLogger(statSeedLogger)
-
-	downloaderLogger, err := CreateLogger(path.Join(logDir, DownloaderLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetDownloadLogger(downloaderLogger)
-
-	keepAliveLogger, err := CreateLogger(path.Join(logDir, KeepAliveLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetKeepAliveLogger(keepAliveLogger.Sugar())
-	return nil
+	return createLogger(meta, logDir)
 }
 
 func InitDaemon(console bool, dir string) error {
@@ -155,25 +158,22 @@ func InitDaemon(console bool, dir string) error {
 
 	logDir := filepath.Join(dir, "daemon")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
-	if err != nil {
-		return err
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: logger.SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: logger.SetGrpcLogger,
+		},
+		{
+			fileName:             GCLogFileName,
+			setSugaredLoggerFunc: logger.SetGCLogger,
+		},
 	}
-	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	gcLogger, err := CreateLogger(path.Join(logDir, GCLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGCLogger(gcLogger.Sugar())
-
-	return nil
+	return createLogger(meta, logDir)
 }
 
 func InitDfget(console bool, dir string) error {
@@ -183,17 +183,16 @@ func InitDfget(console bool, dir string) error {
 
 	logDir := filepath.Join(dir, "dfget")
 
-	coreLogger, err := CreateLogger(path.Join(logDir, CoreLogFileName), false, false)
-	if err != nil {
-		return err
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: logger.SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: logger.SetGrpcLogger,
+		},
 	}
-	logger.SetCoreLogger(coreLogger.Sugar())
 
-	grpcLogger, err := CreateLogger(path.Join(logDir, GrpcLogFileName), false, false)
-	if err != nil {
-		return err
-	}
-	logger.SetGrpcLogger(grpcLogger.Sugar())
-
-	return nil
+	return createLogger(meta, logDir)
 }
