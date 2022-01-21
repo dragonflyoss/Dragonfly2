@@ -48,7 +48,7 @@ func startLoggerSignalHandler() {
 
 				// use fmt.Printf print change log level event when log level is great then info level
 				fmt.Printf("change log level to %s\n", level.String())
-				logger.Infof("change log level to %s\n", level.String())
+				logger.Infof("change log level to %s", level.String())
 				for _, l := range levels {
 					l.SetLevel(level)
 				}
