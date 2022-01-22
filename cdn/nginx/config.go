@@ -19,8 +19,10 @@ package nginx
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 )
 
@@ -103,9 +105,23 @@ func (c Config) Validate() []error {
 }
 
 var (
-	DefaultNginxCmdPath = "/usr/local/bin/nginx"
+	DefaultNginxCmdPath string
 
 	DefaultLogPath = filepath.Join(basic.HomeDir, "logs", "nginx")
 
 	DefaultConfPath = filepath.Join(basic.HomeDir, "conf", "nginx.conf")
 )
+
+// obtain nginx cmd path
+func init() {
+	file, err := exec.LookPath("nginx")
+	if err != nil {
+		DefaultNginxCmdPath = "/usr/sbin/nginx"
+		logger.Warn("failed to get nginx cmd path, fail over to use %s: %v", DefaultNginxCmdPath, err)
+	}
+	nginxPath, err := filepath.Abs(file)
+	if err != nil {
+		logger.Errorf("failed to get absolute representation of nginx cmd path: %v", err)
+	}
+	DefaultNginxCmdPath = nginxPath
+}
