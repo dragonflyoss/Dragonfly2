@@ -282,6 +282,10 @@ func (h *hybridStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	return true, nil
 }
 
+func (h *hybridStorageManager) GetUploadPath() string {
+	return h.diskDriver.GetPath(storage.GetUploadHomeRaw())
+}
+
 func (h *hybridStorageManager) deleteDiskFiles(taskID string) error {
 	return h.deleteTaskFiles(taskID, true)
 }

@@ -74,6 +74,9 @@ type Manager interface {
 
 	// TryFreeSpace checks if there is enough space for the file, return true while we are sure that there is enough space.
 	TryFreeSpace(fileLength int64) (bool, error)
+
+	// GetUploadPath get path of upload file
+	GetUploadPath() string
 }
 
 // FileMetadata meta data of task

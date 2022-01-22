@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/nginx"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
@@ -104,6 +105,21 @@ func TestConfig_Convert(t *testing.T) {
 				},
 			},
 		},
+		Nginx: &nginx.Config{
+			CmdPath:        "/usr/bin/nginx",
+			TargetConfPath: "nginx.conf",
+			TemplatePath:   "nginx.template",
+			LogDir:         "/var/logs",
+			TLS: nginx.TLSConfig{
+				Enabled: false,
+				Cert: nginx.Secret{
+					Path: "/etc/dragonfly/nginx/ca/sca.crt",
+				},
+				Key: nginx.Secret{
+					Path: "/etc/dragonfly/nginx/ca/sca.key",
+				},
+			},
+		},
 	}
 	cfg := dcfg.Convert()
 
@@ -166,5 +182,20 @@ func TestConfig_Convert(t *testing.T) {
 		},
 		LogDir:   "aaa",
 		WorkHome: "/workHome",
+		Nginx: nginx.Config{
+			CmdPath:        "/usr/bin/nginx",
+			TargetConfPath: "nginx.conf",
+			TemplatePath:   "nginx.template",
+			LogDir:         "/var/logs",
+			TLS: nginx.TLSConfig{
+				Enabled: false,
+				Cert: nginx.Secret{
+					Path: "/etc/dragonfly/nginx/ca/sca.crt",
+				},
+				Key: nginx.Secret{
+					Path: "/etc/dragonfly/nginx/ca/sca.key",
+				},
+			},
+		},
 	}, cfg)
 }

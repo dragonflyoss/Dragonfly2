@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/nginx"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
@@ -50,6 +51,7 @@ func New() *Config {
 			IDC:      "",
 		},
 		LogDir: "",
+		Nginx:  nginx.DefaultConfig(),
 	}
 }
 
@@ -69,6 +71,8 @@ type Config struct {
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 	// WorkHome directory
 	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
+	// Nginx configuration
+	Nginx nginx.Config `mapstructure:"nginx" yaml:"nginx"`
 }
 
 func (c *Config) String() string {
@@ -86,6 +90,7 @@ func (c *Config) Validate() []error {
 	errs = append(errs, c.Task.Validate()...)
 	errs = append(errs, c.CDN.Validate()...)
 	errs = append(errs, c.Manager.Validate()...)
+	errs = append(errs, c.Nginx.Validate()...)
 	return errs
 }
 

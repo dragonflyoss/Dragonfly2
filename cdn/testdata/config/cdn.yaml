@@ -92,3 +92,15 @@ verbose: false
 # listen port for pprof, only valid when the verbose option is true
 # default is random port
 pprofPort: 0
+
+# Configuration of nginx
+nginx:
+  cmdPath: /usr/local/bin/nginx
+  targetConfPath: /tmp/nginx/conf/nginx.conf
+  logDir: /tmp/log/nginx
+  tls:
+    enabled: false
+    cert:
+      path: /etc/dragonfly/nginx/tls/certs/sca.crt
+    key:
+      path: /etc/dragonfly/nginx/tls/certs/sca.key

@@ -19,6 +19,7 @@ package cdn
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/cdn/nginx"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -54,6 +55,9 @@ type Server struct {
 
 	// gc Server
 	gcServer *gc.Server
+
+	// nginx Server
+	nginxServer *nginx.Server
 }
 
 // New creates a brand-new server instance.
@@ -103,6 +107,12 @@ func New(config *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create gcServer")
 	}
 
+	// Initialize nginx server
+	nginxServer, err := nginx.New(config.Nginx, storageManager.GetUploadPath(), config.RPCServer.DownloadPort)
+	if err != nil {
+		return nil, errors.Wrap(err, "create nginxServer")
+	}
+
 	var metricsServer *metrics.Server
 	if config.Metrics.Addr != "" {
 		// Initialize metrics server
@@ -126,6 +136,7 @@ func New(config *config.Config) (*Server, error) {
 		metricsServer: metricsServer,
 		configServer:  configServer,
 		gcServer:      gcServer,
+		nginxServer:   nginxServer,
 	}, nil
 }
 
@@ -148,13 +159,12 @@ func (s *Server) Serve() error {
 
 	go func() {
 		if s.configServer != nil {
-			var rpcServerConfig = s.grpcServer.GetConfig()
 			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
 				SourceType:   manager.SourceType_CDN_SOURCE,
 				HostName:     hostutils.FQDNHostname,
-				Ip:           rpcServerConfig.AdvertiseIP,
-				Port:         int32(rpcServerConfig.ListenPort),
-				DownloadPort: int32(rpcServerConfig.DownloadPort),
+				Ip:           s.config.RPCServer.AdvertiseIP,
+				Port:         int32(s.config.RPCServer.ListenPort),
+				DownloadPort: int32(s.config.RPCServer.DownloadPort),
 				Idc:          s.config.Host.IDC,
 				Location:     s.config.Host.Location,
 				CdnClusterId: uint64(s.config.Manager.CDNClusterID),
@@ -172,14 +182,30 @@ func (s *Server) Serve() error {
 		}
 	}()
 
-	// Start grpc server
-	return s.grpcServer.ListenAndServe()
+	go func() {
+		// Start grpc server
+		if err := s.grpcServer.ListenAndServe(); err != nil {
+			logger.Fatal("start grpc server failed: %v", err)
+		}
+	}()
+
+	// start nginx
+	if err := s.nginxServer.Serve(); err != nil {
+		return errors.Errorf("start nginx failed: %v", err)
+	}
+	return nil
 }
 
 func (s *Server) Stop() error {
 	g, ctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
+		// Stop nginx
+		return s.nginxServer.Shutdown()
+	})
+
+	g.Go(func() error {
+		// Stop gc server
 		return s.gcServer.Shutdown()
 	})
 

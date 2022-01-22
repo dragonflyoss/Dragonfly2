@@ -243,7 +243,3 @@ func (css *Server) Shutdown() error {
 	}
 	return nil
 }
-
-func (css *Server) GetConfig() Config {
-	return css.config
-}

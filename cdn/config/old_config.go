@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/nginx"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
@@ -51,7 +52,8 @@ func NewDeprecatedConfig() *DeprecatedConfig {
 type DeprecatedConfig struct {
 	base.Options    `yaml:",inline" mapstructure:",squash"`
 	*BaseProperties `yaml:"base" mapstructure:"base"`
-
+	// nginx configuration
+	Nginx   *nginx.Config                                      `yaml:"nginx" mapstructure:"nginx"`
 	Plugins map[plugins.PluginType][]*plugins.PluginProperties `yaml:"plugins" mapstructure:"plugins"`
 }
 
@@ -120,6 +122,9 @@ func (c DeprecatedConfig) Convert() *Config {
 	newConfig.Console = c.Console
 	newConfig.Telemetry = c.Telemetry
 	newConfig.PProfPort = c.PProfPort
+	if c.Nginx != nil {
+		newConfig.Nginx = *c.Nginx
+	}
 	return newConfig
 }
 
