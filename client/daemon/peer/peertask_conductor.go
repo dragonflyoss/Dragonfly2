@@ -1057,6 +1057,7 @@ func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, re
 }
 
 func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, result *DownloadPieceResult) {
+	metrics.PieceTaskCount.Add(1)
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
@@ -1082,6 +1083,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 }
 
 func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, result *DownloadPieceResult, code base.Code) {
+	metrics.PieceTaskFailedCount.Add(1)
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
