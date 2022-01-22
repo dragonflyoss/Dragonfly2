@@ -22,11 +22,11 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/nginx"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
+	"d7y.io/dragonfly/v2/cdn/nginx"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/storedriver"
