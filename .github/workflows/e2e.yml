@@ -55,9 +55,7 @@ jobs:
         run: |
           hack/gen-buildx.sh
           make docker-build docker-build-testing-tools
-
-      - name: Prepare kind environment
-        run: make kind-load
+          make kind-load
 
       - name: Setup dragonfly
         run: |
