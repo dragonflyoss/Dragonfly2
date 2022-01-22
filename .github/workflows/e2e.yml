@@ -38,7 +38,6 @@ jobs:
           go mod download github.com/go-task/slim-sprig
           go install github.com/onsi/ginkgo/ginkgo
           mkdir -p /tmp/artifact
-          go mod vendor
 
       - name: Setup buildx
         uses: docker/setup-buildx-action@v1
