@@ -33,6 +33,7 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
@@ -248,8 +249,8 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		span.End()
 	}()
-	// update ctx for transfer trace id
-	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
+
+	// update ctx to transfer trace id
 	r = r.WithContext(ctx)
 
 	// check authenticity
@@ -316,7 +317,7 @@ func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
 // "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
 func parseBasicAuth(auth string) (username, password string, ok bool) {
 	const prefix = "Basic "
-	// Case insensitive prefix match. See Issue 22736.
+	// Case-insensitive prefix match. See Issue 22736.
 	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
 		return
 	}
@@ -333,6 +334,7 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
+	// FIXME did not need create a transport per request
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -343,12 +345,16 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
-		logger.Errorf("failed to write http body: %v", err)
+		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
+			logger.Errorf("failed to write http body: %v, peer: %s, task: %s",
+				err, peerID, resp.Header.Get(config.HeaderDragonflyTask))
+		} else {
+			logger.Errorf("failed to write http body: %v", err)
+		}
 		span.RecordError(err)
 	} else {
 		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
 		// when resp.ContentLength == -1 or 0, byte count can not be updated by transport
-		// TODO how to handle byte count for https ?
 		if resp.ContentLength == -1 {
 			metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(n))
 		}
@@ -420,6 +426,8 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	rp := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			// we can not change req.ctx in Director, so inject trace with header
+			propagation.TraceContext{}.Inject(r.Context(), propagation.HeaderCarrier(req.Header))
 			req.URL.Host = req.Host
 			req.URL.Scheme = schemaHTTPS
 			if proxy.dumpHTTPContent {
@@ -488,11 +496,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 	for _, h := range proxy.httpsHosts {
 		if h.Regx.MatchString(host) {
-			config := &tls.Config{InsecureSkipVerify: h.Insecure}
+			tlsConfig := &tls.Config{InsecureSkipVerify: h.Insecure}
 			if h.Certs != nil {
-				config.RootCAs = h.Certs.CertPool
+				tlsConfig.RootCAs = h.Certs.CertPool
 			}
-			return config
+			return tlsConfig
 		}
 	}
 	return nil
@@ -578,9 +586,9 @@ func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
 	return transport.NeedUseDragonfly(req)
 }
 
-// tunnelHTTPS handles a CONNECT request and proxy an https request through an
-// http tunnel.
+// tunnelHTTPS handles the CONNECT request and proxy the https request through http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
+	metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)

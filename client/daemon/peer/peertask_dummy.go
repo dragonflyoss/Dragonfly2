@@ -28,6 +28,7 @@ import (
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
+// when scheduler is not available, use dummySchedulerClient to back source
 type dummySchedulerClient struct {
 }
 
@@ -58,6 +59,7 @@ type dummyPeerPacketStream struct {
 }
 
 func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
+	// TODO set base.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
 	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 }
 

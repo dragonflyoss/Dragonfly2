@@ -37,7 +37,7 @@ import (
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
-	request *FilePeerTaskRequest) (chan *FilePeerTaskProgress, bool) {
+	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	if reuse == nil {
@@ -80,7 +80,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	var cost = time.Now().Sub(start).Milliseconds()
 	log.Infof("reuse file peer task done, cost: %dms", cost)
 
-	pg := &FilePeerTaskProgress{
+	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: true,
 			Code:    base.Code_Success,
@@ -94,8 +94,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		DoneCallback:    func() {},
 	}
 
-	// make a new buffered channel, because we did not need to call newFilePeerTask
-	progressCh := make(chan *FilePeerTaskProgress, 1)
+	// make a new buffered channel, because we did not need to call newFileTask
+	progressCh := make(chan *FileTaskProgress, 1)
 	progressCh <- pg
 
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
@@ -114,7 +114,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	log := logger.With("peer", request.PeerId, "task", taskID, "component", "reuseStreamPeerTask")
 	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
 
-	ctx, span := tracer.Start(ctx, config.SpanStreamPeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))

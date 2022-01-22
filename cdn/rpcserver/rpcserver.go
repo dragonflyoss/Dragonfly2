@@ -35,8 +35,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
@@ -90,6 +92,17 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece, hint register success
+	psc <- &cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done:            false,
+		ContentLength:   registeredTask.SourceFileLength,
+		TotalPieceCount: registeredTask.TotalPieceCount,
+	}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
@@ -200,6 +213,15 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 			count++
 		}
 	}
+	pieceMd5Sign := seedTask.PieceMd5Sign
+	if len(seedTask.Pieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
+		taskPieces := seedTask.Pieces
+		var pieceMd5s []string
+		for i := 0; i < len(taskPieces); i++ {
+			pieceMd5s = append(pieceMd5s, taskPieces[uint32(i)].PieceMd5)
+		}
+		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
+	}
 	pp := &base.PiecePacket{
 		TaskId:        req.TaskId,
 		DstPid:        req.DstPid,
@@ -207,7 +229,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		PieceInfos:    pieceInfos,
 		TotalPiece:    seedTask.TotalPieceCount,
 		ContentLength: seedTask.SourceFileLength,
-		PieceMd5Sign:  seedTask.PieceMd5Sign,
+		PieceMd5Sign:  pieceMd5Sign,
 	}
 	span.SetAttributes(constants.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil

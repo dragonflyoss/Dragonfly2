@@ -27,7 +27,6 @@ import (
 
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -51,6 +50,9 @@ type localTaskStore struct {
 
 	// when digest not match, invalid will be set
 	invalid atomic.Bool
+
+	// content stores tiny file which length less than 128 bytes
+	content []byte
 }
 
 var _ TaskStorageDriver = (*localTaskStore)(nil)
@@ -68,8 +70,8 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
-		// discard data for back source
-		n, err := io.Copy(io.Discard, io.LimitReader(req.Reader, req.Range.Length))
+		// discard already downloaded data for back source
+		n, err := io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
 			return n, err
 		}
@@ -88,55 +90,47 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		return 0, err
 	}
-	var (
-		r  *io.LimitedReader
-		ok bool
-		bn int64 // copied bytes from BufferedReader.B
-	)
-	if r, ok = req.Reader.(*io.LimitedReader); ok {
-		// by jim: drain buffer and use raw reader(normally tcp connection) for using optimised operator, like splice
-		if br, bok := r.R.(*clientutil.BufferedReader); bok {
-			bn, err := io.CopyN(file, br.B, int64(br.B.Buffered()))
-			if err != nil && err != io.EOF {
-				return 0, err
-			}
-			r = io.LimitReader(br.R, r.N-bn).(*io.LimitedReader)
-		}
-	} else {
-		r = io.LimitReader(req.Reader, req.Range.Length).(*io.LimitedReader)
-	}
-	n, err := io.Copy(file, r)
+
+	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
 		return 0, err
 	}
+
 	// when UnknownLength and size is align to piece num
 	if req.UnknownLength && n == 0 {
+		t.Lock()
+		t.genDigest(n, req)
+		t.Unlock()
 		return 0, nil
 	}
-	// update copied bytes from BufferedReader.B
-	n += bn
+
 	if n != req.Range.Length {
 		if req.UnknownLength {
 			// when back source, and can not detect content length, we need update real length
 			req.Range.Length = n
 			// when n == 0, skip
 			if n == 0 {
+				t.Lock()
+				t.genDigest(n, req)
+				t.Unlock()
 				return 0, nil
 			}
 		} else {
 			return n, ErrShortRead
 		}
 	}
+
 	// when Md5 is empty, try to get md5 from reader, it's useful for back source
 	if req.PieceMetadata.Md5 == "" {
-		t.Warnf("piece md5 not found in metadata, read from reader")
+		t.Debugf("piece md5 not found in metadata, read from reader")
 		if get, ok := req.Reader.(digestutils.DigestReader); ok {
 			req.PieceMetadata.Md5 = get.Digest()
 			t.Infof("read md5 from reader, value: %s", req.PieceMetadata.Md5)
 		} else {
-			t.Warnf("reader is not a DigestReader")
+			t.Debugf("reader is not a DigestReader")
 		}
 	}
+
 	t.Debugf("wrote %d bytes to file %s, piece %d, start %d, length: %d",
 		n, t.DataFilePath, req.Num, req.Range.Start, req.Range.Length)
 	t.Lock()
@@ -146,7 +140,29 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		return n, nil
 	}
 	t.Pieces[req.Num] = req.PieceMetadata
+	t.genDigest(n, req)
 	return n, nil
+}
+
+func (t *localTaskStore) genDigest(n int64, req *WritePieceRequest) {
+	if req.GenPieceDigest == nil || t.PieceMd5Sign != "" {
+		return
+	}
+
+	total, gen := req.GenPieceDigest(n)
+	if !gen {
+		return
+	}
+	t.TotalPieces = total
+
+	var pieceDigests []string
+	for i := int32(0); i < t.TotalPieces; i++ {
+		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
+	}
+
+	digest := digestutils.Sha256(pieceDigests...)
+	t.PieceMd5Sign = digest
+	t.Infof("generated digest: %s", digest)
 }
 
 func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
@@ -161,16 +177,6 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	if len(t.PieceMd5Sign) == 0 {
 		t.PieceMd5Sign = req.PieceMd5Sign
 		t.Debugf("update piece md5 sign: %s", t.PieceMd5Sign)
-	}
-	if req.GenPieceDigest {
-		var pieceDigests []string
-		for i := int32(0); i < t.TotalPieces; i++ {
-			pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
-		}
-
-		digest := digestutils.Sha256(pieceDigests...)
-		t.PieceMd5Sign = digest
-		t.Infof("generated digest: %s", digest)
 	}
 	return nil
 }
@@ -206,7 +212,7 @@ func (t *localTaskStore) IsInvalid(*PeerTaskMetadata) (bool, error) {
 	return t.invalid.Load(), nil
 }
 
-// ReadPiece get a LimitReadCloser from task data with seeked, caller should read bytes and close it.
+// ReadPiece get a LimitReadCloser from task data with sought, caller should read bytes and close it.
 func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")
@@ -263,7 +269,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetadat
 }
 
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
-	// Store is be called in callback.Done, mark local task store done, for fast search
+	// Store is called in callback.Done, mark local task store done, for fast search
 	t.Done = true
 	t.touch()
 	if req.TotalPieces > 0 {

@@ -42,7 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
-var tracer = otel.Tracer("sender")
+var tracer = otel.Tracer("manager")
 
 type PreheatType string
 
@@ -160,7 +160,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 		return nil, err
 	}
 
-	logger.Infof("create preheat group job succeeded, group uuid: %s， urls: %s", group.GroupUUID, urls)
+	logger.Infof("create preheat group job successfully, group uuid: %s， urls: %s", group.GroupUUID, urls)
 	return &internaljob.GroupJobState{
 		GroupUUID: group.GroupUUID,
 		State:     machineryv1tasks.StatePending,

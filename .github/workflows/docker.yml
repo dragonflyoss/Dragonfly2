@@ -9,6 +9,7 @@ jobs:
   push_scheduler_to_registry:
     name: Push Scheduler Image
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -68,6 +69,7 @@ jobs:
   push_dfdaemon_to_registry:
     name: Push Dfdaemon Image
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -127,6 +129,7 @@ jobs:
   push_cdn_to_registry:
     name: Push CDN Image
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -186,6 +189,7 @@ jobs:
   push_manager_to_registry:
     name: Push Manager Image
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v2

@@ -9,5 +9,11 @@ worker:
   senderNum: 10
   senderJobPoolSize: 10000
 
+manager:
+  enable: false
+
+job:
+  enable: false
+
 dynconfig:
-  cdnDirPath: /opt/dragonfly/scheduler-cdn
+  cdnDir: /opt/dragonfly/scheduler-cdn

@@ -29,7 +29,7 @@ func TestStructToMap(t *testing.T) {
 		expect func(*testing.T, map[string]interface{}, error)
 	}{
 		{
-			name: "conver struct to map succeeded",
+			name: "conver struct to map",
 			s: struct {
 				Name string
 				Age  float64
@@ -62,7 +62,7 @@ func TestStructToMap(t *testing.T) {
 			},
 		},
 		{
-			name: "conver nil to map succeeded",
+			name: "conver nil to map",
 			s:    nil,
 			expect: func(t *testing.T, m map[string]interface{}, err error) {
 				assert := assert.New(t)
