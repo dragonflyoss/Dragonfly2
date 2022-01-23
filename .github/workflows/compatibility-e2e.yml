@@ -60,7 +60,8 @@ jobs:
       - name: Build images
         run: |
           hack/gen-buildx.sh
-          make docker-build docker-build-testing-tools
+          make -j 5 build-manager-console docker-build-cdn docker-build-dfdaemon docker-build-scheduler docker-build-testing-tools
+          make docker-build-manager
           docker pull dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
           make kind-load
           kind load docker-image dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}

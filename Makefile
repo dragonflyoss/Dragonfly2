@@ -127,6 +127,12 @@ build-manager: build-dirs
 	./hack/build.sh manager
 .PHONY: build-manager
 
+# Build manager console
+build-manager-console: build-dirs
+	@echo "Begin to build manager."
+	./hack/build.sh manager-console
+.PHONY: build-manager-console
+
 # Install cdn
 install-cdn:
 	@echo "Begin to install cdn."
@@ -304,6 +310,7 @@ help:
 	@echo "make build-dfget-linux              build linux dfget"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
+	@echo "make build-manager-console          build manager console"
 	@echo "make install-cdn                    install CDN"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"
