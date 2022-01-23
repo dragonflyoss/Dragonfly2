@@ -128,3 +128,23 @@ jaeger: ""
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn
 service-name: dragonfly-cdn
+
+# nginx 配置
+nginx:
+  # CmdPath nginx 的可执行文件路径
+  # 如果没有指定，程序会在可执行Path路径下查找作为默认值
+  cmdPath: /usr/local/bin/nginx
+  # TargetConfPath 程序生成的 nginx 配置文件路径
+  targetConfPath: /tmp/nginx/conf/nginx.conf
+  # TemplatePath nginx 配置文件的模版文件路径. 默认配置文件查看 conf_template_linux.go
+  templatePath: ""
+  # LogDir nginx 的日志存放目录
+  logDir: /tmp/log/nginx
+  # TLS nginx ssl 配置
+  tls:
+    # 是否启用 nginx ssl
+    enabled: false
+    cert:
+      path: /etc/dragonfly/nginx/tls/certs/sca.crt
+    key:
+      path: /etc/dragonfly/nginx/tls/certs/sca.key
