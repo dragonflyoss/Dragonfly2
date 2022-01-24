@@ -54,8 +54,7 @@ jobs:
       - name: Build images
         run: |
           hack/gen-buildx.sh
-          make -j 5 build-manager-console docker-build-cdn docker-build-dfdaemon docker-build-scheduler docker-build-testing-tools
-          make docker-build-manager
+          make docker-build docker-build-testing-tools
           make kind-load
 
       - name: Setup dragonfly
