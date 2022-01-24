@@ -359,6 +359,58 @@ func TestTask_LenPeers(t *testing.T) {
 	}
 }
 
+func TestTask_LenAvailablePeers(t *testing.T) {
+	tests := []struct {
+		name              string
+		id                string
+		urlMeta           *base.UrlMeta
+		url               string
+		backToSourceLimit int
+		expect            func(t *testing.T, task *Task, mockPeer *Peer)
+	}{
+		{
+			name:              "len available peers",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				task.StorePeer(mockPeer)
+				assert.Equal(task.LenAvailablePeers(), 2)
+				task.StorePeer(mockPeer)
+				assert.Equal(task.LenAvailablePeers(), 2)
+				mockPeer.FSM.SetState(PeerStateLeave)
+				task.StorePeer(mockPeer)
+				assert.Equal(task.LenAvailablePeers(), 0)
+			},
+		},
+		{
+			name:              "peer does not exist",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(task.LenAvailablePeers(), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+
+			tc.expect(t, task, mockPeer)
+		})
+	}
+}
+
 func TestTask_CDNPeers(t *testing.T) {
 	tests := []struct {
 		name   string
