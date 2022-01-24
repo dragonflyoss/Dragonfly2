@@ -9,6 +9,8 @@ scheduler:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  config:
+    verbose: true
 
 cdn:
   image: d7yio/cdn
@@ -21,6 +23,8 @@ cdn:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  config:
+    verbose: true
 
 dfdaemon:
   image: d7yio/dfdaemon
@@ -35,6 +39,7 @@ dfdaemon:
   config:
     verbose: true
     pprofPort: 9999
+    metrics: 127.0.0.1:8888
     scheduler:
       disableAutoBackSource: true
     proxy:
@@ -64,3 +69,5 @@ manager:
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  config:
+    verbose: true
