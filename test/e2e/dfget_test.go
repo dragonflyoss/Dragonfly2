@@ -87,7 +87,6 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 			// slow download
 			Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
-			e2eutil.GetCounterMetric(pod, 8888, "")
 
 			// skip dfdaemon
 			if ns == dragonflyNamespace {
