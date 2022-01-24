@@ -23,13 +23,13 @@ const Template = `
 worker_rlimit_nofile 100000;
 
 events {
-  # use                     epoll;
+  use                     kqueue;
   worker_connections      20480;
   # multi_accept on;
 }
 
 http {
-  # include                 mime.types;
+  include                 /etc/nginx/mime.types;
   default_type            application/octet-stream;
 
   sendfile                on;
