@@ -170,9 +170,14 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		if r := recover(); r != nil {
 			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
 			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
 		}
-		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
+		if err != nil {
+			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
+		} else {
+			logger.WithTaskID(req.TaskId).Infof("get piece tasks success, availablePieceCount(%d), totalPieceCount(%d), pieceMd5Sign(%s), "+
+				"contentLength(%d)", len(piecePacket.PieceInfos), piecePacket.TotalPiece, piecePacket.PieceMd5Sign, piecePacket.ContentLength)
+		}
+
 	}()
 	logger.Infof("get piece tasks: %#v", req)
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
