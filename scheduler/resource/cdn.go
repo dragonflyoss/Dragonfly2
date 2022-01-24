@@ -305,6 +305,20 @@ func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
 		}
 	}
 
+	for _, x := range cx {
+		found := false
+		for _, y := range cy {
+			if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			diff = append(diff, x)
+		}
+	}
+
 	return diff
 }
 

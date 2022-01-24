@@ -171,6 +171,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					ID:       1,
 					Hostname: "foo",
 					IP:       "0.0.0.0",
+					Port:     8080,
 				}},
 			},
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
@@ -178,13 +179,13 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						CDNs: []*config.CDN{{
 							ID:       1,
-							Hostname: "bar",
+							Hostname: "foo",
 							IP:       "0.0.0.0",
+							Port:     8080,
 						}},
 					}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
 		},
@@ -467,7 +468,14 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 			},
 			expect: func(t *testing.T, diff []*config.CDN) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN(nil))
+				assert.EqualValues(diff, []*config.CDN{
+					{
+						ID:       1,
+						Hostname: "bar",
+						IP:       "127.0.0.1",
+						Port:     8080,
+					},
+				})
 			},
 		},
 		{
@@ -490,7 +498,14 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 			},
 			expect: func(t *testing.T, diff []*config.CDN) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN(nil))
+				assert.EqualValues(diff, []*config.CDN{
+					{
+						ID:       1,
+						Hostname: "foo",
+						IP:       "127.0.0.1",
+						Port:     8081,
+					},
+				})
 			},
 		},
 		{
@@ -518,6 +533,78 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 						ID:       1,
 						Hostname: "foo",
 						IP:       "0.0.0.0",
+						Port:     8080,
+					},
+				})
+			},
+		},
+		{
+			name: "remove y cdn",
+			cx: []*config.CDN{
+				{
+					ID:       1,
+					Hostname: "foo",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+				{
+					ID:       2,
+					Hostname: "bar",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+			},
+			cy: []*config.CDN{
+				{
+					ID:       1,
+					Hostname: "foo",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+			},
+			expect: func(t *testing.T, diff []*config.CDN) {
+				assert := assert.New(t)
+				assert.EqualValues(diff, []*config.CDN{
+					{
+						ID:       2,
+						Hostname: "bar",
+						IP:       "127.0.0.1",
+						Port:     8080,
+					},
+				})
+			},
+		},
+		{
+			name: "remove x cdn",
+			cx: []*config.CDN{
+				{
+					ID:       1,
+					Hostname: "foo",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+			},
+			cy: []*config.CDN{
+				{
+					ID:       1,
+					Hostname: "baz",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+				{
+					ID:       2,
+					Hostname: "bar",
+					IP:       "127.0.0.1",
+					Port:     8080,
+				},
+			},
+			expect: func(t *testing.T, diff []*config.CDN) {
+				assert := assert.New(t)
+				assert.EqualValues(diff, []*config.CDN{
+					{
+						ID:       1,
+						Hostname: "foo",
+						IP:       "127.0.0.1",
 						Port:     8080,
 					},
 				})

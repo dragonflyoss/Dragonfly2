@@ -369,7 +369,7 @@ func TestTask_LenAvailablePeers(t *testing.T) {
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
 		{
-			name:              "len avaliable peers",
+			name:              "len available peers",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
