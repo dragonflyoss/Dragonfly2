@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo" //nolint
-	. "github.com/onsi/gomega" //nolint
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
 
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
@@ -87,6 +87,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 
 			// slow download
 			Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+			e2eutil.GetCounterMetric(pod, 8888, "")
 
 			// skip dfdaemon
 			if ns == dragonflyNamespace {
