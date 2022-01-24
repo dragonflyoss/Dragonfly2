@@ -3,9 +3,13 @@ scheduler:
   tag: latest
   replicas: 3
   extraVolumeMounts:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -15,9 +19,13 @@ cdn:
   tag: latest
   replicas: 3
   extraVolumeMounts:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -26,9 +34,13 @@ dfdaemon:
   image: d7yio/dfdaemon
   tag: latest
   extraVolumeMounts:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -58,9 +70,13 @@ manager:
   tag: latest
   replicas: 3
   extraVolumeMounts:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     hostPath:
       path: /tmp/artifact
