@@ -124,7 +124,7 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
-			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateFailed}, Dst: TaskStateRunning},
+			{Name: TaskEventDownload, Src: []string{TaskStatePending, TaskStateSucceeded, TaskStateFailed}, Dst: TaskStateRunning},
 			{Name: TaskEventDownloadSucceeded, Src: []string{TaskStateRunning, TaskStateFailed}, Dst: TaskStateSucceeded},
 			{Name: TaskEventDownloadFailed, Src: []string{TaskStateRunning}, Dst: TaskStateFailed},
 		},
@@ -179,6 +179,26 @@ func (t *Task) DeletePeer(key string) {
 func (t *Task) LenPeers() int {
 	var len int
 	t.Peers.Range(func(_, _ interface{}) bool {
+		len++
+		return true
+	})
+
+	return len
+}
+
+// LenAvailablePeers return length of peers without state is PeerStateLeave
+func (t *Task) LenAvailablePeers() int {
+	var len int
+	t.Peers.Range(func(_, v interface{}) bool {
+		peer, ok := v.(*Peer)
+		if !ok {
+			return true
+		}
+
+		if peer.FSM.Is(PeerStateLeave) {
+			return true
+		}
+
 		len++
 		return true
 	})
