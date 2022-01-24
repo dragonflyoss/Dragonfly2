@@ -4,12 +4,12 @@ scheduler:
   replicas: 3
   extraVolumeMounts:
   - name: logs
-    emptyDir: { }
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
   - name: logs
-    mountPath: "/var/log/"
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -20,12 +20,12 @@ cdn:
   replicas: 3
   extraVolumeMounts:
   - name: logs
-    emptyDir: { }
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
   - name: logs
-    mountPath: "/var/log/"
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -35,12 +35,12 @@ dfdaemon:
   tag: latest
   extraVolumeMounts:
   - name: logs
-    emptyDir: { }
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
   - name: logs
-    mountPath: "/var/log/"
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
@@ -71,12 +71,12 @@ manager:
   replicas: 3
   extraVolumeMounts:
   - name: logs
-    emptyDir: { }
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
   - name: logs
-    mountPath: "/var/log/"
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
