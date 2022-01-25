@@ -36,7 +36,7 @@ jobs:
       - name: Get dependencies
         run: |
           go mod download github.com/go-task/slim-sprig
-          go install github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.0
           mkdir -p /tmp/artifact
           go mod vendor
 
