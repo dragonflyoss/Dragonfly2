@@ -174,7 +174,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 		t.TotalPieces = req.TotalPieces
 		t.Debugf("update total pieces: %d", t.TotalPieces)
 	}
-	if len(t.PieceMd5Sign) == 0 {
+	if len(t.PieceMd5Sign) == 0 && len(req.PieceMd5Sign) > 0 {
 		t.PieceMd5Sign = req.PieceMd5Sign
 		t.Debugf("update piece md5 sign: %s", t.PieceMd5Sign)
 	}
