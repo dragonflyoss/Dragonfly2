@@ -9,7 +9,7 @@ on:
 
 jobs:
   push_image_to_registry:
-    name: Push Scheduler Image
+    name: Push Image
     runs-on: ubuntu-latest
     strategy:
       matrix:
