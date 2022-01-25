@@ -221,26 +221,18 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 		peer.Log.Infof("parent %s is cdn", piece.DstPid)
 		fallthrough
 	case base.Code_CDNTaskNotFound:
-		// CDN peer exists in the scheduler, but the peer information in the cdn service has been recycled.
-		// Scheduler need to redownload cdn peer.
-		if err := parent.FSM.Event(resource.PeerEventRestart); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			break
-		}
-
+		c.PeerFail(ctx, parent)
 		go func() {
 			parent.Log.Info("cdn restart seed task")
-			parent, endOfPiece, err := c.resource.CDN().TriggerTask(context.Background(), parent.Task)
+			cdnPeer, endOfPiece, err := c.resource.CDN().TriggerTask(context.Background(), parent.Task)
 			if err != nil {
 				peer.Log.Errorf("retrigger task failed: %v", err)
-
 				c.TaskFail(ctx, parent.Task)
-				c.PeerFail(ctx, parent)
 				return
 			}
 
-			c.TaskSuccess(ctx, parent.Task, endOfPiece)
-			c.PeerSuccess(ctx, parent)
+			c.TaskSuccess(ctx, cdnPeer.Task, endOfPiece)
+			c.PeerSuccess(ctx, cdnPeer)
 		}()
 	default:
 	}
