@@ -88,7 +88,7 @@ func (s *service) CDN() resource.CDN {
 func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 	task, ok := s.resource.TaskManager().LoadOrStore(task)
-	if ok && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) {
+	if ok && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.LenAvailablePeers() != 0 {
 		// Task is healthy and can be reused
 		task.UpdateAt.Store(time.Now())
 		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
