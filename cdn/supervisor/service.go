@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/mock_cdn_service.go -package mocks d7y.io/dragonfly/v2/cdn/supervisor CDNService
+
 package supervisor
 
 import (
