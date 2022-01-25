@@ -148,6 +148,14 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
+	case resource.PeerStateReceivedTiny:
+		// When the task is tiny,
+		// the peer has already returned to piece data when registering
+		peer.Log.Info("file type is tiny, peer has already returned to piece data when registering")
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
@@ -252,9 +260,8 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
-	if peer.FSM.Is(resource.PeerStateBackToSource) && peer.Task.SizeScope() == base.SizeScope_TINY {
-		peer.Log.Info("peer state is PeerStateBackToSource and type is tiny file")
-		data, err := peer.DownloadTinyFile(ctx)
+	if peer.Task.SizeScope() == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+		data, err := peer.DownloadTinyFile()
 		if err == nil && len(data) == int(peer.Task.ContentLength.Load()) {
 			// Tiny file downloaded successfully
 			peer.Task.DirectPiece = data
