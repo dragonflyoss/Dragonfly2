@@ -95,27 +95,6 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		// Handle end of piece
 		if piece.Done {
 			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
-
-			// Handle tiny scope size task
-			if piece.ContentLength <= TinyFileSize {
-				peer.Log.Info("peer type is tiny file")
-				data, err := peer.DownloadTinyFile(ctx)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				// Tiny file downloaded directly from CDN is exception
-				if len(data) != int(piece.ContentLength) {
-					return nil, nil, errors.Errorf(
-						"piece actual data length is different from content length, content length is %d, data length is %d",
-						piece.ContentLength, len(data),
-					)
-				}
-
-				// Tiny file downloaded successfully
-				task.DirectPiece = data
-			}
-
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
