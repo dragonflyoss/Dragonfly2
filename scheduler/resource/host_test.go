@@ -361,6 +361,54 @@ func TestHost_LenPeers(t *testing.T) {
 	}
 }
 
+func TestHost_LeavePeers(t *testing.T) {
+	tests := []struct {
+		name    string
+		rawHost *scheduler.PeerHost
+		options []HostOption
+		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+	}{
+		{
+			name:    "leave peers",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				host.StorePeer(mockPeer)
+				assert.Equal(host.LenPeers(), 1)
+				host.LeavePeers()
+				host.Peers.Range(func(_, value interface{}) bool {
+					peer := value.(*Peer)
+					assert.True(peer.FSM.Is(PeerStateLeave))
+					return true
+				})
+			},
+		},
+		{
+			name:    "peers is empty ",
+			rawHost: mockRawHost,
+			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(host.LenPeers(), 0)
+				host.LeavePeers()
+				host.Peers.Range(func(_, value interface{}) bool {
+					assert.Fail("host peers is not empty")
+					return true
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			host := NewHost(tc.rawHost, tc.options...)
+			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, mockTask, host)
+
+			tc.expect(t, host, mockPeer)
+		})
+	}
+}
+
 func TestHost_FreeUploadLoad(t *testing.T) {
 	tests := []struct {
 		name    string
