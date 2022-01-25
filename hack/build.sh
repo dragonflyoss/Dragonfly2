@@ -103,6 +103,14 @@ build-manager-docker() {
     build-docker ${MANAGER_BINARY_NAME} manager
 }
 
+build-manager-console() {
+    set -x
+    consoleDir=$(echo $curDir | sed 's#hack#manager/console#')
+    docker run --workdir=/build \
+        --rm -v ${consoleDir}:/build node:12-alpine \
+        sh -c "npm install --loglevel warn --progress false && npm run build"
+}
+
 main() {
     create-dirs
     if [[ "1" == "${USE_DOCKER}" ]]; then
@@ -119,6 +127,9 @@ main() {
             ;;
         manager)
             build-manager-docker
+            ;;
+        manager-console)
+            build-manager-console
             ;;
         *)
             build-dfget-docker
@@ -141,6 +152,9 @@ main() {
             ;;
         manager)
             build-manager-local
+            ;;
+        manager-console)
+            build-manager-console
             ;;
         *)
             build-dfget-local
