@@ -80,7 +80,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Handle begin of piece
 		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			task.Log.Infof("receive begin o piece: %#v %#v", piece, piece.PieceInfo)
+			task.Log.Infof("receive begin of piece: %#v %#v", piece, piece.PieceInfo)
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err

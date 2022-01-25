@@ -318,6 +318,10 @@ func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
 func (c *callback) TaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
+	if task.FSM.Is(resource.TaskStateSucceeded) {
+		return
+	}
+
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
@@ -332,6 +336,10 @@ func (c *callback) TaskSuccess(ctx context.Context, task *resource.Task, result 
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
 func (c *callback) TaskFail(ctx context.Context, task *resource.Task) {
+	if task.FSM.Is(resource.TaskStateFailed) {
+		return
+	}
+
 	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return

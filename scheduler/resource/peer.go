@@ -234,8 +234,6 @@ func (p *Peer) StoreChild(child *Peer) {
 	defer p.mu.Unlock()
 
 	p.Children.Store(child.ID, child)
-	p.Host.Peers.Store(child.ID, child)
-	p.Task.Peers.Store(child.ID, child)
 	child.Parent.Store(p)
 }
 
@@ -250,8 +248,6 @@ func (p *Peer) DeleteChild(key string) {
 	}
 
 	p.Children.Delete(child.ID)
-	p.Host.DeletePeer(child.ID)
-	p.Task.DeletePeer(child.ID)
 	child.Parent = &atomic.Value{}
 }
 
@@ -283,8 +279,6 @@ func (p *Peer) StoreParent(parent *Peer) {
 
 	p.Parent.Store(parent)
 	parent.Children.Store(p.ID, p)
-	parent.Host.Peers.Store(p.ID, p)
-	parent.Task.Peers.Store(p.ID, p)
 }
 
 // DeleteParent deletes peer parent
@@ -299,8 +293,6 @@ func (p *Peer) DeleteParent() {
 
 	p.Parent = &atomic.Value{}
 	parent.Children.Delete(p.ID)
-	parent.Host.Peers.Delete(p.ID)
-	parent.Task.Peers.Delete(p.ID)
 }
 
 // ReplaceParent replaces peer parent
