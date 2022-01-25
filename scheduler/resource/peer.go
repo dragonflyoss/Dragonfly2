@@ -35,6 +35,11 @@ import (
 )
 
 const (
+	// Download tiny file timeout
+	downloadTinyFileContextTimeout = 2 * time.Minute
+)
+
+const (
 	// Peer has been created but did not start running
 	PeerStatePending = "Pending"
 
@@ -389,7 +394,10 @@ func (p *Peer) DeleteStream() {
 }
 
 // Download tiny file from peer
-func (p *Peer) DownloadTinyFile(ctx context.Context) ([]byte, error) {
+func (p *Peer) DownloadTinyFile() ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
+	defer cancel()
+
 	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler
 	url := url.URL{
 		Scheme:   "http",
@@ -397,13 +405,13 @@ func (p *Peer) DownloadTinyFile(ctx context.Context) ([]byte, error) {
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: "peerId=scheduler",
 	}
-	p.Log.Infof("download tiny file url: %#v", url)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
 	if err != nil {
 		return []byte{}, err
 	}
 	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()))
+	p.Log.Infof("download tiny file %s, header is : %#v", url.String(), req.Header)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

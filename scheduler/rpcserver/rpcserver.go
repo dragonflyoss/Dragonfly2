@@ -68,16 +68,8 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		switch sizeScope {
 		case base.SizeScope_TINY:
 			peer.Log.Info("task size scope is tiny and return piece content directly")
-			// When task.DirectPiece length is 0, data is downloaded by common peers failed
-			if int64(len(task.DirectPiece)) == task.ContentLength.Load() {
+			if len(task.DirectPiece) > 0 && int64(len(task.DirectPiece)) == task.ContentLength.Load() {
 				if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
-					dferr := dferrors.New(base.Code_SchedError, err.Error())
-					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
-					return nil, dferr
-				}
-
-				// Dfdaemon does not report piece info when scope size is SizeScope_TINY
-				if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 					dferr := dferrors.New(base.Code_SchedError, err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
 					return nil, dferr
@@ -93,7 +85,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 			}
 
 			// Fallback to base.SizeScope_SMALL
-			peer.Log.Warnf("task size scope is tiny, but task.DirectPiece length is %d, not %d. fall through to size scope small",
+			peer.Log.Warnf("task size scope is tiny, length of direct piece is %d and content length is %d. fall through to size scope small",
 				len(task.DirectPiece), task.ContentLength.Load())
 			fallthrough
 		case base.SizeScope_SMALL:
