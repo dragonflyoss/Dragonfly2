@@ -41,8 +41,6 @@ git-submodule() {
 }
 
 main() {
-    git-submodule
-
     case "${1-}" in
     cdn)
         docker-build cdn
@@ -54,6 +52,7 @@ main() {
         docker-build scheduler
         ;;
     manager)
+        git-submodule
         docker-build manager
     esac
 }
