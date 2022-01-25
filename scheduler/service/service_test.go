@@ -138,6 +138,8 @@ func TestService_RegisterTask(t *testing.T) {
 			},
 			run: func(svc Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStateRunning)
+				mockTask.StorePeer(mockPeer)
+				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
@@ -157,6 +159,8 @@ func TestService_RegisterTask(t *testing.T) {
 			},
 			run: func(svc Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStateSucceeded)
+				mockTask.StorePeer(mockPeer)
+				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
