@@ -106,13 +106,7 @@ func (s *service) RegisterTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
 		if err != nil {
 			task.Log.Errorf("trigger task failed: %v", err)
-
-			// Update the peer status first to help task return the error code to the peer that is downloading
-			// If init cdn fails, peer is nil
 			s.callback.TaskFail(ctx, task)
-			if peer != nil {
-				s.callback.PeerFail(ctx, peer)
-			}
 			return
 		}
 
