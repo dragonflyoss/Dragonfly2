@@ -17,7 +17,6 @@
 package resource
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,7 +25,6 @@ import (
 	"path"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
@@ -880,7 +878,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusPartialContent)
 	}))
 	defer s.Close()
 
@@ -892,10 +890,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			name: "download tiny file",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
+				_, err := peer.DownloadTinyFile()
 				assert.NoError(err)
 			},
 		},
@@ -904,36 +899,9 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ContentLength.Store(2)
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
+				_, err := peer.DownloadTinyFile()
 				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 406 Not Acceptable",
 					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
-			},
-		},
-		{
-			name: "download tiny file failed because of port error",
-			expect: func(t *testing.T, peer *Peer) {
-				assert := assert.New(t)
-				peer.Host.DownloadPort = 8000
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
-				assert.Error(err)
-			},
-		},
-		{
-			name: "download tiny file failed because of ip error",
-			expect: func(t *testing.T, peer *Peer) {
-				assert := assert.New(t)
-				peer.Host.IP = "127.0.0.2"
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
-				assert.Error(err)
 			},
 		},
 		{
@@ -941,10 +909,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
 				peer.Task.ID = "foo"
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
+				_, err := peer.DownloadTinyFile()
 				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 404 Not Found",
 					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
 			},

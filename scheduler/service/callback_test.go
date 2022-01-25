@@ -250,6 +250,16 @@ func TestCallback_BeginOfPiece(t *testing.T) {
 			},
 		},
 		{
+			name: "peer state is PeerStateReceivedTiny",
+			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateReceivedTiny)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+			},
+		},
+		{
 			name: "peer state is PeerStateReceivedSmall",
 			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedSmall)
