@@ -20,7 +20,11 @@ cdn:
   replicas: 3
   extraVolumeMounts:
   - name: logs
-    mountPath: "/var/log/"
+    mountPath: "/var/log/nginx"
+    subPath: nginx
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
