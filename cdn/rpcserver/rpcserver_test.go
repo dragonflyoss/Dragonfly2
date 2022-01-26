@@ -32,26 +32,25 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnRPCServer "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	cdnMocks "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/mocks"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestServer_ObtainSeeds(t *testing.T) {
 	type args struct {
-		ctx context.Context
-		req *cdnsystem.SeedRequest
-		psc chan *cdnsystem.PieceSeed
+		req         *cdnsystem.SeedRequest
+		seedsServer cdnsystem.Seeder_ObtainSeedsServer
 	}
 	tests := []struct {
 		name             string
-		createCallArgs   func() args
-		createCallObject func(t *testing.T, args args) cdnRPCServer.SeederServer
+		createCallArgs   func(t *testing.T) args
+		createCallObject func(t *testing.T, args args) cdnsystem.SeederServer
 		wantErr          assert.ErrorAssertionFunc
 	}{
 		{
 			name: "obtain piece seeds success",
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			createCallObject: func(t *testing.T, args args) cdnsystem.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
 				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
@@ -87,32 +86,38 @@ func TestServer_ObtainSeeds(t *testing.T) {
 				server, _ := New(Config{}, cdnServiceMock)
 				return server
 			},
-			createCallArgs: func() args {
+			createCallArgs: func(t *testing.T) args {
+				ctrl := gomock.NewController(t)
+				seedsServer := cdnMocks.NewMockSeeder_ObtainSeedsServer(ctrl)
+				seedsServer.EXPECT().Send(gomock.Any()).Times(3)
+				seedsServer.EXPECT().Context().Return(context.Background()).Times(1)
 				return args{
-					ctx: context.Background(),
 					req: &cdnsystem.SeedRequest{
 						TaskId:  "task1",
 						Url:     "https://www.dragonfly.com",
 						UrlMeta: nil,
 					},
-					psc: make(chan *cdnsystem.PieceSeed),
+					seedsServer: seedsServer,
 				}
 			},
 			wantErr: assert.NoError,
 		}, {
 			name: "task download fail",
-			createCallArgs: func() args {
+			createCallArgs: func(t *testing.T) args {
+				ctrl := gomock.NewController(t)
+				seedsServer := cdnMocks.NewMockSeeder_ObtainSeedsServer(ctrl)
+				seedsServer.EXPECT().Send(gomock.Any()).Times(2)
+				seedsServer.EXPECT().Context().Return(context.Background()).Times(1)
 				return args{
-					ctx: context.Background(),
 					req: &cdnsystem.SeedRequest{
 						TaskId:  "task1",
 						Url:     "https://www.dragonfly.com",
 						UrlMeta: nil,
 					},
-					psc: make(chan *cdnsystem.PieceSeed),
+					seedsServer: seedsServer,
 				}
 			},
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			createCallObject: func(t *testing.T, args args) cdnsystem.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
 				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
@@ -154,14 +159,9 @@ func TestServer_ObtainSeeds(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.createCallArgs()
+			args := tt.createCallArgs(t)
 			svr := tt.createCallObject(t, args)
-			go func() {
-				for seed := range args.psc {
-					fmt.Println(seed)
-				}
-			}()
-			tt.wantErr(t, svr.ObtainSeeds(args.ctx, args.req, args.psc), fmt.Sprintf("ObtainSeeds(%v, %v, %v)", args.ctx, args.req, args.psc))
+			tt.wantErr(t, svr.ObtainSeeds(args.req, args.seedsServer), fmt.Sprintf("ObtainSeeds(%v, %v)", args.req, args.seedsServer))
 		})
 	}
 }
@@ -173,14 +173,14 @@ func TestServer_GetPieceTasks(t *testing.T) {
 	}
 	tests := []struct {
 		name             string
-		createCallObject func(t *testing.T, args args) cdnRPCServer.SeederServer
+		createCallObject func(t *testing.T, args args) cdnsystem.SeederServer
 		createCallArgs   func() args
 		wantErr          assert.ErrorAssertionFunc
 		wantPiecePacket  *base.PiecePacket
 	}{
 		{
 			name: "task not found",
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			createCallObject: func(t *testing.T, args args) cdnsystem.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
 				cdnServiceMock.EXPECT().GetSeedTask(args.req.TaskId).Return(nil, dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s)",
@@ -206,7 +206,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 		},
 		{
 			name: "success get pieces",
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			createCallObject: func(t *testing.T, args args) cdnsystem.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
 				testTask := &task.SeedTask{
