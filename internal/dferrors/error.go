@@ -17,7 +17,11 @@
 package dferrors
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 // common and framework errors
@@ -29,3 +33,36 @@ var (
 	ErrEndOfStream     = errors.New("end of stream")
 	ErrNoCandidateNode = errors.New("no candidate server node")
 )
+
+type DfError struct {
+	Code    base.Code
+	Message string
+}
+
+func (s *DfError) Error() string {
+	return fmt.Sprintf("[%d]%s", s.Code, s.Message)
+}
+
+func New(code base.Code, msg string) *DfError {
+	return &DfError{
+		Code:    code,
+		Message: msg,
+	}
+}
+
+func Newf(code base.Code, format string, a ...interface{}) *DfError {
+	return &DfError{
+		Code:    code,
+		Message: fmt.Sprintf(format, a...),
+	}
+}
+
+func CheckError(err error, code base.Code) bool {
+	if err == nil {
+		return false
+	}
+
+	e, ok := err.(*DfError)
+
+	return ok && e.Code == code
+}

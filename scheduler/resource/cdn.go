@@ -80,7 +80,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Handle begin of piece
 		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			task.Log.Infof("receive begin o piece: %#v %#v", piece, piece.PieceInfo)
+			task.Log.Infof("receive begin of piece: %#v %#v", piece, piece.PieceInfo)
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
@@ -95,27 +95,6 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		// Handle end of piece
 		if piece.Done {
 			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
-
-			// Handle tiny scope size task
-			if piece.ContentLength <= TinyFileSize {
-				peer.Log.Info("peer type is tiny file")
-				data, err := peer.DownloadTinyFile(ctx)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				// Tiny file downloaded directly from CDN is exception
-				if len(data) != int(piece.ContentLength) {
-					return nil, nil, errors.Errorf(
-						"piece actual data length is different from content length, content length is %d, data length is %d",
-						piece.ContentLength, len(data),
-					)
-				}
-
-				// Tiny file downloaded successfully
-				task.DirectPiece = data
-			}
-
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
@@ -222,13 +201,23 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		return
 	}
 
-	// Update dynamic data
-	c.data = data
+	// If only the ip of the cdn host is changed,
+	// the cdn peer needs to be cleared.
+	diff := diffCDNs(c.data.CDNs, data.CDNs)
+	for _, v := range diff {
+		id := idgen.CDNHostID(v.Hostname, v.Port)
+		if host, ok := c.hostManager.Load(id); ok {
+			host.LeavePeers()
+		}
+	}
 
 	// Update host manager
 	for _, host := range cdnsToHosts(data.CDNs) {
 		c.hostManager.Store(host)
 	}
+
+	// Update dynamic data
+	c.data = data
 
 	// Update grpc cdn addresses
 	if err := c.UpdateAddresses(cdnsToNetAddrs(data.CDNs)); err != nil {
@@ -274,6 +263,44 @@ func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
 	}
 
 	return netAddrs
+}
+
+// diffCDNs get cdns with the same HostID but different IP
+func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
+	var diff []*config.CDN
+	for _, x := range cx {
+		for _, y := range cy {
+			if x.Hostname != y.Hostname {
+				continue
+			}
+
+			if x.Port != y.Port {
+				continue
+			}
+
+			if x.IP == y.IP {
+				continue
+			}
+
+			diff = append(diff, x)
+		}
+	}
+
+	for _, x := range cx {
+		found := false
+		for _, y := range cy {
+			if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			diff = append(diff, x)
+		}
+	}
+
+	return diff
 }
 
 // getCDNIPs get ips by []*config.CDN.

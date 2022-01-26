@@ -193,10 +193,12 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	if p, ok := ptm.findPeerTaskConductor(taskID); ok {
 		ptm.conductorLock.Unlock()
 		logger.Debugf("peer task found: %s/%s", p.taskID, p.peerID)
+		metrics.PeerTaskCacheHitCount.Add(1)
 		return p, false, nil
 	}
 	ptm.runningPeerTasks.Store(taskID, ptc)
 	ptm.conductorLock.Unlock()
+	metrics.PeerTaskCount.Add(1)
 	return ptc, true, nil
 }
 
@@ -204,7 +206,7 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {
-			metrics.PeerTaskReuseCount.Add(1)
+			metrics.PeerTaskCacheHitCount.Add(1)
 			return progress, nil, nil
 		}
 	}
@@ -239,7 +241,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	if ptm.enableMultiplex {
 		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, peerTaskRequest)
 		if ok {
-			metrics.PeerTaskReuseCount.Add(1)
+			metrics.PeerTaskCacheHitCount.Add(1)
 			return r, attr, nil
 		}
 	}

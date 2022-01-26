@@ -148,6 +148,14 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// Back to the source download process, peer directly returns
 		peer.Log.Info("peer back to source")
 		return
+	case resource.PeerStateReceivedTiny:
+		// When the task is tiny,
+		// the peer has already returned to piece data when registering
+		peer.Log.Info("file type is tiny, peer has already returned to piece data when registering")
+		if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+			peer.Log.Errorf("peer fsm event failed: %v", err)
+			return
+		}
 	case resource.PeerStateReceivedSmall:
 		// When the task is small,
 		// the peer has already returned to the parent when registering
@@ -221,26 +229,18 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 		peer.Log.Infof("parent %s is cdn", piece.DstPid)
 		fallthrough
 	case base.Code_CDNTaskNotFound:
-		// CDN peer exists in the scheduler, but the peer information in the cdn service has been recycled.
-		// Scheduler need to redownload cdn peer.
-		if err := parent.FSM.Event(resource.PeerEventRestart); err != nil {
-			peer.Log.Errorf("peer fsm event failed: %v", err)
-			break
-		}
-
+		c.PeerFail(ctx, parent)
 		go func() {
 			parent.Log.Info("cdn restart seed task")
-			parent, endOfPiece, err := c.resource.CDN().TriggerTask(context.Background(), parent.Task)
+			cdnPeer, endOfPiece, err := c.resource.CDN().TriggerTask(context.Background(), parent.Task)
 			if err != nil {
 				peer.Log.Errorf("retrigger task failed: %v", err)
-
 				c.TaskFail(ctx, parent.Task)
-				c.PeerFail(ctx, parent)
 				return
 			}
 
-			c.TaskSuccess(ctx, parent.Task, endOfPiece)
-			c.PeerSuccess(ctx, parent)
+			c.TaskSuccess(ctx, cdnPeer.Task, endOfPiece)
+			c.PeerSuccess(ctx, cdnPeer)
 		}()
 	default:
 	}
@@ -260,9 +260,8 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
-	if peer.FSM.Is(resource.PeerStateBackToSource) && peer.Task.SizeScope() == base.SizeScope_TINY {
-		peer.Log.Info("peer state is PeerStateBackToSource and type is tiny file")
-		data, err := peer.DownloadTinyFile(ctx)
+	if peer.Task.SizeScope() == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+		data, err := peer.DownloadTinyFile()
 		if err == nil && len(data) == int(peer.Task.ContentLength.Load()) {
 			// Tiny file downloaded successfully
 			peer.Task.DirectPiece = data
@@ -326,6 +325,10 @@ func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
 func (c *callback) TaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
+	if task.FSM.Is(resource.TaskStateSucceeded) {
+		return
+	}
+
 	if err := task.FSM.Event(resource.TaskEventDownloadSucceeded); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
@@ -340,6 +343,10 @@ func (c *callback) TaskSuccess(ctx context.Context, task *resource.Task, result 
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
 func (c *callback) TaskFail(ctx context.Context, task *resource.Task) {
+	if task.FSM.Is(resource.TaskStateFailed) {
+		return
+	}
+
 	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return

@@ -245,6 +245,7 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 
 	lock := flock.New(dfgetLockPath)
 	if err := lock.Lock(); err != nil {
+		logger.Errorf("flock lock failed %s", err)
 		return nil, err
 	}
 

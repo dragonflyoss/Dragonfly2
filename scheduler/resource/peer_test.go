@@ -17,15 +17,16 @@
 package resource
 
 import (
-	"context"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path"
 	"strconv"
 	"testing"
-	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
@@ -145,12 +146,6 @@ func TestPeer_StoreChild(t *testing.T) {
 				child, ok = peer.LoadChild(childID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, childID)
-				child, ok = peer.Host.LoadPeer(childID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, childID)
-				child, ok = peer.Task.LoadPeer(childID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, childID)
 				parent, ok = child.LoadParent()
 				assert.Equal(ok, true)
 				assert.Equal(parent.ID, peer.ID)
@@ -168,12 +163,6 @@ func TestPeer_StoreChild(t *testing.T) {
 					ok     bool
 				)
 				child, ok = peer.LoadChild(childID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, childID)
-				child, ok = peer.Host.LoadPeer(childID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, childID)
-				child, ok = peer.Task.LoadPeer(childID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, childID)
 				parent, ok = child.LoadParent()
@@ -212,10 +201,6 @@ func TestPeer_DeleteChild(t *testing.T) {
 				var ok bool
 				_, ok = peer.LoadChild(mockChildPeer.ID)
 				assert.Equal(ok, false)
-				_, ok = peer.Host.LoadPeer(mockChildPeer.ID)
-				assert.Equal(ok, false)
-				_, ok = peer.Task.LoadPeer(mockChildPeer.ID)
-				assert.Equal(ok, false)
 				_, ok = mockChildPeer.LoadParent()
 				assert.Equal(ok, false)
 			},
@@ -233,12 +218,6 @@ func TestPeer_DeleteChild(t *testing.T) {
 					ok     bool
 				)
 				child, ok = peer.LoadChild(mockChildPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, mockChildPeer.ID)
-				child, ok = peer.Host.LoadPeer(mockChildPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, mockChildPeer.ID)
-				child, ok = peer.Task.LoadPeer(mockChildPeer.ID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, mockChildPeer.ID)
 				parent, ok = child.LoadParent()
@@ -376,12 +355,6 @@ func TestPeer_StoreParent(t *testing.T) {
 				child, ok = parent.LoadChild(peer.ID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
-				child, ok = peer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = peer.Host.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
 			},
 		},
 		{
@@ -399,12 +372,6 @@ func TestPeer_StoreParent(t *testing.T) {
 				assert.Equal(ok, true)
 				assert.Equal(parent.ID, parentID)
 				child, ok = parent.LoadChild(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = peer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = peer.Host.LoadPeer(peer.ID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 			},
@@ -443,10 +410,6 @@ func TestPeer_DeleteParent(t *testing.T) {
 				assert.Equal(ok, false)
 				_, ok = mockParentPeer.LoadChild(peer.ID)
 				assert.Equal(ok, false)
-				_, ok = mockParentPeer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, false)
-				_, ok = mockParentPeer.Host.LoadPeer(peer.ID)
-				assert.Equal(ok, false)
 			},
 		},
 		{
@@ -460,10 +423,6 @@ func TestPeer_DeleteParent(t *testing.T) {
 				_, ok = peer.LoadParent()
 				assert.Equal(ok, false)
 				_, ok = mockParentPeer.LoadChild(peer.ID)
-				assert.Equal(ok, false)
-				_, ok = mockParentPeer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, false)
-				_, ok = mockParentPeer.Host.LoadPeer(peer.ID)
 				assert.Equal(ok, false)
 			},
 		},
@@ -510,12 +469,6 @@ func TestPeer_ReplaceParent(t *testing.T) {
 				child, ok = mockNewParentPeer.LoadChild(peer.ID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
-				child, ok = mockNewParentPeer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = mockNewParentPeer.Host.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
 			},
 		},
 		{
@@ -537,12 +490,6 @@ func TestPeer_ReplaceParent(t *testing.T) {
 				_, ok = mockOldParentPeer.LoadChild(peer.ID)
 				assert.Equal(ok, false)
 				child, ok = mockNewParentPeer.LoadChild(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = mockNewParentPeer.Task.LoadPeer(peer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(child.ID, peer.ID)
-				child, ok = mockNewParentPeer.Host.LoadPeer(peer.ID)
 				assert.Equal(ok, true)
 				assert.Equal(child.ID, peer.ID)
 			},
@@ -867,7 +814,17 @@ func TestPeer_DeleteStream(t *testing.T) {
 
 func TestPeer_DownloadTinyFile(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
+		if path.Base(r.URL.Path) == "foo" {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		if r.Header.Get(headers.Range) == "bytes=0-2" {
+			w.WriteHeader(http.StatusNotAcceptable)
+			return
+		}
+
+		w.WriteHeader(http.StatusPartialContent)
 	}))
 	defer s.Close()
 
@@ -879,35 +836,28 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			name: "download tiny file",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
+				_, err := peer.DownloadTinyFile()
 				assert.NoError(err)
 			},
 		},
 		{
-			name: "download tiny file failed because of port error",
+			name: "download tiny file with range header",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Host.DownloadPort = 8000
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
-				assert.Error(err)
+				peer.Task.ContentLength.Store(2)
+				_, err := peer.DownloadTinyFile()
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 406 Not Acceptable",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
 			},
 		},
 		{
-			name: "download tiny file failed because of ip error",
+			name: "download tiny file failed because of http status code",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Host.IP = "127.0.0.2"
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-				defer cancel()
-
-				_, err := peer.DownloadTinyFile(ctx)
-				assert.Error(err)
+				peer.Task.ID = "foo"
+				_, err := peer.DownloadTinyFile()
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 404 Not Found",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
 			},
 		},
 	}

@@ -18,6 +18,7 @@ package rpcserver
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -185,7 +186,16 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
 	logger.Infof("get piece tasks: %#s", req)
 	defer func() {
-		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
+		if r := recover(); r != nil {
+			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
+			span.RecordError(err)
+		}
+		if err != nil {
+			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
+		} else {
+			logger.WithTaskID(req.TaskId).Infof("get piece tasks success, availablePieceCount(%d), totalPieceCount(%d), pieceMd5Sign(%s), "+
+				"contentLength(%d)", len(piecePacket.PieceInfos), piecePacket.TotalPiece, piecePacket.PieceMd5Sign, piecePacket.ContentLength)
+		}
 	}()
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {

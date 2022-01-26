@@ -167,6 +167,47 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
+			name: "length of direct piece is zero",
+			req:  &rpcscheduler.PeerTaskRequest{},
+			mock: func(req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, scheduler scheduler.Scheduler, ms *mocks.MockServiceMockRecorder, msched *schedulermocks.MockSchedulerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateSucceeded)
+
+				gomock.InOrder(
+					ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1),
+					ms.LoadOrStoreHost(context.Background(), req).Return(mockHost, true).Times(1),
+					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
+					ms.Scheduler().Return(scheduler).Times(1),
+					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.Equal(result.TaskId, mockTaskID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+			},
+		},
+		{
+			name: "task content length is not equal to length of direct piece",
+			req:  &rpcscheduler.PeerTaskRequest{},
+			mock: func(req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, scheduler scheduler.Scheduler, ms *mocks.MockServiceMockRecorder, msched *schedulermocks.MockSchedulerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateSucceeded)
+				mockTask.DirectPiece = []byte{1}
+
+				gomock.InOrder(
+					ms.RegisterTask(context.Background(), req).Return(mockTask, nil).Times(1),
+					ms.LoadOrStoreHost(context.Background(), req).Return(mockHost, true).Times(1),
+					ms.LoadOrStorePeer(context.Background(), req, gomock.Any(), gomock.Any()).Return(mockPeer, true).Times(1),
+					ms.Scheduler().Return(scheduler).Times(1),
+					msched.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, false).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.Equal(result.TaskId, mockTaskID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+			},
+		},
+		{
 			name: "task state is TaskStateRunning and peer state is PeerStateFailed",
 			req:  &rpcscheduler.PeerTaskRequest{},
 			mock: func(req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, scheduler scheduler.Scheduler, ms *mocks.MockServiceMockRecorder, msched *schedulermocks.MockSchedulerMockRecorder) {
@@ -206,7 +247,7 @@ func TestRPCServer_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.DirectPiece, &rpcscheduler.RegisterResult_PieceContent{
 					PieceContent: []byte{1},
 				})
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedTiny))
 			},
 		},
 		{
