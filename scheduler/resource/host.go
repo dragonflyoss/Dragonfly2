@@ -167,7 +167,7 @@ func (h *Host) LenPeers() int {
 
 // LeavePeers set peer state to PeerStateLeave
 func (h *Host) LeavePeers() {
-	h.Peers.Range(func(key, value interface{}) bool {
+	h.Peers.Range(func(_, value interface{}) bool {
 		if peer, ok := value.(*Peer); ok {
 			if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -179,7 +179,7 @@ func (h *Host) LeavePeers() {
 				return true
 			}
 
-			peer.Log.Info("peer has been left")
+			h.Log.Infof("peer %s has been left", peer.ID)
 		}
 
 		return true
