@@ -26,10 +26,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/cdn/supervisor/mocks"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnMocks "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/mocks"
@@ -183,7 +184,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 			createCallObject: func(t *testing.T, args args) cdnsystem.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
-				cdnServiceMock.EXPECT().GetSeedTask(args.req.TaskId).Return(nil, dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s)",
+				cdnServiceMock.EXPECT().GetSeedTask(args.req.TaskId).Return(nil, status.Errorf(codes.Code(base.Code_CDNTaskNotFound), "failed to get task(%s)",
 					args.req.TaskId)).Times(1)
 				cdnServiceMock.EXPECT().GetSeedPieces(gomock.Any()).Times(0)
 				server, _ := New(Config{}, cdnServiceMock)

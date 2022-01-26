@@ -33,7 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -186,10 +185,6 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
 	logger.Infof("get piece tasks: %#s", req)
 	defer func() {
-		if r := recover(); r != nil {
-			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
-			span.RecordError(err)
-		}
 		if err != nil {
 			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
 		} else {
