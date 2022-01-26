@@ -43,8 +43,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-var _ scheduler.SchedulerServer = (*testServer)(nil)
-
 type testServer struct {
 	scheduler.UnimplementedSchedulerServer
 

@@ -33,8 +33,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-var _ SchedulerClient = (*schedulerClient)(nil)
-
 func GetClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of scheduler is empty")
