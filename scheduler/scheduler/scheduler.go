@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"sort"
+	"time"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -30,23 +31,114 @@ import (
 
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
-	ScheduleParent(context.Context, *resource.Peer, set.SafeSet) ([]*resource.Peer, bool)
+	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
+
+	// Find the parent that best matches the evaluation and notify peer
+	NotifyAndFindParent(context.Context, *resource.Peer, set.SafeSet) ([]*resource.Peer, bool)
 
 	// Find the parent that best matches the evaluation
 	FindParent(context.Context, *resource.Peer, set.SafeSet) (*resource.Peer, bool)
 }
 
 type scheduler struct {
+	// Evaluator interface
 	evaluator evaluator.Evaluator
+
+	// Scheduler configuration
+	config *config.SchedulerConfig
 }
 
 func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
 	return &scheduler{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
+		config:    cfg,
 	}
 }
 
-func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) ([]*resource.Peer, bool) {
+// ScheduleParent schedule a parent and candidates to a peer
+func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) {
+	var n int
+	for {
+		select {
+		case <-ctx.Done():
+			peer.Log.Infof("context was done")
+			return
+		default:
+		}
+
+		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
+		// peer will download the task back-to-source
+		cdnPeer, ok := peer.Task.LoadCDNPeer()
+		if (n >= s.config.RetryBackSourceLimit ||
+			ok && cdnPeer.FSM.Is(resource.PeerStateFailed)) &&
+			peer.Task.CanBackToSource() {
+			stream, ok := peer.LoadStream()
+			if !ok {
+				peer.Log.Error("load stream failed")
+				return
+			}
+
+			// Notify peer back-to-source
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+				peer.Log.Errorf("send packet failed: %v", err)
+				return
+			}
+			peer.Log.Infof("peer scheduling %d times and back-to-source limit %d times, cdn peer is %#v, return code %d",
+				n, s.config.RetryBackSourceLimit, cdnPeer, base.Code_SchedNeedBackSource)
+
+			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %v", err)
+				return
+			}
+
+			// If the task state is TaskStateFailed,
+			// peer back-to-source and reset task state to TaskStateRunning
+			if peer.Task.FSM.Is(resource.TaskStateFailed) {
+				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
+					peer.Task.Log.Errorf("task fsm event failed: %v", err)
+					return
+				}
+			}
+
+			// If the peer downloads back-to-source, its parent needs to be deleted
+			peer.DeleteParent()
+			peer.Task.Log.Info("peer back to source successfully")
+			return
+		}
+
+		// Handle peer schedule failed
+		if n >= s.config.RetryLimit {
+			stream, ok := peer.LoadStream()
+			if !ok {
+				peer.Log.Error("load stream failed")
+				return
+			}
+
+			// Notify peer schedule failed
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
+				peer.Log.Errorf("send packet failed: %v", err)
+				return
+			}
+			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
+			return
+		}
+
+		if _, ok := s.NotifyAndFindParent(ctx, peer, blocklist); !ok {
+			n++
+			peer.Log.Infof("reschedule parent %d times failed", n)
+
+			// Sleep to avoid hot looping
+			time.Sleep(s.config.RetryInterval)
+			continue
+		}
+
+		peer.Log.Infof("reschedule parent %d times successfully", n+1)
+		return
+	}
+}
+
+// NotifyAndFindParent finds parent that best matches the evaluation and notify peer
+func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) ([]*resource.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
 	// they have been scheduled
@@ -88,6 +180,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 	return parents, true
 }
 
+// FindParent finds parent that best matches the evaluation
 func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) (*resource.Peer, bool) {
 	// Filter the parent that can be scheduled
 	parents := s.filterParents(peer, blocklist)
@@ -158,6 +251,7 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 	return parents
 }
 
+// Construct peer successful packet
 func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {

@@ -71,21 +71,31 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		return nil, nil, err
 	}
 
-	var peer *Peer
+	var (
+		peer        *Peer
+		initialized bool
+	)
+
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
 			return nil, nil, err
 		}
 
-		// Handle begin of piece
-		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			task.Log.Infof("receive begin of piece: %#v %#v", piece, piece.PieceInfo)
+		if !initialized {
+			initialized = true
+
+			// Initialize cdn peer
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
+		}
 
+		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
+
+		// Handle begin of piece
+		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
@@ -94,15 +104,13 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Handle end of piece
 		if piece.Done {
-			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
 			}, nil
 		}
 
-		// Update piece info
-		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
+		// Handle piece download successfully
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 		// TODO(244372610) CDN should set piece cost
 		peer.AppendPieceCost(0)

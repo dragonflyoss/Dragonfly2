@@ -18,7 +18,6 @@ package service
 
 import (
 	"context"
-	"time"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -29,7 +28,6 @@ import (
 )
 
 type Callback interface {
-	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
 	BeginOfPiece(context.Context, *resource.Peer)
 	EndOfPiece(context.Context, *resource.Peer)
 	PieceSuccess(context.Context, *resource.Peer, *rpcscheduler.PieceResult)
@@ -57,88 +55,6 @@ func newCallback(cfg *config.Config, resource resource.Resource, scheduler sched
 		config:    cfg,
 		resource:  resource,
 		scheduler: scheduler,
-	}
-}
-
-// Repeat schedule parent for peer
-func (c *callback) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) {
-	var n int
-	for {
-		select {
-		case <-ctx.Done():
-			peer.Log.Infof("context was done")
-			return
-		default:
-		}
-
-		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
-		// peer will download the task back-to-source
-		cdnPeer, ok := peer.Task.LoadCDNPeer()
-		if (n >= c.config.Scheduler.RetryBackSourceLimit ||
-			ok && cdnPeer.FSM.Is(resource.PeerStateFailed)) &&
-			peer.Task.CanBackToSource() {
-			stream, ok := peer.LoadStream()
-			if !ok {
-				peer.Log.Error("load stream failed")
-				return
-			}
-
-			// Notify peer back-to-source
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
-				peer.Log.Errorf("send packet failed: %v", err)
-				return
-			}
-			peer.Log.Infof("peer scheduling %d times and back-to-source limit %d times, cdn peer is %#v, return code %d",
-				n, c.config.Scheduler.RetryBackSourceLimit, cdnPeer, base.Code_SchedNeedBackSource)
-
-			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
-				return
-			}
-
-			// If the task state is TaskStateFailed,
-			// peer back-to-source and reset task state to TaskStateRunning
-			if peer.Task.FSM.Is(resource.TaskStateFailed) {
-				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
-					peer.Task.Log.Errorf("task fsm event failed: %v", err)
-					return
-				}
-			}
-
-			// If the peer downloads back-to-source, its parent needs to be deleted
-			peer.DeleteParent()
-			peer.Task.Log.Info("peer back to source successfully")
-			return
-		}
-
-		// Handle peer schedule failed
-		if n >= c.config.Scheduler.RetryLimit {
-			stream, ok := peer.LoadStream()
-			if !ok {
-				peer.Log.Error("load stream failed")
-				return
-			}
-
-			// Notify peer schedule failed
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
-				peer.Log.Errorf("send packet failed: %v", err)
-				return
-			}
-			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", c.config.Scheduler.RetryLimit, base.Code_SchedTaskStatusError)
-			return
-		}
-
-		if _, ok := c.scheduler.ScheduleParent(ctx, peer, blocklist); !ok {
-			n++
-			peer.Log.Infof("reschedule parent %d times failed", n)
-
-			// Sleep to avoid hot looping
-			time.Sleep(c.config.Scheduler.RetryInterval)
-			continue
-		}
-
-		peer.Log.Infof("reschedule parent %d times successfully", n+1)
-		return
 	}
 }
 
@@ -174,7 +90,7 @@ func (c *callback) BeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// to help peer to schedule the parent node
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
-		c.ScheduleParent(ctx, peer, blocklist)
+		c.scheduler.ScheduleParent(ctx, peer, blocklist)
 	default:
 		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}
@@ -205,7 +121,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	parent, ok := c.resource.PeerManager().Load(piece.DstPid)
 	if !ok {
 		peer.Log.Errorf("can not found parent %s and reschedule", piece.DstPid)
-		c.ScheduleParent(ctx, peer, set.NewSafeSet())
+		c.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 		return
 	}
 
@@ -254,7 +170,7 @@ func (c *callback) PieceFail(ctx context.Context, peer *resource.Peer, piece *rp
 	blocklist := set.NewSafeSet()
 	blocklist.Add(parent.ID)
 
-	c.ScheduleParent(ctx, peer, blocklist)
+	c.scheduler.ScheduleParent(ctx, peer, blocklist)
 }
 
 func (c *callback) PeerSuccess(ctx context.Context, peer *resource.Peer) {
@@ -292,7 +208,7 @@ func (c *callback) PeerFail(ctx context.Context, peer *resource.Peer) {
 			return true
 		}
 
-		c.ScheduleParent(ctx, child, blocklist)
+		c.scheduler.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
 }
@@ -313,7 +229,7 @@ func (c *callback) PeerLeave(ctx context.Context, peer *resource.Peer) {
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
 
-		c.ScheduleParent(ctx, child, blocklist)
+		c.scheduler.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
 
