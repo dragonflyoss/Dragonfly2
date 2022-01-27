@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/scheduler_mock.go -source scheduler.go -package mocks
+
 package scheduler
 
 import (
