@@ -127,14 +127,14 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 		if _, ok := s.NotifyAndFindParent(ctx, peer, blocklist); !ok {
 			n++
-			peer.Log.Infof("reschedule parent %d times failed", n)
+			peer.Log.Infof("schedule parent %d times failed", n)
 
 			// Sleep to avoid hot looping
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
 
-		peer.Log.Infof("reschedule parent %d times successfully", n+1)
+		peer.Log.Infof("schedule parent %d times successfully", n+1)
 		return
 	}
 }

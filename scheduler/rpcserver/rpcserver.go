@@ -19,26 +19,26 @@ package rpcserver
 import (
 	"context"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/service"
-	"github.com/golang/protobuf/ptypes/empty"
 )
 
 // Server is grpc sercer
 type Server struct {
 	// Service interface
-	service service.Service
+	service *service.Service
 
 	// GRPC UnimplementedSchedulerServer interface
 	scheduler.UnimplementedSchedulerServer
 }
 
 // New returns a new transparent scheduler server from the given options
-func New(service service.Service, opts ...grpc.ServerOption) *grpc.Server {
+func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
 	scheduler.RegisterSchedulerServer(grpcServer, svr)

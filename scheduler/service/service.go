@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/service_mock.go -source service.go -package mocks
-
 package service
 
 import (
@@ -37,20 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 )
 
-type Service interface {
-	// CDN is cdn resource
-	CDN() resource.CDN
-	// RegisterPeerTask registers peer and triggers CDN download task
-	RegisterPeerTask(context.Context, *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error)
-	// ReportPieceResult handles the piece information reported by dfdaemon
-	ReportPieceResult(rpcscheduler.Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult handles peer result reported by dfdaemon
-	ReportPeerResult(context.Context, *rpcscheduler.PeerResult) error
-	// LeaveTask makes the peer unschedulable
-	LeaveTask(context.Context, *rpcscheduler.PeerTarget) error
-}
-
-type service struct {
+type Service struct {
 	// Resource interface
 	resource resource.Resource
 
@@ -70,9 +55,9 @@ func New(
 	resource resource.Resource,
 	scheduler scheduler.Scheduler,
 	dynconfig config.DynconfigInterface,
-) Service {
+) *Service {
 
-	return &service{
+	return &Service{
 		resource:  resource,
 		scheduler: scheduler,
 		config:    cfg,
@@ -81,12 +66,12 @@ func New(
 }
 
 // CDN is cdn resource
-func (s *service) CDN() resource.CDN {
+func (s *Service) CDN() resource.CDN {
 	return s.resource.CDN()
 }
 
 // RegisterPeerTask registers peer and triggers CDN download task
-func (s *service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
+func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
 	// Register task and trigger cdn download task
 	task, err := s.registerTask(ctx, req)
 	if err != nil {
@@ -217,7 +202,7 @@ func (s *service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 }
 
 // ReportPieceResult handles the piece information reported by dfdaemon
-func (s *service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceResultServer) error {
+func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceResultServer) error {
 	ctx := stream.Context()
 	var (
 		peer        *resource.Peer
@@ -238,7 +223,7 @@ func (s *service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 			if err == io.EOF {
 				return nil
 			}
-			logger.Errorf("peer %s receive error: %v", piece.SrcPid, err)
+			logger.Errorf("receive piece %#v error: %v", piece, err)
 			return err
 		}
 
@@ -264,11 +249,13 @@ func (s *service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 			// Handle begin of piece
 			if piece.PieceInfo.PieceNum == common.BeginOfPiece {
 				s.handleBeginOfPiece(ctx, peer)
+				continue
 			}
 
 			// Handle end of piece
 			if piece.PieceInfo.PieceNum == common.EndOfPiece {
 				s.handleEndOfPiece(ctx, peer)
+				continue
 			}
 		}
 
@@ -285,6 +272,7 @@ func (s *service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
 				}
 			}
+			continue
 		}
 
 		// Handle piece download code
@@ -303,7 +291,7 @@ func (s *service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 }
 
 // ReportPeerResult handles peer result reported by dfdaemon
-func (s *service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerResult) error {
+func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerResult) error {
 	peer, ok := s.resource.PeerManager().Load(req.PeerId)
 	if !ok {
 		logger.Errorf("report peer result: peer %s is not exists", req.PeerId)
@@ -312,14 +300,14 @@ func (s *service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 
 	peer.Log.Infof("report peer result request: %#v", req)
 	if !req.Success {
-		if peer.Task.BackToSourcePeers.Contains(peer) {
+		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			s.handleTaskFail(ctx, peer.Task)
 		}
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
 
-	if peer.Task.BackToSourcePeers.Contains(peer) {
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		s.handleTaskSuccess(ctx, peer.Task, req)
 	}
 	s.handlePeerSuccess(ctx, peer)
@@ -327,7 +315,7 @@ func (s *service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 }
 
 // LeaveTask makes the peer unschedulable
-func (s *service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) error {
+func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) error {
 	peer, ok := s.resource.PeerManager().Load(req.PeerId)
 	if !ok {
 		logger.Errorf("leave task: peer %s is not exists", req.PeerId)
@@ -335,15 +323,35 @@ func (s *service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	}
 
 	peer.Log.Infof("leave task request: %#v", req)
-	s.handlePeerLeave(ctx, peer)
+	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
+		peer.Log.Errorf("peer fsm event failed: %v", err)
+		return dferrors.Newf(base.Code_SchedTaskStatusError, err.Error())
+	}
+
+	peer.Children.Range(func(_, value interface{}) bool {
+		child, ok := value.(*resource.Peer)
+		if !ok {
+			return true
+		}
+
+		// Reschedule a new parent to children of peer to exclude the current leave peer
+		blocklist := set.NewSafeSet()
+		blocklist.Add(peer.ID)
+
+		s.scheduler.ScheduleParent(ctx, child, blocklist)
+		return true
+	})
+
+	peer.DeleteParent()
+	s.resource.PeerManager().Delete(peer.ID)
 	return nil
 }
 
 // registerTask creates a new task or reuses a previous task
-func (s *service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
+func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
-	task, ok := s.resource.TaskManager().LoadOrStore(task)
-	if ok && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.LenAvailablePeers() != 0 {
+	task, loaded := s.resource.TaskManager().LoadOrStore(task)
+	if loaded && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.LenAvailablePeers() != 0 {
 		// Task is healthy and can be reused
 		task.UpdateAt.Store(time.Now())
 		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
@@ -374,7 +382,7 @@ func (s *service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 }
 
 // registerHost creates a new host or reuses a previous host
-func (s *service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *resource.Host {
+func (s *Service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *resource.Host {
 	rawHost := req.PeerHost
 	host, ok := s.resource.HostManager().Load(rawHost.Uuid)
 	if !ok {
@@ -395,7 +403,7 @@ func (s *service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRe
 }
 
 // registerPeer creates a new peer or reuses a previous peer
-func (s *service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) *resource.Peer {
+func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) *resource.Peer {
 	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(req.PeerId, task, host))
 	if !loaded {
 		peer.Log.Info("create new peer")
@@ -407,7 +415,7 @@ func (s *service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRe
 }
 
 // handleBeginOfPiece handles begin of piece
-func (s *service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
+func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 	switch peer.FSM.Current() {
 	case resource.PeerStateBackToSource:
 		// Back to the source download process, peer directly returns
@@ -446,10 +454,10 @@ func (s *service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 }
 
 // handleEndOfPiece handles end of piece
-func (s *service) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
+func (s *Service) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 // handlePieceSuccess handles successful piece
-func (s *service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
+func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(int64(piece.EndTime - piece.BeginTime))
@@ -462,7 +470,7 @@ func (s *service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, p
 }
 
 // handlePieceFail handles failed piece
-func (s *service) handlePieceFail(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
+func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Failed to download piece back-to-source
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		peer.Log.Error("peer back to source finished with fail piece")
@@ -526,7 +534,7 @@ func (s *service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 }
 
 // handlePeerSuccess handles successful peer
-func (s *service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
+func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
 	if peer.Task.SizeScope() == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
@@ -546,7 +554,7 @@ func (s *service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 }
 
 // handlePeerFail handles failed peer
-func (s *service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
+func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %v", err)
 		return
@@ -567,35 +575,10 @@ func (s *service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	})
 }
 
-// handlePeerLeave handles leaving peer
-func (s *service) handlePeerLeave(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
-		peer.Log.Errorf("peer fsm event failed: %v", err)
-		return
-	}
-
-	peer.Children.Range(func(_, value interface{}) bool {
-		child, ok := value.(*resource.Peer)
-		if !ok {
-			return true
-		}
-
-		// Reschedule a new parent to children of peer to exclude the current leave peer
-		blocklist := set.NewSafeSet()
-		blocklist.Add(peer.ID)
-
-		s.scheduler.ScheduleParent(ctx, child, blocklist)
-		return true
-	})
-
-	peer.DeleteParent()
-	s.resource.PeerManager().Delete(peer.ID)
-}
-
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
-func (s *service) handleTaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
+func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
 	if task.FSM.Is(resource.TaskStateSucceeded) {
 		return
 	}
@@ -613,7 +596,7 @@ func (s *service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
-func (s *service) handleTaskFail(ctx context.Context, task *resource.Task) {
+func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
 	if task.FSM.Is(resource.TaskStateFailed) {
 		return
 	}
