@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination resource_mock.go -source resource.go -package resource
+
 package resource
 
 import (

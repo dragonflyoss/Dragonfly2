@@ -39,11 +39,11 @@ type job struct {
 	globalJob    *internaljob.Job
 	schedulerJob *internaljob.Job
 	localJob     *internaljob.Job
-	service      service.Service
+	service      *service.Service
 	config       *config.Config
 }
 
-func New(cfg *config.Config, service service.Service) (Job, error) {
+func New(cfg *config.Config, service *service.Service) (Job, error) {
 	redisConfig := &internaljob.Config{
 		Host:      cfg.Job.Redis.Host,
 		Port:      cfg.Job.Redis.Port,

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/dynconfig_mock.go -source dynconfig.go -package mocks
+
 package config
 
 import (

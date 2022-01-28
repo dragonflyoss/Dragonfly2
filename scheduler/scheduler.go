@@ -137,7 +137,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)
-	s.grpcServer = svr.Server
+	s.grpcServer = svr
 
 	// Initialize job service
 	if cfg.Job.Enable {
