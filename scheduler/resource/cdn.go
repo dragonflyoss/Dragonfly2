@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination cdn_mock.go -source cdn.go -package resource
+
 package resource
 
 import (
@@ -71,21 +73,31 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		return nil, nil, err
 	}
 
-	var peer *Peer
+	var (
+		peer        *Peer
+		initialized bool
+	)
+
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
 			return nil, nil, err
 		}
 
-		// Handle begin of piece
-		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
-			task.Log.Infof("receive begin o piece: %#v %#v", piece, piece.PieceInfo)
+		if !initialized {
+			initialized = true
+
+			// Initialize cdn peer
 			peer, err = c.initPeer(task, piece)
 			if err != nil {
 				return nil, nil, err
 			}
+		}
 
+		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
+
+		// Handle begin of piece
+		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
@@ -94,36 +106,13 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Handle end of piece
 		if piece.Done {
-			peer.Log.Infof("receive end of piece: %#v %#v", piece, piece.PieceInfo)
-
-			// Handle tiny scope size task
-			if piece.ContentLength <= TinyFileSize {
-				peer.Log.Info("peer type is tiny file")
-				data, err := peer.DownloadTinyFile(ctx)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				// Tiny file downloaded directly from CDN is exception
-				if len(data) != int(piece.ContentLength) {
-					return nil, nil, errors.Errorf(
-						"piece actual data length is different from content length, content length is %d, data length is %d",
-						piece.ContentLength, len(data),
-					)
-				}
-
-				// Tiny file downloaded successfully
-				task.DirectPiece = data
-			}
-
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
 			}, nil
 		}
 
-		// Update piece info
-		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
+		// Handle piece download successfully
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
 		// TODO(244372610) CDN should set piece cost
 		peer.AppendPieceCost(0)
@@ -222,13 +211,23 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		return
 	}
 
-	// Update dynamic data
-	c.data = data
+	// If only the ip of the cdn host is changed,
+	// the cdn peer needs to be cleared.
+	diff := diffCDNs(c.data.CDNs, data.CDNs)
+	for _, v := range diff {
+		id := idgen.CDNHostID(v.Hostname, v.Port)
+		if host, ok := c.hostManager.Load(id); ok {
+			host.LeavePeers()
+		}
+	}
 
 	// Update host manager
 	for _, host := range cdnsToHosts(data.CDNs) {
 		c.hostManager.Store(host)
 	}
+
+	// Update dynamic data
+	c.data = data
 
 	// Update grpc cdn addresses
 	c.UpdateState(cdnsToNetAddrs(data.CDNs))
@@ -272,6 +271,44 @@ func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
 	}
 
 	return netAddrs
+}
+
+// diffCDNs get cdns with the same HostID but different IP
+func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
+	var diff []*config.CDN
+	for _, x := range cx {
+		for _, y := range cy {
+			if x.Hostname != y.Hostname {
+				continue
+			}
+
+			if x.Port != y.Port {
+				continue
+			}
+
+			if x.IP == y.IP {
+				continue
+			}
+
+			diff = append(diff, x)
+		}
+	}
+
+	for _, x := range cx {
+		found := false
+		for _, y := range cy {
+			if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			diff = append(diff, x)
+		}
+	}
+
+	return diff
 }
 
 // getCDNIPs get ips by []*config.CDN.

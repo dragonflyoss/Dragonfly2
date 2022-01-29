@@ -25,6 +25,13 @@ database:
     host: dragonfly
     port: 3306
     dbname: manager
+  # tls:
+  #   # client certificate file path
+  #   cert: /etc/ssl/certs/cert.pem
+  #   # client key file path
+  #   key: /etc/ssl/private/key.pem
+  #   # ca file path
+  #   ca: /etc/ssl/certs/ca.pem
   # redis configure
   redis:
     password: dragonfly

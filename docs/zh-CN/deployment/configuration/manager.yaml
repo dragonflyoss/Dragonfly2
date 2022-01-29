@@ -24,6 +24,13 @@ database:
     host: dragonfly
     port: 3306
     dbname: manager
+  # tls:
+  #   # 客户端证书文件路径
+  #   cert: /etc/ssl/certs/cert.pem
+  #   # 客户端私钥文件路径
+  #   key: /etc/ssl/private/key.pem
+  #   # CA 证书文件路径
+  #   ca: /etc/ssl/certs/ca.pem
   # redis 配置
   redis:
     password: dragonfly

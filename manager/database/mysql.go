@@ -18,8 +18,10 @@ package database
 
 import (
 	"fmt"
+	"time"
 
-	"gorm.io/driver/mysql"
+	"github.com/go-sql-driver/mysql"
+	drivermysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"moul.io/zapgorm2"
@@ -35,16 +37,19 @@ const (
 )
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
-	logger := zapgorm2.New(logger.CoreLogger.Desugar())
+	// Format dsn string
+	dsn, err := formatDSN(cfg)
+	if err != nil {
+		return nil, err
+	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=true", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-	dialector := mysql.Open(dsn)
-	db, err := gorm.Open(dialector, &gorm.Config{
+	// Connect to mysql
+	db, err := gorm.Open(drivermysql.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
 		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   logger,
+		Logger:                                   zapgorm2.New(logger.CoreLogger.Desugar()),
 	})
 	if err != nil {
 		return nil, err
@@ -65,11 +70,34 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	return db, nil
 }
 
-// TODO support mysql ssl
-// Refer to https://github.com/dexidp/dex/blob/ff6e7c7688f363841f5cb8ffe12b41b990042f58/storage/ent/mysql.go
-// https://github.com/cloudfoundry-incubator/notifications/blob/24e4d7cb633b7c14abe3797ebfadb7a1c539724e/application/mother.go
-// https://stackoverflow.com/questions/52962028/how-to-create-ssl-connection-to-mysql-with-gorm
-// https://pkg.go.dev/github.com/go-sql-driver/mysql#Config
+func formatDSN(cfg *config.MysqlConfig) (string, error) {
+	mysqlCfg := mysql.Config{
+		User:                 cfg.User,
+		Passwd:               cfg.Password,
+		Addr:                 fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Net:                  "tcp",
+		DBName:               cfg.DBName,
+		Loc:                  time.Local,
+		AllowNativePasswords: true,
+		ParseTime:            true,
+		InterpolateParams:    true,
+	}
+
+	// Support TLS connection
+	if cfg.TLS != nil {
+		mysqlCfg.TLSConfig = "custom"
+		tls, err := cfg.TLS.Client()
+		if err != nil {
+			return "", err
+		}
+
+		if err := mysql.RegisterTLSConfig("custom", tls); err != nil {
+			return "", err
+		}
+	}
+
+	return mysqlCfg.FormatDSN(), nil
+}
 
 func migrate(db *gorm.DB) error {
 	return db.Set("gorm:table_options", "DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(

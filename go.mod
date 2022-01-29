@@ -14,6 +14,7 @@ require (
 	github.com/casbin/gorm-adapter/v3 v3.3.2
 	github.com/colinmarc/hdfs/v2 v2.2.0
 	github.com/distribution/distribution/v3 v3.0.0-20210804104954-38ab4c606ee3
+	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0
 	github.com/emirpasic/gods v1.12.0
 	github.com/envoyproxy/protoc-gen-validate v0.6.1
@@ -42,8 +43,8 @@ require (
 	github.com/mcuadros/go-gin-prometheus v0.1.0
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/montanaflynn/stats v0.6.6
-	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.14.0
+	github.com/onsi/ginkgo/v2 v2.1.0
+	github.com/onsi/gomega v1.18.0
 	github.com/opencontainers/go-digest v1.0.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/errors v0.9.1
@@ -70,7 +71,7 @@ require (
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	golang.org/x/oauth2 v0.0.0-20210201163806-010130855d6c
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
 	google.golang.org/api v0.39.0
 	google.golang.org/grpc v1.39.0
@@ -154,7 +155,6 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -198,7 +198,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210207032614-bba0dbe2a9ea // indirect
 	gopkg.in/ini.v1 v1.51.0 // indirect
-	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/postgres v1.0.8 // indirect
 	gorm.io/driver/sqlserver v1.0.4 // indirect

@@ -1057,6 +1057,7 @@ func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, re
 }
 
 func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, result *DownloadPieceResult) {
+	metrics.PieceTaskCount.Add(1)
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
@@ -1082,6 +1083,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 }
 
 func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, result *DownloadPieceResult, code base.Code) {
+	metrics.PieceTaskFailedCount.Add(1)
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
@@ -1236,7 +1238,7 @@ func (pt *peerTaskConductor) fail() {
 	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
 	var end = time.Now()
-	pt.Log().Errorf("stream peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
+	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
 	// send EOF piece result to scheduler
 	err := pt.peerPacketStream.Send(

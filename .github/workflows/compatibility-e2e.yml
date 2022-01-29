@@ -41,9 +41,15 @@ jobs:
       - name: Get dependencies
         run: |
           go mod download github.com/go-task/slim-sprig
-          go install github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.0
           mkdir -p /tmp/artifact
           go mod vendor
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v1
+        id: buildx
+        with:
+          install: true
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
@@ -53,11 +59,9 @@ jobs:
 
       - name: Build images
         run: |
+          hack/gen-buildx.sh
           make docker-build docker-build-testing-tools
           docker pull dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
-
-      - name: Prepare kind environment
-        run: |
           make kind-load
           kind load docker-image dragonflyoss/${{ matrix.module }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
 

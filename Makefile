@@ -127,6 +127,12 @@ build-manager: build-dirs
 	./hack/build.sh manager
 .PHONY: build-manager
 
+# Build manager console
+build-manager-console: build-dirs
+	@echo "Begin to build manager."
+	./hack/build.sh manager-console
+.PHONY: build-manager-console
+
 # Install cdn
 install-cdn:
 	@echo "Begin to install cdn."
@@ -203,8 +209,8 @@ test-coverage:
 
 # Run github actions E2E tests with coverage
 actions-e2e-test-coverage:
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+	@ginkgo -v -r --race --fail-fast -cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
 # Install E2E tests environment
@@ -214,13 +220,13 @@ install-e2e-test:
 
 # Run E2E tests
 e2e-test: install-e2e-test
-	@ginkgo -v -r --race --failFast test/e2e --trace --progress
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
 e2e-test-coverage: install-e2e-test
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
 
 # Clean E2E tests
@@ -304,6 +310,7 @@ help:
 	@echo "make build-dfget-linux              build linux dfget"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
+	@echo "make build-manager-console          build manager console"
 	@echo "make install-cdn                    install CDN"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"

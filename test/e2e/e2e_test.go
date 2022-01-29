@@ -23,8 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/onsi/ginkgo" //nolint
-	. "github.com/onsi/gomega" //nolint
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
 
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
