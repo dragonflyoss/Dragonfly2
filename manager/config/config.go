@@ -21,48 +21,92 @@ import (
 	"errors"
 	"time"
 
-	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"github.com/docker/go-connections/tlsconfig"
+
+	"d7y.io/dragonfly/v2/cmd/dependency/base"
 )
 
 type Config struct {
+	// Base options
 	base.Options `yaml:",inline" mapstructure:",squash"`
-	Server       *ServerConfig   `yaml:"server" mapstructure:"server"`
-	Database     *DatabaseConfig `yaml:"database" mapstructure:"database"`
-	Cache        *CacheConfig    `yaml:"cache" mapstructure:"cache"`
-	Metrics      *RestConfig     `yaml:"metrics" mapstructure:"metrics"`
+
+	// Server configuration
+	Server *ServerConfig `yaml:"server" mapstructure:"server"`
+
+	// Database configuration
+	Database *DatabaseConfig `yaml:"database" mapstructure:"database"`
+
+	// Cache configuration
+	Cache *CacheConfig `yaml:"cache" mapstructure:"cache"`
+
+	// Metrics configuration
+	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ServerConfig struct {
-	Name       string           `yaml:"name" mapstructure:"name"`
-	LogDir     string           `yaml:"logDir" mapstructure:"logDir"`
-	PublicPath string           `yaml:"publicPath" mapstructure:"publicPath"`
-	GRPC       *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
-	REST       *RestConfig      `yaml:"rest" mapstructure:"rest"`
+	// Server name
+	Name string `yaml:"name" mapstructure:"name"`
+
+	// Server log directory
+	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
+	// Console resource path
+	PublicPath string `yaml:"publicPath" mapstructure:"publicPath"`
+
+	// GRPC server configuration
+	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
+
+	// REST server configuration
+	REST *RestConfig `yaml:"rest" mapstructure:"rest"`
 }
 
 type DatabaseConfig struct {
+	// Mysql configuration
 	Mysql *MysqlConfig `yaml:"mysql" mapstructure:"mysql"`
+
+	// Redis configuration
 	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type MysqlConfig struct {
-	User     string     `yaml:"user" mapstructure:"user"`
-	Password string     `yaml:"password" mapstructure:"password"`
-	Host     string     `yaml:"host" mapstructure:"host"`
-	Port     int        `yaml:"port" mapstructure:"port"`
-	DBName   string     `yaml:"dbname" mapstructure:"dbname"`
-	Migrate  bool       `yaml:"migrate" mapstructure:"migrate"`
-	TLS      *TLSConfig `yaml:"tls" mapstructure:"tls"`
+	// Server username
+	User string `yaml:"user" mapstructure:"user"`
+
+	// Server password
+	Password string `yaml:"password" mapstructure:"password"`
+
+	// Server host
+	Host string `yaml:"host" mapstructure:"host"`
+
+	// Server port
+	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server DB name
+	DBName string `yaml:"dbname" mapstructure:"dbname"`
+
+	// Enable migration
+	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
+
+	// TLS configuration
+	TLS *TLSConfig `yaml:"tls" mapstructure:"tls"`
 }
 
 type TLSConfig struct {
-	Cert               string `yaml:"cert" mapstructure:"cert"`
-	Key                string `yaml:"key" mapstructure:"key"`
-	CA                 string `yaml:"ca" mapstructure:"ca"`
-	InsecureSkipVerify bool   `yaml:"insecureSkipVerify" mapstructure:"insecureSkipVerify"`
+	// Client certificate file path
+	Cert string `yaml:"cert" mapstructure:"cert"`
+
+	// Client key file path
+	Key string `yaml:"key" mapstructure:"key"`
+
+	// CA file path
+	CA string `yaml:"ca" mapstructure:"ca"`
+
+	// InsecureSkipVerify controls whether a client verifies the
+	// server's certificate chain and host name.
+	InsecureSkipVerify bool `yaml:"insecureSkipVerify" mapstructure:"insecureSkipVerify"`
 }
 
+// Generate client tls config
 func (t *TLSConfig) Client() (*tls.Config, error) {
 	return tlsconfig.Client(tlsconfig.Options{
 		CAFile:             t.CA,
@@ -73,29 +117,48 @@ func (t *TLSConfig) Client() (*tls.Config, error) {
 }
 
 type RedisConfig struct {
-	Host      string `yaml:"host" mapstructure:"host"`
-	Port      int    `yaml:"port" mapstructure:"port"`
-	Password  string `yaml:"password" mapstructure:"password"`
-	CacheDB   int    `yaml:"cacheDB" mapstructure:"cacheDB"`
-	BrokerDB  int    `yaml:"brokerDB" mapstructure:"brokerDB"`
-	BackendDB int    `yaml:"backendDB" mapstructure:"backendDB"`
+	// Server host
+	Host string `yaml:"host" mapstructure:"host"`
+
+	// Server port
+	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server password
+	Password string `yaml:"password" mapstructure:"password"`
+
+	// Server cache DB name
+	CacheDB int `yaml:"cacheDB" mapstructure:"cacheDB"`
+
+	// Server broker DB name
+	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
+
+	// Server backend DB name
+	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type CacheConfig struct {
+	// Redis cache configuration
 	Redis *RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
+
+	// Local cache configuration
 	Local *LocalCacheConfig `yaml:"local" mapstructure:"local"`
 }
 
 type RedisCacheConfig struct {
+	// Cache TTL
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type LocalCacheConfig struct {
-	Size int           `yaml:"size" mapstructure:"size"`
-	TTL  time.Duration `yaml:"ttl" mapstructure:"ttl"`
+	// Size of LFU cache
+	Size int `yaml:"size" mapstructure:"size"`
+
+	// Cache TTL
+	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type RestConfig struct {
+	// REST server address
 	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
@@ -112,6 +175,7 @@ type TCPListenPortRange struct {
 	End   int
 }
 
+// New config instance
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
@@ -149,6 +213,7 @@ func New() *Config {
 	}
 }
 
+// Validate config values
 func (cfg *Config) Validate() error {
 	if cfg.Server == nil {
 		return errors.New("empty server config is not specified")
