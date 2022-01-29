@@ -78,6 +78,7 @@ func New(managerServer ManagerServer, jaeger bool, opts ...grpc.ServerOption) *g
 	}, opts...)...)
 
 	manager.RegisterManagerServer(grpcServer, &proxy{server: managerServer})
+
 	return grpcServer
 }
 

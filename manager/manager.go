@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -31,11 +32,11 @@ import (
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/router"
+	"d7y.io/dragonfly/v2/manager/rpcserver"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	grpc_manager_server "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 )
 
 const (
@@ -104,12 +105,14 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	grpcService := service.NewGRPC(db, cache, searcher)
-	var enableJaeger bool
-	if cfg.Options.Telemetry.Jaeger != "" {
-		enableJaeger = true
+	var options []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		options = []grpc.ServerOption{
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		}
 	}
-	grpcServer := grpc_manager_server.New(grpcService, enableJaeger)
+	grpcServer := rpcserver.New(db, cache, searcher, options...)
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
