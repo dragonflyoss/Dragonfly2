@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package service
+package rpcserver
 
 import (
 	"context"
@@ -23,6 +23,12 @@ import (
 
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -35,25 +41,46 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
-type GRPC struct {
-	db    *gorm.DB
-	rdb   *redis.Client
-	cache *cache.Cache
-	manager.UnimplementedManagerServer
-	searcher searcher.Searcher
+var defaultStreamMiddleWares = []grpc.StreamServerInterceptor{
+	grpc_validator.StreamServerInterceptor(),
+	grpc_recovery.StreamServerInterceptor(),
+	grpc_prometheus.StreamServerInterceptor,
+	grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
 }
 
-// NewREST returns a new REST instence
-func NewGRPC(database *database.Database, cache *cache.Cache, searcher searcher.Searcher) *GRPC {
-	return &GRPC{
+var defaultUnaryMiddleWares = []grpc.UnaryServerInterceptor{
+	grpc_validator.UnaryServerInterceptor(),
+	grpc_recovery.UnaryServerInterceptor(),
+	grpc_prometheus.UnaryServerInterceptor,
+	grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+}
+
+type Server struct {
+	db       *gorm.DB
+	rdb      *redis.Client
+	cache    *cache.Cache
+	searcher searcher.Searcher
+	manager.UnimplementedManagerServer
+}
+
+func New(database *database.Database, cache *cache.Cache, searcher searcher.Searcher, opts ...grpc.ServerOption) *grpc.Server {
+	server := &Server{
 		db:       database.DB,
 		rdb:      database.RDB,
 		cache:    cache,
 		searcher: searcher,
 	}
+
+	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares...)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
+	}, opts...)...)
+
+	manager.RegisterManagerServer(grpcServer, server)
+	return grpcServer
 }
 
-func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
+func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
 	var pbCDN manager.CDN
 	cacheKey := cache.MakeCDNCacheKey(req.HostName, uint(req.CdnClusterId))
 
@@ -108,34 +135,7 @@ func (s *GRPC) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager
 	return &pbCDN, nil
 }
 
-func (s *GRPC) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	cdn := model.CDN{
-		HostName:     req.HostName,
-		IDC:          req.Idc,
-		Location:     req.Location,
-		IP:           req.Ip,
-		Port:         req.Port,
-		DownloadPort: req.DownloadPort,
-		CDNClusterID: uint(req.CdnClusterId),
-	}
-
-	if err := s.db.WithContext(ctx).Create(&cdn).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	return &manager.CDN{
-		Id:           uint64(cdn.ID),
-		HostName:     cdn.HostName,
-		Location:     cdn.Location,
-		Ip:           cdn.IP,
-		Port:         cdn.Port,
-		DownloadPort: cdn.DownloadPort,
-		CdnClusterId: uint64(cdn.CDNClusterID),
-		State:        cdn.State,
-	}, nil
-}
-
-func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+func (s *Server) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).First(&cdn, model.CDN{
 		HostName:     req.HostName,
@@ -177,7 +177,34 @@ func (s *GRPC) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*m
 	}, nil
 }
 
-func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (s *Server) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+	cdn := model.CDN{
+		HostName:     req.HostName,
+		IDC:          req.Idc,
+		Location:     req.Location,
+		IP:           req.Ip,
+		Port:         req.Port,
+		DownloadPort: req.DownloadPort,
+		CDNClusterID: uint(req.CdnClusterId),
+	}
+
+	if err := s.db.WithContext(ctx).Create(&cdn).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &manager.CDN{
+		Id:           uint64(cdn.ID),
+		HostName:     cdn.HostName,
+		Location:     cdn.Location,
+		Ip:           cdn.IP,
+		Port:         cdn.Port,
+		DownloadPort: cdn.DownloadPort,
+		CdnClusterId: uint64(cdn.CDNClusterID),
+		State:        cdn.State,
+	}, nil
+}
+
+func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	var pbScheduler manager.Scheduler
 	cacheKey := cache.MakeSchedulerCacheKey(req.HostName, uint(req.SchedulerClusterId))
 
@@ -275,44 +302,7 @@ func (s *GRPC) GetScheduler(ctx context.Context, req *manager.GetSchedulerReques
 	return &pbScheduler, nil
 }
 
-func (s *GRPC) createScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
-	var netConfig model.JSONMap
-	if len(req.NetConfig) > 0 {
-		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	}
-
-	scheduler := model.Scheduler{
-		HostName:           req.HostName,
-		VIPs:               req.Vips,
-		IDC:                req.Idc,
-		Location:           req.Location,
-		NetConfig:          netConfig,
-		IP:                 req.Ip,
-		Port:               req.Port,
-		SchedulerClusterID: uint(req.SchedulerClusterId),
-	}
-
-	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	return &manager.Scheduler{
-		Id:                 uint64(scheduler.ID),
-		HostName:           scheduler.HostName,
-		Vips:               scheduler.VIPs,
-		Idc:                scheduler.IDC,
-		Location:           scheduler.Location,
-		NetConfig:          req.NetConfig,
-		Ip:                 scheduler.IP,
-		Port:               scheduler.Port,
-		State:              scheduler.State,
-		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
-	}, nil
-}
-
-func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
 		HostName:           req.HostName,
@@ -364,7 +354,44 @@ func (s *GRPC) UpdateScheduler(ctx context.Context, req *manager.UpdateScheduler
 	}, nil
 }
 
-func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+func (s *Server) createScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+	var netConfig model.JSONMap
+	if len(req.NetConfig) > 0 {
+		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	}
+
+	scheduler := model.Scheduler{
+		HostName:           req.HostName,
+		VIPs:               req.Vips,
+		IDC:                req.Idc,
+		Location:           req.Location,
+		NetConfig:          netConfig,
+		IP:                 req.Ip,
+		Port:               req.Port,
+		SchedulerClusterID: uint(req.SchedulerClusterId),
+	}
+
+	if err := s.db.WithContext(ctx).Create(&scheduler).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &manager.Scheduler{
+		Id:                 uint64(scheduler.ID),
+		HostName:           scheduler.HostName,
+		Vips:               scheduler.VIPs,
+		Idc:                scheduler.IDC,
+		Location:           scheduler.Location,
+		NetConfig:          req.NetConfig,
+		Ip:                 scheduler.IP,
+		Port:               scheduler.Port,
+		State:              scheduler.State,
+		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
+	}, nil
+}
+
+func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 
 	var pbListSchedulersResponse manager.ListSchedulersResponse
@@ -432,8 +459,8 @@ func (s *GRPC) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRe
 	return &pbListSchedulersResponse, nil
 }
 
-func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
-	req, err := m.Recv()
+func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
+	req, err := stream.Recv()
 	if err != nil {
 		logger.Errorf("keepalive failed for the first time: %v", err)
 		return status.Error(codes.Unknown, err.Error())
@@ -484,7 +511,7 @@ func (s *GRPC) KeepAlive(m manager.Manager_KeepAliveServer) error {
 	}
 
 	for {
-		_, err := m.Recv()
+		_, err := stream.Recv()
 		if err != nil {
 			// Inactive scheduler
 			if sourceType == manager.SourceType_SCHEDULER_SOURCE {
