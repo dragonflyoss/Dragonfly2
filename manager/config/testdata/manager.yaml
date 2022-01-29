@@ -17,6 +17,11 @@ database:
     host: foo
     port: 3306
     dbname: foo
+    tls:
+      cert: foo
+      key: foo
+      ca: foo
+      insecureSkipVerify: true
   redis:
     password: bar
     host: bar
