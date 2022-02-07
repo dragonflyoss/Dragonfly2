@@ -51,6 +51,12 @@ func TestManagerConfig_Load(t *testing.T) {
 				Host:     "foo",
 				Port:     3306,
 				DBName:   "foo",
+				TLS: &TLSConfig{
+					Cert:               "foo",
+					Key:                "foo",
+					CA:                 "foo",
+					InsecureSkipVerify: true,
+				},
 			},
 			Redis: &RedisConfig{
 				Host:      "bar",
