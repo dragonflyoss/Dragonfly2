@@ -593,7 +593,7 @@ func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
 // tunnelHTTPS handles the CONNECT request and proxy the https request through http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 	metrics.ProxyRequestNotViaDragonflyCount.Add(1)
-	remote, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
+	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -612,22 +612,22 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
-		if _, err := io.Copy(remote, clientConn); err != nil {
+		if _, err := io.Copy(dst, clientConn); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			logger.Errorf("copy hijacked stream from client to remote error: %s", err)
+			logger.Errorf("copy hijacked stream from client to destination error: %s", err)
 		}
 		wg.Done()
 	}()
 
-	if _, err := io.Copy(clientConn, remote); err != nil {
+	if _, err := io.Copy(clientConn, dst); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		logger.Errorf("copy hijacked stream from remote to client error: %s", err)
+		logger.Errorf("copy hijacked stream from destination to client error: %s", err)
 	}
 	wg.Wait()
 
 	// Close() will close both read and write, we need wait all stream is done, then close connections
-	if err = remote.Close(); err != nil {
-		logger.Errorf("close hijacked remote error: %s", err)
+	if err = dst.Close(); err != nil {
+		logger.Errorf("close hijacked destination error: %s", err)
 	}
 	if err = clientConn.Close(); err != nil {
 		logger.Errorf("close hijacked client error: %s", err)
