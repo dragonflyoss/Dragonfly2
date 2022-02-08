@@ -26,12 +26,12 @@ import (
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -104,37 +104,66 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 }
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
-	request *scheduler.PeerTaskRequest) (io.ReadCloser, map[string]string, bool) {
-	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
+	taskID := idgen.TaskID(request.URL, request.URLMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
+	var (
+		rg  *clientutil.Range // the range of parent peer task data to read
+		log *logger.SugaredLoggerOnWith
+	)
 	if reuse == nil {
-		return nil, nil, false
+		// for ranged request, check the parent task
+		if request.Range == nil {
+			return nil, nil, false
+		}
+		taskID = idgen.ParentTaskID(request.URL, request.URLMeta)
+		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		if reuse == nil {
+			return nil, nil, false
+		}
+		rg = request.Range
 	}
 
-	log := logger.With("peer", request.PeerId, "task", taskID, "component", "reuseStreamPeerTask")
-	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
+	if rg == nil {
+		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseStreamPeerTask")
+		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
+	} else {
+		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseRangeStreamPeerTask")
+		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
+			reuse.PeerID, reuse.ContentLength, request.URLMeta.Range)
+	}
 
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
-	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
+	span.SetAttributes(config.AttributePeerID.String(request.PeerID))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
-	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+	span.SetAttributes(semconv.HTTPURLKey.String(request.URL))
+	if rg != nil {
+		span.SetAttributes(config.AttributeReusePeerID.String(request.URLMeta.Range))
+	}
 	defer span.End()
 
-	rc, err := ptm.storageManager.ReadAllPieces(ctx, &reuse.PeerTaskMetadata)
+	rc, err := ptm.storageManager.ReadAllPieces(ctx,
+		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
 	if err != nil {
-		log.Errorf("read all pieces error when reuse peer task: %s", err)
+		log.Errorf("read pieces error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		span.RecordError(err)
 		return nil, nil, false
 	}
 
 	attr := map[string]string{}
-	attr[headers.ContentLength] = fmt.Sprintf("%d", reuse.ContentLength)
 	attr[config.HeaderDragonflyTask] = taskID
-	attr[config.HeaderDragonflyPeer] = request.PeerId
+	attr[config.HeaderDragonflyPeer] = request.PeerID
+	if rg != nil {
+		attr[config.HeaderDragonflyRange] = request.URLMeta.Range
+		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+rg.Length-1, reuse.ContentLength)
+		attr[headers.ContentLength] = fmt.Sprintf("%d", rg.Length)
+	} else {
+		attr[headers.ContentLength] = fmt.Sprintf("%d", reuse.ContentLength)
+	}
 
 	// TODO record time when file closed, need add a type to implement Close and WriteTo
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))

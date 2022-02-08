@@ -29,6 +29,8 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -108,10 +110,10 @@ type peerTaskManager struct {
 
 	perPeerRateLimit rate.Limit
 
-	// enableMultiplex indicates reusing completed peer task storage
-	// currently, only check completed peer task after register to scheduler
-	// TODO multiplex the running peer task
+	// enableMultiplex indicates to reuse the data of completed peer tasks
 	enableMultiplex bool
+	// enablePrefetch indicates to prefetch the whole files of ranged requests
+	enablePrefetch bool
 
 	calculateDigest bool
 
@@ -126,6 +128,7 @@ func NewPeerTaskManager(
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
 	multiplex bool,
+	prefetch bool,
 	calculateDigest bool,
 	getPiecesMaxRetry int) (TaskManager, error) {
 
@@ -139,6 +142,7 @@ func NewPeerTaskManager(
 		schedulerOption:   schedulerOption,
 		perPeerRateLimit:  perPeerRateLimit,
 		enableMultiplex:   multiplex,
+		enablePrefetch:    prefetch,
 		calculateDigest:   calculateDigest,
 		getPiecesMaxRetry: getPiecesMaxRetry,
 	}
@@ -198,6 +202,30 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	return ptc, true, nil
 }
 
+func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
+	req := new(scheduler.PeerTaskRequest)
+	*req = *request
+	req.UrlMeta = &base.UrlMeta{
+		Digest: request.UrlMeta.Digest,
+		Tag:    request.UrlMeta.Tag,
+		Filter: request.UrlMeta.Filter,
+		Header: request.UrlMeta.Header,
+	}
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	req.PeerId = idgen.PeerID(req.PeerHost.Ip)
+
+	var limit = rate.Inf
+	if ptm.perPeerRateLimit > 0 {
+		limit = ptm.perPeerRateLimit
+	}
+
+	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
+	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit)
+	if err != nil {
+		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
+	}
+}
+
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
@@ -235,7 +263,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	}
 
 	if ptm.enableMultiplex {
-		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, peerTaskRequest)
+		r, attr, ok := ptm.tryReuseStreamPeerTask(ctx, req)
 		if ok {
 			metrics.PeerTaskCacheHitCount.Add(1)
 			return r, attr, nil

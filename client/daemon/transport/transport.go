@@ -20,16 +20,19 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/propagation"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -201,11 +204,24 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
+	var rg *clientutil.Range
 
 	// Set meta range's value
-	if rg := req.Header.Get("Range"); len(rg) > 0 {
+	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
+		// FIXME, return bad request instead error
 		meta.Digest = ""
-		meta.Range = rg
+		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		if err != nil {
+			return nil, err
+		}
+		if len(rgs) > 1 {
+			return nil, fmt.Errorf("multiple range is not supported")
+		} else if len(rgs) == 0 {
+			return nil, fmt.Errorf("zero range is not supported")
+		}
+		rg = &rgs[0]
+		// range in dragonfly is without "bytes="
+		meta.Range = strings.TrimLeft(rangeHeader, "bytes=")
 	}
 
 	// Pick header's parameters
@@ -224,6 +240,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		&peer.StreamTaskRequest{
 			URL:     url,
 			URLMeta: meta,
+			Range:   rg,
 			PeerID:  peerID,
 		},
 	)
@@ -247,8 +264,14 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		}
 	}
 
+	var status int
+	if meta.Range == "" {
+		status = http.StatusOK
+	} else {
+		status = http.StatusPartialContent
+	}
 	resp := &http.Response{
-		StatusCode:    http.StatusOK,
+		StatusCode:    status,
 		Body:          body,
 		Header:        hdr,
 		ContentLength: contentLength,

@@ -26,10 +26,11 @@ import (
 
 func TestTaskID(t *testing.T) {
 	tests := []struct {
-		name   string
-		url    string
-		meta   *base.UrlMeta
-		expect func(t *testing.T, d interface{})
+		name        string
+		url         string
+		meta        *base.UrlMeta
+		ignoreRange bool
+		expect      func(t *testing.T, d interface{})
 	}{
 		{
 			name: "generate taskID with url",
@@ -51,6 +52,20 @@ func TestTaskID(t *testing.T) {
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
 				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0", d)
+			},
+		},
+		{
+			name: "generate taskID with meta",
+			url:  "https://example.com",
+			meta: &base.UrlMeta{
+				Range:  "foo",
+				Digest: "bar",
+				Tag:    "",
+			},
+			ignoreRange: true,
+			expect: func(t *testing.T, d interface{}) {
+				assert := assert.New(t)
+				assert.Equal("63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d", d)
 			},
 		},
 		{
@@ -80,7 +95,12 @@ func TestTaskID(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := TaskID(tc.url, tc.meta)
+			var data string
+			if tc.ignoreRange {
+				data = ParentTaskID(tc.url, tc.meta)
+			} else {
+				data = TaskID(tc.url, tc.meta)
+			}
 			tc.expect(t, data)
 		})
 	}

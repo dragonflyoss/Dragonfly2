@@ -248,7 +248,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		request.UrlMeta.Header = map[string]string{}
 	}
 	if request.UrlMeta.Range != "" {
-		request.UrlMeta.Header["Range"] = request.UrlMeta.Range
+		request.UrlMeta.Header[source.Range] = request.UrlMeta.Range
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
@@ -282,6 +282,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		return err
 	}
 	response, err := source.Download(downloadRequest)
+	// TODO update expire info
 	if err != nil {
 		return err
 	}
