@@ -248,6 +248,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		request.UrlMeta.Header = map[string]string{}
 	}
 	if request.UrlMeta.Range != "" {
+		// in http source package, adapter will update the real range, we inject "X-Dragonfly-Range" here
 		request.UrlMeta.Header[source.Range] = request.UrlMeta.Range
 	}
 	log := pt.Log()

@@ -17,9 +17,11 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"math"
 	"net"
 	"net/http"
@@ -208,16 +210,15 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Set meta range's value
 	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
-		// FIXME, return bad request instead error
-		meta.Digest = ""
 		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
 		if err != nil {
-			return nil, err
+			return badRequest(req, err.Error())
 		}
 		if len(rgs) > 1 {
-			return nil, fmt.Errorf("multiple range is not supported")
+			// TODO support multiple range request
+			return notImplemented(req, "multiple range is not supported")
 		} else if len(rgs) == 0 {
-			return nil, fmt.Errorf("zero range is not supported")
+			return requestedRangeNotSatisfiable(req, "zero range is not supported")
 		}
 		rg = &rgs[0]
 		// range in dragonfly is without "bytes="
@@ -354,4 +355,29 @@ func delHopHeaders(header http.Header) {
 	for _, h := range traceContext.Fields() {
 		header.Del(h)
 	}
+}
+
+func httpResponse(req *http.Request, status int, body string) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode:    status,
+		Body:          io.NopCloser(bytes.NewBufferString(body)),
+		ContentLength: int64(len(body)),
+
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
+	}
+	return resp, nil
+}
+
+func badRequest(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusBadRequest, body)
+}
+
+func notImplemented(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusNotImplemented, body)
+}
+
+func requestedRangeNotSatisfiable(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
 }
