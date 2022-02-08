@@ -204,13 +204,18 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 }
 
 func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
-	req := new(scheduler.PeerTaskRequest)
-	*req = *request
-	req.UrlMeta = &base.UrlMeta{
-		Digest: request.UrlMeta.Digest,
-		Tag:    request.UrlMeta.Tag,
-		Filter: request.UrlMeta.Filter,
-		Header: map[string]string{},
+	req := &scheduler.PeerTaskRequest{
+		Url:         request.Url,
+		PeerId:      request.PeerId,
+		PeerHost:    ptm.host,
+		HostLoad:    request.HostLoad,
+		IsMigrating: request.IsMigrating,
+		UrlMeta: &base.UrlMeta{
+			Digest: request.UrlMeta.Digest,
+			Tag:    request.UrlMeta.Tag,
+			Filter: request.UrlMeta.Filter,
+			Header: map[string]string{},
+		},
 	}
 	for k, v := range request.UrlMeta.Header {
 		if k == headers.Range {
