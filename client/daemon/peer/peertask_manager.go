@@ -21,6 +21,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
@@ -209,7 +210,13 @@ func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
 		Digest: request.UrlMeta.Digest,
 		Tag:    request.UrlMeta.Tag,
 		Filter: request.UrlMeta.Filter,
-		Header: request.UrlMeta.Header,
+		Header: map[string]string{},
+	}
+	for k, v := range request.UrlMeta.Header {
+		if k == headers.Range {
+			continue
+		}
+		req.UrlMeta.Header[k] = v
 	}
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	req.PeerId = idgen.PeerID(req.PeerHost.Ip)
