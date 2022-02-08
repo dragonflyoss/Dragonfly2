@@ -391,19 +391,19 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	defer cancel()
 
 	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
-	targetUrl := url.URL{
+	targetURL := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
 		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetUrl.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
 	if err != nil {
 		return []byte{}, err
 	}
 	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1))
-	p.Log.Infof("download tiny file %s, header is : %#v", targetUrl.String(), req.Header)
+	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -415,7 +415,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
 	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return []byte{}, fmt.Errorf("%v: %v", targetUrl.String(), resp.Status)
+		return []byte{}, fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}
 
 	return io.ReadAll(resp.Body)
