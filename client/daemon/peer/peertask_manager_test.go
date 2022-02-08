@@ -283,7 +283,7 @@ type testSpec struct {
 	taskType           int
 	name               string
 	taskData           []byte
-	range_             *clientutil.Range // only used in back source cases
+	httpRange          *clientutil.Range // only used in back source cases
 	pieceParallelCount int32
 	pieceSize          int
 	sizeScope          base.SizeScope
@@ -386,7 +386,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		{
 			name:     "normal size scope - range - back source - content length",
 			taskData: testBytes[0:4096],
-			range_: &clientutil.Range{
+			httpRange: &clientutil.Range{
 				Start:  0,
 				Length: 4096,
 			},
@@ -514,8 +514,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 						Tag: "d7y-test",
 					}
 
-					if tc.range_ != nil {
-						urlMeta.Range = strings.TrimLeft(tc.range_.String(), "bytes=")
+					if tc.httpRange != nil {
+						urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
 					}
 
 					if tc.urlGenerator != nil {
@@ -540,7 +540,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 							require.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
 						}()
 						// replace source client
-						sourceClient = tc.mockHTTPSourceClient(t, ctrl, tc.range_, tc.taskData, tc.url)
+						sourceClient = tc.mockHTTPSourceClient(t, ctrl, tc.httpRange, tc.taskData, tc.url)
 						require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 					}
 
