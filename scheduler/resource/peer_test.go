@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path"
 	"strconv"
 	"testing"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
@@ -813,57 +813,79 @@ func TestPeer_DeleteStream(t *testing.T) {
 }
 
 func TestPeer_DownloadTinyFile(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if path.Base(r.URL.Path) == "foo" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
+	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	newServer := func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			peer := getPeer()
+			assert := assert.New(t)
+			assert.NotNil(peer)
+			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
+			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-		if r.Header.Get(headers.Range) == "bytes=0-2" {
-			w.WriteHeader(http.StatusNotAcceptable)
-			return
-		}
+			rgs, err := clientutil.ParseRange(r.Header.Get(headers.Range), 128)
+			assert.Nil(err)
+			assert.Equal(1, len(rgs))
+			rg := rgs[0]
 
-		w.WriteHeader(http.StatusPartialContent)
-	}))
-	defer s.Close()
-
+			w.WriteHeader(http.StatusPartialContent)
+			n, err := w.Write(testData[rg.Start : rg.Start+rg.Length])
+			assert.Nil(err)
+			assert.Equal(int64(n), rg.Length)
+		}))
+	}
 	tests := []struct {
-		name   string
-		expect func(t *testing.T, peer *Peer)
+		name      string
+		newServer func(t *testing.T, getPeer func() *Peer) *httptest.Server
+		expect    func(t *testing.T, peer *Peer)
 	}{
 		{
-			name: "download tiny file",
+			name: "download tiny file - 32",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				_, err := peer.DownloadTinyFile()
+				peer.Task.ContentLength.Store(32)
+				data, err := peer.DownloadTinyFile()
 				assert.NoError(err)
+				assert.Equal(testData[:32], data)
 			},
 		},
 		{
-			name: "download tiny file with range header",
+			name: "download tiny file - 128",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Task.ContentLength.Store(2)
-				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 406 Not Acceptable",
-					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
+				peer.Task.ContentLength.Store(32)
+				data, err := peer.DownloadTinyFile()
+				assert.NoError(err)
+				assert.Equal(testData[:32], data)
 			},
 		},
 		{
 			name: "download tiny file failed because of http status code",
+			newServer: func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				}))
+			},
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Task.ID = "foo"
+				peer.Task.ID = "foobar"
 				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 404 Not Found",
-					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=%s: 404 Not Found",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID, peer.ID))
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			var peer *Peer
+			if tc.newServer == nil {
+				tc.newServer = newServer
+			}
+			s := tc.newServer(t, func() *Peer {
+				return peer
+			})
+			defer s.Close()
 			url, err := url.Parse(s.URL)
 			if err != nil {
 				t.Fatal(err)
@@ -883,7 +905,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockRawHost.DownPort = int32(port)
 			mockHost := NewHost(mockRawHost)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			peer = NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer)
 		})
 	}
