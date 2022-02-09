@@ -26,7 +26,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -57,7 +56,7 @@ generate and maintain a P2P network during the download process, and push suitab
 		}
 
 		// Initialize logger
-		if err := logcore.InitScheduler(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitScheduler(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
 

@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package logcore
+package logger
 
 import (
 	"path"
 	"path/filepath"
 
 	"go.uber.org/zap"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 type logInitMeta struct {
@@ -31,7 +29,14 @@ type logInitMeta struct {
 	setLoggerFunc        func(log *zap.Logger)
 }
 
-func createLogger(meta []logInitMeta, logDir string) error {
+func createLogger(console bool, meta []logInitMeta, logDir string) error {
+	if console {
+		startLoggerSignalHandler()
+		return nil
+	}
+	// drop console level
+	levels = nil
+
 	for _, m := range meta {
 		log, level, err := CreateLogger(path.Join(logDir, m.fileName), false, false)
 		if err != nil {
@@ -50,149 +55,129 @@ func createLogger(meta []logInitMeta, logDir string) error {
 }
 
 func InitManager(console bool, dir string) error {
-	if console {
-		return nil
-	}
-
 	logDir := filepath.Join(dir, "manager")
 
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: logger.SetCoreLogger,
+			setSugaredLoggerFunc: SetCoreLogger,
 		},
 		{
 			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: logger.SetGrpcLogger,
+			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
 			fileName:             GCLogFileName,
-			setSugaredLoggerFunc: logger.SetGCLogger,
+			setSugaredLoggerFunc: SetGCLogger,
 		},
 		{
 			fileName:             JobLogFileName,
-			setSugaredLoggerFunc: logger.SetJobLogger,
+			setSugaredLoggerFunc: SetJobLogger,
 		},
 	}
 
-	return createLogger(meta, logDir)
+	return createLogger(console, meta, logDir)
 }
 
 func InitScheduler(console bool, dir string) error {
-	if console {
-		return nil
-	}
-
 	logDir := filepath.Join(dir, "scheduler")
 
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: logger.SetCoreLogger,
+			setSugaredLoggerFunc: SetCoreLogger,
 		},
 		{
 			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: logger.SetGrpcLogger,
+			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
 			fileName:             GCLogFileName,
-			setSugaredLoggerFunc: logger.SetGCLogger,
+			setSugaredLoggerFunc: SetGCLogger,
 		},
 		{
 			fileName:             JobLogFileName,
-			setSugaredLoggerFunc: logger.SetJobLogger,
+			setSugaredLoggerFunc: SetJobLogger,
 		},
 	}
 
-	return createLogger(meta, logDir)
+	return createLogger(console, meta, logDir)
 }
 
 func InitCdnSystem(console bool, dir string) error {
-	if console {
-		return nil
-	}
-
 	logDir := filepath.Join(dir, "cdn")
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: logger.SetCoreLogger,
+			setSugaredLoggerFunc: SetCoreLogger,
 		},
 		{
 			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: logger.SetGrpcLogger,
+			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
 			fileName:             GCLogFileName,
-			setSugaredLoggerFunc: logger.SetGCLogger,
+			setSugaredLoggerFunc: SetGCLogger,
 		},
 		{
 			fileName:             StorageGCLogFileName,
-			setSugaredLoggerFunc: logger.SetStorageGCLogger,
+			setSugaredLoggerFunc: SetStorageGCLogger,
 		},
 		{
 			fileName:             JobLogFileName,
-			setSugaredLoggerFunc: logger.SetJobLogger,
+			setSugaredLoggerFunc: SetJobLogger,
 		},
 		{
 			fileName:      StatSeedLogFileName,
-			setLoggerFunc: logger.SetStatSeedLogger,
+			setLoggerFunc: SetStatSeedLogger,
 		},
 		{
 			fileName:      DownloaderLogFileName,
-			setLoggerFunc: logger.SetDownloadLogger,
+			setLoggerFunc: SetDownloadLogger,
 		},
 		{
 			fileName:             KeepAliveLogFileName,
-			setSugaredLoggerFunc: logger.SetKeepAliveLogger,
+			setSugaredLoggerFunc: SetKeepAliveLogger,
 		},
 	}
 
-	return createLogger(meta, logDir)
+	return createLogger(console, meta, logDir)
 }
 
 func InitDaemon(console bool, dir string) error {
-	if console {
-		return nil
-	}
-
 	logDir := filepath.Join(dir, "daemon")
 
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: logger.SetCoreLogger,
+			setSugaredLoggerFunc: SetCoreLogger,
 		},
 		{
 			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: logger.SetGrpcLogger,
+			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 		{
 			fileName:             GCLogFileName,
-			setSugaredLoggerFunc: logger.SetGCLogger,
+			setSugaredLoggerFunc: SetGCLogger,
 		},
 	}
 
-	return createLogger(meta, logDir)
+	return createLogger(console, meta, logDir)
 }
 
 func InitDfget(console bool, dir string) error {
-	if console {
-		return nil
-	}
-
 	logDir := filepath.Join(dir, "dfget")
 
 	var meta = []logInitMeta{
 		{
 			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: logger.SetCoreLogger,
+			setSugaredLoggerFunc: SetCoreLogger,
 		},
 		{
 			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: logger.SetGrpcLogger,
+			setSugaredLoggerFunc: SetGrpcLogger,
 		},
 	}
 
-	return createLogger(meta, logDir)
+	return createLogger(console, meta, logDir)
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package logcore
+package logger
 
 import (
 	"strings"
