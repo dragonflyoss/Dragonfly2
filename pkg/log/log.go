@@ -19,7 +19,7 @@ package log
 import (
 	"go.uber.org/zap/zapcore"
 
-	"d7y.io/dragonfly/v2/internal/dflog" // nolint
+	"d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 )
 
