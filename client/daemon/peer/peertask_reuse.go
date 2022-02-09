@@ -46,6 +46,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	var (
 		rg  *clientutil.Range // the range of parent peer task data to read
 		log *logger.SugaredLoggerOnWith
+		err error
 	)
 	if reuse == nil {
 		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
@@ -53,8 +54,10 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		if reuse == nil {
 			return nil, false
 		}
-		r, err := rangeutils.ParseRange(request.UrlMeta.Range, math.MaxInt)
+		var r *rangeutils.Range
+		r, err = rangeutils.ParseRange(request.UrlMeta.Range, math.MaxInt)
 		if err != nil {
+			logger.Warnf("parse range %s error: %s", request.UrlMeta.Range, err)
 			return nil, false
 		}
 		rg = &clientutil.Range{
@@ -67,7 +70,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseFilePeerTask")
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
 	} else {
-		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseRangeFilePeerTask")
+		log = logger.With("peer", request.PeerId, "task", taskID, "range", request.UrlMeta.Range,
+			"component", "reuseRangeFilePeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
 	}
@@ -99,21 +103,18 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 			StoreOnly:    true,
 			TotalPieces:  reuse.TotalPieces,
 		}
-		err := ptm.storageManager.Store(context.Background(), storeRequest)
-		if err != nil {
-			log.Errorf("store error when reuse peer task: %s", err)
-			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			span.RecordError(err)
-			return nil, false
-		}
+		err = ptm.storageManager.Store(context.Background(), storeRequest)
 	} else {
-		err := ptm.storePartialFile(ctx, request, log, reuse, rg)
-		if err != nil {
-			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			span.RecordError(err)
-			return nil, false
-		}
+		err = ptm.storePartialFile(ctx, request, log, reuse, rg)
 	}
+
+	if err != nil {
+		log.Errorf("store error when reuse peer task: %s", err)
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
+		return nil, false
+	}
+
 	var cost = time.Now().Sub(start).Milliseconds()
 	log.Infof("reuse file peer task done, cost: %dms", cost)
 
