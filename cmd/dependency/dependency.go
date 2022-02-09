@@ -47,7 +47,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -94,8 +93,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 	var fc = make(chan func(), 5)
 
 	if verbose {
-		logcore.SetCoreLevel(zapcore.DebugLevel)
-		logcore.SetGrpcLevel(zapcore.DebugLevel)
+		logger.SetLevel(zapcore.DebugLevel)
 	}
 
 	if pprofPort >= 0 {
