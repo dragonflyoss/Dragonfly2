@@ -80,7 +80,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 	if rg != nil {
-		span.SetAttributes(config.AttributeReusePeerID.String(request.UrlMeta.Range))
+		span.SetAttributes(config.AttributeReuseRange.String(request.UrlMeta.Range))
 	}
 	defer span.End()
 
@@ -89,18 +89,17 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 
 	start := time.Now()
 	if rg == nil {
-		err := ptm.storageManager.Store(
-			context.Background(),
-			&storage.StoreRequest{
-				CommonTaskRequest: storage.CommonTaskRequest{
-					PeerID:      reuse.PeerID,
-					TaskID:      taskID,
-					Destination: request.Output,
-				},
-				MetadataOnly: false,
-				StoreOnly:    true,
-				TotalPieces:  reuse.TotalPieces,
-			})
+		storeRequest := &storage.StoreRequest{
+			CommonTaskRequest: storage.CommonTaskRequest{
+				PeerID:      reuse.PeerID,
+				TaskID:      taskID,
+				Destination: request.Output,
+			},
+			MetadataOnly: false,
+			StoreOnly:    true,
+			TotalPieces:  reuse.TotalPieces,
+		}
+		err := ptm.storageManager.Store(context.Background(), storeRequest)
 		if err != nil {
 			log.Errorf("store error when reuse peer task: %s", err)
 			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
@@ -108,31 +107,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 			return nil, false
 		}
 	} else {
-		f, err := os.OpenFile(request.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+		err := ptm.storePartialFile(ctx, request, log, reuse, rg)
 		if err != nil {
-			log.Errorf("open dest file error when reuse peer task: %s", err)
-			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			span.RecordError(err)
-			return nil, false
-		}
-		rc, err := ptm.storageManager.ReadAllPieces(ctx,
-			&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
-		if err != nil {
-			log.Errorf("read pieces error when reuse peer task: %s", err)
-			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			span.RecordError(err)
-			return nil, false
-		}
-		defer rc.Close()
-		n, err := io.Copy(f, rc)
-		if err != nil {
-			log.Errorf("copy data error when reuse peer task: %s", err)
-			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-			span.RecordError(err)
-			return nil, false
-		}
-		if n != rg.Length {
-			log.Errorf("copy data length not match when reuse peer task, actual: %d, desire: %d", n, rg.Length)
 			span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 			span.RecordError(err)
 			return nil, false
@@ -162,6 +138,32 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	span.SetAttributes(config.AttributePeerTaskCost.Int64(cost))
 	return progressCh, true
+}
+
+func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileTaskRequest,
+	log *logger.SugaredLoggerOnWith, reuse *storage.ReusePeerTask, rg *clientutil.Range) error {
+	f, err := os.OpenFile(request.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
+	if err != nil {
+		log.Errorf("open dest file error when reuse peer task: %s", err)
+		return err
+	}
+	rc, err := ptm.storageManager.ReadAllPieces(ctx,
+		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
+	if err != nil {
+		log.Errorf("read pieces error when reuse peer task: %s", err)
+		return err
+	}
+	defer rc.Close()
+	n, err := io.Copy(f, rc)
+	if err != nil {
+		log.Errorf("copy data error when reuse peer task: %s", err)
+		return err
+	}
+	if n != rg.Length {
+		log.Errorf("copy data length not match when reuse peer task, actual: %d, desire: %d", n, rg.Length)
+		return io.ErrShortBuffer
+	}
+	return nil
 }
 
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
@@ -202,7 +204,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.URL))
 	if rg != nil {
-		span.SetAttributes(config.AttributeReusePeerID.String(request.URLMeta.Range))
+		span.SetAttributes(config.AttributeReuseRange.String(request.URLMeta.Range))
 	}
 	defer span.End()
 
