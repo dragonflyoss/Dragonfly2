@@ -36,7 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -77,7 +76,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		if err := logcore.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
+		if err := logger.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 

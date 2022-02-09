@@ -19,18 +19,18 @@ package log
 import (
 	"go.uber.org/zap/zapcore"
 
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
+	"d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 )
 
 // SetCoreLevel sets core log level, export internal SetCoreLevel for using dragonfly as library
 func SetCoreLevel(level zapcore.Level) {
-	logcore.SetCoreLevel(level)
+	logger.SetCoreLevel(level)
 }
 
 // SetGrpcLevel sets grpc log level, export internal SetGrpcLevel for using dragonfly as library
 func SetGrpcLevel(level zapcore.Level) {
-	logcore.SetGrpcLevel(level)
+	logger.SetGrpcLevel(level)
 }
 
 // SetupDaemon sets daemon log config: path, console
@@ -49,5 +49,5 @@ func SetupDaemon(logDir string, console bool) error {
 		return err
 	}
 
-	return logcore.InitDaemon(false, d.LogDir())
+	return logger.InitDaemon(false, d.LogDir())
 }
