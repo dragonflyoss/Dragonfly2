@@ -44,9 +44,10 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	reuse := ptm.storageManager.FindCompletedTask(taskID)
 	var (
-		rg  *clientutil.Range // the range of parent peer task data to read
-		log *logger.SugaredLoggerOnWith
-		err error
+		rg     *clientutil.Range // the range of parent peer task data to read
+		log    *logger.SugaredLoggerOnWith
+		length int64
+		err    error
 	)
 	if reuse == nil {
 		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
@@ -69,11 +70,13 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	if rg == nil {
 		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseFilePeerTask")
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
+		length = reuse.ContentLength
 	} else {
 		log = logger.With("peer", request.PeerId, "task", taskID, "range", request.UrlMeta.Range,
 			"component", "reuseRangeFilePeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
+		length = rg.Length
 	}
 
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -88,7 +91,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	}
 	defer span.End()
 
-	log.Infof("reuse from peer task: %s, size: %d", reuse.PeerID, reuse.ContentLength)
+	log.Infof("reuse from peer task: %s, total size: %d, target size: %d", reuse.PeerID, reuse.ContentLength, length)
 	span.AddEvent("reuse peer task", trace.WithAttributes(config.AttributePeerID.String(reuse.PeerID)))
 
 	start := time.Now()
@@ -126,8 +129,8 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		},
 		TaskID:          taskID,
 		PeerID:          request.PeerId,
-		ContentLength:   reuse.ContentLength,
-		CompletedLength: reuse.ContentLength,
+		ContentLength:   length,
+		CompletedLength: length,
 		PeerTaskDone:    true,
 		DoneCallback:    func() {},
 	}
