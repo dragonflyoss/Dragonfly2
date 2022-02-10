@@ -58,6 +58,8 @@ type SchedulerClient interface {
 
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
+	StatPeerTask(context.Context, *scheduler.StatPeerTaskRequest, ...grpc.CallOption) (*base.GrpcDfResult, error)
+
 	UpdateState([]dfnet.NetAddr)
 
 	GetState() []dfnet.NetAddr
@@ -241,3 +243,57 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	}
 	return
 }
+
+func (sc *schedulerClient) StatPeerTask(ctx context.Context, req *scheduler.StatPeerTaskRequest,
+	opts ...grpc.CallOption) (sr *base.GrpcDfResult, err error) {
+	var schedulerNode string
+	statFunc := func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, false)
+		if err != nil {
+			return nil, err
+		}
+		return client.StatPeerTask(ctx, req, opts...)
+	}
+	res, err := rpc.ExecuteWithRetry(statFunc, 0.2, 2.0, 3, nil)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Errorf("StatPeerTask: stat peer task to scheduler %s failed: %v", schedulerNode, err)
+		return sc.retryStatPeerTask(ctx, req, []string{schedulerNode}, err, opts)
+	}
+	sr = res.(*base.GrpcDfResult)
+	logger.Infof("stat task result: %s for taskId: %s, scheduler server node: %s",
+		base.Code_name[int32(sr.Code)], req.TaskId, schedulerNode)
+	return sr, err
+}
+
+func (sc *schedulerClient) retryStatPeerTask(ctx context.Context, req *scheduler.StatPeerTaskRequest, exclusiveNodes []string, cause error,
+	opts []grpc.CallOption) (*base.GrpcDfResult, error) {
+	if status.Code(cause) == codes.Canceled || status.Code(cause) == codes.DeadlineExceeded {
+		return nil, cause
+	}
+	var schedulerNode string
+	preNode, err := sc.TryMigrate(req.TaskId, cause, exclusiveNodes)
+	if err != nil {
+		return nil, cause
+	}
+	exclusiveNodes = append(exclusiveNodes, preNode)
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		var err error
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, true)
+		if err != nil {
+			return nil, err
+		}
+		return client.StatPeerTask(ctx, req, opts...)
+	}, 0.2, 2.0, 3, cause)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Errorf("retryStatPeerTask: stat peer task to scheduler %s failed: %v", schedulerNode, err)
+		return sc.retryStatPeerTask(ctx, req, exclusiveNodes, err, opts)
+	}
+	sr := res.(*base.GrpcDfResult)
+	logger.Infof("stat peer task result %s taskID: %s, scheduler: %s",
+		base.Code_name[int32(sr.Code)], req.TaskId, schedulerNode)
+	return sr, nil
+}
+
+var _ SchedulerClient = (*schedulerClient)(nil)

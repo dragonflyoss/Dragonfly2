@@ -25,6 +25,7 @@ import (
 	empty "google.golang.org/protobuf/types/known/emptypb"
 
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -86,4 +87,10 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 // LeaveTask makes the peer unschedulable
 func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
+}
+
+// StatPeerTask checks if the given task exists in P2P network
+func (s *Server) StatPeerTask(ctx context.Context, req *scheduler.StatPeerTaskRequest) (*base.GrpcDfResult, error) {
+	// TODO: add metrics
+	return s.service.StatPeerTask(ctx, req)
 }

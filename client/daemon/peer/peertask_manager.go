@@ -54,6 +54,9 @@ type TaskManager interface {
 
 	IsPeerTaskRunning(id string) bool
 
+	// Check if the given task exists in P2P network
+	StatPeerTask(ctx context.Context, taskID string) (*base.GrpcDfResult, error)
+
 	// Stop stops the PeerTaskManager
 	Stop(ctx context.Context) error
 }
@@ -351,4 +354,12 @@ func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
 func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) bool {
 	_, ok := ptm.runningPeerTasks.Load(taskID)
 	return ok
+}
+
+func (ptm *peerTaskManager) StatPeerTask(ctx context.Context, taskID string) (*base.GrpcDfResult, error) {
+	req := &scheduler.StatPeerTaskRequest{
+		TaskId: taskID,
+	}
+
+	return ptm.schedulerClient.StatPeerTask(ctx, req)
 }

@@ -379,6 +379,35 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	return nil
 }
 
+// StatPeerTask checks if the given task exists in P2P network
+func (s *Service) StatPeerTask(ctx context.Context, req *rpcscheduler.StatPeerTaskRequest) (*base.GrpcDfResult, error) {
+	log := logger.With("function", "StatPeerTask", "TaskID", req.TaskId)
+
+	// Check if task exists
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if !loaded || task == nil {
+		msg := "task not found in P2P network"
+		log.Info(msg)
+		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
+	}
+	if task.FSM.Current() != resource.TaskStateSucceeded {
+		msg := fmt.Sprintf("task found but not in %s state: %s", resource.TaskStateSucceeded, task.FSM.Current())
+		log.Info(msg)
+		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
+	}
+
+	lenPeers := task.PeerCount.Load()
+	if lenPeers <= 0 {
+		msg := fmt.Sprintf("task found but with %d active peers", lenPeers)
+		log.Info(msg)
+		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
+	}
+
+	msg := "task found in P2P network"
+	log.Info(msg)
+	return common.NewGrpcDfResult(base.Code_Success, msg), nil
+}
+
 // registerTask creates a new task or reuses a previous task
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)

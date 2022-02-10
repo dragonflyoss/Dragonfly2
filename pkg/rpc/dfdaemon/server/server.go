@@ -43,6 +43,8 @@ type DaemonServer interface {
 	SyncPieceTasks(dfdaemon.Daemon_SyncPieceTasksServer) error
 	// CheckHealth check daemon health
 	CheckHealth(context.Context) error
+	// Check if the given task exists in P2P cache system
+	StatTask(context.Context, *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error)
 }
 
 type proxy struct {
@@ -98,6 +100,10 @@ func (p *proxy) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error 
 
 func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.CheckHealth(ctx)
+}
+
+func (p *proxy) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error) {
+	return p.server.StatTask(ctx, req)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

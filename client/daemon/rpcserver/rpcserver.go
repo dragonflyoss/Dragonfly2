@@ -37,6 +37,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -294,4 +295,37 @@ func (s *server) Download(ctx context.Context,
 			return status.Error(codes.Canceled, ctx.Err().Error())
 		}
 	}
+}
+
+func (m *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) (*base.GrpcDfResult, error) {
+	code := base.Code_Success
+	msg := "task found in cache"
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
+
+	log.Info("new stat task request")
+	if completed := m.isTaskCompleted(taskID); !completed {
+		// If only stat local cache and task doesn't exist, return not found
+		if req.LocalOnly {
+			msg = "task not found in local cache"
+			log.Info(msg)
+			return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
+		}
+		res, err := m.peerTaskManager.StatPeerTask(ctx, taskID)
+		if err != nil {
+			msg = fmt.Sprintf("failed to StatPeerTask from peers: %v", err)
+			log.Error(msg)
+			return nil, errors.New(msg)
+		}
+		if res.Code == base.Code_PeerTaskNotFound {
+			code = res.Code
+			msg = res.Message
+			log.Info(msg)
+		}
+	}
+	return common.NewGrpcDfResult(code, msg), nil
+}
+
+func (m *server) isTaskCompleted(taskID string) bool {
+	return m.storageManager.FindCompletedTask(taskID) != nil
 }

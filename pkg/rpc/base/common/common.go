@@ -38,6 +38,13 @@ func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
 	}
 }
 
+func NewGrpcDfResult(code base.Code, msg string) *base.GrpcDfResult {
+	return &base.GrpcDfResult{
+		Code:    code,
+		Message: msg,
+	}
+}
+
 // NewResWithCodeAndMsg returns a response ptr with code and msg,
 // ptr is a expected type ptr.
 func NewResWithCodeAndMsg(ptr interface{}, code base.Code, msg string) interface{} {
