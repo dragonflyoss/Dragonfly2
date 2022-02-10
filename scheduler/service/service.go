@@ -379,6 +379,30 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	return nil
 }
 
+// StatPeerTask checks the current state of the task
+func (s *Service) StatPeerTask(ctx context.Context, req *rpcscheduler.StatPeerTaskRequest) error {
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if !loaded {
+		msg := fmt.Sprintf("task %s not found", req.TaskId)
+		logger.Info(msg)
+		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	}
+	if task.FSM.Current() != resource.TaskStateSucceeded {
+		msg := fmt.Sprintf("task has been found but state %s is not %s", task.FSM.Current(), resource.TaskStateSucceeded)
+		task.Log.Info(msg)
+		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	}
+
+	if !task.HasAvailablePeer() {
+		msg := "task has been found but task has no available peers"
+		task.Log.Info(msg)
+		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	}
+
+	task.Log.Debug("task found in P2P network")
+	return nil
+}
+
 // registerTask creates a new task or reuses a previous task
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)

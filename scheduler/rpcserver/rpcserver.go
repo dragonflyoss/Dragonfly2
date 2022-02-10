@@ -87,3 +87,9 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }
+
+// StatPeerTask checks if the given task exists in P2P network
+func (s *Server) StatPeerTask(ctx context.Context, req *scheduler.StatPeerTaskRequest) (*empty.Empty, error) {
+	// TODO: add metrics
+	return new(empty.Empty), s.service.StatPeerTask(ctx, req)
+}

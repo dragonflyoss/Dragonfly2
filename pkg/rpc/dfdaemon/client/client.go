@@ -79,6 +79,8 @@ type DaemonClient interface {
 
 	CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error
 
+	StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error
+
 	Close() error
 }
 
@@ -155,4 +157,17 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 		return
 	}
 	return
+}
+
+func (dc *daemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error {
+	// StatTask is a latency sensitive operation, so we don't retry & wait for daemon to start,
+	// we assume daemon is already running.
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+
+	client, _, err := dc.getDaemonClient(taskID, false)
+	if err != nil {
+		return err
+	}
+	_, err = client.StatTask(ctx, req, opts...)
+	return err
 }

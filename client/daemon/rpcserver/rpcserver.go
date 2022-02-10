@@ -295,3 +295,25 @@ func (s *server) Download(ctx context.Context,
 		}
 	}
 }
+
+func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+	msg := "task found in cache"
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
+
+	log.Info("new stat task request")
+	if completed := s.isTaskCompleted(taskID); !completed {
+		// If only stat local cache and task doesn't exist, return not found
+		if req.LocalOnly {
+			msg = "task not found in local cache"
+			log.Info(msg)
+			return dferrors.New(base.Code_PeerTaskNotFound, msg)
+		}
+		return s.peerTaskManager.StatPeerTask(ctx, taskID)
+	}
+	return nil
+}
+
+func (s *server) isTaskCompleted(taskID string) bool {
+	return s.storageManager.FindCompletedTask(taskID) != nil
+}
