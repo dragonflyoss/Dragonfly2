@@ -22,10 +22,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
@@ -129,7 +129,7 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)
 		}
-		return client.CheckHealth(ctx, new(empty.Empty), opts...)
+		return client.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
 		logger.Infof("CheckHealth: invoke daemon node %s CheckHealth failed: %v", target, err)
