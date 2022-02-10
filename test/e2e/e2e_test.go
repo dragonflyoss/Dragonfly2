@@ -17,6 +17,7 @@
 package e2e
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,10 +26,37 @@ import (
 
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
+	"k8s.io/component-base/featuregate"
 
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
 )
+
+var (
+	featureGates     = featuregate.NewFeatureGate()
+	featureGatesFlag string
+
+	featureGateRange  featuregate.Feature = "dfget-range"
+	featureGateCommit featuregate.Feature = "dfget-commit"
+
+	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+		featureGateRange: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateCommit: {
+			Default:       true,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+	}
+)
+
+func init() {
+	featureGates.Add(defaultFeatureGates)
+	flag.StringVar(&featureGatesFlag, "featuregates", "", "e2e test feature gates")
+}
 
 var _ = AfterSuite(func() {
 	for _, server := range servers {
@@ -87,6 +115,10 @@ var _ = AfterSuite(func() {
 })
 
 var _ = BeforeSuite(func() {
+	err := featureGates.Set(featureGatesFlag)
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Printf("feature gates: %q, flags: %q\n", featureGates.String(), featureGatesFlag)
+
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
 	if mode != "" {
 		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
@@ -114,9 +146,12 @@ var _ = BeforeSuite(func() {
 	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
-	fmt.Printf("raw dfget version: %s\n", rawDfgetVersion)
+	fmt.Printf("raw dfget version:\n%s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
+	if !featureGates.Enabled(featureGateCommit) {
+		return
+	}
 	if mode == dfdaemonCompatibilityTestMode {
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
