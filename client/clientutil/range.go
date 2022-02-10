@@ -29,6 +29,10 @@ type Range struct {
 	Start, Length int64
 }
 
+func (r Range) String() string {
+	return fmt.Sprintf("bytes=%d-%d", r.Start, r.Start+r.Length-1)
+}
+
 // ErrNoOverlap is returned by ParseRange if first-byte-pos of
 // all of the byte-range-spec values is greater than the content size.
 var ErrNoOverlap = errors.New("invalid range: failed to overlap")
