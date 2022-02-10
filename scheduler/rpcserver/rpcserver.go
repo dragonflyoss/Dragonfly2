@@ -40,7 +40,7 @@ type Server struct {
 // New returns a new transparent scheduler server from the given options
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 	scheduler.RegisterSchedulerServer(grpcServer, svr)
 	return grpcServer
 }

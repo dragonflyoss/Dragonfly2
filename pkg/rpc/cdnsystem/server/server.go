@@ -49,7 +49,7 @@ type proxy struct {
 }
 
 func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 	cdnsystem.RegisterSeederServer(grpcServer, &proxy{server: seederServer})
 	return grpcServer
 }
