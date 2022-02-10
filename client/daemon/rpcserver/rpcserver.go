@@ -41,6 +41,7 @@ import (
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 type Server interface {
@@ -294,4 +295,39 @@ func (s *server) Download(ctx context.Context,
 			return status.Error(codes.Canceled, ctx.Err().Error())
 		}
 	}
+}
+
+func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
+
+	log.Info("new stat task request")
+	if completed := s.isTaskCompleted(taskID); completed {
+		log.Info("task found in local storage")
+		return nil
+	}
+
+	// If only stat local cache and task doesn't exist, return not found
+	if req.LocalOnly {
+		msg := "task not found in local cache"
+		log.Info(msg)
+		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	}
+
+	// Check scheduler if other peers hold the task
+	task, se := s.peerTaskManager.StatTask(ctx, taskID)
+	if se != nil {
+		return se
+	}
+	// Task available for download only if task is in succeeded state and has available peer
+	if task.State == resource.TaskStateSucceeded && task.HasAvailablePeer {
+		return nil
+	}
+	msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
+	log.Info(msg)
+	return dferrors.New(base.Code_PeerTaskNotFound, msg)
+}
+
+func (s *server) isTaskCompleted(taskID string) bool {
+	return s.storageManager.FindCompletedTask(taskID) != nil
 }

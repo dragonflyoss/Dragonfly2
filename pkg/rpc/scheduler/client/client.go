@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -58,6 +59,8 @@ type SchedulerClient interface {
 	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error
 
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
+
+	StatTask(context.Context, *scheduler.StatTaskRequest, ...grpc.CallOption) (*scheduler.Task, error)
 
 	UpdateState([]dfnet.NetAddr)
 
@@ -242,3 +245,64 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	}
 	return
 }
+
+func (sc *schedulerClient) StatTask(ctx context.Context, req *scheduler.StatTaskRequest, opts ...grpc.CallOption) (*scheduler.Task, error) {
+	var schedulerNode string
+	statFunc := func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		var err error
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, false)
+		if err != nil {
+			return nil, err
+		}
+		return client.StatTask(ctx, req, opts...)
+	}
+
+	res, err := rpc.ExecuteWithRetry(statFunc, 0.1, 0.5, 2, nil)
+	if err != nil {
+		// DfError means scheduler responds request correctly
+		if _, ok := err.(*dferrors.DfError); ok {
+			return nil, err
+		}
+		logger.WithTaskID(req.TaskId).Errorf("StatTask: stat peer task to scheduler %s failed: %v", schedulerNode, err)
+		return sc.retryStatTask(ctx, req, []string{schedulerNode}, err, opts)
+	}
+
+	return res.(*scheduler.Task), nil
+}
+
+func (sc *schedulerClient) retryStatTask(ctx context.Context, req *scheduler.StatTaskRequest, exclusiveNodes []string, cause error,
+	opts []grpc.CallOption) (*scheduler.Task, error) {
+	if status.Code(cause) == codes.Canceled || status.Code(cause) == codes.DeadlineExceeded {
+		return nil, cause
+	}
+
+	var schedulerNode string
+	preNode, err := sc.TryMigrate(req.TaskId, cause, exclusiveNodes)
+	if err != nil {
+		return nil, cause
+	}
+
+	exclusiveNodes = append(exclusiveNodes, preNode)
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		var err error
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, true)
+		if err != nil {
+			return nil, err
+		}
+		return client.StatTask(ctx, req, opts...)
+	}, 0.1, 0.5, 2, cause)
+	if err != nil {
+		// DfError means scheduler responds request correctly
+		if _, ok := err.(*dferrors.DfError); ok {
+			return nil, err
+		}
+		logger.WithTaskID(req.TaskId).Errorf("retryStatTask: stat peer task to scheduler %s failed: %v", schedulerNode, err)
+		return sc.retryStatTask(ctx, req, exclusiveNodes, err, opts)
+	}
+
+	return res.(*scheduler.Task), nil
+}
+
+var _ SchedulerClient = (*schedulerClient)(nil)
