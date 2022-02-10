@@ -35,24 +35,6 @@ var (
 	DownloaderLogger *zap.Logger
 )
 
-func init() {
-	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
-	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
-	if err == nil {
-		sugar := log.Sugar()
-		SetCoreLogger(sugar)
-		SetGrpcLogger(sugar)
-		SetGCLogger(sugar)
-		SetStorageGCLogger(sugar)
-		SetKeepAliveLogger(sugar)
-		SetStatSeedLogger(log)
-		SetDownloadLogger(log)
-		SetJobLogger(sugar)
-	}
-	levels = append(levels, config.Level)
-}
-
 // SetLevel updates all log level
 func SetLevel(level zapcore.Level) {
 	Infof("change log level to %s", level.String())

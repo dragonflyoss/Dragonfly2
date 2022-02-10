@@ -52,7 +52,7 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 		}
 
 		// Initialize logger
-		if err := logger.InitManager(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
 
@@ -102,7 +102,7 @@ func runManager(d dfpath.Dfpath) error {
 
 	logger.Infof("manager configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := manager.New(cfg, d)

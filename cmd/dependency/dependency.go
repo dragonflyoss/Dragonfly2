@@ -40,7 +40,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/semconv"
-	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -89,12 +88,8 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 }
 
 // InitMonitor initialize monitor and return final handler
-func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) func() {
+func InitMonitor(pprofPort int, otelOption base.TelemetryOption) func() {
 	var fc = make(chan func(), 5)
-
-	if verbose {
-		logger.SetLevel(zapcore.DebugLevel)
-	}
 
 	if pprofPort >= 0 {
 		// Enable go pprof and statsview
