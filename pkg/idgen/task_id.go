@@ -24,9 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 )
 
-// TaskID generates a taskId.
-// filter is separated by & character.
-func TaskID(url string, meta *base.UrlMeta) string {
+func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
 	var filters []string
 	if meta != nil && meta.Filter != "" {
 		filters = strings.Split(meta.Filter, "&")
@@ -39,7 +37,7 @@ func TaskID(url string, meta *base.UrlMeta) string {
 			data = append(data, meta.Digest)
 		}
 
-		if meta.Range != "" {
+		if !ignoreRange && meta.Range != "" {
 			data = append(data, meta.Range)
 		}
 
@@ -49,4 +47,16 @@ func TaskID(url string, meta *base.UrlMeta) string {
 	}
 
 	return digestutils.Sha256(data...)
+}
+
+// TaskID generates a task id.
+// filter is separated by & character.
+func TaskID(url string, meta *base.UrlMeta) string {
+	return taskID(url, meta, false)
+}
+
+// ParentTaskID generates a task id like TaskID, but without range.
+// this func is used to check the parent tasks for ranged requests
+func ParentTaskID(url string, meta *base.UrlMeta) string {
+	return taskID(url, meta, true)
 }

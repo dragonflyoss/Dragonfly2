@@ -175,6 +175,7 @@ type DownloadOption struct {
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
 }
 
 type TransportOption struct {

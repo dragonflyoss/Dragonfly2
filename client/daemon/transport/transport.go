@@ -17,19 +17,24 @@
 package transport
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/propagation"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -201,11 +206,23 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
+	var rg *clientutil.Range
 
 	// Set meta range's value
-	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta.Digest = ""
-		meta.Range = rg
+	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
+		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		if err != nil {
+			return badRequest(req, err.Error())
+		}
+		if len(rgs) > 1 {
+			// TODO support multiple range request
+			return notImplemented(req, "multiple range is not supported")
+		} else if len(rgs) == 0 {
+			return requestedRangeNotSatisfiable(req, "zero range is not supported")
+		}
+		rg = &rgs[0]
+		// range in dragonfly is without "bytes="
+		meta.Range = strings.TrimLeft(rangeHeader, "bytes=")
 	}
 
 	// Pick header's parameters
@@ -224,6 +241,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		&peer.StreamTaskRequest{
 			URL:     url,
 			URLMeta: meta,
+			Range:   rg,
 			PeerID:  peerID,
 		},
 	)
@@ -247,8 +265,14 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		}
 	}
 
+	var status int
+	if meta.Range == "" {
+		status = http.StatusOK
+	} else {
+		status = http.StatusPartialContent
+	}
 	resp := &http.Response{
-		StatusCode:    http.StatusOK,
+		StatusCode:    status,
 		Body:          body,
 		Header:        hdr,
 		ContentLength: contentLength,
@@ -331,4 +355,29 @@ func delHopHeaders(header http.Header) {
 	for _, h := range traceContext.Fields() {
 		header.Del(h)
 	}
+}
+
+func httpResponse(req *http.Request, status int, body string) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode:    status,
+		Body:          io.NopCloser(bytes.NewBufferString(body)),
+		ContentLength: int64(len(body)),
+
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
+	}
+	return resp, nil
+}
+
+func badRequest(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusBadRequest, body)
+}
+
+func notImplemented(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusNotImplemented, body)
+}
+
+func requestedRangeNotSatisfiable(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
 }

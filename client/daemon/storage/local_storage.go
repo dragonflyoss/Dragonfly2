@@ -248,24 +248,33 @@ func (t *localTaskStore) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	return io.LimitReader(file, req.Range.Length), file, nil
 }
 
-func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *PeerTaskMetadata) (io.ReadCloser, error) {
+func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRequest) (io.ReadCloser, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to read all pieces")
 		return nil, ErrInvalidDigest
 	}
 
 	t.touch()
+
+	// who call ReadPiece, who close the io.ReadCloser
 	file, err := os.Open(t.DataFilePath)
 	if err != nil {
 		return nil, err
 	}
-	if _, err = file.Seek(0, io.SeekStart); err != nil {
+	if req.Range == nil {
+		return file, nil
+	}
+
+	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
 		file.Close()
-		t.Errorf("file seek failed: %v", err)
+		t.Errorf("file seek to %d failed: %v", req.Range.Start, err)
 		return nil, err
 	}
-	// who call ReadPiece, who close the io.ReadCloser
-	return file, nil
+
+	return &limitedReadFile{
+		reader: io.LimitReader(file, req.Range.Length),
+		closer: file,
+	}, nil
 }
 
 func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
@@ -478,4 +487,25 @@ func (t *localTaskStore) saveMetadata() error {
 		t.Errorf("save metadata error: %s", err)
 	}
 	return err
+}
+
+// limitedReadFile implements io optimize for zero copy
+type limitedReadFile struct {
+	reader io.Reader
+	closer io.Closer
+}
+
+func (l *limitedReadFile) Read(p []byte) (n int, err error) {
+	return l.reader.Read(p)
+}
+
+func (l *limitedReadFile) Close() error {
+	return l.closer.Close()
+}
+
+func (l *limitedReadFile) WriteTo(w io.Writer) (n int64, err error) {
+	if r, ok := w.(io.ReaderFrom); ok {
+		return r.ReadFrom(l.reader)
+	}
+	return io.Copy(w, l.reader)
 }

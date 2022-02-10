@@ -82,6 +82,10 @@ type ReadPieceRequest struct {
 	PeerTaskMetadata
 	PieceMetadata
 }
+type ReadAllPiecesRequest struct {
+	PeerTaskMetadata
+	Range *clientutil.Range
+}
 
 type UpdateTaskRequest struct {
 	PeerTaskMetadata

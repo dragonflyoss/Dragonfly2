@@ -88,6 +88,10 @@ func (ptm *peerTaskManager) newFileTask(
 	if err != nil {
 		return nil, nil, err
 	}
+	// prefetch parent request
+	if ptm.enablePrefetch && request.UrlMeta.Range != "" {
+		go ptm.prefetch(&request.PeerTaskRequest)
+	}
 	ctx, span := tracer.Start(ctx, config.SpanFileTask, trace.WithSpanKind(trace.SpanKindClient))
 
 	pt := &fileTask{
