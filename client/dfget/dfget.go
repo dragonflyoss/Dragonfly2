@@ -28,11 +28,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfheaders"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -210,6 +210,10 @@ func parseHeader(s []string) map[string]string {
 }
 
 func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.DownRequest {
+	var rg string
+	if r, ok := hdr[headers.Range]; ok {
+		rg = strings.TrimLeft(r, "bytes=")
+	}
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
@@ -219,7 +223,7 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 		UrlMeta: &base.UrlMeta{
 			Digest: cfg.Digest,
 			Tag:    cfg.Tag,
-			Range:  hdr[dfheaders.Range],
+			Range:  rg,
 			Filter: cfg.Filter,
 			Header: hdr,
 		},

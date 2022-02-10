@@ -25,6 +25,7 @@ const (
 	AttributePeerID            = attribute.Key("d7y.peer.id")
 	AttributeTargetPeerID      = attribute.Key("d7y.peer.target.id")
 	AttributeReusePeerID       = attribute.Key("d7y.peer.reuse.id")
+	AttributeReuseRange        = attribute.Key("d7y.peer.reuse.range")
 	AttributeTargetPeerAddr    = attribute.Key("d7y.peer.target.addr")
 	AttributeMainPeer          = attribute.Key("d7y.peer.task.main_peer")
 	AttributePeerPacketCode    = attribute.Key("d7y.peer.packet.code")
