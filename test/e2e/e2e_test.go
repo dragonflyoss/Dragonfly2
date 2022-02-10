@@ -54,7 +54,7 @@ var (
 )
 
 func init() {
-	featureGates.Add(defaultFeatureGates)
+	_ = featureGates.Add(defaultFeatureGates)
 	flag.StringVar(&featureGatesFlag, "feature-gates", "", "e2e test feature gates")
 }
 
