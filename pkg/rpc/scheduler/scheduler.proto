@@ -165,6 +165,28 @@ message PeerTarget{
   string peer_id = 2 [(validate.rules).string.min_len = 1];
 }
 
+message StatTaskRequest{
+  // task id
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+}
+
+message Task{
+  // task id
+  string id = 1 [(validate.rules).string.min_len = 1];
+  // task type
+  int32 type = 2 [(validate.rules).int32.gte = 0];
+  // task content length
+  int64 content_length = 3 [(validate.rules).int64.gte = 1];
+  // task total piece count
+  int32 total_piece_count = 4 [(validate.rules).int32.gte = 1];
+  // task state
+  string state = 5 [(validate.rules).string.min_len = 1];
+  // task peer count
+  int32 peer_count = 6 [(validate.rules).int32.gte = 0];
+  // task contains available peer
+  bool hasAvailablePeer = 7;
+}
+
 // Scheduler System RPC Service
 service Scheduler{
   // RegisterPeerTask registers a peer into one task.
@@ -180,4 +202,7 @@ service Scheduler{
 
   // LeaveTask makes the peer leaving from scheduling overlay for the task.
   rpc LeaveTask(PeerTarget)returns(google.protobuf.Empty);
+
+  // Checks if any peer has the given task
+  rpc StatTask(StatTaskRequest)returns(Task);
 }
