@@ -57,6 +57,14 @@ message DownResult{
   bool done = 5;
 }
 
+message StatTaskRequest{
+  // content/cache id of the task
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  base.UrlMeta url_meta = 2;
+  // check local cache only
+  bool local_only = 3;
+}
+
 // Daemon Client RPC Service
 service Daemon{
   // Trigger client to download file
@@ -67,4 +75,6 @@ service Daemon{
   rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty);
   // Sync piece tasks with other peers
   rpc SyncPieceTasks(stream base.PieceTaskRequest)returns(stream base.PiecePacket);
+  // Check if given task exists in P2P cache system
+  rpc StatTask(StatTaskRequest) returns(base.GrpcDfResult);
 }

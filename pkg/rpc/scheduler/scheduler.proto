@@ -155,6 +155,10 @@ message PeerTarget{
   string peer_id = 2 [(validate.rules).string.min_len = 1];
 }
 
+message StatPeerTaskRequest{
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+}
+
 // Scheduler System RPC Service
 service Scheduler{
   // RegisterPeerTask registers a peer into one task.
@@ -170,4 +174,7 @@ service Scheduler{
 
   // LeaveTask makes the peer leaving from scheduling overlay for the task.
   rpc LeaveTask(PeerTarget)returns(google.protobuf.Empty);
+
+  // Checks if any peer has the given task
+  rpc StatPeerTask(StatPeerTaskRequest) returns(base.GrpcDfResult);
 }

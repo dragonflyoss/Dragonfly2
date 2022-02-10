@@ -142,3 +142,8 @@ message PiecePacket{
   // sha256 code of all piece md5
   string piece_md5_sign = 8;
 }
+
+message GrpcDfResult{
+  Code code = 1 [(validate.rules).enum.defined_only = true];
+  string message = 2;
+}
