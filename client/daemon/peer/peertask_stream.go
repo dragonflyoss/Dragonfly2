@@ -134,7 +134,7 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 }
 
 func (s *streamTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
-	pr, pc, err := s.peerTaskConductor.storage.ReadPiece(s.ctx, &storage.ReadPieceRequest{
+	pr, pc, err := s.peerTaskConductor.GetStorage().ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: s.peerTaskConductor.peerID,
 			TaskID: s.peerTaskConductor.taskID,
