@@ -55,7 +55,7 @@ var (
 
 func init() {
 	featureGates.Add(defaultFeatureGates)
-	flag.StringVar(&featureGatesFlag, "featuregates", "", "e2e test feature gates")
+	flag.StringVar(&featureGatesFlag, "feature-gates", "", "e2e test feature gates")
 }
 
 var _ = AfterSuite(func() {
