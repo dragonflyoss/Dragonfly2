@@ -85,6 +85,8 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		fmt.Println("test in pod: " + podName)
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 		pod := e2eutil.NewPodExec(ns, podName, container)
+		// install curl
+		pod.Command("apk", "add", "-U", "curl")
 
 		for path, size := range getFileDetails() {
 			url1 := e2eutil.GetFileURL(path)
@@ -105,23 +107,20 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	var (
 		sha256sum []string
 		dfget     []string
-		wget      []string
+		curl      []string
 	)
 
 	if rg == nil {
-		sha256sum = append(sha256sum, "sha256sum", path)
-		dfget = append(dfget, "dfget", "-O", "/tmp/d7y.out", url)
-		wget = append(wget, "sh", "-c", fmt.Sprintf(`
-              export http_proxy=http://127.0.0.1:65001
-              wget -O /tmp/wget.out %s`, url))
+		sha256sum = append(sha256sum, "/usr/bin/sha256sum", path)
+		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "-O", "/tmp/d7y.out", url)
+		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out", url)
 	} else {
 		sha256sum = append(sha256sum, "sh", "-c",
-			fmt.Sprintf("dd if=%s ibs=1 skip=%d count=%d 2> /dev/null | sha256sum", path, rg.Start, rg.Length))
-		dfget = append(dfget, "dfget", "-O", "/tmp/d7y.out", "-H",
+			fmt.Sprintf("dd if=%s ibs=1 skip=%d count=%d 2> /dev/null | /usr/bin/sha256sum", path, rg.Start, rg.Length))
+		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "-O", "/tmp/d7y.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
-		wget = append(wget, "sh", "-c", fmt.Sprintf(`
-              export http_proxy=http://127.0.0.1:65001
-              wget -O /tmp/wget.out "Range: bytes=%d-%d" %s`, rg.Start, rg.Start+rg.Length-1, url))
+		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",
+			"--header", fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 	}
 
 	fmt.Printf("--------------------------------------------------------------------------------\n\n")
@@ -149,7 +148,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	Expect(err).NotTo(HaveOccurred())
 
 	// get dfget downloaded file digest
-	out, err = pod.Command("sha256sum", "/tmp/d7y.out").CombinedOutput()
+	out, err = pod.Command("/usr/bin/sha256sum", "/tmp/d7y.out").CombinedOutput()
 	fmt.Println("dfget sha256sum: " + string(out))
 	Expect(err).NotTo(HaveOccurred())
 	sha256sum2 := strings.Split(string(out), " ")[0]
@@ -160,18 +159,19 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 
 	// skip dfdaemon
 	if ns == dragonflyNamespace {
+		fmt.Println("skip " + dragonflyNamespace + " namespace proxy tests")
 		return
 	}
 	// download file via proxy
 	start = time.Now()
-	out, err = pod.Command(wget...).CombinedOutput()
+	out, err = pod.Command(curl...).CombinedOutput()
 	end = time.Now()
 	fmt.Println(string(out))
 	Expect(err).NotTo(HaveOccurred())
 
 	// get proxy downloaded file digest
-	out, err = pod.Command("sha256sum", "/tmp/wget.out").CombinedOutput()
-	fmt.Println("wget sha256sum: " + string(out))
+	out, err = pod.Command("/usr/bin/sha256sum", "/tmp/curl.out").CombinedOutput()
+	fmt.Println("curl sha256sum: " + string(out))
 	Expect(err).NotTo(HaveOccurred())
 	sha256sum3 := strings.Split(string(out), " ")[0]
 	Expect(sha256sum1).To(Equal(sha256sum3))
