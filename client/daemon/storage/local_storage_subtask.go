@@ -234,6 +234,16 @@ func (t *localSubTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRe
 	return piecePacket, nil
 }
 
+func (t *localSubTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return -1, ErrInvalidDigest
+	}
+
+	t.parent.touch()
+	return t.TotalPieces, nil
+}
+
 func (t *localSubTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
 	t.parent.touch()
 	t.Lock()

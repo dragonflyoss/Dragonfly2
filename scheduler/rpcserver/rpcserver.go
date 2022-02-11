@@ -93,3 +93,9 @@ func (s *Server) StatPeerTask(ctx context.Context, req *scheduler.StatPeerTaskRe
 	// TODO: add metrics
 	return new(empty.Empty), s.service.StatPeerTask(ctx, req)
 }
+
+// AnnounceTask informs scheduler a peer has completed task
+func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
+	// TODO: add metrics
+	return new(empty.Empty), s.service.AnnounceTask(ctx, req)
+}

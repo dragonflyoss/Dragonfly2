@@ -81,6 +81,8 @@ type DaemonClient interface {
 
 	StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error
 
+	ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) error
+
 	Close() error
 }
 
@@ -169,5 +171,15 @@ func (dc *daemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequ
 		return err
 	}
 	_, err = client.StatTask(ctx, req, opts...)
+	return err
+}
+
+func (dc *daemonClient) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) error {
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	client, _, err := dc.getDaemonClient(taskID, false)
+	if err != nil {
+		return err
+	}
+	_, err = client.ImportTask(ctx, req, opts...)
 	return err
 }
