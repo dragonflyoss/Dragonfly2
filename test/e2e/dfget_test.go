@@ -92,14 +92,15 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		for path, size := range getFileDetails() {
 			url1 := e2eutil.GetFileURL(path)
 			url2 := e2eutil.GetNoContentLengthFileURL(path)
-			downloadSingleFile(ns, pod, path, url1, size, nil)
-			downloadSingleFile(ns, pod, path, url2, size, nil)
 
+			// make ranged requests to invoke prefetch feature
 			if featureGates.Enabled(featureGateRange) {
 				rg := getRandomRange(size)
 				downloadSingleFile(ns, pod, path, url1, size, rg)
 				downloadSingleFile(ns, pod, path, url2, size, rg)
 			}
+			downloadSingleFile(ns, pod, path, url1, size, nil)
+			downloadSingleFile(ns, pod, path, url2, size, nil)
 		}
 	})
 }
