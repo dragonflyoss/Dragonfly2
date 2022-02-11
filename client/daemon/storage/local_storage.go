@@ -417,6 +417,16 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return piecePacket, nil
 }
 
+func (t *localTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return -1, ErrInvalidDigest
+	}
+
+	t.touch()
+	return t.TotalPieces, nil
+}
+
 func (t *localTaskStore) CanReclaim() bool {
 	if t.invalid.Load() {
 		return true

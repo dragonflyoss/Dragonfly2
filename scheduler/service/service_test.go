@@ -1605,7 +1605,7 @@ func TestService_registerHost(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
 
 			tc.mock(mockHost, hostManager, res.EXPECT(), hostManager.EXPECT(), dynconfig.EXPECT())
-			host := svc.registerHost(context.Background(), tc.req)
+			host := svc.registerHost(context.Background(), tc.req.PeerHost)
 			tc.expect(t, host)
 		})
 	}
@@ -1811,7 +1811,7 @@ func TestService_registerPeer(t *testing.T) {
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.mock(mockPeer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			peer := svc.registerPeer(context.Background(), tc.req, mockTask, mockHost)
+			peer := svc.registerPeer(context.Background(), tc.req.PeerId, mockTask, mockHost, tc.req.UrlMeta.Tag)
 			tc.expect(t, peer)
 		})
 	}

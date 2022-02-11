@@ -45,6 +45,8 @@ type DaemonServer interface {
 	CheckHealth(context.Context) error
 	// Check if the given task exists in P2P cache system
 	StatTask(context.Context, *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error)
+	// Import the given file into P2P cache system
+	ImportTask(context.Context, *dfdaemon.ImportTaskRequest) (*base.GrpcDfResult, error)
 }
 
 type proxy struct {
@@ -104,6 +106,10 @@ func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.E
 
 func (p *proxy) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error) {
 	return p.server.StatTask(ctx, req)
+}
+
+func (p *proxy) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest) (*base.GrpcDfResult, error) {
+	return p.server.ImportTask(ctx, req)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

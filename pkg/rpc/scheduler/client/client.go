@@ -60,6 +60,8 @@ type SchedulerClient interface {
 
 	StatPeerTask(context.Context, *scheduler.StatPeerTaskRequest, ...grpc.CallOption) (*base.GrpcDfResult, error)
 
+	AnnounceTask(context.Context, *scheduler.AnnounceTaskRequest, ...grpc.CallOption) (*base.GrpcDfResult, error)
+
 	UpdateState([]dfnet.NetAddr)
 
 	GetState() []dfnet.NetAddr
@@ -294,6 +296,58 @@ func (sc *schedulerClient) retryStatPeerTask(ctx context.Context, req *scheduler
 	logger.Infof("stat peer task result %s taskID: %s, scheduler: %s",
 		base.Code_name[int32(sr.Code)], req.TaskId, schedulerNode)
 	return sr, nil
+}
+
+func (sc *schedulerClient) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest,
+	opts ...grpc.CallOption) (ar *base.GrpcDfResult, err error) {
+	var schedulerNode string
+	annFunc := func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, false)
+		if err != nil {
+			return nil, err
+		}
+		return client.AnnounceTask(ctx, req, opts...)
+	}
+	res, err := rpc.ExecuteWithRetry(annFunc, 0.2, 2.0, 3, nil)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Errorf("AnnounceTask: announce task to scheduler %s failed: %v", schedulerNode, err)
+		return sc.retryAnnounceTask(ctx, req, []string{schedulerNode}, err, opts)
+	}
+	ar = res.(*base.GrpcDfResult)
+	logger.Infof("announce task result: %s for taskId: %s, scheduler server node: %s",
+		base.Code_name[int32(ar.Code)], req.TaskId, schedulerNode)
+	return ar, nil
+}
+
+func (sc *schedulerClient) retryAnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest,
+	exclusiveNodes []string, cause error, opts []grpc.CallOption) (*base.GrpcDfResult, error) {
+	if status.Code(cause) == codes.Canceled || status.Code(cause) == codes.DeadlineExceeded {
+		return nil, cause
+	}
+	var schedulerNode string
+	preNode, err := sc.TryMigrate(req.TaskId, cause, exclusiveNodes)
+	if err != nil {
+		return nil, cause
+	}
+	exclusiveNodes = append(exclusiveNodes, preNode)
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		var client scheduler.SchedulerClient
+		client, schedulerNode, err = sc.getSchedulerClient(req.TaskId, true)
+		if err != nil {
+			return nil, err
+		}
+		return client.AnnounceTask(ctx, req, opts...)
+	}, 0.2, 2.0, 3, cause)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Errorf("retryAnnounceTask: announce peer task to scheduler %s failed: %v",
+			schedulerNode, err)
+		return sc.retryAnnounceTask(ctx, req, exclusiveNodes, err, opts)
+	}
+	ar := res.(*base.GrpcDfResult)
+	logger.Infof("announce task result: %s for taskID: %s, scheduler: %s",
+		base.Code_name[int32(ar.Code)], req.TaskId, schedulerNode)
+	return ar, nil
 }
 
 var _ SchedulerClient = (*schedulerClient)(nil)

@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
@@ -56,6 +57,11 @@ type TaskManager interface {
 
 	// Check if the given task exists in P2P network
 	StatPeerTask(ctx context.Context, taskID string) (*base.GrpcDfResult, error)
+
+	// AnnouncePeerTask announces peer task info to P2P network
+	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error
+
+	GetPieceManager() PieceManager
 
 	// Stop stops the PeerTaskManager
 	Stop(ctx context.Context) error
@@ -362,4 +368,62 @@ func (ptm *peerTaskManager) StatPeerTask(ctx context.Context, taskID string) (*b
 	}
 
 	return ptm.schedulerClient.StatPeerTask(ctx, req)
+}
+
+func (ptm *peerTaskManager) GetPieceManager() PieceManager {
+	return ptm.pieceManager
+}
+
+func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context,
+	meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
+	log := logger.With("function", "AnnouncePeerTask", "taskID", meta.TaskID, "peerID", meta.PeerID, "CID", cid)
+
+	// Check if the given task is completed in local storageManager
+	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
+		msg := fmt.Sprintf("task %s not found in local storage", meta.TaskID)
+		log.Errorf(msg)
+		return errors.New(msg)
+	}
+
+	// prepare AnnounceTaskRequest
+	totalPieces, err := ptm.storageManager.GetTotalPieces(ctx, &meta)
+	if err != nil {
+		msg := fmt.Sprintf("get total pieces failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	pieceTaskRequest := &base.PieceTaskRequest{
+		TaskId:   meta.TaskID,
+		DstPid:   meta.PeerID,
+		StartNum: 0,
+		Limit:    uint32(totalPieces),
+	}
+	piecePacket, err := ptm.storageManager.GetPieces(ctx, pieceTaskRequest)
+	if err != nil {
+		msg := fmt.Sprintf("get pieces info failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
+	req := &scheduler.AnnounceTaskRequest{
+		TaskId:      meta.TaskID,
+		Cid:         cid,
+		UrlMeta:     urlMeta,
+		PeerHost:    ptm.host,
+		PiecePacket: piecePacket,
+	}
+
+	// Announce peer task to scheduler
+	res, err := ptm.schedulerClient.AnnounceTask(ctx, req)
+	if err != nil {
+		msg := fmt.Sprintf("announce peer task failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	if res.Code != base.Code_Success {
+		msg := fmt.Sprintf("announce peer task got unexpected result: %v", res)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	return nil
 }

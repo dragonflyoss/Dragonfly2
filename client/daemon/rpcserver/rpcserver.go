@@ -22,6 +22,7 @@ import (
 	"math"
 	"net"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -324,6 +325,67 @@ func (m *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest
 		}
 	}
 	return common.NewGrpcDfResult(code, msg), nil
+}
+
+func (m *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) (*base.GrpcDfResult, error) {
+	peerID := idgen.PeerID(m.peerHost.Ip)
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	log := logger.With("function", "ImportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
+
+	log.Info("new import task request")
+	ptm := storage.PeerTaskMetadata{
+		PeerID: peerID,
+		TaskID: taskID,
+	}
+	announceFunc := func() {
+		// TODO: retry announce on error
+		start := time.Now()
+		err := m.peerTaskManager.AnnouncePeerTask(context.Background(), ptm, req.Cid, req.UrlMeta)
+		if err != nil {
+			log.Warnf("Failed to announce task to scheduler: %s", err)
+		} else {
+			log.Infof("Announce task (peerID %s) to scheduler in %.6f seconds", ptm.PeerID, time.Since(start).Seconds())
+		}
+	}
+
+	// 0. Task exists in local storage
+	if task := m.storageManager.FindCompletedTask(taskID); task != nil {
+		msg := fmt.Sprintf("import file skipped, task already exists with peerID %s", task.PeerID)
+		log.Info(msg)
+
+		// Announce to scheduler as well, but in background
+		ptm.PeerID = task.PeerID
+		go announceFunc()
+		return common.NewGrpcDfResult(base.Code_Success, msg), nil
+	}
+
+	// 1. Register to storageManager
+	// TODO: compute and check hash digest if digest exists in ImportTaskRequest
+	tsd, err := s.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
+		PeerTaskMetadata: storage.PeerTaskMetadata{
+			PeerID: peerID,
+			TaskID: taskID,
+		},
+	})
+	if err != nil {
+		msg := fmt.Sprintf("register task to storage manager failed: %v", err)
+		log.Error(msg)
+		return nil, errors.New(msg)
+	}
+
+	// 2. Import task file
+	pieceManager := m.peerTaskManager.GetPieceManager()
+	if err := pieceManager.ImportFile(ctx, ptm, tsd, req); err != nil {
+		msg := fmt.Sprintf("import file failed: %v", err)
+		log.Error(msg)
+		return nil, errors.New(msg)
+	}
+	log.Info("import file succeeded")
+
+	// 3. Announce to scheduler asynchronously
+	go announceFunc()
+
+	return common.NewGrpcDfResult(base.Code_Success, "import file succeeded"), nil
 }
 
 func (m *server) isTaskCompleted(taskID string) bool {
