@@ -170,6 +170,19 @@ message StatPeerTaskRequest{
   string task_id = 1 [(validate.rules).string.min_len = 1];
 }
 
+message AnnounceTaskRequest{
+  // task id
+  string task_id = 1 [(validate.rules).string.min_len = 1];
+  // cache id
+  string cid = 2 [(validate.rules).string.min_len = 1];
+  // task url meta
+  base.UrlMeta url_meta = 3 [(validate.rules).message.required = true];
+  // peer host info
+  PeerHost peer_host = 4;
+  // task's piece info
+  base.PiecePacket piece_packet = 5 [(validate.rules).message.required = true];
+}
+
 // Scheduler System RPC Service
 service Scheduler{
   // RegisterPeerTask registers a peer into one task.
@@ -188,4 +201,7 @@ service Scheduler{
 
   // Checks if any peer has the given task
   rpc StatPeerTask(StatPeerTaskRequest) returns(google.protobuf.Empty);
+
+  // A peer announces that it has the announced task to other peers
+  rpc AnnounceTask(AnnounceTaskRequest) returns(google.protobuf.Empty);
 }
