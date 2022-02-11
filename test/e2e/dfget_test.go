@@ -86,7 +86,8 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 		pod := e2eutil.NewPodExec(ns, podName, container)
 		// install curl
-		pod.Command("apk", "add", "-U", "curl")
+		out, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
 
 		for path, size := range getFileDetails() {
 			url1 := e2eutil.GetFileURL(path)
@@ -166,7 +167,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	start = time.Now()
 	out, err = pod.Command(curl...).CombinedOutput()
 	end = time.Now()
-	fmt.Println(string(out))
+	fmt.Print(string(out))
 	Expect(err).NotTo(HaveOccurred())
 
 	// get proxy downloaded file digest
