@@ -108,6 +108,11 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		return nil, attr, fmt.Errorf("peer task failed: %d/%s",
 			s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
 	case <-s.peerTaskConductor.successCh:
+		if s.peerTaskConductor.GetContentLength() != -1 {
+			attr[headers.ContentLength] = fmt.Sprintf("%d", s.peerTaskConductor.GetContentLength())
+		} else {
+			attr[headers.TransferEncoding] = "chunked"
+		}
 		rc, err := s.peerTaskConductor.peerTaskManager.storageManager.ReadAllPieces(
 			ctx,
 			&storage.ReadAllPiecesRequest{
