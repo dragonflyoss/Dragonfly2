@@ -20,11 +20,16 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-http-utils/headers"
+
+	"d7y.io/dragonfly/v2/client/clientutil"
 )
 
 var port = flag.Int("port", 80, "")
@@ -44,6 +49,21 @@ type fileHandler struct {
 }
 
 func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var rg *clientutil.Range
+	if s := r.Header.Get(headers.Range); s != "" {
+		rgs, err := clientutil.ParseRange(s, math.MaxInt)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(fmt.Sprintf("wrong range format")))
+			return
+		}
+		if len(rgs) > 1 || len(rgs) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(fmt.Sprintf("unsupport range format")))
+			return
+		}
+		rg = &rgs[0]
+	}
 	upath := filepath.Clean(r.URL.Path)
 	if !strings.HasPrefix(upath, "/") {
 		upath = "/" + upath
@@ -79,9 +99,16 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+	var rd io.Reader
+	if rg == nil {
+		rd = file
+	} else {
+		_, _ = file.Seek(rg.Start, io.SeekStart)
+		rd = io.LimitReader(file, rg.Length)
+	}
 
 	if f.enableContentLength {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	}
-	_, _ = io.Copy(w, file)
+	_, _ = io.Copy(w, rd)
 }
