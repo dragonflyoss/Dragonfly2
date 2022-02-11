@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -27,8 +28,10 @@ const (
 )
 
 func DockerCommand(arg ...string) *exec.Cmd {
-	extArgs := []string{"exec", "-i", kindDockerContainer}
+	container := kindDockerContainer
+	extArgs := []string{"exec", "-i", container}
 	extArgs = append(extArgs, arg...)
+	fmt.Println(fmt.Sprintf(`docker %s exec: "%s"`, container, strings.Join(arg, `" "`)))
 	return exec.Command("docker", extArgs...)
 }
 
@@ -70,6 +73,7 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 		extArgs = []string{"-n", p.namespace, "exec", "-c", p.container, p.name, "--"}
 	}
 	extArgs = append(extArgs, arg...)
+	fmt.Println(fmt.Sprintf(`pod %s/%s exec: "%s"`, p.namespace, p.name, strings.Join(arg, `" "`)))
 	return KubeCtlCommand(extArgs...)
 }
 
