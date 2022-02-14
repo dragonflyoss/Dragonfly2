@@ -161,7 +161,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
