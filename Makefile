@@ -209,7 +209,7 @@ test-coverage:
 
 # Run github actions E2E tests with coverage
 actions-e2e-test-coverage:
-	@ginkgo -v -r --race --fail-fast -cover --trace --progress test/e2e
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
