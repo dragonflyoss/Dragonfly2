@@ -410,6 +410,9 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		sConfig.Certificates = []tls.Certificate{*proxy.cert}
 	}
 
+	// TODO support http2 by set sConfig.NextProtos = []string{"http/1.1", "h2"}
+	// then check conn.ConnectionState().NegotiatedProtocol in handshake(w, sConfig)
+	// example https://github.com/google/martian/blob/v3.2.1/proxy.go#L337
 	sConn, err := handshake(w, sConfig)
 	if err != nil {
 		logger.Errorf("handshake failed for %s: %v", r.Host, err)
@@ -417,6 +420,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer sConn.Close()
 
+	// confirm remote is valid
 	cConn, err := tls.Dial("tcp", r.Host, cConfig)
 	if err != nil {
 		logger.Errorf("dial failed for %s: %v", r.Host, err)
@@ -605,24 +609,29 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		if err := copyAndClose(dst, clientConn); err != nil {
+		if _, err := io.Copy(dst, clientConn); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Errorf("copy hijacked stream from client to destination error: %s", err)
 		}
+		wg.Done()
 	}()
 
-	if err := copyAndClose(clientConn, dst); err != nil {
+	if _, err := io.Copy(clientConn, dst); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Errorf("copy hijacked stream from destination to client error: %s", err)
 	}
-}
+	wg.Wait()
 
-func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {
-	defer src.Close()
-	defer dst.Close()
-	if _, err := io.Copy(dst, src); err != nil {
-		return err
+	// Close() will close both read and write, we need wait all stream is done, then close connections
+	if err = dst.Close(); err != nil {
+		logger.Errorf("close hijacked destination error: %s", err)
 	}
-	return nil
+	if err = clientConn.Close(); err != nil {
+		logger.Errorf("close hijacked client error: %s", err)
+	}
 }
 
 func copyHeader(dst, src http.Header) {

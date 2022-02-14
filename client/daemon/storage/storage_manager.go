@@ -53,7 +53,7 @@ type TaskStorageDriver interface {
 	// If req.Num is equal to -1, range has a fixed value.
 	ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error)
 
-	ReadAllPieces(ctx context.Context, req *PeerTaskMetadata) (io.ReadCloser, error)
+	ReadAllPieces(ctx context.Context, req *ReadAllPiecesRequest) (io.ReadCloser, error)
 
 	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
 
@@ -241,7 +241,7 @@ func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 	return t.(TaskStorageDriver).ReadPiece(ctx, req)
 }
 
-func (s *storageManager) ReadAllPieces(ctx context.Context, req *PeerTaskMetadata) (io.ReadCloser, error) {
+func (s *storageManager) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRequest) (io.ReadCloser, error) {
 	t, ok := s.LoadTask(
 		PeerTaskMetadata{
 			PeerID: req.PeerID,

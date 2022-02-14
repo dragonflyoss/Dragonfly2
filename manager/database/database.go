@@ -17,23 +17,10 @@
 package database
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/go-redis/redis/v8"
-	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/schema"
-	"moul.io/zapgorm2"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
-	"d7y.io/dragonfly/v2/manager/model"
-)
-
-const (
-	defaultCDNLoadLimit    = 300
-	defaultClientLoadLimit = 100
 )
 
 type Database struct {
@@ -56,127 +43,4 @@ func New(cfg *config.Config) (*Database, error) {
 		DB:  db,
 		RDB: rdb,
 	}, nil
-}
-
-func NewRedis(cfg *config.RedisConfig) (*redis.Client, error) {
-	redis.SetLogger(&redisLogger{})
-
-	client := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Password: cfg.Password,
-		DB:       cfg.CacheDB,
-	})
-
-	if err := client.Ping(context.Background()).Err(); err != nil {
-		return nil, err
-	}
-
-	return client, nil
-}
-
-func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
-	logger := zapgorm2.New(logger.CoreLogger.Desugar())
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local&interpolateParams=true", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.DBName)
-	dialector := mysql.Open(dsn)
-	db, err := gorm.Open(dialector, &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			SingularTable: true,
-		},
-		DisableForeignKeyConstraintWhenMigrating: true,
-		Logger:                                   logger,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Run migration
-	if cfg.Migrate {
-		if err := migrate(db); err != nil {
-			return nil, err
-		}
-	}
-
-	// Run seed
-	if err := seed(db); err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
-func migrate(db *gorm.DB) error {
-	return db.Set("gorm:table_options", "DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(
-		&model.Job{},
-		&model.CDNCluster{},
-		&model.CDN{},
-		&model.SchedulerCluster{},
-		&model.Scheduler{},
-		&model.SecurityRule{},
-		&model.SecurityGroup{},
-		&model.User{},
-		&model.Oauth{},
-		&model.Config{},
-		&model.Application{},
-	)
-}
-
-func seed(db *gorm.DB) error {
-	var cdnClusterCount int64
-	if err := db.Model(model.CDNCluster{}).Count(&cdnClusterCount).Error; err != nil {
-		return err
-	}
-	if cdnClusterCount <= 0 {
-		if err := db.Create(&model.CDNCluster{
-			Model: model.Model{
-				ID: uint(1),
-			},
-			Name: "cdn-cluster-1",
-			Config: map[string]interface{}{
-				"load_limit": defaultCDNLoadLimit,
-			},
-			IsDefault: true,
-		}).Error; err != nil {
-			return err
-		}
-	}
-
-	var schedulerClusterCount int64
-	if err := db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
-		return err
-	}
-	if schedulerClusterCount <= 0 {
-		if err := db.Create(&model.SchedulerCluster{
-			Model: model.Model{
-				ID: uint(1),
-			},
-			Name:   "scheduler-cluster-1",
-			Config: map[string]interface{}{},
-			ClientConfig: map[string]interface{}{
-				"load_limit": defaultClientLoadLimit,
-			},
-			Scopes:    map[string]interface{}{},
-			IsDefault: true,
-		}).Error; err != nil {
-			return err
-		}
-	}
-
-	if schedulerClusterCount == 0 && cdnClusterCount == 0 {
-		cdnCluster := model.CDNCluster{}
-		if err := db.First(&cdnCluster).Error; err != nil {
-			return err
-		}
-
-		schedulerCluster := model.SchedulerCluster{}
-		if err := db.First(&schedulerCluster).Error; err != nil {
-			return err
-		}
-
-		if err := db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

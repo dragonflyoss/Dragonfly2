@@ -26,10 +26,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
@@ -281,6 +283,7 @@ type testSpec struct {
 	taskType           int
 	name               string
 	taskData           []byte
+	httpRange          *clientutil.Range // only used in back source cases
 	pieceParallelCount int32
 	pieceSize          int
 	sizeScope          base.SizeScope
@@ -296,7 +299,7 @@ type testSpec struct {
 	backSource      bool
 
 	mockPieceDownloader  func(ctrl *gomock.Controller, taskData []byte, pieceSize int) PieceDownloader
-	mockHTTPSourceClient func(ctrl *gomock.Controller, taskData []byte, url string) source.ResourceClient
+	mockHTTPSourceClient func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient
 
 	cleanUp []func()
 }
@@ -367,7 +370,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(ctrl *gomock.Controller, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourceMock.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -375,6 +378,47 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					})
 				sourceClient.EXPECT().Download(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (*source.Response, error) {
+						return source.NewResponse(io.NopCloser(bytes.NewBuffer(taskData))), nil
+					})
+				return sourceClient
+			},
+		},
+		{
+			name:     "normal size scope - range - back source - content length",
+			taskData: testBytes[0:4096],
+			httpRange: &clientutil.Range{
+				Start:  0,
+				Length: 4096,
+			},
+			pieceParallelCount:  4,
+			pieceSize:           1024,
+			peerID:              "normal-size-peer-range-back-source",
+			backSource:          true,
+			url:                 "http://localhost/test/data",
+			sizeScope:           base.SizeScope_NORMAL,
+			mockPieceDownloader: nil,
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
+				sourceClient := sourceMock.NewMockResourceClient(ctrl)
+				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (int64, error) {
+						assert := testifyassert.New(t)
+						if rg != nil {
+							rgs, err := clientutil.ParseRange(request.Header.Get(headers.Range), math.MaxInt)
+							assert.Nil(err)
+							assert.Equal(1, len(rgs))
+							assert.Equal(rg.String(), rgs[0].String())
+						}
+						return int64(len(taskData)), nil
+					})
+				sourceClient.EXPECT().Download(source.RequestEq(url)).AnyTimes().DoAndReturn(
+					func(request *source.Request) (*source.Response, error) {
+						assert := testifyassert.New(t)
+						if rg != nil {
+							rgs, err := clientutil.ParseRange(request.Header.Get(headers.Range), math.MaxInt)
+							assert.Nil(err)
+							assert.Equal(1, len(rgs))
+							assert.Equal(rg.String(), rgs[0].String())
+						}
 						return source.NewResponse(io.NopCloser(bytes.NewBuffer(taskData))), nil
 					})
 				return sourceClient
@@ -390,7 +434,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(ctrl *gomock.Controller, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourceMock.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -413,7 +457,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			url:                 "http://localhost/test/data",
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
-			mockHTTPSourceClient: func(ctrl *gomock.Controller, taskData []byte, url string) source.ResourceClient {
+			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourceMock.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
@@ -469,10 +513,24 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 					urlMeta := &base.UrlMeta{
 						Tag: "d7y-test",
 					}
+
+					if tc.httpRange != nil {
+						urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
+					}
+
 					if tc.urlGenerator != nil {
 						tc.url = tc.urlGenerator(&tc)
 					}
 					taskID := idgen.TaskID(tc.url, urlMeta)
+
+					var (
+						downloader   PieceDownloader
+						sourceClient source.ResourceClient
+					)
+
+					if tc.mockPieceDownloader != nil {
+						downloader = tc.mockPieceDownloader(ctrl, tc.taskData, tc.pieceSize)
+					}
 
 					if tc.mockHTTPSourceClient != nil {
 						source.UnRegister("http")
@@ -482,18 +540,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 							require.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
 						}()
 						// replace source client
-						require.Nil(source.Register("http", tc.mockHTTPSourceClient(ctrl, tc.taskData, tc.url), httpprotocol.Adapter))
-					}
-
-					var (
-						downloader   PieceDownloader
-						sourceClient source.ResourceClient
-					)
-					if tc.mockPieceDownloader != nil {
-						downloader = tc.mockPieceDownloader(ctrl, tc.taskData, tc.pieceSize)
-					}
-					if tc.mockHTTPSourceClient != nil {
-						sourceClient = tc.mockHTTPSourceClient(ctrl, tc.taskData, tc.url)
+						sourceClient = tc.mockHTTPSourceClient(t, ctrl, tc.httpRange, tc.taskData, tc.url)
+						require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
 					}
 
 					option := componentsOption{
@@ -596,14 +644,14 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		assert.Nil(os.Remove(output))
 	}()
 
-	request := &scheduler.PeerTaskRequest{
+	peerTaskRequest := &scheduler.PeerTaskRequest{
 		Url:      ts.url,
 		UrlMeta:  urlMeta,
 		PeerId:   ts.peerID,
 		PeerHost: &scheduler.PeerHost{},
 	}
 
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, request, rate.Limit(pieceSize*4))
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, peerTaskRequest, rate.Limit(pieceSize*4))
 	assert.Nil(err, "load first peerTaskConductor")
 	assert.True(created, "should create a new peerTaskConductor")
 
@@ -698,7 +746,12 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	assert.True(noRunningTask, "no running tasks")
 
 	// test reuse stream task
-	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(), request)
+	rc, _, ok := ptm.tryReuseStreamPeerTask(context.Background(),
+		&StreamTaskRequest{
+			URL:     ts.url,
+			URLMeta: urlMeta,
+			PeerID:  ts.peerID,
+		})
 	assert.True(ok, "reuse stream task")
 	defer func() {
 		assert.Nil(rc.Close())

@@ -239,8 +239,6 @@ func (p *Peer) StoreChild(child *Peer) {
 	defer p.mu.Unlock()
 
 	p.Children.Store(child.ID, child)
-	p.Host.Peers.Store(child.ID, child)
-	p.Task.Peers.Store(child.ID, child)
 	child.Parent.Store(p)
 }
 
@@ -255,8 +253,6 @@ func (p *Peer) DeleteChild(key string) {
 	}
 
 	p.Children.Delete(child.ID)
-	p.Host.DeletePeer(child.ID)
-	p.Task.DeletePeer(child.ID)
 	child.Parent = &atomic.Value{}
 }
 
@@ -288,8 +284,6 @@ func (p *Peer) StoreParent(parent *Peer) {
 
 	p.Parent.Store(parent)
 	parent.Children.Store(p.ID, p)
-	parent.Host.Peers.Store(p.ID, p)
-	parent.Task.Peers.Store(p.ID, p)
 }
 
 // DeleteParent deletes peer parent
@@ -304,8 +298,6 @@ func (p *Peer) DeleteParent() {
 
 	p.Parent = &atomic.Value{}
 	parent.Children.Delete(p.ID)
-	parent.Host.Peers.Delete(p.ID)
-	parent.Task.Peers.Delete(p.ID)
 }
 
 // ReplaceParent replaces peer parent
@@ -393,25 +385,25 @@ func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
 }
 
-// Download tiny file from peer
+// DownloadTinyFile downloads tiny file from peer
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
 
-	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler
-	url := url.URL{
+	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
+	targetURL := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
-		RawQuery: "peerId=scheduler",
+		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
 	if err != nil {
 		return []byte{}, err
 	}
-	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()))
-	p.Log.Infof("download tiny file %s, header is : %#v", url.String(), req.Header)
+	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1))
+	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -423,7 +415,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
 	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return []byte{}, fmt.Errorf("%v: %v", url.String(), resp.Status)
+		return []byte{}, fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}
 
 	return io.ReadAll(resp.Body)

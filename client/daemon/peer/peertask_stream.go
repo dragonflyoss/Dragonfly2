@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -39,6 +40,8 @@ type StreamTaskRequest struct {
 	URL string
 	// url meta info
 	URLMeta *base.UrlMeta
+	// http range
+	Range *clientutil.Range
 	// peer's id and must be global uniqueness
 	PeerID string
 }
@@ -71,6 +74,12 @@ func (ptm *peerTaskManager) newStreamTask(
 	if err != nil {
 		return nil, err
 	}
+
+	// prefetch parent request
+	if ptm.enablePrefetch && request.UrlMeta.Range != "" {
+		go ptm.prefetch(request)
+	}
+
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
 	pt := &streamTask{
 		SugaredLoggerOnWith: ptc.SugaredLoggerOnWith,
@@ -99,12 +108,18 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		return nil, attr, fmt.Errorf("peer task failed: %d/%s",
 			s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
 	case <-s.peerTaskConductor.successCh:
+		if s.peerTaskConductor.GetContentLength() != -1 {
+			attr[headers.ContentLength] = fmt.Sprintf("%d", s.peerTaskConductor.GetContentLength())
+		} else {
+			attr[headers.TransferEncoding] = "chunked"
+		}
 		rc, err := s.peerTaskConductor.peerTaskManager.storageManager.ReadAllPieces(
 			ctx,
-			&storage.PeerTaskMetadata{
-				PeerID: s.peerTaskConductor.peerID,
-				TaskID: s.peerTaskConductor.taskID,
-			})
+			&storage.ReadAllPiecesRequest{
+				PeerTaskMetadata: storage.PeerTaskMetadata{
+					PeerID: s.peerTaskConductor.peerID,
+					TaskID: s.peerTaskConductor.taskID,
+				}})
 		return rc, attr, err
 	case first := <-s.pieceCh:
 		firstPiece = first
@@ -124,7 +139,7 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 }
 
 func (s *streamTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
-	pr, pc, err := s.peerTaskConductor.storage.ReadPiece(s.ctx, &storage.ReadPieceRequest{
+	pr, pc, err := s.peerTaskConductor.GetStorage().ReadPiece(s.ctx, &storage.ReadPieceRequest{
 		PeerTaskMetadata: storage.PeerTaskMetadata{
 			PeerID: s.peerTaskConductor.peerID,
 			TaskID: s.peerTaskConductor.taskID,
