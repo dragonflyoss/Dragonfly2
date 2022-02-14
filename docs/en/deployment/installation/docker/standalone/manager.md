@@ -20,7 +20,7 @@ You can get it from [DockerHub](https://hub.docker.com/) directly.
 1. Obtain the latest Docker image of the manager.
 
     ```sh
-    docker pull d7yio/manager
+    docker pull dragonflyoss/manager
     ```
 
 Or you can build your own manager image.
