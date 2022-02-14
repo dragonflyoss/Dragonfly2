@@ -77,3 +77,11 @@ const (
 	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
 	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
 )
+
+/* dfcache subcommand names */
+const (
+	CmdStat   = "stat"
+	CmdImport = "import"
+	CmdExport = "export"
+	CmdDelete = "delete"
+)
