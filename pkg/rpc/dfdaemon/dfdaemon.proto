@@ -73,6 +73,26 @@ message ImportTaskRequest{
   string path = 3 [(validate.rules).string.min_len = 1];
 }
 
+message ExportTaskRequest{
+  // download cache file identified by this cid
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  // output path of downloaded file
+  string output = 2 [(validate.rules).string.min_len = 1];
+  // timeout duration
+  uint64 timeout = 3 [(validate.rules).uint64.gte = 0];
+  // rate limit in bytes per second
+  double limit = 4 [(validate.rules).double.gte = 0];
+  base.UrlMeta url_meta = 5;
+  // call system
+  string callsystem = 6;
+  // user id
+  int64 uid = 7;
+  // group id
+  int64 gid = 8;
+  // only export from local storage
+  bool local_only = 9;
+}
+
 // Daemon Client RPC Service
 service Daemon{
   // Trigger client to download file
@@ -87,4 +107,6 @@ service Daemon{
   rpc StatTask(StatTaskRequest) returns(base.GrpcDfResult);
   // Import the given file into P2P cache system
   rpc ImportTask(ImportTaskRequest) returns(base.GrpcDfResult);
+  // Export or download file from P2P cache system
+  rpc ExportTask(ExportTaskRequest) returns(base.GrpcDfResult);
 }
