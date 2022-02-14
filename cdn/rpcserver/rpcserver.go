@@ -78,6 +78,17 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
+	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
+	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece
+	psc <- &cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done: false,
+	}
 	// register seed task
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
@@ -89,19 +100,6 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		err = dferrors.Newf(base.Code_CDNTaskRegistryFail, "failed to register seed task(%s): %v", req.TaskId, err)
 		span.RecordError(err)
 		return err
-	}
-	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
-	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
-	// begin piece, hint register success
-	psc <- &cdnsystem.PieceSeed{
-		PeerId:   peerID,
-		HostUuid: hostID,
-		PieceInfo: &base.PieceInfo{
-			PieceNum: common.BeginOfPiece,
-		},
-		Done:            false,
-		ContentLength:   registeredTask.SourceFileLength,
-		TotalPieceCount: registeredTask.TotalPieceCount,
 	}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
