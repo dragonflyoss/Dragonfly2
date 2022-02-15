@@ -6,23 +6,11 @@ And here is a list of contributing guide for you.
 
 ## Topics
 
-- [Contributing to Dragonfly](#contributing-to-dragonfly)
-  - [Topics](#topics)
-  - [Reporting security issues](#reporting-security-issues)
-  - [Reporting general issues](#reporting-general-issues)
-  - [Code and doc contribution](#code-and-doc-contribution)
-    - [Workspace Preparation](#workspace-preparation)
-    - [Branch Definition](#branch-definition)
-    - [Commit Rules](#commit-rules)
-      - [Commit Message](#commit-message)
-      - [Commit Content](#commit-content)
-    - [PR Description](#pr-description)
-    - [Developing Environment](#developing-environment)
-    - [Golang Dependency Management](#golang-dependency-management)
-  - [Engage to help anything](#engage-to-help-anything)
-  - [Join Dragonfly as a member](#join-dragonfly-as-a-member)
-    - [Requirements](#requirements)
-    - [How to do it](#how-to-do-it)
+* [Reporting security issues](#reporting-security-issues)
+* [Reporting general issues](#reporting-general-issues)
+* [Code and doc contribution](#code-and-doc-contribution)
+* [Engage to help anything](#engage-to-help-anything)
+* [Join Dragonfly as a member](#join-dragonfly-as-a-member)
 
 ## Reporting security issues
 
@@ -96,23 +84,12 @@ Just remember one principle:
 Since you are ready to improve Dragonfly with a PR,
 we suggest you could take a look at the PR rules here.
 
-- [Contributing to Dragonfly](#contributing-to-dragonfly)
-  - [Topics](#topics)
-  - [Reporting security issues](#reporting-security-issues)
-  - [Reporting general issues](#reporting-general-issues)
-  - [Code and doc contribution](#code-and-doc-contribution)
-    - [Workspace Preparation](#workspace-preparation)
-    - [Branch Definition](#branch-definition)
-    - [Commit Rules](#commit-rules)
-      - [Commit Message](#commit-message)
-      - [Commit Content](#commit-content)
-    - [PR Description](#pr-description)
-    - [Developing Environment](#developing-environment)
-    - [Golang Dependency Management](#golang-dependency-management)
-  - [Engage to help anything](#engage-to-help-anything)
-  - [Join Dragonfly as a member](#join-dragonfly-as-a-member)
-    - [Requirements](#requirements)
-    - [How to do it](#how-to-do-it)
+* [Workspace Preparation](#workspace-preparation)
+* [Branch Definition](#branch-definition)
+* [Commit Rules](#commit-rules)
+* [PR Description](#pr-description)
+* [Developing Environment](#developing-environment)
+* [Golang Dependency Management](#golang-dependency-management)
 
 ### Workspace Preparation
 
@@ -200,7 +177,7 @@ MAJOR.MINOR.PATCH of [SemVer](http://semver.org/).
 
 ### Commit Rules
 
-Actually, in Dragonfly, we take two rules seriously when committing:
+Actually in Dragonfly, we take two rules seriously when committing:
 
 * [Commit Message](#commit-message)
 * [Commit Content](#commit-content)
