@@ -81,6 +81,14 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
+			// If the peer initialization succeeds and the download fails,
+			// set peer status is PeerStateFailed.
+			if peer != nil {
+				if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
+					return nil, nil, err
+				}
+			}
+
 			return nil, nil, err
 		}
 
