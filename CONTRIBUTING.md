@@ -1,16 +1,28 @@
 # Contributing to Dragonfly
 
-It is warmly welcomed if you have interest to hack on Dragonfly.
-First, we encourage this kind of willing very much.
+It is warmly welcomed if you have the interest to hack on Dragonfly.
+First, we encourage this kind of willingness very much.
 And here is a list of contributing guide for you.
 
 ## Topics
 
-* [Reporting security issues](#reporting-security-issues)
-* [Reporting general issues](#reporting-general-issues)
-* [Code and doc contribution](#code-and-doc-contribution)
-* [Engage to help anything](#engage-to-help-anything)
-* [Join Dragonfly as a member](#join-dragonfly-as-a-member)
+- [Contributing to Dragonfly](#contributing-to-dragonfly)
+  - [Topics](#topics)
+  - [Reporting security issues](#reporting-security-issues)
+  - [Reporting general issues](#reporting-general-issues)
+  - [Code and doc contribution](#code-and-doc-contribution)
+    - [Workspace Preparation](#workspace-preparation)
+    - [Branch Definition](#branch-definition)
+    - [Commit Rules](#commit-rules)
+      - [Commit Message](#commit-message)
+      - [Commit Content](#commit-content)
+    - [PR Description](#pr-description)
+    - [Developing Environment](#developing-environment)
+    - [Golang Dependency Management](#golang-dependency-management)
+  - [Engage to help anything](#engage-to-help-anything)
+  - [Join Dragonfly as a member](#join-dragonfly-as-a-member)
+    - [Requirements](#requirements)
+    - [How to do it](#how-to-do-it)
 
 ## Reporting security issues
 
@@ -18,7 +30,7 @@ Security issues are always treated seriously.
 As our usual principle, we discourage anyone to spread security issues.
 If you find a security issue of Dragonfly, please do not discuss it in
 public and even do not open a public issue.
-Instead we encourage you to send us a private email to
+Instead, we encourage you to send us a private email to
 [Dragonfly@noreply.github.com](mailto:Dragonfly@noreply.github.com) to report this.
 
 ## Reporting general issues
@@ -41,7 +53,7 @@ You can find three kinds of issue templates there: question,
 bug report and feature request. Please **BE SURE** to follow
 the instructions to fill fields in template.
 
-There are lot of cases when you could open an issue:
+There are a lot of cases when you could open an issue:
 
 * bug report
 * feature request
@@ -54,7 +66,7 @@ There are lot of cases when you could open an issue:
 * any questions on project
 * and so on
 
-Also we must remind that when filing a new issue,
+Also, we must remind that when filing a new issue,
 please remember to remove the sensitive data from your post.
 Sensitive data could be password, secret key,
 network locations, private business data and so on.
@@ -76,20 +88,31 @@ via a PR (short for pull request).
 * If you find document incorrect, just do it and fix that!
 * ...
 
-Actually it is impossible to list them completely.
-Just remember one princinple:
+Actually, it is impossible to list them completely.
+Just remember one principle:
 
 > WE ARE LOOKING FORWARD TO ANY PR FROM YOU.
 
 Since you are ready to improve Dragonfly with a PR,
 we suggest you could take a look at the PR rules here.
 
-* [Workspace Preparation](#workspace-preparation)
-* [Branch Definition](#branch-definition)
-* [Commit Rules](#commit-rules)
-* [PR Description](#pr-description)
-* [Developing Environment](#developing-environment)
-* [Golang Dependency Management](#golang-dependency-management)
+- [Contributing to Dragonfly](#contributing-to-dragonfly)
+  - [Topics](#topics)
+  - [Reporting security issues](#reporting-security-issues)
+  - [Reporting general issues](#reporting-general-issues)
+  - [Code and doc contribution](#code-and-doc-contribution)
+    - [Workspace Preparation](#workspace-preparation)
+    - [Branch Definition](#branch-definition)
+    - [Commit Rules](#commit-rules)
+      - [Commit Message](#commit-message)
+      - [Commit Content](#commit-content)
+    - [PR Description](#pr-description)
+    - [Developing Environment](#developing-environment)
+    - [Golang Dependency Management](#golang-dependency-management)
+  - [Engage to help anything](#engage-to-help-anything)
+  - [Join Dragonfly as a member](#join-dragonfly-as-a-member)
+    - [Requirements](#requirements)
+    - [How to do it](#how-to-do-it)
 
 ### Workspace Preparation
 
@@ -177,7 +200,7 @@ MAJOR.MINOR.PATCH of [SemVer](http://semver.org/).
 
 ### Commit Rules
 
-Actually in Dragonfly, we take two rules serious when committing:
+Actually, in Dragonfly, we take two rules seriously when committing:
 
 * [Commit Message](#commit-message)
 * [Commit Content](#commit-content)
@@ -188,7 +211,7 @@ Commit message could help reviewers better understand
 what the purpose of submitted PR is.
 It could help accelerate the code review procedure as well.
 We encourage contributors to use **EXPLICIT** commit
-message rather than ambiguous message. In general,
+message rather than an ambiguous message. In general,
 we advocate the following commit message type:
 
 * feat: xxxx.For example, "feat: make result show in sorted order".
@@ -198,10 +221,10 @@ we advocate the following commit message type:
 * refactor: xxxx. For example, "refactor: simplify to make codes more readable".
 * test: xxx. For example, "test: add unit test case for func InsertIntoArray".
 * chore: xxx. For example, "chore: integrate travis-ci".
-It's the type of mantainance change.
+It's the type of maintenance change.
 
 On the other side, we discourage contributors
-from committing message like the following ways:
+from committing messages in the following ways:
 
 * ~~fix bug~~
 * ~~update~~
@@ -237,16 +260,16 @@ Dragonfly project, we should reach an agreement on
 the version of tools used in the development environment.
 Here are some dependents with specific version:
 
-* golang : v1.15
-* misspell : latest
-* shellCheck : latest
+* golang: v1.15
+* misspell: latest
+* shellCheck: latest
 * docker: latest
 
-When you develop the Dragonfly project at the local environment,
+When you develop the Dragonfly project in the local environment,
 you should use subcommands of Makefile to help yourself
 to check and build the latest version of Dragonfly.
 For the convenience of developers,
-we use the docker to build Dragonfly.
+we use docker to build Dragonfly.
 It can reduce problems of the developing environment.
 
 ### Golang Dependency Management
@@ -287,10 +310,10 @@ collaborate. So the latest updates of Dragonfly are always here.
 Although contributions via PR is an explicit way to help,
 we still call for any other ways.
 
-* Reply to other's issues if you could.
-* Help solve other user's problems.
-* Help review other's PR design.
-* Help review other's codes in PR.
+* Reply to others' issues if you could.
+* Help solve other users' problems.
+* Help review others' PR design.
+* Help review others' codes in PR.
 * Discuss about Dragonfly to make things clearer.
 * Advocate Dragonfly technology beyond GitHub.
 * Write blogs on Dragonfly and so on.
@@ -300,7 +323,7 @@ In a word, **ANY HELP IS CONTRIBUTION.**
 ## Join Dragonfly as a member
 
 It is also welcomed to join Dragonfly team if you are
-willing to participate in Dragonfly community continuously and keep active.
+willing to participate in Dragonfly community continuously and be active.
 
 ### Requirements
 
