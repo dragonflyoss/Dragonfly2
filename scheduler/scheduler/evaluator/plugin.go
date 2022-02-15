@@ -35,5 +35,5 @@ func LoadPlugin(dir string) (Evaluator, error) {
 	if rc, ok := client.(Evaluator); ok {
 		return rc, err
 	}
-	return nil, errors.New("invalid client, not a ResourceClient")
+	return nil, errors.New("invalid evaluator plugin")
 }
