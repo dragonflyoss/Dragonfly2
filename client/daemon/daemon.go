@@ -411,7 +411,6 @@ func (cd *clientDaemon) Serve() error {
 		// serve proxy sni service
 		if cd.Option.Proxy.HijackHTTPS != nil && len(cd.Option.Proxy.HijackHTTPS.SNI) > 0 {
 			for _, opt := range cd.Option.Proxy.HijackHTTPS.SNI {
-
 				listener, port, err := cd.prepareTCPListener(config.ListenOption{
 					TCPListen: opt,
 				}, false)
@@ -475,7 +474,7 @@ func (cd *clientDaemon) Serve() error {
 		// dynconfig register client daemon
 		cd.dynconfig.Register(cd)
 
-		// servce dynconfig
+		// serve dynconfig
 		g.Go(func() error {
 			if err := cd.dynconfig.Serve(); err != nil {
 				logger.Errorf("dynconfig start failed %v", err)

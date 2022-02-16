@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -38,6 +39,7 @@ type FileTaskRequest struct {
 	DisableBackSource bool
 	Pattern           string
 	Callsystem        string
+	Range             *clientutil.Range
 }
 
 // FileTask represents a peer task to download a file
@@ -84,16 +86,20 @@ func (ptm *peerTaskManager) newFileTask(
 	request *FileTaskRequest,
 	limit rate.Limit) (context.Context, *fileTask, error) {
 	metrics.FileTaskCount.Add(1)
-	ptc, err := ptm.getPeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), &request.PeerTaskRequest, limit)
+
+	// prefetch parent request
+	var parent *peerTaskConductor
+	if ptm.enablePrefetch && request.Range != nil {
+		parent = ptm.prefetchParentTask(&request.PeerTaskRequest)
+	}
+
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range)
 	if err != nil {
 		return nil, nil, err
 	}
-	// prefetch parent request
-	if ptm.enablePrefetch && request.UrlMeta.Range != "" {
-		go ptm.prefetch(&request.PeerTaskRequest)
-	}
-	ctx, span := tracer.Start(ctx, config.SpanFileTask, trace.WithSpanKind(trace.SpanKindClient))
 
+	ctx, span := tracer.Start(ctx, config.SpanFileTask, trace.WithSpanKind(trace.SpanKindClient))
 	pt := &fileTask{
 		SugaredLoggerOnWith: ptc.SugaredLoggerOnWith,
 		ctx:                 ctx,

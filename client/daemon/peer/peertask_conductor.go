@@ -139,9 +139,18 @@ type peerTaskConductor struct {
 	limiter *rate.Limiter
 
 	startTime time.Time
+
+	// subtask only
+	parent *peerTaskConductor
+	rg     *clientutil.Range
 }
 
-func (ptm *peerTaskManager) newPeerTaskConductor(ctx context.Context, request *scheduler.PeerTaskRequest, limit rate.Limit) *peerTaskConductor {
+func (ptm *peerTaskManager) newPeerTaskConductor(
+	ctx context.Context,
+	request *scheduler.PeerTaskRequest,
+	limit rate.Limit,
+	parent *peerTaskConductor,
+	rg *clientutil.Range) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 	ctx, span := tracer.Start(ctx, config.SpanPeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -200,11 +209,16 @@ func (ptm *peerTaskManager) newPeerTaskConductor(ctx context.Context, request *s
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
+
+		parent: parent,
+		rg:     rg,
 	}
+
 	ptc.pieceTaskPoller = &pieceTaskPoller{
 		getPiecesMaxRetry: ptm.getPiecesMaxRetry,
 		peerTaskConductor: ptc,
 	}
+
 	return ptc
 }
 
@@ -415,7 +429,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	ctx := pt.ctx
 	var err error
 	storageDriver, err := pt.peerTaskManager.storageManager.RegisterTask(ctx,
-		storage.RegisterTaskRequest{
+		&storage.RegisterTaskRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.tinyData.PeerID,
 				TaskID: pt.tinyData.TaskID,
@@ -1113,17 +1127,36 @@ func (pt *peerTaskConductor) InitStorage() (err error) {
 	if pt.storage != nil {
 		return nil
 	}
+	return pt.initStorage()
+}
+
+func (pt *peerTaskConductor) initStorage() (err error) {
 	// prepare storage
-	pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
-		storage.RegisterTaskRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID: pt.GetPeerID(),
-				TaskID: pt.GetTaskID(),
-			},
-			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
-			PieceMd5Sign:  pt.GetPieceMd5Sign(),
-		})
+	if pt.parent == nil {
+		pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
+			&storage.RegisterTaskRequest{
+				CommonTaskRequest: storage.CommonTaskRequest{
+					PeerID: pt.GetPeerID(),
+					TaskID: pt.GetTaskID(),
+				},
+				ContentLength: pt.GetContentLength(),
+				TotalPieces:   pt.GetTotalPieces(),
+				PieceMd5Sign:  pt.GetPieceMd5Sign(),
+			})
+	} else {
+		pt.storage, err = pt.storageManager.RegisterSubTask(pt.ctx,
+			&storage.RegisterSubTaskRequest{
+				Parent: storage.PeerTaskMetadata{
+					PeerID: pt.parent.GetPeerID(),
+					TaskID: pt.parent.GetTaskID(),
+				},
+				SubTask: storage.PeerTaskMetadata{
+					PeerID: pt.GetPeerID(),
+					TaskID: pt.GetTaskID(),
+				},
+				Range: pt.rg,
+			})
+	}
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
 	}

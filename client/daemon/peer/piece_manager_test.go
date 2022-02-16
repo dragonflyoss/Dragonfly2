@@ -174,7 +174,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				return logger.With("test case", tc.name)
 			})
 			taskStorage, err = storageManager.RegisterTask(context.Background(),
-				storage.RegisterTaskRequest{
+				&storage.RegisterTaskRequest{
 					CommonTaskRequest: storage.CommonTaskRequest{
 						PeerID:      mockPeerTask.GetPeerID(),
 						TaskID:      mockPeerTask.GetTaskID(),

@@ -64,20 +64,24 @@ type streamTask struct {
 
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
-	request *scheduler.PeerTaskRequest) (*streamTask, error) {
+	request *scheduler.PeerTaskRequest,
+	rg *clientutil.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf
 	if ptm.perPeerRateLimit > 0 {
 		limit = ptm.perPeerRateLimit
 	}
-	ptc, err := ptm.getPeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), request, limit)
-	if err != nil {
-		return nil, err
-	}
 
 	// prefetch parent request
-	if ptm.enablePrefetch && request.UrlMeta.Range != "" {
-		go ptm.prefetch(request)
+	var parent *peerTaskConductor
+	if ptm.enablePrefetch && rg != nil {
+		parent = ptm.prefetchParentTask(request)
+	}
+
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg)
+	if err != nil {
+		return nil, err
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))

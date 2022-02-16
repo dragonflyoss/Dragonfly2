@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -163,8 +164,10 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	taskID string,
 	request *scheduler.PeerTaskRequest,
-	limit rate.Limit) (*peerTaskConductor, error) {
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit)
+	limit rate.Limit,
+	parent *peerTaskConductor,
+	rg *clientutil.Range) (*peerTaskConductor, error) {
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg)
 	if err != nil {
 		return nil, err
 	}
@@ -182,12 +185,14 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ctx context.Context,
 	taskID string,
 	request *scheduler.PeerTaskRequest,
-	limit rate.Limit) (*peerTaskConductor, bool, error) {
+	limit rate.Limit,
+	parent *peerTaskConductor,
+	rg *clientutil.Range) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	ptc := ptm.newPeerTaskConductor(ctx, request, limit)
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg)
 
 	ptm.conductorLock.Lock()
 	// double check
@@ -200,10 +205,10 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ptm.runningPeerTasks.Store(taskID, ptc)
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
-	return ptc, true, nil
+	return ptc, true, ptc.initStorage()
 }
 
-func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
+func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest) *peerTaskConductor {
 	req := &scheduler.PeerTaskRequest{
 		Url:         request.Url,
 		PeerId:      request.PeerId,
@@ -232,10 +237,11 @@ func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
 	}
 
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
-	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit)
+	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil)
 	if err != nil {
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
 	}
+	return prefetch
 }
 
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
@@ -282,7 +288,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		}
 	}
 
-	pt, err := ptm.newStreamTask(ctx, peerTaskRequest)
+	pt, err := ptm.newStreamTask(ctx, peerTaskRequest, req.Range)
 	if err != nil {
 		return nil, nil, err
 	}

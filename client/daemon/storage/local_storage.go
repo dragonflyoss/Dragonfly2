@@ -53,6 +53,8 @@ type localTaskStore struct {
 
 	// content stores tiny file which length less than 128 bytes
 	content []byte
+
+	subtasks map[PeerTaskMetadata]*localSubTaskStore
 }
 
 var _ TaskStorageDriver = (*localTaskStore)(nil)
@@ -61,6 +63,30 @@ var _ Reclaimer = (*localTaskStore)(nil)
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()
 	t.lastAccess.Store(access)
+}
+
+func (t *localTaskStore) SubTask(ctx context.Context, req *RegisterSubTaskRequest) *localSubTaskStore {
+	subtask := &localSubTaskStore{
+		parent: t,
+		Range:  req.Range,
+		persistentMetadata: persistentMetadata{
+			TaskID:        req.SubTask.TaskID,
+			TaskMeta:      map[string]string{},
+			ContentLength: req.Range.Length,
+			TotalPieces:   -1,
+			PeerID:        req.SubTask.PeerID,
+			Pieces:        map[int32]PieceMetadata{},
+			PieceMd5Sign:  "",
+			DataFilePath:  "",
+			Done:          false,
+		},
+		SugaredLoggerOnWith: logger.With("task", req.SubTask.TaskID,
+			"parent", req.Parent.TaskID, "peer", req.SubTask.PeerID, "component", "localTaskStore"),
+	}
+	t.Lock()
+	t.subtasks[req.SubTask] = subtask
+	t.Unlock()
+	return subtask
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -261,6 +287,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 	if err != nil {
 		return nil, err
 	}
+
 	if req.Range == nil {
 		return file, nil
 	}
@@ -370,6 +397,9 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (t *localTaskStore) CanReclaim() bool {
+	if t.invalid.Load() {
+		return true
+	}
 	access := time.Unix(0, t.lastAccess.Load())
 	reclaim := access.Add(t.expireTime).Before(time.Now())
 	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
@@ -388,6 +418,21 @@ func (t *localTaskStore) MarkReclaim() {
 	})
 	t.reclaimMarked.Store(true)
 	t.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
+
+	t.Lock()
+	var keys []PeerTaskMetadata
+	for key, _ := range t.subtasks {
+		t.gcCallback(CommonTaskRequest{
+			PeerID: key.PeerID,
+			TaskID: key.TaskID,
+		})
+		t.Infof("sub task %s/%s will be reclaimed, marked", key.TaskID, key.PeerID)
+		keys = append(keys, key)
+	}
+	for _, key := range keys {
+		delete(t.subtasks, key)
+	}
+	t.Unlock()
 }
 
 func (t *localTaskStore) Reclaim() error {
