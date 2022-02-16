@@ -1,11 +1,11 @@
 # console
 
-用户使用 api 进行预热。 首先访问 Dragonfly Manager Console (http://dragonfly-manager:8080/service/task) 创建预热任务。
+用户使用 api 进行预热。 
+首先访问 Dragonfly Manager Console e.g. http://dragonfly-manager:8080/service/task 创建预热任务。
 
 如果不选择 `Scheduler Cluster` 则是对所有 Scheduler 进行预热。
 
 ![add-preheat-job](../../en/images/manager-console/add-preheat-job.png)
-
 
 查看预热任务列表
 
@@ -15,16 +15,16 @@
 
 ![preheat-list](../../en/images/manager-console/preheat-job-detail.png)
 
+## FAQ
 
-### FAQ
-
-#### 创建预热任务报错
+### 创建预热任务报错
 
 如果创建预热任务报错，接口返回500，页面提示 `http error`，需要排查 redis 是否具有写权限。
 Dragonfly Manager 日志报错类似
 
 ```bash
-2022-02-15T08:30:01.123Z ERROR job/preheat.go:159 create preheat group job failedREADONLY You  can't write against a read only replica.
+2022-02-15T08:30:01.123Z ERROR job/preheat.go:159 create preheat group job failed
+READONLY You  can't write against a read only replica.
 d7y.io/dragonfly/v2/manager/job.(*preheat).createGroupJob
 /go/src/d7y.io/dragonfly/v2/manager/job/preheat.go:159
 d7y.io/dragonfly/v2/manager/job.(*preheat).CreatePreheat

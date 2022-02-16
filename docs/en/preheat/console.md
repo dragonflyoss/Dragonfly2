@@ -1,7 +1,8 @@
 # console
 
-Use preheat apis for preheating. First access Dragonfly Manager Console (http://dragonfly-manager:8080/service/task) and create preheat task for preheating.
-
+Use preheat apis for preheating. 
+First access Dragonfly Manager Console e.g. http://dragonfly-manager:8080/service/task  
+and create preheat task for preheating.
 
 If the `scheduler_cluster_ids` does not selected, it means to preheat all scheduler clusters.
 
@@ -15,10 +16,9 @@ View preheat task details by Click `Description`.
 
 ![preheat-list](../images/manager-console/preheat-job-detail.png)
 
+## FAQ
 
-### FAQ
-
-#### Create preheat task throw error
+### Create preheat task throw error
 
 If create preheat task throw error,html alert `http error`,network response http status code is `500`,
 Check whether Redis has write permission.
@@ -26,7 +26,8 @@ Check whether Redis has write permission.
 Dragonfly Manager error logs like:
 
 ```bash
-2022-02-15T08:30:01.123Z ERROR job/preheat.go:159 create preheat group job failedREADONLY You  can't write against a read only replica.
+2022-02-15T08:30:01.123Z ERROR job/preheat.go:159 create preheat group job failed
+READONLY You  can't write against a read only replica.
 d7y.io/dragonfly/v2/manager/job.(*preheat).createGroupJob
 /go/src/d7y.io/dragonfly/v2/manager/job/preheat.go:159
 d7y.io/dragonfly/v2/manager/job.(*preheat).CreatePreheat
