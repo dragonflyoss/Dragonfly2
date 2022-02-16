@@ -119,39 +119,6 @@ func TestService_New(t *testing.T) {
 	}
 }
 
-func TestService_CDN(t *testing.T) {
-	tests := []struct {
-		name   string
-		mock   func(cdn resource.CDN, mr *resource.MockResourceMockRecorder)
-		expect func(t *testing.T, c resource.CDN)
-	}{
-		{
-			name: "get cdn interface",
-			mock: func(cdn resource.CDN, mr *resource.MockResourceMockRecorder) {
-				mr.CDN().Return(cdn).Times(1)
-			},
-			expect: func(t *testing.T, c resource.CDN) {
-				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(c).Elem().Name(), "MockCDN")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			scheduler := mocks.NewMockScheduler(ctl)
-			res := resource.NewMockResource(ctl)
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			cdn := resource.NewMockCDN(ctl)
-			svc := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig)
-			tc.mock(cdn, res.EXPECT())
-			tc.expect(t, svc.CDN())
-		})
-	}
-}
-
 func TestService_RegisterPeerTask(t *testing.T) {
 	tests := []struct {
 		name string
