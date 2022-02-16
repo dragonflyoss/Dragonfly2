@@ -141,7 +141,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize job service
 	if cfg.Job.Enable {
-		s.job, err = job.New(cfg, service)
+		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}
