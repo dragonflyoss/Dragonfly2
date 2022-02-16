@@ -45,6 +45,22 @@ version = 2
 
 配置支持两个镜像仓库地址 `http://127.0.0.1:65001` 以及 `https://registry-1.docker.io`.
 
+在 Containerd 配置文件中启用私有镜像注册中心，配置文件位于 `/etc/containerd/config.toml`:
+
+```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
+
+[plugins."io.containerd.grpc.v1.cri".registry.configs."127.0.0.1:65001".auth]
+  username = "registry_username"
+  password = "registry_password"
+```
+
+在本配置文件中，注册中心的 auth 必须基于 `127.0.0.1:65001`。
+
 > 详细 Containerd 配置文档参照: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint>
 > 镜像仓库配置参照文档: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
 
