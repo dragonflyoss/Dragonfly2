@@ -65,11 +65,6 @@ func New(
 	}
 }
 
-// CDN is cdn resource
-func (s *Service) CDN() resource.CDN {
-	return s.resource.CDN()
-}
-
 // RegisterPeerTask registers peer and triggers CDN download task
 func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
 	// Register task and trigger cdn download task
