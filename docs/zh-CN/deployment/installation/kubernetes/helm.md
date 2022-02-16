@@ -11,10 +11,10 @@
 > 因为当前 Kubernetes 里的 `daemonset` 并不支持 `Surging Rolling Update` 策略,
 > 一旦旧的 dfdaemon pod 被删除后，新的 dfdaemon 就再也拉取不了了。
 > 如果无法更换容器运行时的话，那在升级蜻蜓的时候，请从下面两种方案选择比较适合的：
-> 选项1：先手动拉取新的 dfdaemon 镜像，或者使用
-[ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob)
-去自动拉取。
-> 选项2：保持蜻蜓的镜像中心和通用的镜像中心不一样，同时将蜻蜓镜像中心相关的 host 加入 `containerRuntime.docker.skipHosts`。
+> 选项 1：先手动拉取新的 dfdaemon 镜像，或者使用
+> [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob)
+> 去自动拉取。
+> 选项 2：保持蜻蜓的镜像中心和通用的镜像中心不一样，同时将蜻蜓镜像中心相关的 host 加入 `containerRuntime.docker.skipHosts`。
 
 Dragonfly Helm 支持自动更改 docker 配置。
 
@@ -32,8 +32,8 @@ containerRuntime:
     # When use certs and inject hosts in docker, no necessary to restart docker daemon.
     injectHosts: true
     registryDomains:
-    - "harbor.example.com"
-    - "harbor.example.net"
+      - 'harbor.example.com'
+      - 'harbor.example.net'
 ```
 
 此配置允许 docker 通过 Dragonfly 拉取 `harbor.example.com` 和 `harbor.example.net` 域名镜像。
@@ -41,13 +41,13 @@ containerRuntime:
 
 优点：
 
-* 支持 dfdaemon 自身平滑升级
+- 支持 dfdaemon 自身平滑升级
 
 > 这种模式下，当删除 dfdaemon pod 的时候，`preStop` 钩子将会清理已经注入到 `/etc/hosts` 下的所有主机信息，所有流量将会走原来的镜像中心。
 
 限制:
 
-* 只支持指定域名。
+- 只支持指定域名。
 
 #### 情况 2: 支持任意仓库
 
@@ -72,8 +72,8 @@ containerRuntime:
 
 限制:
 
-* 必须开启 docker 的 `live-restore` 功能
-* 需要重启 docker daemon
+- 必须开启 docker 的 `live-restore` 功能
+- 需要重启 docker daemon
 
 ### 2. Containerd
 
@@ -100,7 +100,7 @@ containerRuntime:
 
 #### 情况 2: V2 版本不使用配置文件
 
-* 选项 1 - 允许 Charts 注入 `config_path` 并重新启动 containerd。
+- 选项 1 - 允许 Charts 注入 `config_path` 并重新启动 containerd。
 
 此选项启用多个镜像仓库支持。
 
@@ -115,7 +115,7 @@ containerRuntime:
     injectConfigPath: true
 ```
 
-* 选项 2 - 只使用一个镜像仓库 `dfdaemon.config.proxy.registryMirror.url`
+- 选项 2 - 只使用一个镜像仓库 `dfdaemon.config.proxy.registryMirror.url`
 
 定制 values.yaml 文件:
 
@@ -153,9 +153,9 @@ containerRuntime:
     enable: true
     # Registries full urls
     registries:
-    - "https://ghcr.io"
-    - "https://quay.io"
-    - "https://harbor.example.com:8443"
+      - 'https://ghcr.io'
+      - 'https://quay.io'
+      - 'https://harbor.example.com:8443'
 ```
 
 ## 准备 Kubernetes 集群
@@ -230,7 +230,7 @@ manager:
 
 externalManager:
   enable: true
-  host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
+  host: 'dragonfly-manager.dragonfly-system.svc.cluster.local'
   restPort: 8080
   grpcPort: 65003
 

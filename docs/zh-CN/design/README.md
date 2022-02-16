@@ -5,8 +5,8 @@ Dragonfly 的所有组件设计的架构，组件之间的交互工作流程，D
 
 具体设计:
 
-* [architecture](architecture.md)
-* [manager](manager.md)
-* [TODO scheduler](scheduler.md)
-* [TODO cdn](cdn.md)
-* [TODO dfdaemon](dfdaemon.md)
+- [architecture](architecture.md)
+- [manager](manager.md)
+- [TODO scheduler](scheduler.md)
+- [TODO cdn](cdn.md)
+- [TODO dfdaemon](dfdaemon.md)

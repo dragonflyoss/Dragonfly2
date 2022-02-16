@@ -2,8 +2,8 @@
 
 内容:
 
-* [安装](installation/README.md)
-* [配置](configuration)
+- [安装](installation/README.md)
+- [配置](configuration)
 
 ## 安装
 

@@ -21,11 +21,11 @@ manager [Option]
 启动时配置参数: --pprof-port port
 ```
 
-## Swagger支持
+## Swagger 支持
 
 端点: /swagger/doc.json
 
-## Prometheus集成
+## Prometheus 集成
 
 端点: /metrics
 
@@ -33,7 +33,7 @@ manager [Option]
 
 端点: /healthy/
 
-## jaeger集成
+## jaeger 集成
 
 ```text
 启动时配置 --jaeger  http://localhost:14250/api/traces

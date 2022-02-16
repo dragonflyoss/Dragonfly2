@@ -32,6 +32,7 @@ set environment variable console=true if you want to print logs to Terminal
 ### Options
 
 <!-- markdownlint-disable -->
+
 ```
       --alivetime duration           alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --cacerts strings              the cacert file which is used to verify remote server when supernode interact with the source.
@@ -65,6 +66,7 @@ set environment variable console=true if you want to print logs to Terminal
   -u, --url string                   URL of user requested downloading file(only HTTP/HTTPs supported)
       --verbose                      enable verbose mode, all debug log will be display
 ```
+
 <!-- markdownlint-restore -->
 
 ## dfget daemon
@@ -76,6 +78,7 @@ set environment variable console=true if you want to print logs to Terminal
 ### Daemon Options
 
 <!-- markdownlint-disable -->
+
 ```
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
       --alivetime duration        alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
@@ -104,4 +107,5 @@ set environment variable console=true if you want to print logs to Terminal
       --upload-rate ratelimit     upload rate limit for other peers (default 104857600.000000)
       --verbose                   print verbose log and enable golang debug info
 ```
+
 <!-- markdownlint-restore -->

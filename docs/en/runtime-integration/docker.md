@@ -150,7 +150,7 @@ proxy:
     key: ca.key
     hosts:
       - regx: your.private.registry
-        certs: ["server.crt"]
+        certs: ['server.crt']
 ```
 
 You can get the certificate of your server with:

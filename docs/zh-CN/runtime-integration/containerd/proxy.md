@@ -139,7 +139,7 @@ proxy:
     key: ca.key
     hosts:
       - regx: your.private.registry
-        certs: ["server.crt"]
+        certs: ['server.crt']
 ```
 
 您能使用以下命令获取您服务器的证书：
