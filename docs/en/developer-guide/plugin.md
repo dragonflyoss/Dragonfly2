@@ -12,22 +12,26 @@ The resource plugin is used to download custom resource like `dfget -u d7yfs://h
 
 All resource plugins need to implement `d7y.io/dragonfly/v2/pkg/source.ResourceClient`
 and a function
+
 <!-- markdownlint-disable -->
+
 `func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error)`.
+
 <!-- markdownlint-restore -->
 
 <!-- markdownlint-disable -->
+
 ```golang
 // ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
     // GetContentLength get length of resource content
     // return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
     GetContentLength(request *Request) (int64, error)
-    
+
     // IsSupportRange checks if resource supports breakpoint continuation
     // return false if response status is not StatusPartialContent
     IsSupportRange(request *Request) (bool, error)
-    
+
     // IsExpired checks if a resource received or stored is the same.
     // return false and non-nil err to prevent the source from exploding if
     // fails to get the result, it is considered that the source has not expired
@@ -35,11 +39,12 @@ type ResourceClient interface {
 
     // Download downloads from source
     Download(request *Request) (*Response, error)
-    
+
     // GetLastModified gets last modified timestamp milliseconds of resource
     GetLastModified(request *Request) (int64, error)
 }
 ```
+
 <!-- markdownlint-restore -->
 
 ### Example Code
@@ -47,6 +52,7 @@ type ResourceClient interface {
 #### 1. main.go
 
 <!-- markdownlint-disable -->
+
 ```golang
 package main
 
@@ -107,11 +113,13 @@ func DragonflyPluginInit(option map[string]string) (interface{}, map[string]stri
 
 
 ```
+
 <!-- markdownlint-restore -->
 
 #### 2. go.mod
 
 <!-- markdownlint-disable -->
+
 ```
 module example.com/d7yfs
 
@@ -132,6 +140,7 @@ require (
 // fix golang build error: `plugin was built with a different version of package d7y.io/dragonfly/v2/internal/dflog`
 replace d7y.io/dragonfly/v2 => /Dragonfly2
 ```
+
 <!-- markdownlint-restore -->
 
 ### Build
@@ -141,6 +150,7 @@ replace d7y.io/dragonfly/v2 => /Dragonfly2
 > Update `D7Y_COMMIT` in the following script.
 
 <!-- markdownlint-disable -->
+
 ```shell
 # golang plugin need cgo
 # original Dragonfly2 image is built with CGO_ENABLED=0 for alpine linux
@@ -159,6 +169,7 @@ go mod tidy -compat=1.17
 go build -ldflags="-X main.buildTime=${BUILD_TIME} -X main.buildCommit=${BUILD_COMMIT}" \
     -buildmode=plugin -o=/usr/local/dragonfly/plugins/d7y-resource-plugin-d7yfs.so ./main.go
 ```
+
 <!-- markdownlint-restore -->
 
 #### 2. Validate plugin
@@ -170,10 +181,12 @@ go build -ldflags="-X main.buildTime=${BUILD_TIME} -X main.buildCommit=${BUILD_C
 Example output:
 
 <!-- markdownlint-disable -->
+
 ```text
 search plugin in /usr/local/dragonfly/plugins
 resource plugin d7yfs, location: d7y-resource-plugin-d7yfs.so, attribute: {"buildCommit":"bb65f13","buildTime":"2021-12-13T08:53:04Z","name":"d7yfs","schema":"d7yfs","type":"resource","vendor":"d7y"}
 ```
+
 <!-- markdownlint-restore -->
 
 ## Searcher plugin

@@ -4,5 +4,5 @@
 
 安装选项:
 
-* [Docker Compose](docker-compose.md)
-* [Standalone](standalone/README.md)
+- [Docker Compose](docker-compose.md)
+- [Standalone](standalone/README.md)

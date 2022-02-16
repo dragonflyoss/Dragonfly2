@@ -8,7 +8,7 @@
 
 内容列表:
 
-* [dfget](dfget.md)
-* [cdn](cdn.md)
-* [scheduler](scheduler.md)
-* [manager](manager.md)
+- [dfget](dfget.md)
+- [cdn](cdn.md)
+- [scheduler](scheduler.md)
+- [manager](manager.md)

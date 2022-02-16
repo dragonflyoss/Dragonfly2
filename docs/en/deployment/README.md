@@ -2,8 +2,8 @@
 
 Table of contents:
 
-* [installation](installation/README.md)
-* [configuration](configuration)
+- [installation](installation/README.md)
+- [configuration](configuration)
 
 ## Installation
 

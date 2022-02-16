@@ -2,7 +2,7 @@
 
 ## dfget
 
-`dfget` 是Dragonfly中用来下载和上传文件的客户端。
+`dfget` 是 Dragonfly 中用来下载和上传文件的客户端。
 
 ### dfget 简介
 
@@ -24,11 +24,12 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
 
 ### 查看 dfget 日志
 
-如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
+如果您想要在 Terminal 中查看日志，请使用 --console 参数，或者将环境变量 console 设置为 true。
 
 ### dfget 的可选参数
 
 <!-- markdownlint-disable -->
+
 ```text
       --alivetime duration           alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
       --cacerts strings              the cacert file which is used to verify remote server when supernode interact with the source.
@@ -62,17 +63,19 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
   -u, --url string                   URL of user requested downloading file(only HTTP/HTTPs supported)
       --verbose                      enable verbose mode, all debug log will be display
 ```
+
 <!-- markdownlint-restore -->
 
 ## dfget daemon
 
 ### 查看 daemon 日志
 
-如果您想要在Terminal中查看日志，请使用 --console参数，或者将环境变量 console 设置为 true。
+如果您想要在 Terminal 中查看日志，请使用 --console 参数，或者将环境变量 console 设置为 true。
 
 ### daemon 的可选参数
 
 <!-- markdownlint-disable -->
+
 ```text
       --advertise-ip string       the ip report to scheduler, normal same with listen ip (default "10.15.232.63")
       --alivetime duration       alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
@@ -101,4 +104,5 @@ dfget --schedulers 127.0.0.1:8002 -o /path/to/output -u "http://example.com/obje
       --upload-rate ratelimit     upload rate limit for other peers (default 104857600.000000)
       --verbose                   print verbose log and enable golang debug info
 ```
+
 <!-- markdownlint-restore -->

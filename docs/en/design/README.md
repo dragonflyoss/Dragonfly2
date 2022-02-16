@@ -8,8 +8,8 @@ all APIs in Dragonfly and some technical things else.
 
 Table of contents:
 
-* [architecture](architecture.md)
-* [manager](manager.md)
-* [TODO scheduler](scheduler.md)
-* [TODO cdn](cdn.md)
-* [TODO dfdaemon](dfdaemon.md)
+- [architecture](architecture.md)
+- [manager](manager.md)
+- [TODO scheduler](scheduler.md)
+- [TODO cdn](cdn.md)
+- [TODO dfdaemon](dfdaemon.md)

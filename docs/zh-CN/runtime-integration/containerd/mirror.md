@@ -82,7 +82,7 @@ version = 2
 
 #### 2. 生成每个仓库的 hosts.toml
 
-##### 选项 1:  手动生成 hosts.toml
+##### 选项 1: 手动生成 hosts.toml
 
 路径: `/etc/containerd/certs.d/example.com/hosts.toml`
 
