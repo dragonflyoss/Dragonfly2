@@ -421,7 +421,7 @@ func (t *localTaskStore) MarkReclaim() {
 
 	t.Lock()
 	var keys []PeerTaskMetadata
-	for key, _ := range t.subtasks {
+	for key := range t.subtasks {
 		t.gcCallback(CommonTaskRequest{
 			PeerID: key.PeerID,
 			TaskID: key.TaskID,
