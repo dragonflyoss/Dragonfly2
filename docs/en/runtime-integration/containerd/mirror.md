@@ -71,7 +71,7 @@ In this config, registry auth configuration needs to be based on `127.0.0.1:6500
 
 > More details about Containerd configuration: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint>
 > Containerd has deprecated the above config from v1.4.0,
-  new format for reference: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
+> new format for reference: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
 
 ### Option 2: Multiple Registries
 

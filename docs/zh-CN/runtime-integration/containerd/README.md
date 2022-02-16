@@ -4,5 +4,5 @@
 
 集成方式:
 
-* [mirror](mirror.md)
-* [proxy](proxy.md)
+- [mirror](mirror.md)
+- [proxy](proxy.md)

@@ -6,6 +6,6 @@ dfdaemon 会作为 `DaemonSets` 部署, manager 会作为 `Deployments` 部署�
 
 部署方式:
 
-* [Helm](helm.md)
-* [Kustomize](kustomize.md)
-* [TODO Upgrade Guide](upgrade-guide.md)
+- [Helm](helm.md)
+- [Kustomize](kustomize.md)
+- [TODO Upgrade Guide](upgrade-guide.md)
