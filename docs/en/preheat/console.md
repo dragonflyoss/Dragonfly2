@@ -1,7 +1,7 @@
 # console
 
 Use preheat console for preheating.
-First access Dragonfly Manager Console e.g. `http://dragonfly-manager:8080/service/task` 
+First access Dragonfly Manager Console e.g. `http://dragonfly-manager:8080/service/task`
 and create preheat task for preheating.
 
 If the `scheduler_cluster_ids` does not selected, it means to preheat all scheduler clusters.
