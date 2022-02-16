@@ -16,24 +16,24 @@ When deploying with physical machines, the following conditions must be met.
 
 ### Get cdn executable file
 
-1.  Download a binary package of the cdn. You can download one of
-    the latest builds for Dragonfly on the
-    [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
+1. Download a binary package of the cdn. You can download one of
+   the latest builds for Dragonfly on the
+   [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
 
-        ```sh
-        version=2.0.0
-        wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
-        ```
+   ```sh
+   version=2.0.0
+   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+   ```
 
-2.  Unzip the package.
+2. Unzip the package.
 
-    ```bash
-    # Replace `xxx` with the installation directory.
-    tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
-    ```
+   ```bash
+   # Replace `xxx` with the installation directory.
+   tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+   ```
 
-3.  Move the `cdn` to your `PATH` environment variable to
-    make sure you can directly use `cdn` command.
+3. Move the `cdn` to your `PATH` environment variable to
+   make sure you can directly use `cdn` command.
 
 Or you can build your own cdn executable file.
 
@@ -75,25 +75,25 @@ However, the following conditions must be met:
 
 Let's take nginx as an example.
 
-1.  Add the following configuration items to
-    the Nginx configuration file.
+1. Add the following configuration items to
+   the Nginx configuration file.
 
-        ```conf
-        server {
-        # Must be ${cdnDownloadPort}
-        listen 8001;
-          location / {
-             # Must be ${cdnHomeDir}/ftp
-             root /home/admin/ftp;
-          }
-        }
-        ```
+   ```conf
+   server {
+   # Must be ${cdnDownloadPort}
+   listen 8001;
+     location / {
+        # Must be ${cdnHomeDir}/ftp
+        root /home/admin/ftp;
+     }
+   }
+   ```
 
-2.  Start Nginx.
+2. Start Nginx.
 
-    ```sh
-    sudo nginx
-    ```
+   ```sh
+   sudo nginx
+   ```
 
 After cdn is installed, run the following commands to
 verify if Nginx and **cdn** are started,

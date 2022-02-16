@@ -15,24 +15,24 @@ When deploying with physical machines, the following conditions must be met.
 
 ### Get dfget executable file
 
-1.  Download a binary package of the dfget. You can download one of
-    the latest builds for Dragonfly on the
-    [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
+1. Download a binary package of the dfget. You can download one of
+   the latest builds for Dragonfly on the
+   [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
 
-        ```sh
-        version=2.0.0
-        wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
-        ```
+   ```sh
+   version=2.0.0
+   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+   ```
 
-2.  Unzip the package.
+2. Unzip the package.
 
-    ```bash
-    # Replace `xxx` with the installation directory.
-    tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
-    ```
+   ```bash
+   # Replace `xxx` with the installation directory.
+   tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+   ```
 
-3.  Move the `dfget` to your `PATH` environment variable to
-    make sure you can directly use `dfget` command.
+3. Move the `dfget` to your `PATH` environment variable to
+   make sure you can directly use `dfget` command.
 
 Or you can build your own dfget executable file.
 

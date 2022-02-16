@@ -43,8 +43,8 @@ containerRuntime:
     # When use certs and inject hosts in docker, no necessary to restart docker daemon.
     injectHosts: true
     registryDomains:
-      - 'harbor.example.com'
-      - 'harbor.example.net'
+      - "harbor.example.com"
+      - "harbor.example.net"
 ```
 
 <!-- markdownlint-restore -->
@@ -81,8 +81,8 @@ containerRuntime:
     # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
     restart: true
     skipHosts:
-      - '127.0.0.1'
-      - 'docker.io' # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
+      - "127.0.0.1"
+      - "docker.io" # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
 ```
 
 <!-- markdownlint-restore -->
@@ -143,15 +143,13 @@ containerRuntime:
   ```
 
 - Option 2 - Just mirror only one registry
-  which `dfdaemon.config.proxy.registryMirror.url` is
+  which `dfdaemon.config.proxy.registryMirror.url` is Chart customize values.yaml:
 
-      Chart customize values.yaml:
-
-      ```yaml
-      containerRuntime:
-        containerd:
-          enable: true
-      ```
+  ```yaml
+  containerRuntime:
+    containerd:
+      enable: true
+  ```
 
 #### Case 3: Version 1
 
@@ -182,9 +180,9 @@ containerRuntime:
     enable: true
     # Registries full urls
     registries:
-      - 'https://ghcr.io'
-      - 'https://quay.io'
-      - 'https://harbor.example.com:8443'
+      - "https://ghcr.io"
+      - "https://quay.io"
+      - "https://harbor.example.com:8443"
 ```
 
 ## Prepare Kubernetes Cluster
@@ -265,7 +263,7 @@ manager:
 
 externalManager:
   enable: true
-  host: 'dragonfly-manager.dragonfly-system.svc.cluster.local'
+  host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
   restPort: 8080
   grpcPort: 65003
 

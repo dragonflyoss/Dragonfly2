@@ -16,23 +16,23 @@
 
 ### 获取 CDN 可执行文件
 
-1.  下载 Dragonfly 项目的压缩包。您可以从
-    [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases)
-    下载一个已发布的最近版本
+1. 下载 Dragonfly 项目的压缩包。您可以从
+   [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases)
+   下载一个已发布的最近版本
 
-        ```sh
-        version=2.0.0
-        wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
-        ```
+   ```sh
+   version=2.0.0
+   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+   ```
 
-2.  解压压缩包
+2. 解压压缩包
 
-    ```bash
-    # Replace `xxx` with the installation directory.
-    tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
-    ```
+   ```bash
+   # Replace `xxx` with the installation directory.
+   tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+   ```
 
-3.  把 `cdn` 移动到环境变量 `PATH` 下以确保您可以直接使用 `cdn` 命令
+3. 把 `cdn` 移动到环境变量 `PATH` 下以确保您可以直接使用 `cdn` 命令
 
 或者您可以编译生成自己的 CDN 可执行文件。
 
