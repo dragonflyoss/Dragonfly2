@@ -70,4 +70,4 @@ verbose: false
 pprof-port: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ""
+jaeger: ''

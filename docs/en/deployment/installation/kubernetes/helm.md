@@ -8,21 +8,21 @@ you can skip [Configure Runtime](#configure-runtime-manually) manually.
 ### 1. Docker
 
 > **We did not recommend to using dragonfly
-with docker in Kubernetes**
-due to many reasons:
-no fallback image pulling policy.
-deprecated in Kubernetes.
+> with docker in Kubernetes**
+> due to many reasons:
+> no fallback image pulling policy.
+> deprecated in Kubernetes.
 > Because the original `daemonset` in
-Kubernetes did not support `Surging Rolling Update` policy.
+> Kubernetes did not support `Surging Rolling Update` policy.
 > When kill current dfdaemon pod,
-the new pod image can not be pulled anymore.
+> the new pod image can not be pulled anymore.
 > If you can not change runtime from docker to others,
-remind to choose a plan when upgrade dfdaemon:
+> remind to choose a plan when upgrade dfdaemon:
 > pull newly dfdaemon image manually before upgrade dragonfly,
-or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) to
-pull image automate.
+> or use [ImagePullJob](https://openkruise.io/docs/user-manuals/imagepulljob) to
+> pull image automate.
 > keep the image registry of dragonfly is
-different from common registries and add host in `containerRuntime.docker.skipHosts`.
+> different from common registries and add host in `containerRuntime.docker.skipHosts`.
 
 Dragonfly helm supports config docker automatically.
 
@@ -33,6 +33,7 @@ Config cases:
 Chart customize values.yaml:
 
 <!-- markdownlint-disable -->
+
 ```yaml
 containerRuntime:
   docker:
@@ -42,9 +43,10 @@ containerRuntime:
     # When use certs and inject hosts in docker, no necessary to restart docker daemon.
     injectHosts: true
     registryDomains:
-    - "harbor.example.com"
-    - "harbor.example.net"
+      - 'harbor.example.com'
+      - 'harbor.example.net'
 ```
+
 <!-- markdownlint-restore -->
 
 This config enables docker pulling images from
@@ -57,7 +59,7 @@ Advantages:
 - Support upgrade dfdaemon smoothness
 
 > In this mode, when dfdaemon pod deleted,
-  the `preStop` hook will remove all injected hosts info in /etc/hosts,
+> the `preStop` hook will remove all injected hosts info in /etc/hosts,
 > all images traffic fallbacks to original registries.
 
 Limitations:
@@ -69,6 +71,7 @@ Limitations:
 Chart customize values.yaml:
 
 <!-- markdownlint-disable -->
+
 ```yaml
 containerRuntime:
   docker:
@@ -78,9 +81,10 @@ containerRuntime:
     # If did not want restart docker daemon, keep containerRuntime.docker.restart=false and containerRuntime.docker.injectHosts=true.
     restart: true
     skipHosts:
-    - "127.0.0.1"
-    - "docker.io" # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
+      - '127.0.0.1'
+      - 'docker.io' # Dragonfly use this image registry to upgrade itself, so we need skip it. Change it in real environment.
 ```
+
 <!-- markdownlint-restore -->
 
 This config enables docker pulling images from arbitrary registries via Dragonfly.
@@ -124,30 +128,30 @@ containerRuntime:
 
 - Option 1 - Allow charts to inject config_path and restart containerd.
 
-    This option also enable multiple registry mirrors support.
+  This option also enable multiple registry mirrors support.
 
-    > Caution: if there are already many other mirror config in config.toml,
-    should not use this option, or migrate your config with `config_path`.
+  > Caution: if there are already many other mirror config in config.toml,
+  > should not use this option, or migrate your config with `config_path`.
 
-    Chart customize values.yaml:
+  Chart customize values.yaml:
 
-    ```yaml
-    containerRuntime:
-      containerd:
-        enable: true
-        injectConfigPath: true
-    ```
+  ```yaml
+  containerRuntime:
+    containerd:
+      enable: true
+      injectConfigPath: true
+  ```
 
 - Option 2 - Just mirror only one registry
-which `dfdaemon.config.proxy.registryMirror.url` is
+  which `dfdaemon.config.proxy.registryMirror.url` is
 
-    Chart customize values.yaml:
+      Chart customize values.yaml:
 
-    ```yaml
-    containerRuntime:
-      containerd:
-        enable: true
-    ```
+      ```yaml
+      containerRuntime:
+        containerd:
+          enable: true
+      ```
 
 #### Case 3: Version 1
 
@@ -178,9 +182,9 @@ containerRuntime:
     enable: true
     # Registries full urls
     registries:
-    - "https://ghcr.io"
-    - "https://quay.io"
-    - "https://harbor.example.com:8443"
+      - 'https://ghcr.io'
+      - 'https://quay.io'
+      - 'https://harbor.example.com:8443'
 ```
 
 ## Prepare Kubernetes Cluster
@@ -261,7 +265,7 @@ manager:
 
 externalManager:
   enable: true
-  host: "dragonfly-manager.dragonfly-system.svc.cluster.local"
+  host: 'dragonfly-manager.dragonfly-system.svc.cluster.local'
   restPort: 8080
   grpcPort: 65003
 

@@ -53,7 +53,7 @@ the default `https://registry-1.docker.io` will be used for HA.
 
 > More details about Containerd configuration: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint>
 > Containerd has deprecated the above config from v1.4.0,
-  new format for reference: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
+> new format for reference: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
 
 ### Option 2: Multiple Registries
 

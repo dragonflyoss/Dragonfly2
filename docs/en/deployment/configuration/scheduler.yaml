@@ -11,11 +11,11 @@ server:
   # cacheDir is dynconfig cache storage directory
   # in linux, default value is /var/cache/dragonfly
   # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
-  cacheDir: ""
+  cacheDir: ''
   # logDir is the log storage directory
   # in linux, default value is /var/log/dragonfly
   # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
-  logDir: ""
+  logDir: ''
 
 # scheduler policy configuration
 scheduler:
@@ -57,11 +57,11 @@ dynConfig:
 # scheduler host configuration
 host:
   # idc is the idc of scheduler instance
-  idc: ""
+  idc: ''
   # netTopology is the net topology of scheduler instance
-  netTopology: ""
+  netTopology: ''
   # location is the location of scheduler instance
-  location: ""
+  location: ''
 
 # manager configuration
 manager:
@@ -89,11 +89,11 @@ job:
   # redis configuration
   redis:
     # host
-    host: ""
+    host: ''
     # port
     port: 6379
     # password
-    password: ""
+    password: ''
     # brokerDB
     brokerDB: 1
     # backendDB
@@ -104,7 +104,7 @@ metrics:
   # scheduler enable metrics service
   enable: false
   # metrics service address
-  addr: ":8000"
+  addr: ':8000'
   # enable peer host metrics
   enablePeerHost: false
 
@@ -119,4 +119,4 @@ verbose: false
 pprof-port: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ""
+jaeger: ''

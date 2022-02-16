@@ -6,54 +6,54 @@ This topic explains how to install the Dragonfly CDN server.
 
 When deploying with physical machines, the following conditions must be met.
 
-Required Software | Version Limit
----|---
-Git|1.9.1+
-Golang|1.12.x
-Nginx|0.8+
+| Required Software | Version Limit |
+| ----------------- | ------------- |
+| Git               | 1.9.1+        |
+| Golang            | 1.12.x        |
+| Nginx             | 0.8+          |
 
 ## Procedure - When Deploying with Physical Machines
 
 ### Get cdn executable file
 
-1. Download a binary package of the cdn. You can download one of
-the latest builds for Dragonfly on the
-[github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
+1.  Download a binary package of the cdn. You can download one of
+    the latest builds for Dragonfly on the
+    [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
 
-    ```sh
-    version=2.0.0
-    wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
-    ```
+        ```sh
+        version=2.0.0
+        wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+        ```
 
-2. Unzip the package.
+2.  Unzip the package.
 
     ```bash
     # Replace `xxx` with the installation directory.
     tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
     ```
 
-3. Move the `cdn` to your `PATH` environment variable to
-make sure you can directly use `cdn` command.
+3.  Move the `cdn` to your `PATH` environment variable to
+    make sure you can directly use `cdn` command.
 
 Or you can build your own cdn executable file.
 
 1. Obtain the source code of Dragonfly.
 
-    ```sh
-    git clone https://github.com/dragonflyoss/Dragonfly2.git
-    ```
+   ```sh
+   git clone https://github.com/dragonflyoss/Dragonfly2.git
+   ```
 
 2. Enter the project directory.
 
-    ```sh
-    cd Dragonfly2
-    ```
+   ```sh
+   cd Dragonfly2
+   ```
 
 3. Compile the source code.
 
-    ```sh
-    make build-cdn && make install-cdn
-    ```
+   ```sh
+   make build-cdn && make install-cdn
+   ```
 
 ### Start cdn
 
@@ -69,27 +69,27 @@ You can start a file server in any way.
 However, the following conditions must be met:
 
 - It must be rooted at `cdnHomeDir/ftp` which is
-defined in the previous step.
+  defined in the previous step.
 - It must listen on the port `cdnDownloadPort` which is
-defined in the previous step.
+  defined in the previous step.
 
 Let's take nginx as an example.
 
-1. Add the following configuration items to
-the Nginx configuration file.
+1.  Add the following configuration items to
+    the Nginx configuration file.
 
-    ```conf
-    server {
-    # Must be ${cdnDownloadPort}
-    listen 8001;
-      location / {
-         # Must be ${cdnHomeDir}/ftp
-         root /home/admin/ftp;
-      }
-    }
-    ```
+        ```conf
+        server {
+        # Must be ${cdnDownloadPort}
+        listen 8001;
+          location / {
+             # Must be ${cdnHomeDir}/ftp
+             root /home/admin/ftp;
+          }
+        }
+        ```
 
-2. Start Nginx.
+2.  Start Nginx.
 
     ```sh
     sudo nginx

@@ -8,22 +8,22 @@ gcInterval: 1m0s
 # daemon 工作目录
 # linux 上默认目录 /usr/local/dragonfly
 # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly
-workHome: ""
+workHome: ''
 
 # daemon 动态配置缓存目录
 # linux 上默认目录 /var/cache/dragonfly
 # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
-cacheDir: ""
+cacheDir: ''
 
 # daemon 日志目录
 # linux 上默认目录 /var/log/dragonfly
 # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
-logDir: ""
+logDir: ''
 
 # daemon 数据目录
 # linux 上默认目录为 /var/lib/dragonfly
 # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/data/
-dataDir: ""
+dataDir: ''
 
 # 当 daemon 退出是, 是否保存缓存数据
 # 保留缓存数据在升级 daemon 的时候比较有用
@@ -41,7 +41,7 @@ pprof-port: -1
 
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ""
+jaeger: ''
 
 # 调度器地址
 # 尽量使用同一个地区的调度器.
@@ -73,13 +73,13 @@ host:
   # 其他 daemon 可以通过这个 IP 地址连接过来
   advertiseIP: 0.0.0.0
   # 地理信息, 通过 "|" 符号分隔
-  location: ""
+  location: ''
   # 机房信息
-  idc: ""
+  idc: ''
   # 安全域信息，不同安全域之间网络隔离
-  securityDomain: ""
+  securityDomain: ''
   # 网络拓扑结构，通过 "|" 符号分隔
-  netTopology: ""
+  netTopology: ''
   # 主机名称
   # hostname: ""
 
@@ -96,9 +96,9 @@ download:
     # 安全选项
     security:
       insecure: true
-      cacert: ""
-      cert: ""
-      key: ""
+      cacert: ''
+      cert: ''
+      key: ''
       tlsConfig: null
     # 下载服务监听地址，dfget 下载文件将通过该地址连接到 daemon
     # 目前是支持 unix domain socket
@@ -111,9 +111,9 @@ download:
   peerGRPC:
     security:
       insecure: true
-      cacert: ""
-      cert: ""
-      key: ""
+      cacert: ''
+      cert: ''
+      key: ''
     tcpListen:
       # 监听地址
       listen: 0.0.0.0
@@ -130,9 +130,9 @@ upload:
   rateLimit: 100Mi
   security:
     insecure: true
-    cacert: ""
-    cert: ""
-    key: ""
+    cacert: ''
+    cert: ''
+    key: ''
   tcpListen:
     # 监听地址
     listen: 0.0.0.0
@@ -174,17 +174,17 @@ proxy:
   # 例如：defaultFilter: "Expires&Signature":
   #  http://localhost/xyz?Expires=111&Signature=222 and http://localhost/xyz?Expires=333&Signature=999
   # 是相同的 task
-  defaultFilter: "Expires&Signature"
+  defaultFilter: 'Expires&Signature'
   security:
     insecure: true
-    cacert: ""
-    cert: ""
-    key: ""
+    cacert: ''
+    cert: ''
+    key: ''
   tcpListen:
     # 监听的网络命名空间, 例如：/proc/1/ns/net
     # 主要用在部署 kubernetes 中的时候，daemon 不使用 host network 时，监听宿主机的端口
     # 仅支持 Linux
-    namespace: ""
+    namespace: ''
     # 监听地址
     listen: 0.0.0.0
     # 监听端口
@@ -222,8 +222,8 @@ proxy:
   hijackHTTPS:
     # https 劫持的证书和密钥
     # 建议自签 CA 并更新主机证书链
-    cert: ""
-    key: ""
+    cert: ''
+    key: ''
     # 需要走蜻蜓 p2p 的流量
     hosts:
       - regx: mirror.aliyuncs.com:443 # 正则匹配
@@ -236,7 +236,7 @@ proxy:
   # 白名单，如果设置了，仅白名单内可以走代理，其他的都拒绝
   whiteList:
     # 主机信息
-    - host: ""
+    - host: ''
       # 正则匹配
       regx:
       # 端口白名单
