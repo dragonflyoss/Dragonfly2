@@ -51,6 +51,24 @@ Containerd will pull images with `http://127.0.0.1:65001` first.
 If `http://127.0.0.1:65001` is not available,
 the default `https://registry-1.docker.io` will be used for HA.
 
+Enable mirrors in private Containerd registries configuration in
+
+`/etc/containerd/config.toml`:
+
+```toml
+# explicitly use v2 config format, if already v2, skip the "version = 2"
+version = 2
+
+[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+  endpoint = ["http://127.0.0.1:65001","https://registry-1.docker.io"]
+
+[plugins."io.containerd.grpc.v1.cri".registry.configs."127.0.0.1:65001".auth]
+  username = "registry_username"
+  password = "registry_password"
+```
+
+In this config, registry auth configuration needs to be based on `127.0.0.1:65001`.
+
 > More details about Containerd configuration: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/registry.md#configure-registry-endpoint>
 > Containerd has deprecated the above config from v1.4.0,
   new format for reference: <https://github.com/containerd/containerd/blob/v1.5.2/docs/cri/config.md#registry-configuration>
