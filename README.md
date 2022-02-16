@@ -27,7 +27,7 @@ Currently Dragonfly focuses on being:
 
 - Simple: well-defined user-facing API (HTTP), non-invasive to all container engines;
 - Efficient: CDN support, P2P based file distribution to save enterprise bandwidth;
-- Intelligent: host level speed limit, intelligent flow control due to host detection;
+- Intelligent: host-level speed limit, intelligent flow control due to host detection;
 - Secure: block transmission encryption, HTTPS connection support.
 
 Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as
@@ -74,10 +74,10 @@ warehouse services for various cloud vendors, etc.
 each module depends on, and provide keepalive and metrics functions.
 
 **Scheduler:** The tracker and scheduler in the P2P
-network that choose appropriate downloading net-path for each peer.
+network that chooses appropriate downloading net-path for each peer.
 
 **CDN:** A CDN server that caches downloaded data
-from source to avoid downloading same files repeatedly.
+from source to avoid downloading the same files repeatedly.
 
 **Daemon:** It's a daemon of dfget client.
 It establishes a proxy between containerd/CRI-O and registry.
