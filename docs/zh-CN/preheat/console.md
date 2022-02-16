@@ -1,7 +1,7 @@
 # console
 
-用户使用 api 进行预热。 
-首先访问 Dragonfly Manager Console e.g. http://dragonfly-manager:8080/service/task 创建预热任务。
+用户使用 Dragonfly Manager Console 进行预热。
+首先访问 Dragonfly Manager Console e.g. `http://dragonfly-manager:8080/service/task` 创建预热任务。
 
 如果不选择 `Scheduler Cluster` 则是对所有 Scheduler 进行预热。
 
