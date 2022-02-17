@@ -358,20 +358,10 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		return nil, err
 	}
 
-	// Start seed cdn task
-	go func() {
-		task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
-		peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
-		if err != nil {
-			task.Log.Errorf("trigger cdn download task failed: %v", err)
-			s.handleTaskFail(ctx, task)
-			return
-		}
-
-		// Update the task status first to help peer scheduling evaluation and scoring
-		s.handleTaskSuccess(ctx, task, endOfPiece)
-		s.handlePeerSuccess(ctx, peer)
-	}()
+	// Start trigger cdn task
+	if s.config.CDN.Enable {
+		go s.triggerCDNTask(ctx, task)
+	}
 
 	return task, nil
 }
@@ -407,6 +397,21 @@ func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	}
 
 	return peer
+}
+
+// triggerCDNTask starts trigger cdn task
+func (s *Service) triggerCDNTask(ctx context.Context, task *resource.Task) {
+	task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
+	peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
+	if err != nil {
+		task.Log.Errorf("trigger cdn download task failed: %v", err)
+		s.handleTaskFail(ctx, task)
+		return
+	}
+
+	// Update the task status first to help peer scheduling evaluation and scoring
+	s.handleTaskSuccess(ctx, task, endOfPiece)
+	s.handlePeerSuccess(ctx, peer)
 }
 
 // handleBeginOfPiece handles begin of piece
@@ -501,18 +506,11 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		fallthrough
 	case base.Code_CDNTaskNotFound:
 		s.handlePeerFail(ctx, parent)
-		go func() {
-			parent.Log.Info("cdn restart seed task")
-			cdnPeer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), parent.Task)
-			if err != nil {
-				peer.Log.Errorf("retrigger task failed: %v", err)
-				s.handleTaskFail(ctx, parent.Task)
-				return
-			}
 
-			s.handleTaskSuccess(ctx, cdnPeer.Task, endOfPiece)
-			s.handlePeerSuccess(ctx, cdnPeer)
-		}()
+		// Start trigger cdn task
+		if s.config.CDN.Enable {
+			go s.triggerCDNTask(ctx, parent.Task)
+		}
 	default:
 	}
 
