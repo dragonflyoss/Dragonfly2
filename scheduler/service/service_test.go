@@ -1555,6 +1555,69 @@ func TestService_registerHost(t *testing.T) {
 	}
 }
 
+func TestService_triggerCDNTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder)
+		expect func(t *testing.T, task *resource.Task, peer *resource.Peer)
+	}{
+		{
+			name: "trigger cdn task",
+			mock: func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				gomock.InOrder(
+					mr.CDN().Return(cdn).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &rpcscheduler.PeerResult{
+						TotalPieceCount: 3,
+						ContentLength:   1024,
+					}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *resource.Task, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+				assert.Equal(task.TotalPieceCount.Load(), int32(3))
+				assert.Equal(task.ContentLength.Load(), int64(1024))
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "trigger cdn task failed",
+			mock: func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				gomock.InOrder(
+					mr.CDN().Return(cdn).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &rpcscheduler.PeerResult{}, errors.New("foo")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *resource.Task, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			cdn := resource.NewMockCDN(ctl)
+			mockHost := resource.NewHost(mockRawHost)
+			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := resource.NewPeer(mockPeerID, task, mockHost)
+			svc := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig)
+
+			tc.mock(task, peer, cdn, res.EXPECT(), cdn.EXPECT())
+			svc.triggerCDNTask(context.Background(), task)
+			tc.expect(t, task, peer)
+		})
+	}
+}
+
 func TestService_handleBeginOfPiece(t *testing.T) {
 	tests := []struct {
 		name   string
