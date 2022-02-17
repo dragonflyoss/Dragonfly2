@@ -172,8 +172,9 @@ func (f *fileTask) storeToOutput() {
 				TaskID:      f.peerTaskConductor.GetTaskID(),
 				Destination: f.request.Output,
 			},
-			MetadataOnly: false,
-			TotalPieces:  f.peerTaskConductor.GetTotalPieces(),
+			MetadataOnly:   false,
+			TotalPieces:    f.peerTaskConductor.GetTotalPieces(),
+			OriginalOffset: f.request.KeepOriginalOffset,
 		})
 	if err != nil {
 		f.sendFailProgress(base.Code_ClientError, err.Error())

@@ -83,7 +83,7 @@ func (t *localTaskStore) SubTask(req *RegisterSubTaskRequest) *localSubTaskStore
 			Done:          false,
 		},
 		SugaredLoggerOnWith: logger.With("task", req.SubTask.TaskID,
-			"parent", req.Parent.TaskID, "peer", req.SubTask.PeerID, "component", "localTaskStore"),
+			"parent", req.Parent.TaskID, "peer", req.SubTask.PeerID, "component", "localSubTaskStore"),
 	}
 	t.Lock()
 	t.subtasks[req.SubTask] = subtask
