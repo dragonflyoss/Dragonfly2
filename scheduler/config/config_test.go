@@ -63,7 +63,6 @@ func TestConfig_Load(t *testing.T) {
 			Location:    "baz",
 		},
 		Manager: &ManagerConfig{
-			Enable:             true,
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
