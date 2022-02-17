@@ -205,6 +205,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ptm.runningPeerTasks.Store(taskID, ptc)
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
+	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
 	return ptc, true, ptc.initStorage()
 }
 

@@ -163,13 +163,14 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	}
 
 	s := &storageManager{
-		KeepAlive:          clientutil.NewKeepAlive("storage manager"),
-		storeStrategy:      storeStrategy,
-		storeOption:        opt,
-		dataPathStat:       stat.Sys().(*syscall.Stat_t),
-		gcCallback:         gcCallback,
-		gcInterval:         time.Minute,
-		indexTask2PeerTask: map[string][]*localTaskStore{},
+		KeepAlive:             clientutil.NewKeepAlive("storage manager"),
+		storeStrategy:         storeStrategy,
+		storeOption:           opt,
+		dataPathStat:          stat.Sys().(*syscall.Stat_t),
+		gcCallback:            gcCallback,
+		gcInterval:            time.Minute,
+		indexTask2PeerTask:    map[string][]*localTaskStore{},
+		subIndexTask2PeerTask: map[string][]*localSubTaskStore{},
 	}
 
 	for _, o := range moreOpts {
@@ -233,8 +234,8 @@ func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTa
 	if !ok {
 		return nil, fmt.Errorf("task %s not found", req.Parent.TaskID)
 	}
-	// still not exist, create a new task store
-	subtask := t.(*localTaskStore).SubTask(ctx, req)
+
+	subtask := t.(*localTaskStore).SubTask(req)
 	s.subIndexRWMutex.Lock()
 	if ts, ok := s.subIndexTask2PeerTask[req.SubTask.TaskID]; ok {
 		ts = append(ts, subtask)
@@ -243,6 +244,14 @@ func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTa
 		s.subIndexTask2PeerTask[req.SubTask.TaskID] = []*localSubTaskStore{subtask}
 	}
 	s.subIndexRWMutex.Unlock()
+
+	s.Lock()
+	s.tasks.Store(
+		PeerTaskMetadata{
+			PeerID: req.SubTask.PeerID,
+			TaskID: req.SubTask.TaskID,
+		}, subtask)
+	s.Unlock()
 	return subtask, nil
 }
 
@@ -350,6 +359,7 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetadata),
 		expireTime:       s.storeOption.TaskExpireTime.Duration,
+		subtasks:         map[PeerTaskMetadata]*localSubTaskStore{},
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}

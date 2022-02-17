@@ -65,7 +65,7 @@ func (t *localTaskStore) touch() {
 	t.lastAccess.Store(access)
 }
 
-func (t *localTaskStore) SubTask(ctx context.Context, req *RegisterSubTaskRequest) *localSubTaskStore {
+func (t *localTaskStore) SubTask(req *RegisterSubTaskRequest) *localSubTaskStore {
 	subtask := &localSubTaskStore{
 		parent: t,
 		Range:  req.Range,

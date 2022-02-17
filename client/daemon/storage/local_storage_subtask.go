@@ -32,6 +32,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
+// TODO need refactor with localTaskStore, currently, localSubTaskStore code copies from localTaskStore
 type localSubTaskStore struct {
 	sync.RWMutex
 	persistentMetadata
@@ -170,25 +171,31 @@ func (t *localSubTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiece
 
 	t.parent.touch()
 
-	// TODO different with localTaskStore
 	// who call ReadPiece, who close the io.ReadCloser
 	file, err := os.Open(t.parent.DataFilePath)
 	if err != nil {
 		return nil, err
 	}
+
+	var (
+		start  int64
+		length int64
+	)
+
 	if req.Range == nil {
-		return file, nil
+		start, length = t.Range.Start, t.Range.Length
+	} else {
+		start, length = t.Range.Start+req.Range.Start, t.Range.Length
 	}
 
-	// TODO different with localTaskStore
-	if _, err = file.Seek(t.Range.Start+req.Range.Start, io.SeekStart); err != nil {
+	if _, err = file.Seek(start, io.SeekStart); err != nil {
 		file.Close()
-		t.Errorf("file seek to %d failed: %v", req.Range.Start, err)
+		t.Errorf("file seek to %d failed: %v", start, err)
 		return nil, err
 	}
 
 	return &limitedReadFile{
-		reader: io.LimitReader(file, req.Range.Length),
+		reader: io.LimitReader(file, length),
 		closer: file,
 	}, nil
 }
@@ -298,37 +305,46 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 func (t *localSubTaskStore) storeOriginalOffset(err error, req *StoreRequest, dstStat os.FileInfo) error {
 	if os.IsNotExist(err) {
 		// hard link
-		err = os.Link(t.DataFilePath, req.Destination)
-		if err == nil {
-			t.Infof("task data link to file %q success", req.Destination)
-			return nil
-		}
-		t.Errorf("task data link to file %q error: %s", req.Destination, err)
-		return err
-	} else if err == nil {
-		srcStat, err := os.Stat(t.parent.DataFilePath)
+		err = os.Link(t.parent.DataFilePath, req.Destination)
 		if err != nil {
-			t.Errorf("stat %q error: %s", t.parent.DataFilePath, err)
+			t.Errorf("task data link to file %q error: %s", req.Destination, err)
 			return err
 		}
-		dstSysStat, ok := dstStat.Sys().(*syscall.Stat_t)
-		if !ok {
-			t.Errorf("can not get inode for %q", req.Destination)
-			return err
-		}
-		srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
-		if ok {
-			t.Errorf("can not get inode for %q", t.parent.DataFilePath)
-			return err
-		}
-		if dstSysStat.Dev == srcSysStat.Dev && dstSysStat.Ino == srcSysStat.Ino {
-			t.Debugf("target inode match underlay data inode, skip hard link")
-			return nil
-		}
-		err = fmt.Errorf("target file %q exists, and different with underlay data %q", req.Destination, t.parent.DataFilePath)
+		t.Infof("task data link to file %q success", req.Destination)
+		return nil
+	}
+
+	// other errors
+	if err != nil {
+		t.Errorf("stat %q error: %s", req.Destination, err)
 		return err
 	}
-	t.Errorf("stat %q error: %s", req.Destination, err)
+
+	// target already exists, check inode
+	srcStat, err := os.Stat(t.parent.DataFilePath)
+	if err != nil {
+		t.Errorf("stat %q error: %s", t.parent.DataFilePath, err)
+		return err
+	}
+
+	dstSysStat, ok := dstStat.Sys().(*syscall.Stat_t)
+	if !ok {
+		t.Errorf("can not get inode for %q", req.Destination)
+		return err
+	}
+
+	srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
+	if ok {
+		t.Errorf("can not get inode for %q", t.parent.DataFilePath)
+		return err
+	}
+
+	if dstSysStat.Dev == srcSysStat.Dev && dstSysStat.Ino == srcSysStat.Ino {
+		t.Debugf("target inode match underlay data inode, skip hard link")
+		return nil
+	}
+
+	err = fmt.Errorf("target file %q exists, and different with underlay data %q", req.Destination, t.parent.DataFilePath)
 	return err
 }
 
