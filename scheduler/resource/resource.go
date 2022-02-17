@@ -54,37 +54,39 @@ type resource struct {
 }
 
 func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Resource, error) {
+	resource := &resource{}
+
 	// Initialize host manager interface
 	hostManager, err := newHostManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
+	resource.hostManager = hostManager
 
 	// Initialize task manager interface
 	taskManager, err := newTaskManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
+	resource.taskManager = taskManager
 
 	// Initialize peer manager interface
 	peerManager, err := newPeerManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
+	resource.peerManager = peerManager
 
 	// Initialize cdn interface
-	client, err := newCDNClient(dynconfig, hostManager, opts...)
-	if err != nil {
-		return nil, err
+	if cfg.CDN.Enable {
+		client, err := newCDNClient(dynconfig, hostManager, opts...)
+		if err != nil {
+			return nil, err
+		}
+		resource.cdn = newCDN(peerManager, hostManager, client)
 	}
-	cdn := newCDN(peerManager, hostManager, client)
 
-	return &resource{
-		cdn:         cdn,
-		hostManager: hostManager,
-		peerManager: peerManager,
-		taskManager: taskManager,
-	}, nil
+	return resource, nil
 }
 
 func (r *resource) CDN() CDN {

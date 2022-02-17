@@ -84,7 +84,6 @@ func New() *Config {
 		},
 		Host: &HostConfig{},
 		Manager: &ManagerConfig{
-			Enable:             true,
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
@@ -161,18 +160,16 @@ func (c *Config) Validate() error {
 		return errors.New("dynconfig requires parameter refreshInterval")
 	}
 
-	if c.Manager.Enable {
-		if c.Manager.Addr == "" {
-			return errors.New("manager requires parameter addr")
-		}
+	if c.Manager.Addr == "" {
+		return errors.New("manager requires parameter addr")
+	}
 
-		if c.Manager.SchedulerClusterID == 0 {
-			return errors.New("manager requires parameter schedulerClusterID")
-		}
+	if c.Manager.SchedulerClusterID == 0 {
+		return errors.New("manager requires parameter schedulerClusterID")
+	}
 
-		if c.Manager.KeepAlive.Interval <= 0 {
-			return errors.New("manager requires parameter keepAlive interval")
-		}
+	if c.Manager.KeepAlive.Interval <= 0 {
+		return errors.New("manager requires parameter keepAlive interval")
 	}
 
 	if c.Job.Enable {
@@ -294,9 +291,6 @@ type HostConfig struct {
 }
 
 type ManagerConfig struct {
-	// Enable is to enable contact with manager
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
