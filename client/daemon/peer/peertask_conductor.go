@@ -224,7 +224,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 
 // register to scheduler, if error and disable auto back source, return error, otherwise return nil
 func (pt *peerTaskConductor) register() error {
-	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
+	pt.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
 		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta, pt.request.UrlMeta.Tag)
 	// trace register
 	regCtx, cancel := context.WithTimeout(pt.ctx, pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
@@ -238,7 +238,7 @@ func (pt *peerTaskConductor) register() error {
 		tinyData       *TinyData
 	)
 
-	logger.Infof("step 1: peer %s start to register", pt.request.PeerId)
+	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
 	schedulerClient := pt.peerTaskManager.schedulerClient
 
 	result, err := schedulerClient.RegisterPeerTask(regCtx, pt.request)
@@ -247,11 +247,11 @@ func (pt *peerTaskConductor) register() error {
 
 	if err != nil {
 		if err == context.DeadlineExceeded {
-			logger.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+			pt.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
 		}
-		logger.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
+		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
 		if pt.peerTaskManager.schedulerOption.DisableAutoBackSource {
-			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
+			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
 			pt.span.RecordError(err)
 			pt.cancel(base.Code_SchedError, err.Error())
 			return err
@@ -260,7 +260,7 @@ func (pt *peerTaskConductor) register() error {
 		// can not detect source or scheduler error, create a new dummy scheduler client
 		schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: pt.taskID}
-		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
+		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
 	}
 
 	pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
@@ -437,7 +437,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		})
 	pt.storage = storageDriver
 	if err != nil {
-		logger.Errorf("register tiny data storage failed: %s", err)
+		pt.Errorf("register tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
@@ -464,24 +464,24 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 			},
 		})
 	if err != nil {
-		logger.Errorf("write tiny data storage failed: %s", err)
+		pt.Errorf("write tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 	if n != l {
-		logger.Errorf("write tiny data storage failed", n, l)
+		pt.Errorf("write tiny data storage failed", n, l)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 
 	err = pt.UpdateStorage()
 	if err != nil {
-		logger.Errorf("update tiny data storage failed: %s", err)
+		pt.Errorf("update tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 
-	logger.Debugf("store tiny data, len: %d", l)
+	pt.Debugf("store tiny data, len: %d", l)
 	pt.PublishPieceInfo(0, uint32(l))
 }
 
