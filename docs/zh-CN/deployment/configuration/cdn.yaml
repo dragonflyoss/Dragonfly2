@@ -48,12 +48,12 @@ base:
   # cdn 日志目录
   # linux 上默认目录 /var/log/dragonfly
   # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/logs
-  logDir: ''
+  logDir: ""
 
   # CDN 连接的 manager，可以不指定。
   # 各项配置默认值如下。如果 addr 为空字符串，CDN将不会连接manager。
   manager:
-    addr: ''
+    addr: ""
     cdnClusterID: 0
     keepAlive:
       interval: 5s
@@ -61,9 +61,9 @@ base:
   # 主机信息
   host:
     # 地理位置
-    location: ''
+    location: ""
     # IDC(Internet Data Center)，互联网数据中心
-    idc: ''
+    idc: ""
 
   # 开启数据收集服务
   # metrics:
@@ -123,7 +123,7 @@ pprof-port: -1
 
 # jaeger 地址
 # 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ''
+jaeger: ""
 
 # tracer 中使用的 service-name
 # 默认值：dragonfly-cdn

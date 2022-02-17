@@ -70,6 +70,9 @@ func TestConfig_Load(t *testing.T) {
 				Interval: 5 * time.Second,
 			},
 		},
+		CDN: &CDNConfig{
+			Enable: true,
+		},
 		Job: &JobConfig{
 			Enable:             true,
 			GlobalWorkerNum:    1,
