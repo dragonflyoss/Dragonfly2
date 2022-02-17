@@ -8,22 +8,22 @@ gcInterval: 1m0s
 # daemon work directory, daemon will change current working directory to this
 # in linux, default value is /usr/local/dragonfly
 # in macos(just for testing), default value is /Users/$USER/.dragonfly
-workHome: ''
+workHome: ""
 
 # cacheDir is dynconfig cache storage directory
 # in linux, default value is /var/cache/dragonfly
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
-cacheDir: ''
+cacheDir: ""
 
 # logDir is the log storage directory
 # in linux, default value is /var/log/dragonfly
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
-logDir: ''
+logDir: ""
 
 # dataDir is the download data storage directory
 # in linux, default value is /var/lib/dragonfly
 # in macos(just for testing), default value is /Users/$USER/.dragonfly/data
-dataDir: ''
+dataDir: ""
 
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
@@ -41,7 +41,7 @@ verbose: false
 pprof-port: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ''
+jaeger: ""
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
@@ -75,13 +75,13 @@ host:
   # when local ip is different with access ip, advertiseIP should be set
   advertiseIP: 0.0.0.0
   # geographical location, separated by "|" characters
-  location: ''
+  location: ""
   # idc deployed by daemon
-  idc: ''
+  idc: ""
   # security domain deployed by daemon, network isolation between different security domains
-  securityDomain: ''
+  securityDomain: ""
   # network topology, separated by "|" characters
-  netTopology: ''
+  netTopology: ""
   # daemon hostname
   # hostname: ""
 
@@ -116,9 +116,9 @@ download:
     # security option
     security:
       insecure: true
-      cacert: ''
-      cert: ''
-      key: ''
+      cacert: ""
+      cert: ""
+      key: ""
       tlsConfig: null
     # download service listen address
     # current, only support unix domain socket
@@ -131,9 +131,9 @@ download:
   peerGRPC:
     security:
       insecure: true
-      cacert: ''
-      cert: ''
-      key: ''
+      cacert: ""
+      cert: ""
+      key: ""
     tcpListen:
       # listen address
       listen: 0.0.0.0
@@ -151,9 +151,9 @@ upload:
   rateLimit: 100Mi
   security:
     insecure: true
-    cacert: ''
-    cert: ''
-    key: ''
+    cacert: ""
+    cert: ""
+    key: ""
   tcpListen:
     # listen address
     listen: 0.0.0.0
@@ -196,17 +196,17 @@ proxy:
   # when defaultFilter: "Expires&Signature", for example:
   #  http://localhost/xyz?Expires=111&Signature=222 and http://localhost/xyz?Expires=333&Signature=999
   # is same task
-  defaultFilter: 'Expires&Signature'
+  defaultFilter: "Expires&Signature"
   security:
     insecure: true
-    cacert: ''
-    cert: ''
-    key: ''
+    cacert: ""
+    cert: ""
+    key: ""
   tcpListen:
     # namespace stands the linux net namespace, like /proc/1/ns/net
     # it's useful for running daemon in pod with ip allocated and listening the special port in host net namespace
     # Linux only
-    namespace: ''
+    namespace: ""
     # listen address
     listen: 0.0.0.0
     # listen port, daemon will try to listen
@@ -248,8 +248,8 @@ proxy:
 
   hijackHTTPS:
     # key pair used to hijack https requests
-    cert: ''
-    key: ''
+    cert: ""
+    key: ""
     hosts:
       - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
         # whether to ignore https certificate errors
@@ -260,7 +260,7 @@ proxy:
   maxConcurrency: 0
   whiteList:
     # the host of the whitelist
-    - host: ''
+    - host: ""
       # match whitelist hosts
       regx:
       # port that need to be added to the whitelist

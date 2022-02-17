@@ -42,6 +42,9 @@ type Config struct {
 	// Manager configuration
 	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
+	// CDN configuration
+	CDN *CDNConfig `yaml:"cdn" mapstructure:"cdn"`
+
 	// Host configuration
 	Host *HostConfig `yaml:"host" mapstructure:"host"`
 
@@ -86,6 +89,9 @@ func New() *Config {
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
+		},
+		CDN: &CDNConfig{
+			Enable: true,
 		},
 		Job: &JobConfig{
 			Enable:             true,
@@ -299,6 +305,11 @@ type ManagerConfig struct {
 
 	// KeepAlive configuration
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type CDNConfig struct {
+	// Enable is to enable cdn as P2P peer
+	Enable bool `yaml:"enable" mapstructure:"enable"`
 }
 
 type KeepAliveConfig struct {
