@@ -63,8 +63,6 @@ host:
 
 # manager 配置
 manager:
-  # 启动与 manager 的连接
-  enable: true
   # manager 访问地址
   addr: ""
   # 注册的 scheduler 集群 ID
