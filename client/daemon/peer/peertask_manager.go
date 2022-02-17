@@ -18,6 +18,7 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -249,6 +250,9 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 }
 
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
+	if req.KeepOriginalOffset && !ptm.enablePrefetch {
+		return nil, nil, fmt.Errorf("please enable prefetch when use original offset feature")
+	}
 	if ptm.enableMultiplex {
 		progress, ok := ptm.tryReuseFilePeerTask(ctx, req)
 		if ok {

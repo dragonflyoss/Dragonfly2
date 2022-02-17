@@ -18,11 +18,9 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"sync"
-	"syscall"
 
 	"go.uber.org/atomic"
 
@@ -266,11 +264,11 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 		return nil
 	}
 
-	dstStat, err := os.Stat(req.Destination)
 	if req.OriginalOffset {
-		return t.storeOriginalOffset(err, req, dstStat)
+		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.parent.DataFilePath)
 	}
 
+	_, err := os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
 		t.Infof("destination file %q exists, purge it first", req.Destination)
@@ -299,52 +297,6 @@ func (t *localSubTaskStore) Store(ctx context.Context, req *StoreRequest) error 
 	// https://go-review.googlesource.com/c/go/+/229101/
 	n, err := io.Copy(dstFile, io.LimitReader(file, t.ContentLength))
 	t.Debugf("copied tasks data %d bytes to %s", n, req.Destination)
-	return err
-}
-
-func (t *localSubTaskStore) storeOriginalOffset(err error, req *StoreRequest, dstStat os.FileInfo) error {
-	if os.IsNotExist(err) {
-		// hard link
-		err = os.Link(t.parent.DataFilePath, req.Destination)
-		if err != nil {
-			t.Errorf("task data link to file %q error: %s", req.Destination, err)
-			return err
-		}
-		t.Infof("task data link to file %q success", req.Destination)
-		return nil
-	}
-
-	// other errors
-	if err != nil {
-		t.Errorf("stat %q error: %s", req.Destination, err)
-		return err
-	}
-
-	// target already exists, check inode
-	srcStat, err := os.Stat(t.parent.DataFilePath)
-	if err != nil {
-		t.Errorf("stat %q error: %s", t.parent.DataFilePath, err)
-		return err
-	}
-
-	dstSysStat, ok := dstStat.Sys().(*syscall.Stat_t)
-	if !ok {
-		t.Errorf("can not get inode for %q", req.Destination)
-		return err
-	}
-
-	srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
-	if ok {
-		t.Errorf("can not get inode for %q", t.parent.DataFilePath)
-		return err
-	}
-
-	if dstSysStat.Dev == srcSysStat.Dev && dstSysStat.Ino == srcSysStat.Ino {
-		t.Debugf("target inode match underlay data inode, skip hard link")
-		return nil
-	}
-
-	err = fmt.Errorf("target file %q exists, and different with underlay data %q", req.Destination, t.parent.DataFilePath)
 	return err
 }
 

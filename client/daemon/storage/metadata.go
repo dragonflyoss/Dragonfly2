@@ -75,9 +75,9 @@ type WritePieceRequest struct {
 type StoreRequest struct {
 	CommonTaskRequest
 	MetadataOnly bool
-	// StoreOnly stands save file only without save metadata, used in reuse cases
-	StoreOnly   bool
-	TotalPieces int32
+	// StoreDataOnly stands save file only without save metadata, used in reuse cases
+	StoreDataOnly bool
+	TotalPieces   int32
 	// OriginalOffset stands keep original offset in the target file, if the target file is not original file, return error
 	OriginalOffset bool
 }

@@ -89,18 +89,19 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.AddEvent("reuse peer task", trace.WithAttributes(config.AttributePeerID.String(reuse.PeerID)))
 
 	start := time.Now()
-	if rg == nil {
+	if rg == nil || request.KeepOriginalOffset {
 		storeRequest := &storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      reuse.PeerID,
 				TaskID:      taskID,
 				Destination: request.Output,
 			},
-			MetadataOnly: false,
-			StoreOnly:    true,
-			TotalPieces:  reuse.TotalPieces,
+			MetadataOnly:   false,
+			StoreDataOnly:  true,
+			TotalPieces:    reuse.TotalPieces,
+			OriginalOffset: request.KeepOriginalOffset,
 		}
-		err = ptm.storageManager.Store(context.Background(), storeRequest)
+		err = ptm.storageManager.Store(ctx, storeRequest)
 	} else {
 		err = ptm.storePartialFile(ctx, request, log, reuse, rg)
 	}

@@ -275,7 +275,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 							Destination: dst,
 						},
 						MetadataOnly:   false,
-						StoreOnly:      false,
+						StoreDataOnly:  false,
 						TotalPieces:    0,
 						OriginalOffset: true,
 					})
@@ -291,7 +291,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 							Destination: dst,
 						},
 						MetadataOnly:   false,
-						StoreOnly:      false,
+						StoreDataOnly:  false,
 						TotalPieces:    0,
 						OriginalOffset: false,
 					})

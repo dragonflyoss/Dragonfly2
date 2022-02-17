@@ -85,6 +85,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		fmt.Println("test in pod: " + podName)
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 		pod := e2eutil.NewPodExec(ns, podName, container)
+
 		// install curl
 		_, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
@@ -110,6 +111,9 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 		sha256sum []string
 		dfget     []string
 		curl      []string
+
+		sha256sumOffset []string
+		dfgetOffset     []string
 	)
 
 	if rg == nil {
@@ -123,6 +127,12 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",
 			"--header", fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
+
+		sha256sumOffset = append(sha256sumOffset, "sh", "-c",
+			fmt.Sprintf("dd if=%s ibs=1 skip=%d count=%d 2> /dev/null | /usr/bin/sha256sum",
+				"/tmp/d7y.offset.out", rg.Start, rg.Length))
+		dfgetOffset = append(dfgetOffset, "/opt/dragonfly/bin/dfget", "--original-offset", "-O", "/tmp/d7y.offset.out", "-H",
+			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 	}
 
 	fmt.Printf("--------------------------------------------------------------------------------\n\n")
@@ -158,6 +168,29 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 
 	// slow download
 	Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+
+	// download file via dfget with offset
+	if rg != nil {
+		start = time.Now()
+		out, err = pod.Command(dfgetOffset...).CombinedOutput()
+		end = time.Now()
+		fmt.Println(string(out))
+		Expect(err).NotTo(HaveOccurred())
+
+		// get dfget downloaded file digest
+		out, err = pod.Command(sha256sumOffset...).CombinedOutput()
+		fmt.Println("dfget with offset sha256sum: " + string(out))
+		Expect(err).NotTo(HaveOccurred())
+		sha256sumz := strings.Split(string(out), " ")[0]
+		Expect(sha256sum1).To(Equal(sha256sumz))
+
+		// remove output for next cases
+		_, err = pod.Command("/bin/rm", "-f", "/tmp/d7y.offset.out", "/tmp/d7y.offset.out.last").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+
+		// slow download
+		Expect(end.Sub(start).Seconds() < 30.0).To(Equal(true))
+	}
 
 	// skip dfdaemon
 	if ns == dragonflyNamespace {
