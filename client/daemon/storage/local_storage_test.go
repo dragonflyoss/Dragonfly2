@@ -144,7 +144,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 				})
 			assert.Nil(err)
 
-			ts, err := tc.create(sm.(*storageManager), taskID, peerID)
+			_, err = tc.create(sm.(*storageManager), taskID, peerID)
 			assert.Nil(err, "create task storage")
 
 			ts, ok := sm.(*storageManager).LoadTask(PeerTaskMetadata{
