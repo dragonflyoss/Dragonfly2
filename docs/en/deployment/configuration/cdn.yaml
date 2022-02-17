@@ -44,11 +44,11 @@ base:
   # logDir is the log storage directory
   # in linux, default value is /var/log/dragonfly
   # in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
-  logDir: ''
+  logDir: ""
 
   # manager configuration
   manager:
-    addr: ''
+    addr: ""
     cdnClusterID: 0
     keepAlive:
       interval: 5s
@@ -116,7 +116,7 @@ verbose: false
 pprof-port: -1
 
 # jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ''
+jaeger: ""
 
 # service name used in tracer
 # default: dragonfly-cdn

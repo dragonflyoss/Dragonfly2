@@ -36,6 +36,9 @@ manager:
   keepAlive:
     interval: 5000000000
 
+cdn:
+  enable: true
+
 job:
   enable: true
   globalWorkerNum: 1
