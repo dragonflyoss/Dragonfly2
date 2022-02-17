@@ -32,11 +32,13 @@ import (
 func TestResource_New(t *testing.T) {
 	tests := []struct {
 		name   string
+		config *config.Config
 		mock   func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, resource Resource, err error)
 	}{
 		{
-			name: "new resource",
+			name:   "new resource",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
@@ -53,7 +55,8 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource failed because of host manager error",
+			name:   "new resource failed because of host manager error",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(errors.New("foo")).Times(1),
@@ -65,7 +68,8 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource failed because of task manager error",
+			name:   "new resource failed because of task manager error",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(1),
@@ -78,7 +82,8 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource failed because of peer manager error",
+			name:   "new resource failed because of peer manager error",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(2),
@@ -91,7 +96,8 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource faild because of dynconfig get error",
+			name:   "new resource faild because of dynconfig get error",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
@@ -104,7 +110,8 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name: "new resource faild because of cdn list is empty",
+			name:   "new resource faild because of cdn list is empty",
+			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
@@ -118,6 +125,34 @@ func TestResource_New(t *testing.T) {
 				assert.EqualError(err, "address list of cdn is empty")
 			},
 		},
+		{
+			name: "new resource with cdn",
+			config: &config.Config{
+				Scheduler: &config.SchedulerConfig{
+					GC: &config.GCConfig{
+						PeerGCInterval: 100,
+						PeerTTL:        1000,
+						TaskGCInterval: 100,
+						TaskTTL:        1000,
+						HostGCInterval: 100,
+						HostTTL:        1000,
+					},
+				},
+				CDN: &config.CDNConfig{
+					Enable: false,
+				},
+			},
+			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
+				gomock.InOrder(
+					gc.Add(gomock.Any()).Return(nil).Times(3),
+				)
+			},
+			expect: func(t *testing.T, resource Resource, err error) {
+				assert := assert.New(t)
+				assert.Equal(reflect.TypeOf(resource).Elem().Name(), "resource")
+				assert.NoError(err)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -128,7 +163,7 @@ func TestResource_New(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			tc.mock(gc.EXPECT(), dynconfig.EXPECT())
 
-			resource, err := New(config.New(), gc, dynconfig)
+			resource, err := New(tc.config, gc, dynconfig)
 			tc.expect(t, resource, err)
 		})
 	}

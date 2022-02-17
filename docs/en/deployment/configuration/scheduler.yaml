@@ -67,8 +67,6 @@ host:
 
 # manager configuration
 manager:
-  # scheduler enable contact with manager
-  enable: true
   # addr manager access address
   addr: 127.0.0.1:65003
   # schedulerClusterID cluster id to which scheduler instance belongs
