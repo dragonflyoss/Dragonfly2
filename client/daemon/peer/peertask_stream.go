@@ -75,11 +75,11 @@ func (ptm *peerTaskManager) newStreamTask(
 	// prefetch parent request
 	var parent *peerTaskConductor
 	if ptm.enablePrefetch && rg != nil {
-		parent = ptm.prefetchParentTask(request)
+		parent = ptm.prefetchParentTask(request, "")
 	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "")
 	if err != nil {
 		return nil, err
 	}

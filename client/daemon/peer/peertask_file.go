@@ -34,12 +34,13 @@ import (
 
 type FileTaskRequest struct {
 	scheduler.PeerTaskRequest
-	Output            string
-	Limit             float64
-	DisableBackSource bool
-	Pattern           string
-	Callsystem        string
-	Range             *clientutil.Range
+	Output             string
+	Limit              float64
+	DisableBackSource  bool
+	Pattern            string
+	Callsystem         string
+	Range              *clientutil.Range
+	KeepOriginalOffset bool
 }
 
 // FileTask represents a peer task to download a file
@@ -90,11 +91,11 @@ func (ptm *peerTaskManager) newFileTask(
 	// prefetch parent request
 	var parent *peerTaskConductor
 	if ptm.enablePrefetch && request.Range != nil {
-		parent = ptm.prefetchParentTask(&request.PeerTaskRequest)
+		parent = ptm.prefetchParentTask(&request.PeerTaskRequest, request.Output)
 	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range, request.Output)
 	if err != nil {
 		return nil, nil, err
 	}

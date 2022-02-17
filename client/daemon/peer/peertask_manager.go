@@ -166,8 +166,9 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range) (*peerTaskConductor, error) {
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg)
+	rg *clientutil.Range,
+	desiredLocation string) (*peerTaskConductor, error) {
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +188,8 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range) (*peerTaskConductor, bool, error) {
+	rg *clientutil.Range,
+	desiredLocation string) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
@@ -206,10 +208,10 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
-	return ptc, true, ptc.initStorage()
+	return ptc, true, ptc.initStorage(desiredLocation)
 }
 
-func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest) *peerTaskConductor {
+func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
 	req := &scheduler.PeerTaskRequest{
 		Url:         request.Url,
 		PeerId:      request.PeerId,
@@ -238,9 +240,10 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 	}
 
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
-	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil)
+	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation)
 	if err != nil {
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
+		return nil
 	}
 	return prefetch
 }

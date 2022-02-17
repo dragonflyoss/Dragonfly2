@@ -56,10 +56,11 @@ type CommonTaskRequest struct {
 }
 
 type RegisterTaskRequest struct {
-	CommonTaskRequest
-	ContentLength int64
-	TotalPieces   int32
-	PieceMd5Sign  string
+	PeerTaskMetadata
+	DesiredLocation string
+	ContentLength   int64
+	TotalPieces     int32
+	PieceMd5Sign    string
 }
 
 type WritePieceRequest struct {

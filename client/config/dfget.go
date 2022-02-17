@@ -127,6 +127,11 @@ type ClientOption struct {
 	RecursiveAcceptRegex string `yaml:"acceptRegex,omitempty" mapstructure:"accept-regex,omitempty"`
 
 	RecursiveRejectRegex string `yaml:"rejectRegex,omitempty" mapstructure:"reject-regex,omitempty"`
+
+	KeepOriginalOffset bool `yaml:"keepOriginalOffset,omitempty" mapstructure:"keepOriginalOffset,omitempty"`
+
+	// Range stands download range for url, like: 0-9, will download 10 bytes from 0 to 9 ([0:9])
+	Range string `yaml:"range,omitempty" mapstructure:"range,omitempty"`
 }
 
 func NewDfgetConfig() *ClientOption {

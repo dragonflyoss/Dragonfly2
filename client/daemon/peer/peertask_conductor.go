@@ -385,10 +385,6 @@ func (pt *peerTaskConductor) backSource() {
 	backSourceCtx, backSourceSpan := tracer.Start(pt.ctx, config.SpanBackSource)
 	defer backSourceSpan.End()
 	pt.contentLength.Store(-1)
-	if err := pt.InitStorage(); err != nil {
-		pt.cancel(base.Code_ClientError, err.Error())
-		return
-	}
 	err := pt.pieceManager.DownloadSource(backSourceCtx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
@@ -430,12 +426,13 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 	var err error
 	storageDriver, err := pt.peerTaskManager.storageManager.RegisterTask(ctx,
 		&storage.RegisterTaskRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.tinyData.PeerID,
 				TaskID: pt.tinyData.TaskID,
 			},
-			ContentLength: l,
-			TotalPieces:   1,
+			DesiredLocation: "",
+			ContentLength:   l,
+			TotalPieces:     1,
 			// TODO check digest
 		})
 	pt.storage = storageDriver
@@ -659,13 +656,6 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digestutils.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
-	if err := pt.InitStorage(); err != nil {
-		pt.cancel(base.Code_ClientError, err.Error())
-		span.RecordError(err)
-		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
-		span.End()
-		return
-	}
 
 	request := &DownloadPieceRequest{
 		storage: pt.GetStorage(),
@@ -807,11 +797,7 @@ func (pt *peerTaskConductor) init(piecePacket *base.PiecePacket, pieceBufferSize
 	if piecePacket.ContentLength > -1 {
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
 	}
-	if err := pt.InitStorage(); err != nil {
-		pt.span.RecordError(err)
-		pt.cancel(base.Code_ClientError, err.Error())
-		return nil, false
-	}
+
 	pc := pt.peerPacket.Load().(*scheduler.PeerPacket).ParallelCount
 	pieceRequestCh := make(chan *DownloadPieceRequest, pieceBufferSize)
 	for i := int32(0); i < pc; i++ {
@@ -1120,28 +1106,19 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	span.End()
 }
 
-func (pt *peerTaskConductor) InitStorage() (err error) {
-	pt.lock.Lock()
-	defer pt.lock.Unlock()
-	// check storage for partial back source cases.
-	if pt.storage != nil {
-		return nil
-	}
-	return pt.initStorage()
-}
-
-func (pt *peerTaskConductor) initStorage() (err error) {
+func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 	// prepare storage
 	if pt.parent == nil {
 		pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
 			&storage.RegisterTaskRequest{
-				CommonTaskRequest: storage.CommonTaskRequest{
+				PeerTaskMetadata: storage.PeerTaskMetadata{
 					PeerID: pt.GetPeerID(),
 					TaskID: pt.GetTaskID(),
 				},
-				ContentLength: pt.GetContentLength(),
-				TotalPieces:   pt.GetTotalPieces(),
-				PieceMd5Sign:  pt.GetPieceMd5Sign(),
+				DesiredLocation: desiredLocation,
+				ContentLength:   pt.GetContentLength(),
+				TotalPieces:     pt.GetTotalPieces(),
+				PieceMd5Sign:    pt.GetPieceMd5Sign(),
 			})
 	} else {
 		pt.storage, err = pt.storageManager.RegisterSubTask(pt.ctx,

@@ -651,7 +651,8 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		PeerHost: &scheduler.PeerHost{},
 	}
 
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, peerTaskRequest, rate.Limit(pieceSize*4), nil, nil)
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(
+		context.Background(), taskID, peerTaskRequest, rate.Limit(pieceSize*4), nil, nil, "")
 	assert.Nil(err, "load first peerTaskConductor")
 	assert.True(created, "should create a new peerTaskConductor")
 
@@ -695,7 +696,8 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 			PeerId:   fmt.Sprintf("should-not-use-peer-%d", i),
 			PeerHost: &scheduler.PeerHost{},
 		}
-		p, created, err := ptm.getOrCreatePeerTaskConductor(context.Background(), taskID, request, rate.Limit(pieceSize*3), nil, nil)
+		p, created, err := ptm.getOrCreatePeerTaskConductor(
+			context.Background(), taskID, request, rate.Limit(pieceSize*3), nil, nil, "")
 		assert.Nil(err, fmt.Sprintf("load peerTaskConductor %d", i))
 		assert.Equal(ptc.peerID, p.GetPeerID(), fmt.Sprintf("ptc %d should be same with ptc", i))
 		assert.False(created, "should not create a new peerTaskConductor")

@@ -145,11 +145,12 @@ func (m *server) Download(ctx context.Context,
 			PeerId:   idgen.PeerID(m.peerHost.Ip),
 			PeerHost: m.peerHost,
 		},
-		Output:            req.Output,
-		Limit:             req.Limit,
-		DisableBackSource: req.DisableBackSource,
-		Pattern:           req.Pattern,
-		Callsystem:        req.Callsystem,
+		Output:             req.Output,
+		Limit:              req.Limit,
+		DisableBackSource:  req.DisableBackSource,
+		Pattern:            req.Pattern,
+		Callsystem:         req.Callsystem,
+		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
 		r, err := rangeutils.ParseRange(req.UrlMeta.Range, math.MaxInt)
