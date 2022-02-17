@@ -63,12 +63,12 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			create: func(s *storageManager, taskID, peerID string) (TaskStorageDriver, error) {
 				return s.CreateTask(
 					&RegisterTaskRequest{
-						CommonTaskRequest: CommonTaskRequest{
-							PeerID:      peerID,
-							TaskID:      taskID,
-							Destination: dst,
+						PeerTaskMetadata: PeerTaskMetadata{
+							PeerID: peerID,
+							TaskID: taskID,
 						},
-						ContentLength: int64(len(testBytes)),
+						DesiredLocation: dst,
+						ContentLength:   int64(len(testBytes)),
 					})
 			},
 		},
@@ -78,12 +78,12 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			create: func(s *storageManager, taskID, peerID string) (TaskStorageDriver, error) {
 				return s.CreateTask(
 					&RegisterTaskRequest{
-						CommonTaskRequest: CommonTaskRequest{
-							PeerID:      peerID,
-							TaskID:      taskID,
-							Destination: dst,
+						PeerTaskMetadata: PeerTaskMetadata{
+							PeerID: peerID,
+							TaskID: taskID,
 						},
-						ContentLength: int64(len(testBytes)),
+						DesiredLocation: dst,
+						ContentLength:   int64(len(testBytes)),
 					})
 			},
 		},
@@ -98,12 +98,12 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 
 				_, err := s.CreateTask(
 					&RegisterTaskRequest{
-						CommonTaskRequest: CommonTaskRequest{
-							PeerID:      parentPeerID,
-							TaskID:      parentTaskID,
-							Destination: dst,
+						PeerTaskMetadata: PeerTaskMetadata{
+							PeerID: parentPeerID,
+							TaskID: parentTaskID,
 						},
-						ContentLength: int64(len(testBytes)),
+						DesiredLocation: dst,
+						ContentLength:   int64(len(testBytes)),
 					})
 				assert.Nil(err)
 

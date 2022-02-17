@@ -374,7 +374,7 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 	t.metadataFile = metadata
 
 	// fallback to simple strategy for proxy
-	if req.Destination == "" {
+	if req.DesiredLocation == "" {
 		t.StoreStrategy = string(config.SimpleLocalTaskStoreStrategy)
 	}
 	data := path.Join(dataDir, taskData)
@@ -387,7 +387,7 @@ func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver
 		}
 		f.Close()
 	case string(config.AdvanceLocalTaskStoreStrategy):
-		dir, file := path.Split(req.Destination)
+		dir, file := path.Split(req.DesiredLocation)
 		dirStat, err := os.Stat(dir)
 		if err != nil {
 			return nil, err

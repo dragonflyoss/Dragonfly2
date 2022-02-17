@@ -175,12 +175,12 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			})
 			taskStorage, err = storageManager.RegisterTask(context.Background(),
 				&storage.RegisterTaskRequest{
-					CommonTaskRequest: storage.CommonTaskRequest{
-						PeerID:      mockPeerTask.GetPeerID(),
-						TaskID:      mockPeerTask.GetTaskID(),
-						Destination: output,
+					PeerTaskMetadata: storage.PeerTaskMetadata{
+						PeerID: mockPeerTask.GetPeerID(),
+						TaskID: mockPeerTask.GetTaskID(),
 					},
-					ContentLength: int64(len(testBytes)),
+					DesiredLocation: output,
+					ContentLength:   int64(len(testBytes)),
 				})
 			assert.Nil(err)
 			defer storageManager.CleanUp()
