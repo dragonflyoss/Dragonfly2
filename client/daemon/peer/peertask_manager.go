@@ -246,6 +246,10 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
 		return nil
 	}
+
+	if prefetch != nil && prefetch.peerID == req.PeerId {
+		metrics.PrefetchTaskCount.Add(1)
+	}
 	return prefetch
 }
 

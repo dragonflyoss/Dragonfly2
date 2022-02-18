@@ -110,6 +110,13 @@ var (
 		Name:      "peer_task_cache_hit_total",
 		Help:      "Counter of the total cache hit peer tasks.",
 	})
+
+	PrefetchTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "prefetch_task_total",
+		Help:      "Counter of the total prefetched tasks.",
+	})
 )
 
 func New(addr string) *http.Server {
