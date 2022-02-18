@@ -224,8 +224,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 
 // register to scheduler, if error and disable auto back source, return error, otherwise return nil
 func (pt *peerTaskConductor) register() error {
-	pt.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
-		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta, pt.request.UrlMeta.Tag)
+	pt.Debugf("request overview, pid: %s, url: %s, filter: %s, tag: %s, range: %s, digest: %s, header: %#v",
+		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta.Tag, pt.request.UrlMeta.Range, pt.request.UrlMeta.Digest, pt.request.UrlMeta.Header)
 	// trace register
 	regCtx, cancel := context.WithTimeout(pt.ctx, pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
 	defer cancel()

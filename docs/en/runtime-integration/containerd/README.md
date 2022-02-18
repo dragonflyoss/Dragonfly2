@@ -5,5 +5,5 @@ Containerd. We recommend to use `mirror`.
 
 Table of contents:
 
-* [mirror](mirror.md)
-* [proxy](proxy.md)
+- [mirror](mirror.md)
+- [proxy](proxy.md)

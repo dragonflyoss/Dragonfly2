@@ -24,6 +24,7 @@ Attaching to cdn, scheduler, dfdaemon
 Show dragonfly logs.
 
 <!-- markdownlint-disable -->
+
 ```bash
 $ tail -f log/**/*.log
 ==> log/dragonfly/cdn/core.log <==
@@ -49,6 +50,7 @@ $ tail -f log/**/*.log
 {"level":"info","ts":"2021-02-26 05:43:37.342","caller":"worker/sender.go:49","msg":"start sender worker : 50"}
 {"level":"info","ts":"2021-02-26 05:43:37.343","caller":"worker/worker_group.go:64","msg":"start scheduler worker number:6"}
 ```
+
 <!-- markdownlint-restore -->
 
 ## Step 4: Stop dragonfly

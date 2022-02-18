@@ -9,14 +9,16 @@
 下表列出了一些容器的运行时、版本和文档。
 
 <!-- markdownlint-disable -->
-| Runtime | Version | Document | CRI Support | Pull Command |
-| --- | --- | --- | --- | --- |
-| Containerd<sup>*</sup> | v1.1.0+ | [Link](runtime-integration/containerd/mirror.md) | Yes | crictl pull docker.io/library/alpine:latest |
-| Containerd without CRI | < v1.1.0 | [Link](runtime-integration/containerd/proxy.md) | No | ctr image pull docker.io/library/alpine |
-| CRI-O | All | [Link](runtime-integration/cri-o.md) | Yes | crictl pull docker.io/library/alpine:latest |
+
+| Runtime                 | Version  | Document                                         | CRI Support | Pull Command                                |
+| ----------------------- | -------- | ------------------------------------------------ | ----------- | ------------------------------------------- |
+| Containerd<sup>\*</sup> | v1.1.0+  | [Link](runtime-integration/containerd/mirror.md) | Yes         | crictl pull docker.io/library/alpine:latest |
+| Containerd without CRI  | < v1.1.0 | [Link](runtime-integration/containerd/proxy.md)  | No          | ctr image pull docker.io/library/alpine     |
+| CRI-O                   | All      | [Link](runtime-integration/cri-o.md)             | Yes         | crictl pull docker.io/library/alpine:latest |
+
 <!-- markdownlint-restore -->
 
-**: 推荐使用`containerd`*
+推荐使用 `containerd`.
 
 ## Helm Chart 运行时配置
 
@@ -34,8 +36,8 @@ containerRuntime:
     # When use certs and inject hosts in docker, no necessary to restart docker daemon.
     injectHosts: true
     registryDomains:
-    - "harbor.example.com"
-    - "harbor.example.net"
+      - 'harbor.example.com'
+      - 'harbor.example.net'
 ```
 
 此配置允许 docker 通过 Dragonfly 拉取 `harbor.example.com` 和 `harbor.example.net` 域名镜像。
@@ -43,13 +45,13 @@ containerRuntime:
 
 优点：
 
-* 支持 dfdaemon 自身平滑升级
+- 支持 dfdaemon 自身平滑升级
 
 > 这种模式下，当删除 dfdaemon pod 的时候，`preStop` 钩子将会清理已经注入到 `/etc/hosts` 下的所有主机信息，所有流量将会走原来的镜像中心。
 
 限制:
 
-* 只支持指定域名。
+- 只支持指定域名。
 
 ## 准备 Kubernetes 集群
 

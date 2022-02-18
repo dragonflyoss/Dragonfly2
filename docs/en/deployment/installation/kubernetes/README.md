@@ -6,6 +6,6 @@ daemon as `DaemonSets`, manager as `Deployments`.
 
 Table of contents:
 
-* [Helm](helm.md)
-* [Kustomize](kustomize.md)
-* [TODO Upgrade Guide](upgrade-guide.md)
+- [Helm](helm.md)
+- [Kustomize](kustomize.md)
+- [TODO Upgrade Guide](upgrade-guide.md)

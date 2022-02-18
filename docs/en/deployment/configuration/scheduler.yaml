@@ -21,12 +21,14 @@ server:
 scheduler:
   # algorithm configuration to use different scheduling algorithms,
   # default configuration supports "default" and "ml"
-  # "default" is the rule-based scheduling algorithm, "ml" is the machine learning scheduling algorithm
+  # "default" is the rule-based scheduling algorithm,
+  # "ml" is the machine learning scheduling algorithm
   # It also supports user plugin extension, the algorithm value is "plugin",
   # and the compiled `d7y-scheduler-plugin-evaluator.so` file is added to
   # the dragonfly working directory plugins
   algorithm: default
-  # backSourceCount is the number of backsource clients when the CDN is unavailable
+  # backSourceCount is the number of backsource clients
+  # when the CDN is unavailable
   backSourceCount: 3
   # retry scheduling back-to-source limit times
   retryBackSourceLimit: 5
@@ -65,8 +67,6 @@ host:
 
 # manager configuration
 manager:
-  # scheduler enable contact with manager
-  enable: true
   # addr manager access address
   addr: 127.0.0.1:65003
   # schedulerClusterID cluster id to which scheduler instance belongs
@@ -76,7 +76,15 @@ manager:
     # interval
     interval: 5s
 
-# machinery async job configuration, see https://github.com/RichardKnop/machinery
+# cdn configuration
+cdn:
+  # scheduler enable cdn as P2P peer,
+  # if the value is false, P2P network will not be back-to-source through
+  # cdn but by dfdaemon and preheat feature does not work
+  enable: true
+
+# machinery async job configuration,
+# see https://github.com/RichardKnop/machinery
 job:
   # scheduler enable job service
   enable: true

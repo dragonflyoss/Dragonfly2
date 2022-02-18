@@ -72,25 +72,23 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client
-	if cfg.Manager.Enable {
-		managerClient, err := managerclient.New(cfg.Manager.Addr)
-		if err != nil {
-			return nil, err
-		}
-		s.managerClient = managerClient
+	managerClient, err := managerclient.New(cfg.Manager.Addr)
+	if err != nil {
+		return nil, err
+	}
+	s.managerClient = managerClient
 
-		// Register to manager
-		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
-			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
-			HostName:           s.config.Server.Host,
-			Ip:                 s.config.Server.IP,
-			Port:               int32(s.config.Server.Port),
-			Idc:                s.config.Host.IDC,
-			Location:           s.config.Host.Location,
-			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-		}); err != nil {
-			logger.Fatalf("register to manager failed %v", err)
-		}
+	// Register to manager
+	if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
+		SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+		HostName:           s.config.Server.Host,
+		Ip:                 s.config.Server.IP,
+		Port:               int32(s.config.Server.Port),
+		Idc:                s.config.Host.IDC,
+		Location:           s.config.Host.Location,
+		SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+	}); err != nil {
+		logger.Fatalf("register to manager failed %v", err)
 	}
 
 	// Initialize dynconfig client
@@ -141,7 +139,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize job service
 	if cfg.Job.Enable {
-		s.job, err = job.New(cfg, service)
+		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}
