@@ -32,6 +32,9 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
+		_, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
 			"dragonfly-dfdaemon-", "dfdaemon")
@@ -84,6 +87,12 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Println("test in pod: " + podName)
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
+
+		// copy test tools into container
+		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
+			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
+		Expect(err).NotTo(HaveOccurred())
+
 		pod := e2eutil.NewPodExec(ns, podName, container)
 
 		// install curl
@@ -128,14 +137,14 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out", url)
 	} else {
 		sha256sum = append(sha256sum, "sh", "-c",
-			fmt.Sprintf("dd if=%s ibs=1 skip=%d count=%d 2> /dev/null | /usr/bin/sha256sum", path, rg.Start, rg.Length))
+			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d", path, rg.Start, rg.Length))
 		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "-O", "/tmp/d7y.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",
 			"--header", fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 
 		sha256sumOffset = append(sha256sumOffset, "sh", "-c",
-			fmt.Sprintf("dd if=%s ibs=1 skip=%d count=%d 2> /dev/null | /usr/bin/sha256sum",
+			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d",
 				"/var/lib/dragonfly/d7y.offset.out", rg.Start, rg.Length))
 		dfgetOffset = append(dfgetOffset, "/opt/dragonfly/bin/dfget", "--original-offset", "-O", "/var/lib/dragonfly/d7y.offset.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
