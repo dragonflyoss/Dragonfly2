@@ -36,8 +36,9 @@ var (
 	featureGates     = featuregate.NewFeatureGate()
 	featureGatesFlag string
 
-	featureGateRange  featuregate.Feature = "dfget-range"
-	featureGateCommit featuregate.Feature = "dfget-commit"
+	featureGateRange    featuregate.Feature = "dfget-range"
+	featureGateCommit   featuregate.Feature = "dfget-commit"
+	featureGateNoLength featuregate.Feature = "dfget-no-length"
 
 	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
 		featureGateRange: {
@@ -46,6 +47,11 @@ var (
 			PreRelease:    featuregate.Alpha,
 		},
 		featureGateCommit: {
+			Default:       true,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateNoLength: {
 			Default:       true,
 			LockToDefault: false,
 			PreRelease:    featuregate.Alpha,
