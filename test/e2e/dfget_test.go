@@ -89,7 +89,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
-		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
+		_, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
 			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 
