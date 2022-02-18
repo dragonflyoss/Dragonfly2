@@ -236,6 +236,9 @@ func (ptm *peerTaskManager) prefetch(request *scheduler.PeerTaskRequest) {
 	if err != nil {
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
 	}
+	if prefetch != nil && prefetch.peerID == req.PeerId {
+		metrics.PrefetchTaskCount.Add(1)
+	}
 }
 
 func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequest) (chan *FileTaskProgress, *TinyData, error) {
