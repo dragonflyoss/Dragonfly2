@@ -32,8 +32,13 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
-		_, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
-		Expect(err).NotTo(HaveOccurred())
+		It("install test tools into kind", func() {
+			out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+			if err != nil {
+				fmt.Println(string(out))
+			}
+			Expect(err).NotTo(HaveOccurred())
+		})
 
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
@@ -89,8 +94,11 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
-		_, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
+		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
 			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		pod := e2eutil.NewPodExec(ns, podName, container)
