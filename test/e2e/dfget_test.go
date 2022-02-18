@@ -32,13 +32,15 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
-		It("install test tools into kind", func() {
-			out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
-			if err != nil {
-				fmt.Println(string(out))
-			}
-			Expect(err).NotTo(HaveOccurred())
-		})
+		if featureGates.Enabled(featureGateRange) {
+			It("install test tools into kind", func() {
+				out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+				if err != nil {
+					fmt.Println(string(out))
+				}
+				Expect(err).NotTo(HaveOccurred())
+			})
+		}
 
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
@@ -94,12 +96,14 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		Expect(strings.HasPrefix(podName, podNamePrefix)).Should(BeTrue())
 
 		// copy test tools into container
-		out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
-			fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
-		if err != nil {
-			fmt.Println(string(out))
+		if featureGates.Enabled(featureGateRange) {
+			out, err = e2eutil.KubeCtlCommand("-n", ns, "cp", "-c", container, "/tmp/sha256sum-offset",
+				fmt.Sprintf("%s:/bin/", podName)).CombinedOutput()
+			if err != nil {
+				fmt.Println(string(out))
+			}
+			Expect(err).NotTo(HaveOccurred())
 		}
-		Expect(err).NotTo(HaveOccurred())
 
 		pod := e2eutil.NewPodExec(ns, podName, container)
 
