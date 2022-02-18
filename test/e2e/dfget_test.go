@@ -32,20 +32,21 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
+		files := getFileSizes()
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
-			"dragonfly-dfdaemon-", "dfdaemon")
+			"dragonfly-dfdaemon-", "dfdaemon", files)
 		for i := 0; i < 3; i++ {
 			singleDfgetTest(
 				fmt.Sprintf("dfget daemon proxy-%d should be ok", i),
 				dragonflyE2ENamespace,
 				fmt.Sprintf("statefulset.kubernetes.io/pod-name=proxy-%d", i),
-				"proxy-", "proxy")
+				"proxy-", "proxy", files)
 		}
 	})
 })
 
-func getFileDetails() map[string]int {
+func getFileSizes() map[string]int {
 	var details = map[string]int{}
 	for _, path := range e2eutil.GetFileList() {
 		out, err := e2eutil.DockerCommand("stat", "--printf=%s", path).CombinedOutput()
@@ -76,7 +77,7 @@ func getRandomRange(size int) *clientutil.Range {
 	return rg
 }
 
-func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
+func singleDfgetTest(name, ns, label, podNamePrefix, container string, fileDetails map[string]int) {
 	It(name, func() {
 		out, err := e2eutil.KubeCtlCommand("-n", ns, "get", "pod", "-l", label,
 			"-o", "jsonpath='{range .items[*]}{.metadata.name}{end}'").CombinedOutput()
@@ -101,7 +102,7 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string) {
 		_, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 
-		for path, size := range getFileDetails() {
+		for path, size := range fileDetails {
 			url1 := e2eutil.GetFileURL(path)
 			url2 := e2eutil.GetNoContentLengthFileURL(path)
 
