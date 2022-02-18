@@ -32,16 +32,6 @@ import (
 
 var _ = Describe("Download with dfget and proxy", func() {
 	Context("dfget", func() {
-		if featureGates.Enabled(featureGateRange) {
-			It("install test tools into kind", func() {
-				out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
-				if err != nil {
-					fmt.Println(string(out))
-				}
-				Expect(err).NotTo(HaveOccurred())
-			})
-		}
-
 		singleDfgetTest("dfget daemon download should be ok",
 			dragonflyNamespace, "component=dfdaemon",
 			"dragonfly-dfdaemon-", "dfdaemon")
