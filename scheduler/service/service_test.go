@@ -2095,9 +2095,9 @@ func TestService_handlePieceFail(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-					mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1),
-					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1),
 				)
+				mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1)
+				mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1)
 
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
