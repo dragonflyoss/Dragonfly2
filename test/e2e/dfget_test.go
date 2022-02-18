@@ -178,8 +178,11 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 	// download file via dfget with offset
 	if rg != nil {
 		// move output for next cases and debugging
-		_, _ = pod.Command("/bin/mv", "-f",
-			"/var/lib/dragonfly/d7y.offset.out", "/var/lib/dragonfly/d7y.offset.out.last").CombinedOutput()
+		_, _ = pod.Command("/bin/sh", "-c", `
+                rm -f /var/lib/dragonfly/d7y.offset.out.last
+                cp -l /var/lib/dragonfly/d7y.offset.out /var/lib/dragonfly/d7y.offset.out.last
+                rm -f /var/lib/dragonfly/d7y.offset.out
+			`).CombinedOutput()
 
 		start = time.Now()
 		out, err = pod.Command(dfgetOffset...).CombinedOutput()
