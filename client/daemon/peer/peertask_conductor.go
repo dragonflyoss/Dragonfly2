@@ -418,7 +418,6 @@ func (pt *peerTaskConductor) pullPieces() {
 }
 
 func (pt *peerTaskConductor) storeTinyPeerTask() {
-	// TODO store tiny data asynchronous
 	l := int64(len(pt.tinyData.Content))
 	pt.SetContentLength(l)
 	pt.SetTotalPieces(1)
@@ -469,7 +468,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		return
 	}
 	if n != l {
-		pt.Errorf("write tiny data storage failed", n, l)
+		pt.Errorf("write tiny data storage failed, want: %d, wrote: %d", l, n)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
