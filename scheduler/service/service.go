@@ -435,7 +435,7 @@ func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		return peer
 	}
 
-	peer.Log.Info("peer already exists")
+	peer.Log.Infof("peer already exists, state %s", peer.FSM.Current())
 	return peer
 }
 
