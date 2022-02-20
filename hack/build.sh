@@ -6,6 +6,7 @@ set -o pipefail
 
 CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
+DFCACHE_BINARY_NAME=dfcache
 SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
 
@@ -56,6 +57,10 @@ build-dfget-local() {
     build-local ${DFGET_BINARY_NAME} dfget
 }
 
+build-dfcache-local() {
+    build-local ${DFCACHE_BINARY_NAME} dfcache
+}
+
 build-scheduler-local() {
     build-local ${SCHEDULER_BINARY_NAME} scheduler
 }
@@ -95,6 +100,10 @@ build-dfget-docker() {
     build-docker ${DFGET_BINARY_NAME} dfget
 }
 
+build-dfcache-docker() {
+    build-docker ${DFCACHE_BINARY_NAME} dfcache
+}
+
 build-scheduler-docker() {
     build-docker ${SCHEDULER_BINARY_NAME} scheduler
 }
@@ -122,6 +131,9 @@ main() {
         dfget)
             build-dfget-docker
             ;;
+        dfcache)
+            build-dfcache-docker
+            ;;
         scheduler)
             build-scheduler-docker
             ;;
@@ -133,6 +145,7 @@ main() {
             ;;
         *)
             build-dfget-docker
+            build-dfcache-docker
             build-cdn-docker
             build-scheduler-docker
             build-manager-docker
@@ -147,6 +160,9 @@ main() {
         dfget)
             build-dfget-local
             ;;
+        dfcache)
+            build-dfcache-local
+            ;;
         scheduler)
             build-scheduler-local
             ;;
@@ -158,6 +174,7 @@ main() {
             ;;
         *)
             build-dfget-local
+            build-dfcache-local
             build-cdn-local
             build-scheduler-local
             build-manager-local
