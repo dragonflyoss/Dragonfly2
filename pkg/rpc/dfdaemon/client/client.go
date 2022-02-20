@@ -85,6 +85,8 @@ type DaemonClient interface {
 
 	ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error)
 
+	DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error)
+
 	Close() error
 }
 
@@ -202,6 +204,20 @@ func (dc *daemonClient) ExportTask(ctx context.Context, req *dfdaemon.ExportTask
 	res, err := client.ExportTask(ctx, req, opts...)
 	if err != nil {
 		logger.With("Cid", req.Cid, "TaskID", taskID, "Output", req.Output).Errorf("ExportTask: invoke daemon node %s failed: %v", target, err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func (dc *daemonClient) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error) {
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	client, target, err := dc.getDaemonClient(taskID, false)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.DeleteTask(ctx, req, opts...)
+	if err != nil {
+		logger.With("Cid", req.Cid, "TaskID", taskID).Errorf("DeleteTask: invoke daemon node %s failed: %v", target, err)
 		return nil, err
 	}
 	return res, nil

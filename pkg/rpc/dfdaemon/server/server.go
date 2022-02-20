@@ -49,6 +49,8 @@ type DaemonServer interface {
 	ImportTask(context.Context, *dfdaemon.ImportTaskRequest) (*base.GrpcDfResult, error)
 	// Export or download file from P2P cache system
 	ExportTask(context.Context, *dfdaemon.ExportTaskRequest) (*base.GrpcDfResult, error)
+	// Delete file from P2P cache system
+	DeleteTask(context.Context, *dfdaemon.DeleteTaskRequest) (*base.GrpcDfResult, error)
 }
 
 type proxy struct {
@@ -116,6 +118,10 @@ func (p *proxy) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest)
 
 func (p *proxy) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest) (*base.GrpcDfResult, error) {
 	return p.server.ExportTask(ctx, req)
+}
+
+func (p *proxy) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest) (*base.GrpcDfResult, error) {
+	return p.server.DeleteTask(ctx, req)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {
