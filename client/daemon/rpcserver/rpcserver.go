@@ -515,3 +515,27 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 		errChan <- err
 	}
 }
+
+func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
+	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	log := logger.With("function", "DeleteTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID)
+
+	log.Info("new delete task request")
+	task := s.storageManager.FindCompletedTask(taskID)
+	if task == nil {
+		log.Info("task not found, skip delete")
+		return nil
+	}
+
+	// Unregister task
+	unregReq := storage.CommonTaskRequest{
+		PeerID: task.PeerID,
+		TaskID: taskID,
+	}
+	if err := s.storageManager.UnregisterTask(ctx, unregReq); err != nil {
+		msg := fmt.Sprintf("failed to UnregisterTask: %s", err)
+		log.Errorf(msg)
+		return errors.New(msg)
+	}
+	return nil
+}
