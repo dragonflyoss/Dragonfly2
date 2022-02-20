@@ -93,6 +93,12 @@ message ExportTaskRequest{
   bool local_only = 9;
 }
 
+message DeleteTaskRequest{
+  // content/cache id of the task
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  base.UrlMeta url_meta = 2;
+}
+
 // Daemon Client RPC Service
 service Daemon{
   // Trigger client to download file
@@ -109,4 +115,6 @@ service Daemon{
   rpc ImportTask(ImportTaskRequest) returns(base.GrpcDfResult);
   // Export or download file from P2P cache system
   rpc ExportTask(ExportTaskRequest) returns(base.GrpcDfResult);
+  // Delete file from P2P cache system
+  rpc DeleteTask(DeleteTaskRequest) returns(base.GrpcDfResult);
 }
