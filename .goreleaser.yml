@@ -1,5 +1,6 @@
 before:
   hooks:
+    - hack/update-version-gorelease.sh
     - go mod download
 
 builds:
@@ -11,6 +12,14 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
   - main: ./cmd/scheduler
     id: scheduler
@@ -20,6 +29,14 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
   - main: ./cmd/cdn
     id: cdn
@@ -29,6 +46,14 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
   - main: ./cmd/manager
     id: manager
@@ -38,6 +63,14 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
 archives:
   - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
