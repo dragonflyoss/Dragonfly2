@@ -14,6 +14,8 @@ prepare(){
     cat template/cdn.template.json > config/cdn.json
     cat template/cdn.template.yaml > config/cdn.yaml
     cat template/dfget.template.yaml > config/dfget.yaml
+    cat template/scheduler.template.yaml > config/scheduler.yaml
+    cat template/manager.template.yaml > config/manager.yaml
 
     ip=${IP:-$(hostname -i)}
     hostname=$(hostname)
@@ -21,6 +23,8 @@ prepare(){
     sed -i "s,__IP__,$ip," config/cdn.json
     sed -i "s,__IP__,$ip," config/dfget.yaml
     sed -i "s,__IP__,$ip," config/cdn.yaml
+    sed -i "s,__IP__,$ip," config/scheduler.yaml
+    sed -i "s,__IP__,$ip," config/manager.yaml
 
     sed -i "s,__HOSTNAME__,$hostname," config/cdn.json
 }
@@ -62,7 +66,24 @@ case "$1" in
 
   *)
     if [ -z "$1" ]; then
+
+        # start all of docker-compose defined service
         docker-compose up -d
+
+        # docker-compose version 3 depends_on does not wait for redis and mysql to be “ready” before starting manager ...
+        # doc https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on
+        for i in $(seq 0 10); do
+          service_num=$(docker-compose ps --services |wc -l)
+          ready_num=$(docker-compose ps | grep healthy | wc -l)
+           if [ "$service_num" -eq "$ready_num" ]; then
+             break
+           fi
+           echo "wait for all service ready: $ready_num/$service_num,$i times check"
+           sleep 2
+        done
+
+        # print service list info
+        docker-compose ps
         exit 0
     fi
     echo "unknown argument: $1"
