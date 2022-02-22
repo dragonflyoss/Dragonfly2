@@ -68,7 +68,7 @@ host:
 # manager configuration
 manager:
   # addr manager access address
-  addr: "172.18.191.244:65003"
+  addr: "__IP__:65003"
   # schedulerClusterID cluster id to which scheduler instance belongs
   schedulerClusterID: "1"
   # keepAlive keep alive configuration
@@ -97,7 +97,7 @@ job:
   # redis configuration
   redis:
     # host
-    host: "172.18.191.244"
+    host: "__IP__"
     # port
     port: 6379
     # password
