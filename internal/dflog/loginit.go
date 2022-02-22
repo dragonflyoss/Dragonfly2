@@ -177,6 +177,7 @@ func InitDfget(verbose, console bool, dir string) error {
 }
 
 func createConsoleLogger(verbose bool) error {
+	levels = nil
 	config := zap.NewDevelopmentConfig()
 	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	if verbose {
