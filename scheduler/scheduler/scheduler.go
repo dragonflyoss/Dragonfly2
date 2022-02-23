@@ -53,12 +53,16 @@ type scheduler struct {
 
 	// Scheduler configuration
 	config *config.SchedulerConfig
+
+	// Scheduler dynamic configuration
+	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduler {
 	return &scheduler{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 		config:    cfg,
+		dynconfig: dynconfig,
 	}
 }
 
@@ -177,7 +181,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	if err := stream.Send(constructSuccessPeerPacket(peer, parents[0], parents[1:])); err != nil {
+	if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, parents[0], parents[1:])); err != nil {
 		peer.Log.Error(err)
 		return []*resource.Peer{}, false
 	}
@@ -259,7 +263,12 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 }
 
 // Construct peer successful packet
-func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+	parallelCount := defaultParallelCount
+	if client, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && client.ParallelCount > 0 {
+		parallelCount = int(client.ParallelCount)
+	}
+
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
 		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
@@ -272,7 +281,7 @@ func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, cand
 	return &rpcscheduler.PeerPacket{
 		TaskId:        peer.Task.ID,
 		SrcPid:        peer.ID,
-		ParallelCount: defaultParallelCount,
+		ParallelCount: int32(parallelCount),
 		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,
