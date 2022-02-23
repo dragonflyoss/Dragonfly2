@@ -85,7 +85,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 			pickerLogger.Infof("d7yPicker: failed to pick server for request: %v", err)
 			return
 		}
-		pickerLogger.Infof("d7yPicker: pick out server: %s for request: %v", targetAddr, pickRequest)
+		pickerLogger.Infof("d7yPicker: pick out server: %s for request: %+v", targetAddr, pickRequest)
 	}()
 	if ok && pickRequest != nil {
 		// mark history

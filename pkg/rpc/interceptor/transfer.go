@@ -19,6 +19,7 @@ package interceptor
 import (
 	"context"
 	"io"
+	"strings"
 	"sync"
 
 	"golang.org/x/net/trace"
@@ -274,7 +275,11 @@ func callContext(ctx context.Context, failedPeer peer.Peer, err error) context.C
 		pr.FailedNodes = sets.NewString()
 	}
 	if failedPeer.Addr != nil {
-		pr.FailedNodes.Insert(failedPeer.Addr.String())
+		failedAddr := failedPeer.Addr.String()
+		if failedPeer.Addr.Network() == "unix" && !strings.HasPrefix(failedAddr, "unix") {
+			failedAddr = "unix://" + failedAddr
+		}
+		pr.FailedNodes.Insert(failedAddr)
 	}
 	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
 		if len(st.Details()) == 1 {
