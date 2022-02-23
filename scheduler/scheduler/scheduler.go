@@ -31,6 +31,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
+const (
+	// Default number of pieces downloaded in parallel
+	defaultParallelCount = 4
+)
+
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
@@ -265,10 +270,9 @@ func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, cand
 	}
 
 	return &rpcscheduler.PeerPacket{
-		TaskId: peer.Task.ID,
-		SrcPid: peer.ID,
-		// TODO(gaius-qi) Configure ParallelCount parameter in manager service
-		ParallelCount: 1,
+		TaskId:        peer.Task.ID,
+		SrcPid:        peer.ID,
+		ParallelCount: defaultParallelCount,
 		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,
