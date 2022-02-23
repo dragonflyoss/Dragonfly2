@@ -115,6 +115,8 @@ func (m *DownRequest) Validate() error {
 
 	// no validation rules for Gid
 
+	// no validation rules for KeepOriginalOffset
+
 	return nil
 }
 

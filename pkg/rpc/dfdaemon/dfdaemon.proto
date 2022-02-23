@@ -46,6 +46,8 @@ message DownRequest{
   int64 uid = 10;
   // group id
   int64 gid = 11;
+  // keep original offset, used for ranged request, only available for hard link, otherwise will failed
+  bool keep_original_offset = 12;
 }
 
 message DownResult{

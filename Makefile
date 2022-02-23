@@ -194,7 +194,11 @@ build-deb-dfget: build-linux-dfget
 # Generate dfget man page
 build-dfget-man-page:
 	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
-.PHONY: build-man-page
+.PHONY: build-dfget-man-page
+
+build-e2e-sha256sum:
+	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
+.PHONY: build-e2e-sha256sum
 
 # Run unittests
 test:
@@ -219,12 +223,12 @@ install-e2e-test:
 .PHONY: install-e2e-test
 
 # Run E2E tests
-e2e-test: install-e2e-test
+e2e-test: install-e2e-test build-e2e-sha256sum
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: install-e2e-test
+e2e-test-coverage: install-e2e-test build-e2e-sha256sum
 	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
@@ -311,6 +315,7 @@ help:
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
 	@echo "make build-manager-console          build manager console"
+	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make install-cdn                    install CDN"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"

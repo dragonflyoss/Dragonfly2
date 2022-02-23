@@ -125,7 +125,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 		}
 	}
 
-	if downError != nil {
+	if downError != nil && !cfg.KeepOriginalOffset {
 		wLog.Warnf("daemon downloads file error: %v", downError)
 		fmt.Printf("daemon downloads file error: %v\n", downError)
 		downError = downloadFromSource(ctx, cfg, hdr)
@@ -213,6 +213,8 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 	var rg string
 	if r, ok := hdr[headers.Range]; ok {
 		rg = strings.TrimLeft(r, "bytes=")
+	} else {
+		rg = cfg.Range
 	}
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
@@ -227,10 +229,11 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 			Filter: cfg.Filter,
 			Header: hdr,
 		},
-		Pattern:    cfg.Pattern,
-		Callsystem: cfg.CallSystem,
-		Uid:        int64(basic.UserID),
-		Gid:        int64(basic.UserGroup),
+		Pattern:            cfg.Pattern,
+		Callsystem:         cfg.CallSystem,
+		Uid:                int64(basic.UserID),
+		Gid:                int64(basic.UserGroup),
+		KeepOriginalOffset: cfg.KeepOriginalOffset,
 	}
 }
 
