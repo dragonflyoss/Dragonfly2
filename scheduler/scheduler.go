@@ -92,11 +92,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize dynconfig client
-	dynConfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	dynconfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
 	if err != nil {
 		return nil, err
 	}
-	s.dynconfig = dynConfig
+	s.dynconfig = dynconfig
 
 	// Initialize GC
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
@@ -122,16 +122,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize resource
-	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, dialOptions...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Initialize scheduler
-	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
+	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize scheduler service
-	service := service.New(cfg, resource, scheduler, dynConfig)
+	service := service.New(cfg, resource, scheduler, dynconfig)
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)
