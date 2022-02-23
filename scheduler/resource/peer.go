@@ -199,6 +199,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
