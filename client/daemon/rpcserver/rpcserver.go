@@ -19,6 +19,7 @@ package rpcserver
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"os"
 
@@ -37,6 +38,7 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 type Server interface {
@@ -143,11 +145,23 @@ func (m *server) Download(ctx context.Context,
 			PeerId:   idgen.PeerID(m.peerHost.Ip),
 			PeerHost: m.peerHost,
 		},
-		Output:            req.Output,
-		Limit:             req.Limit,
-		DisableBackSource: req.DisableBackSource,
-		Pattern:           req.Pattern,
-		Callsystem:        req.Callsystem,
+		Output:             req.Output,
+		Limit:              req.Limit,
+		DisableBackSource:  req.DisableBackSource,
+		Pattern:            req.Pattern,
+		Callsystem:         req.Callsystem,
+		KeepOriginalOffset: req.KeepOriginalOffset,
+	}
+	if len(req.UrlMeta.Range) > 0 {
+		r, err := rangeutils.ParseRange(req.UrlMeta.Range, math.MaxInt)
+		if err != nil {
+			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
+			return err
+		}
+		peerTask.Range = &clientutil.Range{
+			Start:  int64(r.StartIndex),
+			Length: int64(r.Length()),
+		}
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 

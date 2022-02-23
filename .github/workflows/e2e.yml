@@ -70,6 +70,7 @@ jobs:
 
       - name: Run E2E test
         run: |
+          make build-e2e-sha256sum
           ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e -- --feature-gates=dfget-range=true
           cat coverprofile.out >> coverage.txt
 

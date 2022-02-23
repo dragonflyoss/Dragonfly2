@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"os"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -42,7 +40,12 @@ var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	reuse := ptm.storageManager.FindCompletedTask(taskID)
+	var reuse *storage.ReusePeerTask
+	if ptm.enablePrefetch && request.Range != nil {
+		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+	} else {
+		reuse = ptm.storageManager.FindCompletedTask(taskID)
+	}
 	var (
 		rg     *clientutil.Range // the range of parent peer task data to read
 		log    *logger.SugaredLoggerOnWith
@@ -55,16 +58,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		if reuse == nil {
 			return nil, false
 		}
-		var r *rangeutils.Range
-		r, err = rangeutils.ParseRange(request.UrlMeta.Range, math.MaxInt)
-		if err != nil {
-			logger.Warnf("parse range %s error: %s", request.UrlMeta.Range, err)
-			return nil, false
-		}
-		rg = &clientutil.Range{
-			Start:  int64(r.StartIndex),
-			Length: int64(r.EndIndex - r.StartIndex + 1),
-		}
+		rg = request.Range
 	}
 
 	if rg == nil {
@@ -95,18 +89,19 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.AddEvent("reuse peer task", trace.WithAttributes(config.AttributePeerID.String(reuse.PeerID)))
 
 	start := time.Now()
-	if rg == nil {
+	if rg == nil || request.KeepOriginalOffset {
 		storeRequest := &storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      reuse.PeerID,
 				TaskID:      taskID,
 				Destination: request.Output,
 			},
-			MetadataOnly: false,
-			StoreOnly:    true,
-			TotalPieces:  reuse.TotalPieces,
+			MetadataOnly:   false,
+			StoreDataOnly:  true,
+			TotalPieces:    reuse.TotalPieces,
+			OriginalOffset: request.KeepOriginalOffset,
 		}
-		err = ptm.storageManager.Store(context.Background(), storeRequest)
+		err = ptm.storageManager.Store(ctx, storeRequest)
 	} else {
 		err = ptm.storePartialFile(ctx, request, log, reuse, rg)
 	}
@@ -173,7 +168,12 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
 	taskID := idgen.TaskID(request.URL, request.URLMeta)
-	reuse := ptm.storageManager.FindCompletedTask(taskID)
+	var reuse *storage.ReusePeerTask
+	if ptm.enablePrefetch && request.Range != nil {
+		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+	} else {
+		reuse = ptm.storageManager.FindCompletedTask(taskID)
+	}
 	var (
 		rg  *clientutil.Range // the range of parent peer task data to read
 		log *logger.SugaredLoggerOnWith

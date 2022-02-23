@@ -182,6 +182,12 @@ func init() {
 	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
 		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
 
+	flagSet.Bool("original-offset", dfgetConfig.KeepOriginalOffset,
+		`Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled`)
+
+	flagSet.String("range", dfgetConfig.Range,
+		`Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url`)
+
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind dfget flags to viper"))

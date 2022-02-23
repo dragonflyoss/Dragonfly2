@@ -179,6 +179,7 @@ func (client *httpSourceClient) Download(request *source.Request) (*source.Respo
 		resp.Body.Close()
 		return nil, err
 	}
+	// FIXME check response "Content-Range" header, if not found, need to wrap resp.Body
 	response := source.NewResponse(
 		resp.Body,
 		source.WithExpireInfo(

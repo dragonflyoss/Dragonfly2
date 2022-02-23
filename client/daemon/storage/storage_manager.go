@@ -84,9 +84,13 @@ type Manager interface {
 	// KeepAlive tests if storage is used in given time duration
 	clientutil.KeepAlive
 	// RegisterTask registers a task in storage driver
-	RegisterTask(ctx context.Context, req RegisterTaskRequest) (TaskStorageDriver, error)
+	RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error)
+	// RegisterSubTask registers a subtask in storage driver
+	RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error)
 	// FindCompletedTask try to find a completed task for fast path
 	FindCompletedTask(taskID string) *ReusePeerTask
+	// FindCompletedSubTask try to find a completed subtask for fast path
+	FindCompletedSubTask(taskID string) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
 }
@@ -119,8 +123,12 @@ type storageManager struct {
 	dataPathStat       *syscall.Stat_t
 	gcCallback         func(CommonTaskRequest)
 	gcInterval         time.Duration
+
 	indexRWMutex       sync.RWMutex
 	indexTask2PeerTask map[string][]*localTaskStore // key: task id, value: slice of localTaskStore
+
+	subIndexRWMutex       sync.RWMutex
+	subIndexTask2PeerTask map[string][]*localSubTaskStore // key: task id, value: slice of localSubTaskStore
 }
 
 var _ gc.GC = (*storageManager)(nil)
@@ -155,13 +163,14 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	}
 
 	s := &storageManager{
-		KeepAlive:          clientutil.NewKeepAlive("storage manager"),
-		storeStrategy:      storeStrategy,
-		storeOption:        opt,
-		dataPathStat:       stat.Sys().(*syscall.Stat_t),
-		gcCallback:         gcCallback,
-		gcInterval:         time.Minute,
-		indexTask2PeerTask: map[string][]*localTaskStore{},
+		KeepAlive:             clientutil.NewKeepAlive("storage manager"),
+		storeStrategy:         storeStrategy,
+		storeOption:           opt,
+		dataPathStat:          stat.Sys().(*syscall.Stat_t),
+		gcCallback:            gcCallback,
+		gcInterval:            time.Minute,
+		indexTask2PeerTask:    map[string][]*localTaskStore{},
+		subIndexTask2PeerTask: map[string][]*localSubTaskStore{},
 	}
 
 	for _, o := range moreOpts {
@@ -192,7 +201,7 @@ func WithGCInterval(gcInterval time.Duration) func(*storageManager) error {
 	}
 }
 
-func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskRequest) (TaskStorageDriver, error) {
+func (s *storageManager) RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error) {
 	ts, ok := s.LoadTask(
 		PeerTaskMetadata{
 			PeerID: req.PeerID,
@@ -216,6 +225,36 @@ func (s *storageManager) RegisterTask(ctx context.Context, req RegisterTaskReque
 	return s.CreateTask(req)
 }
 
+func (s *storageManager) RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error) {
+	t, ok := s.LoadTask(
+		PeerTaskMetadata{
+			PeerID: req.Parent.PeerID,
+			TaskID: req.Parent.TaskID,
+		})
+	if !ok {
+		return nil, fmt.Errorf("task %s not found", req.Parent.TaskID)
+	}
+
+	subtask := t.(*localTaskStore).SubTask(req)
+	s.subIndexRWMutex.Lock()
+	if ts, ok := s.subIndexTask2PeerTask[req.SubTask.TaskID]; ok {
+		ts = append(ts, subtask)
+		s.subIndexTask2PeerTask[req.SubTask.TaskID] = ts
+	} else {
+		s.subIndexTask2PeerTask[req.SubTask.TaskID] = []*localSubTaskStore{subtask}
+	}
+	s.subIndexRWMutex.Unlock()
+
+	s.Lock()
+	s.tasks.Store(
+		PeerTaskMetadata{
+			PeerID: req.SubTask.PeerID,
+			TaskID: req.SubTask.TaskID,
+		}, subtask)
+	s.Unlock()
+	return subtask, nil
+}
+
 func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
 	t, ok := s.LoadTask(
 		PeerTaskMetadata{
@@ -225,7 +264,7 @@ func (s *storageManager) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if !ok {
 		return 0, ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).WritePiece(ctx, req)
+	return t.WritePiece(ctx, req)
 }
 
 func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (io.Reader, io.Closer, error) {
@@ -238,7 +277,7 @@ func (s *storageManager) ReadPiece(ctx context.Context, req *ReadPieceRequest) (
 		// TODO recover for local task persistentMetadata data
 		return nil, nil, ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).ReadPiece(ctx, req)
+	return t.ReadPiece(ctx, req)
 }
 
 func (s *storageManager) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRequest) (io.ReadCloser, error) {
@@ -251,7 +290,7 @@ func (s *storageManager) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 		// TODO recover for local task persistentMetadata data
 		return nil, ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).ReadAllPieces(ctx, req)
+	return t.ReadAllPieces(ctx, req)
 }
 
 func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
@@ -264,7 +303,7 @@ func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
 		// TODO recover for local task persistentMetadata data
 		return ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).Store(ctx, req)
+	return t.Store(ctx, req)
 }
 
 func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
@@ -276,7 +315,7 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	if !ok {
 		return nil, ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).GetPieces(ctx, req)
+	return t.GetPieces(ctx, req)
 }
 
 func (s *storageManager) LoadTask(meta PeerTaskMetadata) (TaskStorageDriver, bool) {
@@ -297,10 +336,10 @@ func (s *storageManager) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	if !ok {
 		return ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).UpdateTask(ctx, req)
+	return t.UpdateTask(ctx, req)
 }
 
-func (s *storageManager) CreateTask(req RegisterTaskRequest) (TaskStorageDriver, error) {
+func (s *storageManager) CreateTask(req *RegisterTaskRequest) (TaskStorageDriver, error) {
 	s.Keep()
 	logger.Debugf("init local task storage, peer id: %s, task id: %s", req.PeerID, req.TaskID)
 
@@ -320,6 +359,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) (TaskStorageDriver,
 		dataDir:          dataDir,
 		metadataFilePath: path.Join(dataDir, taskMetadata),
 		expireTime:       s.storeOption.TaskExpireTime.Duration,
+		subtasks:         map[PeerTaskMetadata]*localSubTaskStore{},
 
 		SugaredLoggerOnWith: logger.With("task", req.TaskID, "peer", req.PeerID, "component", "localTaskStore"),
 	}
@@ -334,7 +374,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) (TaskStorageDriver,
 	t.metadataFile = metadata
 
 	// fallback to simple strategy for proxy
-	if req.Destination == "" {
+	if req.DesiredLocation == "" {
 		t.StoreStrategy = string(config.SimpleLocalTaskStoreStrategy)
 	}
 	data := path.Join(dataDir, taskData)
@@ -347,7 +387,7 @@ func (s *storageManager) CreateTask(req RegisterTaskRequest) (TaskStorageDriver,
 		}
 		f.Close()
 	case string(config.AdvanceLocalTaskStoreStrategy):
-		dir, file := path.Split(req.Destination)
+		dir, file := path.Split(req.DesiredLocation)
 		dirStat, err := os.Stat(dir)
 		if err != nil {
 			return nil, err
@@ -431,6 +471,39 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 	return nil
 }
 
+func (s *storageManager) FindCompletedSubTask(taskID string) *ReusePeerTask {
+	s.subIndexRWMutex.RLock()
+	defer s.subIndexRWMutex.RUnlock()
+	ts, ok := s.subIndexTask2PeerTask[taskID]
+	if !ok {
+		return nil
+	}
+	for _, t := range ts {
+		if t.invalid.Load() {
+			continue
+		}
+		// touch it before marking reclaim
+		t.parent.touch()
+		// already marked, skip
+		if t.parent.reclaimMarked.Load() {
+			continue
+		}
+
+		if !t.Done {
+			continue
+		}
+		return &ReusePeerTask{
+			PeerTaskMetadata: PeerTaskMetadata{
+				PeerID: t.PeerID,
+				TaskID: taskID,
+			},
+			ContentLength: t.ContentLength,
+			TotalPieces:   t.TotalPieces,
+		}
+	}
+	return nil
+}
+
 func (s *storageManager) cleanIndex(taskID, peerID string) {
 	s.indexRWMutex.Lock()
 	defer s.indexRWMutex.Unlock()
@@ -450,6 +523,25 @@ func (s *storageManager) cleanIndex(taskID, peerID string) {
 	s.indexTask2PeerTask[taskID] = remain
 }
 
+func (s *storageManager) cleanSubIndex(taskID, peerID string) {
+	s.subIndexRWMutex.Lock()
+	defer s.subIndexRWMutex.Unlock()
+	ts, ok := s.subIndexTask2PeerTask[taskID]
+	if !ok {
+		return
+	}
+	var remain []*localSubTaskStore
+	// FIXME switch instead copy
+	for _, t := range ts {
+		if t.PeerID == peerID {
+			logger.Debugf("clean index for %s/%s", taskID, peerID)
+			continue
+		}
+		remain = append(remain, t)
+	}
+	s.subIndexTask2PeerTask[taskID] = remain
+}
+
 func (s *storageManager) ValidateDigest(req *PeerTaskMetadata) error {
 	t, ok := s.LoadTask(
 		PeerTaskMetadata{
@@ -459,7 +551,7 @@ func (s *storageManager) ValidateDigest(req *PeerTaskMetadata) error {
 	if !ok {
 		return ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).ValidateDigest(req)
+	return t.ValidateDigest(req)
 }
 
 func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
@@ -471,7 +563,7 @@ func (s *storageManager) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 	if !ok {
 		return false, ErrTaskNotFound
 	}
-	return t.(TaskStorageDriver).IsInvalid(req)
+	return t.IsInvalid(req)
 }
 
 func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
@@ -602,17 +694,21 @@ func (s *storageManager) ReloadPersistentTask(gcCallback GCCallback) error {
 }
 
 func (s *storageManager) TryGC() (bool, error) {
+	// FIXME gc subtask
 	var markedTasks []PeerTaskMetadata
 	var totalNotMarkedSize int64
 	s.tasks.Range(func(key, task interface{}) bool {
-		if task.(*localTaskStore).CanReclaim() {
-			task.(*localTaskStore).MarkReclaim()
+		if task.(Reclaimer).CanReclaim() {
+			task.(Reclaimer).MarkReclaim()
 			markedTasks = append(markedTasks, key.(PeerTaskMetadata))
 		} else {
-			// just calculate not reclaimed task
-			totalNotMarkedSize += task.(*localTaskStore).ContentLength
-			logger.Debugf("task %s/%s not reach gc time",
-				key.(PeerTaskMetadata).TaskID, key.(PeerTaskMetadata).PeerID)
+			lts, ok := task.(*localTaskStore)
+			if ok {
+				// just calculate not reclaimed task
+				totalNotMarkedSize += lts.ContentLength
+				logger.Debugf("task %s/%s not reach gc time",
+					key.(PeerTaskMetadata).TaskID, key.(PeerTaskMetadata).PeerID)
+			}
 		}
 		return true
 	})
@@ -632,7 +728,10 @@ func (s *storageManager) TryGC() (bool, error) {
 		var tasks []*localTaskStore
 		s.tasks.Range(func(key, val interface{}) bool {
 			// skip reclaimed task
-			task := val.(*localTaskStore)
+			task, ok := val.(*localTaskStore)
+			if !ok { // skip subtask
+				return true
+			}
 			if task.reclaimMarked.Load() {
 				return true
 			}
@@ -669,14 +768,21 @@ func (s *storageManager) TryGC() (bool, error) {
 		if !ok {
 			continue
 		}
-		task := t.(*localTaskStore)
 		_, span := tracer.Start(context.Background(), config.SpanPeerGC)
-		span.SetAttributes(config.AttributePeerID.String(task.PeerID))
-		span.SetAttributes(config.AttributeTaskID.String(task.TaskID))
-
 		s.tasks.Delete(key)
-		s.cleanIndex(task.TaskID, task.PeerID)
-		if err := task.Reclaim(); err != nil {
+
+		if lts, ok := t.(*localTaskStore); ok {
+			span.SetAttributes(config.AttributePeerID.String(lts.PeerID))
+			span.SetAttributes(config.AttributeTaskID.String(lts.TaskID))
+			s.cleanIndex(lts.TaskID, lts.PeerID)
+		} else {
+			task := t.(*localSubTaskStore)
+			span.SetAttributes(config.AttributePeerID.String(task.PeerID))
+			span.SetAttributes(config.AttributeTaskID.String(task.TaskID))
+			s.cleanSubIndex(task.TaskID, task.PeerID)
+		}
+
+		if err := t.(Reclaimer).Reclaim(); err != nil {
 			// FIXME: retry later or push to queue
 			logger.Errorf("gc task %s/%s error: %s", key.TaskID, key.PeerID, err)
 			span.RecordError(err)
@@ -706,9 +812,14 @@ func (s *storageManager) forceGC() (bool, error) {
 	s.tasks.Range(func(key, task interface{}) bool {
 		meta := key.(PeerTaskMetadata)
 		s.tasks.Delete(meta)
-		s.cleanIndex(meta.TaskID, meta.PeerID)
-		task.(*localTaskStore).MarkReclaim()
-		err := task.(*localTaskStore).Reclaim()
+		if _, ok := task.(*localTaskStore); ok {
+			s.cleanIndex(meta.TaskID, meta.PeerID)
+		} else {
+			s.cleanSubIndex(meta.TaskID, meta.PeerID)
+		}
+
+		task.(Reclaimer).MarkReclaim()
+		err := task.(Reclaimer).Reclaim()
 		if err != nil {
 			logger.Errorf("gc task store %s error: %s", key, err)
 		}
