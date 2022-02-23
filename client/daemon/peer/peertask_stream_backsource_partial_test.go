@@ -265,7 +265,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		PeerHost: &scheduler.PeerHost{},
 	}
 	ctx := context.Background()
-	pt, err := ptm.newStreamTask(ctx, req)
+	pt, err := ptm.newStreamTask(ctx, req, nil)
 	assert.Nil(err, "new stream peer task")
 
 	rc, _, err := pt.Start(ctx)

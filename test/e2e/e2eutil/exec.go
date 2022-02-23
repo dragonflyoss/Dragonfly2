@@ -35,6 +35,13 @@ func DockerCommand(arg ...string) *exec.Cmd {
 	return exec.Command("docker", extArgs...)
 }
 
+func DockerCopy(dst, src string) *exec.Cmd {
+	container := kindDockerContainer
+	args := []string{"cp", src, fmt.Sprintf("%s:%s", container, dst)}
+	fmt.Println(fmt.Sprintf(`docker cp %s to %s:%s"`, src, container, dst))
+	return exec.Command("docker", args...)
+}
+
 func CriCtlCommand(arg ...string) *exec.Cmd {
 	extArgs := []string{"/usr/local/bin/crictl"}
 	extArgs = append(extArgs, arg...)
@@ -42,6 +49,7 @@ func CriCtlCommand(arg ...string) *exec.Cmd {
 }
 
 func KubeCtlCommand(arg ...string) *exec.Cmd {
+	fmt.Println(fmt.Sprintf(`kubectl command: "kubectl" "%s"`, strings.Join(arg, `" "`)))
 	return exec.Command("kubectl", arg...)
 }
 
