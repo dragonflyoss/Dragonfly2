@@ -34,6 +34,9 @@ import (
 const (
 	// Default number of pieces downloaded in parallel
 	defaultParallelCount = 4
+
+	// Default number of available parents after filtering
+	defaultFilterParentCount = 5
 )
 
 type Scheduler interface {
@@ -205,7 +208,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
@@ -215,9 +218,18 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
+	filterParentCount := defaultFilterParentCount
+	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && config.FilterParentCount > 0 {
+		filterParentCount = int(config.FilterParentCount)
+	}
+
 	var parents []*resource.Peer
 	var parentIDs []string
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
+		if len(parents) >= filterParentCount {
+			return false
+		}
+
 		parent, ok := value.(*resource.Peer)
 		if !ok {
 			return true
@@ -265,8 +277,8 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 // Construct peer successful packet
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
 	parallelCount := defaultParallelCount
-	if client, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && client.ParallelCount > 0 {
-		parallelCount = int(client.ParallelCount)
+	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
+		parallelCount = int(config.ParallelCount)
 	}
 
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
