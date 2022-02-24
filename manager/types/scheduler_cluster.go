@@ -52,6 +52,7 @@ type GetSchedulerClustersQuery struct {
 }
 
 type SchedulerClusterConfig struct {
+	FilterParentCount uint32 `yaml:"filterParentCount" mapstructure:"filterParentCount" json:"filter_parent_count" binding:"omitempty,gte=1,lte=100"`
 }
 
 type SchedulerClusterClientConfig struct {
