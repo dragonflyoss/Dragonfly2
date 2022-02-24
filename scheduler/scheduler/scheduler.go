@@ -20,7 +20,6 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"time"
 
@@ -209,11 +208,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			fmt.Println("111111111111")
-			fmt.Println(parents[i].ID, s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount))
-			fmt.Println(parents[j].ID, s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount))
-			fmt.Println("111111111111")
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 

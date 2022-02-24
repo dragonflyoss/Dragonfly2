@@ -19,7 +19,6 @@ package scheduler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -804,9 +803,6 @@ func TestScheduler_FindParent(t *testing.T) {
 			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
 				assert := assert.New(t)
 				assert.True(ok)
-				fmt.Println("1111111111111")
-				fmt.Println(mockPeers[0].ID, mockPeers[1].ID, parent.ID)
-				fmt.Println("1111111111111")
 				assert.Equal(mockPeers[1].ID, parent.ID)
 			},
 		},
@@ -829,6 +825,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
 				assert := assert.New(t)
 				assert.True(ok)
+				assert.Equal(mockPeers[0].ID, parent.ID)
 			},
 		},
 	}
