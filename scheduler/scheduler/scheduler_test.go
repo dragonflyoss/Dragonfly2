@@ -817,6 +817,7 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[0].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
 					FilterParentCount: 1,
@@ -825,7 +826,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
 				assert := assert.New(t)
 				assert.True(ok)
-				assert.Equal(mockPeers[0].ID, parent.ID)
+				assert.Contains([]string{mockPeers[0].ID, mockPeers[1].ID}, parent.ID)
 			},
 		},
 	}
