@@ -86,7 +86,7 @@ type daemonClient struct {
 }
 
 func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
-	if req.Uuid != "" {
+	if req.Uuid == "" {
 		req.Uuid = uuid.New().String()
 	}
 	// generate taskID
