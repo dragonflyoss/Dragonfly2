@@ -213,9 +213,13 @@ func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, 
 
 // Dynamic config notify function
 func (c *cdnClient) OnNotify(data *config.DynconfigData) {
-	ips := getCDNIPs(data.CDNs)
+	var cdns []config.CDN
+	for _, cdn := range data.CDNs {
+		cdns = append(cdns, *cdn)
+	}
+
 	if reflect.DeepEqual(c.data, data) {
-		logger.Infof("cdn addresses deep equal: %v", ips)
+		logger.Infof("cdn addresses deep equal: %#v", cdns)
 		return
 	}
 
@@ -239,7 +243,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 
 	// Update grpc cdn addresses
 	c.UpdateState(cdnsToNetAddrs(data.CDNs))
-	logger.Infof("cdn addresses have been updated: %v", ips)
+	logger.Infof("cdn addresses have been updated: %#v", cdns)
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
@@ -317,14 +321,4 @@ func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
 	}
 
 	return diff
-}
-
-// getCDNIPs get ips by []*config.CDN.
-func getCDNIPs(cdns []*config.CDN) []string {
-	ips := []string{}
-	for _, cdn := range cdns {
-		ips = append(ips, cdn.IP)
-	}
-
-	return ips
 }
