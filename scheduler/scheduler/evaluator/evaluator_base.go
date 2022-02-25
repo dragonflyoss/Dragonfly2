@@ -110,7 +110,7 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
 func calculateFreeLoadScore(host *resource.Host) float64 {
-	load := host.LenPeers()
+	load := host.PeerCount.Load()
 	totalLoad := host.UploadLoadLimit.Load()
 	return float64(totalLoad-int32(load)) / float64(totalLoad)
 }

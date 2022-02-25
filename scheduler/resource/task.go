@@ -93,6 +93,9 @@ type Task struct {
 	// Peer sync map
 	Peers *sync.Map
 
+	// PeerCount is peer count
+	PeerCount *atomic.Int32
+
 	// CreateAt is task create time
 	CreateAt *atomic.Time
 
@@ -115,6 +118,7 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
 		Peers:             &sync.Map{},
+		PeerCount:         atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
 		Log:               logger.WithTaskIDAndURL(id, url),
@@ -160,6 +164,7 @@ func (t *Task) LoadPeer(key string) (*Peer, bool) {
 // StorePeer set peer
 func (t *Task) StorePeer(peer *Peer) {
 	t.Peers.Store(peer.ID, peer)
+	t.PeerCount.Inc()
 }
 
 // LoadOrStorePeer returns peer the key if present.
@@ -167,43 +172,38 @@ func (t *Task) StorePeer(peer *Peer) {
 // The loaded result is true if the peer was loaded, false if stored.
 func (t *Task) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	rawPeer, loaded := t.Peers.LoadOrStore(peer.ID, peer)
+	if !loaded {
+		t.PeerCount.Inc()
+	}
+
 	return rawPeer.(*Peer), loaded
 }
 
 // DeletePeer deletes peer for a key
 func (t *Task) DeletePeer(key string) {
-	t.Peers.Delete(key)
+	if _, loaded := t.Peers.LoadAndDelete(key); loaded {
+		t.PeerCount.Dec()
+	}
 }
 
-// LenPeers return length of peers sync map
-func (t *Task) LenPeers() int {
-	var len int
-	t.Peers.Range(func(_, _ interface{}) bool {
-		len++
-		return true
-	})
-
-	return len
-}
-
-// LenAvailablePeers return length of peers without state is PeerStateLeave
-func (t *Task) LenAvailablePeers() int {
-	var len int
+// HasAvailablePeer returns whether there is an available peer
+func (t *Task) HasAvailablePeer() bool {
+	var hasAvailablePeer bool
 	t.Peers.Range(func(_, v interface{}) bool {
 		peer, ok := v.(*Peer)
 		if !ok {
 			return true
 		}
 
-		if peer.FSM.Is(PeerStateLeave) {
-			return true
+		if !(peer.FSM.Is(PeerStateLeave) || peer.FSM.Is(PeerStateFailed)) {
+			hasAvailablePeer = true
+			return false
 		}
 
-		len++
 		return true
 	})
 
-	return len
+	return hasAvailablePeer
 }
 
 // LoadCDNPeer return latest cdn peer in peers sync map

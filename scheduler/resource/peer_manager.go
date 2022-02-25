@@ -95,8 +95,8 @@ func (p *peerManager) Store(peer *Peer) {
 	defer p.mu.Unlock()
 
 	p.Map.Store(peer.ID, peer)
-	peer.Host.StorePeer(peer)
-	peer.Task.StorePeer(peer)
+	peer.Host.LoadOrStorePeer(peer)
+	peer.Task.LoadOrStorePeer(peer)
 }
 
 func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
@@ -105,8 +105,8 @@ func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 
 	rawPeer, loaded := p.Map.LoadOrStore(peer.ID, peer)
 	if !loaded {
-		peer.Host.StorePeer(peer)
-		peer.Task.StorePeer(peer)
+		peer.Host.LoadOrStorePeer(peer)
+		peer.Task.LoadOrStorePeer(peer)
 	}
 
 	return rawPeer.(*Peer), loaded
@@ -128,7 +128,7 @@ func (p *peerManager) RunGC() error {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 
-		if elapsed > p.ttl && peer.LenChildren() == 0 {
+		if elapsed > p.ttl && peer.ChildCount.Load() == 0 {
 			// If the status is PeerStateLeave,
 			// clear peer information
 			if peer.FSM.Is(PeerStateLeave) {

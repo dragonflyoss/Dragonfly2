@@ -73,7 +73,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IDC, mockRawHost.Idc)
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
-				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -96,7 +96,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IDC, mockRawCDNHost.Idc)
 				assert.Equal(host.NetTopology, mockRawCDNHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
-				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.Equal(host.IsCDN, true)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -119,7 +119,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.IDC, mockRawHost.Idc)
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(200))
-				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
@@ -320,47 +320,6 @@ func TestHost_DeletePeer(t *testing.T) {
 	}
 }
 
-func TestHost_LenPeers(t *testing.T) {
-	tests := []struct {
-		name    string
-		rawHost *scheduler.PeerHost
-		options []HostOption
-		expect  func(t *testing.T, host *Host, mockPeer *Peer)
-	}{
-		{
-			name:    "len peers",
-			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				host.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				host.StorePeer(mockPeer)
-				assert.Equal(host.LenPeers(), 2)
-				host.StorePeer(mockPeer)
-				assert.Equal(host.LenPeers(), 2)
-			},
-		},
-		{
-			name:    "peer does not exist",
-			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				assert.Equal(host.LenPeers(), 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			mockPeer := NewPeer(mockPeerID, mockTask, host)
-
-			tc.expect(t, host, mockPeer)
-		})
-	}
-}
-
 func TestHost_LeavePeers(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -374,7 +333,7 @@ func TestHost_LeavePeers(t *testing.T) {
 			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
 				assert := assert.New(t)
 				host.StorePeer(mockPeer)
-				assert.Equal(host.LenPeers(), 1)
+				assert.Equal(host.PeerCount.Load(), int32(1))
 				host.LeavePeers()
 				host.Peers.Range(func(_, value interface{}) bool {
 					peer := value.(*Peer)
@@ -388,7 +347,7 @@ func TestHost_LeavePeers(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				assert.Equal(host.LenPeers(), 0)
+				assert.Equal(host.PeerCount.Load(), int32(0))
 				host.LeavePeers()
 				host.Peers.Range(func(_, value interface{}) bool {
 					assert.Fail("host peers is not empty")
