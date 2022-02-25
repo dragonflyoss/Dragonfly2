@@ -240,48 +240,6 @@ func TestPeer_DeleteChild(t *testing.T) {
 	}
 }
 
-func TestPeer_LenChildren(t *testing.T) {
-	tests := []struct {
-		name    string
-		childID string
-		expect  func(t *testing.T, peer *Peer, mockChildPeer *Peer)
-	}{
-		{
-			name:    "len children",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
-				assert := assert.New(t)
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 1)
-				mockChildPeer.ID = idgen.PeerID("0.0.0.0")
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 2)
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 2)
-			},
-		},
-		{
-			name:    "child does not exist",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
-				assert := assert.New(t)
-				assert.Equal(peer.LenChildren(), 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
-
-			tc.expect(t, peer, mockChildPeer)
-		})
-	}
-}
-
 func TestPeer_LoadParent(t *testing.T) {
 	tests := []struct {
 		name     string

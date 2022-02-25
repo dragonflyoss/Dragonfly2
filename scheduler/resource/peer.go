@@ -125,6 +125,9 @@ type Peer struct {
 	// Children is peer children
 	Children *sync.Map
 
+	// ChildCount is child count
+	ChildCount *atomic.Int32
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -149,6 +152,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Host:       host,
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
+		ChildCount: atomic.NewInt32(0),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
 		mu:         &sync.RWMutex{},
@@ -239,7 +243,9 @@ func (p *Peer) StoreChild(child *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.Children.Store(child.ID, child)
+	if _, loaded := p.Children.LoadOrStore(child.ID, child); !loaded {
+		p.ChildCount.Inc()
+	}
 	child.Parent.Store(p)
 }
 
@@ -253,19 +259,10 @@ func (p *Peer) DeleteChild(key string) {
 		return
 	}
 
-	p.Children.Delete(child.ID)
+	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
+		p.ChildCount.Dec()
+	}
 	child.Parent = &atomic.Value{}
-}
-
-// LenChildren return length of children sync map
-func (p *Peer) LenChildren() int {
-	var len int
-	p.Children.Range(func(_, _ interface{}) bool {
-		len++
-		return true
-	})
-
-	return len
 }
 
 // LoadParent return peer parent
@@ -284,7 +281,9 @@ func (p *Peer) StoreParent(parent *Peer) {
 	defer p.mu.Unlock()
 
 	p.Parent.Store(parent)
-	parent.Children.Store(p.ID, p)
+	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
+		p.ChildCount.Inc()
+	}
 }
 
 // DeleteParent deletes peer parent
@@ -298,7 +297,9 @@ func (p *Peer) DeleteParent() {
 	}
 
 	p.Parent = &atomic.Value{}
-	parent.Children.Delete(p.ID)
+	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
+		p.ChildCount.Dec()
+	}
 }
 
 // ReplaceParent replaces peer parent
