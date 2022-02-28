@@ -6,7 +6,7 @@ All compiled plugins need to place in `/usr/local/dragonfly/plugins/`.
 
 Dragonfly2 use golang plugin to build its plugins, refer: [https://pkg.go.dev/plugin#section-documentation](https://pkg.go.dev/plugin#section-documentation).
 
-## Resource Plugin
+## Resource Plugin for CDN and Dfget
 
 The resource plugin is used to download custom resource like `dfget -u d7yfs://host:56001/path/to/resource`.
 
@@ -145,6 +145,9 @@ replace d7y.io/dragonfly/v2 => /Dragonfly2
 
 ### Build
 
+> We have created a plugin builder in docker, follow [this document](./plugin-builder.md).
+> With the plugin builder, `go.mod` will be ignored.
+
 #### 1. Build plugin with target Dragonfly2 commit
 
 > Update `D7Y_COMMIT` in the following script.
@@ -189,6 +192,10 @@ resource plugin d7yfs, location: d7y-resource-plugin-d7yfs.so, attribute: {"buil
 
 <!-- markdownlint-restore -->
 
-## Searcher plugin
+## Evaluator Plugin for Scheduler
+
+TODO
+
+## Searcher Plugin for Manager
 
 TODO
