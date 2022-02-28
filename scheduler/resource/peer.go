@@ -308,20 +308,35 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 	p.StoreParent(parent)
 }
 
-// TreeTotalNodeCount represents tree's total node count
-func (p *Peer) TreeTotalNodeCount() int {
-	count := 1
-	p.Children.Range(func(_, value interface{}) bool {
-		node, ok := value.(*Peer)
-		if !ok {
-			return true
+// Depth represents depth of tree
+func (p *Peer) Depth() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	node := p
+	var depth int
+	for node != nil {
+		depth++
+
+		if node.Host.IsCDN {
+			break
 		}
 
-		count += node.TreeTotalNodeCount()
-		return true
-	})
+		parent, ok := node.LoadParent()
+		if !ok {
+			break
+		}
 
-	return count
+		// Prevent traversal tree from infinite loop
+		if p == parent {
+			p.Log.Info("tree structure produces an infinite loop")
+			break
+		}
+
+		node = parent
+	}
+
+	return depth
 }
 
 // IsDescendant determines whether it is ancestor of peer
