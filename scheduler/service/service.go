@@ -107,11 +107,26 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			fallthrough
 		case base.SizeScope_SMALL:
 			peer.Log.Info("task size scope is small")
-			// If the file is registered as a small type,
-			// there is no need to build a tree, just find the parent and return
+			// There is no need to build a tree, just find the parent and return
 			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet())
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not select parent")
+				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+					dferr := dferrors.New(base.Code_SchedError, err.Error())
+					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+					return nil, dferr
+				}
+
+				return &rpcscheduler.RegisterResult{
+					TaskId:    task.ID,
+					SizeScope: base.SizeScope_NORMAL,
+				}, nil
+			}
+
+			// When task size scope is small, parent must be downloaded successfully
+			// before returning to the parent directly
+			if !parent.FSM.Is(resource.PeerStateSucceeded) {
+				peer.Log.Infof("task size scope is small and download state %s is not PeerStateSucceeded", parent.FSM.Current())
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					dferr := dferrors.New(base.Code_SchedError, err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
