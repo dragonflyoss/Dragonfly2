@@ -19,6 +19,7 @@ package scheduler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -829,6 +830,23 @@ func TestScheduler_FindParent(t *testing.T) {
 				assert.Contains([]string{mockPeers[0].ID, mockPeers[1].ID}, parent.ID)
 			},
 		},
+		{
+			name: "exceeds the depth limit of the tree",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				for i := 0; i < 10; i++ {
+					mockPeers[i].StoreParent(mockPeers[i+1])
+				}
+				peer.Task.StorePeer(mockPeers[0])
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -839,12 +857,14 @@ func TestScheduler_FindParent(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			mockPeers := []*resource.Peer{
-				resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
-				resource.NewPeer(idgen.PeerID("127.0.0.2"), mockTask, mockHost),
-			}
-			blocklist := set.NewSafeSet()
 
+			var mockPeers []*resource.Peer
+			for i := 0; i < 11; i++ {
+				peer := resource.NewPeer(idgen.PeerID(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
+				mockPeers = append(mockPeers, peer)
+			}
+
+			blocklist := set.NewSafeSet()
 			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
 			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
 			parent, ok := scheduler.FindParent(context.Background(), peer, blocklist)
