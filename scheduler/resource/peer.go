@@ -365,9 +365,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 		if !ok {
 			return false
 		}
+
 		if parent.ID == ancestor.ID {
 			return true
 		}
+
 		node = parent
 	}
 

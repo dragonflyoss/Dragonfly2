@@ -39,7 +39,7 @@ const (
 	defaultFilterParentCount = 5
 
 	// Default tree depth limit
-	defaultDepthLimit = 10
+	defaultDepthLimit = 5
 )
 
 type Scheduler interface {
@@ -253,12 +253,6 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
-		depth := parent.Depth()
-		if depth > defaultDepthLimit {
-			peer.Log.Infof("%d exceeds the %d depth limit of the tree", depth, defaultDepthLimit)
-			return true
-		}
-
 		if parent.IsDescendant(peer) {
 			peer.Log.Infof("parent %s is not selected because it is descendant", parent.ID)
 			return true
@@ -266,6 +260,12 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 		if parent.IsAncestor(peer) {
 			peer.Log.Infof("parent %s is not selected because it is ancestor", parent.ID)
+			return true
+		}
+
+		depth := parent.Depth() + peer.Depth()
+		if depth > defaultDepthLimit {
+			peer.Log.Infof("%d exceeds the %d depth limit of the tree", depth, defaultDepthLimit)
 			return true
 		}
 
