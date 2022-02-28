@@ -261,9 +261,9 @@ func (pt *peerTaskConductor) register() error {
 		schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: pt.taskID}
 		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
+	} else {
+		pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 	}
-
-	pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 
 	if !needBackSource {
 		sizeScope = result.SizeScope
