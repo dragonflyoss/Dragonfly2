@@ -253,6 +253,13 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
+		parentDepth := parent.Depth()
+		peerDepth := peer.Depth()
+		if parentDepth+peerDepth > defaultDepthLimit {
+			peer.Log.Infof("exceeds the %d depth limit of the tree, peer depth is %d, parent %s is %d", defaultDepthLimit, peerDepth, parent.ID, parentDepth)
+			return true
+		}
+
 		if parent.IsDescendant(peer) {
 			peer.Log.Infof("parent %s is not selected because it is descendant", parent.ID)
 			return true
@@ -260,12 +267,6 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 		if parent.IsAncestor(peer) {
 			peer.Log.Infof("parent %s is not selected because it is ancestor", parent.ID)
-			return true
-		}
-
-		depth := parent.Depth() + peer.Depth()
-		if depth > defaultDepthLimit {
-			peer.Log.Infof("%d exceeds the %d depth limit of the tree", depth, defaultDepthLimit)
 			return true
 		}
 
