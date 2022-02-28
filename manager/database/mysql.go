@@ -32,8 +32,11 @@ import (
 )
 
 const (
-	defaultCDNLoadLimit    = 300
-	defaultClientLoadLimit = 100
+	// Default number of cdn load limit
+	defaultCDNLoadLimit = 300
+
+	// Default number of client load limit
+	defaultClientLoadLimit = 50
 )
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
