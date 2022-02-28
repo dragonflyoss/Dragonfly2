@@ -310,9 +310,6 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 
 // Depth represents depth of tree
 func (p *Peer) Depth() int {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	node := p
 	var depth int
 	for node != nil {
