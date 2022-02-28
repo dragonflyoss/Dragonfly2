@@ -347,6 +347,46 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
+			name: "task scope size is SizeScope_SMALL and load piece error, parent state is PeerStateRunning",
+			req: &rpcscheduler.PeerTaskRequest{
+				PeerHost: &rpcscheduler.PeerHost{
+					Uuid: mockRawHost.Uuid,
+				},
+			},
+			mock: func(
+				req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockCDNPeer *resource.Peer,
+				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockPeer.Task.StorePeer(mockCDNPeer)
+				mockPeer.Task.ContentLength.Store(129)
+				mockPeer.Task.StorePiece(&base.PieceInfo{
+					PieceNum: 0,
+				})
+				mockPeer.Task.TotalPieceCount.Store(1)
+				mockPeer.FSM.SetState(resource.PeerStatePending)
+				mockCDNPeer.FSM.SetState(resource.PeerStateRunning)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockCDNPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+			},
+		},
+		{
 			name: "task scope size is SizeScope_SMALL and load piece error, peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
 				PeerHost: &rpcscheduler.PeerHost{
@@ -366,6 +406,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -403,6 +445,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -439,6 +483,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					PieceNum: 0,
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
