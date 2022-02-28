@@ -20,6 +20,7 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"time"
 
@@ -37,6 +38,9 @@ const (
 
 	// Default number of available parents after filtering
 	defaultFilterParentCount = 5
+
+	// Default tree depth limit
+	defaultDepthLimit = 3
 )
 
 type Scheduler interface {
@@ -249,6 +253,15 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			peer.Log.Infof("parent %s is not selected because it is bad node", parent.ID)
 			return true
 		}
+
+		if parent.Depth() > defaultDepthLimit {
+			peer.Log.Infof("exceeds the %d depth limit of the tree", defaultDepthLimit)
+			return true
+		}
+
+		fmt.Println("111111111111")
+		fmt.Println(parent.Depth())
+		fmt.Println("111111111111")
 
 		if parent.IsDescendant(peer) {
 			peer.Log.Infof("parent %s is not selected because it is descendant", parent.ID)
