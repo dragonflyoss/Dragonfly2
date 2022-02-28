@@ -258,10 +258,10 @@ func (p *Peer) DeleteChild(key string) {
 	if !ok {
 		return
 	}
-
 	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
 		p.ChildCount.Dec()
 	}
+
 	child.Parent = &atomic.Value{}
 }
 
@@ -282,7 +282,7 @@ func (p *Peer) StoreParent(parent *Peer) {
 
 	p.Parent.Store(parent)
 	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
-		p.ChildCount.Inc()
+		parent.ChildCount.Inc()
 	}
 }
 
@@ -295,17 +295,28 @@ func (p *Peer) DeleteParent() {
 	if !ok {
 		return
 	}
-
 	p.Parent = &atomic.Value{}
+
 	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
-		p.ChildCount.Dec()
+		parent.ChildCount.Dec()
 	}
 }
 
 // ReplaceParent replaces peer parent
 func (p *Peer) ReplaceParent(parent *Peer) {
-	p.DeleteParent()
-	p.StoreParent(parent)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if oldParent, ok := p.LoadParent(); ok {
+		if _, loaded := oldParent.Children.LoadAndDelete(p.ID); loaded {
+			oldParent.ChildCount.Dec()
+		}
+	}
+
+	p.Parent.Store(parent)
+	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
+		parent.ChildCount.Inc()
+	}
 }
 
 // Depth represents depth of tree
@@ -325,7 +336,7 @@ func (p *Peer) Depth() int {
 		}
 
 		// Prevent traversal tree from infinite loop
-		if p == parent {
+		if p.ID == parent.ID {
 			p.Log.Info("tree structure produces an infinite loop")
 			break
 		}

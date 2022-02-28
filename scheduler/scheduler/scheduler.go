@@ -243,7 +243,7 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
-		if parent == peer {
+		if parent.ID == peer.ID {
 			peer.Log.Info("parent is not selected because it is same")
 			return true
 		}
