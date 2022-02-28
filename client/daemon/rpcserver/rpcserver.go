@@ -137,6 +137,9 @@ func (m *server) CheckHealth(context.Context) error {
 func (m *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
 	m.Keep()
+	if req.UrlMeta == nil {
+		req.UrlMeta = &base.UrlMeta{}
+	}
 	// init peer task request, peer uses different peer id to generate every request
 	peerTask := &peer.FileTaskRequest{
 		PeerTaskRequest: scheduler.PeerTaskRequest{
