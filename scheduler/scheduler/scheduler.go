@@ -253,8 +253,9 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
-		if parent.Depth() > defaultDepthLimit {
-			peer.Log.Infof("exceeds the %d depth limit of the tree", defaultDepthLimit)
+		depth := parent.Depth()
+		if depth > defaultDepthLimit {
+			peer.Log.Infof("%d exceeds the %d depth limit of the tree", depth, defaultDepthLimit)
 			return true
 		}
 
