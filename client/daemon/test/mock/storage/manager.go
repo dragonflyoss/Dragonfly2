@@ -10,6 +10,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	clientutil "d7y.io/dragonfly/v2/client/clientutil"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	gomock "github.com/golang/mock/gomock"
@@ -294,6 +295,20 @@ func (m *MockManager) FindCompletedTask(taskID string) *storage.ReusePeerTask {
 func (mr *MockManagerMockRecorder) FindCompletedTask(taskID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedTask", reflect.TypeOf((*MockManager)(nil).FindCompletedTask), taskID)
+}
+
+// FindPartialCompletedTask mocks base method.
+func (m *MockManager) FindPartialCompletedTask(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPartialCompletedTask", taskID, rg)
+	ret0, _ := ret[0].(*storage.ReusePeerTask)
+	return ret0
+}
+
+// FindPartialCompletedTask indicates an expected call of FindPartialCompletedTask.
+func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPartialCompletedTask", reflect.TypeOf((*MockManager)(nil).FindPartialCompletedTask), taskID, rg)
 }
 
 // GetPieces mocks base method.
