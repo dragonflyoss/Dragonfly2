@@ -91,6 +91,8 @@ type Manager interface {
 	FindCompletedTask(taskID string) *ReusePeerTask
 	// FindCompletedSubTask try to find a completed subtask for fast path
 	FindCompletedSubTask(taskID string) *ReusePeerTask
+	// FindPartialCompletedTask try to find a partial completed task for fast path
+	FindPartialCompletedTask(taskID string, rg *clientutil.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
 }
@@ -456,16 +458,47 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 			continue
 		}
 
-		if !t.Done {
+		if t.Done {
+			return &ReusePeerTask{
+				PeerTaskMetadata: PeerTaskMetadata{
+					PeerID: t.PeerID,
+					TaskID: taskID,
+				},
+				ContentLength: t.ContentLength,
+				TotalPieces:   t.TotalPieces,
+			}
+		}
+	}
+	return nil
+}
+
+func (s *storageManager) FindPartialCompletedTask(taskID string, rg *clientutil.Range) *ReusePeerTask {
+	s.indexRWMutex.RLock()
+	defer s.indexRWMutex.RUnlock()
+	ts, ok := s.indexTask2PeerTask[taskID]
+	if !ok {
+		return nil
+	}
+	for _, t := range ts {
+		if t.invalid.Load() {
 			continue
 		}
-		return &ReusePeerTask{
-			PeerTaskMetadata: PeerTaskMetadata{
-				PeerID: t.PeerID,
-				TaskID: taskID,
-			},
-			ContentLength: t.ContentLength,
-			TotalPieces:   int32(t.TotalPieces),
+		// touch it before marking reclaim
+		t.touch()
+		// already marked, skip
+		if t.reclaimMarked.Load() {
+			continue
+		}
+
+		if t.Done || t.partialCompleted(rg) {
+			return &ReusePeerTask{
+				PeerTaskMetadata: PeerTaskMetadata{
+					PeerID: t.PeerID,
+					TaskID: taskID,
+				},
+				ContentLength: t.ContentLength,
+				TotalPieces:   t.TotalPieces,
+			}
 		}
 	}
 	return nil

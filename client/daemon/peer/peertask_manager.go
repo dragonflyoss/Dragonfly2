@@ -212,6 +212,10 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	return ptc, true, ptc.initStorage(desiredLocation)
 }
 
+func (ptm *peerTaskManager) enabledPrefetch(rg *clientutil.Range) bool {
+	return ptm.enablePrefetch && rg != nil
+}
+
 func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
 	req := &scheduler.PeerTaskRequest{
 		Url:         request.Url,

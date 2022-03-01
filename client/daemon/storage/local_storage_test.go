@@ -391,3 +391,92 @@ func calcPieceMd5(data []byte) string {
 	hash.Write(data)
 	return hex.EncodeToString(hash.Sum(nil)[:16])
 }
+
+func Test_computePiecePosition(t *testing.T) {
+	var testCases = []struct {
+		name  string
+		total int64
+		rg    *clientutil.Range
+		start int32
+		end   int32
+		piece uint32
+	}{
+		{
+			name:  "0",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  0,
+				Length: 10,
+			},
+			start: 0,
+			end:   0,
+			piece: 100,
+		},
+		{
+			name:  "1",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  30,
+				Length: 60,
+			},
+			start: 0,
+			end:   0,
+			piece: 100,
+		},
+		{
+			name:  "2",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  30,
+				Length: 130,
+			},
+			start: 0,
+			end:   1,
+			piece: 100,
+		},
+		{
+			name:  "3",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  350,
+				Length: 100,
+			},
+			start: 3,
+			end:   4,
+			piece: 100,
+		},
+		{
+			name:  "4",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  400,
+				Length: 100,
+			},
+			start: 4,
+			end:   4,
+			piece: 100,
+		},
+		{
+			name:  "5",
+			total: 500,
+			rg: &clientutil.Range{
+				Start:  0,
+				Length: 500,
+			},
+			start: 0,
+			end:   4,
+			piece: 100,
+		},
+	}
+
+	assert := testifyassert.New(t)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			start, end := computePiecePosition(tc.total, tc.rg, func(length int64) uint32 {
+				return tc.piece
+			})
+			assert.Equal(tc.start, start)
+			assert.Equal(tc.end, end)
+		})
+	}
+}
