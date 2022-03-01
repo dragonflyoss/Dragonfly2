@@ -19,7 +19,6 @@ package cdn
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -36,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"

@@ -22,14 +22,15 @@ import (
 	"context"
 	"fmt"
 
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 var _ SchedulerClient = (*schedulerClient)(nil)
@@ -90,8 +91,6 @@ func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		HashKey: idgen.TaskID(ptr.Url, ptr.UrlMeta),
 	})
-	grpc_retry.WithCodes()
-
 	return sc.schedulerClient.RegisterPeerTask(ctx, ptr, opts...)
 }
 

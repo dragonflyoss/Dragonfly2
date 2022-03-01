@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
@@ -42,6 +41,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
