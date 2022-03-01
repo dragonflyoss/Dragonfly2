@@ -19,6 +19,8 @@ package cdn
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
+	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -91,6 +93,10 @@ func New(config *config.Config) (*Server, error) {
 	var opts []grpc.ServerOption
 	if config.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
+	}
+	if config.RPCServer.RateLimit.Enable {
+		opts = append(opts, grpc.ChainUnaryInterceptor(ratelimit.UnaryServerInterceptor(rpc.NewLimiter(config.RPCServer.RateLimit.UnaryCallLimit))),
+			grpc.ChainStreamInterceptor(ratelimit.StreamServerInterceptor(rpc.NewLimiter(config.RPCServer.RateLimit.StreamCallLimit))))
 	}
 	grpcServer, err := rpcserver.New(config.RPCServer, service, opts...)
 	if err != nil {

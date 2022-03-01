@@ -19,6 +19,7 @@ package rpcserver
 import (
 	"fmt"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -35,6 +36,9 @@ type Config struct {
 	// DownloadPort is the port for download files from cdn.
 	// default: 8001
 	DownloadPort int `yaml:"downloadPort" mapstructure:"downloadPort"`
+
+	// RateLimit
+	RateLimit rpc.RateLimit `yaml:"downloadPort" mapstructure:"downloadPort"`
 }
 
 func DefaultConfig() Config {

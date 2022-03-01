@@ -69,6 +69,7 @@ type Config struct {
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 	// WorkHome directory
 	WorkHome string `mapstructure:"workHome" yaml:"workHome"`
+	// Rate
 }
 
 func (c *Config) String() string {

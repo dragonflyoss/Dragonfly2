@@ -24,6 +24,7 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/keepalive"
@@ -64,4 +65,28 @@ var DefaultServerOptions = []grpc.ServerOption{
 			return status.Errorf(codes.Unknown, "panic triggered: %v", p)
 		})),
 	),
+}
+
+type RateLimiter struct {
+	limiter *rate.Limiter
+}
+
+func NewLimiter(tokenLimit *TokenLimit) *RateLimiter {
+	limiter := rate.NewLimiter(rate.Limit(tokenLimit.Limit), tokenLimit.Burst)
+	return &RateLimiter{limiter: limiter}
+}
+
+func (limiter *RateLimiter) Limit() bool {
+	return !limiter.limiter.Allow()
+}
+
+type RateLimit struct {
+	Enable          bool        `yaml:"enable" mapstructure:"enable"`
+	UnaryCallLimit  *TokenLimit `yaml:"unaryCallLimit" mapstructure:"unaryCallLimit"`
+	StreamCallLimit *TokenLimit `yaml:"streamCallLimit" mapstructure:"streamCallLimit"`
+}
+
+type TokenLimit struct {
+	Limit int `yaml:"limit" mapstructure:"limit"`
+	Burst int `yaml:"burst" mapstructure:"burst"`
 }

@@ -25,9 +25,12 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"github.com/serialx/hashring"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -154,7 +157,7 @@ func (t *testServerData) cleanup() {
 	}
 }
 
-func startTestServers(count int) (_ *testServerData, err error) {
+func startTestServers(count int, opt ...grpc.ServerOption) (_ *testServerData, err error) {
 	t := &testServerData{}
 	registerResult, _, _ := loadTestData()
 	defer func() {
@@ -173,7 +176,7 @@ func startTestServers(count int) (_ *testServerData, err error) {
 			return nil, fmt.Errorf("failed to listen %v", err)
 		}
 
-		s := grpc.NewServer()
+		s := grpc.NewServer(opt...)
 		//var rs map[string]*scheduler.RegisterResult
 		//if count != 1 {
 		//	rs = map[string]*scheduler.RegisterResult{
@@ -705,4 +708,60 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 		normalTaskID: normalPeerPacket,
 	}
 	return taskRegisterResult, taskInfos, taskURL2ID
+}
+
+func TestRegisterRateLimit(t *testing.T) {
+	var limit, burst = 4, 2
+	test, err := startTestServers(1, grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
+		Limit: limit,
+		Burst: burst}))))
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test.cleanup()
+
+	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}})
+	if err != nil {
+		t.Fatalf("failed to get scheduler client: %v", err)
+	}
+	defer client.Close()
+	for i := 0; i < burst; i++ {
+		_, err := client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+			Url:         normalTaskURL,
+			UrlMeta:     nil,
+			PeerId:      "test_peer",
+			PeerHost:    nil,
+			HostLoad:    nil,
+			IsMigrating: false,
+		})
+		assert.Nil(t, err)
+	}
+	errGroup := errgroup.Group{}
+	for i := 0; i < limit; i++ {
+		errGroup.Go(func() error {
+			_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+				Url:         normalTaskURL,
+				UrlMeta:     nil,
+				PeerId:      "test_peer",
+				PeerHost:    nil,
+				HostLoad:    nil,
+				IsMigrating: false,
+			})
+			return err
+		})
+	}
+	if errGroup.Wait() != nil {
+		assert.Equal(t, status.Code(err), codes.ResourceExhausted)
+	}
+
+	time.Sleep(time.Second / time.Duration(limit))
+	_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+		Url:         normalTaskURL,
+		UrlMeta:     nil,
+		PeerId:      "test_peer",
+		PeerHost:    nil,
+		HostLoad:    nil,
+		IsMigrating: false,
+	})
+	assert.Nil(t, err)
 }

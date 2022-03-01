@@ -82,7 +82,7 @@ func (p *d7yHashPicker) Pick(info balancer.PickInfo) (ret balancer.PickResult, e
 
 	defer func() {
 		if err != nil {
-			pickerLogger.Infof("d7yPicker: failed to pick server for request: %v", err)
+			pickerLogger.Infof("d7yPicker: failed to pick server for request:%+v, %v", pickRequest, err)
 			return
 		}
 		pickerLogger.Infof("d7yPicker: pick out server: %s for request: %+v", targetAddr, pickRequest)
