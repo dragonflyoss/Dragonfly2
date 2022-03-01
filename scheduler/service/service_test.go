@@ -802,7 +802,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			},
 		},
 		{
-			name: "revice Code_ClientPieceDownloadFail code",
+			name: "revice Code_PeerTaskNotFound code",
 			mock: func(
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
@@ -814,7 +814,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 					ms.Context().Return(context.Background()).Times(1),
 					ms.Recv().Return(&rpcscheduler.PieceResult{
 						SrcPid: mockPeerID,
-						Code:   base.Code_ClientPieceDownloadFail,
+						Code:   base.Code_PeerTaskNotFound,
 					}, nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
@@ -1934,36 +1934,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-			},
-		},
-		{
-			name: "piece result code is Code_ClientPieceDownloadFail and parent state set PeerEventDownloadFailed",
-			config: &config.Config{
-				Scheduler: mockSchedulerConfig,
-				CDN:       &config.CDNConfig{Enable: true},
-				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
-			},
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_ClientPieceDownloadFail,
-				DstPid: mockCDNPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-				)
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
 			},
 		},
 		{

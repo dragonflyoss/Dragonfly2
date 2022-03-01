@@ -58,7 +58,7 @@ const (
 const (
 	// If the number of samples is greater than or equal to 10,
 	// it is close to the normal distribution
-	normalDistributionLen = 10
+	normalDistributionLen = 30
 
 	// When costs len is greater than or equal to 2,
 	// the last cost can be compared and calculated

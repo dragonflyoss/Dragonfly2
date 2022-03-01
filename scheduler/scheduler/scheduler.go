@@ -35,11 +35,14 @@ const (
 	// Default number of pieces downloaded in parallel
 	defaultParallelCount = 4
 
-	// Default number of available parents after filtering
-	defaultFilterParentCount = 5
+	// Default limit the number of filter traversals
+	defaultFilterParentLimit = 10
+
+	// Default tree available depth
+	defaultAvailableDepth = 1
 
 	// Default tree depth limit
-	defaultDepthLimit = 5
+	defaultDepthLimit = 3
 )
 
 type Scheduler interface {
@@ -221,17 +224,19 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
-	filterParentCount := defaultFilterParentCount
-	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && config.FilterParentCount > 0 {
-		filterParentCount = int(config.FilterParentCount)
+	filterParentLimit := defaultFilterParentLimit
+	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
+		filterParentLimit = int(config.FilterParentLimit)
 	}
 
 	var parents []*resource.Peer
 	var parentIDs []string
+	var n int
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
-		if len(parents) >= filterParentCount {
+		if n > filterParentLimit {
 			return false
 		}
+		n++
 
 		parent, ok := value.(*resource.Peer)
 		if !ok {
@@ -253,7 +258,13 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
+		peerChildCount := peer.ChildCount.Load()
 		parentDepth := parent.Depth()
+		if peerChildCount > 0 && parentDepth > defaultAvailableDepth {
+			peer.Log.Infof("peer has %d children and parent %s depth is %d", peerChildCount, parent.ID, parentDepth)
+			return true
+		}
+
 		peerDepth := peer.Depth()
 		if parentDepth+peerDepth > defaultDepthLimit {
 			peer.Log.Infof("exceeds the %d depth limit of the tree, peer depth is %d, parent %s is %d", defaultDepthLimit, peerDepth, parent.ID, parentDepth)
