@@ -39,10 +39,10 @@ const (
 	defaultFilterParentLimit = 10
 
 	// Default tree available depth
-	defaultAvailableDepth = 1
+	defaultAvailableDepth = 2
 
 	// Default tree depth limit
-	defaultDepthLimit = 3
+	defaultDepthLimit = 4
 )
 
 type Scheduler interface {
