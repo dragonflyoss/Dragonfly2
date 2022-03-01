@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path"
 	"sync"
@@ -29,7 +30,9 @@ import (
 
 	"go.uber.org/atomic"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
@@ -121,7 +124,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 
 	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 
 	// when UnknownLength and size is align to piece num
@@ -541,6 +544,29 @@ func (t *localTaskStore) saveMetadata() error {
 		t.Errorf("save metadata error: %s", err)
 	}
 	return err
+}
+
+func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
+	t.RLock()
+	defer t.RUnlock()
+
+	if t.ContentLength == -1 {
+		return false
+	}
+	start, end := computePiecePosition(t.ContentLength, rg, util.ComputePieceSize)
+	for i := start; i <= end; i++ {
+		if _, ok := t.Pieces[i]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func computePiecePosition(total int64, rg *clientutil.Range, compute func(length int64) uint32) (start, end int32) {
+	pieceSize := compute(total)
+	start = int32(math.Floor(float64(rg.Start) / float64(pieceSize)))
+	end = int32(math.Floor(float64(rg.Start+rg.Length-1) / float64(pieceSize)))
+	return
 }
 
 // limitedReadFile implements io optimize for zero copy
