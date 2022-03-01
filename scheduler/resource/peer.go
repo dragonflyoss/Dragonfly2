@@ -304,19 +304,8 @@ func (p *Peer) DeleteParent() {
 
 // ReplaceParent replaces peer parent
 func (p *Peer) ReplaceParent(parent *Peer) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if oldParent, ok := p.LoadParent(); ok {
-		if _, loaded := oldParent.Children.LoadAndDelete(p.ID); loaded {
-			oldParent.ChildCount.Dec()
-		}
-	}
-
-	p.Parent.Store(parent)
-	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
-		parent.ChildCount.Inc()
-	}
+	p.DeleteParent()
+	p.StoreParent(parent)
 }
 
 // Depth represents depth of tree
@@ -378,17 +367,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 
 // AppendPieceCost append piece cost to costs slice
 func (p *Peer) AppendPieceCost(cost int64) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	p.pieceCosts = append(p.pieceCosts, cost)
 }
 
 // PieceCosts return piece costs slice
 func (p *Peer) PieceCosts() []int64 {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	return p.pieceCosts
 }
 
