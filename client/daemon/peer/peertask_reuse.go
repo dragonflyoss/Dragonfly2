@@ -41,7 +41,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	var reuse *storage.ReusePeerTask
-	if ptm.enablePrefetch && request.Range != nil {
+	if ptm.enabledPrefetch(request.Range) {
 		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
 	} else {
 		reuse = ptm.storageManager.FindCompletedTask(taskID)
@@ -53,12 +53,12 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		err    error
 	)
 	if reuse == nil {
+		rg = request.Range
 		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
-		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, rg)
 		if reuse == nil {
 			return nil, false
 		}
-		rg = request.Range
 	}
 
 	if rg == nil {
@@ -169,7 +169,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
 	taskID := idgen.TaskID(request.URL, request.URLMeta)
 	var reuse *storage.ReusePeerTask
-	if ptm.enablePrefetch && request.Range != nil {
+	if ptm.enabledPrefetch(request.Range) {
 		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
 	} else {
 		reuse = ptm.storageManager.FindCompletedTask(taskID)
@@ -183,12 +183,12 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		if request.Range == nil {
 			return nil, nil, false
 		}
+		rg = request.Range
 		taskID = idgen.ParentTaskID(request.URL, request.URLMeta)
-		reuse = ptm.storageManager.FindCompletedTask(taskID)
+		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, rg)
 		if reuse == nil {
 			return nil, nil, false
 		}
-		rg = request.Range
 	}
 
 	if rg == nil {

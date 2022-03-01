@@ -90,7 +90,7 @@ func (ptm *peerTaskManager) newFileTask(
 
 	// prefetch parent request
 	var parent *peerTaskConductor
-	if ptm.enablePrefetch && request.Range != nil {
+	if ptm.enabledPrefetch(request.Range) {
 		parent = ptm.prefetchParentTask(&request.PeerTaskRequest, request.Output)
 	}
 
