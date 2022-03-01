@@ -87,6 +87,20 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 	defer span.End()
 	span.SetAttributes(constants.AttributeObtainSeedsRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
+	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
+	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece
+	if err := stream.Send(&cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done: false,
+	}); err != nil {
+		logger.Errorf("failed to send begin piece seed: %v", err)
+		return err
+	}
 	// register seed task
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
@@ -99,22 +113,21 @@ func (css *Server) ObtainSeeds(req *cdnsystem.SeedRequest, stream cdnsystem.Seed
 		span.RecordError(err)
 		return err
 	}
-	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
-	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
 	// begin piece, hint register success
-	if err := stream.Send(&cdnsystem.PieceSeed{
-		PeerId:   peerID,
-		HostUuid: hostID,
-		PieceInfo: &base.PieceInfo{
-			PieceNum: common.BeginOfPiece,
-		},
-		Done:            false,
-		ContentLength:   registeredTask.SourceFileLength,
-		TotalPieceCount: registeredTask.TotalPieceCount,
-	}); err != nil {
-		logger.Errorf("failed to send begin piece seed: %v", err)
-		return err
-	}
+	// Fixme Delete temporarily, conflict with the above "beginPiece", the comments may be removed later
+	//if err := stream.Send(&cdnsystem.PieceSeed{
+	//	PeerId:   peerID,
+	//	HostUuid: hostID,
+	//	PieceInfo: &base.PieceInfo{
+	//		PieceNum: common.BeginOfPiece,
+	//	},
+	//	Done:            false,
+	//	ContentLength:   registeredTask.SourceFileLength,
+	//	TotalPieceCount: registeredTask.TotalPieceCount,
+	//}); err != nil {
+	//	logger.Errorf("failed to send begin piece seed: %v", err)
+	//	return err
+	//}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,

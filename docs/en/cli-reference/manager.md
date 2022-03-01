@@ -31,7 +31,7 @@ endpoint: /swagger/doc.json
 
 ## Prometheus metrics monitoring
 
-endpoint:  /metrics  
+endpoint: /metrics
 
 ## HealthCheck
 
@@ -46,6 +46,7 @@ manager --jaeger  http://localhost:14250/api/traces
 ## Options
 
 <!-- markdownlint-disable -->
+
 ```text
       --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/manager.yaml, it can also be set by env var: MANAGER_CONFIG
       --console               whether logger output records to the stdout
@@ -55,6 +56,7 @@ manager --jaeger  http://localhost:14250/api/traces
       --service-name string   name of the service for tracer (default "dragonfly-manager")
       --verbose               whether logger use debug level
 ```
+
 <!-- markdownlint-restore -->
 
 ## Manager Config

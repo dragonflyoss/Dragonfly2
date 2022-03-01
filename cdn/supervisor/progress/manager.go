@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"sync"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -50,7 +51,7 @@ var _ Manager = (*manager)(nil)
 type manager struct {
 	mu               *synclock.LockerPool
 	taskManager      task.Manager
-	seedTaskSubjects map[string]*publisher
+	seedTaskSubjects sync.Map
 }
 
 func NewManager(taskManager task.Manager) (Manager, error) {
@@ -61,7 +62,7 @@ func newManager(taskManager task.Manager) (*manager, error) {
 	return &manager{
 		mu:               synclock.NewLockerPool(),
 		taskManager:      taskManager,
-		seedTaskSubjects: make(map[string]*publisher),
+		seedTaskSubjects: sync.Map{},
 	}, nil
 }
 
@@ -95,13 +96,9 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 		}(pieceChan)
 		return pieceChan, nil
 	}
-	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
-	if !ok {
-		progressPublisher = newProgressPublisher(taskID)
-		pm.seedTaskSubjects[taskID] = progressPublisher
-	}
+	var progressPublisher, _ = pm.seedTaskSubjects.LoadOrStore(taskID, newProgressPublisher(taskID))
 	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, seedTask.Pieces)
-	progressPublisher.AddSubscriber(observer)
+	progressPublisher.(*publisher).AddSubscriber(observer)
 	return observer.Receiver(), nil
 }
 
@@ -115,9 +112,9 @@ func (pm *manager) PublishPiece(ctx context.Context, taskID string, record *task
 	}
 	span.AddEvent(constants.EventPublishPiece, trace.WithAttributes(constants.AttributeSeedPiece.String(string(jsonRecord))))
 	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonRecord)
-	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
+	var progressPublisher, ok = pm.seedTaskSubjects.Load(taskID)
 	if ok {
-		progressPublisher.NotifySubscribers(record)
+		progressPublisher.(*publisher).NotifySubscribers(record)
 	}
 	return pm.taskManager.UpdateProgress(taskID, record)
 }
@@ -137,9 +134,9 @@ func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *tas
 	if err := pm.taskManager.Update(taskID, seedTask); err != nil {
 		return err
 	}
-	if progressPublisher, ok := pm.seedTaskSubjects[taskID]; ok {
-		progressPublisher.RemoveAllSubscribers()
-		delete(pm.seedTaskSubjects, taskID)
+	if progressPublisher, ok := pm.seedTaskSubjects.Load(taskID); ok {
+		progressPublisher.(*publisher).RemoveAllSubscribers()
+		pm.seedTaskSubjects.Delete(taskID)
 	}
 	return nil
 }

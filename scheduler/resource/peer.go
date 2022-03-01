@@ -125,6 +125,9 @@ type Peer struct {
 	// Children is peer children
 	Children *sync.Map
 
+	// ChildCount is child count
+	ChildCount *atomic.Int32
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -149,6 +152,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Host:       host,
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
+		ChildCount: atomic.NewInt32(0),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
 		mu:         &sync.RWMutex{},
@@ -199,6 +203,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -238,7 +243,9 @@ func (p *Peer) StoreChild(child *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.Children.Store(child.ID, child)
+	if _, loaded := p.Children.LoadOrStore(child.ID, child); !loaded {
+		p.ChildCount.Inc()
+	}
 	child.Parent.Store(p)
 }
 
@@ -252,19 +259,10 @@ func (p *Peer) DeleteChild(key string) {
 		return
 	}
 
-	p.Children.Delete(child.ID)
+	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
+		p.ChildCount.Dec()
+	}
 	child.Parent = &atomic.Value{}
-}
-
-// LenChildren return length of children sync map
-func (p *Peer) LenChildren() int {
-	var len int
-	p.Children.Range(func(_, _ interface{}) bool {
-		len++
-		return true
-	})
-
-	return len
 }
 
 // LoadParent return peer parent
@@ -283,7 +281,9 @@ func (p *Peer) StoreParent(parent *Peer) {
 	defer p.mu.Unlock()
 
 	p.Parent.Store(parent)
-	parent.Children.Store(p.ID, p)
+	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
+		p.ChildCount.Inc()
+	}
 }
 
 // DeleteParent deletes peer parent
@@ -297,7 +297,9 @@ func (p *Peer) DeleteParent() {
 	}
 
 	p.Parent = &atomic.Value{}
-	parent.Children.Delete(p.ID)
+	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
+		p.ChildCount.Dec()
+	}
 }
 
 // ReplaceParent replaces peer parent
@@ -306,20 +308,32 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 	p.StoreParent(parent)
 }
 
-// TreeTotalNodeCount represents tree's total node count
-func (p *Peer) TreeTotalNodeCount() int {
-	count := 1
-	p.Children.Range(func(_, value interface{}) bool {
-		node, ok := value.(*Peer)
-		if !ok {
-			return true
+// Depth represents depth of tree
+func (p *Peer) Depth() int {
+	node := p
+	var depth int
+	for node != nil {
+		depth++
+
+		if node.Host.IsCDN {
+			break
 		}
 
-		count += node.TreeTotalNodeCount()
-		return true
-	})
+		parent, ok := node.LoadParent()
+		if !ok {
+			break
+		}
 
-	return count
+		// Prevent traversal tree from infinite loop
+		if p == parent {
+			p.Log.Info("tree structure produces an infinite loop")
+			break
+		}
+
+		node = parent
+	}
+
+	return depth
 }
 
 // IsDescendant determines whether it is ancestor of peer
@@ -385,25 +399,25 @@ func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
 }
 
-// Download tiny file from peer
+// DownloadTinyFile downloads tiny file from peer
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
 
-	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=scheduler
-	url := url.URL{
+	// Download url: http://${host}:${port}/download/${taskIndex}/${taskID}?peerId=${peerID}
+	targetURL := url.URL{
 		Scheme:   "http",
 		Host:     fmt.Sprintf("%s:%d", p.Host.IP, p.Host.DownloadPort),
 		Path:     fmt.Sprintf("download/%s/%s", p.Task.ID[:3], p.Task.ID),
-		RawQuery: "peerId=scheduler",
+		RawQuery: fmt.Sprintf("peerId=%s", p.ID),
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
 	if err != nil {
 		return []byte{}, err
 	}
-	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()))
-	p.Log.Infof("download tiny file %s, header is : %#v", url.String(), req.Header)
+	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1))
+	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -415,7 +429,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
 	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return []byte{}, fmt.Errorf("%v: %v", url.String(), resp.Status)
+		return []byte{}, fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}
 
 	return io.ReadAll(resp.Body)

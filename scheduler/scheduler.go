@@ -72,33 +72,31 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client
-	if cfg.Manager.Enable {
-		managerClient, err := managerclient.New(cfg.Manager.Addr)
-		if err != nil {
-			return nil, err
-		}
-		s.managerClient = managerClient
-
-		// Register to manager
-		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
-			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
-			HostName:           s.config.Server.Host,
-			Ip:                 s.config.Server.IP,
-			Port:               int32(s.config.Server.Port),
-			Idc:                s.config.Host.IDC,
-			Location:           s.config.Host.Location,
-			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-		}); err != nil {
-			logger.Fatalf("register to manager failed %v", err)
-		}
-	}
-
-	// Initialize dynconfig client
-	dynConfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	managerClient, err := managerclient.New(cfg.Manager.Addr)
 	if err != nil {
 		return nil, err
 	}
-	s.dynconfig = dynConfig
+	s.managerClient = managerClient
+
+	// Register to manager
+	if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
+		SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+		HostName:           s.config.Server.Host,
+		Ip:                 s.config.Server.IP,
+		Port:               int32(s.config.Server.Port),
+		Idc:                s.config.Host.IDC,
+		Location:           s.config.Host.Location,
+		SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+	}); err != nil {
+		logger.Fatalf("register to manager failed %v", err)
+	}
+
+	// Initialize dynconfig client
+	dynconfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	s.dynconfig = dynconfig
 
 	// Initialize GC
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
@@ -124,16 +122,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize resource
-	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, dialOptions...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Initialize scheduler
-	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
+	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize scheduler service
-	service := service.New(cfg, resource, scheduler, dynConfig)
+	service := service.New(cfg, resource, scheduler, dynconfig)
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)
@@ -141,7 +139,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize job service
 	if cfg.Job.Enable {
-		s.job, err = job.New(cfg, service)
+		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}

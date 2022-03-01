@@ -56,10 +56,11 @@ type CommonTaskRequest struct {
 }
 
 type RegisterTaskRequest struct {
-	CommonTaskRequest
-	ContentLength int64
-	TotalPieces   int32
-	PieceMd5Sign  string
+	PeerTaskMetadata
+	DesiredLocation string
+	ContentLength   int64
+	TotalPieces     int32
+	PieceMd5Sign    string
 }
 
 type WritePieceRequest struct {
@@ -74,13 +75,27 @@ type WritePieceRequest struct {
 type StoreRequest struct {
 	CommonTaskRequest
 	MetadataOnly bool
-	StoreOnly    bool
-	TotalPieces  int32
+	// StoreDataOnly stands save file only without save metadata, used in reuse cases
+	StoreDataOnly bool
+	TotalPieces   int32
+	// OriginalOffset stands keep original offset in the target file, if the target file is not original file, return error
+	OriginalOffset bool
 }
 
 type ReadPieceRequest struct {
 	PeerTaskMetadata
 	PieceMetadata
+}
+
+type ReadAllPiecesRequest struct {
+	PeerTaskMetadata
+	Range *clientutil.Range
+}
+
+type RegisterSubTaskRequest struct {
+	Parent  PeerTaskMetadata
+	SubTask PeerTaskMetadata
+	Range   *clientutil.Range
 }
 
 type UpdateTaskRequest struct {

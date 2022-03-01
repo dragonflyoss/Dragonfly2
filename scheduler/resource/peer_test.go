@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"path"
 	"strconv"
 	"testing"
 
@@ -30,6 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
@@ -235,48 +235,6 @@ func TestPeer_DeleteChild(t *testing.T) {
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			peer.StoreChild(mockChildPeer)
-			tc.expect(t, peer, mockChildPeer)
-		})
-	}
-}
-
-func TestPeer_LenChildren(t *testing.T) {
-	tests := []struct {
-		name    string
-		childID string
-		expect  func(t *testing.T, peer *Peer, mockChildPeer *Peer)
-	}{
-		{
-			name:    "len children",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
-				assert := assert.New(t)
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 1)
-				mockChildPeer.ID = idgen.PeerID("0.0.0.0")
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 2)
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.LenChildren(), 2)
-			},
-		},
-		{
-			name:    "child does not exist",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
-				assert := assert.New(t)
-				assert.Equal(peer.LenChildren(), 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
-
 			tc.expect(t, peer, mockChildPeer)
 		})
 	}
@@ -509,30 +467,43 @@ func TestPeer_ReplaceParent(t *testing.T) {
 	}
 }
 
-func TestPeer_TreeTotalNodeCount(t *testing.T) {
+func TestPeer_Depth(t *testing.T) {
 	tests := []struct {
-		name    string
-		childID string
-		expect  func(t *testing.T, peer *Peer, mockChildPeer *Peer)
+		name   string
+		expect func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer)
 	}{
 		{
-			name:    "get tree total node count",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+			name: "there is only one node in the tree",
+			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
 				assert := assert.New(t)
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.TreeTotalNodeCount(), 2)
-				mockChildPeer.ID = idgen.PeerID("0.0.0.0")
-				peer.StoreChild(mockChildPeer)
-				assert.Equal(peer.TreeTotalNodeCount(), 3)
+				assert.Equal(peer.Depth(), 1)
 			},
 		},
 		{
-			name:    "tree is empty",
-			childID: idgen.PeerID("127.0.0.1"),
-			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+			name: "more than one node in the tree",
+			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+				peer.StoreParent(parent)
+
 				assert := assert.New(t)
-				assert.Equal(peer.TreeTotalNodeCount(), 1)
+				assert.Equal(peer.Depth(), 2)
+			},
+		},
+		{
+			name: "node parent is cdn",
+			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+				peer.StoreParent(cdnParent)
+
+				assert := assert.New(t)
+				assert.Equal(peer.Depth(), 2)
+			},
+		},
+		{
+			name: "node parent is itself",
+			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+				peer.StoreParent(peer)
+
+				assert := assert.New(t)
+				assert.Equal(peer.Depth(), 1)
 			},
 		},
 	}
@@ -540,11 +511,13 @@ func TestPeer_TreeTotalNodeCount(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
+			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			parent := NewPeer(idgen.PeerID("127.0.0.2"), mockTask, mockHost)
+			cdnParent := NewPeer(mockCDNPeerID, mockTask, mockCDNHost)
 
-			tc.expect(t, peer, mockChildPeer)
+			tc.expect(t, peer, parent, cdnParent)
 		})
 	}
 }
@@ -813,57 +786,79 @@ func TestPeer_DeleteStream(t *testing.T) {
 }
 
 func TestPeer_DownloadTinyFile(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if path.Base(r.URL.Path) == "foo" {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
+	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+	newServer := func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			peer := getPeer()
+			assert := assert.New(t)
+			assert.NotNil(peer)
+			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
+			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-		if r.Header.Get(headers.Range) == "bytes=0-2" {
-			w.WriteHeader(http.StatusNotAcceptable)
-			return
-		}
+			rgs, err := clientutil.ParseRange(r.Header.Get(headers.Range), 128)
+			assert.Nil(err)
+			assert.Equal(1, len(rgs))
+			rg := rgs[0]
 
-		w.WriteHeader(http.StatusPartialContent)
-	}))
-	defer s.Close()
-
+			w.WriteHeader(http.StatusPartialContent)
+			n, err := w.Write(testData[rg.Start : rg.Start+rg.Length])
+			assert.Nil(err)
+			assert.Equal(int64(n), rg.Length)
+		}))
+	}
 	tests := []struct {
-		name   string
-		expect func(t *testing.T, peer *Peer)
+		name      string
+		newServer func(t *testing.T, getPeer func() *Peer) *httptest.Server
+		expect    func(t *testing.T, peer *Peer)
 	}{
 		{
-			name: "download tiny file",
+			name: "download tiny file - 32",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				_, err := peer.DownloadTinyFile()
+				peer.Task.ContentLength.Store(32)
+				data, err := peer.DownloadTinyFile()
 				assert.NoError(err)
+				assert.Equal(testData[:32], data)
 			},
 		},
 		{
-			name: "download tiny file with range header",
+			name: "download tiny file - 128",
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Task.ContentLength.Store(2)
-				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 406 Not Acceptable",
-					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
+				peer.Task.ContentLength.Store(32)
+				data, err := peer.DownloadTinyFile()
+				assert.NoError(err)
+				assert.Equal(testData[:32], data)
 			},
 		},
 		{
 			name: "download tiny file failed because of http status code",
+			newServer: func(t *testing.T, getPeer func() *Peer) *httptest.Server {
+				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusNotFound)
+				}))
+			},
 			expect: func(t *testing.T, peer *Peer) {
 				assert := assert.New(t)
-				peer.Task.ID = "foo"
+				peer.Task.ID = "foobar"
 				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=scheduler: 404 Not Found",
-					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID))
+				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=%s: 404 Not Found",
+					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID, peer.ID))
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			var peer *Peer
+			if tc.newServer == nil {
+				tc.newServer = newServer
+			}
+			s := tc.newServer(t, func() *Peer {
+				return peer
+			})
+			defer s.Close()
 			url, err := url.Parse(s.URL)
 			if err != nil {
 				t.Fatal(err)
@@ -883,7 +878,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockRawHost.DownPort = int32(port)
 			mockHost := NewHost(mockRawHost)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			peer = NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer)
 		})
 	}

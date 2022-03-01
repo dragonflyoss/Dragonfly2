@@ -67,11 +67,6 @@ func New(
 	}
 }
 
-// CDN is cdn resource
-func (s *Service) CDN() resource.CDN {
-	return s.resource.CDN()
-}
-
 // RegisterPeerTask registers peer and triggers CDN download task
 func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
 	// Register task and trigger cdn download task
@@ -114,11 +109,26 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			fallthrough
 		case base.SizeScope_SMALL:
 			peer.Log.Info("task size scope is small")
-			// If the file is registered as a small type,
-			// there is no need to build a tree, just find the parent and return
+			// There is no need to build a tree, just find the parent and return
 			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet())
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not select parent")
+				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
+					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
+					return nil, dferr
+				}
+
+				return &rpcscheduler.RegisterResult{
+					TaskId:    task.ID,
+					SizeScope: base.SizeScope_NORMAL,
+				}, nil
+			}
+
+			// When task size scope is small, parent must be downloaded successfully
+			// before returning to the parent directly
+			if !parent.FSM.Is(resource.PeerStateSucceeded) {
+				peer.Log.Infof("task size scope is small and download state %s is not PeerStateSucceeded", parent.FSM.Current())
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					dferr := status.Error(codes.Code(base.Code_SchedError), err.Error())
 					peer.Log.Errorf("peer %s register is failed: %v", req.PeerId, err)
@@ -353,7 +363,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) && task.LenAvailablePeers() != 0 {
+	if loaded && task.HasAvailablePeer() && (task.FSM.Is(resource.TaskStateRunning) || task.FSM.Is(resource.TaskStateSucceeded)) {
 		// Task is healthy and can be reused
 		task.UpdateAt.Store(time.Now())
 		task.Log.Infof("reuse task and status is %s", task.FSM.Current())
@@ -365,20 +375,10 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		return nil, err
 	}
 
-	// Start seed cdn task
-	go func() {
-		task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
-		peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
-		if err != nil {
-			task.Log.Errorf("trigger cdn download task failed: %v", err)
-			s.handleTaskFail(ctx, task)
-			return
-		}
-
-		// Update the task status first to help peer scheduling evaluation and scoring
-		s.handleTaskSuccess(ctx, task, endOfPiece)
-		s.handlePeerSuccess(ctx, peer)
-	}()
+	// Start trigger cdn task
+	if s.config.CDN.Enable {
+		go s.triggerCDNTask(ctx, task)
+	}
 
 	return task, nil
 }
@@ -414,6 +414,21 @@ func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	}
 
 	return peer
+}
+
+// triggerCDNTask starts trigger cdn task
+func (s *Service) triggerCDNTask(ctx context.Context, task *resource.Task) {
+	task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
+	peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
+	if err != nil {
+		task.Log.Errorf("trigger cdn download task failed: %v", err)
+		s.handleTaskFail(ctx, task)
+		return
+	}
+
+	// Update the task status first to help peer scheduling evaluation and scoring
+	s.handleTaskSuccess(ctx, task, endOfPiece)
+	s.handlePeerSuccess(ctx, peer)
 }
 
 // handleBeginOfPiece handles begin of piece
@@ -508,18 +523,11 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		fallthrough
 	case base.Code_CDNTaskNotFound:
 		s.handlePeerFail(ctx, parent)
-		go func() {
-			parent.Log.Info("cdn restart seed task")
-			cdnPeer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), parent.Task)
-			if err != nil {
-				peer.Log.Errorf("retrigger task failed: %v", err)
-				s.handleTaskFail(ctx, parent.Task)
-				return
-			}
 
-			s.handleTaskSuccess(ctx, cdnPeer.Task, endOfPiece)
-			s.handlePeerSuccess(ctx, cdnPeer)
-		}()
+		// Start trigger cdn task
+		if s.config.CDN.Enable {
+			go s.triggerCDNTask(ctx, parent.Task)
+		}
 	default:
 	}
 

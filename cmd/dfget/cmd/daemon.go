@@ -31,7 +31,6 @@ import (
 	server "d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -61,7 +60,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 		}
 
 		// Initialize logger
-		if err := logcore.InitDaemon(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitDaemon(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client daemon logger")
 		}
 

@@ -140,9 +140,18 @@ type peerTaskConductor struct {
 	limiter *rate.Limiter
 
 	startTime time.Time
+
+	// subtask only
+	parent *peerTaskConductor
+	rg     *clientutil.Range
 }
 
-func (ptm *peerTaskManager) newPeerTaskConductor(ctx context.Context, request *scheduler.PeerTaskRequest, limit rate.Limit) *peerTaskConductor {
+func (ptm *peerTaskManager) newPeerTaskConductor(
+	ctx context.Context,
+	request *scheduler.PeerTaskRequest,
+	limit rate.Limit,
+	parent *peerTaskConductor,
+	rg *clientutil.Range) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 	ctx, span := tracer.Start(ctx, config.SpanPeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -201,19 +210,24 @@ func (ptm *peerTaskManager) newPeerTaskConductor(ctx context.Context, request *s
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
+
+		parent: parent,
+		rg:     rg,
 	}
+
 	ptc.pieceTaskPoller = &pieceTaskPoller{
 		getPiecesMaxRetry: ptm.getPiecesMaxRetry,
 		peerTaskConductor: ptc,
 		peerTaskClient:    ptm.peerTaskClient,
 	}
+
 	return ptc
 }
 
 // register to scheduler, if error and disable auto back source, return error, otherwise return nil
 func (pt *peerTaskConductor) register() error {
-	logger.Debugf("request overview, pid: %s, url: %s, filter: %s, meta: %s, tag: %s",
-		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta, pt.request.UrlMeta.Tag)
+	pt.Debugf("request overview, pid: %s, url: %s, filter: %s, tag: %s, range: %s, digest: %s, header: %#v",
+		pt.request.PeerId, pt.request.Url, pt.request.UrlMeta.Filter, pt.request.UrlMeta.Tag, pt.request.UrlMeta.Range, pt.request.UrlMeta.Digest, pt.request.UrlMeta.Header)
 	// trace register
 	regCtx, cancel := context.WithTimeout(pt.ctx, pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
 	defer cancel()
@@ -226,7 +240,7 @@ func (pt *peerTaskConductor) register() error {
 		tinyData       *TinyData
 	)
 
-	logger.Infof("step 1: peer %s start to register", pt.request.PeerId)
+	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
 	schedulerClient := pt.peerTaskManager.schedulerClient
 
 	result, err := schedulerClient.RegisterPeerTask(regCtx, pt.request)
@@ -235,11 +249,11 @@ func (pt *peerTaskConductor) register() error {
 
 	if err != nil {
 		if err == context.DeadlineExceeded {
-			logger.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
+			pt.Errorf("scheduler did not response in %s", pt.peerTaskManager.schedulerOption.ScheduleTimeout.Duration)
 		}
-		logger.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
+		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
 		if pt.peerTaskManager.schedulerOption.DisableAutoBackSource {
-			logger.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
+			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
 			pt.span.RecordError(err)
 			pt.cancel(base.Code_SchedError, err.Error())
 			return err
@@ -248,10 +262,10 @@ func (pt *peerTaskConductor) register() error {
 		// can not detect source or scheduler error, create a new dummy scheduler client
 		schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: pt.taskID}
-		logger.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
+		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
+	} else {
+		pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 	}
-
-	pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 
 	if !needBackSource {
 		sizeScope = result.SizeScope
@@ -373,10 +387,6 @@ func (pt *peerTaskConductor) backSource() {
 	backSourceCtx, backSourceSpan := tracer.Start(pt.ctx, config.SpanBackSource)
 	defer backSourceSpan.End()
 	pt.contentLength.Store(-1)
-	if err := pt.InitStorage(); err != nil {
-		pt.cancel(base.Code_ClientError, err.Error())
-		return
-	}
 	err := pt.pieceManager.DownloadSource(backSourceCtx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
@@ -410,28 +420,29 @@ func (pt *peerTaskConductor) pullPieces() {
 }
 
 func (pt *peerTaskConductor) storeTinyPeerTask() {
-	// TODO store tiny data asynchronous
 	l := int64(len(pt.tinyData.Content))
 	pt.SetContentLength(l)
 	pt.SetTotalPieces(1)
 	ctx := pt.ctx
 	var err error
-	pt.storage, err = pt.peerTaskManager.storageManager.RegisterTask(ctx,
-		storage.RegisterTaskRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
+	storageDriver, err := pt.peerTaskManager.storageManager.RegisterTask(ctx,
+		&storage.RegisterTaskRequest{
+			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.tinyData.PeerID,
 				TaskID: pt.tinyData.TaskID,
 			},
-			ContentLength: l,
-			TotalPieces:   1,
+			DesiredLocation: "",
+			ContentLength:   l,
+			TotalPieces:     1,
 			// TODO check digest
 		})
+	pt.storage = storageDriver
 	if err != nil {
-		logger.Errorf("register tiny data storage failed: %s", err)
+		pt.Errorf("register tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
-	n, err := pt.storage.WritePiece(ctx,
+	n, err := pt.GetStorage().WritePiece(ctx,
 		&storage.WritePieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.tinyData.PeerID,
@@ -454,24 +465,24 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 			},
 		})
 	if err != nil {
-		logger.Errorf("write tiny data storage failed: %s", err)
+		pt.Errorf("write tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 	if n != l {
-		logger.Errorf("write tiny data storage failed", n, l)
+		pt.Errorf("write tiny data storage failed, want: %d, wrote: %d", l, n)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 
 	err = pt.UpdateStorage()
 	if err != nil {
-		logger.Errorf("update tiny data storage failed: %s", err)
+		pt.Errorf("update tiny data storage failed: %s", err)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
 
-	logger.Debugf("store tiny data, len: %d", l)
+	pt.Debugf("store tiny data, len: %d", l)
 	pt.PublishPieceInfo(0, uint32(l))
 }
 
@@ -646,16 +657,9 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digestutils.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
-	if err := pt.InitStorage(); err != nil {
-		pt.cancel(base.Code_ClientError, err.Error())
-		span.RecordError(err)
-		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
-		span.End()
-		return
-	}
 
 	request := &DownloadPieceRequest{
-		storage: pt.storage,
+		storage: pt.GetStorage(),
 		piece:   pt.singlePiece.PieceInfo,
 		log:     pt.Log(),
 		TaskID:  pt.GetTaskID(),
@@ -794,11 +798,7 @@ func (pt *peerTaskConductor) init(piecePacket *base.PiecePacket, pieceBufferSize
 	if piecePacket.ContentLength > -1 {
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
 	}
-	if err := pt.InitStorage(); err != nil {
-		pt.span.RecordError(err)
-		pt.cancel(base.Code_ClientError, err.Error())
-		return nil, false
-	}
+
 	pc := pt.peerPacket.Load().(*scheduler.PeerPacket).ParallelCount
 	pieceRequestCh := make(chan *DownloadPieceRequest, pieceBufferSize)
 	for i := int32(0); i < pc; i++ {
@@ -894,7 +894,7 @@ func (pt *peerTaskConductor) dispatchPieceRequest(pieceRequestCh chan *DownloadP
 			pt.requestedPieces.Set(piece.PieceNum)
 		}
 		req := &DownloadPieceRequest{
-			storage: pt.storage,
+			storage: pt.GetStorage(),
 			piece:   piece,
 			log:     pt.Log(),
 			TaskID:  pt.GetTaskID(),
@@ -1107,18 +1107,34 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	span.End()
 }
 
-func (pt *peerTaskConductor) InitStorage() (err error) {
+func (pt *peerTaskConductor) initStorage(desiredLocation string) (err error) {
 	// prepare storage
-	pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
-		storage.RegisterTaskRequest{
-			CommonTaskRequest: storage.CommonTaskRequest{
-				PeerID: pt.GetPeerID(),
-				TaskID: pt.GetTaskID(),
-			},
-			ContentLength: pt.GetContentLength(),
-			TotalPieces:   pt.GetTotalPieces(),
-			PieceMd5Sign:  pt.GetPieceMd5Sign(),
-		})
+	if pt.parent == nil {
+		pt.storage, err = pt.storageManager.RegisterTask(pt.ctx,
+			&storage.RegisterTaskRequest{
+				PeerTaskMetadata: storage.PeerTaskMetadata{
+					PeerID: pt.GetPeerID(),
+					TaskID: pt.GetTaskID(),
+				},
+				DesiredLocation: desiredLocation,
+				ContentLength:   pt.GetContentLength(),
+				TotalPieces:     pt.GetTotalPieces(),
+				PieceMd5Sign:    pt.GetPieceMd5Sign(),
+			})
+	} else {
+		pt.storage, err = pt.storageManager.RegisterSubTask(pt.ctx,
+			&storage.RegisterSubTaskRequest{
+				Parent: storage.PeerTaskMetadata{
+					PeerID: pt.parent.GetPeerID(),
+					TaskID: pt.parent.GetTaskID(),
+				},
+				SubTask: storage.PeerTaskMetadata{
+					PeerID: pt.GetPeerID(),
+					TaskID: pt.GetTaskID(),
+				},
+				Range: pt.rg,
+			})
+	}
 	if err != nil {
 		pt.Log().Errorf("register task to storage manager failed: %s", err)
 	}
@@ -1127,7 +1143,7 @@ func (pt *peerTaskConductor) InitStorage() (err error) {
 
 func (pt *peerTaskConductor) UpdateStorage() error {
 	// update storage
-	err := pt.storage.UpdateTask(pt.ctx,
+	err := pt.GetStorage().UpdateTask(pt.ctx,
 		&storage.UpdateTaskRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
 				PeerID: pt.GetPeerID(),
@@ -1280,7 +1296,7 @@ func (pt *peerTaskConductor) fail() {
 
 // Validate stores metadata and validates digest
 func (pt *peerTaskConductor) Validate() error {
-	err := pt.storage.Store(pt.ctx,
+	err := pt.GetStorage().Store(pt.ctx,
 		&storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID: pt.peerID,
@@ -1297,7 +1313,7 @@ func (pt *peerTaskConductor) Validate() error {
 	if !pt.peerTaskManager.calculateDigest {
 		return nil
 	}
-	err = pt.storage.ValidateDigest(
+	err = pt.GetStorage().ValidateDigest(
 		&storage.PeerTaskMetadata{
 			PeerID: pt.GetPeerID(),
 			TaskID: pt.GetTaskID(),

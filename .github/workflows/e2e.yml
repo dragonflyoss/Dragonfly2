@@ -69,7 +69,10 @@ jobs:
           kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run E2E test
-        run: make actions-e2e-test-coverage
+        run: |
+          make build-e2e-sha256sum
+          ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e -- --feature-gates=dfget-range=true
+          cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

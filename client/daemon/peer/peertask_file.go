@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -33,11 +34,13 @@ import (
 
 type FileTaskRequest struct {
 	scheduler.PeerTaskRequest
-	Output            string
-	Limit             float64
-	DisableBackSource bool
-	Pattern           string
-	Callsystem        string
+	Output             string
+	Limit              float64
+	DisableBackSource  bool
+	Pattern            string
+	Callsystem         string
+	Range              *clientutil.Range
+	KeepOriginalOffset bool
 }
 
 // FileTask represents a peer task to download a file
@@ -84,12 +87,20 @@ func (ptm *peerTaskManager) newFileTask(
 	request *FileTaskRequest,
 	limit rate.Limit) (context.Context, *fileTask, error) {
 	metrics.FileTaskCount.Add(1)
-	ptc, err := ptm.getPeerTaskConductor(ctx, idgen.TaskID(request.Url, request.UrlMeta), &request.PeerTaskRequest, limit)
+
+	// prefetch parent request
+	var parent *peerTaskConductor
+	if ptm.enablePrefetch && request.Range != nil {
+		parent = ptm.prefetchParentTask(&request.PeerTaskRequest, request.Output)
+	}
+
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range, request.Output)
 	if err != nil {
 		return nil, nil, err
 	}
-	ctx, span := tracer.Start(ctx, config.SpanFileTask, trace.WithSpanKind(trace.SpanKindClient))
 
+	ctx, span := tracer.Start(ctx, config.SpanFileTask, trace.WithSpanKind(trace.SpanKindClient))
 	pt := &fileTask{
 		SugaredLoggerOnWith: ptc.SugaredLoggerOnWith,
 		ctx:                 ctx,
@@ -161,8 +172,9 @@ func (f *fileTask) storeToOutput() {
 				TaskID:      f.peerTaskConductor.GetTaskID(),
 				Destination: f.request.Output,
 			},
-			MetadataOnly: false,
-			TotalPieces:  f.peerTaskConductor.GetTotalPieces(),
+			MetadataOnly:   false,
+			TotalPieces:    f.peerTaskConductor.GetTotalPieces(),
+			OriginalOffset: f.request.KeepOriginalOffset,
 		})
 	if err != nil {
 		f.sendFailProgress(base.Code_ClientError, err.Error())

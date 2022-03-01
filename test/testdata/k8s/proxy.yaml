@@ -27,6 +27,7 @@ data:
       netTopology: ""
       securityDomain: ""
     download:
+      prefetch: true
       calculateDigest: true
       downloadGRPC:
         security:

@@ -81,6 +81,14 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
+			// If the peer initialization succeeds and the download fails,
+			// set peer status is PeerStateFailed.
+			if peer != nil {
+				if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
+					return nil, nil, err
+				}
+			}
+
 			return nil, nil, err
 		}
 
@@ -205,9 +213,13 @@ func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, 
 
 // Dynamic config notify function
 func (c *cdnClient) OnNotify(data *config.DynconfigData) {
-	ips := getCDNIPs(data.CDNs)
+	var cdns []config.CDN
+	for _, cdn := range data.CDNs {
+		cdns = append(cdns, *cdn)
+	}
+
 	if reflect.DeepEqual(c.data, data) {
-		logger.Infof("cdn addresses deep equal: %v", ips)
+		logger.Infof("cdn addresses deep equal: %#v", cdns)
 		return
 	}
 
@@ -233,7 +245,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 	if err := c.UpdateAddresses(cdnsToNetAddrs(data.CDNs)); err != nil {
 		logger.Errorf("failed to update addresses: %v", err)
 	}
-	logger.Infof("cdn addresses have been updated: %v", ips)
+	logger.Infof("cdn addresses have been updated: %#v", cdns)
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
@@ -311,14 +323,4 @@ func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
 	}
 
 	return diff
-}
-
-// getCDNIPs get ips by []*config.CDN.
-func getCDNIPs(cdns []*config.CDN) []string {
-	ips := []string{}
-	for _, cdn := range cdns {
-		ips = append(ips, cdn.IP)
-	}
-
-	return ips
 }

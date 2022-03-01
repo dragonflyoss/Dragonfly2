@@ -18,7 +18,10 @@ package job
 
 import (
 	"context"
+	"errors"
+	"strings"
 
+	"github.com/go-http-utils/headers"
 	"github.com/go-playground/validator/v10"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -27,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
-	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 type Job interface {
@@ -39,11 +42,11 @@ type job struct {
 	globalJob    *internaljob.Job
 	schedulerJob *internaljob.Job
 	localJob     *internaljob.Job
-	service      *service.Service
+	resource     resource.Resource
 	config       *config.Config
 }
 
-func New(cfg *config.Config, service *service.Service) (Job, error) {
+func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	redisConfig := &internaljob.Config{
 		Host:      cfg.Job.Redis.Host,
 		Port:      cfg.Job.Redis.Port,
@@ -83,7 +86,7 @@ func New(cfg *config.Config, service *service.Service) (Job, error) {
 		globalJob:    globalJob,
 		schedulerJob: schedulerJob,
 		localJob:     localJob,
-		service:      service,
+		resource:     resource,
 		config:       cfg,
 	}
 
@@ -99,36 +102,40 @@ func New(cfg *config.Config, service *service.Service) (Job, error) {
 	return t, nil
 }
 
-func (t *job) Serve() {
+func (j *job) Serve() {
 	go func() {
-		logger.Infof("ready to launch %d worker(s) on global queue", t.config.Job.GlobalWorkerNum)
-		if err := t.globalJob.LaunchWorker("global_worker", int(t.config.Job.GlobalWorkerNum)); err != nil {
+		logger.Infof("ready to launch %d worker(s) on global queue", j.config.Job.GlobalWorkerNum)
+		if err := j.globalJob.LaunchWorker("global_worker", int(j.config.Job.GlobalWorkerNum)); err != nil {
 			logger.Fatalf("global queue worker error: %v", err)
 		}
 	}()
 
 	go func() {
-		logger.Infof("ready to launch %d worker(s) on scheduler queue", t.config.Job.SchedulerWorkerNum)
-		if err := t.schedulerJob.LaunchWorker("scheduler_worker", int(t.config.Job.SchedulerWorkerNum)); err != nil {
+		logger.Infof("ready to launch %d worker(s) on scheduler queue", j.config.Job.SchedulerWorkerNum)
+		if err := j.schedulerJob.LaunchWorker("scheduler_worker", int(j.config.Job.SchedulerWorkerNum)); err != nil {
 			logger.Fatalf("scheduler queue worker error: %v", err)
 		}
 	}()
 
 	go func() {
-		logger.Infof("ready to launch %d worker(s) on local queue", t.config.Job.LocalWorkerNum)
-		if err := t.localJob.LaunchWorker("local_worker", int(t.config.Job.LocalWorkerNum)); err != nil {
+		logger.Infof("ready to launch %d worker(s) on local queue", j.config.Job.LocalWorkerNum)
+		if err := j.localJob.LaunchWorker("local_worker", int(j.config.Job.LocalWorkerNum)); err != nil {
 			logger.Fatalf("scheduler queue worker error: %v", err)
 		}
 	}()
 }
 
-func (t *job) Stop() {
-	t.globalJob.Worker.Quit()
-	t.schedulerJob.Worker.Quit()
-	t.localJob.Worker.Quit()
+func (j *job) Stop() {
+	j.globalJob.Worker.Quit()
+	j.schedulerJob.Worker.Quit()
+	j.localJob.Worker.Quit()
 }
 
-func (t *job) preheat(ctx context.Context, req string) error {
+func (j *job) preheat(ctx context.Context, req string) error {
+	if !j.config.CDN.Enable {
+		return errors.New("scheduler has disabled cdn")
+	}
+
 	request := &internaljob.PreheatRequest{}
 	if err := internaljob.UnmarshalRequest(req, request); err != nil {
 		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
@@ -140,46 +147,44 @@ func (t *job) preheat(ctx context.Context, req string) error {
 		return err
 	}
 
-	// Generate meta
-	meta := &base.UrlMeta{
+	urlMeta := &base.UrlMeta{
 		Header: request.Headers,
 		Tag:    request.Tag,
 		Filter: request.Filter,
 		Digest: request.Digest,
 	}
-
 	if request.Headers != nil {
-		if rg := request.Headers["Range"]; len(rg) > 0 {
-			meta.Range = rg
+		if r, ok := request.Headers[headers.Range]; ok {
+			// Range in dragonfly is without "bytes="
+			urlMeta.Range = strings.TrimLeft(r, "bytes=")
 		}
 	}
-	logger.Infof("preheat %s meta: %v", request.URL, meta)
 
-	// Generate taskID
-	taskID := idgen.TaskID(request.URL, meta)
+	taskID := idgen.TaskID(request.URL, urlMeta)
 
 	// Trigger CDN download seeds
-	plogger := logger.WithTaskIDAndURL(taskID, request.URL)
-	plogger.Info("ready to preheat")
-	stream, err := t.service.CDN().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	log := logger.WithTaskIDAndURL(taskID, request.URL)
+	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
+		request.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
+	stream, err := j.resource.CDN().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  taskID,
 		Url:     request.URL,
-		UrlMeta: meta,
+		UrlMeta: urlMeta,
 	})
 	if err != nil {
-		plogger.Errorf("preheat failed: %v", err)
+		log.Errorf("preheat failed: %v", err)
 		return err
 	}
 
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			plogger.Errorf("preheat recive piece failed: %v", err)
+			log.Errorf("preheat recive piece failed: %v", err)
 			return err
 		}
 
 		if piece.Done == true {
-			plogger.Info("preheat succeeded")
+			log.Info("preheat succeeded")
 			return nil
 		}
 	}

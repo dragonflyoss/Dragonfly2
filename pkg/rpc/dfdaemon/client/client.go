@@ -22,10 +22,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -109,7 +109,7 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 	ctx = pickreq.NewContext(ctx, &pickreq.PickRequest{
 		TargetAddr: target.String(),
 	})
-	_, err = dc.daemonClient.CheckHealth(ctx, new(empty.Empty), opts...)
+	_, err = dc.daemonClient.CheckHealth(ctx, new(emptypb.Empty), opts...)
 	return
 }
 

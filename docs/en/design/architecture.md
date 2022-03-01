@@ -72,7 +72,7 @@ data market, multi-tenancy, and permission control, etc.
 
 #### CDN system
 
-![cdn][TODO cdn]
+![cdn][todo cdn]
 
 ### Sub-system function
 

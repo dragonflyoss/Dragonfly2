@@ -16,7 +16,7 @@ scheduler [command]
 ## Available Commands
 
 ```text
-doc         generate documents 
+doc         generate documents
 help        Help about any command
 version     show version
 ```
@@ -24,8 +24,9 @@ version     show version
 ## Flags
 
 <!-- markdownlint-disable -->
+
 ```text
-    --config string         the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/scheduler.yaml, it can 
+    --config string         the path of configuration file with yaml extension name, default is /Users/${USER_HOME}/.dragonfly/config/scheduler.yaml, it can
                             also be set by environment variable scheduler_config
     --console               whether logger output records to the stdout
     -h, --help              help for scheduler
@@ -34,4 +35,5 @@ version     show version
     --service-name string   name of the service for tracer (default "dragonfly-scheduler")
     --verbose               whether logger use debug level
 ```
+
 <!-- markdownlint-restore -->

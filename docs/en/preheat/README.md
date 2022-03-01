@@ -5,5 +5,5 @@ Users can be preheat in the `console` or directly call `preheat api` for preheat
 
 Table of contents:
 
-* [Console](console.md)
-* [Api](api.md)
+- [Console](console.md)
+- [Api](api.md)

@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -36,7 +37,7 @@ var (
 
 func init() {
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	if err == nil {
 		sugar := log.Sugar()
@@ -48,6 +49,15 @@ func init() {
 		SetStatSeedLogger(log)
 		SetDownloadLogger(log)
 		SetJobLogger(sugar)
+	}
+	levels = append(levels, config.Level)
+}
+
+// SetLevel updates all log level
+func SetLevel(level zapcore.Level) {
+	Infof("change log level to %s", level.String())
+	for _, l := range levels {
+		l.SetLevel(level)
 	}
 }
 

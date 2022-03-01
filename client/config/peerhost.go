@@ -175,6 +175,7 @@ type DownloadOption struct {
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
 }
 
 type TransportOption struct {
@@ -198,6 +199,8 @@ type ProxyOption struct {
 	Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+	// ExtraRegistryMirrors add more mirror for different ports
+	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {

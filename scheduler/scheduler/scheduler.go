@@ -31,6 +31,17 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
+const (
+	// Default number of pieces downloaded in parallel
+	defaultParallelCount = 4
+
+	// Default number of available parents after filtering
+	defaultFilterParentCount = 5
+
+	// Default tree depth limit
+	defaultDepthLimit = 10
+)
+
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
@@ -48,12 +59,16 @@ type scheduler struct {
 
 	// Scheduler configuration
 	config *config.SchedulerConfig
+
+	// Scheduler dynamic configuration
+	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduler {
 	return &scheduler{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 		config:    cfg,
+		dynconfig: dynconfig,
 	}
 }
 
@@ -161,7 +176,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
@@ -172,7 +187,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	if err := stream.Send(constructSuccessPeerPacket(peer, parents[0], parents[1:])); err != nil {
+	if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, parents[0], parents[1:])); err != nil {
 		peer.Log.Error(err)
 		return []*resource.Peer{}, false
 	}
@@ -196,7 +211,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
@@ -206,9 +221,18 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
+	filterParentCount := defaultFilterParentCount
+	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && config.FilterParentCount > 0 {
+		filterParentCount = int(config.FilterParentCount)
+	}
+
 	var parents []*resource.Peer
 	var parentIDs []string
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
+		if len(parents) >= filterParentCount {
+			return false
+		}
+
 		parent, ok := value.(*resource.Peer)
 		if !ok {
 			return true
@@ -226,6 +250,12 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 		if s.evaluator.IsBadNode(parent) {
 			peer.Log.Infof("parent %s is not selected because it is bad node", parent.ID)
+			return true
+		}
+
+		depth := parent.Depth()
+		if depth > defaultDepthLimit {
+			peer.Log.Infof("%d exceeds the %d depth limit of the tree", depth, defaultDepthLimit)
 			return true
 		}
 
@@ -254,7 +284,12 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 }
 
 // Construct peer successful packet
-func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+	parallelCount := defaultParallelCount
+	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
+		parallelCount = int(config.ParallelCount)
+	}
+
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
 		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
@@ -265,10 +300,9 @@ func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, cand
 	}
 
 	return &rpcscheduler.PeerPacket{
-		TaskId: peer.Task.ID,
-		SrcPid: peer.ID,
-		// TODO(gaius-qi) Configure ParallelCount parameter in manager service
-		ParallelCount: 1,
+		TaskId:        peer.Task.ID,
+		SrcPid:        peer.ID,
+		ParallelCount: int32(parallelCount),
 		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,
