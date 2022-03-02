@@ -70,7 +70,7 @@ func TestConfig_Convert(t *testing.T) {
 				Location: "beijing",
 				IDC:      "na61",
 			},
-			Metrics: &RestConfig{
+			Metrics: RestConfig{
 				Addr: ":8081",
 			},
 		},

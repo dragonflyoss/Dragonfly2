@@ -22,6 +22,7 @@ import (
 	"reflect"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
@@ -62,7 +63,7 @@ func (c DeprecatedConfig) Convert() *Config {
 	newConfig.Host = baseProperties.Host
 	newConfig.LogDir = baseProperties.LogDir
 	newConfig.WorkHome = baseProperties.WorkHome
-	if baseProperties.Metrics != nil {
+	if baseProperties.Metrics.Addr != "" {
 		newConfig.Metrics = metrics.Config{
 			Net:  "tcp",
 			Addr: baseProperties.Metrics.Addr,
@@ -80,6 +81,7 @@ func (c DeprecatedConfig) Convert() *Config {
 		AdvertiseIP:  baseProperties.AdvertiseIP,
 		ListenPort:   baseProperties.ListenPort,
 		DownloadPort: baseProperties.DownloadPort,
+		RateLimit:    baseProperties.RateLimit,
 	}
 	for _, properties := range c.Plugins[plugins.StorageManagerPlugin] {
 		if properties.Enable == false {
@@ -231,7 +233,7 @@ func NewDefaultBaseProperties() *BaseProperties {
 			},
 		},
 		Host: HostConfig{},
-		Metrics: &RestConfig{
+		Metrics: RestConfig{
 			Addr: ":8000",
 		},
 	}
@@ -312,7 +314,10 @@ type BaseProperties struct {
 	Host HostConfig `yaml:"host" mapstructure:"host"`
 
 	// Metrics configuration
-	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
+	Metrics RestConfig `yaml:"metrics" mapstructure:"metrics"`
+
+	// RateLimit configuration
+	RateLimit rpc.RateLimit `yaml:"rateLimit" mapstructure:"rateLimit"`
 }
 
 type RestConfig struct {

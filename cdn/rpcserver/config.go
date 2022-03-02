@@ -37,8 +37,8 @@ type Config struct {
 	// default: 8001
 	DownloadPort int `yaml:"downloadPort" mapstructure:"downloadPort"`
 
-	// RateLimit
-	RateLimit rpc.RateLimit `yaml:"downloadPort" mapstructure:"downloadPort"`
+	// RateLimit is the rate limit configuration for rpc request
+	RateLimit rpc.RateLimit `yaml:"rateLimit" mapstructure:"rateLimit"`
 }
 
 func DefaultConfig() Config {
@@ -69,6 +69,22 @@ func (c Config) Validate() []error {
 	}
 	if c.DownloadPort > 65535 || c.DownloadPort < 1024 {
 		errors = append(errors, fmt.Errorf("rpc server DownloadPort must be between 0 and 65535, inclusive. but is: %d", c.DownloadPort))
+	}
+	if c.RateLimit.Enable {
+		if c.RateLimit.UnaryCallLimit == nil {
+			errors = append(errors, fmt.Errorf("rate limit is enabled but unaryCallLimit is nil"))
+		} else if c.RateLimit.StreamCallLimit == nil {
+			errors = append(errors, fmt.Errorf("rate limit is enabled but streamCallLimit is nil"))
+		} else {
+			if c.RateLimit.UnaryCallLimit.Limit < 0 || c.RateLimit.UnaryCallLimit.Burst < 0 {
+				errors = append(errors, fmt.Errorf("rate limit is enabled but unaryCallLimit token limit or burst is negetive, "+
+					"UnaryCallLimit.Limit: %d, UnaryCallLimit.Burst: %d", c.RateLimit.UnaryCallLimit.Limit, c.RateLimit.UnaryCallLimit.Burst))
+			}
+			if c.RateLimit.StreamCallLimit.Limit < 0 || c.RateLimit.StreamCallLimit.Burst < 0 {
+				errors = append(errors, fmt.Errorf("rate limit is enabled but streamCallLimit token limit or burst is negetive, "+
+					"UnaryCallLimit.Limit: %d, UnaryCallLimit.Burst: %d", c.RateLimit.StreamCallLimit.Limit, c.RateLimit.StreamCallLimit.Burst))
+			}
+		}
 	}
 	return errors
 }
