@@ -627,17 +627,10 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.AppendPieceCost(10)
-				peer.AppendPieceCost(11)
-				peer.AppendPieceCost(12)
-				peer.AppendPieceCost(13)
-				peer.AppendPieceCost(14)
-				peer.AppendPieceCost(9)
-				peer.AppendPieceCost(8)
-				peer.AppendPieceCost(7)
-				peer.AppendPieceCost(6)
-				peer.AppendPieceCost(5)
-				peer.AppendPieceCost(19)
+				for i := 0; i < 30; i++ {
+					peer.AppendPieceCost(int64(i))
+				}
+				peer.AppendPieceCost(50)
 			},
 			expect: func(t *testing.T, isBadNode bool) {
 				assert := assert.New(t)
@@ -650,16 +643,9 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.AppendPieceCost(10)
-				peer.AppendPieceCost(11)
-				peer.AppendPieceCost(12)
-				peer.AppendPieceCost(13)
-				peer.AppendPieceCost(14)
-				peer.AppendPieceCost(9)
-				peer.AppendPieceCost(8)
-				peer.AppendPieceCost(7)
-				peer.AppendPieceCost(6)
-				peer.AppendPieceCost(5)
+				for i := 0; i < 30; i++ {
+					peer.AppendPieceCost(int64(i))
+				}
 				peer.AppendPieceCost(18)
 			},
 			expect: func(t *testing.T, isBadNode bool) {
@@ -673,16 +659,9 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			totalPieceCount: 1,
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.AppendPieceCost(10)
-				peer.AppendPieceCost(11)
-				peer.AppendPieceCost(12)
-				peer.AppendPieceCost(13)
-				peer.AppendPieceCost(14)
-				peer.AppendPieceCost(9)
-				peer.AppendPieceCost(8)
-				peer.AppendPieceCost(7)
-				peer.AppendPieceCost(6)
-				peer.AppendPieceCost(5)
+				for i := 20; i < 50; i++ {
+					peer.AppendPieceCost(int64(i))
+				}
 				peer.AppendPieceCost(0)
 			},
 			expect: func(t *testing.T, isBadNode bool) {

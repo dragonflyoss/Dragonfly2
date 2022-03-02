@@ -59,10 +59,9 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:          iputils.IPv4,
-			Host:        hostutils.FQDNHostname,
-			Port:        8002,
-			ListenLimit: 1000,
+			IP:   iputils.IPv4,
+			Host: hostutils.FQDNHostname,
+			Port: 8002,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            "default",
@@ -122,10 +121,6 @@ func (c *Config) Validate() error {
 
 	if c.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
-	}
-
-	if c.Server.ListenLimit <= 0 {
-		return errors.New("server requires parameter listenLimit")
 	}
 
 	if c.Scheduler.Algorithm == "" {
@@ -220,9 +215,6 @@ type ServerConfig struct {
 
 	// Server port
 	Port int `yaml:"port" mapstructure:"port"`
-
-	// Limit the number of requests
-	ListenLimit int `yaml:"listenLimit" mapstructure:"listenLimit"`
 
 	// Server dynamic config cache directory
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`

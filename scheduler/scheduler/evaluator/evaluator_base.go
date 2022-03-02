@@ -56,9 +56,9 @@ const (
 )
 
 const (
-	// If the number of samples is greater than or equal to 10,
+	// If the number of samples is greater than or equal to 30,
 	// it is close to the normal distribution
-	normalDistributionLen = 10
+	normalDistributionLen = 30
 
 	// When costs len is greater than or equal to 2,
 	// the last cost can be compared and calculated
@@ -110,9 +110,13 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
 func calculateFreeLoadScore(host *resource.Host) float64 {
-	load := host.PeerCount.Load()
-	totalLoad := host.UploadLoadLimit.Load()
-	return float64(totalLoad-int32(load)) / float64(totalLoad)
+	uploadLoadLimit := host.UploadLoadLimit.Load()
+	freeUploadLoad := host.FreeUploadLoad()
+	if uploadLoadLimit > 0 && freeUploadLoad > 0 {
+		return float64(freeUploadLoad) / float64(uploadLoadLimit)
+	}
+
+	return minScore
 }
 
 // calculateHostTypeAffinityScore 0.0~1.0 larger and better
