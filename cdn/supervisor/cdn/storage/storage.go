@@ -153,15 +153,15 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid pieceStyle: %s", fields[5])
 	}
-	downloadCost, err := strconv.ParseUint(fields[6], 10, 32)
+	downloadCost, err := strconv.ParseUint(fields[6], 10, 64)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid download cost: %s", fields[6])
 	}
-	beginDownloadTime, err := strconv.ParseUint(fields[7], 10, 32)
+	beginDownloadTime, err := strconv.ParseUint(fields[7], 10, 64)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid begin download time: %s", fields[7])
 	}
-	endDownloadTime, err := strconv.ParseUint(fields[8], 10, 32)
+	endDownloadTime, err := strconv.ParseUint(fields[8], 10, 64)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid end download time: %s", fields[8])
 	}
