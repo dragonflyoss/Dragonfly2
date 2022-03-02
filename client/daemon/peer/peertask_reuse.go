@@ -37,31 +37,45 @@ import (
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
+// reuse task search logic:
+// A. prefetch feature enabled
+//    for ranged request, 1, find completed subtask, 2, find partial completed parent task
+//    for non-ranged request, just find completed task
+// B. prefetch feature disabled
+//    for ranged request, 1, find completed normal task, 2, find partial completed parent task
+//    for non-ranged request, just find completed task
+
 func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	request *FileTaskRequest) (chan *FileTaskProgress, bool) {
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	var reuse *storage.ReusePeerTask
+	var (
+		reuse      *storage.ReusePeerTask
+		reuseRange *clientutil.Range // the range of parent peer task data to read
+		log        *logger.SugaredLoggerOnWith
+		length     int64
+		err        error
+	)
+
 	if ptm.enabledPrefetch(request.Range) {
 		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
 	} else {
 		reuse = ptm.storageManager.FindCompletedTask(taskID)
 	}
-	var (
-		rg     *clientutil.Range // the range of parent peer task data to read
-		log    *logger.SugaredLoggerOnWith
-		length int64
-		err    error
-	)
+
 	if reuse == nil {
-		rg = request.Range
+		if request.Range == nil {
+			return nil, false
+		}
+		// for ranged request, check the parent task
+		reuseRange = request.Range
 		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
-		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, rg)
+		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, false
 		}
 	}
 
-	if rg == nil {
+	if reuseRange == nil {
 		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseFilePeerTask")
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
 		length = reuse.ContentLength
@@ -70,7 +84,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 			"component", "reuseRangeFilePeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
-		length = rg.Length
+		length = reuseRange.Length
 	}
 
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -80,7 +94,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
-	if rg != nil {
+	if reuseRange != nil {
 		span.SetAttributes(config.AttributeReuseRange.String(request.UrlMeta.Range))
 	}
 	defer span.End()
@@ -89,7 +103,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	span.AddEvent("reuse peer task", trace.WithAttributes(config.AttributePeerID.String(reuse.PeerID)))
 
 	start := time.Now()
-	if rg == nil || request.KeepOriginalOffset {
+	if reuseRange == nil || request.KeepOriginalOffset {
 		storeRequest := &storage.StoreRequest{
 			CommonTaskRequest: storage.CommonTaskRequest{
 				PeerID:      reuse.PeerID,
@@ -103,7 +117,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		}
 		err = ptm.storageManager.Store(ctx, storeRequest)
 	} else {
-		err = ptm.storePartialFile(ctx, request, log, reuse, rg)
+		err = ptm.storePartialFile(ctx, request, log, reuse, reuseRange)
 	}
 
 	if err != nil {
@@ -168,36 +182,41 @@ func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileT
 func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	request *StreamTaskRequest) (io.ReadCloser, map[string]string, bool) {
 	taskID := idgen.TaskID(request.URL, request.URLMeta)
-	var reuse *storage.ReusePeerTask
+	var (
+		reuse      *storage.ReusePeerTask
+		reuseRange *clientutil.Range // the range of parent peer task data to read
+		log        *logger.SugaredLoggerOnWith
+		length     int64
+	)
+
 	if ptm.enabledPrefetch(request.Range) {
 		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
 	} else {
 		reuse = ptm.storageManager.FindCompletedTask(taskID)
 	}
-	var (
-		rg  *clientutil.Range // the range of parent peer task data to read
-		log *logger.SugaredLoggerOnWith
-	)
+
 	if reuse == nil {
-		// for ranged request, check the parent task
 		if request.Range == nil {
 			return nil, nil, false
 		}
-		rg = request.Range
+		// for ranged request, check the parent task
+		reuseRange = request.Range
 		taskID = idgen.ParentTaskID(request.URL, request.URLMeta)
-		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, rg)
+		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
 		if reuse == nil {
 			return nil, nil, false
 		}
 	}
 
-	if rg == nil {
+	if reuseRange == nil {
 		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseStreamPeerTask")
 		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
+		length = reuse.ContentLength
 	} else {
 		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseRangeStreamPeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.URLMeta.Range)
+		length = reuseRange.Length
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -207,13 +226,13 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerID.String(request.PeerID))
 	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
 	span.SetAttributes(semconv.HTTPURLKey.String(request.URL))
-	if rg != nil {
+	if reuseRange != nil {
 		span.SetAttributes(config.AttributeReuseRange.String(request.URLMeta.Range))
 	}
 	defer span.End()
 
 	rc, err := ptm.storageManager.ReadAllPieces(ctx,
-		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: rg})
+		&storage.ReadAllPiecesRequest{PeerTaskMetadata: reuse.PeerTaskMetadata, Range: reuseRange})
 	if err != nil {
 		log.Errorf("read pieces error when reuse peer task: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
@@ -224,12 +243,20 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	attr := map[string]string{}
 	attr[config.HeaderDragonflyTask] = taskID
 	attr[config.HeaderDragonflyPeer] = request.PeerID
-	if rg != nil {
+	attr[headers.ContentLength] = fmt.Sprintf("%d", length)
+
+	if reuseRange != nil {
 		attr[config.HeaderDragonflyRange] = request.URLMeta.Range
-		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+rg.Length-1, reuse.ContentLength)
-		attr[headers.ContentLength] = fmt.Sprintf("%d", rg.Length)
-	} else {
-		attr[headers.ContentLength] = fmt.Sprintf("%d", reuse.ContentLength)
+		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/%d", reuseRange.Start,
+			reuseRange.Start+reuseRange.Length-1, reuse.ContentLength)
+	} else if request.Range != nil {
+		// the length is from reuse task, ensure it equal with request
+		if length != request.Range.Length {
+			log.Errorf("target task length %d did not match range length %d", length, request.Range.Length)
+			return nil, nil, false
+		}
+		attr[headers.ContentRange] = fmt.Sprintf("bytes %d-%d/*", request.Range.Start,
+			request.Range.Start+request.Range.Length-1)
 	}
 
 	// TODO record time when file closed, need add a type to implement Close and WriteTo
