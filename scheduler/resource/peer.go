@@ -258,10 +258,10 @@ func (p *Peer) DeleteChild(key string) {
 	if !ok {
 		return
 	}
-
 	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
 		p.ChildCount.Dec()
 	}
+
 	child.Parent = &atomic.Value{}
 }
 
@@ -282,7 +282,7 @@ func (p *Peer) StoreParent(parent *Peer) {
 
 	p.Parent.Store(parent)
 	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
-		p.ChildCount.Inc()
+		parent.ChildCount.Inc()
 	}
 }
 
@@ -295,10 +295,10 @@ func (p *Peer) DeleteParent() {
 	if !ok {
 		return
 	}
-
 	p.Parent = &atomic.Value{}
+
 	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
-		p.ChildCount.Dec()
+		parent.ChildCount.Dec()
 	}
 }
 
@@ -325,7 +325,7 @@ func (p *Peer) Depth() int {
 		}
 
 		// Prevent traversal tree from infinite loop
-		if p == parent {
+		if p.ID == parent.ID {
 			p.Log.Info("tree structure produces an infinite loop")
 			break
 		}
@@ -354,9 +354,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 		if !ok {
 			return false
 		}
+
 		if parent.ID == ancestor.ID {
 			return true
 		}
+
 		node = parent
 	}
 
@@ -365,17 +367,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 
 // AppendPieceCost append piece cost to costs slice
 func (p *Peer) AppendPieceCost(cost int64) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	p.pieceCosts = append(p.pieceCosts, cost)
 }
 
 // PieceCosts return piece costs slice
 func (p *Peer) PieceCosts() []int64 {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	return p.pieceCosts
 }
 

@@ -808,7 +808,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			},
 		},
 		{
-			name: "find parent and fetch filterParentCount from manager dynconfig",
+			name: "find parent and fetch filterParentLimit from manager dynconfig",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
@@ -821,7 +821,7 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].Pieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
-					FilterParentCount: 1,
+					FilterParentLimit: 1,
 				}, true).Times(1)
 			},
 			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
