@@ -150,9 +150,9 @@ loop:
 				pieceNum:          uint32(curPieceNum),
 				pieceSize:         uint32(seedTask.PieceSize),
 				pieceContent:      bb,
-				downloadCost:      uint64(end.Sub(start).Milliseconds()),
-				beginDownloadTime: uint64(start.UnixMilli()),
-				endDownloadTime:   uint64(end.UnixMilli()),
+				downloadCost:      uint64(end.Sub(start).Nanoseconds()),
+				beginDownloadTime: uint64(start.UnixNano()),
+				endDownloadTime:   uint64(end.UnixNano()),
 			}
 			curPieceNum++
 			if n < int64(seedTask.PieceSize) {
