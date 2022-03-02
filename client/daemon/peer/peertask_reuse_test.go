@@ -31,10 +31,9 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	ms "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-
-	ms "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 )
 
 func TestReuseFilePeerTask(t *testing.T) {
