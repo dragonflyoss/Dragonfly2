@@ -225,9 +225,9 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		// Once a subConn enters TRANSIENT_FAILURE, ignore subsequent
 		// CONNECTING or Idle transitions to prevent the aggregated state from being
 		// always CONNECTING when many backends exist but are all down.
-		if s == connectivity.Idle {
-			sc.Connect()
-		}
+		// if s == connectivity.Idle {
+		//	sc.Connect()
+		// }
 		return
 	}
 	b.scStates[sc] = s
@@ -241,6 +241,10 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		b.connErr = state.ConnectionError
 	}
 
+	// do not update cc if s is connecting
+	if s == connectivity.Connecting {
+		return
+	}
 	b.state = b.csEvltr.RecordTransition(oldS, s)
 
 	// Regenerate picker when one of the following happens:
@@ -251,7 +255,6 @@ func (b *d7yBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.Sub
 		TransientFailure) || b.state == connectivity.Idle {
 		b.regeneratePicker()
 	}
-
 	b.cc.UpdateState(balancer.State{ConnectivityState: b.state, Picker: b.picker})
 }
 

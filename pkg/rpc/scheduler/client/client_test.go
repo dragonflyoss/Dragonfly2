@@ -719,7 +719,6 @@ func TestRegisterRateLimit(t *testing.T) {
 		t.Fatalf("failed to start servers: %v", err)
 	}
 	defer test.cleanup()
-
 	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}})
 	if err != nil {
 		t.Fatalf("failed to get scheduler client: %v", err)
