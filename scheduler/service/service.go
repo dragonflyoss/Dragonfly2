@@ -310,8 +310,8 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		return status.Errorf(codes.Code(base.Code_SchedPeerNotFound), "peer %s not found", req.PeerId)
 	}
 
-	peer.Log.Infof("report peer result request: %#v", req)
 	if !req.Success {
+		peer.Log.Errorf("report peer result error: %#v", req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			s.handleTaskFail(ctx, peer.Task)
 		}
@@ -319,6 +319,7 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		return nil
 	}
 
+	peer.Log.Infof("report peer result request: %#v", req)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		s.handleTaskSuccess(ctx, peer.Task, req)
 	}
@@ -350,6 +351,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
 
+		child.Log.Infof("schedule parent because of parent peer %s is leaving", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, blocklist)
 		return true
 	})
@@ -464,6 +466,7 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		// to help peer to schedule the parent node
 		blocklist := set.NewSafeSet()
 		blocklist.Add(peer.ID)
+		peer.Log.Infof("schedule parent because of peer receive beginOfPiece")
 		s.scheduler.ScheduleParent(ctx, peer, blocklist)
 	default:
 		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
@@ -497,7 +500,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// If parent can not found, reschedule parent.
 	parent, ok := s.resource.PeerManager().Load(piece.DstPid)
 	if !ok {
-		peer.Log.Errorf("can not found parent %s and reschedule", piece.DstPid)
+		peer.Log.Errorf("schedule parent because of peer can not found parent %s", piece.DstPid)
 		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 		return
 	}
@@ -505,7 +508,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node
 	switch piece.Code {
-	case base.Code_ClientPieceDownloadFail, base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
+	case base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %v", err)
 			break
@@ -540,6 +543,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	blocklist := set.NewSafeSet()
 	blocklist.Add(parent.ID)
 
+	peer.Log.Infof("schedule parent because of peer receive failed piece")
 	s.scheduler.ScheduleParent(ctx, peer, blocklist)
 }
 
@@ -580,6 +584,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 			return true
 		}
 
+		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, blocklist)
 		return true
 	})

@@ -74,7 +74,7 @@ func (ptm *peerTaskManager) newStreamTask(
 
 	// prefetch parent request
 	var parent *peerTaskConductor
-	if ptm.enablePrefetch && rg != nil {
+	if ptm.enabledPrefetch(rg) {
 		parent = ptm.prefetchParentTask(request, "")
 	}
 

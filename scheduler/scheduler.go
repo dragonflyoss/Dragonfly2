@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -203,11 +202,10 @@ func (s *Server) Serve() error {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
 	defer listener.Close()
-	limitListener := netutil.LimitListener(listener, s.config.Server.ListenLimit)
 
 	// Started GRPC server
-	logger.Infof("started grpc server at %s://%s with max connection %d", limitListener.Addr().Network(), limitListener.Addr().String(), s.config.Server.ListenLimit)
-	if err := s.grpcServer.Serve(limitListener); err != nil {
+	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
+	if err := s.grpcServer.Serve(listener); err != nil {
 		logger.Errorf("stoped grpc server: %v", err)
 		return err
 	}
