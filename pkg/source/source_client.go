@@ -33,7 +33,7 @@ import (
 
 var (
 	// Clinet back-to-source download timeout
-	contextTimeout = 30 * time.Second
+	contextTimeout = 1 * time.Minute
 )
 
 var (
