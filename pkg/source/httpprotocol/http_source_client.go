@@ -17,6 +17,7 @@
 package httpprotocol
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -53,12 +54,19 @@ func init() {
 		}
 	}
 
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.TLSClientConfig.InsecureSkipVerify = true
-	transport.DialContext = (&net.Dialer{
-		Timeout:   3 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext
+	transport := &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		IdleConnTimeout:       90 * time.Second,
+		ResponseHeaderTimeout: 5 * time.Second,
+		ExpectContinueTimeout: 2 * time.Second,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
 
 	if proxy != nil {
 		transport.Proxy = http.ProxyURL(proxy)
