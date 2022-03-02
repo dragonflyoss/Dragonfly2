@@ -90,9 +90,6 @@ const (
 	// Peer downloaded failed
 	PeerEventDownloadFailed = "DownloadFailed"
 
-	// Peer back to initial pending state
-	PeerEventRestart = "Restart"
-
 	// Peer leaves
 	PeerEventLeave = "Leave"
 )
@@ -173,7 +170,6 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
-			{Name: PeerEventRestart, Src: []string{PeerStateSucceeded}, Dst: PeerStatePending},
 			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
@@ -195,6 +191,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.Task.BackToSourcePeers.Add(p)
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -212,14 +209,12 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.UpdateAt.Store(time.Now())
-				p.Log.Infof("peer state is %s", e.FSM.Current())
-			},
-			PeerEventRestart: func(e *fsm.Event) {
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
+				p.DeleteParent()
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
