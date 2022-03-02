@@ -2,7 +2,6 @@ server:
   ip: 127.0.0.1
   host: foo
   port: 8002
-  listenLimit: 1000
   cacheDir: foo
   logDir: bar
 
