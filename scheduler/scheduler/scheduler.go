@@ -103,8 +103,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling %d times and back-to-source limit %d times, cdn peer is %#v, return code %d",
-				n, s.config.RetryBackSourceLimit, cdnPeer, base.Code_SchedNeedBackSource)
+			peer.Log.Infof("peer scheduling %d times and cdn peer is %#v, peer downloads back-to-source %d",
+				n, cdnPeer, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -122,7 +122,6 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 			// If the peer downloads back-to-source, its parent needs to be deleted
 			peer.DeleteParent()
-			peer.Task.Log.Info("peer back to source successfully")
 			return
 		}
 
@@ -139,7 +138,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
+			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
 			return
 		}
 
@@ -244,45 +243,45 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		if blocklist.Contains(parent.ID) {
-			peer.Log.Infof("parent %s is not selected because it is in blocklist", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is in blocklist", parent.ID)
 			return true
 		}
 
 		if parent.ID == peer.ID {
-			peer.Log.Info("parent is not selected because it is same")
+			peer.Log.Debug("parent is not selected because it is same")
 			return true
 		}
 
 		if s.evaluator.IsBadNode(parent) {
-			peer.Log.Infof("parent %s is not selected because it is bad node", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is bad node", parent.ID)
 			return true
 		}
 
 		peerChildCount := peer.ChildCount.Load()
 		parentDepth := parent.Depth()
 		if peerChildCount > 0 && parentDepth > defaultAvailableDepth {
-			peer.Log.Infof("peer has %d children and parent %s depth is %d", peerChildCount, parent.ID, parentDepth)
+			peer.Log.Debugf("peer has %d children and parent %s depth is %d", peerChildCount, parent.ID, parentDepth)
 			return true
 		}
 
 		peerDepth := peer.Depth()
 		if parentDepth+peerDepth > defaultDepthLimit {
-			peer.Log.Infof("exceeds the %d depth limit of the tree, peer depth is %d, parent %s is %d", defaultDepthLimit, peerDepth, parent.ID, parentDepth)
+			peer.Log.Debugf("exceeds the %d depth limit of the tree, peer depth is %d, parent %s is %d", defaultDepthLimit, peerDepth, parent.ID, parentDepth)
 			return true
 		}
 
 		if parent.IsDescendant(peer) {
-			peer.Log.Infof("parent %s is not selected because it is descendant", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is descendant", parent.ID)
 			return true
 		}
 
 		if parent.IsAncestor(peer) {
-			peer.Log.Infof("parent %s is not selected because it is ancestor", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is ancestor", parent.ID)
 			return true
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Infof("parent %s is not selected because its free upload is empty", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty", parent.ID)
 			return true
 		}
 
