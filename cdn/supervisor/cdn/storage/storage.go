@@ -112,14 +112,17 @@ type PieceMetaRecord struct {
 	// 0: PlainUnspecified
 	PieceStyle int32 `json:"pieceStyle"`
 	// total time(millisecond) consumed
-	DownloadCost uint64 `json:"download_cost"`
+	DownloadCost      uint64 `json:"downloadCost"`
+	BeginDownloadTime uint64 `json:"beginDownloadTime"`
+	EndDownloadTime   uint64 `json:"endDownloadTime"`
 }
 
 const fieldSeparator = ":"
 
 func (record PieceMetaRecord) String() string {
 	return fmt.Sprint(record.PieceNum, fieldSeparator, record.PieceLen, fieldSeparator, record.Md5, fieldSeparator, record.Range, fieldSeparator,
-		record.OriginRange, fieldSeparator, record.PieceStyle, fieldSeparator, record.DownloadCost)
+		record.OriginRange, fieldSeparator, record.PieceStyle, fieldSeparator, record.DownloadCost, fieldSeparator, record.BeginDownloadTime, fieldSeparator,
+		record.EndDownloadTime)
 }
 
 func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
@@ -154,14 +157,24 @@ func ParsePieceMetaRecord(value string) (record *PieceMetaRecord, err error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid download cost: %s", fields[6])
 	}
+	beginDownloadTime, err := strconv.ParseUint(fields[7], 10, 32)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid begin download time: %s", fields[7])
+	}
+	endDownloadTime, err := strconv.ParseUint(fields[8], 10, 32)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid end download time: %s", fields[8])
+	}
 	return &PieceMetaRecord{
-		PieceNum:     uint32(pieceNum),
-		PieceLen:     uint32(pieceLen),
-		Md5:          md5,
-		Range:        pieceRange,
-		OriginRange:  originRange,
-		PieceStyle:   int32(pieceStyle),
-		DownloadCost: downloadCost,
+		PieceNum:          uint32(pieceNum),
+		PieceLen:          uint32(pieceLen),
+		Md5:               md5,
+		Range:             pieceRange,
+		OriginRange:       originRange,
+		PieceStyle:        int32(pieceStyle),
+		DownloadCost:      downloadCost,
+		BeginDownloadTime: beginDownloadTime,
+		EndDownloadTime:   endDownloadTime,
 	}, nil
 }
 

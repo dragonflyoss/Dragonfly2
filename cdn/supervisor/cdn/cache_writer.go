@@ -40,11 +40,13 @@ import (
 )
 
 type piece struct {
-	taskID       string
-	pieceNum     uint32
-	pieceSize    uint32
-	pieceContent *bytes.Buffer
-	downloadCost uint64
+	taskID            string
+	pieceNum          uint32
+	pieceSize         uint32
+	pieceContent      *bytes.Buffer
+	downloadCost      uint64
+	beginDownloadTime uint64
+	endDownloadTime   uint64
 }
 
 type downloadMetadata struct {
@@ -142,12 +144,15 @@ loop:
 				break loop
 			}
 			backSourceLength += n
+			end := time.Now()
 			jobCh <- &piece{
-				taskID:       seedTask.ID,
-				pieceNum:     uint32(curPieceNum),
-				pieceSize:    uint32(seedTask.PieceSize),
-				pieceContent: bb,
-				downloadCost: uint64(time.Now().Sub(start).Milliseconds()),
+				taskID:            seedTask.ID,
+				pieceNum:          uint32(curPieceNum),
+				pieceSize:         uint32(seedTask.PieceSize),
+				pieceContent:      bb,
+				downloadCost:      uint64(end.Sub(start).Milliseconds()),
+				beginDownloadTime: uint64(start.UnixMilli()),
+				endDownloadTime:   uint64(end.UnixMilli()),
 			}
 			curPieceNum++
 			if n < int64(seedTask.PieceSize) {
@@ -200,8 +205,10 @@ func (cw *cacheWriter) writerPool(ctx context.Context, g *errgroup.Group, routin
 							StartIndex: start,
 							EndIndex:   end,
 						},
-						PieceStyle:   pieceStyle,
-						DownloadCost: p.downloadCost,
+						PieceStyle:        pieceStyle,
+						DownloadCost:      p.downloadCost,
+						BeginDownloadTime: p.beginDownloadTime,
+						EndDownloadTime:   p.endDownloadTime,
 					}
 					// write piece meta to storage
 					if err = cw.metadataManager.appendPieceMetadata(p.taskID, pieceRecord); err != nil {

@@ -93,10 +93,8 @@ message PieceResult{
   // piece info
   base.PieceInfo piece_info = 4;
   // begin time for the piece downloading
-  // deprecated: Use base.PieceInfo.download_cost instead.
   uint64 begin_time = 5;
   // end time for the piece downloading
-  // deprecated: Use base.PieceInfo.download_cost instead.
   uint64 end_time = 6;
   // whether the piece downloading is successfully
   bool success = 7;

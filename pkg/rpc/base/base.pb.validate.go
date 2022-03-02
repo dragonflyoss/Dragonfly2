@@ -34,24 +34,61 @@ var (
 )
 
 // Validate checks the field values on GrpcDfError with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *GrpcDfError) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GrpcDfError with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in GrpcDfErrorMultiError, or
+// nil if none found.
+func (m *GrpcDfError) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GrpcDfError) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if _, ok := Code_name[int32(m.GetCode())]; !ok {
-		return GrpcDfErrorValidationError{
+		err := GrpcDfErrorValidationError{
 			field:  "Code",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for Message
 
+	if len(errors) > 0 {
+		return GrpcDfErrorMultiError(errors)
+	}
 	return nil
 }
+
+// GrpcDfErrorMultiError is an error wrapping multiple validation errors
+// returned by GrpcDfError.ValidateAll() if the designated constraints aren't met.
+type GrpcDfErrorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GrpcDfErrorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GrpcDfErrorMultiError) AllErrors() []error { return m }
 
 // GrpcDfErrorValidationError is the validation error returned by
 // GrpcDfError.Validate if the designated constraints aren't met.
@@ -108,19 +145,37 @@ var _ interface {
 } = GrpcDfErrorValidationError{}
 
 // Validate checks the field values on UrlMeta with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *UrlMeta) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on UrlMeta with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in UrlMetaMultiError, or nil if none found.
+func (m *UrlMeta) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *UrlMeta) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if m.GetDigest() != "" {
 
 		if !_UrlMeta_Digest_Pattern.MatchString(m.GetDigest()) {
-			return UrlMetaValidationError{
+			err := UrlMetaValidationError{
 				field:  "Digest",
 				reason: "value does not match regex pattern \"^(md5)|(sha256):[A-Fa-f0-9]+$\"",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -130,10 +185,14 @@ func (m *UrlMeta) Validate() error {
 	if m.GetRange() != "" {
 
 		if !_UrlMeta_Range_Pattern.MatchString(m.GetRange()) {
-			return UrlMetaValidationError{
+			err := UrlMetaValidationError{
 				field:  "Range",
 				reason: "value does not match regex pattern \"^[0-9]+-[0-9]+$\"",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
@@ -142,8 +201,27 @@ func (m *UrlMeta) Validate() error {
 
 	// no validation rules for Header
 
+	if len(errors) > 0 {
+		return UrlMetaMultiError(errors)
+	}
 	return nil
 }
+
+// UrlMetaMultiError is an error wrapping multiple validation errors returned
+// by UrlMeta.ValidateAll() if the designated constraints aren't met.
+type UrlMetaMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m UrlMetaMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m UrlMetaMultiError) AllErrors() []error { return m }
 
 // UrlMetaValidationError is the validation error returned by UrlMeta.Validate
 // if the designated constraints aren't met.
@@ -204,35 +282,81 @@ var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+$"
 var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+-[0-9]+$")
 
 // Validate checks the field values on HostLoad with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *HostLoad) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HostLoad with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in HostLoadMultiError, or nil
+// if none found.
+func (m *HostLoad) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HostLoad) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if val := m.GetCpuRatio(); val < 0 || val > 1 {
-		return HostLoadValidationError{
+		err := HostLoadValidationError{
 			field:  "CpuRatio",
 			reason: "value must be inside range [0, 1]",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetMemRatio(); val < 0 || val > 1 {
-		return HostLoadValidationError{
+		err := HostLoadValidationError{
 			field:  "MemRatio",
 			reason: "value must be inside range [0, 1]",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetDiskRatio(); val < 0 || val > 1 {
-		return HostLoadValidationError{
+		err := HostLoadValidationError{
 			field:  "DiskRatio",
 			reason: "value must be inside range [0, 1]",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return HostLoadMultiError(errors)
+	}
 	return nil
 }
+
+// HostLoadMultiError is an error wrapping multiple validation errors returned
+// by HostLoad.ValidateAll() if the designated constraints aren't met.
+type HostLoadMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HostLoadMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HostLoadMultiError) AllErrors() []error { return m }
 
 // HostLoadValidationError is the validation error returned by
 // HostLoad.Validate if the designated constraints aren't met.
@@ -289,50 +413,104 @@ var _ interface {
 } = HostLoadValidationError{}
 
 // Validate checks the field values on PieceTaskRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *PieceTaskRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PieceTaskRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PieceTaskRequestMultiError, or nil if none found.
+func (m *PieceTaskRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PieceTaskRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PieceTaskRequestValidationError{
+		err := PieceTaskRequestValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
-		return PieceTaskRequestValidationError{
+		err := PieceTaskRequestValidationError{
 			field:  "SrcPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
-		return PieceTaskRequestValidationError{
+		err := PieceTaskRequestValidationError{
 			field:  "DstPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetStartNum() < 0 {
-		return PieceTaskRequestValidationError{
+		err := PieceTaskRequestValidationError{
 			field:  "StartNum",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetLimit() < 0 {
-		return PieceTaskRequestValidationError{
+		err := PieceTaskRequestValidationError{
 			field:  "Limit",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
+	if len(errors) > 0 {
+		return PieceTaskRequestMultiError(errors)
+	}
 	return nil
 }
+
+// PieceTaskRequestMultiError is an error wrapping multiple validation errors
+// returned by PieceTaskRequest.ValidateAll() if the designated constraints
+// aren't met.
+type PieceTaskRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PieceTaskRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PieceTaskRequestMultiError) AllErrors() []error { return m }
 
 // PieceTaskRequestValidationError is the validation error returned by
 // PieceTaskRequest.Validate if the designated constraints aren't met.
@@ -389,50 +567,111 @@ var _ interface {
 } = PieceTaskRequestValidationError{}
 
 // Validate checks the field values on PieceInfo with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PieceInfo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PieceInfo with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PieceInfoMultiError, or nil
+// if none found.
+func (m *PieceInfo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PieceInfo) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	// no validation rules for PieceNum
 
 	if m.GetRangeStart() < 0 {
-		return PieceInfoValidationError{
+		err := PieceInfoValidationError{
 			field:  "RangeStart",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetRangeSize() < 0 {
-		return PieceInfoValidationError{
+		err := PieceInfoValidationError{
 			field:  "RangeSize",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetPieceMd5() != "" {
 
 		if !_PieceInfo_PieceMd5_Pattern.MatchString(m.GetPieceMd5()) {
-			return PieceInfoValidationError{
+			err := PieceInfoValidationError{
 				field:  "PieceMd5",
 				reason: "value does not match regex pattern \"([a-f\\\\d]{32}|[A-F\\\\d]{32}|[a-f\\\\d]{16}|[A-F\\\\d]{16})\"",
 			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
 		}
 
 	}
 
 	if m.GetPieceOffset() < 0 {
-		return PieceInfoValidationError{
+		err := PieceInfoValidationError{
 			field:  "PieceOffset",
 			reason: "value must be greater than or equal to 0",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for PieceStyle
 
+	if m.GetDownloadCost() < 0 {
+		err := PieceInfoValidationError{
+			field:  "DownloadCost",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return PieceInfoMultiError(errors)
+	}
 	return nil
 }
+
+// PieceInfoMultiError is an error wrapping multiple validation errors returned
+// by PieceInfo.ValidateAll() if the designated constraints aren't met.
+type PieceInfoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PieceInfoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PieceInfoMultiError) AllErrors() []error { return m }
 
 // PieceInfoValidationError is the validation error returned by
 // PieceInfo.Validate if the designated constraints aren't met.
@@ -491,38 +730,83 @@ var _ interface {
 var _PieceInfo_PieceMd5_Pattern = regexp.MustCompile("([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})")
 
 // Validate checks the field values on PiecePacket with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PiecePacket) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PiecePacket with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PiecePacketMultiError, or
+// nil if none found.
+func (m *PiecePacket) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PiecePacket) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PiecePacketValidationError{
+		err := PiecePacketValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
-		return PiecePacketValidationError{
+		err := PiecePacketValidationError{
 			field:  "DstPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDstAddr()) < 1 {
-		return PiecePacketValidationError{
+		err := PiecePacketValidationError{
 			field:  "DstAddr",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	for idx, item := range m.GetPieceInfos() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, PiecePacketValidationError{
+						field:  fmt.Sprintf("PieceInfos[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, PiecePacketValidationError{
+						field:  fmt.Sprintf("PieceInfos[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PiecePacketValidationError{
 					field:  fmt.Sprintf("PieceInfos[%v]", idx),
@@ -540,8 +824,27 @@ func (m *PiecePacket) Validate() error {
 
 	// no validation rules for PieceMd5Sign
 
+	if len(errors) > 0 {
+		return PiecePacketMultiError(errors)
+	}
 	return nil
 }
+
+// PiecePacketMultiError is an error wrapping multiple validation errors
+// returned by PiecePacket.ValidateAll() if the designated constraints aren't met.
+type PiecePacketMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PiecePacketMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PiecePacketMultiError) AllErrors() []error { return m }
 
 // PiecePacketValidationError is the validation error returned by
 // PiecePacket.Validate if the designated constraints aren't met.

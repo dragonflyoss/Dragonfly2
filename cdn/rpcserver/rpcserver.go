@@ -117,6 +117,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			Done:            false,
 			ContentLength:   registeredTask.SourceFileLength,
 			TotalPieceCount: registeredTask.TotalPieceCount,
+			BeginTime:       piece.BeginDownloadTime,
+			EndTime:         piece.EndDownloadTime,
 		}
 		psc <- pieceSeed
 		jsonPiece, err := json.Marshal(pieceSeed)
