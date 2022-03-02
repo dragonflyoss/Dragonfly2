@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
@@ -36,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
