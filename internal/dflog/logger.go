@@ -18,6 +18,8 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -87,7 +89,12 @@ func SetDownloadLogger(log *zap.Logger) {
 
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
-	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
+	var v int
+	vLevel := os.Getenv("GRPC_GO_LOG_VERBOSITY_LEVEL")
+	if vl, err := strconv.Atoi(vLevel); err == nil {
+		v = vl
+	}
+	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger, v})
 }
 
 func SetJobLogger(log *zap.SugaredLogger) {
@@ -204,6 +211,7 @@ func Fatal(args ...interface{}) {
 
 type zapGrpc struct {
 	*zap.SugaredLogger
+	verbose int
 }
 
 func (z *zapGrpc) Infoln(args ...interface{}) {
@@ -231,5 +239,5 @@ func (z *zapGrpc) Fatalln(args ...interface{}) {
 }
 
 func (z *zapGrpc) V(level int) bool {
-	return level > 0
+	return level <= z.verbose
 }
