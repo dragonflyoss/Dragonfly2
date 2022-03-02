@@ -7,10 +7,9 @@ data:
   dfget.yaml: |-
     aliveTime: 0s
     gcInterval: 1m0s
-    keepStorage: false
-    workDir: /root/.dragonfly/dfget-daemon/
+    keepStorage: true
     verbose: true
-    pprof-port: 0
+    pprof-port: 9999
     scheduler:
       manager:
         enable: true
@@ -28,6 +27,7 @@ data:
       netTopology: ""
       securityDomain: ""
     download:
+      prefetch: true
       calculateDigest: true
       downloadGRPC:
         security:

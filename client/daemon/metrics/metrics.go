@@ -41,6 +41,13 @@ var (
 		Help:      "Counter of the total proxy request via Dragonfly.",
 	})
 
+	ProxyRequestNotViaDragonflyCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "proxy_request_not_via_dragonfly_total",
+		Help:      "Counter of the total proxy request not via Dragonfly.",
+	})
+
 	ProxyRequestRunningCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.DfdaemonMetricsName,
@@ -69,11 +76,46 @@ var (
 		Help:      "Counter of the total failed peer tasks.",
 	})
 
-	PeerTaskReuseCount = promauto.NewCounter(prometheus.CounterOpts{
+	PieceTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.DfdaemonMetricsName,
-		Name:      "peer_task_reuse_total",
-		Help:      "Counter of the total reused peer tasks.",
+		Name:      "piece_task_total",
+		Help:      "Counter of the total failed piece tasks.",
+	})
+
+	PieceTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "piece_task_failed_total",
+		Help:      "Counter of the total failed piece tasks.",
+	})
+
+	FileTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "file_task_total",
+		Help:      "Counter of the total file tasks.",
+	})
+
+	StreamTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "stream_task_total",
+		Help:      "Counter of the total stream tasks.",
+	})
+
+	PeerTaskCacheHitCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "peer_task_cache_hit_total",
+		Help:      "Counter of the total cache hit peer tasks.",
+	})
+
+	PrefetchTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "prefetch_task_total",
+		Help:      "Counter of the total prefetched tasks.",
 	})
 )
 

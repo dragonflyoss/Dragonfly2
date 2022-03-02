@@ -3,36 +3,61 @@ scheduler:
   tag: latest
   replicas: 3
   extraVolumeMounts:
-    - name: logs
-      mountPath: "/var/log/dragonfly"
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
   extraVolumes:
-    - name: logs
-      hostPath:
-        path: /tmp/artifact
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
 
 cdn:
   image: d7yio/cdn
   tag: latest
   replicas: 3
   extraVolumeMounts:
-    - name: logs
-      mountPath: "/var/log/dragonfly"
+  - name: logs
+    mountPath: "/var/log/nginx"
+    subPath: nginx
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
+  - name: artifact
+    mountPath: /tmp/artifact
   extraVolumes:
-    - name: logs
-      hostPath:
-        path: /tmp/artifact
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
 
 dfdaemon:
   image: d7yio/dfdaemon
   tag: latest
   extraVolumeMounts:
-    - name: logs
-      mountPath: "/var/log/dragonfly"
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
   extraVolumes:
-    - name: logs
-      hostPath:
-        path: /tmp/artifact
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
   config:
+    verbose: true
+    pprofPort: 9999
+    metrics: 127.0.0.1:8888
+    download:
+      prefetch: true
     scheduler:
       disableAutoBackSource: true
     proxy:
@@ -56,9 +81,15 @@ manager:
   tag: latest
   replicas: 3
   extraVolumeMounts:
-    - name: logs
-      mountPath: "/var/log/dragonfly"
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
   extraVolumes:
-    - name: logs
-      hostPath:
-        path: /tmp/artifact
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true

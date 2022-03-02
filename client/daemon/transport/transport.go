@@ -17,17 +17,24 @@
 package transport
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel/propagation"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -42,7 +49,8 @@ var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 var (
 	// layerReg the regex to determine if it is an image download
-	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
+	layerReg     = regexp.MustCompile("^.+/blobs/sha256.*$")
+	traceContext = propagation.TraceContext{}
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -144,20 +152,31 @@ func New(options ...Option) (http.RoundTripper, error) {
 }
 
 // RoundTrip only process first redirect at present
-// TODO: fix resource release
 func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
+
+		ctx := req.Context()
+		if req.URL.Scheme == "https" {
+			// for https, the trace info is in request header
+			ctx = traceContext.Extract(req.Context(), propagation.HeaderCarrier(req.Header))
+		}
+
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
 		metrics.ProxyRequestViaDragonflyCount.Add(1)
-		resp, err = rt.download(req)
+		resp, err = rt.download(ctx, req)
 	} else {
 		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
 		req.Host = req.URL.Host
 		req.Header.Set("Host", req.Host)
+		metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 		resp, err = rt.baseRoundTripper.RoundTrip(req)
+	}
+
+	if err != nil {
+		return resp, err
 	}
 
 	if resp.ContentLength > 0 {
@@ -178,7 +197,8 @@ func NeedUseDragonfly(req *http.Request) bool {
 }
 
 // download uses dragonfly to download.
-func (rt *transport) download(req *http.Request) (*http.Response, error) {
+// the ctx has span info from transport, did not use the ctx from request
+func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
 	peerID := idgen.PeerID(rt.peerHost.Ip)
 	log := logger.With("peer", peerID, "component", "transport")
@@ -186,11 +206,23 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
+	var rg *clientutil.Range
 
 	// Set meta range's value
-	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta.Digest = ""
-		meta.Range = rg
+	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
+		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		if err != nil {
+			return badRequest(req, err.Error())
+		}
+		if len(rgs) > 1 {
+			// TODO support multiple range request
+			return notImplemented(req, "multiple range is not supported")
+		} else if len(rgs) == 0 {
+			return requestedRangeNotSatisfiable(req, "zero range is not supported")
+		}
+		rg = &rgs[0]
+		// range in dragonfly is without "bytes="
+		meta.Range = strings.TrimLeft(rangeHeader, "bytes=")
 	}
 
 	// Pick header's parameters
@@ -204,15 +236,13 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 	meta.Tag = tag
 	meta.Filter = filter
 
-	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
-		req.Context(),
-		&scheduler.PeerTaskRequest{
-			Url:         url,
-			UrlMeta:     meta,
-			PeerId:      peerID,
-			PeerHost:    rt.peerHost,
-			HostLoad:    nil,
-			IsMigrating: false,
+	body, attr, err := rt.peerTaskManager.StartStreamTask(
+		ctx,
+		&peer.StreamTaskRequest{
+			URL:     url,
+			URLMeta: meta,
+			Range:   rg,
+			PeerID:  peerID,
 		},
 	)
 	if err != nil {
@@ -235,8 +265,14 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		}
 	}
 
+	var status int
+	if meta.Range == "" {
+		status = http.StatusOK
+	} else {
+		status = http.StatusPartialContent
+	}
 	resp := &http.Response{
-		StatusCode:    http.StatusOK,
+		StatusCode:    status,
 		Body:          body,
 		Header:        hdr,
 		ContentLength: contentLength,
@@ -291,6 +327,8 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 // obsoleted RFC 2616 (section 13.5.1) and are used for backward
 // compatibility.
 // copy from net/http/httputil/reverseproxy.go
+
+// dragonfly need generate task id with header, need to remove some other headers
 var hopHeaders = []string{
 	"Connection",
 	"Proxy-Connection", // non-standard but still sent by libcurl and rejected by e.g. google
@@ -301,6 +339,11 @@ var hopHeaders = []string{
 	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
 	"Transfer-Encoding",
 	"Upgrade",
+
+	// remove by dragonfly
+	"Accept",
+	"User-Agent",
+	"X-Forwarded-For",
 }
 
 // delHopHeaders delete hop-by-hop headers.
@@ -308,4 +351,33 @@ func delHopHeaders(header http.Header) {
 	for _, h := range hopHeaders {
 		header.Del(h)
 	}
+	// remove correlation with trace header
+	for _, h := range traceContext.Fields() {
+		header.Del(h)
+	}
+}
+
+func httpResponse(req *http.Request, status int, body string) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode:    status,
+		Body:          io.NopCloser(bytes.NewBufferString(body)),
+		ContentLength: int64(len(body)),
+
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
+	}
+	return resp, nil
+}
+
+func badRequest(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusBadRequest, body)
+}
+
+func notImplemented(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusNotImplemented, body)
+}
+
+func requestedRangeNotSatisfiable(req *http.Request, body string) (*http.Response, error) {
+	return httpResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
 }

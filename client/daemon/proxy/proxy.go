@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/golang/groupcache/lru"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/semaphore"
@@ -247,8 +249,8 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		span.End()
 	}()
-	// update ctx for transfer trace id
-	// TODO(jim): only support HTTP scheme, need support HTTPS scheme
+
+	// update ctx to transfer trace id
 	r = r.WithContext(ctx)
 
 	// check authenticity
@@ -269,8 +271,11 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// check direct request
+	directRequest := r.Method != http.MethodConnect && r.URL.Scheme == ""
+
 	// check whiteList
-	if !proxy.checkWhiteList(r) {
+	if !directRequest && !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
 		http.Error(w, http.StatusText(status), status)
 		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
@@ -312,7 +317,7 @@ func proxyBasicAuth(r *http.Request) (username, password string, ok bool) {
 // "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==" returns ("Aladdin", "open sesame", true).
 func parseBasicAuth(auth string) (username, password string, ok bool) {
 	const prefix = "Basic "
-	// Case insensitive prefix match. See Issue 22736.
+	// Case-insensitive prefix match. See Issue 22736.
 	if len(auth) < len(prefix) || !strings.EqualFold(auth[:len(prefix)], prefix) {
 		return
 	}
@@ -329,6 +334,7 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
+	// FIXME did not need create a transport per request
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -339,12 +345,16 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	w.WriteHeader(resp.StatusCode)
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
-		logger.Errorf("failed to write http body: %v", err)
+		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
+			logger.Errorf("failed to write http body: %v, peer: %s, task: %s",
+				err, peerID, resp.Header.Get(config.HeaderDragonflyTask))
+		} else {
+			logger.Errorf("failed to write http body: %v", err)
+		}
 		span.RecordError(err)
 	} else {
 		span.SetAttributes(semconv.HTTPResponseContentLengthKey.Int64(n))
 		// when resp.ContentLength == -1 or 0, byte count can not be updated by transport
-		// TODO how to handle byte count for https ?
 		if resp.ContentLength == -1 {
 			metrics.ProxyRequestBytesCount.WithLabelValues(req.Method).Add(float64(n))
 		}
@@ -400,6 +410,9 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 		sConfig.Certificates = []tls.Certificate{*proxy.cert}
 	}
 
+	// TODO support http2 by set sConfig.NextProtos = []string{"http/1.1", "h2"}
+	// then check conn.ConnectionState().NegotiatedProtocol in handshake(w, sConfig)
+	// example https://github.com/google/martian/blob/v3.2.1/proxy.go#L337
 	sConn, err := handshake(w, sConfig)
 	if err != nil {
 		logger.Errorf("handshake failed for %s: %v", r.Host, err)
@@ -407,6 +420,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 	}
 	defer sConn.Close()
 
+	// confirm remote is valid
 	cConn, err := tls.Dial("tcp", r.Host, cConfig)
 	if err != nil {
 		logger.Errorf("dial failed for %s: %v", r.Host, err)
@@ -416,6 +430,8 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 	rp := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
+			// we can not change req.ctx in Director, so inject trace with header
+			propagation.TraceContext{}.Inject(r.Context(), propagation.HeaderCarrier(req.Header))
 			req.URL.Host = req.Host
 			req.URL.Scheme = schemaHTTPS
 			if proxy.dumpHTTPContent {
@@ -484,11 +500,11 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 	for _, h := range proxy.httpsHosts {
 		if h.Regx.MatchString(host) {
-			config := &tls.Config{InsecureSkipVerify: h.Insecure}
+			tlsConfig := &tls.Config{InsecureSkipVerify: h.Insecure}
 			if h.Certs != nil {
-				config.RootCAs = h.Certs.CertPool
+				tlsConfig.RootCAs = h.Certs.CertPool
 			}
-			return config
+			return tlsConfig
 		}
 	}
 	return nil
@@ -543,7 +559,16 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 			if rule.UseHTTPS {
 				req.URL.Scheme = schemaHTTPS
 			}
-			if rule.Redirect != "" {
+			if strings.Contains(rule.Redirect, "/") {
+				u, err := url.Parse(rule.Regx.ReplaceAllString(req.URL.String(), rule.Redirect))
+				if err != nil {
+					logger.Errorf("failed to rewrite url", err)
+					return false
+				}
+				req.URL = u
+				req.Host = req.URL.Host
+				req.RequestURI = req.URL.RequestURI()
+			} else if rule.Redirect != "" {
 				req.URL.Host = rule.Redirect
 				req.Host = rule.Redirect
 			}
@@ -556,12 +581,18 @@ func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 // shouldUseDragonflyForMirror returns whether we should use dragonfly to proxy a request
 // when we use registry mirror.
 func (proxy *Proxy) shouldUseDragonflyForMirror(req *http.Request) bool {
-	return proxy.registry != nil && !proxy.registry.Direct && transport.NeedUseDragonfly(req)
+	if proxy.registry == nil || proxy.registry.Direct {
+		return false
+	}
+	if proxy.registry.UseProxies {
+		return proxy.shouldUseDragonfly(req)
+	}
+	return transport.NeedUseDragonfly(req)
 }
 
-// tunnelHTTPS handles a CONNECT request and proxy an https request through an
-// http tunnel.
+// tunnelHTTPS handles the CONNECT request and proxy the https request through http tunnel.
 func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
+	metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 	dst, err := net.DialTimeout("tcp", r.Host, 10*time.Second)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -578,24 +609,29 @@ func tunnelHTTPS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
 
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	go func() {
-		if err := copyAndClose(dst, clientConn); err != nil {
+		if _, err := io.Copy(dst, clientConn); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			logger.Errorf("copy hijacked stream from client to destination error: %s", err)
 		}
+		wg.Done()
 	}()
 
-	if err := copyAndClose(clientConn, dst); err != nil {
+	if _, err := io.Copy(clientConn, dst); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		logger.Errorf("copy hijacked stream from destination to client error: %s", err)
 	}
-}
+	wg.Wait()
 
-func copyAndClose(dst io.WriteCloser, src io.ReadCloser) error {
-	defer src.Close()
-	defer dst.Close()
-	if _, err := io.Copy(dst, src); err != nil {
-		return err
+	// Close() will close both read and write, we need wait all stream is done, then close connections
+	if err = dst.Close(); err != nil {
+		logger.Errorf("close hijacked destination error: %s", err)
 	}
-	return nil
+	if err = clientConn.Close(); err != nil {
+		logger.Errorf("close hijacked client error: %s", err)
+	}
 }
 
 func copyHeader(dst, src http.Header) {

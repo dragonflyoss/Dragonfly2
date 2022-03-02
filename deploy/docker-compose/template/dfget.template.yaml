@@ -1,28 +1,70 @@
 # daemon alive time, when sets 0s, daemon will not auto exit
+# it is useful for longtime running
 aliveTime: 0s
 
 # daemon gc task running interval
 gcInterval: 1m0s
 
+# daemon work directory, daemon will change current working directory to this
+# in linux, default value is /usr/local/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly
+workHome: ""
+
+# cacheDir is dynconfig cache storage directory
+# in linux, default value is /var/cache/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+cacheDir: ""
+
+# logDir is the log storage directory
+# in linux, default value is /var/log/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+logDir: ""
+
+# dataDir is the download data storage directory
+# in linux, default value is /var/lib/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/data
+dataDir: ""
+
 # when daemon exit, keep peer task data or not
 # it is usefully when upgrade daemon service, all local cache will be saved
+# default is false
 keepStorage: true
+
+# console shows log on console
+console: false
+
+# whether to enable debug level logger and enable pprof
+verbose: false
+
+# listen port for pprof, only valid when the verbose option is true
+# default is -1. If it is 0, pprof will use a random port.
+pprof-port: -1
+
+# jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""
 
 # all addresses of all schedulers
 # the schedulers of all daemons should be same in one region or zone.
 # daemon will send tasks to a fixed scheduler by hashing the task url and meta data
 # caution: only tcp is supported
 scheduler:
+  manager:
+    # get scheduler list dynamically from manager
+    enable: false
+    # manager service addresses
+    netAddrs:
+      - type: tcp
+        addr: __IP__:65003
+        # scheduler list refresh interval
+        refreshInterval: 5m
+  # schedule timeout
+  scheduleTimeout: 30s
+  # when true, only scheduler says back source, daemon can back source
+  disableAutoBackSource: false
   # below example is a stand address
   netAddrs:
-  - type: tcp
-    addr: __IP__:8002
-  # schedule timeout
-  scheduleTimeout: 10s
-
-# when enable, pprof will be enabled,
-verbose: true
-console: false
+    - type: tcp
+      addr: __IP__:8002
 
 # current host info used for scheduler
 host:
@@ -32,17 +74,43 @@ host:
   # access ip for other peers
   # when local ip is different with access ip, advertiseIP should be set
   advertiseIP: __IP__
-  # geographical location and network topology
+  # geographical location, separated by "|" characters
   location: ""
+  # idc deployed by daemon
   idc: ""
+  # security domain deployed by daemon, network isolation between different security domains
   securityDomain: ""
+  # network topology, separated by "|" characters
   netTopology: ""
+  # daemon hostname
+  # hostname: ""
 
 # download service option
 download:
-  # download limit  per second
-  totalRateLimit: 1024Mi
-  perPeerRateLimit: 1024Mi
+  # calculate digest when transfer files, set false to save memory
+  calculateDigest: true
+  # total download limit per second
+  totalRateLimit: 200Mi
+  # per peer task download limit per second
+  perPeerRateLimit: 100Mi
+  # download piece timeout
+  pieceDownloadTimeout: 30s
+  # golang transport option
+  transportOption:
+    # dial timeout
+    dialTimeout: 2s
+    # keep alive
+    keepAlive: 30s
+    # same with http.Transport.MaxIdleConns
+    maxIdleConns: 100
+    # same with http.Transport.IdleConnTimeout
+    idleConnTimeout: 90s
+    # same with http.Transport.ResponseHeaderTimeout
+    responseHeaderTimeout: 2s
+    # same with http.Transport.TLSHandshakeTimeout
+    tlsHandshakeTimeout: 1s
+    # same with http.Transport.ExpectContinueTimeout
+    expectContinueTimeout: 2s
   # download grpc option
   downloadGRPC:
     # security option
@@ -55,6 +123,8 @@ download:
     # download service listen address
     # current, only support unix domain socket
     unixListen:
+      # in linux, default value is /var/run/dfdaemon.sock
+      # in macos(just for testing), default value is /tmp/dfdaemon.sock
       socket: /var/run/dfdaemon.sock
   # peer grpc option
   # peer grpc service send pieces info to other peers
@@ -75,14 +145,10 @@ download:
 #       start: 65000
 #       end: 65009
 
-# proxy config file location or detail config
-# proxy: ""
-
 # upload service option
 upload:
-  defaultFilter: "Expires&Signature"
   # upload limit per second
-  rateLimit: 200Mi
+  rateLimit: 100Mi
   security:
     insecure: true
     cacert: ""
@@ -103,19 +169,42 @@ upload:
 storage:
   # task data expire time
   # when there is no access to a task data, this task will be gc.
-  taskExpireTime: 1m0s
+  taskExpireTime: 6h
+  # storage strategy when process task data
+  # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
+  #                           the download file in date directory will be the peer data for uploading to other peers
+  # io.d7y.storage.v2.advance: download file directly to output path with postfix, hard link to final output,
+  #                            avoid copy to output path, fast than simple strategy, but:
+  #                            the output file with postfix will be the peer data for uploading to other peers
+  #                            when user delete or change this file, this peer data will be corrupted
+  # default is io.d7y.storage.v2.advance
+  strategy: io.d7y.storage.v2.advance
+  # disk quota gc threshold, when the quota of all tasks exceeds the gc threshold, the oldest tasks will be reclaimed.
+  diskGCThreshold: 50Gi
+  # disk used percent gc threshold, when the disk used percent exceeds, the oldest tasks will be reclaimed.
+  # eg, diskGCThresholdPercent=80, when the disk usage is above 80%, start to gc the oldest tasks
+  diskGCThresholdPercent: 80
+  # set to ture for reusing underlying storage for same task id
   multiplex: true
 
-# proxy service option
+# proxy service config file location or detail config
+# proxy: ""
+
+# proxy service detail option
 proxy:
+  # filter for hash url
+  # when defaultFilter: "Expires&Signature", for example:
+  #  http://localhost/xyz?Expires=111&Signature=222 and http://localhost/xyz?Expires=333&Signature=999
+  # is same task
+  defaultFilter: "Expires&Signature"
   security:
     insecure: true
     cacert: ""
     cert: ""
     key: ""
   tcpListen:
-    # Namespace stands the linux net namespace, like /proc/1/ns/net
-    # It's useful for running daemon in pod with ip allocated and listen in host
+    # namespace stands the linux net namespace, like /proc/1/ns/net
+    # it's useful for running daemon in pod with ip allocated and listening the special port in host net namespace
     # Linux only
     namespace: ""
     # listen address
@@ -128,16 +217,51 @@ proxy:
   #     start: 65020
   #     end: 65029
   registryMirror:
+    # when enable, using header "X-Dragonfly-Registry" for remote instead of url
+    dynamic: true
     # url for the registry mirror
     url: https://index.docker.io
     # whether to ignore https certificate errors
     insecure: true
     # optional certificates if the remote server uses self-signed certificates
-    certs: [ ]
+    certs: []
     # whether to request the remote registry directly
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
-  # proxy all http image layer download requests with dfget
-  - regx: (blobs|manifests|config)/sha256.*
-  - regx: __IP__.* # test only
+    # proxy all http image layer download requests with dfget
+    - regx: blobs/sha256.*
+    # change http requests to some-registry to https and proxy them with dfget
+    - regx: some-registry/
+      useHTTPS: true
+    # proxy requests directly, without dfget
+    - regx: no-proxy-reg
+      direct: true
+    # proxy requests with redirect
+    - regx: some-registry
+      redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
+
+  hijackHTTPS:
+    # key pair used to hijack https requests
+    cert: ""
+    key: ""
+    hosts:
+      - regx: mirror.aliyuncs.com:443 # regexp to match request hosts
+        # whether to ignore https certificate errors
+        insecure: true
+        # optional certificates if the host uses self-signed certificates
+        certs: []
+  # max tasks to download same time, 0 is no limit
+  maxConcurrency: 0
+  whiteList:
+    # the host of the whitelist
+    - host: ""
+      # match whitelist hosts
+      regx:
+      # port that need to be added to the whitelist
+      ports:

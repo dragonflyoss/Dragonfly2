@@ -175,6 +175,7 @@ type DownloadOption struct {
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
 }
 
 type TransportOption struct {
@@ -198,6 +199,8 @@ type ProxyOption struct {
 	Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+	// ExtraRegistryMirrors add more mirror for different ports
+	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -527,6 +530,9 @@ type RegistryMirror struct {
 
 	// Request the remote registry directly.
 	Direct bool `yaml:"direct" mapstructure:"direct"`
+
+	// Whether to use proxies to decide when to use dragonfly
+	UseProxies bool `yaml:"useProxies" mapstructure:"useProxies"`
 }
 
 // TLSConfig returns the tls.Config used to communicate with the mirror.

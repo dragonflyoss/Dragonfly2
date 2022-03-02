@@ -20,9 +20,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -89,8 +89,8 @@ func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
-func (p *proxy) CheckHealth(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
-	return new(empty.Empty), p.server.CheckHealth(ctx)
+func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), p.server.CheckHealth(ctx)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

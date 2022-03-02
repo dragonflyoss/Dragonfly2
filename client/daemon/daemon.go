@@ -169,7 +169,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
 	if err != nil {
 		return nil, err
 	}
@@ -411,7 +411,6 @@ func (cd *clientDaemon) Serve() error {
 		// serve proxy sni service
 		if cd.Option.Proxy.HijackHTTPS != nil && len(cd.Option.Proxy.HijackHTTPS.SNI) > 0 {
 			for _, opt := range cd.Option.Proxy.HijackHTTPS.SNI {
-
 				listener, port, err := cd.prepareTCPListener(config.ListenOption{
 					TCPListen: opt,
 				}, false)
@@ -475,7 +474,7 @@ func (cd *clientDaemon) Serve() error {
 		// dynconfig register client daemon
 		cd.dynconfig.Register(cd)
 
-		// servce dynconfig
+		// serve dynconfig
 		g.Go(func() error {
 			if err := cd.dynconfig.Serve(); err != nil {
 				logger.Errorf("dynconfig start failed %v", err)

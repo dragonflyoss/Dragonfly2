@@ -18,15 +18,18 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
 )
 
 var (
 	CoreLogger       *zap.SugaredLogger
 	GrpcLogger       *zap.SugaredLogger
-	MetaGCLogger     *zap.SugaredLogger
+	GCLogger         *zap.SugaredLogger
 	StorageGCLogger  *zap.SugaredLogger
 	JobLogger        *zap.SugaredLogger
 	KeepAliveLogger  *zap.SugaredLogger
@@ -36,7 +39,7 @@ var (
 
 func init() {
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	if err == nil {
 		sugar := log.Sugar()
@@ -49,6 +52,15 @@ func init() {
 		SetDownloadLogger(log)
 		SetJobLogger(sugar)
 	}
+	levels = append(levels, config.Level)
+}
+
+// SetLevel updates all log level
+func SetLevel(level zapcore.Level) {
+	Infof("change log level to %s", level.String())
+	for _, l := range levels {
+		l.SetLevel(level)
+	}
 }
 
 func SetCoreLogger(log *zap.SugaredLogger) {
@@ -56,7 +68,7 @@ func SetCoreLogger(log *zap.SugaredLogger) {
 }
 
 func SetGCLogger(log *zap.SugaredLogger) {
-	MetaGCLogger = log
+	GCLogger = log
 }
 
 func SetStorageGCLogger(log *zap.SugaredLogger) {
@@ -77,7 +89,12 @@ func SetDownloadLogger(log *zap.Logger) {
 
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
-	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
+	var v int
+	vLevel := os.Getenv("GRPC_GO_LOG_VERBOSITY_LEVEL")
+	if vl, err := strconv.Atoi(vLevel); err == nil {
+		v = vl
+	}
+	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger, v})
 }
 
 func SetJobLogger(log *zap.SugaredLogger) {
@@ -94,21 +111,27 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostID(hostID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"hostID", hostID},
+	}
+}
+
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID},
+		withArgs: []interface{}{"taskID", taskID},
 	}
 }
 
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
+		withArgs: []interface{}{"taskID", taskID, "peerID", peerID},
 	}
 }
 
 func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "url", url},
+		withArgs: []interface{}{"taskID", taskID, "url", url},
 	}
 }
 
@@ -188,6 +211,7 @@ func Fatal(args ...interface{}) {
 
 type zapGrpc struct {
 	*zap.SugaredLogger
+	verbose int
 }
 
 func (z *zapGrpc) Infoln(args ...interface{}) {
@@ -215,5 +239,5 @@ func (z *zapGrpc) Fatalln(args ...interface{}) {
 }
 
 func (z *zapGrpc) V(level int) bool {
-	return level > 0
+	return level <= z.verbose
 }

@@ -27,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/version"
@@ -57,7 +56,7 @@ from remote source repeatedly.`,
 		}
 
 		// Initialize logger
-		if err := logcore.InitCdnSystem(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitCdnSystem(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init cdn system logger")
 		}
 

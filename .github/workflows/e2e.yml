@@ -3,10 +3,10 @@ name: E2E Test
 on:
   push:
     branches: [main, release-*]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
   pull_request:
     branches: [main, release-*]
-    paths-ignore: [ '**.md', '**.png', '**.jpg', '**.svg', '**/docs/**' ]
+    paths-ignore: ["**.md", "**.png", "**.jpg", "**.svg", "**/docs/**"]
 
 env:
   GO_VERSION: 1.17
@@ -21,6 +21,7 @@ env:
 jobs:
   e2e_tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -35,9 +36,14 @@ jobs:
       - name: Get dependencies
         run: |
           go mod download github.com/go-task/slim-sprig
-          go install github.com/onsi/ginkgo/ginkgo
+          go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.0
           mkdir -p /tmp/artifact
-          go mod vendor
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v1
+        id: buildx
+        with:
+          install: true
 
       - name: Setup Kind
         uses: engineerd/setup-kind@v0.5.0
@@ -46,10 +52,10 @@ jobs:
           config: ${{ env.KIND_CONFIG_PATH }}
 
       - name: Build images
-        run: make docker-build docker-build-testing-tools
-
-      - name: Prepare kind environment
-        run: make kind-load
+        run: |
+          hack/gen-buildx.sh
+          make docker-build docker-build-testing-tools
+          make kind-load
 
       - name: Setup dragonfly
         run: |
@@ -63,7 +69,10 @@ jobs:
           kubectl wait po proxy-2 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
 
       - name: Run E2E test
-        run: make actions-e2e-test-coverage
+        run: |
+          make build-e2e-sha256sum
+          ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e -- --feature-gates=dfget-range=true
+          cat coverprofile.out >> coverage.txt
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
@@ -78,7 +87,4 @@ jobs:
         with:
           name: e2e-tests-logs
           path: |
-            /tmp/artifact/manager/*.log
-            /tmp/artifact/daemon/*.log
-            /tmp/artifact/scheduler/*.log
-            /tmp/artifact/cdn/*.log
+            /tmp/artifact/**/*.log

@@ -25,7 +25,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -53,7 +52,7 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 		}
 
 		// Initialize logger
-		if err := logcore.InitManager(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitManager(cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
 

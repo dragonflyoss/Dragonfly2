@@ -56,10 +56,11 @@ type CommonTaskRequest struct {
 }
 
 type RegisterTaskRequest struct {
-	CommonTaskRequest
-	ContentLength int64
-	TotalPieces   int32
-	PieceMd5Sign  string
+	PeerTaskMetadata
+	DesiredLocation string
+	ContentLength   int64
+	TotalPieces     int32
+	PieceMd5Sign    string
 }
 
 type WritePieceRequest struct {
@@ -67,13 +68,18 @@ type WritePieceRequest struct {
 	PieceMetadata
 	UnknownLength bool
 	Reader        io.Reader
+	// GenPieceDigest is used after the last piece in back source case
+	GenPieceDigest func(n int64) (total int32, gen bool)
 }
 
 type StoreRequest struct {
 	CommonTaskRequest
 	MetadataOnly bool
-	StoreOnly    bool
-	TotalPieces  int32
+	// StoreDataOnly stands save file only without save metadata, used in reuse cases
+	StoreDataOnly bool
+	TotalPieces   int32
+	// OriginalOffset stands keep original offset in the target file, if the target file is not original file, return error
+	OriginalOffset bool
 }
 
 type ReadPieceRequest struct {
@@ -81,13 +87,22 @@ type ReadPieceRequest struct {
 	PieceMetadata
 }
 
+type ReadAllPiecesRequest struct {
+	PeerTaskMetadata
+	Range *clientutil.Range
+}
+
+type RegisterSubTaskRequest struct {
+	Parent  PeerTaskMetadata
+	SubTask PeerTaskMetadata
+	Range   *clientutil.Range
+}
+
 type UpdateTaskRequest struct {
 	PeerTaskMetadata
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string
-	// GenPieceDigest is used when back source
-	GenPieceDigest bool
 }
 
 type ReusePeerTask = UpdateTaskRequest

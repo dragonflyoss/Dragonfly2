@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/dynconfig_mock.go -source dynconfig.go -package mocks
+
 package config
 
 import (
@@ -30,8 +32,11 @@ import (
 )
 
 var (
+	// Cache filename
 	cacheFileName = "scheduler_dynconfig"
-	watchInterval = 1 * time.Second
+
+	// Notify observer interval
+	watchInterval = 10 * time.Second
 )
 
 type DynconfigData struct {
@@ -40,15 +45,14 @@ type DynconfigData struct {
 }
 
 type CDN struct {
-	ID            uint        `yaml:"id" mapstructure:"id" json:"id"`
-	HostName      string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	IP            string      `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port          int32       `yaml:"port" mapstructure:"port" json:"port"`
-	DownloadPort  int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
-	SecurityGroup string      `yaml:"securityGroup" mapstructure:"securityGroup" json:"security_group"`
-	Location      string      `yaml:"location" mapstructure:"location" json:"location"`
-	IDC           string      `yaml:"idc" mapstructure:"idc" json:"idc"`
-	CDNCluster    *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`
+	ID           uint        `yaml:"id" mapstructure:"id" json:"id"`
+	Hostname     string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	IP           string      `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port         int32       `yaml:"port" mapstructure:"port" json:"port"`
+	DownloadPort int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
+	Location     string      `yaml:"location" mapstructure:"location" json:"location"`
+	IDC          string      `yaml:"idc" mapstructure:"idc" json:"idc"`
+	CDNCluster   *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`
 }
 
 type CDNCluster struct {
@@ -109,30 +113,36 @@ type Observer interface {
 
 type dynconfig struct {
 	*dc.Dynconfig
-	observers  map[Observer]struct{}
-	done       chan bool
-	cdnDirPath string
-	cachePath  string
-	sourceType dc.SourceType
+	observers map[Observer]struct{}
+	done      chan bool
+	cdnDir    string
+	cachePath string
 }
 
 // TODO(Gaius) Rely on manager to delete cdnDirPath
-func NewDynconfig(sourceType dc.SourceType, cacheDir string, cdnDirPath string, options ...dc.Option) (DynconfigInterface, error) {
+func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
-		observers:  map[Observer]struct{}{},
-		done:       make(chan bool),
-		cdnDirPath: cdnDirPath,
-		sourceType: sourceType,
-		cachePath:  cachePath,
+		observers: map[Observer]struct{}{},
+		done:      make(chan bool),
+		cdnDir:    cfg.DynConfig.CDNDir,
+		cachePath: cachePath,
 	}
 
-	options = append(options, dc.WithCachePath(cachePath))
-	client, err := dc.New(sourceType, options...)
-	if err != nil {
-		return nil, err
+	if rawManagerClient != nil {
+		client, err := dc.New(
+			dc.ManagerSourceType,
+			dc.WithCachePath(cachePath),
+			dc.WithExpireTime(cfg.DynConfig.RefreshInterval),
+			dc.WithManagerClient(newManagerClient(rawManagerClient, cfg)),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		d.Dynconfig = client
 	}
-	d.Dynconfig = client
+
 	return d, nil
 }
 
@@ -192,7 +202,7 @@ func (d *dynconfig) GetCDNClusterConfig(id uint) (types.CDNClusterConfig, bool) 
 
 func (d *dynconfig) Get() (*DynconfigData, error) {
 	var config DynconfigData
-	if d.cdnDirPath != "" {
+	if d.cdnDir != "" {
 		cdns, err := d.getCDNFromDirPath()
 		if err != nil {
 			return nil, err
@@ -201,28 +211,14 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 		return &config, nil
 	}
 
-	if d.sourceType == dc.ManagerSourceType {
-		if err := d.Unmarshal(&config); err != nil {
-			return nil, err
-		}
-		return &config, nil
-	}
-
-	if err := d.Unmarshal(&struct {
-		Dynconfig *DynConfig `yaml:"dynconfig" mapstructure:"dynconfig"`
-	}{
-		Dynconfig: &DynConfig{
-			Data: &config,
-		},
-	}); err != nil {
+	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
 	}
-
 	return &config, nil
 }
 
 func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
-	files, err := os.ReadDir(d.cdnDirPath)
+	files, err := os.ReadDir(d.cdnDir)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +230,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 			continue
 		}
 
-		p := filepath.Join(d.cdnDirPath, file.Name())
+		p := filepath.Join(d.cdnDir, file.Name())
 		if file.Type()&os.ModeSymlink != 0 {
 			stat, err := os.Stat(p)
 			if err != nil {
@@ -289,7 +285,6 @@ func (d *dynconfig) Serve() error {
 	}
 
 	go d.watch()
-
 	return nil
 }
 
@@ -317,12 +312,13 @@ func (d *dynconfig) Stop() error {
 	return nil
 }
 
+// Manager client for dynconfig
 type managerClient struct {
 	managerclient.Client
 	config *Config
 }
 
-func NewManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
+func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
 	return &managerClient{
 		Client: client,
 		config: cfg,

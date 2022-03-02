@@ -4,5 +4,5 @@ P2P 加速可预热两种类型数据 `image` 和 `file`, 用户可以在控制�
 
 预热方式:
 
-* [Console](console.md)
-* [Api](api.md)
+- [Console](console.md)
+- [Api](api.md)

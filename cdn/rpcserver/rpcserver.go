@@ -35,8 +35,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnserver "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
@@ -76,6 +78,17 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
+	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
+	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece
+	psc <- &cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done: false,
+	}
 	// register seed task
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
@@ -88,8 +101,6 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
-	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
@@ -158,9 +169,14 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		if r := recover(); r != nil {
 			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
 			span.RecordError(err)
-			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
 		}
-		logger.WithTaskID(req.TaskId).Infof("get piece tasks result success: %t", err == nil)
+		if err != nil {
+			logger.WithTaskID(req.TaskId).Errorf("get piece tasks failed: %v", err)
+		} else {
+			logger.WithTaskID(req.TaskId).Infof("get piece tasks success, availablePieceCount(%d), totalPieceCount(%d), pieceMd5Sign(%s), "+
+				"contentLength(%d)", len(piecePacket.PieceInfos), piecePacket.TotalPiece, piecePacket.PieceMd5Sign, piecePacket.ContentLength)
+		}
+
 	}()
 	logger.Infof("get piece tasks: %#v", req)
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
@@ -202,6 +218,15 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 			count++
 		}
 	}
+	pieceMd5Sign := seedTask.PieceMd5Sign
+	if len(seedTask.Pieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
+		taskPieces := seedTask.Pieces
+		var pieceMd5s []string
+		for i := 0; i < len(taskPieces); i++ {
+			pieceMd5s = append(pieceMd5s, taskPieces[uint32(i)].PieceMd5)
+		}
+		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
+	}
 	pp := &base.PiecePacket{
 		TaskId:        req.TaskId,
 		DstPid:        req.DstPid,
@@ -209,7 +234,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		PieceInfos:    pieceInfos,
 		TotalPiece:    seedTask.TotalPieceCount,
 		ContentLength: seedTask.SourceFileLength,
-		PieceMd5Sign:  seedTask.PieceMd5Sign,
+		PieceMd5Sign:  pieceMd5Sign,
 	}
 	span.SetAttributes(constants.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil

@@ -36,7 +36,6 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -77,7 +76,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		if err := logcore.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
+		if err := logger.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 
@@ -183,6 +182,12 @@ func init() {
 	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
 		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
 
+	flagSet.Bool("original-offset", dfgetConfig.KeepOriginalOffset,
+		`Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled`)
+
+	flagSet.String("range", dfgetConfig.Range,
+		`Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url`)
+
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
 		panic(errors.Wrap(err, "bind dfget flags to viper"))
@@ -245,6 +250,7 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 
 	lock := flock.New(dfgetLockPath)
 	if err := lock.Lock(); err != nil {
+		logger.Errorf("flock lock failed %s", err)
 		return nil, err
 	}
 

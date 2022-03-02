@@ -83,7 +83,7 @@ docker-push-dfdaemon: docker-build-dfdaemon
 
 # Push scheduler image
 docker-push-scheduler: docker-build-scheduler
-	@echo "Begin to push dfdaemon docker image."
+	@echo "Begin to push scheduler docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
@@ -126,6 +126,12 @@ build-manager: build-dirs
 	@echo "Begin to build manager."
 	./hack/build.sh manager
 .PHONY: build-manager
+
+# Build manager console
+build-manager-console: build-dirs
+	@echo "Begin to build manager."
+	./hack/build.sh manager-console
+.PHONY: build-manager-console
 
 # Install cdn
 install-cdn:
@@ -188,7 +194,11 @@ build-deb-dfget: build-linux-dfget
 # Generate dfget man page
 build-dfget-man-page:
 	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
-.PHONY: build-man-page
+.PHONY: build-dfget-man-page
+
+build-e2e-sha256sum:
+	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
+.PHONY: build-e2e-sha256sum
 
 # Run unittests
 test:
@@ -203,8 +213,8 @@ test-coverage:
 
 # Run github actions E2E tests with coverage
 actions-e2e-test-coverage:
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
 # Install E2E tests environment
@@ -213,14 +223,14 @@ install-e2e-test:
 .PHONY: install-e2e-test
 
 # Run E2E tests
-e2e-test: install-e2e-test
-	@ginkgo -v -r --race --failFast test/e2e --trace --progress
+e2e-test: install-e2e-test build-e2e-sha256sum
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: install-e2e-test
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+e2e-test-coverage: install-e2e-test build-e2e-sha256sum
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
 
 # Clean E2E tests
@@ -304,6 +314,8 @@ help:
 	@echo "make build-dfget-linux              build linux dfget"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
+	@echo "make build-manager-console          build manager console"
+	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make install-cdn                    install CDN"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"

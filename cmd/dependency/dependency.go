@@ -47,7 +47,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -94,8 +93,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 	var fc = make(chan func(), 5)
 
 	if verbose {
-		logcore.SetCoreLevel(zapcore.DebugLevel)
-		logcore.SetGrpcLevel(zapcore.DebugLevel)
+		logger.SetLevel(zapcore.DebugLevel)
 	}
 
 	if pprofPort >= 0 {
@@ -105,7 +103,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 				pprofPort, _ = freeport.GetFreePort()
 			}
 
-			debugAddr := fmt.Sprintf("%s:%d", iputils.IPv4, pprofPort)
+			debugAddr := fmt.Sprintf(":%d", pprofPort)
 			viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugAddr),
@@ -160,15 +158,6 @@ func SetupQuitSignalHandler(handler func()) {
 			}
 		}
 	}()
-}
-
-func GetConfigPath(name string) string {
-	cfgFile := viper.GetString("config")
-	if cfgFile != "" {
-		return cfgFile
-	}
-
-	return filepath.Join(dfpath.DefaultConfigDir, fmt.Sprintf("%s.yaml", name))
 }
 
 // initConfig reads in config file and ENV variables if set.

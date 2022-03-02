@@ -28,11 +28,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfheaders"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -125,7 +125,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 		}
 	}
 
-	if downError != nil {
+	if downError != nil && !cfg.KeepOriginalOffset {
 		wLog.Warnf("daemon downloads file error: %v", downError)
 		fmt.Printf("daemon downloads file error: %v\n", downError)
 		downError = downloadFromSource(ctx, cfg, hdr)
@@ -210,6 +210,12 @@ func parseHeader(s []string) map[string]string {
 }
 
 func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.DownRequest {
+	var rg string
+	if r, ok := hdr[headers.Range]; ok {
+		rg = strings.TrimLeft(r, "bytes=")
+	} else {
+		rg = cfg.Range
+	}
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
@@ -219,14 +225,15 @@ func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.Do
 		UrlMeta: &base.UrlMeta{
 			Digest: cfg.Digest,
 			Tag:    cfg.Tag,
-			Range:  hdr[dfheaders.Range],
+			Range:  rg,
 			Filter: cfg.Filter,
 			Header: hdr,
 		},
-		Pattern:    cfg.Pattern,
-		Callsystem: cfg.CallSystem,
-		Uid:        int64(basic.UserID),
-		Gid:        int64(basic.UserGroup),
+		Pattern:            cfg.Pattern,
+		Callsystem:         cfg.CallSystem,
+		Uid:                int64(basic.UserID),
+		Gid:                int64(basic.UserGroup),
+		KeepOriginalOffset: cfg.KeepOriginalOffset,
 	}
 }
 

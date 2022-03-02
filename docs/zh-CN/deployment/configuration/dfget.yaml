@@ -30,6 +30,19 @@ dataDir: ""
 # 默认为 false
 keepStorage: true
 
+# console 是否在控制台程序中显示日志
+console: false
+
+# verbose 是否使用调试级别的日志、是否启用 pprof。
+verbose: false
+
+# pprof-port pprof 监听的端口，仅在 verbose 为 true 时可用
+pprof-port: -1
+
+# jaeger 地址
+# 默认使用空字符串（不配置 jaeger）, 例如: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""
+
 # 调度器地址
 # 尽量使用同一个地区的调度器.
 # daemon 将会根据 task id 来进行一致性 hash 来选择所有配置的调度器
@@ -51,13 +64,6 @@ scheduler:
   netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002
-
-# 是否开启 verbose 日志模式
-verbose: true
-
-# 遥测配置
-# jaeger 地址, 例如: http://jaeger.dragonfly.svc:14268/api/traces
-jaeger: ""
 
 # 用于注册到调度器的 daemon 信息
 host:
@@ -141,7 +147,7 @@ upload:
 storage:
   # task data 过期时间
   # 超过指定时间没有访问之后，缓存数据将会被清理
-  taskExpireTime: 3m0s
+  taskExpireTime: 6h
   # storage strategy when process task data
   # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
   #                           the download file in date directory will be the peer data for uploading to other peers
@@ -194,6 +200,8 @@ proxy:
     certs: []
     # 是否直连镜像中心，true 的话，流量不再走 p2p
     direct: false
+    # whether to use proxies to decide if dragonfly should be used
+    useProxies: false
 
   proxies:
     # 代理镜像 blobs 信息
@@ -207,6 +215,9 @@ proxy:
     # 转发流量到指定地址
     - regx: some-registry
       redirect: another-registry
+    # the same with url rewrite like apache ProxyPass directive
+    - regx: ^http://some-registry/(.*)
+      redirect: http://another-registry/$1
 
   hijackHTTPS:
     # https 劫持的证书和密钥

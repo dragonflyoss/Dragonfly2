@@ -32,6 +32,11 @@ import (
 )
 
 var (
+	// Clinet back-to-source download timeout
+	contextTimeout = 30 * time.Second
+)
+
+var (
 	// ErrResourceNotReachable represents the url resource is a not reachable.
 	ErrResourceNotReachable = errors.New("resource is not reachable")
 
@@ -89,7 +94,6 @@ const (
 
 // ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
-
 	// GetContentLength get length of resource content
 	// return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(request *Request) (int64, error)
@@ -261,7 +265,7 @@ func GetContentLength(request *Request) (int64, error) {
 		return UnknownSourceFileLen, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -274,7 +278,7 @@ func IsSupportRange(request *Request) (bool, error) {
 		return false, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -290,7 +294,7 @@ func IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 		return false, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -303,7 +307,7 @@ func GetLastModified(request *Request) (int64, error) {
 		return -1, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
