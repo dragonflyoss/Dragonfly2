@@ -431,6 +431,13 @@ func (m *PieceInfo) Validate() error {
 
 	// no validation rules for PieceStyle
 
+	if m.GetDownloadCost() < 0 {
+		return PieceInfoValidationError{
+			field:  "DownloadCost",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
 	return nil
 }
 
