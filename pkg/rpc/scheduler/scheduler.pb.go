@@ -191,7 +191,7 @@ func (x *RegisterResult) GetSizeScope() base.SizeScope {
 	if x != nil {
 		return x.SizeScope
 	}
-	return base.SizeScope_NORMAL
+	return base.SizeScope(0)
 }
 
 func (m *RegisterResult) GetDirectPiece() isRegisterResult_DirectPiece {
@@ -531,7 +531,7 @@ func (x *PieceResult) GetCode() base.Code {
 	if x != nil {
 		return x.Code
 	}
-	return base.Code_X_UNSPECIFIED
+	return base.Code(0)
 }
 
 func (x *PieceResult) GetHostLoad() *base.HostLoad {
@@ -635,7 +635,7 @@ func (x *PeerPacket) GetCode() base.Code {
 	if x != nil {
 		return x.Code
 	}
-	return base.Code_X_UNSPECIFIED
+	return base.Code(0)
 }
 
 type PeerResult struct {
@@ -769,7 +769,7 @@ func (x *PeerResult) GetCode() base.Code {
 	if x != nil {
 		return x.Code
 	}
-	return base.Code_X_UNSPECIFIED
+	return base.Code(0)
 }
 
 func (x *PeerResult) GetTotalPieceCount() int32 {
