@@ -74,11 +74,14 @@ func (re *reporter) reportPieceMetaRecord(ctx context.Context, taskID string, re
 */
 func convertPieceMeta2SeedPiece(record *storage.PieceMetaRecord) *task.PieceInfo {
 	return &task.PieceInfo{
-		PieceStyle:  base.PieceStyle(record.PieceStyle),
-		PieceNum:    record.PieceNum,
-		PieceMd5:    record.Md5,
-		PieceRange:  record.Range,
-		OriginRange: record.OriginRange,
-		PieceLen:    record.PieceLen,
+		PieceNum:          record.PieceNum,
+		PieceMd5:          record.Md5,
+		PieceRange:        record.Range,
+		OriginRange:       record.OriginRange,
+		PieceLen:          record.PieceLen,
+		PieceStyle:        base.PieceStyle(record.PieceStyle),
+		DownloadCost:      record.DownloadCost,
+		BeginDownloadTime: record.BeginDownloadTime,
+		EndDownloadTime:   record.EndDownloadTime,
 	}
 }

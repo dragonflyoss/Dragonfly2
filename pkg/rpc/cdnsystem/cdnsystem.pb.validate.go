@@ -165,6 +165,10 @@ func (m *PieceSeed) Validate() error {
 
 	// no validation rules for TotalPieceCount
 
+	// no validation rules for BeginTime
+
+	// no validation rules for EndTime
+
 	return nil
 }
 
