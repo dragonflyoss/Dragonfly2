@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -123,8 +124,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		// Handle piece download successfully
 		peer.Log.Infof("receive piece from cdn: %#v %#v", piece, piece.PieceInfo)
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-		// TODO(244372610) CDN should set piece cost
-		peer.AppendPieceCost(0)
+		peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)))
 		task.StorePiece(piece.PieceInfo)
 	}
 }

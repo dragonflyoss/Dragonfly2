@@ -65,3 +65,13 @@ func UnixSeconds(timeString string) int64 {
 func SecondsUnixTime(seconds int64) time.Time {
 	return time.Unix(seconds, 0)
 }
+
+// NanoToTime converts an int64 nanoseconds to a time
+func NanoToTime(nsec int64) time.Time {
+	return time.Unix(0, nsec)
+}
+
+// SubNano returns the difference between two nanoseconds
+func SubNano(x int64, y int64) int64 {
+	return NanoToTime(x).Sub(NanoToTime(y)).Nanoseconds()
+}
