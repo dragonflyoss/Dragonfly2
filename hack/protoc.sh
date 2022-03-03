@@ -3,11 +3,15 @@
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "work dir:$SRC"
+go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
+go install github.com/envoyproxy/protoc-gen-validate@v0.6.6
 if protoc -I="$SRC" \
   -I $GOPATH/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v0.6.1 \
   --go_out "$SRC" --go_opt paths=source_relative \
   --go-grpc_out "$SRC" --go-grpc_opt paths=source_relative \
   --validate_out "lang=go,paths=source_relative:$SRC" \
+  --plugin=protoc-gen-go=$GOPATH/bin/protoc-gen-go \
+  --plugin=protoc-gen-validate=$GOPATH/bin/protoc-gen-validate \
   "$SRC"/pkg/rpc/base/*.proto \
   "$SRC"/pkg/rpc/cdnsystem/*.proto \
   "$SRC"/pkg/rpc/dfdaemon/*.proto \

@@ -11,6 +11,7 @@ import (
 	"net/mail"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -33,41 +34,77 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
+	_ = sort.Sort
 
 	_ = base.SizeScope(0)
-
-	_ = base.Code(0)
-
-	_ = base.Code(0)
-
-	_ = base.Code(0)
 )
 
 // define the regex for a UUID once up-front
 var _scheduler_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
 
 // Validate checks the field values on PeerTaskRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, an
-// error is returned.
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
 func (m *PeerTaskRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerTaskRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PeerTaskRequestMultiError, or nil if none found.
+func (m *PeerTaskRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerTaskRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if uri, err := url.Parse(m.GetUrl()); err != nil {
-		return PeerTaskRequestValidationError{
+		err = PeerTaskRequestValidationError{
 			field:  "Url",
 			reason: "value must be a valid URI",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	} else if !uri.IsAbs() {
-		return PeerTaskRequestValidationError{
+		err := PeerTaskRequestValidationError{
 			field:  "Url",
 			reason: "value must be absolute",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetUrlMeta()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "UrlMeta",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -78,13 +115,36 @@ func (m *PeerTaskRequest) Validate() error {
 	}
 
 	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
-		return PeerTaskRequestValidationError{
+		err := PeerTaskRequestValidationError{
 			field:  "PeerId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetPeerHost()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPeerHost()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "PeerHost",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "PeerHost",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPeerHost()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "PeerHost",
@@ -94,7 +154,26 @@ func (m *PeerTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetHostLoad()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "HostLoad",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PeerTaskRequestValidationError{
+					field:  "HostLoad",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "HostLoad",
@@ -106,8 +185,29 @@ func (m *PeerTaskRequest) Validate() error {
 
 	// no validation rules for IsMigrating
 
+	if len(errors) > 0 {
+		return PeerTaskRequestMultiError(errors)
+	}
+
 	return nil
 }
+
+// PeerTaskRequestMultiError is an error wrapping multiple validation errors
+// returned by PeerTaskRequest.ValidateAll() if the designated constraints
+// aren't met.
+type PeerTaskRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerTaskRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerTaskRequestMultiError) AllErrors() []error { return m }
 
 // PeerTaskRequestValidationError is the validation error returned by
 // PeerTaskRequest.Validate if the designated constraints aren't met.
@@ -164,32 +264,73 @@ var _ interface {
 } = PeerTaskRequestValidationError{}
 
 // Validate checks the field values on RegisterResult with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *RegisterResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RegisterResult with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in RegisterResultMultiError,
+// or nil if none found.
+func (m *RegisterResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RegisterResult) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return RegisterResultValidationError{
+		err := RegisterResultValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if _, ok := base.SizeScope_name[int32(m.GetSizeScope())]; !ok {
-		return RegisterResultValidationError{
+		err := RegisterResultValidationError{
 			field:  "SizeScope",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	switch m.DirectPiece.(type) {
 
 	case *RegisterResult_SinglePiece:
 
-		if v, ok := interface{}(m.GetSinglePiece()).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(m.GetSinglePiece()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, RegisterResultValidationError{
+						field:  "SinglePiece",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, RegisterResultValidationError{
+						field:  "SinglePiece",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetSinglePiece()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return RegisterResultValidationError{
 					field:  "SinglePiece",
@@ -204,8 +345,29 @@ func (m *RegisterResult) Validate() error {
 
 	}
 
+	if len(errors) > 0 {
+		return RegisterResultMultiError(errors)
+	}
+
 	return nil
 }
+
+// RegisterResultMultiError is an error wrapping multiple validation errors
+// returned by RegisterResult.ValidateAll() if the designated constraints
+// aren't met.
+type RegisterResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RegisterResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RegisterResultMultiError) AllErrors() []error { return m }
 
 // RegisterResultValidationError is the validation error returned by
 // RegisterResult.Validate if the designated constraints aren't met.
@@ -262,28 +424,69 @@ var _ interface {
 } = RegisterResultValidationError{}
 
 // Validate checks the field values on SinglePiece with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *SinglePiece) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SinglePiece with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SinglePieceMultiError, or
+// nil if none found.
+func (m *SinglePiece) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SinglePiece) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetDstPid()) < 1 {
-		return SinglePieceValidationError{
+		err := SinglePieceValidationError{
 			field:  "DstPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetDstAddr()) < 1 {
-		return SinglePieceValidationError{
+		err := SinglePieceValidationError{
 			field:  "DstAddr",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPieceInfo()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SinglePieceValidationError{
+					field:  "PieceInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SinglePieceValidationError{
+					field:  "PieceInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SinglePieceValidationError{
 				field:  "PieceInfo",
@@ -293,8 +496,28 @@ func (m *SinglePiece) Validate() error {
 		}
 	}
 
+	if len(errors) > 0 {
+		return SinglePieceMultiError(errors)
+	}
+
 	return nil
 }
+
+// SinglePieceMultiError is an error wrapping multiple validation errors
+// returned by SinglePiece.ValidateAll() if the designated constraints aren't met.
+type SinglePieceMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SinglePieceMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SinglePieceMultiError) AllErrors() []error { return m }
 
 // SinglePieceValidationError is the validation error returned by
 // SinglePiece.Validate if the designated constraints aren't met.
@@ -351,47 +574,82 @@ var _ interface {
 } = SinglePieceValidationError{}
 
 // Validate checks the field values on PeerHost with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PeerHost) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerHost with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PeerHostMultiError, or nil
+// if none found.
+func (m *PeerHost) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerHost) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if err := m._validateUuid(m.GetUuid()); err != nil {
-		return PeerHostValidationError{
+		err = PeerHostValidationError{
 			field:  "Uuid",
 			reason: "value must be a valid UUID",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return PeerHostValidationError{
+		err := PeerHostValidationError{
 			field:  "Ip",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetRpcPort(); val < 1024 || val >= 65535 {
-		return PeerHostValidationError{
+		err := PeerHostValidationError{
 			field:  "RpcPort",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetDownPort(); val < 1024 || val >= 65535 {
-		return PeerHostValidationError{
+		err := PeerHostValidationError{
 			field:  "DownPort",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if err := m._validateHostname(m.GetHostName()); err != nil {
-		return PeerHostValidationError{
+		err = PeerHostValidationError{
 			field:  "HostName",
 			reason: "value must be a valid hostname",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for SecurityDomain
@@ -401,6 +659,10 @@ func (m *PeerHost) Validate() error {
 	// no validation rules for Idc
 
 	// no validation rules for NetTopology
+
+	if len(errors) > 0 {
+		return PeerHostMultiError(errors)
+	}
 
 	return nil
 }
@@ -442,6 +704,22 @@ func (m *PeerHost) _validateUuid(uuid string) error {
 
 	return nil
 }
+
+// PeerHostMultiError is an error wrapping multiple validation errors returned
+// by PeerHost.ValidateAll() if the designated constraints aren't met.
+type PeerHostMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerHostMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerHostMultiError) AllErrors() []error { return m }
 
 // PeerHostValidationError is the validation error returned by
 // PeerHost.Validate if the designated constraints aren't met.
@@ -498,30 +776,71 @@ var _ interface {
 } = PeerHostValidationError{}
 
 // Validate checks the field values on PieceResult with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PieceResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PieceResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PieceResultMultiError, or
+// nil if none found.
+func (m *PieceResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PieceResult) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PieceResultValidationError{
+		err := PieceResultValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
-		return PieceResultValidationError{
+		err := PieceResultValidationError{
 			field:  "SrcPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for DstPid
 
-	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetPieceInfo()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PieceResultValidationError{
+					field:  "PieceInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PieceResultValidationError{
+					field:  "PieceInfo",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceResultValidationError{
 				field:  "PieceInfo",
@@ -538,13 +857,36 @@ func (m *PieceResult) Validate() error {
 	// no validation rules for Success
 
 	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PieceResultValidationError{
+		err := PieceResultValidationError{
 			field:  "Code",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetHostLoad()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PieceResultValidationError{
+					field:  "HostLoad",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PieceResultValidationError{
+					field:  "HostLoad",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceResultValidationError{
 				field:  "HostLoad",
@@ -556,8 +898,28 @@ func (m *PieceResult) Validate() error {
 
 	// no validation rules for FinishedCount
 
+	if len(errors) > 0 {
+		return PieceResultMultiError(errors)
+	}
+
 	return nil
 }
+
+// PieceResultMultiError is an error wrapping multiple validation errors
+// returned by PieceResult.ValidateAll() if the designated constraints aren't met.
+type PieceResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PieceResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PieceResultMultiError) AllErrors() []error { return m }
 
 // PieceResultValidationError is the validation error returned by
 // PieceResult.Validate if the designated constraints aren't met.
@@ -614,34 +976,80 @@ var _ interface {
 } = PieceResultValidationError{}
 
 // Validate checks the field values on PeerPacket with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PeerPacket) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerPacket with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PeerPacketMultiError, or
+// nil if none found.
+func (m *PeerPacket) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerPacket) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PeerPacketValidationError{
+		err := PeerPacketValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetSrcPid()) < 1 {
-		return PeerPacketValidationError{
+		err := PeerPacketValidationError{
 			field:  "SrcPid",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if m.GetParallelCount() < 1 {
-		return PeerPacketValidationError{
+		err := PeerPacketValidationError{
 			field:  "ParallelCount",
 			reason: "value must be greater than or equal to 1",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
-	if v, ok := interface{}(m.GetMainPeer()).(interface{ Validate() error }); ok {
+	if all {
+		switch v := interface{}(m.GetMainPeer()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, PeerPacketValidationError{
+					field:  "MainPeer",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, PeerPacketValidationError{
+					field:  "MainPeer",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMainPeer()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerPacketValidationError{
 				field:  "MainPeer",
@@ -654,7 +1062,26 @@ func (m *PeerPacket) Validate() error {
 	for idx, item := range m.GetStealPeers() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, PeerPacketValidationError{
+						field:  fmt.Sprintf("StealPeers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, PeerPacketValidationError{
+						field:  fmt.Sprintf("StealPeers[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PeerPacketValidationError{
 					field:  fmt.Sprintf("StealPeers[%v]", idx),
@@ -667,14 +1094,38 @@ func (m *PeerPacket) Validate() error {
 	}
 
 	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PeerPacketValidationError{
+		err := PeerPacketValidationError{
 			field:  "Code",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return PeerPacketMultiError(errors)
 	}
 
 	return nil
 }
+
+// PeerPacketMultiError is an error wrapping multiple validation errors
+// returned by PeerPacket.ValidateAll() if the designated constraints aren't met.
+type PeerPacketMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerPacketMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerPacketMultiError) AllErrors() []error { return m }
 
 // PeerPacketValidationError is the validation error returned by
 // PeerPacket.Validate if the designated constraints aren't met.
@@ -731,31 +1182,58 @@ var _ interface {
 } = PeerPacketValidationError{}
 
 // Validate checks the field values on PeerResult with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PeerResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerResult with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PeerResultMultiError, or
+// nil if none found.
+func (m *PeerResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerResult) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PeerResultValidationError{
+		err := PeerResultValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
-		return PeerResultValidationError{
+		err := PeerResultValidationError{
 			field:  "PeerId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if ip := net.ParseIP(m.GetSrcIp()); ip == nil {
-		return PeerResultValidationError{
+		err := PeerResultValidationError{
 			field:  "SrcIp",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for SecurityDomain
@@ -763,16 +1241,24 @@ func (m *PeerResult) Validate() error {
 	// no validation rules for Idc
 
 	if uri, err := url.Parse(m.GetUrl()); err != nil {
-		return PeerResultValidationError{
+		err = PeerResultValidationError{
 			field:  "Url",
 			reason: "value must be a valid URI",
 			cause:  err,
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	} else if !uri.IsAbs() {
-		return PeerResultValidationError{
+		err := PeerResultValidationError{
 			field:  "Url",
 			reason: "value must be absolute",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for ContentLength
@@ -784,16 +1270,40 @@ func (m *PeerResult) Validate() error {
 	// no validation rules for Success
 
 	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PeerResultValidationError{
+		err := PeerResultValidationError{
 			field:  "Code",
 			reason: "value must be one of the defined enum values",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	// no validation rules for TotalPieceCount
 
+	if len(errors) > 0 {
+		return PeerResultMultiError(errors)
+	}
+
 	return nil
 }
+
+// PeerResultMultiError is an error wrapping multiple validation errors
+// returned by PeerResult.ValidateAll() if the designated constraints aren't met.
+type PeerResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerResultMultiError) AllErrors() []error { return m }
 
 // PeerResultValidationError is the validation error returned by
 // PeerResult.Validate if the designated constraints aren't met.
@@ -850,28 +1360,71 @@ var _ interface {
 } = PeerResultValidationError{}
 
 // Validate checks the field values on PeerTarget with the rules defined in the
-// proto definition for this message. If any rules are violated, an error is returned.
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
 func (m *PeerTarget) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerTarget with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in PeerTargetMultiError, or
+// nil if none found.
+func (m *PeerTarget) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerTarget) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return PeerTargetValidationError{
+		err := PeerTargetValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
-		return PeerTargetValidationError{
+		err := PeerTargetValidationError{
 			field:  "PeerId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return PeerTargetMultiError(errors)
 	}
 
 	return nil
 }
+
+// PeerTargetMultiError is an error wrapping multiple validation errors
+// returned by PeerTarget.ValidateAll() if the designated constraints aren't met.
+type PeerTargetMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerTargetMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerTargetMultiError) AllErrors() []error { return m }
 
 // PeerTargetValidationError is the validation error returned by
 // PeerTarget.Validate if the designated constraints aren't met.
@@ -929,35 +1482,82 @@ var _ interface {
 
 // Validate checks the field values on PeerPacket_DestPeer with the rules
 // defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
+// violated, the first error encountered is returned, or nil if there are no violations.
 func (m *PeerPacket_DestPeer) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PeerPacket_DestPeer with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PeerPacket_DestPeerMultiError, or nil if none found.
+func (m *PeerPacket_DestPeer) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PeerPacket_DestPeer) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
+	var errors []error
+
 	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return PeerPacket_DestPeerValidationError{
+		err := PeerPacket_DestPeerValidationError{
 			field:  "Ip",
 			reason: "value must be a valid IP address",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if val := m.GetRpcPort(); val < 1024 || val >= 65535 {
-		return PeerPacket_DestPeerValidationError{
+		err := PeerPacket_DestPeerValidationError{
 			field:  "RpcPort",
 			reason: "value must be inside range [1024, 65535)",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
 	}
 
 	if utf8.RuneCountInString(m.GetPeerId()) < 1 {
-		return PeerPacket_DestPeerValidationError{
+		err := PeerPacket_DestPeerValidationError{
 			field:  "PeerId",
 			reason: "value length must be at least 1 runes",
 		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return PeerPacket_DestPeerMultiError(errors)
 	}
 
 	return nil
 }
+
+// PeerPacket_DestPeerMultiError is an error wrapping multiple validation
+// errors returned by PeerPacket_DestPeer.ValidateAll() if the designated
+// constraints aren't met.
+type PeerPacket_DestPeerMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PeerPacket_DestPeerMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PeerPacket_DestPeerMultiError) AllErrors() []error { return m }
 
 // PeerPacket_DestPeerValidationError is the validation error returned by
 // PeerPacket_DestPeer.Validate if the designated constraints aren't met.
