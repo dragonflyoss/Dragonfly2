@@ -6,7 +6,7 @@ echo "work dir:$SRC"
 go install github.com/golang/protobuf/protoc-gen-go@v1.5.2
 go install github.com/envoyproxy/protoc-gen-validate@v0.6.6
 if protoc -I="$SRC" \
-  -I $GOPATH/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v0.6.1 \
+  -I $GOPATH/pkg/mod/github.com/envoyproxy/protoc-gen-validate@v0.6.6 \
   --go_out "$SRC" --go_opt paths=source_relative \
   --go-grpc_out "$SRC" --go-grpc_opt paths=source_relative \
   --validate_out "lang=go,paths=source_relative:$SRC" \
