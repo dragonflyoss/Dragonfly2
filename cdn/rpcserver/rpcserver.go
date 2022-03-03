@@ -106,16 +106,19 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			PeerId:   peerID,
 			HostUuid: hostID,
 			PieceInfo: &base.PieceInfo{
-				PieceNum:    int32(piece.PieceNum),
-				RangeStart:  piece.PieceRange.StartIndex,
-				RangeSize:   piece.PieceLen,
-				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.OriginRange.StartIndex,
-				PieceStyle:  piece.PieceStyle,
+				PieceNum:     int32(piece.PieceNum),
+				RangeStart:   piece.PieceRange.StartIndex,
+				RangeSize:    piece.PieceLen,
+				PieceMd5:     piece.PieceMd5,
+				PieceOffset:  piece.OriginRange.StartIndex,
+				PieceStyle:   piece.PieceStyle,
+				DownloadCost: piece.DownloadCost,
 			},
 			Done:            false,
 			ContentLength:   registeredTask.SourceFileLength,
 			TotalPieceCount: registeredTask.TotalPieceCount,
+			BeginTime:       piece.BeginDownloadTime,
+			EndTime:         piece.EndDownloadTime,
 		}
 		psc <- pieceSeed
 		jsonPiece, err := json.Marshal(pieceSeed)
@@ -205,12 +208,13 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	for _, piece := range pieces {
 		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
 			p := &base.PieceInfo{
-				PieceNum:    int32(piece.PieceNum),
-				RangeStart:  piece.PieceRange.StartIndex,
-				RangeSize:   piece.PieceLen,
-				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.OriginRange.StartIndex,
-				PieceStyle:  piece.PieceStyle,
+				PieceNum:     int32(piece.PieceNum),
+				RangeStart:   piece.PieceRange.StartIndex,
+				RangeSize:    piece.PieceLen,
+				PieceMd5:     piece.PieceMd5,
+				PieceOffset:  piece.OriginRange.StartIndex,
+				PieceStyle:   piece.PieceStyle,
+				DownloadCost: piece.DownloadCost,
 			}
 			pieceInfos = append(pieceInfos, p)
 			count++

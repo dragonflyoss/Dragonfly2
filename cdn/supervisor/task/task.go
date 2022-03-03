@@ -89,12 +89,15 @@ type SeedTask struct {
 }
 
 type PieceInfo struct {
-	PieceNum    uint32            `json:"piece_num"`
-	PieceMd5    string            `json:"piece_md5"`
-	PieceRange  *rangeutils.Range `json:"piece_range"`
-	OriginRange *rangeutils.Range `json:"origin_range"`
-	PieceLen    uint32            `json:"piece_len"`
-	PieceStyle  base.PieceStyle   `json:"piece_style"`
+	PieceNum          uint32            `json:"piece_num"`
+	PieceMd5          string            `json:"piece_md5"`
+	PieceRange        *rangeutils.Range `json:"piece_range"`
+	OriginRange       *rangeutils.Range `json:"origin_range"`
+	PieceLen          uint32            `json:"piece_len"`
+	PieceStyle        base.PieceStyle   `json:"piece_style"`
+	DownloadCost      uint64            `json:"download_cost"`
+	BeginDownloadTime uint64            `json:"begin_download_time"`
+	EndDownloadTime   uint64            `json:"end_download_time"`
 }
 
 const (
