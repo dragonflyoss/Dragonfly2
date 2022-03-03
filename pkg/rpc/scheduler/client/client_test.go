@@ -712,55 +712,55 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 
 func TestRegisterRateLimit(t *testing.T) {
 	var limit, burst = 4, 2
-	test, err := startTestServers(1, grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
+	test, err := startTestServers(2, grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
 		Limit: limit,
 		Burst: burst}))))
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)
 	}
 	defer test.cleanup()
-	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}})
+	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}})
 	if err != nil {
 		t.Fatalf("failed to get scheduler client: %v", err)
 	}
 	defer client.Close()
-	for i := 0; i < burst; i++ {
-		_, err := client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
-			Url:         normalTaskURL,
-			UrlMeta:     nil,
-			PeerId:      "test_peer",
-			PeerHost:    nil,
-			HostLoad:    nil,
-			IsMigrating: false,
-		})
-		assert.Nil(t, err)
-	}
-	errGroup := errgroup.Group{}
-	for i := 0; i < limit; i++ {
-		errGroup.Go(func() error {
-			_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
-				Url:         normalTaskURL,
-				UrlMeta:     nil,
-				PeerId:      "test_peer",
-				PeerHost:    nil,
-				HostLoad:    nil,
-				IsMigrating: false,
-			})
-			return err
-		})
-	}
-	if errGroup.Wait() != nil {
-		assert.Equal(t, status.Code(err), codes.ResourceExhausted)
-	}
-
-	time.Sleep(time.Second / time.Duration(limit))
-	_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+	var serverPeer peer.Peer
+	registerRequest := &scheduler.PeerTaskRequest{
 		Url:         normalTaskURL,
 		UrlMeta:     nil,
 		PeerId:      "test_peer",
 		PeerHost:    nil,
 		HostLoad:    nil,
 		IsMigrating: false,
-	})
-	assert.Nil(t, err)
+	}
+	registerTaskID := idgen.TaskID(registerRequest.Url, registerRequest.UrlMeta)
+	serverHashRing := hashring.New(test.addresses)
+	candidateAddrs, _ := serverHashRing.GetNodes(registerTaskID, 1)
+	targetServer := candidateAddrs[0]
+	for i := 0; i < burst; i++ {
+		_, err := client.RegisterPeerTask(context.Background(), registerRequest, grpc.Peer(&serverPeer))
+		assert.Nil(t, err)
+		assert.Equal(t, targetServer, serverPeer.Addr.String())
+	}
+	//errGroup := errgroup.Group{}
+	//for i := 0; i < limit; i++ {
+	//	errGroup.Go(func() error {
+	//		_, err = client.RegisterPeerTask(context.Background(), regesterRequest)
+	//		return err
+	//	})
+	//}
+	//if errGroup.Wait() != nil {
+	//	assert.Equal(t, status.Code(err), codes.ResourceExhausted)
+	//}
+	//
+	//time.Sleep(time.Second / time.Duration(limit))
+	//_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
+	//	Url:         normalTaskURL,
+	//	UrlMeta:     nil,
+	//	PeerId:      "test_peer",
+	//	PeerHost:    nil,
+	//	HostLoad:    nil,
+	//	IsMigrating: false,
+	//})
+	//assert.Nil(t, err)
 }
