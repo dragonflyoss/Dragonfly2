@@ -73,8 +73,8 @@ func Test_publisher_NotifySubscribers(t *testing.T) {
 		PieceLen:    0,
 		PieceStyle:  0,
 	}
-	sub3 := newProgressSubscriber(context.Background(), "client3", "taskTask", map[uint32]*task.PieceInfo{
-		100: additionPieceInfo1,
+	sub3 := newProgressSubscriber(context.Background(), "client3", "taskTask", []*task.PieceInfo{
+		additionPieceInfo1,
 	})
 	additionPieceInfo2 := &task.PieceInfo{
 		PieceNum:    200,
@@ -85,9 +85,9 @@ func Test_publisher_NotifySubscribers(t *testing.T) {
 		PieceStyle:  0,
 	}
 	publisher.AddSubscriber(sub3)
-	sub4 := newProgressSubscriber(context.Background(), "client4", "taskTask", map[uint32]*task.PieceInfo{
-		100: additionPieceInfo1,
-		200: additionPieceInfo2,
+	sub4 := newProgressSubscriber(context.Background(), "client4", "taskTask", []*task.PieceInfo{
+		additionPieceInfo1,
+		additionPieceInfo2,
 	})
 	publisher.AddSubscriber(sub4)
 	chan1 := sub1.Receiver()
@@ -144,6 +144,7 @@ func Test_publisher_NotifySubscribers(t *testing.T) {
 		assert.Equal(4, pieceCount)
 	}(chan4)
 
+	// notify all subscribers
 	for i := range notifyPieces {
 		publisher.NotifySubscribers(notifyPieces[i])
 	}
