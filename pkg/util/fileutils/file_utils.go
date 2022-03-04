@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -122,7 +121,7 @@ func PathExist(path string) bool {
 }
 
 func IsDir(path string) bool {
-	f, err := stat(path)
+	f, err := os.Stat(path)
 	if err != nil {
 		return false
 	}
@@ -131,7 +130,7 @@ func IsDir(path string) bool {
 }
 
 func IsRegular(path string) bool {
-	f, err := stat(path)
+	f, err := os.Stat(path)
 	if err != nil {
 		return false
 	}
@@ -151,16 +150,6 @@ func IsEmptyDir(path string) (bool, error) {
 	}
 
 	return false, err
-}
-
-func stat(path string) (os.FileInfo, error) {
-	f, err := os.Stat(path)
-
-	if err != nil {
-		logger.Warnf("stat file %s: %v", path, err)
-	}
-
-	return f, err
 }
 
 // GetFreeSpace gets the free disk space of the path.
