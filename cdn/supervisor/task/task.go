@@ -18,6 +18,7 @@ package task
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -83,7 +84,7 @@ type SeedTask struct {
 	Header map[string]string `json:"header,omitempty"`
 
 	// Pieces pieces of task
-	Pieces map[uint32]*PieceInfo `json:"-"`
+	Pieces sync.Map `json:"-"` // map[uint32]*PieceInfo
 
 	logger *logger.SugaredLoggerOnWith
 }
@@ -124,7 +125,6 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 		Range:            urlMeta.Range,
 		Filter:           urlMeta.Filter,
 		Header:           urlMeta.Header,
-		Pieces:           make(map[uint32]*PieceInfo),
 		logger:           logger.WithTaskID(taskID),
 	}
 }
@@ -137,11 +137,11 @@ func (task *SeedTask) Clone() *SeedTask {
 			cloneTask.Header[key] = value
 		}
 	}
-	if len(task.Pieces) > 0 {
-		for pieceNum, piece := range task.Pieces {
-			cloneTask.Pieces[pieceNum] = piece
-		}
-	}
+	task.Pieces.Range(func(key, value interface{}) bool {
+		cloneTask.Pieces.Store(key, value)
+		return true
+	})
+
 	return cloneTask
 }
 
@@ -192,7 +192,7 @@ func (task *SeedTask) Log() *logger.SugaredLoggerOnWith {
 
 func (task *SeedTask) StartTrigger() {
 	task.CdnStatus = StatusRunning
-	task.Pieces = make(map[uint32]*PieceInfo)
+	task.Pieces = sync.Map{}
 }
 
 const (

@@ -225,58 +225,57 @@ func TestServer_GetPieceTasks(t *testing.T) {
 					Range:            "",
 					Filter:           "",
 					Header:           nil,
-					Pieces: map[uint32]*task.PieceInfo{
-						0: {
-							PieceNum: 0,
-							PieceMd5: "xxxx0",
-							PieceRange: &rangeutils.Range{
-								StartIndex: 0,
-								EndIndex:   99,
-							},
-							OriginRange: &rangeutils.Range{
-								StartIndex: 0,
-								EndIndex:   99,
-							},
-							PieceLen:   100,
-							PieceStyle: 0,
-						},
-						1: {
-							PieceNum: 1,
-							PieceMd5: "xxxx1",
-							PieceRange: &rangeutils.Range{
-								StartIndex: 100,
-								EndIndex:   199,
-							},
-							OriginRange: &rangeutils.Range{
-								StartIndex: 100,
-								EndIndex:   199,
-							},
-							PieceLen:   100,
-							PieceStyle: 0,
-						},
-						2: {
-							PieceNum: 2,
-							PieceMd5: "xxxx2",
-							PieceRange: &rangeutils.Range{
-								StartIndex: 200,
-								EndIndex:   299,
-							},
-							OriginRange: &rangeutils.Range{
-								StartIndex: 200,
-								EndIndex:   249,
-							},
-							PieceLen:   100,
-							PieceStyle: 0,
-						},
-					},
 				}
+				testTask.Pieces.Store(0, &task.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "xxxx0",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(1, &task.PieceInfo{
+					PieceNum: 1,
+					PieceMd5: "xxxx1",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(2, &task.PieceInfo{
+					PieceNum: 2,
+					PieceMd5: "xxxx2",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   299,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   249,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
 				cdnServiceMock.EXPECT().GetSeedTask(args.req.TaskId).DoAndReturn(func(taskID string) (seedTask *task.SeedTask, err error) {
 					return testTask, nil
 				})
 				cdnServiceMock.EXPECT().GetSeedPieces(args.req.TaskId).DoAndReturn(func(taskID string) (pieces []*task.PieceInfo, err error) {
-					for u := range testTask.Pieces {
-						pieces = append(pieces, testTask.Pieces[u])
-					}
+					testTask.Pieces.Range(func(key, value interface{}) bool {
+						pieces = append(pieces, value.(*task.PieceInfo))
+						return true
+					})
 					sort.Slice(pieces, func(i, j int) bool {
 						return pieces[i].PieceNum < pieces[j].PieceNum
 					})
