@@ -34,25 +34,21 @@ type subscriber struct {
 	taskID    string
 	done      chan struct{}
 	once      sync.Once
-	pieces    map[uint32]*task.PieceInfo
+	pieces    []*task.PieceInfo
 	pieceChan chan *task.PieceInfo
 	cond      *sync.Cond
 	closed    *atomic.Bool
 }
 
-func newProgressSubscriber(ctx context.Context, clientAddr, taskID string, taskPieces map[uint32]*task.PieceInfo) *subscriber {
-	pieces := make(map[uint32]*task.PieceInfo, len(taskPieces))
-	for u, info := range taskPieces {
-		pieces[u] = info
-	}
+func newProgressSubscriber(ctx context.Context, clientAddr, taskID string, taskPieces []*task.PieceInfo) *subscriber {
 	sub := &subscriber{
 		ctx:       ctx,
 		scheduler: clientAddr,
 		taskID:    taskID,
-		pieces:    pieces,
 		done:      make(chan struct{}),
-		pieceChan: make(chan *task.PieceInfo, 100),
 		cond:      sync.NewCond(&sync.Mutex{}),
+		pieces:    taskPieces,
+		pieceChan: make(chan *task.PieceInfo, 100),
 		closed:    atomic.NewBool(false),
 	}
 	go sub.readLoop()
@@ -89,24 +85,20 @@ func (sub *subscriber) readLoop() {
 }
 
 func (sub *subscriber) sendPieces() {
-	pieceNums := make([]uint32, 0, len(sub.pieces))
-	for pieceNum := range sub.pieces {
-		pieceNums = append(pieceNums, pieceNum)
-	}
-	sort.Slice(pieceNums, func(i, j int) bool {
-		return pieceNums[i] < pieceNums[j]
+	sort.Slice(sub.pieces, func(i, j int) bool {
+		return sub.pieces[i].PieceNum < sub.pieces[j].PieceNum
 	})
-	for _, pieceNum := range pieceNums {
-		logger.Debugf("subscriber %s send %d piece info of taskID %s", sub.scheduler, pieceNum, sub.taskID)
-		sub.pieceChan <- sub.pieces[pieceNum]
-		delete(sub.pieces, pieceNum)
+	for _, piece := range sub.pieces {
+		logger.Debugf("subscriber %s send %d piece info of taskID %s", sub.scheduler, piece.PieceNum, sub.taskID)
+		sub.pieceChan <- piece
 	}
+	sub.pieces = []*task.PieceInfo{}
 }
 
 func (sub *subscriber) Notify(seedPiece *task.PieceInfo) {
 	logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", sub.scheduler, seedPiece.PieceNum, sub.taskID)
 	sub.cond.L.Lock()
-	sub.pieces[seedPiece.PieceNum] = seedPiece
+	sub.pieces = append(sub.pieces, seedPiece)
 	sub.cond.L.Unlock()
 	sub.cond.Signal()
 }
@@ -154,7 +146,8 @@ func (pub *publisher) RemoveSubscriber(sub *subscriber) {
 
 func (pub *publisher) NotifySubscribers(seedPiece *task.PieceInfo) {
 	for e := pub.subscribers.Front(); e != nil; e = e.Next() {
-		e.Value.(*subscriber).Notify(seedPiece)
+		sub := e.Value.(*subscriber)
+		sub.Notify(seedPiece)
 	}
 }
 
