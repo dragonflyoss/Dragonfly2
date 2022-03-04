@@ -19,6 +19,7 @@
 package task
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -54,7 +55,7 @@ type Manager interface {
 	// UpdateProgress update the downloaded pieces belonging to the task
 	UpdateProgress(taskID string, piece *PieceInfo) (err error)
 
-	// GetProgress returns the downloaded pieces belonging to the task
+	// GetProgress returns the downloaded pieces belonging to the task，sorted by pieceNum ascending order
 	GetProgress(taskID string) ([]*PieceInfo, error)
 
 	// Exist check task existence with specified taskID.
@@ -216,6 +217,9 @@ func (tm *manager) GetProgress(taskID string) ([]*PieceInfo, error) {
 	seedTask.Pieces.Range(func(key, value interface{}) bool {
 		pieces = append(pieces, value.(*PieceInfo))
 		return true
+	})
+	sort.Slice(pieces, func(i, j int) bool {
+		return pieces[i].PieceNum < pieces[j].PieceNum
 	})
 	return pieces, nil
 }
