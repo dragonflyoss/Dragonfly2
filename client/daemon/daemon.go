@@ -507,7 +507,7 @@ func (cd *clientDaemon) Serve() error {
 		r := mux.NewRouter()
 		r.Path(cd.Option.Health.Path).HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte("success"))
+			_, _ = writer.Write([]byte("success"))
 		})
 		listener, _, err := cd.prepareTCPListener(cd.Option.Health.ListenOption, false)
 		if err != nil {
