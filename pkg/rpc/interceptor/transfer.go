@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -279,11 +280,13 @@ func callContext(ctx context.Context, failedPeer peer.Peer, err error) context.C
 		if failedPeer.Addr.Network() == "unix" && !strings.HasPrefix(failedAddr, "unix") {
 			failedAddr = "unix://" + failedAddr
 		}
+		logger.GrpcLogger.Warnf("call server node: %s failed, try migrate. err: %v", failedAddr, err)
 		pr.FailedNodes.Insert(failedAddr)
 	}
 	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
 		if len(st.Details()) == 1 {
 			if addr, ok := st.Details()[0].(*anypb.Any); ok {
+				logger.GrpcLogger.Warnf("call server node: %s failed, try migrate. err: %v", addr.Value, err)
 				pr.FailedNodes.Insert(string(addr.Value))
 			}
 		}

@@ -25,9 +25,12 @@ import (
 	"testing"
 	"time"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"github.com/serialx/hashring"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
@@ -712,14 +715,32 @@ func loadTestData() (map[string]*scheduler.RegisterResult, map[string][]*schedul
 
 func TestRegisterRateLimit(t *testing.T) {
 	var limit, burst = 4, 2
-	test, err := startTestServers(2, grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
-		Limit: limit,
-		Burst: burst}))))
+	test1, err := startTestServers(1, grpc.ChainUnaryInterceptor(
+		grpc_zap.PayloadUnaryServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+			return true
+		}),
+		ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
+			Limit: limit,
+			Burst: burst}))),
+	)
 	if err != nil {
 		t.Fatalf("failed to start servers: %v", err)
 	}
-	defer test.cleanup()
-	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: test.addresses[0]}, {Addr: test.addresses[1]}})
+	defer test1.cleanup()
+	test2, err := startTestServers(1, grpc.ChainUnaryInterceptor(
+		grpc_zap.PayloadUnaryServerInterceptor(logger.GrpcLogger.Desugar(), func(ctx context.Context, fullMethodName string, servingObject interface{}) bool {
+			return true
+		}),
+		ratelimit.UnaryServerInterceptor(rpc.NewLimiter(&rpc.TokenLimit{
+			Limit: limit,
+			Burst: burst}))),
+	)
+	if err != nil {
+		t.Fatalf("failed to start servers: %v", err)
+	}
+	defer test2.cleanup()
+	serverAddrs := []string{test1.addresses[0], test2.addresses[0]}
+	client, err := GetClientByAddrs([]dfnet.NetAddr{{Addr: serverAddrs[0]}, {Addr: serverAddrs[1]}})
 	if err != nil {
 		t.Fatalf("failed to get scheduler client: %v", err)
 	}
@@ -734,14 +755,22 @@ func TestRegisterRateLimit(t *testing.T) {
 		IsMigrating: false,
 	}
 	registerTaskID := idgen.TaskID(registerRequest.Url, registerRequest.UrlMeta)
-	serverHashRing := hashring.New(test.addresses)
-	candidateAddrs, _ := serverHashRing.GetNodes(registerTaskID, 1)
+
+	serverHashRing := hashring.New(serverAddrs)
+	candidateAddrs, _ := serverHashRing.GetNodes(registerTaskID, 2)
 	targetServer := candidateAddrs[0]
+	migratedServer := candidateAddrs[1]
+	// Wait one second for the bucket to fill with tokens
+	time.Sleep(time.Second)
 	for i := 0; i < burst; i++ {
-		_, err := client.RegisterPeerTask(context.Background(), registerRequest, grpc.Peer(&serverPeer))
+		_, err := client.RegisterPeerTask(context.Background(), registerRequest, grpc.Peer(&serverPeer), grpc_retry.WithMax(0))
 		assert.Nil(t, err)
 		assert.Equal(t, targetServer, serverPeer.Addr.String())
 	}
+	// reach rate limit
+	_, err = client.RegisterPeerTask(context.Background(), registerRequest, grpc.Peer(&serverPeer), grpc_retry.WithMax(0))
+	assert.Nil(t, err)
+	assert.Equal(t, migratedServer, serverPeer.Addr.String())
 	//errGroup := errgroup.Group{}
 	//for i := 0; i < limit; i++ {
 	//	errGroup.Go(func() error {
