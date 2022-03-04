@@ -223,7 +223,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	pieceMd5Sign := seedTask.PieceMd5Sign
 
-  // TODO The calculation of sign has been completed after the source has been completed. This is just a fallback
+	// TODO The calculation of sign has been completed after the source has been completed. This is just a fallback
 	if len(taskPieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
 		logger.WithTaskID(req.TaskId).Warn("The code flow should not go to this point, if the output of this log need to check why")
 		var pieceMd5s []string
