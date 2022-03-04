@@ -818,7 +818,6 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
 		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source")
-		pt.needBackSource.Store(true)
 		pt.backSource()
 		return false, true
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
@@ -855,7 +854,6 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
 		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
 		pt.span.AddEvent("back source due to scheduler says need back source ")
-		pt.needBackSource.Store(true)
 		// TODO optimize back source when already downloaded some pieces
 		pt.backSource()
 	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
