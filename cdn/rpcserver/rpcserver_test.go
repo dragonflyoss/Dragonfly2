@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -225,6 +226,7 @@ func TestServer_GetPieceTasks(t *testing.T) {
 					Range:            "",
 					Filter:           "",
 					Header:           nil,
+					Pieces:           new(sync.Map),
 				}
 				testTask.Pieces.Store(0, &task.PieceInfo{
 					PieceNum: 0,

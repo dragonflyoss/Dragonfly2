@@ -84,7 +84,7 @@ type SeedTask struct {
 	Header map[string]string `json:"header,omitempty"`
 
 	// Pieces pieces of task
-	Pieces sync.Map `json:"-"` // map[uint32]*PieceInfo
+	Pieces *sync.Map `json:"-"` // map[uint32]*PieceInfo
 
 	logger *logger.SugaredLoggerOnWith
 }
@@ -125,6 +125,7 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 		Range:            urlMeta.Range,
 		Filter:           urlMeta.Filter,
 		Header:           urlMeta.Header,
+		Pieces:           new(sync.Map),
 		logger:           logger.WithTaskID(taskID),
 	}
 }
@@ -137,6 +138,7 @@ func (task *SeedTask) Clone() *SeedTask {
 			cloneTask.Header[key] = value
 		}
 	}
+	cloneTask.Pieces = new(sync.Map)
 	task.Pieces.Range(func(key, value interface{}) bool {
 		cloneTask.Pieces.Store(key, value)
 		return true
@@ -192,7 +194,7 @@ func (task *SeedTask) Log() *logger.SugaredLoggerOnWith {
 
 func (task *SeedTask) StartTrigger() {
 	task.CdnStatus = StatusRunning
-	task.Pieces = sync.Map{}
+	task.Pieces = new(sync.Map)
 }
 
 const (
