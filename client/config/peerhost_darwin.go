@@ -124,4 +124,9 @@ var peerHostConfig = DaemonOption{
 		Multiplex:              false,
 		DiskGCThresholdPercent: 95,
 	},
+	Reload: ReloadOption{
+		Interval: clientutil.Duration{
+			Duration: time.Minute,
+		},
+	},
 }
