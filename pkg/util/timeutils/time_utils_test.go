@@ -194,7 +194,7 @@ func TestSubNano(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := SubNano(tt.args[0], tt.args[1]); got != tt.want {
+			if got := SubNano(tt.args[0], tt.args[1]); got.Nanoseconds() != tt.want {
 				t.Errorf("SubNano() = %v, want %v", got, tt.want)
 			}
 		})
