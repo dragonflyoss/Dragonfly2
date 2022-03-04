@@ -21,7 +21,6 @@ package progress
 import (
 	"context"
 	"encoding/json"
-	"sort"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -86,9 +85,6 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 				logger.Debugf("subscriber %s starts watching task %s seed progress", clientAddr, taskID)
 				close(pieceChan)
 			}()
-			sort.Slice(pieces, func(i, j int) bool {
-				return pieces[i].PieceNum < pieces[j].PieceNum
-			})
 			for _, piece := range pieces {
 				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, piece.PieceNum, taskID)
 				pieceChan <- piece
