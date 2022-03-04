@@ -92,10 +92,10 @@ func (mr *MockManagerMockRecorder) Get(arg0 interface{}) *gomock.Call {
 }
 
 // GetProgress mocks base method.
-func (m *MockManager) GetProgress(arg0 string) (map[uint32]*task.PieceInfo, error) {
+func (m *MockManager) GetProgress(arg0 string) ([]*task.PieceInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProgress", arg0)
-	ret0, _ := ret[0].(map[uint32]*task.PieceInfo)
+	ret0, _ := ret[0].([]*task.PieceInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -145,6 +146,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 				Digest:           "md5:f1e2488bba4d1267948d9e2f7008571c",
 				SourceRealDigest: "",
 				PieceMd5Sign:     "",
+				Pieces:           new(sync.Map),
 			},
 			targetTask: &task.SeedTask{
 				ID:               md5TaskID,
@@ -159,6 +161,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 				Digest:           "md5:f1e2488bba4d1267948d9e2f7008571c",
 				SourceRealDigest: "md5:f1e2488bba4d1267948d9e2f7008571c",
 				PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
+				Pieces:           new(sync.Map),
 			},
 		},
 		{
@@ -176,6 +179,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 				Digest:           "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
 				SourceRealDigest: "",
 				PieceMd5Sign:     "",
+				Pieces:           new(sync.Map),
 			},
 			targetTask: &task.SeedTask{
 				ID:               sha256TaskID,
@@ -190,6 +194,7 @@ func (suite *CDNManagerTestSuite) TestTriggerCDN() {
 				Digest:           "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
 				SourceRealDigest: "sha256:b9907b9a5ba2b0223868c201b9addfe2ec1da1b90325d57c34f192966b0a68c5",
 				PieceMd5Sign:     "bb138842f338fff90af737e4a6b2c6f8e2a7031ca9d5900bc9b646f6406d890f",
+				Pieces:           new(sync.Map),
 			},
 		},
 	}
