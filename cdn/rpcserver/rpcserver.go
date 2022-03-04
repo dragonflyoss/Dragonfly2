@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -226,10 +227,13 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		var pieceMd5s []string
 		for i := 0; i < len(taskPieces); i++ {
 			pieceMd5s = append(pieceMd5s, taskPieces[i].PieceMd5)
+			logger.WithTaskID(req.TaskId).Infof("%d %s", taskPieces[i].PieceNum, taskPieces[i].PieceMd5)
 		}
+		logger.WithTaskID(req.TaskId).Infof("11111 %s", strings.Join(pieceMd5s, " "))
 		sort.Slice(pieceMd5s, func(i, j int) bool {
 			return taskPieces[i].PieceNum < taskPieces[j].PieceNum
 		})
+		logger.WithTaskID(req.TaskId).Infof("22222 %s", strings.Join(pieceMd5s, " "))
 		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
 	}
 	pp := &base.PiecePacket{
