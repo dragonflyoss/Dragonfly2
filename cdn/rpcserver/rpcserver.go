@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -220,11 +221,15 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		}
 	}
 	pieceMd5Sign := seedTask.PieceMd5Sign
+	// FIXME calc sign when back source, not here
 	if len(taskPieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
 		var pieceMd5s []string
 		for i := 0; i < len(taskPieces); i++ {
 			pieceMd5s = append(pieceMd5s, taskPieces[i].PieceMd5)
 		}
+		sort.Slice(pieceMd5s, func(i, j int) bool {
+			return taskPieces[i].PieceNum < taskPieces[j].PieceNum
+		})
 		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
 	}
 	pp := &base.PiecePacket{
