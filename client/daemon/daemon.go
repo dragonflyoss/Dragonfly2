@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -494,6 +495,30 @@ func (cd *clientDaemon) Serve() error {
 					return
 				}
 				logger.Fatalf("metrics server closed unexpect: %v", err)
+			}
+		}()
+	}
+
+	if cd.Option.Health != nil {
+		if cd.Option.Health.ListenOption.TCPListen == nil {
+			logger.Fatalf("health listen not found")
+		}
+		logger.Infof("serve http health at %#v", cd.Option.Health.ListenOption.TCPListen)
+		r := mux.NewRouter()
+		r.Path(cd.Option.Health.Path).HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			writer.WriteHeader(http.StatusOK)
+			_, _ = writer.Write([]byte("success"))
+		})
+		listener, _, err := cd.prepareTCPListener(cd.Option.Health.ListenOption, false)
+		if err != nil {
+			logger.Fatalf("init health http server error: %v", err)
+		}
+		go func() {
+			if err = http.Serve(listener, r); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Errorf("health http server error: %v", err)
 			}
 		}()
 	}
