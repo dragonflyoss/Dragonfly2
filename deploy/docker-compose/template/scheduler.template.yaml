@@ -85,7 +85,7 @@ cdn:
 # see https://github.com/RichardKnop/machinery
 job:
   # scheduler enable job service
-  enable: false
+  enable: true
   # number of workers in global queue
   globalWorkerNum: 1
   # number of workers in scheduler queue
@@ -99,7 +99,7 @@ job:
     # port
     port: 6379
     # password
-    password: ""
+    password: dragonfly
     # brokerDB
     brokerDB: 1
     # backendDB
