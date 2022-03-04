@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -32,6 +31,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/pickreq"
 )
 
