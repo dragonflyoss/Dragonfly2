@@ -17,7 +17,9 @@
 package peer
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
@@ -43,8 +45,14 @@ func (poller *pieceTaskPoller) preparePieceTasks(request *base.PieceTaskRequest)
 	var retryCount int
 prepare:
 	retryCount++
+	poller.peerTaskConductor.Debugf("prepare piece tasks, retry count: %d", retryCount)
 	peerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
 	ptc.pieceParallelCount.Store(peerPacket.ParallelCount)
+
+	if poller.peerTaskConductor.needBackSource.Load() {
+		return nil, fmt.Errorf("need back source")
+	}
+
 	request.DstPid = peerPacket.MainPeer.PeerId
 	pp, err = poller.preparePieceTasksByPeer(peerPacket, peerPacket.MainPeer, request)
 	if err == nil {
@@ -58,6 +66,10 @@ prepare:
 		goto prepare
 	}
 	for _, peer := range peerPacket.StealPeers {
+		if poller.peerTaskConductor.needBackSource.Load() {
+			return nil, fmt.Errorf("need back source")
+		}
+
 		request.DstPid = peer.PeerId
 		pp, err = poller.preparePieceTasksByPeer(peerPacket, peer, request)
 		if err == nil {
@@ -103,7 +115,7 @@ retry:
 	if err == errPeerPacketChanged {
 		return nil, err
 	}
-	ptc.Debugf("get piece task error: %#v", err)
+	ptc.Debugf("get piece task error: %s", err)
 
 	// grpc error
 	if se, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
@@ -159,7 +171,10 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		ptc               = poller.peerTaskConductor
 	)
 	p, _, err := retry.Run(ptc.ctx, func() (interface{}, bool, error) {
-		piecePacket, getError := dfclient.GetPieceTasks(ptc.ctx, peer, request)
+		// GetPieceTasks must be fast, so short time out is okay
+		ctx, cancel := context.WithTimeout(ptc.ctx, 4*time.Second)
+		defer cancel()
+		piecePacket, getError := dfclient.GetPieceTasks(ctx, peer, request)
 		// when GetPieceTasks returns err, exit retry
 		if getError != nil {
 			ptc.Errorf("get piece tasks with error: %s", getError)
