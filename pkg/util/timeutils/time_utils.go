@@ -72,6 +72,6 @@ func NanoToTime(nsec int64) time.Time {
 }
 
 // SubNano returns the difference between two nanoseconds
-func SubNano(x int64, y int64) int64 {
-	return NanoToTime(x).Sub(NanoToTime(y)).Nanoseconds()
+func SubNano(x int64, y int64) time.Duration {
+	return NanoToTime(x).Sub(NanoToTime(y))
 }

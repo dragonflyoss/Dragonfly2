@@ -480,7 +480,7 @@ func (s *Service) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-	peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)))
+	peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info
