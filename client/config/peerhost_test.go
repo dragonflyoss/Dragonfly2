@@ -347,7 +347,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Insecure: true,
 				Direct:   false,
 			},
-			Proxies: []*Proxy{
+			Proxies: []*ProxyRule{
 				{
 					Regx:     proxyExp,
 					UseHTTPS: false,
