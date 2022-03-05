@@ -19,7 +19,6 @@
 package task
 
 import (
-	"sort"
 	"sync"
 	"time"
 
@@ -218,9 +217,9 @@ func (tm *manager) GetProgress(taskID string) ([]*PieceInfo, error) {
 		pieces = append(pieces, value.(*PieceInfo))
 		return true
 	})
-	sort.Slice(pieces, func(i, j int) bool {
-		return pieces[i].PieceNum < pieces[j].PieceNum
-	})
+	//sort.Slice(pieces, func(i, j int) bool {
+	//	return pieces[i].PieceNum < pieces[j].PieceNum
+	//})
 	return pieces, nil
 }
 
