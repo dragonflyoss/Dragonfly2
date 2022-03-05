@@ -184,18 +184,6 @@ func (mm *metadataManager) getPiecesMetaAndMd5Sign(taskID string) (string, []*st
 }
 
 func (mm *metadataManager) getPieceMd5Sign(taskID string) (string, error) {
-	mm.cacheLocker.Lock(taskID, true)
-	defer mm.cacheLocker.UnLock(taskID, true)
-	pieceMetaRecords, err := mm.storage.ReadPieceMetaRecords(taskID)
-	if err != nil {
-		return "", errors.Wrapf(err, "read piece meta file")
-	}
-	var pieceMd5 []string
-	sort.Slice(pieceMetaRecords, func(i, j int) bool {
-		return pieceMetaRecords[i].PieceNum < pieceMetaRecords[j].PieceNum
-	})
-	for _, piece := range pieceMetaRecords {
-		pieceMd5 = append(pieceMd5, piece.Md5)
-	}
-	return digestutils.Sha256(pieceMd5...), nil
+	pieceMd5Sign, _, err := mm.getPiecesMetaAndMd5Sign(taskID)
+	return pieceMd5Sign, err
 }
