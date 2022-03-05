@@ -135,7 +135,7 @@ func (cd *cacheDetector) detectByReadMetaFile(taskID string, fileMetadata *stora
 	if !fileMetadata.Success {
 		return nil, errors.New("metadata success flag is false")
 	}
-	md5Sign, pieceMetaRecords, err := cd.metadataManager.getPieceMd5Sign(taskID)
+	md5Sign, pieceMetaRecords, err := cd.metadataManager.getPiecesMetaAndMd5Sign(taskID)
 	if err != nil {
 		return nil, errors.Wrap(err, "get pieces md5 sign")
 	}

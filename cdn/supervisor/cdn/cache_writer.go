@@ -94,7 +94,7 @@ func (cw *cacheWriter) startWriter(ctx context.Context, reader *limitreader.Limi
 	storageInfoBytes, _ := json.Marshal(storageInfo)
 	writeSpan.SetAttributes(constants.AttributeDownloadFileInfo.String(string(storageInfoBytes)))
 	// TODO Try getting it from the ProgressManager first
-	pieceMd5Sign, _, err := cw.metadataManager.getPieceMd5Sign(seedTask.ID)
+	pieceMd5Sign, err := cw.metadataManager.getPieceMd5Sign(seedTask.ID)
 	if err != nil {
 		return &downloadMetadata{backSourceLength: backSourceLength}, errors.Wrap(err, "get piece md5 sign")
 	}

@@ -37,9 +37,9 @@ import (
 
 // SeederServer  refer to cdnsystem.SeederServer
 type SeederServer interface {
-	// Generate seeds and return to scheduler
+	// ObtainSeeds generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
-	// Get piece tasks from cdn
+	// GetPieceTasks get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 }
 
