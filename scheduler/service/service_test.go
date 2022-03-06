@@ -1808,6 +1808,7 @@ func TestService_registerPeer(t *testing.T) {
 func TestService_handlePieceSuccess(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
 	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+	now := time.Now()
 
 	tests := []struct {
 		name   string
@@ -1823,8 +1824,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 					PieceNum: 0,
 					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
 				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+				BeginTime: uint64(now.UnixNano()),
+				EndTime:   uint64(now.Add(1 * time.Millisecond).UnixNano()),
 			},
 			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
 			mock: func(peer *resource.Peer) {
@@ -1843,8 +1844,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 					PieceNum: 0,
 					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
 				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+				BeginTime: uint64(now.UnixNano()),
+				EndTime:   uint64(now.Add(1 * time.Millisecond).UnixNano()),
 			},
 			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
 			mock: func(peer *resource.Peer) {

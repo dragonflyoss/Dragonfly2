@@ -21,7 +21,6 @@ package supervisor
 import (
 	"context"
 	"encoding/json"
-	"sort"
 
 	"github.com/pkg/errors"
 
@@ -124,18 +123,7 @@ func (service *cdnService) triggerCdnSyncAction(ctx context.Context, taskID stri
 }
 
 func (service *cdnService) GetSeedPieces(taskID string) ([]*task.PieceInfo, error) {
-	pieceMap, err := service.taskManager.GetProgress(taskID)
-	if err != nil {
-		return nil, err
-	}
-	pieces := make([]*task.PieceInfo, 0, len(pieceMap))
-	for i := range pieceMap {
-		pieces = append(pieces, pieceMap[i])
-	}
-	sort.Slice(pieces, func(i, j int) bool {
-		return pieces[i].PieceNum < pieces[j].PieceNum
-	})
-	return pieces, nil
+	return service.taskManager.GetProgress(taskID)
 }
 
 func (service *cdnService) GetSeedTask(taskID string) (*task.SeedTask, error) {

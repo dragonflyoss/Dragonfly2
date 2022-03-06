@@ -18,6 +18,7 @@ package task
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -83,18 +84,21 @@ type SeedTask struct {
 	Header map[string]string `json:"header,omitempty"`
 
 	// Pieces pieces of task
-	Pieces map[uint32]*PieceInfo `json:"-"`
+	Pieces *sync.Map `json:"-"` // map[uint32]*PieceInfo
 
 	logger *logger.SugaredLoggerOnWith
 }
 
 type PieceInfo struct {
-	PieceNum    uint32            `json:"piece_num"`
-	PieceMd5    string            `json:"piece_md5"`
-	PieceRange  *rangeutils.Range `json:"piece_range"`
-	OriginRange *rangeutils.Range `json:"origin_range"`
-	PieceLen    uint32            `json:"piece_len"`
-	PieceStyle  base.PieceStyle   `json:"piece_style"`
+	PieceNum          uint32            `json:"piece_num"`
+	PieceMd5          string            `json:"piece_md5"`
+	PieceRange        *rangeutils.Range `json:"piece_range"`
+	OriginRange       *rangeutils.Range `json:"origin_range"`
+	PieceLen          uint32            `json:"piece_len"`
+	PieceStyle        base.PieceStyle   `json:"piece_style"`
+	DownloadCost      uint64            `json:"download_cost"`
+	BeginDownloadTime uint64            `json:"begin_download_time"`
+	EndDownloadTime   uint64            `json:"end_download_time"`
 }
 
 const (
@@ -121,7 +125,7 @@ func NewSeedTask(taskID string, rawURL string, urlMeta *base.UrlMeta) *SeedTask 
 		Range:            urlMeta.Range,
 		Filter:           urlMeta.Filter,
 		Header:           urlMeta.Header,
-		Pieces:           make(map[uint32]*PieceInfo),
+		Pieces:           new(sync.Map),
 		logger:           logger.WithTaskID(taskID),
 	}
 }
@@ -134,11 +138,12 @@ func (task *SeedTask) Clone() *SeedTask {
 			cloneTask.Header[key] = value
 		}
 	}
-	if len(task.Pieces) > 0 {
-		for pieceNum, piece := range task.Pieces {
-			cloneTask.Pieces[pieceNum] = piece
-		}
-	}
+	cloneTask.Pieces = new(sync.Map)
+	task.Pieces.Range(func(key, value interface{}) bool {
+		cloneTask.Pieces.Store(key, value)
+		return true
+	})
+
 	return cloneTask
 }
 
@@ -189,7 +194,7 @@ func (task *SeedTask) Log() *logger.SugaredLoggerOnWith {
 
 func (task *SeedTask) StartTrigger() {
 	task.CdnStatus = StatusRunning
-	task.Pieces = make(map[uint32]*PieceInfo)
+	task.Pieces = new(sync.Map)
 }
 
 const (

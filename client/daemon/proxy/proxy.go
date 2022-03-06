@@ -65,7 +65,7 @@ type Proxy struct {
 	registry *config.RegistryMirror
 
 	// proxy rules
-	rules []*config.Proxy
+	rules []*config.ProxyRule
 
 	// httpsHosts is the list of hosts whose https requests will be hijacked
 	httpsHosts []*config.HijackHost
@@ -166,7 +166,7 @@ func WithDirectHandler(h *http.ServeMux) Option {
 }
 
 // WithRules sets the proxy rules
-func WithRules(rules []*config.Proxy) Option {
+func WithRules(rules []*config.ProxyRule) Option {
 	return func(p *Proxy) *Proxy {
 		p.rules = rules
 		return p
@@ -511,7 +511,7 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 }
 
 // setRules changes the rule lists of the proxy to the given rules.
-func (proxy *Proxy) setRules(rules []*config.Proxy) error {
+func (proxy *Proxy) setRules(rules []*config.ProxyRule) error {
 	proxy.rules = rules
 	return nil
 }

@@ -64,6 +64,9 @@ type DaemonOption struct {
 	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
 	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
 	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
+	Health       *HealthOption   `mapstructure:"health" yaml:"health"`
+	// TODO WIP, did not use
+	Reload ReloadOption `mapstructure:"reloadOption" yaml:"reloadOption"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -196,7 +199,7 @@ type ProxyOption struct {
 	MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 	RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
 	WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-	Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+	Proxies         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	// ExtraRegistryMirrors add more mirror for different ports
@@ -283,7 +286,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 		RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
 		WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-		Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+		Proxies         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
 		HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 		DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	}{}
@@ -443,6 +446,15 @@ type StorageOption struct {
 }
 
 type StoreStrategy string
+
+type HealthOption struct {
+	ListenOption `yaml:",inline" mapstructure:",squash"`
+	Path         string `mapstructure:"path" yaml:"pash"`
+}
+
+type ReloadOption struct {
+	Interval clientutil.Duration
+}
 
 type FileString string
 
@@ -650,8 +662,8 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 	return roots, nil
 }
 
-// Proxy describes a regular expression matching rule for how to proxy a request.
-type Proxy struct {
+// ProxyRule describes a regular expression matching rule for how to proxy a request.
+type ProxyRule struct {
 	Regx     *Regexp `yaml:"regx" mapstructure:"regx"`
 	UseHTTPS bool    `yaml:"useHTTPS" mapstructure:"useHTTPS"`
 	Direct   bool    `yaml:"direct" mapstructure:"direct"`
@@ -660,13 +672,13 @@ type Proxy struct {
 	Redirect string `yaml:"redirect" mapstructure:"redirect"`
 }
 
-func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
+func NewProxyRule(regx string, useHTTPS bool, direct bool, redirect string) (*ProxyRule, error) {
 	exp, err := NewRegexp(regx)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid regexp")
 	}
 
-	return &Proxy{
+	return &ProxyRule{
 		Regx:     exp,
 		UseHTTPS: useHTTPS,
 		Direct:   direct,
@@ -675,7 +687,7 @@ func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy,
 }
 
 // Match checks if the given url matches the rule.
-func (r *Proxy) Match(url string) bool {
+func (r *ProxyRule) Match(url string) bool {
 	return r.Regx != nil && r.Regx.MatchString(url)
 }
 
