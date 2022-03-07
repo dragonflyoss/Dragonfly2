@@ -113,7 +113,6 @@ func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.P
 		IsStick: true,
 	})
 	_, err := sc.schedulerClient.ReportPeerResult(ctx, pr, opts...)
-	// TODO if fail then report to manager
 	return err
 }
 

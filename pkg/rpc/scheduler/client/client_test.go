@@ -771,25 +771,4 @@ func TestRegisterRateLimit(t *testing.T) {
 	_, err = client.RegisterPeerTask(context.Background(), registerRequest, grpc.Peer(&serverPeer), grpc_retry.WithMax(0))
 	assert.Nil(t, err)
 	assert.Equal(t, migratedServer, serverPeer.Addr.String())
-	//errGroup := errgroup.Group{}
-	//for i := 0; i < limit; i++ {
-	//	errGroup.Go(func() error {
-	//		_, err = client.RegisterPeerTask(context.Background(), regesterRequest)
-	//		return err
-	//	})
-	//}
-	//if errGroup.Wait() != nil {
-	//	assert.Equal(t, status.Code(err), codes.ResourceExhausted)
-	//}
-	//
-	//time.Sleep(time.Second / time.Duration(limit))
-	//_, err = client.RegisterPeerTask(context.Background(), &scheduler.PeerTaskRequest{
-	//	Url:         normalTaskURL,
-	//	UrlMeta:     nil,
-	//	PeerId:      "test_peer",
-	//	PeerHost:    nil,
-	//	HostLoad:    nil,
-	//	IsMigrating: false,
-	//})
-	//assert.Nil(t, err)
 }

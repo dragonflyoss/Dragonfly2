@@ -23,12 +23,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	rpcmanager "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -118,6 +120,11 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
+	}
+	if s.config.Server.RateLimit.Enable {
+		serverOptions = append(serverOptions, grpc.ChainUnaryInterceptor(ratelimit.UnaryServerInterceptor(
+			rpc.NewLimiter(s.config.Server.RateLimit.UnaryCallLimit))),
+			grpc.ChainStreamInterceptor(ratelimit.StreamServerInterceptor(rpc.NewLimiter(s.config.Server.RateLimit.StreamCallLimit))))
 	}
 
 	// Initialize resource

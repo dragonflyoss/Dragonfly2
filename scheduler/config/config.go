@@ -22,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -221,6 +222,9 @@ type ServerConfig struct {
 
 	// Server log directory
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
+	// RateLimit is the rate limit configuration for rpc request
+	RateLimit rpc.RateLimit `yaml:"rateLimit" mapstructure:"rateLimit"`
 }
 
 type SchedulerConfig struct {
