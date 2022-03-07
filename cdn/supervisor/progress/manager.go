@@ -21,7 +21,6 @@ package progress
 import (
 	"context"
 	"encoding/json"
-	"sort"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -75,6 +74,10 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 	if err != nil {
 		return nil, err
 	}
+	pieces, err := pm.taskManager.GetProgress(taskID)
+	if err != nil {
+		return nil, err
+	}
 	if seedTask.IsDone() {
 		pieceChan := make(chan *task.PieceInfo)
 		go func(pieceChan chan *task.PieceInfo) {
@@ -82,22 +85,15 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 				logger.Debugf("subscriber %s starts watching task %s seed progress", clientAddr, taskID)
 				close(pieceChan)
 			}()
-			pieceNums := make([]uint32, 0, len(seedTask.Pieces))
-			for pieceNum := range seedTask.Pieces {
-				pieceNums = append(pieceNums, pieceNum)
-			}
-			sort.Slice(pieceNums, func(i, j int) bool {
-				return pieceNums[i] < pieceNums[j]
-			})
-			for _, pieceNum := range pieceNums {
-				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, pieceNum, taskID)
-				pieceChan <- seedTask.Pieces[pieceNum]
+			for _, piece := range pieces {
+				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, piece.PieceNum, taskID)
+				pieceChan <- piece
 			}
 		}(pieceChan)
 		return pieceChan, nil
 	}
 	var progressPublisher, _ = pm.seedTaskSubjects.LoadOrStore(taskID, newProgressPublisher(taskID))
-	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, seedTask.Pieces)
+	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, pieces)
 	progressPublisher.(*publisher).AddSubscriber(observer)
 	return observer.Receiver(), nil
 }

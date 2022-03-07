@@ -19,6 +19,7 @@
 package task
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -54,8 +55,8 @@ type Manager interface {
 	// UpdateProgress update the downloaded pieces belonging to the task
 	UpdateProgress(taskID string, piece *PieceInfo) (err error)
 
-	// GetProgress returns the downloaded pieces belonging to the task
-	GetProgress(taskID string) (map[uint32]*PieceInfo, error)
+	// GetProgress returns the downloaded pieces belonging to the task，sorted by pieceNum ascending order
+	GetProgress(taskID string) ([]*PieceInfo, error)
 
 	// Exist check task existence with specified taskID.
 	// returns the task info with specified taskID, or nil if no value is present.
@@ -198,13 +199,13 @@ func (tm *manager) UpdateProgress(taskID string, info *PieceInfo) error {
 	if !ok {
 		return errTaskNotFound
 	}
-	seedTask.Pieces[info.PieceNum] = info
+	seedTask.Pieces.Store(info.PieceNum, info)
 	// only update access when update task success
 	tm.accessTimeMap.Store(taskID, time.Now())
 	return nil
 }
 
-func (tm *manager) GetProgress(taskID string) (map[uint32]*PieceInfo, error) {
+func (tm *manager) GetProgress(taskID string) ([]*PieceInfo, error) {
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
 	seedTask, ok := tm.getTask(taskID)
@@ -212,7 +213,15 @@ func (tm *manager) GetProgress(taskID string) (map[uint32]*PieceInfo, error) {
 		return nil, errTaskNotFound
 	}
 	tm.accessTimeMap.Store(taskID, time.Now())
-	return seedTask.Pieces, nil
+	var pieces []*PieceInfo
+	seedTask.Pieces.Range(func(key, value interface{}) bool {
+		pieces = append(pieces, value.(*PieceInfo))
+		return true
+	})
+	sort.Slice(pieces, func(i, j int) bool {
+		return pieces[i].PieceNum < pieces[j].PieceNum
+	})
+	return pieces, nil
 }
 
 func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
