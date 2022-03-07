@@ -57,7 +57,7 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Da
 	once.Do(func() {
 		elasticDaemonClient = &daemonClient{
 			rpc.NewConnection(context.Background(), "daemon-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(30 * time.Second),
+				rpc.WithConnExpireTime(60 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/RichardKnop/machinery v1.10.6
+	github.com/RichardKnop/machinery/v2 v2.0.11
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/agiledragon/gomonkey/v2 v2.3.0
