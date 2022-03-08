@@ -253,17 +253,22 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	}
 	log := pt.Log()
 	log.Infof("start to download from source")
-	contentLengthRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
+
+	// 1. download pieces from source
+	downloadRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
 	if err != nil {
 		return err
 	}
-	contentLength, err := source.GetContentLength(contentLengthRequest)
+	response, err := source.Download(downloadRequest)
+	// TODO update expire info
 	if err != nil {
-		log.Warnf("get content length error: %s for %s", err, request.Url)
+		return err
 	}
+	contentLength := response.ContentLength
 	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
 	} else {
+		log.Debugf("back source content length: %d", contentLength)
 		err = pt.GetStorage().UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -275,17 +280,6 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 		if err != nil {
 			return err
 		}
-	}
-	log.Debugf("get content length: %d", contentLength)
-	// 1. download piece from source
-	downloadRequest, err := source.NewRequestWithContext(ctx, request.Url, request.UrlMeta.Header)
-	if err != nil {
-		return err
-	}
-	response, err := source.Download(downloadRequest)
-	// TODO update expire info
-	if err != nil {
-		return err
 	}
 	defer response.Body.Close()
 	reader := response.Body.(io.Reader)
