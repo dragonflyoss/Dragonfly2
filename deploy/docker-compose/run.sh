@@ -18,10 +18,10 @@ prepare(){
 
     ip=${IP:-$(hostname -i)}
 
-    sed -i'' -e "s,__IP__,$ip," config/dfget.yaml
-    sed -i'' -e "s,__IP__,$ip," config/cdn.yaml
-    sed -i'' -e "s,__IP__,$ip," config/scheduler.yaml
-    sed -i'' -e "s,__IP__,$ip," config/manager.yaml
+    sed -i "s,__IP__,$ip," config/dfget.yaml
+    sed -i "s,__IP__,$ip," config/cdn.yaml
+    sed -i "s,__IP__,$ip," config/scheduler.yaml
+    sed -i "s,__IP__,$ip," config/manager.yaml
 }
 
 run_container(){
