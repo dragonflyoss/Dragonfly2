@@ -211,6 +211,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					hostManager.Delete(gomock.Eq("foo-0_CDN")).Return().Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
