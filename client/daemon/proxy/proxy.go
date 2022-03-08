@@ -231,12 +231,14 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
 	}
-	proxy.transport = proxy.newTransport(nil)
 
 	for _, opt := range options {
 		opt(proxy)
 	}
 
+	if proxy.transport == nil {
+		proxy.transport = proxy.newTransport(nil)
+	}
 	return proxy, nil
 }
 
