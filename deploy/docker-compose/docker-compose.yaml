@@ -28,7 +28,7 @@ services:
       retries: 30
 
   manager:
-    image: dragonflyoss/manager:v2.0.2-rc.9
+    image: dragonflyoss/manager:v2.0.2-rc.20
     container_name: manager
     network_mode: host
     depends_on:
@@ -45,7 +45,7 @@ services:
       retries: 30
 
   dfdaemon:
-    image: dragonflyoss/dfdaemon:v2.0.2-rc.9
+    image: dragonflyoss/dfdaemon:v2.0.2-rc.20
     depends_on:
       - scheduler
       - cdn
@@ -62,7 +62,7 @@ services:
       - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml
 
   scheduler:
-    image: dragonflyoss/scheduler:v2.0.2-rc.9
+    image: dragonflyoss/scheduler:v2.0.2-rc.20
     depends_on:
       - cdn
       - manager
@@ -77,10 +77,9 @@ services:
     volumes:
       - /tmp/log/dragonfly:/var/log/dragonfly
       - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml
-      - ./config/cdn.json:/opt/dragonfly/scheduler-cdn/cdn.json
 
   cdn:
-    image: dragonflyoss/cdn:v2.0.2-rc.9
+    image: dragonflyoss/cdn:v2.0.2-rc.20
     container_name: cdn
     network_mode: host
     restart: always
