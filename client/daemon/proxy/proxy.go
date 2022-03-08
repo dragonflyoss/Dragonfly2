@@ -337,6 +337,7 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	// FIXME did not need create a transport per request
 	resp, err := proxy.newTransport(nil).RoundTrip(req)
 	if err != nil {
+		span.RecordError(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}

@@ -53,7 +53,7 @@ type pieceManager struct {
 
 var _ PieceManager = (*pieceManager)(nil)
 
-func NewPieceManager(s storage.TaskStorageDriver, pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
+func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
 		computePieceSize: util.ComputePieceSize,
 		calculateDigest:  true,

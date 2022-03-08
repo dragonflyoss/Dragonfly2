@@ -676,6 +676,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 		pt.Infof("single piece download success")
 	} else {
 		// fallback to download from other peers
+		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
 
@@ -1076,6 +1077,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 		})
 	if err != nil {
 		pt.Errorf("report piece task error: %v", err)
+		span.RecordError(err)
 	}
 
 	span.End()
