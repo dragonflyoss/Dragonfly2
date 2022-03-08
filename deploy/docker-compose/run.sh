@@ -11,22 +11,17 @@ cd $DIR
 prepare(){
     mkdir -p config
 
-    cat template/cdn.template.json > config/cdn.json
     cat template/cdn.template.yaml > config/cdn.yaml
     cat template/dfget.template.yaml > config/dfget.yaml
     cat template/scheduler.template.yaml > config/scheduler.yaml
     cat template/manager.template.yaml > config/manager.yaml
 
     ip=${IP:-$(hostname -i)}
-    hostname=$(hostname)
 
-    sed -i "s,__IP__,$ip," config/cdn.json
     sed -i "s,__IP__,$ip," config/dfget.yaml
     sed -i "s,__IP__,$ip," config/cdn.yaml
     sed -i "s,__IP__,$ip," config/scheduler.yaml
     sed -i "s,__IP__,$ip," config/manager.yaml
-
-    sed -i "s,__HOSTNAME__,$hostname," config/cdn.json
 }
 
 run_container(){
@@ -35,6 +30,12 @@ run_container(){
 
     echo try to clean old containers
     ${RUNTIME} rm -f dragonfly-cdn dragonfly-scheduler dragonfly-dfdaemon
+
+    printf "create dragonfly-manager "
+    ${RUNTIME} run -d --name dragonfly-cdn --net=host \
+        -v /tmp/log/dragonfly:/var/log/dragonfly \
+        -v ${DIR}/config/manager.yaml:/etc/dragonfly/manager.yaml \
+        ${REPO}/manager:${TAG}
 
     printf "create dragonfly-cdn "
     ${RUNTIME} run -d --name dragonfly-cdn --net=host \
@@ -47,7 +48,6 @@ run_container(){
     ${RUNTIME} run -d --name dragonfly-scheduler --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/scheduler.yaml:/etc/dragonfly/scheduler.yaml \
-        -v ${DIR}/config/cdn.json:/opt/dragonfly/scheduler-cdn/cdn.json \
         ${REPO}/scheduler:${TAG}
 
     printf "create dragonfly-dfdaemon "
