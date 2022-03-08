@@ -79,6 +79,9 @@ type Proxy struct {
 	// directHandler are used to handle non-proxy requests
 	directHandler http.Handler
 
+	// transport is used to handle http proxy requests
+	transport http.RoundTripper
+
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
@@ -101,6 +104,8 @@ type Proxy struct {
 
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
+
+	peerIDGenerator transport.PeerIDGenerator
 }
 
 // Option is a functional option for configuring the proxy
@@ -110,6 +115,7 @@ type Option func(p *Proxy) *Proxy
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
+		p.peerIDGenerator = transport.NewPeerIDGenerator(peerHost.Ip)
 		return p
 	}
 }
@@ -225,6 +231,7 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 		directHandler: http.NewServeMux(),
 		tracer:        otel.Tracer("dfget-daemon-proxy"),
 	}
+	proxy.transport = proxy.newTransport(nil)
 
 	for _, opt := range options {
 		opt(proxy)
@@ -334,8 +341,7 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
-	// FIXME did not need create a transport per request
-	resp, err := proxy.newTransport(nil).RoundTrip(req)
+	resp, err := proxy.transport.RoundTrip(req)
 	if err != nil {
 		span.RecordError(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -459,7 +465,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 	rt, _ := transport.New(
-		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
@@ -473,7 +479,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := newReverseProxy(proxy.registry)
 	t, err := transport.New(
-		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),

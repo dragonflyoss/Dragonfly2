@@ -14,25 +14,38 @@
  * limitations under the License.
  */
 
-package idgen
+package transport
 
-import (
-	"fmt"
-	"os"
+import "d7y.io/dragonfly/v2/pkg/idgen"
 
-	"github.com/google/uuid"
+const (
+	defaultPeerIDBufferSize = 1024
 )
 
-var pid int
-
-func init() {
-	pid = os.Getpid()
+type PeerIDGenerator interface {
+	PeerID() string
 }
 
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
+type peerIDGenerator struct {
+	ip string
+	ch chan string
 }
 
-func PeerID(ip string) string {
-	return fmt.Sprintf("%s-%d-%s", ip, pid, uuid.New())
+func NewPeerIDGenerator(ip string) PeerIDGenerator {
+	p := &peerIDGenerator{
+		ip: ip,
+		ch: make(chan string, defaultPeerIDBufferSize),
+	}
+	go p.run()
+	return p
+}
+
+func (p *peerIDGenerator) PeerID() string {
+	return <-p.ch
+}
+
+func (p *peerIDGenerator) run() {
+	for {
+		p.ch <- idgen.PeerID(p.ip)
+	}
 }
