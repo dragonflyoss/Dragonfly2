@@ -231,6 +231,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		id := idgen.CDNHostID(v.Hostname, v.Port)
 		if host, ok := c.hostManager.Load(id); ok {
 			host.LeavePeers()
+			c.hostManager.Delete(id)
 		}
 	}
 
