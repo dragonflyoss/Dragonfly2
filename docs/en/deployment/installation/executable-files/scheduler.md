@@ -9,8 +9,7 @@ When deploying with physical machines, the following conditions must be met.
 | Required Software | Version Limit |
 | ----------------- | ------------- |
 | Git               | 1.9.1+        |
-| Golang            | 1.12.x        |
-| Nginx             | 0.8+          |
+| Golang            | 1.16.x        |
 
 ## Procedure - When Deploying with Physical Machines
 
@@ -21,15 +20,21 @@ When deploying with physical machines, the following conditions must be met.
    Dragonfly on the [github releases page](https://github.com/dragonflyoss/Dragonfly2/releases).
 
    ```sh
-   version=2.0.0
-   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+   # latest version
+   # version=$(https://raw.githubusercontent.com/dragonflyoss/Dragonfly2/main/version/version.latest)
+
+   # stable version
+   version=$(curl -s https://raw.githubusercontent.com/dragonflyoss/Dragonfly2/main/version/version.stable)
+
+   wget -o Dragonfly2_linux_amd64.tar.gz \
+      https://github.com/dragonflyoss/Dragonfly2/releases/download/v${version}/Dragonfly2_${version}_linux_amd64.tar.gz
    ```
 
 2. Unzip the package.
 
    ```bash
    # Replace `xxx` with the installation directory.
-   tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+   tar -zxf Dragonfly2_linux_amd64.tar.gz -C xxx
    ```
 
 3. Move the `scheduler` to your `PATH` environment

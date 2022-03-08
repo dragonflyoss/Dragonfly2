@@ -9,7 +9,7 @@
 | 所需软件 | 版本要求 |
 | -------- | -------- |
 | Git      | 1.9.1+   |
-| Golang   | 1.12.x   |
+| Golang   | 1.16.x   |
 
 ## 在物理机上部署
 
@@ -20,15 +20,21 @@
    下载一个已发布的最近版本
 
    ```sh
-   version=2.0.0
-   wget https://github.com/dragonflyoss/Dragonfly2/releases/download/v$version/Dragonfly2_$version_linux_amd64.tar.gz
+   # latest version
+   # version=$(https://raw.githubusercontent.com/dragonflyoss/Dragonfly2/main/version/version.latest)
+
+   # stable version
+   version=$(curl -s https://raw.githubusercontent.com/dragonflyoss/Dragonfly2/main/version/version.stable)
+
+   wget -o Dragonfly2_linux_amd64.tar.gz \
+      https://github.com/dragonflyoss/Dragonfly2/releases/download/v${version}/Dragonfly2_${version}_linux_amd64.tar.gz
    ```
 
 2. 解压压缩包
 
    ```bash
    # Replace `xxx` with the installation directory.
-   tar -zxf Dragonfly2_2.0.0_linux_amd64.tar.gz -C xxx
+   tar -zxf Dragonfly2_linux_amd64.tar.gz -C xxx
    ```
 
 3. 把 `dfget` 移动到环境变量 `PATH` 下以确保您可以直接使用 `dfget` 命令
