@@ -294,7 +294,12 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 	}
 
 	if req.Range == nil {
-		return file, nil
+		// by jim: for some corner case, avoid the io.Copy call superfluous sendfile syscall
+		// then increase network latency
+		return &limitedReadFile{
+			reader: io.LimitReader(file, t.ContentLength),
+			closer: file,
+		}, nil
 	}
 
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
