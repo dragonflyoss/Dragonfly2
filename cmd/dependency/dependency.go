@@ -35,11 +35,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/yaml.v3"
 
@@ -221,7 +221,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
 func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
-	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
 	if err != nil {
 		return nil, err
 	}
@@ -232,6 +232,7 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(otelOption.ServiceName),
 			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", hostutils.FQDNHostname, iputils.IPv4)),
 			semconv.ServiceNamespaceKey.String("dragonfly"),

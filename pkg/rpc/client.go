@@ -26,6 +26,7 @@ import (
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -91,7 +92,7 @@ var defaultClientOpts = []grpc.DialOption{
 	grpc.WithBlock(),
 	grpc.WithDisableServiceConfig(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
-	grpc.WithInsecure(),
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:    20 * time.Second,
 		Timeout: 20 * time.Second,
