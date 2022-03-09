@@ -94,9 +94,23 @@ const (
 	PeerEventLeave = "Leave"
 )
 
+// PeerOption is a functional option for configuring the peer
+type PeerOption func(p *Peer) *Peer
+
+// WithBizTag sets peer's BizTag
+func WithBizTag(bizTag string) PeerOption {
+	return func(p *Peer) *Peer {
+		p.BizTag = bizTag
+		return p
+	}
+}
+
 type Peer struct {
 	// ID is peer id
 	ID string
+
+	// BizTag is peer biz tag
+	BizTag string
 
 	// Pieces is piece bitset
 	Pieces *bitset.BitSet
@@ -139,7 +153,7 @@ type Peer struct {
 }
 
 // New Peer instance
-func NewPeer(id string, task *Task, host *Host) *Peer {
+func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:         id,
 		Pieces:     &bitset.BitSet{},
@@ -219,6 +233,10 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			},
 		},
 	)
+
+	for _, opt := range options {
+		opt(p)
+	}
 
 	return p
 }

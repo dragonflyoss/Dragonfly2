@@ -28,7 +28,7 @@ message PeerTaskRequest{
   // universal resource locator for different kind of storage
   string url = 1 [(validate.rules).string.uri = true];
   // url meta info
-  base.UrlMeta url_meta = 2;
+  base.UrlMeta url_meta = 2 [(validate.rules).message.required = true];
   // peer's id and must be global uniqueness
   string peer_id = 3 [(validate.rules).string.min_len = 1];
   // peer host info

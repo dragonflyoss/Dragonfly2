@@ -47,13 +47,13 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 
 // RegisterPeerTask registers peer and triggers CDN download task
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
-	metrics.RegisterPeerTaskCount.Inc()
+	metrics.RegisterPeerTaskCount.WithLabelValues(req.UrlMeta.Tag).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
 	if err != nil {
-		metrics.RegisterPeerTaskFailureCount.Inc()
+		metrics.RegisterPeerTaskFailureCount.WithLabelValues(req.UrlMeta.Tag).Inc()
 	} else {
-		metrics.PeerTaskCounter.WithLabelValues(resp.SizeScope.String()).Inc()
+		metrics.PeerTaskCounter.WithLabelValues(req.UrlMeta.Tag, resp.SizeScope.String()).Inc()
 	}
 
 	return resp, err
@@ -69,14 +69,6 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 
 // ReportPeerResult handles peer result reported by dfdaemon
 func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
-	metrics.DownloadCount.Inc()
-	if req.Success {
-		metrics.P2PTraffic.Add(float64(req.Traffic))
-		metrics.PeerTaskDownloadDuration.Observe(float64(req.Cost))
-	} else {
-		metrics.DownloadFailureCount.Inc()
-	}
-
 	return new(empty.Empty), s.service.ReportPeerResult(ctx, req)
 }
 
