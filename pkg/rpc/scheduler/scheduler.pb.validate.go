@@ -67,6 +67,13 @@ func (m *PeerTaskRequest) Validate() error {
 		}
 	}
 
+	if m.GetUrlMeta() == nil {
+		return PeerTaskRequestValidationError{
+			field:  "UrlMeta",
+			reason: "value is required",
+		}
+	}
+
 	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{

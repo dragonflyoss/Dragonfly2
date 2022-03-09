@@ -42,9 +42,10 @@ var (
 
 func TestPeer_NewPeer(t *testing.T) {
 	tests := []struct {
-		name   string
-		id     string
-		expect func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
+		name    string
+		id      string
+		options []PeerOption
+		expect  func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host)
 	}{
 		{
 			name: "new peer",
@@ -65,13 +66,34 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert.NotNil(peer.Log)
 			},
 		},
+		{
+			name:    "new peer with bizTag",
+			id:      mockPeerID,
+			options: []PeerOption{WithBizTag("foo")},
+			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
+				assert := assert.New(t)
+				assert.Equal(peer.ID, mockPeerID)
+				assert.Equal(peer.BizTag, "foo")
+				assert.Empty(peer.Pieces)
+				assert.Equal(len(peer.PieceCosts()), 0)
+				assert.Empty(peer.Stream)
+				assert.Equal(peer.FSM.Current(), PeerStatePending)
+				assert.EqualValues(peer.Task, mockTask)
+				assert.EqualValues(peer.Host, mockHost)
+				assert.Empty(peer.Parent)
+				assert.Empty(peer.Children)
+				assert.NotEqual(peer.CreateAt.Load(), 0)
+				assert.NotEqual(peer.UpdateAt.Load(), 0)
+				assert.NotNil(peer.Log)
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
-			tc.expect(t, NewPeer(tc.id, mockTask, mockHost), mockTask, mockHost)
+			tc.expect(t, NewPeer(tc.id, mockTask, mockHost, tc.options...), mockTask, mockHost)
 		})
 	}
 }
