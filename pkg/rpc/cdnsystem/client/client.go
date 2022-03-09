@@ -51,7 +51,7 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Cd
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
 			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(30 * time.Second),
+				rpc.WithConnExpireTime(60 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}
