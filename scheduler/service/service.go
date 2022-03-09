@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 
+	"go.opentelemetry.io/otel/trace"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
@@ -447,7 +449,8 @@ func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRe
 // triggerCDNTask starts trigger cdn task
 func (s *Service) triggerCDNTask(ctx context.Context, task *resource.Task) {
 	task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
-	peer, endOfPiece, err := s.resource.CDN().TriggerTask(context.Background(), task)
+	peer, endOfPiece, err := s.resource.CDN().TriggerTask(
+		trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx)), task)
 	if err != nil {
 		task.Log.Errorf("trigger cdn download task failed: %v", err)
 		s.handleTaskFail(ctx, task)
