@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"go.opentelemetry.io/otel/semconv"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
