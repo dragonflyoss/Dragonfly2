@@ -70,7 +70,7 @@ func getDiskDriverConfig(diskDriver storedriver.Driver) (*storage.DriverConfig, 
 		BaseDir: diskDriver.GetBaseDir(),
 		DriverGCConfig: &storage.DriverGCConfig{
 			YoungGCThreshold:  yongGCThreshold,
-			FullGCThreshold:   25 * unit.GB,
+			FullGCThreshold:   5 * unit.GB,
 			IntervalThreshold: 2 * time.Hour,
 			CleanRatio:        1,
 		},
