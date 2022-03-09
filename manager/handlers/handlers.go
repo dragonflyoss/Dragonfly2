@@ -27,10 +27,10 @@ import (
 )
 
 type Handlers struct {
-	service service.REST
+	service service.Service
 }
 
-func New(service service.REST) *Handlers {
+func New(service service.Service) *Handlers {
 	return &Handlers{
 		service: service,
 	}

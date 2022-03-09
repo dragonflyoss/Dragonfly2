@@ -279,6 +279,9 @@ definitions:
   rbac.Permission:
     properties:
       action:
+        enum:
+        - read
+        - '*'
         type: string
       object:
         type: string
@@ -289,6 +292,9 @@ definitions:
   types.AddPermissionForRoleRequest:
     properties:
       action:
+        enum:
+        - read
+        - '*'
         type: string
       object:
         type: string
@@ -299,6 +305,8 @@ definitions:
   types.CDNClusterConfig:
     properties:
       load_limit:
+        maximum: 10000
+        minimum: 1
         type: integer
       net_topology:
         type: string
@@ -312,6 +320,9 @@ definitions:
       name:
         type: string
       state:
+        enum:
+        - enable
+        - disable
         type: string
       url:
         type: string
@@ -408,6 +419,9 @@ definitions:
       client_secret:
         type: string
       name:
+        enum:
+        - github
+        - google
         type: string
       redirect_url:
         type: string
@@ -507,6 +521,9 @@ definitions:
           type: string
         type: object
       type:
+        enum:
+        - image
+        - file
         type: string
       url:
         type: string
@@ -522,6 +539,9 @@ definitions:
   types.DeletePermissionForRoleRequest:
     properties:
       action:
+        enum:
+        - read
+        - '*'
         type: string
       object:
         type: string
@@ -543,8 +563,12 @@ definitions:
   types.ResetPasswordRequest:
     properties:
       new_password:
+        maxLength: 20
+        minLength: 8
         type: string
       old_password:
+        maxLength: 20
+        minLength: 8
         type: string
     required:
     - new_password
@@ -553,9 +577,20 @@ definitions:
   types.SchedulerClusterClientConfig:
     properties:
       load_limit:
+        maximum: 10000
+        minimum: 1
+        type: integer
+      parallel_count:
+        maximum: 50
+        minimum: 1
         type: integer
     type: object
   types.SchedulerClusterConfig:
+    properties:
+      filter_parent_limit:
+        maximum: 100
+        minimum: 1
+        type: integer
     type: object
   types.SchedulerClusterScopes:
     properties:
@@ -577,8 +612,12 @@ definitions:
       location:
         type: string
       name:
+        maxLength: 10
+        minLength: 3
         type: string
       password:
+        maxLength: 20
+        minLength: 8
         type: string
       phone:
         type: string
@@ -596,6 +635,9 @@ definitions:
       name:
         type: string
       state:
+        enum:
+        - enable
+        - disable
         type: string
       url:
         type: string
@@ -657,6 +699,9 @@ definitions:
       client_secret:
         type: string
       name:
+        enum:
+        - github
+        - google
         type: string
       redirect_url:
         type: string
@@ -714,6 +759,19 @@ definitions:
       name:
         type: string
       proxy_domain:
+        type: string
+    type: object
+  types.UpdateUserRequest:
+    properties:
+      avatar:
+        type: string
+      bio:
+        type: string
+      email:
+        type: string
+      location:
+        type: string
+      phone:
         type: string
     type: object
 host: localhost:8080
@@ -2910,6 +2968,38 @@ paths:
         "500":
           description: ""
       summary: Get User
+      tags:
+      - User
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User
+        in: body
+        name: User
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update User
       tags:
       - User
   /users/{id}/reset_password:
