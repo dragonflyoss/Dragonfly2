@@ -276,12 +276,19 @@ func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 
 			// Collect peer host traffic metrics
 			if s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
-				metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, "download", peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
-					metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, "upload", parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+					metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else {
 					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
 				}
+			}
+
+			// Collect traffic metrics
+			if piece.DstPid != "" {
+				metrics.Traffic.WithLabelValues(peer.BizTag, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
+			} else {
+				metrics.Traffic.WithLabelValues(peer.BizTag, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
 			}
 			continue
 		}
@@ -330,7 +337,6 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 	}
 	s.handlePeerSuccess(ctx, peer)
 
-	metrics.P2PTraffic.WithLabelValues(peer.BizTag).Add(float64(req.Traffic))
 	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.BizTag).Observe(float64(req.Cost))
 	return nil
 }

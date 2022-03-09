@@ -29,6 +29,20 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+var (
+	// TrafficP2PType is p2p type for traffic metrics
+	TrafficP2PType = "p2p"
+
+	// TrafficBackToSourceType is back-to-source type for traffic metrics
+	TrafficBackToSourceType = "back_to_source"
+
+	// PeerHostTrafficUploadType is upload traffic type for peer host traffic metrics
+	PeerHostTrafficUploadType = "upload"
+
+	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics
+	PeerHostTrafficDownloadType = "download"
+)
+
 // Variables declared for metrics.
 var (
 	RegisterPeerTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -73,12 +87,12 @@ var (
 		Help:      "Counter of the number of failed of the leaving task.",
 	}, []string{"biz_tag"})
 
-	P2PTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
+	Traffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
-		Name:      "p2p_traffic",
-		Help:      "Counter of the number of p2p traffic.",
-	}, []string{"biz_tag"})
+		Name:      "traffic",
+		Help:      "Counter of the number of traffic.",
+	}, []string{"biz_tag", "type"})
 
 	PeerHostTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
