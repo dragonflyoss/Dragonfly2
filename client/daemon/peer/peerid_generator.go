@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package transport
+package peer
 
 import "d7y.io/dragonfly/v2/pkg/idgen"
 
@@ -22,7 +22,7 @@ const (
 	defaultPeerIDBufferSize = 1024
 )
 
-type PeerIDGenerator interface {
+type IDGenerator interface {
 	PeerID() string
 }
 
@@ -31,7 +31,7 @@ type peerIDGenerator struct {
 	ch chan string
 }
 
-func NewPeerIDGenerator(ip string) PeerIDGenerator {
+func NewPeerIDGenerator(ip string) IDGenerator {
 	p := &peerIDGenerator{
 		ip: ip,
 		ch: make(chan string, defaultPeerIDBufferSize),

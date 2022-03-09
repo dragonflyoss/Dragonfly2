@@ -73,14 +73,14 @@ type transport struct {
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
 
-	peerIDGenerator PeerIDGenerator
+	peerIDGenerator peer.IDGenerator
 }
 
 // Option is functional config for transport.
 type Option func(rt *transport) *transport
 
 // WithPeerIDGenerator sets the peerIDGenerator for transport
-func WithPeerIDGenerator(peerIDGenerator PeerIDGenerator) Option {
+func WithPeerIDGenerator(peerIDGenerator peer.IDGenerator) Option {
 	return func(rt *transport) *transport {
 		rt.peerIDGenerator = peerIDGenerator
 		return rt
