@@ -2115,7 +2115,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				var wg sync.WaitGroup
-				wg.Add(3)
+				wg.Add(2)
 				defer wg.Wait()
 
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -2126,9 +2126,9 @@ func TestService_handlePieceFail(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 				)
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Do(func(context.Context, *resource.Peer, set.SafeSet) { wg.Done() }).Return().Times(1)
 				mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1)
 				mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().AnyTimes()
 
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
