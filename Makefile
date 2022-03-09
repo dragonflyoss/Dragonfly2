@@ -236,6 +236,8 @@ e2e-test-coverage: install-e2e-test build-e2e-sha256sum
 # Clean E2E tests
 clean-e2e-test: 
 	@kind delete cluster
+	@echo "cleaning log file"
+	@rm -rf test/e2e/*.log
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
