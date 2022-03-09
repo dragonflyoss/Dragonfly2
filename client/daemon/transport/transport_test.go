@@ -51,7 +51,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 		},
 	)
 	rt, _ := New(
-		WithPeerIDGenerator(NewPeerIDGenerator("127.0.0.1")),
+		WithPeerIDGenerator(peer.NewPeerIDGenerator("127.0.0.1")),
 		WithPeerTaskManager(peerTaskManager),
 		WithCondition(func(r *http.Request) bool {
 			return true
