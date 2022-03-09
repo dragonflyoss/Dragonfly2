@@ -12,7 +12,7 @@ cdn [command]
 ## 可用子命令
 
 ```text
-doc         生成帮助文档 
+doc         生成帮助文档
 help        命令的帮助文档
 version     查看 cdn 当前版本
 ```
@@ -20,6 +20,7 @@ version     查看 cdn 当前版本
 ## 可选参数
 
 <!-- markdownlint-disable -->
+
 ```text
       --config string         配置文件地址 (默认值为/Users/${USER_HOME}/.dragonfly/config/cdn.yaml)，也可以使用环境变量 cdn_config 进行配置
       --console               logger 日志是否输出记录到标准输出
@@ -29,4 +30,5 @@ version     查看 cdn 当前版本
       --service-name string   tracer分布式追踪日志中的服务名称 (默认 "dragonfly-scheduler")
       --verbose               是否使用debug级别的日志输出
 ```
+
 <!-- markdownlint-restore -->

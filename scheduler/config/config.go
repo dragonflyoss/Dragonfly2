@@ -42,6 +42,9 @@ type Config struct {
 	// Manager configuration
 	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
+	// CDN configuration
+	CDN *CDNConfig `yaml:"cdn" mapstructure:"cdn"`
+
 	// Host configuration
 	Host *HostConfig `yaml:"host" mapstructure:"host"`
 
@@ -56,10 +59,9 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:          iputils.IPv4,
-			Host:        hostutils.FQDNHostname,
-			Port:        8002,
-			ListenLimit: 1000,
+			IP:   iputils.IPv4,
+			Host: hostutils.FQDNHostname,
+			Port: 8002,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            "default",
@@ -81,11 +83,13 @@ func New() *Config {
 		},
 		Host: &HostConfig{},
 		Manager: &ManagerConfig{
-			Enable:             true,
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
+		},
+		CDN: &CDNConfig{
+			Enable: true,
 		},
 		Job: &JobConfig{
 			Enable:             true,
@@ -117,10 +121,6 @@ func (c *Config) Validate() error {
 
 	if c.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
-	}
-
-	if c.Server.ListenLimit <= 0 {
-		return errors.New("server requires parameter listenLimit")
 	}
 
 	if c.Scheduler.Algorithm == "" {
@@ -155,18 +155,16 @@ func (c *Config) Validate() error {
 		return errors.New("dynconfig requires parameter refreshInterval")
 	}
 
-	if c.Manager.Enable {
-		if c.Manager.Addr == "" {
-			return errors.New("manager requires parameter addr")
-		}
+	if c.Manager.Addr == "" {
+		return errors.New("manager requires parameter addr")
+	}
 
-		if c.Manager.SchedulerClusterID == 0 {
-			return errors.New("manager requires parameter schedulerClusterID")
-		}
+	if c.Manager.SchedulerClusterID == 0 {
+		return errors.New("manager requires parameter schedulerClusterID")
+	}
 
-		if c.Manager.KeepAlive.Interval <= 0 {
-			return errors.New("manager requires parameter keepAlive interval")
-		}
+	if c.Manager.KeepAlive.Interval <= 0 {
+		return errors.New("manager requires parameter keepAlive interval")
 	}
 
 	if c.Job.Enable {
@@ -217,9 +215,6 @@ type ServerConfig struct {
 
 	// Server port
 	Port int `yaml:"port" mapstructure:"port"`
-
-	// Limit the number of requests
-	ListenLimit int `yaml:"listenLimit" mapstructure:"listenLimit"`
 
 	// Server dynamic config cache directory
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
@@ -288,9 +283,6 @@ type HostConfig struct {
 }
 
 type ManagerConfig struct {
-	// Enable is to enable contact with manager
-	Enable bool `yaml:"enable" mapstructure:"enable"`
-
 	// Addr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
@@ -299,6 +291,11 @@ type ManagerConfig struct {
 
 	// KeepAlive configuration
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type CDNConfig struct {
+	// Enable is to enable cdn as P2P peer
+	Enable bool `yaml:"enable" mapstructure:"enable"`
 }
 
 type KeepAliveConfig struct {

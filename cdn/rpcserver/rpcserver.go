@@ -78,6 +78,17 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
+	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
+	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
+	// begin piece
+	psc <- &cdnsystem.PieceSeed{
+		PeerId:   peerID,
+		HostUuid: hostID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
+		Done: false,
+	}
 	// register seed task
 	registeredTask, pieceChan, err := css.service.RegisterSeedTask(ctx, clientAddr, task.NewSeedTask(req.TaskId, req.Url, req.UrlMeta))
 	if err != nil {
@@ -90,34 +101,24 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	peerID := idgen.CDNPeerID(css.config.AdvertiseIP)
-	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
-	// begin piece, hint register success
-	psc <- &cdnsystem.PieceSeed{
-		PeerId:   peerID,
-		HostUuid: hostID,
-		PieceInfo: &base.PieceInfo{
-			PieceNum: common.BeginOfPiece,
-		},
-		Done:            false,
-		ContentLength:   registeredTask.SourceFileLength,
-		TotalPieceCount: registeredTask.TotalPieceCount,
-	}
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
 			HostUuid: hostID,
 			PieceInfo: &base.PieceInfo{
-				PieceNum:    int32(piece.PieceNum),
-				RangeStart:  piece.PieceRange.StartIndex,
-				RangeSize:   piece.PieceLen,
-				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.OriginRange.StartIndex,
-				PieceStyle:  piece.PieceStyle,
+				PieceNum:     int32(piece.PieceNum),
+				RangeStart:   piece.PieceRange.StartIndex,
+				RangeSize:    piece.PieceLen,
+				PieceMd5:     piece.PieceMd5,
+				PieceOffset:  piece.OriginRange.StartIndex,
+				PieceStyle:   piece.PieceStyle,
+				DownloadCost: piece.DownloadCost,
 			},
 			Done:            false,
 			ContentLength:   registeredTask.SourceFileLength,
 			TotalPieceCount: registeredTask.TotalPieceCount,
+			BeginTime:       piece.BeginDownloadTime,
+			EndTime:         piece.EndDownloadTime,
 		}
 		psc <- pieceSeed
 		jsonPiece, err := json.Marshal(pieceSeed)
@@ -165,7 +166,7 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	defer span.End()
 	span.SetAttributes(constants.AttributeGetPieceTasksRequest.String(req.String()))
 	span.SetAttributes(constants.AttributeTaskID.String(req.TaskId))
-	logger.Infof("get piece tasks: %#v", req)
+	logger.Infof("get piece tasks: %s", req)
 	defer func() {
 		if r := recover(); r != nil {
 			err = dferrors.Newf(base.Code_UnknownError, "get task(%s) piece tasks encounter an panic: %v", req.TaskId, r)
@@ -179,7 +180,6 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		}
 
 	}()
-	logger.Infof("get piece tasks: %#v", req)
 	seedTask, err := css.service.GetSeedTask(req.TaskId)
 	if err != nil {
 		if task.IsTaskNotFound(err) {
@@ -196,34 +196,36 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		span.RecordError(err)
 		return nil, err
 	}
-	pieces, err := css.service.GetSeedPieces(req.TaskId)
+	taskPieces, err := css.service.GetSeedPieces(req.TaskId)
 	if err != nil {
 		err = dferrors.Newf(base.Code_CDNError, "failed to get pieces of task(%s) from cdn: %v", seedTask.ID, err)
 		span.RecordError(err)
 		return nil, err
 	}
-	pieceInfos := make([]*base.PieceInfo, 0, len(pieces))
+	pieceInfos := make([]*base.PieceInfo, 0, len(taskPieces))
 	var count uint32 = 0
-	for _, piece := range pieces {
+	for _, piece := range taskPieces {
 		if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
 			p := &base.PieceInfo{
-				PieceNum:    int32(piece.PieceNum),
-				RangeStart:  piece.PieceRange.StartIndex,
-				RangeSize:   piece.PieceLen,
-				PieceMd5:    piece.PieceMd5,
-				PieceOffset: piece.OriginRange.StartIndex,
-				PieceStyle:  piece.PieceStyle,
+				PieceNum:     int32(piece.PieceNum),
+				RangeStart:   piece.PieceRange.StartIndex,
+				RangeSize:    piece.PieceLen,
+				PieceMd5:     piece.PieceMd5,
+				PieceOffset:  piece.OriginRange.StartIndex,
+				PieceStyle:   piece.PieceStyle,
+				DownloadCost: piece.DownloadCost,
 			}
 			pieceInfos = append(pieceInfos, p)
 			count++
 		}
 	}
 	pieceMd5Sign := seedTask.PieceMd5Sign
-	if len(seedTask.Pieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
-		taskPieces := seedTask.Pieces
+	// TODO The calculation of sign has been completed after the source has been completed. This is just a fallback
+	if len(taskPieces) == int(seedTask.TotalPieceCount) && pieceMd5Sign == "" {
+		logger.WithTaskID(req.TaskId).Warn("The code flow should not go to this point, if the output of this log need to check why")
 		var pieceMd5s []string
 		for i := 0; i < len(taskPieces); i++ {
-			pieceMd5s = append(pieceMd5s, taskPieces[uint32(i)].PieceMd5)
+			pieceMd5s = append(pieceMd5s, taskPieces[i].PieceMd5)
 		}
 		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
 	}

@@ -1,7 +1,0 @@
-{
-    "host_name": "__HOSTNAME__",
-    "ip": "__IP__",
-    "port": 8003,
-    "download_port": 8001,
-    "status": "active"
-}

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
-	"golang.org/x/net/netutil"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -72,33 +71,31 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client
-	if cfg.Manager.Enable {
-		managerClient, err := managerclient.New(cfg.Manager.Addr)
-		if err != nil {
-			return nil, err
-		}
-		s.managerClient = managerClient
-
-		// Register to manager
-		if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
-			SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
-			HostName:           s.config.Server.Host,
-			Ip:                 s.config.Server.IP,
-			Port:               int32(s.config.Server.Port),
-			Idc:                s.config.Host.IDC,
-			Location:           s.config.Host.Location,
-			SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
-		}); err != nil {
-			logger.Fatalf("register to manager failed %v", err)
-		}
-	}
-
-	// Initialize dynconfig client
-	dynConfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	managerClient, err := managerclient.New(cfg.Manager.Addr)
 	if err != nil {
 		return nil, err
 	}
-	s.dynconfig = dynConfig
+	s.managerClient = managerClient
+
+	// Register to manager
+	if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
+		SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+		HostName:           s.config.Server.Host,
+		Ip:                 s.config.Server.IP,
+		Port:               int32(s.config.Server.Port),
+		Idc:                s.config.Host.IDC,
+		Location:           s.config.Host.Location,
+		SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
+	}); err != nil {
+		logger.Fatalf("register to manager failed %v", err)
+	}
+
+	// Initialize dynconfig client
+	dynconfig, err := config.NewDynconfig(s.managerClient, d.CacheDir(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	s.dynconfig = dynconfig
 
 	// Initialize GC
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
@@ -124,16 +121,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 
 	// Initialize resource
-	resource, err := resource.New(cfg, s.gc, dynConfig, dialOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, dialOptions...)
 	if err != nil {
 		return nil, err
 	}
 
 	// Initialize scheduler
-	scheduler := scheduler.New(cfg.Scheduler, d.PluginDir())
+	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
 
 	// Initialize scheduler service
-	service := service.New(cfg, resource, scheduler, dynConfig)
+	service := service.New(cfg, resource, scheduler, dynconfig)
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)
@@ -141,7 +138,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 
 	// Initialize job service
 	if cfg.Job.Enable {
-		s.job, err = job.New(cfg, service)
+		s.job, err = job.New(cfg, resource)
 		if err != nil {
 			return nil, err
 		}
@@ -205,11 +202,10 @@ func (s *Server) Serve() error {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}
 	defer listener.Close()
-	limitListener := netutil.LimitListener(listener, s.config.Server.ListenLimit)
 
 	// Started GRPC server
-	logger.Infof("started grpc server at %s://%s with max connection %d", limitListener.Addr().Network(), limitListener.Addr().String(), s.config.Server.ListenLimit)
-	if err := s.grpcServer.Serve(limitListener); err != nil {
+	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
+	if err := s.grpcServer.Serve(listener); err != nil {
 		logger.Errorf("stoped grpc server: %v", err)
 		return err
 	}

@@ -36,7 +36,7 @@ type testItem struct {
 
 type testCase struct {
 	Error          error
-	Rules          []*config.Proxy
+	Rules          []*config.ProxyRule
 	RegistryMirror *config.RegistryMirror
 	Items          []testItem
 }
@@ -50,8 +50,8 @@ func (tc *testCase) WithRule(regx string, direct bool, useHTTPS bool, redirect s
 		return tc
 	}
 
-	var r *config.Proxy
-	r, tc.Error = config.NewProxy(regx, useHTTPS, direct, redirect)
+	var r *config.ProxyRule
+	r, tc.Error = config.NewProxyRule(regx, useHTTPS, direct, redirect)
 	tc.Rules = append(tc.Rules, r)
 	return tc
 }

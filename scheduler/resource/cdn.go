@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -81,6 +82,14 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
+			// If the peer initialization succeeds and the download fails,
+			// set peer status is PeerStateFailed.
+			if peer != nil {
+				if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
+					return nil, nil, err
+				}
+			}
+
 			return nil, nil, err
 		}
 
@@ -94,10 +103,9 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 			}
 		}
 
-		peer.Log.Infof("receive piece: %#v %#v", piece, piece.PieceInfo)
-
 		// Handle begin of piece
 		if piece.PieceInfo != nil && piece.PieceInfo.PieceNum == common.BeginOfPiece {
+			peer.Log.Infof("receive begin of piece from cdn: %#v %#v", piece, piece.PieceInfo)
 			if err := peer.FSM.Event(PeerEventDownload); err != nil {
 				return nil, nil, err
 			}
@@ -106,6 +114,7 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 
 		// Handle end of piece
 		if piece.Done {
+			peer.Log.Infof("receive end of from cdn: %#v %#v", piece, piece.PieceInfo)
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
@@ -113,9 +122,9 @@ func (c *cdn) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler
 		}
 
 		// Handle piece download successfully
+		peer.Log.Infof("receive piece from cdn: %#v %#v", piece, piece.PieceInfo)
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-		// TODO(244372610) CDN should set piece cost
-		peer.AppendPieceCost(0)
+		peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 		task.StorePiece(piece.PieceInfo)
 	}
 }
@@ -205,9 +214,13 @@ func newCDNClient(dynconfig config.DynconfigInterface, hostManager HostManager, 
 
 // Dynamic config notify function
 func (c *cdnClient) OnNotify(data *config.DynconfigData) {
-	ips := getCDNIPs(data.CDNs)
+	var cdns []config.CDN
+	for _, cdn := range data.CDNs {
+		cdns = append(cdns, *cdn)
+	}
+
 	if reflect.DeepEqual(c.data, data) {
-		logger.Infof("cdn addresses deep equal: %v", ips)
+		logger.Infof("cdn addresses deep equal: %#v", cdns)
 		return
 	}
 
@@ -218,6 +231,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		id := idgen.CDNHostID(v.Hostname, v.Port)
 		if host, ok := c.hostManager.Load(id); ok {
 			host.LeavePeers()
+			c.hostManager.Delete(id)
 		}
 	}
 
@@ -231,7 +245,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 
 	// Update grpc cdn addresses
 	c.UpdateState(cdnsToNetAddrs(data.CDNs))
-	logger.Infof("cdn addresses have been updated: %v", ips)
+	logger.Infof("cdn addresses have been updated: %#v", cdns)
 }
 
 // cdnsToHosts coverts []*config.CDN to map[string]*Host.
@@ -309,14 +323,4 @@ func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
 	}
 
 	return diff
-}
-
-// getCDNIPs get ips by []*config.CDN.
-func getCDNIPs(cdns []*config.CDN) []string {
-	ips := []string{}
-	for _, cdn := range cdns {
-		ips = append(ips, cdn.IP)
-	}
-
-	return ips
 }

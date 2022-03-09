@@ -21,7 +21,7 @@ package progress
 import (
 	"context"
 	"encoding/json"
-	"sort"
+	"sync"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -50,7 +50,7 @@ var _ Manager = (*manager)(nil)
 type manager struct {
 	mu               *synclock.LockerPool
 	taskManager      task.Manager
-	seedTaskSubjects map[string]*publisher
+	seedTaskSubjects sync.Map
 }
 
 func NewManager(taskManager task.Manager) (Manager, error) {
@@ -61,7 +61,7 @@ func newManager(taskManager task.Manager) (*manager, error) {
 	return &manager{
 		mu:               synclock.NewLockerPool(),
 		taskManager:      taskManager,
-		seedTaskSubjects: make(map[string]*publisher),
+		seedTaskSubjects: sync.Map{},
 	}, nil
 }
 
@@ -74,6 +74,10 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 	if err != nil {
 		return nil, err
 	}
+	pieces, err := pm.taskManager.GetProgress(taskID)
+	if err != nil {
+		return nil, err
+	}
 	if seedTask.IsDone() {
 		pieceChan := make(chan *task.PieceInfo)
 		go func(pieceChan chan *task.PieceInfo) {
@@ -81,27 +85,16 @@ func (pm *manager) WatchSeedProgress(ctx context.Context, clientAddr string, tas
 				logger.Debugf("subscriber %s starts watching task %s seed progress", clientAddr, taskID)
 				close(pieceChan)
 			}()
-			pieceNums := make([]uint32, 0, len(seedTask.Pieces))
-			for pieceNum := range seedTask.Pieces {
-				pieceNums = append(pieceNums, pieceNum)
-			}
-			sort.Slice(pieceNums, func(i, j int) bool {
-				return pieceNums[i] < pieceNums[j]
-			})
-			for _, pieceNum := range pieceNums {
-				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, pieceNum, taskID)
-				pieceChan <- seedTask.Pieces[pieceNum]
+			for _, piece := range pieces {
+				logger.Debugf("notifies subscriber %s about %d piece info of taskID %s", clientAddr, piece.PieceNum, taskID)
+				pieceChan <- piece
 			}
 		}(pieceChan)
 		return pieceChan, nil
 	}
-	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
-	if !ok {
-		progressPublisher = newProgressPublisher(taskID)
-		pm.seedTaskSubjects[taskID] = progressPublisher
-	}
-	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, seedTask.Pieces)
-	progressPublisher.AddSubscriber(observer)
+	var progressPublisher, _ = pm.seedTaskSubjects.LoadOrStore(taskID, newProgressPublisher(taskID))
+	observer := newProgressSubscriber(ctx, clientAddr, seedTask.ID, pieces)
+	progressPublisher.(*publisher).AddSubscriber(observer)
 	return observer.Receiver(), nil
 }
 
@@ -115,9 +108,9 @@ func (pm *manager) PublishPiece(ctx context.Context, taskID string, record *task
 	}
 	span.AddEvent(constants.EventPublishPiece, trace.WithAttributes(constants.AttributeSeedPiece.String(string(jsonRecord))))
 	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonRecord)
-	var progressPublisher, ok = pm.seedTaskSubjects[taskID]
+	var progressPublisher, ok = pm.seedTaskSubjects.Load(taskID)
 	if ok {
-		progressPublisher.NotifySubscribers(record)
+		progressPublisher.(*publisher).NotifySubscribers(record)
 	}
 	return pm.taskManager.UpdateProgress(taskID, record)
 }
@@ -137,9 +130,9 @@ func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *tas
 	if err := pm.taskManager.Update(taskID, seedTask); err != nil {
 		return err
 	}
-	if progressPublisher, ok := pm.seedTaskSubjects[taskID]; ok {
-		progressPublisher.RemoveAllSubscribers()
-		delete(pm.seedTaskSubjects, taskID)
+	if progressPublisher, ok := pm.seedTaskSubjects.Load(taskID); ok {
+		progressPublisher.(*publisher).RemoveAllSubscribers()
+		pm.seedTaskSubjects.Delete(taskID)
 	}
 	return nil
 }

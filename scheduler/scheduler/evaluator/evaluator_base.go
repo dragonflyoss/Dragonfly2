@@ -56,9 +56,9 @@ const (
 )
 
 const (
-	// If the number of samples is greater than or equal to 10,
+	// If the number of samples is greater than or equal to 30,
 	// it is close to the normal distribution
-	normalDistributionLen = 10
+	normalDistributionLen = 30
 
 	// When costs len is greater than or equal to 2,
 	// the last cost can be compared and calculated
@@ -110,9 +110,13 @@ func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPiece
 
 // calculateFreeLoadScore 0.0~1.0 larger and better
 func calculateFreeLoadScore(host *resource.Host) float64 {
-	load := host.LenPeers()
-	totalLoad := host.UploadLoadLimit.Load()
-	return float64(totalLoad-int32(load)) / float64(totalLoad)
+	uploadLoadLimit := host.UploadLoadLimit.Load()
+	freeUploadLoad := host.FreeUploadLoad()
+	if uploadLoadLimit > 0 && freeUploadLoad > 0 {
+		return float64(freeUploadLoad) / float64(uploadLoadLimit)
+	}
+
+	return minScore
 }
 
 // calculateHostTypeAffinityScore 0.0~1.0 larger and better
@@ -174,7 +178,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 
 func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	if peer.FSM.Is(resource.PeerStateFailed) || peer.FSM.Is(resource.PeerStateLeave) || peer.FSM.Is(resource.PeerStatePending) {
-		peer.Log.Infof("peer is bad node because peer status is %s", peer.FSM.Current())
+		peer.Log.Debugf("peer is bad node because peer status is %s", peer.FSM.Current())
 		return true
 	}
 
@@ -183,7 +187,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	len := len(costs)
 	// Peer has not finished downloading enough piece
 	if len < minAvailableCostLen {
-		logger.Infof("peer %s has not finished downloading enough piece, it can't be bad node", peer.ID)
+		logger.Debugf("peer %s has not finished downloading enough piece, it can't be bad node", peer.ID)
 		return false
 	}
 
@@ -194,7 +198,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	// if the last cost is twenty times more than mean, it is bad node.
 	if len < normalDistributionLen {
 		isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean*20)) > 0
-		logger.Infof("peer %s mean is %.2f and it is bad node: %t", peer.ID, mean, isBadNode)
+		logger.Debugf("peer %s mean is %.2f and it is bad node: %t", peer.ID, mean, isBadNode)
 		return isBadNode
 	}
 
@@ -203,7 +207,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
 	stdev, _ := stats.StandardDeviation(costs[:len-1]) // nolint: errcheck
 	isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean+3*stdev)) > 0
-	logger.Infof("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer is bad node: %t",
+	logger.Debugf("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer is bad node: %t",
 		peer.ID, mean, stdev, isBadNode)
 	return isBadNode
 }

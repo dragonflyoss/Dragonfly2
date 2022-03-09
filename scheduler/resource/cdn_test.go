@@ -211,6 +211,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					hostManager.Delete(gomock.Eq("foo-0_CDN")).Return().Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -615,47 +616,6 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.expect(t, diffCDNs(tc.cx, tc.cy))
-		})
-	}
-}
-
-func TestCDNClient_getCDNIPs(t *testing.T) {
-	tests := []struct {
-		name   string
-		cdns   []*config.CDN
-		expect func(t *testing.T, ips []string)
-	}{
-		{
-			name: "cdns covert to hosts",
-			cdns: []*config.CDN{
-				{
-					ID:           1,
-					Hostname:     mockRawCDNHost.HostName,
-					IP:           mockRawCDNHost.Ip,
-					Port:         mockRawCDNHost.RpcPort,
-					DownloadPort: mockRawCDNHost.DownPort,
-					Location:     mockRawCDNHost.Location,
-					IDC:          mockRawCDNHost.Idc,
-				},
-			},
-			expect: func(t *testing.T, ips []string) {
-				assert := assert.New(t)
-				assert.Equal(ips[0], mockRawCDNHost.Ip)
-			},
-		},
-		{
-			name: "cdns is empty",
-			cdns: []*config.CDN{},
-			expect: func(t *testing.T, ips []string) {
-				assert := assert.New(t)
-				assert.Equal(len(ips), 0)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, getCDNIPs(tc.cdns))
 		})
 	}
 }

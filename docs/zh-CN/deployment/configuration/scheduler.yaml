@@ -6,8 +6,6 @@ server:
   # host: localhost
   # 服务监听端口
   port:
-  # 限制请求并发数
-  listenLimit: 10000
   # daemon 动态配置缓存目录
   # linux 上默认目录 /var/cache/dragonfly
   # macos(仅开发、测试), 默认目录是 /Users/$USER/.dragonfly/cache
@@ -29,9 +27,9 @@ scheduler:
   # 调度回源重试次数限制
   retryBackSourceLimit: 5
   # 调度重试次数限制
-  retryLimit: 20
+  retryLimit: 10
   # 调度重试时间间隔
-  retryInterval: 200ms
+  retryInterval: 50ms
   # 数据回收策略
   gc:
     # peer 的回收间隔
@@ -63,8 +61,6 @@ host:
 
 # manager 配置
 manager:
-  # 启动与 manager 的连接
-  enable: true
   # manager 访问地址
   addr: ""
   # 注册的 scheduler 集群 ID
@@ -73,6 +69,13 @@ manager:
   keepAlive:
     # 保持心跳的时间间隔
     interval: 5s
+
+# cdn 配置
+cdn:
+  # 启动 cdn 作为 P2P 网络节点,
+  # 如果值为 false 第一次回源请求不通过 cdn 而是通过 dfdaemon 直接回源,
+  # 而且无法使用预热功能
+  enable: true
 
 # machinery 异步任务配置，配置参考 https://github.com/RichardKnop/machinery
 job:

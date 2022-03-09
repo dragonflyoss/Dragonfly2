@@ -2,7 +2,6 @@ server:
   ip: 127.0.0.1
   host: foo
   port: 8002
-  listenLimit: 1000
   cacheDir: foo
   logDir: bar
 
@@ -30,11 +29,13 @@ host:
   location: baz
 
 manager:
-  enable: true
   addr: 127.0.0.1:65003
   schedulerClusterID: 1
   keepAlive:
     interval: 5000000000
+
+cdn:
+  enable: true
 
 job:
   enable: true

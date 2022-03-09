@@ -90,16 +90,27 @@ const (
 	// Peer downloaded failed
 	PeerEventDownloadFailed = "DownloadFailed"
 
-	// Peer back to initial pending state
-	PeerEventRestart = "Restart"
-
 	// Peer leaves
 	PeerEventLeave = "Leave"
 )
 
+// PeerOption is a functional option for configuring the peer
+type PeerOption func(p *Peer) *Peer
+
+// WithBizTag sets peer's BizTag
+func WithBizTag(bizTag string) PeerOption {
+	return func(p *Peer) *Peer {
+		p.BizTag = bizTag
+		return p
+	}
+}
+
 type Peer struct {
 	// ID is peer id
 	ID string
+
+	// BizTag is peer biz tag
+	BizTag string
 
 	// Pieces is piece bitset
 	Pieces *bitset.BitSet
@@ -125,6 +136,9 @@ type Peer struct {
 	// Children is peer children
 	Children *sync.Map
 
+	// ChildCount is child count
+	ChildCount *atomic.Int32
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -139,7 +153,7 @@ type Peer struct {
 }
 
 // New Peer instance
-func NewPeer(id string, task *Task, host *Host) *Peer {
+func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:         id,
 		Pieces:     &bitset.BitSet{},
@@ -149,6 +163,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 		Host:       host,
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
+		ChildCount: atomic.NewInt32(0),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
 		mu:         &sync.RWMutex{},
@@ -169,7 +184,6 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
-			{Name: PeerEventRestart, Src: []string{PeerStateSucceeded}, Dst: PeerStatePending},
 			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
 		},
 		fsm.Callbacks{
@@ -191,6 +205,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.Task.BackToSourcePeers.Add(p)
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -199,6 +214,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -207,18 +223,20 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.UpdateAt.Store(time.Now())
-				p.Log.Infof("peer state is %s", e.FSM.Current())
-			},
-			PeerEventRestart: func(e *fsm.Event) {
+				p.DeleteParent()
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
+				p.DeleteParent()
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
 	)
+
+	for _, opt := range options {
+		opt(p)
+	}
 
 	return p
 }
@@ -238,7 +256,9 @@ func (p *Peer) StoreChild(child *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	p.Children.Store(child.ID, child)
+	if _, loaded := p.Children.LoadOrStore(child.ID, child); !loaded {
+		p.ChildCount.Inc()
+	}
 	child.Parent.Store(p)
 }
 
@@ -251,20 +271,11 @@ func (p *Peer) DeleteChild(key string) {
 	if !ok {
 		return
 	}
+	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
+		p.ChildCount.Dec()
+	}
 
-	p.Children.Delete(child.ID)
 	child.Parent = &atomic.Value{}
-}
-
-// LenChildren return length of children sync map
-func (p *Peer) LenChildren() int {
-	var len int
-	p.Children.Range(func(_, _ interface{}) bool {
-		len++
-		return true
-	})
-
-	return len
 }
 
 // LoadParent return peer parent
@@ -283,7 +294,9 @@ func (p *Peer) StoreParent(parent *Peer) {
 	defer p.mu.Unlock()
 
 	p.Parent.Store(parent)
-	parent.Children.Store(p.ID, p)
+	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
+		parent.ChildCount.Inc()
+	}
 }
 
 // DeleteParent deletes peer parent
@@ -295,9 +308,11 @@ func (p *Peer) DeleteParent() {
 	if !ok {
 		return
 	}
-
 	p.Parent = &atomic.Value{}
-	parent.Children.Delete(p.ID)
+
+	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
+		parent.ChildCount.Dec()
+	}
 }
 
 // ReplaceParent replaces peer parent
@@ -306,20 +321,32 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 	p.StoreParent(parent)
 }
 
-// TreeTotalNodeCount represents tree's total node count
-func (p *Peer) TreeTotalNodeCount() int {
-	count := 1
-	p.Children.Range(func(_, value interface{}) bool {
-		node, ok := value.(*Peer)
-		if !ok {
-			return true
+// Depth represents depth of tree
+func (p *Peer) Depth() int {
+	node := p
+	var depth int
+	for node != nil {
+		depth++
+
+		if node.Host.IsCDN {
+			break
 		}
 
-		count += node.TreeTotalNodeCount()
-		return true
-	})
+		parent, ok := node.LoadParent()
+		if !ok {
+			break
+		}
 
-	return count
+		// Prevent traversal tree from infinite loop
+		if p.ID == parent.ID {
+			p.Log.Info("tree structure produces an infinite loop")
+			break
+		}
+
+		node = parent
+	}
+
+	return depth
 }
 
 // IsDescendant determines whether it is ancestor of peer
@@ -340,9 +367,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 		if !ok {
 			return false
 		}
+
 		if parent.ID == ancestor.ID {
 			return true
 		}
+
 		node = parent
 	}
 
@@ -351,17 +380,11 @@ func isDescendant(ancestor, descendant *Peer) bool {
 
 // AppendPieceCost append piece cost to costs slice
 func (p *Peer) AppendPieceCost(cost int64) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	p.pieceCosts = append(p.pieceCosts, cost)
 }
 
 // PieceCosts return piece costs slice
 func (p *Peer) PieceCosts() []int64 {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	return p.pieceCosts
 }
 

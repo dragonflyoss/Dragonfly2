@@ -119,39 +119,6 @@ func TestService_New(t *testing.T) {
 	}
 }
 
-func TestService_CDN(t *testing.T) {
-	tests := []struct {
-		name   string
-		mock   func(cdn resource.CDN, mr *resource.MockResourceMockRecorder)
-		expect func(t *testing.T, c resource.CDN)
-	}{
-		{
-			name: "get cdn interface",
-			mock: func(cdn resource.CDN, mr *resource.MockResourceMockRecorder) {
-				mr.CDN().Return(cdn).Times(1)
-			},
-			expect: func(t *testing.T, c resource.CDN) {
-				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(c).Elem().Name(), "MockCDN")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			scheduler := mocks.NewMockScheduler(ctl)
-			res := resource.NewMockResource(ctl)
-			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			cdn := resource.NewMockCDN(ctl)
-			svc := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig)
-			tc.mock(cdn, res.EXPECT())
-			tc.expect(t, svc.CDN())
-		})
-	}
-}
-
 func TestService_RegisterPeerTask(t *testing.T) {
 	tests := []struct {
 		name string
@@ -165,7 +132,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 	}{
 		{
 			name: "task register failed",
-			req:  &rpcscheduler.PeerTaskRequest{},
+			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
+			},
 			mock: func(
 				req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockCDNPeer *resource.Peer,
 				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
@@ -187,6 +156,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -217,6 +187,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateFailed and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -248,6 +219,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -283,6 +255,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is empty",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -316,6 +289,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error, peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -349,6 +323,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -380,8 +355,50 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
+			name: "task scope size is SizeScope_SMALL and load piece error, parent state is PeerStateRunning",
+			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
+				PeerHost: &rpcscheduler.PeerHost{
+					Uuid: mockRawHost.Uuid,
+				},
+			},
+			mock: func(
+				req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockCDNPeer *resource.Peer,
+				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockPeer.Task.StorePeer(mockCDNPeer)
+				mockPeer.Task.ContentLength.Store(129)
+				mockPeer.Task.StorePiece(&base.PieceInfo{
+					PieceNum: 0,
+				})
+				mockPeer.Task.TotalPieceCount.Store(1)
+				mockPeer.FSM.SetState(resource.PeerStatePending)
+				mockCDNPeer.FSM.SetState(resource.PeerStateRunning)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+					ms.FindParent(gomock.Any(), gomock.Any(), gomock.Any()).Return(mockCDNPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+			},
+		},
+		{
 			name: "task scope size is SizeScope_SMALL and load piece error, peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -399,6 +416,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -419,6 +438,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -436,6 +456,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -456,6 +478,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -472,6 +495,8 @@ func TestService_RegisterPeerTask(t *testing.T) {
 					PieceNum: 0,
 				})
 				mockPeer.Task.TotalPieceCount.Store(1)
+				mockCDNPeer.FSM.SetState(resource.PeerStateSucceeded)
+
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -493,6 +518,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -526,6 +552,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -789,7 +816,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 			},
 		},
 		{
-			name: "revice Code_ClientPieceDownloadFail code",
+			name: "revice Code_PeerTaskNotFound code",
 			mock: func(
 				mockPeer *resource.Peer,
 				res resource.Resource, peerManager resource.PeerManager,
@@ -801,7 +828,7 @@ func TestService_ReportPieceResult(t *testing.T) {
 					ms.Context().Return(context.Background()).Times(1),
 					ms.Recv().Return(&rpcscheduler.PieceResult{
 						SrcPid: mockPeerID,
-						Code:   base.Code_ClientPieceDownloadFail,
+						Code:   base.Code_PeerTaskNotFound,
 					}, nil).Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
@@ -1245,20 +1272,25 @@ func TestService_LeaveTask(t *testing.T) {
 
 func TestService_registerTask(t *testing.T) {
 	tests := []struct {
-		name string
-		req  *rpcscheduler.PeerTaskRequest
-		run  func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder)
+		name   string
+		config *config.Config
+		req    *rpcscheduler.PeerTaskRequest
+		run    func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder)
 	}{
 		{
 			name: "task already exists and state is TaskStateRunning",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
 			},
 			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStateRunning)
-				mockTask.StorePeer(mockPeer)
-				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
@@ -1272,6 +1304,12 @@ func TestService_registerTask(t *testing.T) {
 		},
 		{
 			name: "task already exists and state is TaskStateSucceeded",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
@@ -1293,6 +1331,12 @@ func TestService_registerTask(t *testing.T) {
 		},
 		{
 			name: "task state is TaskStatePending",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
@@ -1318,6 +1362,12 @@ func TestService_registerTask(t *testing.T) {
 		},
 		{
 			name: "task state is TaskStateFailed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
@@ -1343,6 +1393,12 @@ func TestService_registerTask(t *testing.T) {
 		},
 		{
 			name: "task state is TaskStatePending, but trigger cdn failed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
@@ -1368,6 +1424,12 @@ func TestService_registerTask(t *testing.T) {
 		},
 		{
 			name: "task state is TaskStateFailed, but trigger cdn failed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
 			req: &rpcscheduler.PeerTaskRequest{
 				Url:     mockTaskURL,
 				UrlMeta: mockTaskURLMeta,
@@ -1391,6 +1453,57 @@ func TestService_registerTask(t *testing.T) {
 				assert.EqualValues(mockTask, task)
 			},
 		},
+		{
+			name: "task state is TaskStatePending and disable cdn",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: false,
+				},
+			},
+			req: &rpcscheduler.PeerTaskRequest{
+				Url:     mockTaskURL,
+				UrlMeta: mockTaskURLMeta,
+			},
+			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
+
+				mockTask.FSM.SetState(resource.TaskStatePending)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+				)
+
+				task, err := svc.registerTask(context.Background(), req)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(mockTask, task)
+			},
+		},
+		{
+			name: "task state is TaskStateFailed and disable cdn",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: false,
+				},
+			},
+			req: &rpcscheduler.PeerTaskRequest{
+				Url:     mockTaskURL,
+				UrlMeta: mockTaskURLMeta,
+			},
+			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateFailed)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+				)
+
+				task, err := svc.registerTask(context.Background(), req)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(mockTask, task)
+			},
+		},
 	}
 
 	for _, tc := range tests {
@@ -1400,7 +1513,8 @@ func TestService_registerTask(t *testing.T) {
 			scheduler := mocks.NewMockScheduler(ctl)
 			res := resource.NewMockResource(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
-			svc := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig)
+			svc := New(tc.config, res, scheduler, dynconfig)
+
 			taskManager := resource.NewMockTaskManager(ctl)
 			mockHost := resource.NewHost(mockRawHost)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
@@ -1499,6 +1613,69 @@ func TestService_registerHost(t *testing.T) {
 	}
 }
 
+func TestService_triggerCDNTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder)
+		expect func(t *testing.T, task *resource.Task, peer *resource.Peer)
+	}{
+		{
+			name: "trigger cdn task",
+			mock: func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				gomock.InOrder(
+					mr.CDN().Return(cdn).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &rpcscheduler.PeerResult{
+						TotalPieceCount: 3,
+						ContentLength:   1024,
+					}, nil).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *resource.Task, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateSucceeded))
+				assert.Equal(task.TotalPieceCount.Load(), int32(3))
+				assert.Equal(task.ContentLength.Load(), int64(1024))
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "trigger cdn task failed",
+			mock: func(task *resource.Task, peer *resource.Peer, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mc *resource.MockCDNMockRecorder) {
+				task.FSM.SetState(resource.TaskStateRunning)
+				gomock.InOrder(
+					mr.CDN().Return(cdn).Times(1),
+					mc.TriggerTask(gomock.Any(), gomock.Any()).Return(peer, &rpcscheduler.PeerResult{}, errors.New("foo")).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *resource.Task, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			cdn := resource.NewMockCDN(ctl)
+			mockHost := resource.NewHost(mockRawHost)
+			task := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := resource.NewPeer(mockPeerID, task, mockHost)
+			svc := New(&config.Config{Scheduler: mockSchedulerConfig}, res, scheduler, dynconfig)
+
+			tc.mock(task, peer, cdn, res.EXPECT(), cdn.EXPECT())
+			svc.triggerCDNTask(context.Background(), task)
+			tc.expect(t, task, peer)
+		})
+	}
+}
+
 func TestService_handleBeginOfPiece(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -1589,7 +1766,8 @@ func TestService_registerPeer(t *testing.T) {
 		{
 			name: "peer already exists",
 			req: &rpcscheduler.PeerTaskRequest{
-				PeerId: mockPeerID,
+				PeerId:  mockPeerID,
+				UrlMeta: &base.UrlMeta{},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
@@ -1605,7 +1783,8 @@ func TestService_registerPeer(t *testing.T) {
 		{
 			name: "peer does not exists",
 			req: &rpcscheduler.PeerTaskRequest{
-				PeerId: mockPeerID,
+				PeerId:  mockPeerID,
+				UrlMeta: &base.UrlMeta{},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
@@ -1643,6 +1822,7 @@ func TestService_registerPeer(t *testing.T) {
 func TestService_handlePieceSuccess(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
 	mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+	now := time.Now()
 
 	tests := []struct {
 		name   string
@@ -1658,8 +1838,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 					PieceNum: 0,
 					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
 				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+				BeginTime: uint64(now.UnixNano()),
+				EndTime:   uint64(now.Add(1 * time.Millisecond).UnixNano()),
 			},
 			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
 			mock: func(peer *resource.Peer) {
@@ -1678,8 +1858,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 					PieceNum: 0,
 					PieceMd5: "ac32345ef819f03710e2105c81106fdd",
 				},
-				BeginTime: uint64(time.Now().Unix()),
-				EndTime:   uint64(time.Now().Add(1 * time.Second).Unix()),
+				BeginTime: uint64(now.UnixNano()),
+				EndTime:   uint64(now.Add(1 * time.Millisecond).UnixNano()),
 			},
 			peer: resource.NewPeer(mockPeerID, mockTask, mockHost),
 			mock: func(peer *resource.Peer) {
@@ -1721,13 +1901,19 @@ func TestService_handlePieceFail(t *testing.T) {
 
 	tests := []struct {
 		name   string
+		config *config.Config
 		piece  *rpcscheduler.PieceResult
 		peer   *resource.Peer
 		parent *resource.Peer
 		run    func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder)
 	}{
 		{
-			name:   "peer state is PeerStateBackToSource",
+			name: "peer state is PeerStateBackToSource",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece:  &rpcscheduler.PieceResult{},
 			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
@@ -1741,6 +1927,11 @@ func TestService_handlePieceFail(t *testing.T) {
 		},
 		{
 			name: "can not found parent",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_ClientWaitPieceReady,
 				DstPid: mockCDNPeerID,
@@ -1761,32 +1952,12 @@ func TestService_handlePieceFail(t *testing.T) {
 			},
 		},
 		{
-			name: "piece result code is Code_ClientPieceDownloadFail and parent state set PeerEventDownloadFailed",
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_ClientPieceDownloadFail,
-				DstPid: mockCDNPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-				)
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
-			},
-		},
-		{
 			name: "piece result code is Code_PeerTaskNotFound and parent state set PeerEventDownloadFailed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_PeerTaskNotFound,
 				DstPid: mockCDNPeerID,
@@ -1812,6 +1983,11 @@ func TestService_handlePieceFail(t *testing.T) {
 		},
 		{
 			name: "piece result code is Code_ClientPieceNotFound and parent is not CDN",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_ClientPieceNotFound,
 				DstPid: mockCDNPeerID,
@@ -1836,6 +2012,11 @@ func TestService_handlePieceFail(t *testing.T) {
 		},
 		{
 			name: "piece result code is Code_CDNError and parent state set PeerEventDownloadFailed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_CDNError,
 				DstPid: mockCDNPeerID,
@@ -1861,6 +2042,11 @@ func TestService_handlePieceFail(t *testing.T) {
 		},
 		{
 			name: "piece result code is Code_CDNTaskDownloadFail and parent state set PeerEventDownloadFailed",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_CDNTaskDownloadFail,
 				DstPid: mockCDNPeerID,
@@ -1886,6 +2072,11 @@ func TestService_handlePieceFail(t *testing.T) {
 		},
 		{
 			name: "piece result code is Code_ClientPieceRequestFail",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_ClientPieceRequestFail,
 				DstPid: mockCDNPeerID,
@@ -1910,7 +2101,77 @@ func TestService_handlePieceFail(t *testing.T) {
 			},
 		},
 		{
+			name: "piece result code is Code_CDNTaskNotFound",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
+			piece: &rpcscheduler.PieceResult{
+				Code:   base.Code_CDNTaskNotFound,
+				DstPid: mockCDNPeerID,
+			},
+			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
+			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
+				var wg sync.WaitGroup
+				wg.Add(3)
+				defer wg.Wait()
+
+				peer.FSM.SetState(resource.PeerStateRunning)
+				parent.FSM.SetState(resource.PeerStateRunning)
+				blocklist := set.NewSafeSet()
+				blocklist.Add(parent.ID)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
+				)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Do(func(context.Context, *resource.Peer, set.SafeSet) { wg.Done() }).Return().Times(1)
+				mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1)
+				mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1)
+
+				svc.handlePieceFail(context.Background(), peer, piece)
+				assert := assert.New(t)
+				assert.True(parent.FSM.Is(resource.PeerStateFailed))
+			},
+		},
+		{
+			name: "piece result code is Code_CDNTaskNotFound and disable cdn",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: false},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
+			piece: &rpcscheduler.PieceResult{
+				Code:   base.Code_CDNTaskNotFound,
+				DstPid: mockCDNPeerID,
+			},
+			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
+			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
+			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				parent.FSM.SetState(resource.PeerStateRunning)
+				blocklist := set.NewSafeSet()
+				blocklist.Add(parent.ID)
+				gomock.InOrder(
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
+				)
+
+				svc.handlePieceFail(context.Background(), peer, piece)
+				assert := assert.New(t)
+				assert.True(peer.FSM.Is(resource.PeerStateRunning))
+				assert.True(parent.FSM.Is(resource.PeerStateFailed))
+			},
+		},
+		{
 			name: "piece result code is unknow",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN:       &config.CDNConfig{Enable: true},
+				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
+			},
 			piece: &rpcscheduler.PieceResult{
 				Code:   base.Code_ClientPieceRequestFail,
 				DstPid: mockCDNPeerID,
@@ -1945,7 +2206,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			peerManager := resource.NewMockPeerManager(ctl)
 			cdn := resource.NewMockCDN(ctl)
-			svc := New(&config.Config{Scheduler: mockSchedulerConfig, Metrics: &config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig)
+			svc := New(tc.config, res, scheduler, dynconfig)
 
 			tc.run(t, svc, tc.peer, tc.parent, tc.piece, peerManager, cdn, scheduler.EXPECT(), res.EXPECT(), peerManager.EXPECT(), cdn.EXPECT())
 		})

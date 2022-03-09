@@ -31,6 +31,20 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
+const (
+	// Default number of pieces downloaded in parallel
+	defaultParallelCount = 4
+
+	// Default limit the number of filter traversals
+	defaultFilterParentLimit = 10
+
+	// Default tree available depth
+	defaultAvailableDepth = 2
+
+	// Default tree depth limit
+	defaultDepthLimit = 4
+)
+
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
@@ -48,12 +62,16 @@ type scheduler struct {
 
 	// Scheduler configuration
 	config *config.SchedulerConfig
+
+	// Scheduler dynamic configuration
+	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, pluginDir string) Scheduler {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduler {
 	return &scheduler{
 		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
 		config:    cfg,
+		dynconfig: dynconfig,
 	}
 }
 
@@ -85,8 +103,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling %d times and back-to-source limit %d times, cdn peer is %#v, return code %d",
-				n, s.config.RetryBackSourceLimit, cdnPeer, base.Code_SchedNeedBackSource)
+			peer.Log.Infof("peer scheduling %d times and cdn peer is %#v, peer downloads back-to-source %d",
+				n, cdnPeer, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)
@@ -104,7 +122,6 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 			// If the peer downloads back-to-source, its parent needs to be deleted
 			peer.DeleteParent()
-			peer.Task.Log.Info("peer back to source successfully")
 			return
 		}
 
@@ -121,7 +138,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
+			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
 			return
 		}
 
@@ -161,7 +178,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
@@ -172,7 +189,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	if err := stream.Send(constructSuccessPeerPacket(peer, parents[0], parents[1:])); err != nil {
+	if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, parents[0], parents[1:])); err != nil {
 		peer.Log.Error(err)
 		return []*resource.Peer{}, false
 	}
@@ -196,7 +213,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	sort.Slice(
 		parents,
 		func(i, j int) bool {
-			return s.evaluator.Evaluate(peer, parents[i], taskTotalPieceCount) > s.evaluator.Evaluate(peer, parents[j], taskTotalPieceCount)
+			return s.evaluator.Evaluate(parents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(parents[j], peer, taskTotalPieceCount)
 		},
 	)
 
@@ -206,41 +223,65 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
+	filterParentLimit := defaultFilterParentLimit
+	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
+		filterParentLimit = int(config.FilterParentLimit)
+	}
+
 	var parents []*resource.Peer
 	var parentIDs []string
+	var n int
 	peer.Task.Peers.Range(func(_, value interface{}) bool {
+		if n > filterParentLimit {
+			return false
+		}
+		n++
+
 		parent, ok := value.(*resource.Peer)
 		if !ok {
 			return true
 		}
 
 		if blocklist.Contains(parent.ID) {
-			peer.Log.Infof("parent %s is not selected because it is in blocklist", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is in blocklist", parent.ID)
 			return true
 		}
 
-		if parent == peer {
-			peer.Log.Info("parent is not selected because it is same")
+		if parent.ID == peer.ID {
+			peer.Log.Debug("parent is not selected because it is same")
 			return true
 		}
 
 		if s.evaluator.IsBadNode(parent) {
-			peer.Log.Infof("parent %s is not selected because it is bad node", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is bad node", parent.ID)
+			return true
+		}
+
+		peerChildCount := peer.ChildCount.Load()
+		parentDepth := parent.Depth()
+		if peerChildCount > 0 && parentDepth > defaultAvailableDepth {
+			peer.Log.Debugf("peer has %d children and parent %s depth is %d", peerChildCount, parent.ID, parentDepth)
+			return true
+		}
+
+		peerDepth := peer.Depth()
+		if parentDepth+peerDepth > defaultDepthLimit {
+			peer.Log.Debugf("exceeds the %d depth limit of the tree, peer depth is %d, parent %s is %d", defaultDepthLimit, peerDepth, parent.ID, parentDepth)
 			return true
 		}
 
 		if parent.IsDescendant(peer) {
-			peer.Log.Infof("parent %s is not selected because it is descendant", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is descendant", parent.ID)
 			return true
 		}
 
 		if parent.IsAncestor(peer) {
-			peer.Log.Infof("parent %s is not selected because it is ancestor", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because it is ancestor", parent.ID)
 			return true
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Infof("parent %s is not selected because its free upload is empty", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty", parent.ID)
 			return true
 		}
 
@@ -254,7 +295,12 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 }
 
 // Construct peer successful packet
-func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+	parallelCount := defaultParallelCount
+	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
+		parallelCount = int(config.ParallelCount)
+	}
+
 	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
 		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
@@ -265,10 +311,9 @@ func constructSuccessPeerPacket(peer *resource.Peer, parent *resource.Peer, cand
 	}
 
 	return &rpcscheduler.PeerPacket{
-		TaskId: peer.Task.ID,
-		SrcPid: peer.ID,
-		// TODO(gaius-qi) Configure ParallelCount parameter in manager service
-		ParallelCount: 1,
+		TaskId:        peer.Task.ID,
+		SrcPid:        peer.ID,
+		ParallelCount: int32(parallelCount),
 		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,

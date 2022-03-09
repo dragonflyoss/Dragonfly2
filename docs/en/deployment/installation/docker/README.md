@@ -6,5 +6,5 @@ or install separately according to modules.
 
 Table of contents:
 
-* [Docker Compose](docker-compose.md)
-* [Standalone](standalone/README.md)
+- [Docker Compose](docker-compose.md)
+- [Standalone](standalone/README.md)

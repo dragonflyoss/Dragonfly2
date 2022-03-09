@@ -10,7 +10,7 @@ all commandline docs are auto generated via source code.
 
 Table of contents:
 
-* [dfget](dfget.md)
-* [cdn](cdn.md)
-* [scheduler](scheduler.md)
-* [manager](manager.md)
+- [dfget](dfget.md)
+- [cdn](cdn.md)
+- [scheduler](scheduler.md)
+- [manager](manager.md)

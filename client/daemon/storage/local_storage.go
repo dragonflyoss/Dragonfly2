@@ -19,15 +19,20 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
+	"math"
 	"os"
 	"path"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.uber.org/atomic"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
@@ -53,6 +58,8 @@ type localTaskStore struct {
 
 	// content stores tiny file which length less than 128 bytes
 	content []byte
+
+	subtasks map[PeerTaskMetadata]*localSubTaskStore
 }
 
 var _ TaskStorageDriver = (*localTaskStore)(nil)
@@ -61,6 +68,30 @@ var _ Reclaimer = (*localTaskStore)(nil)
 func (t *localTaskStore) touch() {
 	access := time.Now().UnixNano()
 	t.lastAccess.Store(access)
+}
+
+func (t *localTaskStore) SubTask(req *RegisterSubTaskRequest) *localSubTaskStore {
+	subtask := &localSubTaskStore{
+		parent: t,
+		Range:  req.Range,
+		persistentMetadata: persistentMetadata{
+			TaskID:        req.SubTask.TaskID,
+			TaskMeta:      map[string]string{},
+			ContentLength: req.Range.Length,
+			TotalPieces:   -1,
+			PeerID:        req.SubTask.PeerID,
+			Pieces:        map[int32]PieceMetadata{},
+			PieceMd5Sign:  "",
+			DataFilePath:  "",
+			Done:          false,
+		},
+		SugaredLoggerOnWith: logger.With("task", req.SubTask.TaskID,
+			"parent", req.Parent.TaskID, "peer", req.SubTask.PeerID, "component", "localSubTaskStore"),
+	}
+	t.Lock()
+	t.subtasks[req.SubTask] = subtask
+	t.Unlock()
+	return subtask
 }
 
 func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {
@@ -93,7 +124,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 
 	n, err := io.Copy(file, io.LimitReader(req.Reader, req.Range.Length))
 	if err != nil {
-		return 0, err
+		return n, err
 	}
 
 	// when UnknownLength and size is align to piece num
@@ -261,6 +292,7 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 	if err != nil {
 		return nil, err
 	}
+
 	if req.Range == nil {
 		return file, nil
 	}
@@ -281,21 +313,28 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	// Store is called in callback.Done, mark local task store done, for fast search
 	t.Done = true
 	t.touch()
-	if req.TotalPieces > 0 {
+	if req.TotalPieces > 0 && t.TotalPieces == -1 {
 		t.Lock()
 		t.TotalPieces = req.TotalPieces
 		t.Unlock()
 	}
-	if !req.StoreOnly {
+
+	if !req.StoreDataOnly {
 		err := t.saveMetadata()
 		if err != nil {
 			t.Warnf("save task metadata error: %s", err)
 			return err
 		}
 	}
+
 	if req.MetadataOnly {
 		return nil
 	}
+
+	if req.OriginalOffset {
+		return hardlink(t.SugaredLoggerOnWith, req.Destination, t.DataFilePath)
+	}
+
 	_, err := os.Stat(req.Destination)
 	if err == nil {
 		// remove exist file
@@ -370,6 +409,9 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 }
 
 func (t *localTaskStore) CanReclaim() bool {
+	if t.invalid.Load() {
+		return true
+	}
 	access := time.Unix(0, t.lastAccess.Load())
 	reclaim := access.Add(t.expireTime).Before(time.Now())
 	t.Debugf("reclaim check, last access: %v, reclaim: %v", access, reclaim)
@@ -388,6 +430,21 @@ func (t *localTaskStore) MarkReclaim() {
 	})
 	t.reclaimMarked.Store(true)
 	t.Infof("task %s/%s will be reclaimed, marked", t.TaskID, t.PeerID)
+
+	t.Lock()
+	var keys []PeerTaskMetadata
+	for key := range t.subtasks {
+		t.gcCallback(CommonTaskRequest{
+			PeerID: key.PeerID,
+			TaskID: key.TaskID,
+		})
+		t.Infof("sub task %s/%s will be reclaimed, marked", key.TaskID, key.PeerID)
+		keys = append(keys, key)
+	}
+	for _, key := range keys {
+		delete(t.subtasks, key)
+	}
+	t.Unlock()
 }
 
 func (t *localTaskStore) Reclaim() error {
@@ -489,6 +546,29 @@ func (t *localTaskStore) saveMetadata() error {
 	return err
 }
 
+func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
+	t.RLock()
+	defer t.RUnlock()
+
+	if t.ContentLength == -1 {
+		return false
+	}
+	start, end := computePiecePosition(t.ContentLength, rg, util.ComputePieceSize)
+	for i := start; i <= end; i++ {
+		if _, ok := t.Pieces[i]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func computePiecePosition(total int64, rg *clientutil.Range, compute func(length int64) uint32) (start, end int32) {
+	pieceSize := compute(total)
+	start = int32(math.Floor(float64(rg.Start) / float64(pieceSize)))
+	end = int32(math.Floor(float64(rg.Start+rg.Length-1) / float64(pieceSize)))
+	return
+}
+
 // limitedReadFile implements io optimize for zero copy
 type limitedReadFile struct {
 	reader io.Reader
@@ -508,4 +588,50 @@ func (l *limitedReadFile) WriteTo(w io.Writer) (n int64, err error) {
 		return r.ReadFrom(l.reader)
 	}
 	return io.Copy(w, l.reader)
+}
+
+func hardlink(log *logger.SugaredLoggerOnWith, dst, src string) error {
+	dstStat, err := os.Stat(dst)
+	if os.IsNotExist(err) {
+		// hard link
+		err = os.Link(src, dst)
+		if err != nil {
+			log.Errorf("hardlink from %q to %q error: %s", src, dst, err)
+			return err
+		}
+		log.Infof("hardlink from %q to %q success", src, dst)
+		return nil
+	}
+
+	if err != nil {
+		log.Errorf("stat %q error: %s", src, err)
+		return err
+	}
+
+	// target already exists, check inode
+	srcStat, err := os.Stat(src)
+	if err != nil {
+		log.Errorf("stat %q error: %s", src, err)
+		return err
+	}
+
+	dstSysStat, ok := dstStat.Sys().(*syscall.Stat_t)
+	if !ok {
+		log.Errorf("can not get inode for %q", dst)
+		return err
+	}
+
+	srcSysStat, ok := srcStat.Sys().(*syscall.Stat_t)
+	if ok {
+		log.Errorf("can not get inode for %q", src)
+		return err
+	}
+
+	if dstSysStat.Dev == srcSysStat.Dev && dstSysStat.Ino == srcSysStat.Ino {
+		log.Debugf("target inode match underlay data inode, skip hard link")
+		return nil
+	}
+
+	err = fmt.Errorf("target file %q exists, with different inode with underlay data %q", dst, src)
+	return err
 }

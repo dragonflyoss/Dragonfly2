@@ -86,6 +86,9 @@ type Host struct {
 	// Peer sync map
 	Peers *sync.Map
 
+	// PeerCount is peer count
+	PeerCount *atomic.Int32
+
 	// IsCDN is used as tag cdn
 	IsCDN bool
 
@@ -113,6 +116,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		Location:        rawHost.Location,
 		UploadLoadLimit: atomic.NewInt32(defaultUploadLoadLimit),
 		Peers:           &sync.Map{},
+		PeerCount:       atomic.NewInt32(0),
 		IsCDN:           false,
 		CreateAt:        atomic.NewTime(time.Now()),
 		UpdateAt:        atomic.NewTime(time.Now()),
@@ -139,6 +143,7 @@ func (h *Host) LoadPeer(key string) (*Peer, bool) {
 // StorePeer set peer
 func (h *Host) StorePeer(peer *Peer) {
 	h.Peers.Store(peer.ID, peer)
+	h.PeerCount.Inc()
 }
 
 // LoadOrStorePeer returns peer the key if present.
@@ -146,23 +151,18 @@ func (h *Host) StorePeer(peer *Peer) {
 // The loaded result is true if the peer was loaded, false if stored.
 func (h *Host) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	rawPeer, loaded := h.Peers.LoadOrStore(peer.ID, peer)
+	if !loaded {
+		h.PeerCount.Inc()
+	}
+
 	return rawPeer.(*Peer), loaded
 }
 
 // DeletePeer deletes peer for a key
 func (h *Host) DeletePeer(key string) {
-	h.Peers.Delete(key)
-}
-
-// LenPeers return length of peers sync map
-func (h *Host) LenPeers() int {
-	var len int
-	h.Peers.Range(func(_, _ interface{}) bool {
-		len++
-		return true
-	})
-
-	return len
+	if _, loaded := h.Peers.LoadAndDelete(key); loaded {
+		h.PeerCount.Dec()
+	}
 }
 
 // LeavePeers set peer state to PeerStateLeave
@@ -188,5 +188,5 @@ func (h *Host) LeavePeers() {
 
 // FreeUploadLoad return free upload load of host
 func (h *Host) FreeUploadLoad() int32 {
-	return h.UploadLoadLimit.Load() - int32(h.LenPeers())
+	return h.UploadLoadLimit.Load() - h.PeerCount.Load()
 }

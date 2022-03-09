@@ -10,6 +10,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	clientutil "d7y.io/dragonfly/v2/client/clientutil"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	gomock "github.com/golang/mock/gomock"
@@ -268,6 +269,20 @@ func (mr *MockManagerMockRecorder) CleanUp() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanUp", reflect.TypeOf((*MockManager)(nil).CleanUp))
 }
 
+// FindCompletedSubTask mocks base method.
+func (m *MockManager) FindCompletedSubTask(taskID string) *storage.ReusePeerTask {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindCompletedSubTask", taskID)
+	ret0, _ := ret[0].(*storage.ReusePeerTask)
+	return ret0
+}
+
+// FindCompletedSubTask indicates an expected call of FindCompletedSubTask.
+func (mr *MockManagerMockRecorder) FindCompletedSubTask(taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedSubTask", reflect.TypeOf((*MockManager)(nil).FindCompletedSubTask), taskID)
+}
+
 // FindCompletedTask mocks base method.
 func (m *MockManager) FindCompletedTask(taskID string) *storage.ReusePeerTask {
 	m.ctrl.T.Helper()
@@ -280,6 +295,20 @@ func (m *MockManager) FindCompletedTask(taskID string) *storage.ReusePeerTask {
 func (mr *MockManagerMockRecorder) FindCompletedTask(taskID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedTask", reflect.TypeOf((*MockManager)(nil).FindCompletedTask), taskID)
+}
+
+// FindPartialCompletedTask mocks base method.
+func (m *MockManager) FindPartialCompletedTask(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPartialCompletedTask", taskID, rg)
+	ret0, _ := ret[0].(*storage.ReusePeerTask)
+	return ret0
+}
+
+// FindPartialCompletedTask indicates an expected call of FindPartialCompletedTask.
+func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPartialCompletedTask", reflect.TypeOf((*MockManager)(nil).FindPartialCompletedTask), taskID, rg)
 }
 
 // GetPieces mocks base method.
@@ -355,8 +384,23 @@ func (mr *MockManagerMockRecorder) ReadPiece(ctx, req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadPiece", reflect.TypeOf((*MockManager)(nil).ReadPiece), ctx, req)
 }
 
+// RegisterSubTask mocks base method.
+func (m *MockManager) RegisterSubTask(ctx context.Context, req *storage.RegisterSubTaskRequest) (storage.TaskStorageDriver, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterSubTask", ctx, req)
+	ret0, _ := ret[0].(storage.TaskStorageDriver)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterSubTask indicates an expected call of RegisterSubTask.
+func (mr *MockManagerMockRecorder) RegisterSubTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSubTask", reflect.TypeOf((*MockManager)(nil).RegisterSubTask), ctx, req)
+}
+
 // RegisterTask mocks base method.
-func (m *MockManager) RegisterTask(ctx context.Context, req storage.RegisterTaskRequest) (storage.TaskStorageDriver, error) {
+func (m *MockManager) RegisterTask(ctx context.Context, req *storage.RegisterTaskRequest) (storage.TaskStorageDriver, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterTask", ctx, req)
 	ret0, _ := ret[0].(storage.TaskStorageDriver)

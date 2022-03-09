@@ -31,12 +31,11 @@ func TestConfig_Load(t *testing.T) {
 
 	config := &Config{
 		Server: &ServerConfig{
-			IP:          "127.0.0.1",
-			Host:        "foo",
-			Port:        8002,
-			ListenLimit: 1000,
-			CacheDir:    "foo",
-			LogDir:      "bar",
+			IP:       "127.0.0.1",
+			Host:     "foo",
+			Port:     8002,
+			CacheDir: "foo",
+			LogDir:   "bar",
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            "default",
@@ -63,12 +62,14 @@ func TestConfig_Load(t *testing.T) {
 			Location:    "baz",
 		},
 		Manager: &ManagerConfig{
-			Enable:             true,
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
+		},
+		CDN: &CDNConfig{
+			Enable: true,
 		},
 		Job: &JobConfig{
 			Enable:             true,
