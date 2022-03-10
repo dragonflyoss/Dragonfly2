@@ -37,6 +37,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+const (
+	// Default value of biz tag for cdn peer
+	cdnBizTag = "d7y/cdn"
+)
+
 type CDN interface {
 	// TriggerTask start to trigger cdn task
 	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
@@ -146,7 +151,7 @@ func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 	}
 
 	// New cdn peer
-	peer = NewPeer(ps.PeerId, task, host)
+	peer = NewPeer(ps.PeerId, task, host, WithBizTag(cdnBizTag))
 	peer.Log.Info("new cdn peer successfully")
 
 	// Store cdn peer
