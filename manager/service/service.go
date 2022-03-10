@@ -32,7 +32,8 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-type REST interface {
+type Service interface {
+	UpdateUser(context.Context, uint, types.UpdateUserRequest) (*model.User, error)
 	GetUser(context.Context, uint) (*model.User, error)
 	GetUsers(context.Context, types.GetUsersQuery) (*[]model.User, int64, error)
 	SignIn(context.Context, types.SignInRequest) (*model.User, error)
@@ -128,7 +129,7 @@ type REST interface {
 	DeleteCDNClusterToApplication(context.Context, uint, uint) error
 }
 
-type rest struct {
+type service struct {
 	db       *gorm.DB
 	rdb      *redis.Client
 	cache    *cache.Cache
@@ -137,8 +138,8 @@ type rest struct {
 }
 
 // NewREST returns a new REST instence
-func NewREST(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer) REST {
-	return &rest{
+func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer) Service {
+	return &service{
 		db:       database.DB,
 		rdb:      database.RDB,
 		cache:    cache,

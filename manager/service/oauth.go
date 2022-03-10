@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (*model.Oauth, error) {
+func (s *service) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (*model.Oauth, error) {
 	oauth := model.Oauth{
 		Name:         json.Name,
 		BIO:          json.BIO,
@@ -39,7 +39,7 @@ func (s *rest) CreateOauth(ctx context.Context, json types.CreateOauthRequest) (
 	return &oauth, nil
 }
 
-func (s *rest) DestroyOauth(ctx context.Context, id uint) error {
+func (s *service) DestroyOauth(ctx context.Context, id uint) error {
 	oauth := model.Oauth{}
 	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return err
@@ -52,7 +52,7 @@ func (s *rest) DestroyOauth(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthRequest) (*model.Oauth, error) {
+func (s *service) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthRequest) (*model.Oauth, error) {
 	oauth := model.Oauth{}
 	if err := s.db.WithContext(ctx).First(&oauth, id).Updates(model.Oauth{
 		Name:         json.Name,
@@ -67,7 +67,7 @@ func (s *rest) UpdateOauth(ctx context.Context, id uint, json types.UpdateOauthR
 	return &oauth, nil
 }
 
-func (s *rest) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
+func (s *service) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	oauth := model.Oauth{}
 	if err := s.db.WithContext(ctx).First(&oauth, id).Error; err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *rest) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	return &oauth, nil
 }
 
-func (s *rest) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, int64, error) {
+func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, int64, error) {
 	var count int64
 	var oauths []model.Oauth
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{

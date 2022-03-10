@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*model.CDN, error) {
+func (s *service) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{
 		HostName:     json.HostName,
 		IDC:          json.IDC,
@@ -41,7 +41,7 @@ func (s *rest) CreateCDN(ctx context.Context, json types.CreateCDNRequest) (*mod
 	return &cdn, nil
 }
 
-func (s *rest) DestroyCDN(ctx context.Context, id uint) error {
+func (s *service) DestroyCDN(ctx context.Context, id uint) error {
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).First(&cdn, id).Error; err != nil {
 		return err
@@ -54,7 +54,7 @@ func (s *rest) DestroyCDN(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
+func (s *service) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNRequest) (*model.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).First(&cdn, id).Updates(model.CDN{
 		IDC:          json.IDC,
@@ -70,7 +70,7 @@ func (s *rest) UpdateCDN(ctx context.Context, id uint, json types.UpdateCDNReque
 	return &cdn, nil
 }
 
-func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
+func (s *service) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).First(&cdn, id).Error; err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (s *rest) GetCDN(ctx context.Context, id uint) (*model.CDN, error) {
 	return &cdn, nil
 }
 
-func (s *rest) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, int64, error) {
+func (s *service) GetCDNs(ctx context.Context, q types.GetCDNsQuery) (*[]model.CDN, int64, error) {
 	var count int64
 	var cdns []model.CDN
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDN{

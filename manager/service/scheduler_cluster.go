@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
-func (s *rest) CreateSchedulerCluster(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (s *rest) CreateSchedulerCluster(ctx context.Context, json types.CreateSche
 	return &schedulerCluster, nil
 }
 
-func (s *rest) DestroySchedulerCluster(ctx context.Context, id uint) error {
+func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Error; err != nil {
 		return err
@@ -75,7 +75,7 @@ func (s *rest) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateSchedulerCluster(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
+func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (s *rest) UpdateSchedulerCluster(ctx context.Context, id uint, json types.U
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetSchedulerCluster(ctx context.Context, id uint) (*model.SchedulerCluster, error) {
+func (s *service) GetSchedulerCluster(ctx context.Context, id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).Preload("CDNClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (s *rest) GetSchedulerCluster(ctx context.Context, id uint) (*model.Schedul
 	return &schedulerCluster, nil
 }
 
-func (s *rest) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error) {
+func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error) {
 	var count int64
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
@@ -133,7 +133,7 @@ func (s *rest) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClu
 	return &schedulerClusters, count, nil
 }
 
-func (s *rest) AddSchedulerToSchedulerCluster(ctx context.Context, id, schedulerID uint) error {
+func (s *service) AddSchedulerToSchedulerCluster(ctx context.Context, id, schedulerID uint) error {
 	schedulerCluster := model.SchedulerCluster{}
 	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Error; err != nil {
 		return err
