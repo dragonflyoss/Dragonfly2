@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateConfig(ctx context.Context, json types.CreateConfigRequest) (*model.Config, error) {
+func (s *service) CreateConfig(ctx context.Context, json types.CreateConfigRequest) (*model.Config, error) {
 	config := model.Config{
 		Name:   json.Name,
 		Value:  json.Value,
@@ -38,7 +38,7 @@ func (s *rest) CreateConfig(ctx context.Context, json types.CreateConfigRequest)
 	return &config, nil
 }
 
-func (s *rest) DestroyConfig(ctx context.Context, id uint) error {
+func (s *service) DestroyConfig(ctx context.Context, id uint) error {
 	config := model.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Error; err != nil {
 		return err
@@ -51,7 +51,7 @@ func (s *rest) DestroyConfig(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfigRequest) (*model.Config, error) {
+func (s *service) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfigRequest) (*model.Config, error) {
 	config := model.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Updates(model.Config{
 		Name:   json.Name,
@@ -65,7 +65,7 @@ func (s *rest) UpdateConfig(ctx context.Context, id uint, json types.UpdateConfi
 	return &config, nil
 }
 
-func (s *rest) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
+func (s *service) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
 	config := model.Config{}
 	if err := s.db.WithContext(ctx).First(&config, id).Error; err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (s *rest) GetConfig(ctx context.Context, id uint) (*model.Config, error) {
 	return &config, nil
 }
 
-func (s *rest) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, int64, error) {
+func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, int64, error) {
 	var count int64
 	var configs []model.Config
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
