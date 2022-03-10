@@ -44,7 +44,7 @@ const (
 	V1PreheatingStateFail = "FAIL"
 )
 
-func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
+func (s *service) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
 	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatJobRequest{
 		Type: internaljob.PreheatJob,
 		Args: types.PreheatArgs{
@@ -63,7 +63,7 @@ func (s *rest) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRe
 	}, nil
 }
 
-func (s *rest) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1PreheatResponse, error) {
+func (s *service) GetV1Preheat(ctx context.Context, rawID string) (*types.GetV1PreheatResponse, error) {
 	id, err := strconv.ParseUint(rawID, 10, 32)
 	if err != nil {
 		logger.Errorf("preheat convert error", err)

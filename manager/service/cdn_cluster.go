@@ -24,7 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
-func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *service) CreateCDNCluster(ctx context.Context, json types.CreateCDNClusterRequest) (*model.CDNCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func (s *rest) CreateCDNCluster(ctx context.Context, json types.CreateCDNCluster
 	return &cdnCluster, nil
 }
 
-func (s *rest) DestroyCDNCluster(ctx context.Context, id uint) error {
+func (s *service) DestroyCDNCluster(ctx context.Context, id uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err
@@ -57,7 +57,7 @@ func (s *rest) DestroyCDNCluster(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
+func (s *service) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateCDNClusterRequest) (*model.CDNCluster, error) {
 	config, err := structutils.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (s *rest) UpdateCDNCluster(ctx context.Context, id uint, json types.UpdateC
 	return &cdnCluster, nil
 }
 
-func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, error) {
+func (s *service) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, error) {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (s *rest) GetCDNCluster(ctx context.Context, id uint) (*model.CDNCluster, e
 	return &cdnCluster, nil
 }
 
-func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error) {
+func (s *service) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error) {
 	var count int64
 	var cdnClusters []model.CDNCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.CDNCluster{
@@ -97,7 +97,7 @@ func (s *rest) GetCDNClusters(ctx context.Context, q types.GetCDNClustersQuery) 
 	return &cdnClusters, count, nil
 }
 
-func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
+func (s *service) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err
@@ -115,7 +115,7 @@ func (s *rest) AddCDNToCDNCluster(ctx context.Context, id, cdnID uint) error {
 	return nil
 }
 
-func (s *rest) AddSchedulerClusterToCDNCluster(ctx context.Context, id, schedulerClusterID uint) error {
+func (s *service) AddSchedulerClusterToCDNCluster(ctx context.Context, id, schedulerClusterID uint) error {
 	cdnCluster := model.CDNCluster{}
 	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
 		return err

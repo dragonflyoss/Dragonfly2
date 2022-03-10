@@ -88,7 +88,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize REST server
-	restService := service.NewREST(db, cache, job, enforcer)
+	restService := service.New(db, cache, job, enforcer)
 	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
 	if err != nil {
 		return nil, err

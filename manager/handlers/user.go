@@ -27,6 +27,40 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
+// @Summary Update User
+// @Description Update by json config
+// @Tags User
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param User body types.UpdateUserRequest true "User"
+// @Success 200 {object} model.User
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /users/{id} [patch]
+func (h *Handlers) UpdateUser(ctx *gin.Context) {
+	var params types.UserParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var json types.UpdateUserRequest
+	if err := ctx.ShouldBindJSON(&json); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	user, err := h.service.UpdateUser(ctx.Request.Context(), params.ID, json)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, user)
+}
+
 // @Summary Get User
 // @Description Get User by id
 // @Tags User

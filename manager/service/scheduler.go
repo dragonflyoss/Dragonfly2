@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*model.Scheduler, error) {
+func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{
 		HostName:           json.HostName,
 		VIPs:               json.VIPs,
@@ -42,7 +42,7 @@ func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRe
 	return &scheduler, nil
 }
 
-func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
+func (s *service) DestroyScheduler(ctx context.Context, id uint) error {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return err
@@ -55,7 +55,7 @@ func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
+func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(model.Scheduler{
 		VIPs:               json.VIPs,
@@ -72,7 +72,7 @@ func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSc
 	return &scheduler, nil
 }
 
-func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, error) {
+func (s *service) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, err
 	return &scheduler, nil
 }
 
-func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, int64, error) {
+func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, int64, error) {
 	var count int64
 	var schedulers []model.Scheduler
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{

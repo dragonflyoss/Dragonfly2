@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/structutils"
 )
 
-func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
+func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
 	var schedulerClusters []model.SchedulerCluster
 
@@ -97,7 +97,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 	return &job, nil
 }
 
-func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
+func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 	var job model.Job
 
 	if _, _, err := retry.Run(ctx, func() (interface{}, bool, error) {
@@ -140,7 +140,7 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 	}
 }
 
-func (s *rest) DestroyJob(ctx context.Context, id uint) error {
+func (s *service) DestroyJob(ctx context.Context, id uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err
@@ -153,7 +153,7 @@ func (s *rest) DestroyJob(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
+func (s *service) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
 		BIO:    json.BIO,
@@ -165,7 +165,7 @@ func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobReque
 	return &job, nil
 }
 
-func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
+func (s *service) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Error; err != nil {
 		return nil, err
@@ -174,7 +174,7 @@ func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	return &job, nil
 }
 
-func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, int64, error) {
+func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, int64, error) {
 	var count int64
 	var jobs []model.Job
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
@@ -188,7 +188,7 @@ func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job,
 	return &jobs, count, nil
 }
 
-func (s *rest) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {
+func (s *service) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err
@@ -210,7 +210,7 @@ func (s *rest) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClust
 	return nil
 }
 
-func (s *rest) AddJobToCDNClusters(ctx context.Context, id, cdnClusterIDs []uint) error {
+func (s *service) AddJobToCDNClusters(ctx context.Context, id, cdnClusterIDs []uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err

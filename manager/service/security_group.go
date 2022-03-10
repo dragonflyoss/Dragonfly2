@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *service) CreateSecurityGroup(ctx context.Context, json types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{
 		Name: json.Name,
 		BIO:  json.BIO,
@@ -36,7 +36,7 @@ func (s *rest) CreateSecurityGroup(ctx context.Context, json types.CreateSecurit
 	return &securityGroup, nil
 }
 
-func (s *rest) DestroySecurityGroup(ctx context.Context, id uint) error {
+func (s *service) DestroySecurityGroup(ctx context.Context, id uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
@@ -49,7 +49,7 @@ func (s *rest) DestroySecurityGroup(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
+func (s *service) UpdateSecurityGroup(ctx context.Context, id uint, json types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Updates(model.SecurityGroup{
 		Name: json.Name,
@@ -61,7 +61,7 @@ func (s *rest) UpdateSecurityGroup(ctx context.Context, id uint, json types.Upda
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
+func (s *service) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGroup, error) {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).Preload("SecurityRules").First(&securityGroup, id).Error; err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (s *rest) GetSecurityGroup(ctx context.Context, id uint) (*model.SecurityGr
 	return &securityGroup, nil
 }
 
-func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error) {
+func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error) {
 	var count int64
 	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
@@ -82,7 +82,7 @@ func (s *rest) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQ
 	return &securityGroups, count, nil
 }
 
-func (s *rest) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {
+func (s *service) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
@@ -100,7 +100,7 @@ func (s *rest) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, sched
 	return nil
 }
 
-func (s *rest) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
+func (s *service) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
@@ -118,7 +118,7 @@ func (s *rest) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterI
 	return nil
 }
 
-func (s *rest) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
+func (s *service) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err
@@ -136,7 +136,7 @@ func (s *rest) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityR
 	return nil
 }
 
-func (s *rest) DestroySecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
+func (s *service) DestroySecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
 		return err

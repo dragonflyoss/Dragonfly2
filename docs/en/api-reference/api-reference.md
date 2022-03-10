@@ -3284,6 +3284,50 @@ Get User by id
 * User
 
 
+<a name="api-v1-users-id-patch"></a>
+### Update User
+```
+PATCH /api/v1/users/{id}
+```
+
+
+#### Description
+Update by json config
+
+
+#### Parameters
+
+|Type|Name|Description|Schema|
+|---|---|---|---|
+|**Path**|**id**  <br>*required*|id|string|
+|**Body**|**User**  <br>*required*|User|[types.UpdateUserRequest](#types-updateuserrequest)|
+
+
+#### Responses
+
+|HTTP Code|Description|Schema|
+|---|---|---|
+|**200**|OK|[model.User](#model-user)|
+|**400**||No Content|
+|**404**||No Content|
+|**500**||No Content|
+
+
+#### Consumes
+
+* `application/json`
+
+
+#### Produces
+
+* `application/json`
+
+
+#### Tags
+
+* User
+
+
 <a name="api-v1-users-id-reset_password-post"></a>
 ### Reset Password For User
 ```
@@ -3651,7 +3695,7 @@ delete role by uri config
 
 |Name|Schema|
 |---|---|
-|**action**  <br>*required*|string|
+|**action**  <br>*required*|enum (read, *)|
 |**object**  <br>*required*|string|
 
 
@@ -3660,17 +3704,17 @@ delete role by uri config
 
 |Name|Schema|
 |---|---|
-|**action**  <br>*required*|string|
+|**action**  <br>*required*|enum (read, *)|
 |**object**  <br>*required*|string|
 
 
 <a name="types-cdnclusterconfig"></a>
 ### types.CDNClusterConfig
 
-|Name|Schema|
-|---|---|
-|**load_limit**  <br>*optional*|integer|
-|**net_topology**  <br>*optional*|string|
+|Name|Description|Schema|
+|---|---|---|
+|**load_limit**  <br>*optional*|**Minimum value** : `1`  <br>**Maximum value** : `10000`|integer|
+|**net_topology**  <br>*optional*||string|
 
 
 <a name="types-createapplicationrequest"></a>
@@ -3681,7 +3725,7 @@ delete role by uri config
 |**bio**  <br>*optional*|string|
 |**download_rate_limit**  <br>*optional*|integer|
 |**name**  <br>*required*|string|
-|**state**  <br>*optional*|string|
+|**state**  <br>*optional*|enum (enable, disable)|
 |**url**  <br>*optional*|string|
 |**user_id**  <br>*required*|integer|
 
@@ -3744,7 +3788,7 @@ delete role by uri config
 |**bio**  <br>*optional*|string|
 |**client_id**  <br>*required*|string|
 |**client_secret**  <br>*required*|string|
-|**name**  <br>*required*|string|
+|**name**  <br>*required*|enum (github, google)|
 |**redirect_url**  <br>*optional*|string|
 
 
@@ -3813,7 +3857,7 @@ delete role by uri config
 |---|---|
 |**filter**  <br>*optional*|string|
 |**headers**  <br>*optional*|< string, string > map|
-|**type**  <br>*required*|string|
+|**type**  <br>*required*|enum (image, file)|
 |**url**  <br>*required*|string|
 
 
@@ -3830,7 +3874,7 @@ delete role by uri config
 
 |Name|Schema|
 |---|---|
-|**action**  <br>*required*|string|
+|**action**  <br>*required*|enum (read, *)|
 |**object**  <br>*required*|string|
 
 
@@ -3848,23 +3892,27 @@ delete role by uri config
 <a name="types-resetpasswordrequest"></a>
 ### types.ResetPasswordRequest
 
-|Name|Schema|
-|---|---|
-|**new_password**  <br>*required*|string|
-|**old_password**  <br>*required*|string|
+|Name|Description|Schema|
+|---|---|---|
+|**new_password**  <br>*required*|**Length** : `8 - 20`|string|
+|**old_password**  <br>*required*|**Length** : `8 - 20`|string|
 
 
 <a name="types-schedulerclusterclientconfig"></a>
 ### types.SchedulerClusterClientConfig
 
-|Name|Schema|
-|---|---|
-|**load_limit**  <br>*optional*|integer|
+|Name|Description|Schema|
+|---|---|---|
+|**load_limit**  <br>*optional*|**Minimum value** : `1`  <br>**Maximum value** : `10000`|integer|
+|**parallel_count**  <br>*optional*|**Minimum value** : `1`  <br>**Maximum value** : `50`|integer|
 
 
 <a name="types-schedulerclusterconfig"></a>
 ### types.SchedulerClusterConfig
-*Type* : object
+
+|Name|Description|Schema|
+|---|---|---|
+|**filter_parent_limit**  <br>*optional*|**Minimum value** : `1`  <br>**Maximum value** : `100`|integer|
 
 
 <a name="types-schedulerclusterscopes"></a>
@@ -3880,15 +3928,15 @@ delete role by uri config
 <a name="types-signuprequest"></a>
 ### types.SignUpRequest
 
-|Name|Schema|
-|---|---|
-|**avatar**  <br>*optional*|string|
-|**bio**  <br>*optional*|string|
-|**email**  <br>*required*|string|
-|**location**  <br>*optional*|string|
-|**name**  <br>*required*|string|
-|**password**  <br>*required*|string|
-|**phone**  <br>*optional*|string|
+|Name|Description|Schema|
+|---|---|---|
+|**avatar**  <br>*optional*||string|
+|**bio**  <br>*optional*||string|
+|**email**  <br>*required*||string|
+|**location**  <br>*optional*||string|
+|**name**  <br>*required*|**Length** : `3 - 10`|string|
+|**password**  <br>*required*|**Length** : `8 - 20`|string|
+|**phone**  <br>*optional*||string|
 
 
 <a name="types-updateapplicationrequest"></a>
@@ -3899,7 +3947,7 @@ delete role by uri config
 |**bio**  <br>*optional*|string|
 |**download_rate_limit**  <br>*optional*|integer|
 |**name**  <br>*optional*|string|
-|**state**  <br>*optional*|string|
+|**state**  <br>*optional*|enum (enable, disable)|
 |**url**  <br>*optional*|string|
 |**user_id**  <br>*required*|integer|
 
@@ -3956,7 +4004,7 @@ delete role by uri config
 |**bio**  <br>*optional*|string|
 |**client_id**  <br>*optional*|string|
 |**client_secret**  <br>*optional*|string|
-|**name**  <br>*optional*|string|
+|**name**  <br>*optional*|enum (github, google)|
 |**redirect_url**  <br>*optional*|string|
 
 
@@ -4007,6 +4055,18 @@ delete role by uri config
 |**domain**  <br>*optional*|string|
 |**name**  <br>*optional*|string|
 |**proxy_domain**  <br>*optional*|string|
+
+
+<a name="types-updateuserrequest"></a>
+### types.UpdateUserRequest
+
+|Name|Schema|
+|---|---|
+|**avatar**  <br>*optional*|string|
+|**bio**  <br>*optional*|string|
+|**email**  <br>*optional*|string|
+|**location**  <br>*optional*|string|
+|**phone**  <br>*optional*|string|
 
 
 
