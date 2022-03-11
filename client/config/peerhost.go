@@ -38,7 +38,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type DaemonConfig = DaemonOption
@@ -57,14 +56,13 @@ type DaemonOption struct {
 	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
-	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
-	Host         HostOption      `mapstructure:"host" yaml:"host"`
-	Download     DownloadOption  `mapstructure:"download" yaml:"download"`
-	Proxy        *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
-	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
-	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
-	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
-	Health       *HealthOption   `mapstructure:"health" yaml:"health"`
+	Scheduler SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
+	Host      HostOption      `mapstructure:"host" yaml:"host"`
+	Download  DownloadOption  `mapstructure:"download" yaml:"download"`
+	Proxy     *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
+	Upload    UploadOption    `mapstructure:"upload" yaml:"upload"`
+	Storage   StorageOption   `mapstructure:"storage" yaml:"storage"`
+	Health    *HealthOption   `mapstructure:"health" yaml:"health"`
 	// TODO WIP, did not use
 	Reload ReloadOption `mapstructure:"reloadOption" yaml:"reloadOption"`
 }
@@ -115,20 +113,19 @@ func (p *DaemonOption) Convert() error {
 }
 
 func (p *DaemonOption) Validate() error {
-	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
-		return errors.New("empty schedulers and config server is not specified")
-	}
-
 	if p.Scheduler.Manager.Enable {
-		if len(p.Scheduler.NetAddrs) == 0 {
+		if len(p.Scheduler.Manager.NetAddrs) == 0 {
 			return errors.New("manager addr is not specified")
 		}
 
 		if p.Scheduler.Manager.RefreshInterval == 0 {
 			return errors.New("manager refreshInterval is not specified")
 		}
+		return nil
 	}
-
+	if len(p.Scheduler.NetAddrs) == 0 {
+		return errors.New("empty schedulers and config server is not specified")
+	}
 	return nil
 }
 
