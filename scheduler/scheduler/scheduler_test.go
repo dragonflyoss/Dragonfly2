@@ -872,3 +872,85 @@ func TestScheduler_FindParent(t *testing.T) {
 		})
 	}
 }
+
+func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)
+		expect func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
+	}{
+		{
+			name: "get parallelCount from dynconfig",
+			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{
+					ParallelCount: 1,
+				}, true).Times(1)
+			},
+			expect: func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+				assert := assert.New(t)
+				assert.EqualValues(packet, &rpcscheduler.PeerPacket{
+					TaskId:        mockTaskID,
+					SrcPid:        mockPeerID,
+					ParallelCount: 1,
+					MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+						Ip:      parent.Host.IP,
+						RpcPort: parent.Host.Port,
+						PeerId:  parent.ID,
+					},
+					StealPeers: []*rpcscheduler.PeerPacket_DestPeer{
+						{
+							Ip:      candidateParents[0].Host.IP,
+							RpcPort: candidateParents[0].Host.Port,
+							PeerId:  candidateParents[0].ID,
+						},
+					},
+					Code: base.Code_Success,
+				})
+			},
+		},
+		{
+			name: "use default parallelCount",
+			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+				assert := assert.New(t)
+				assert.EqualValues(packet, &rpcscheduler.PeerPacket{
+					TaskId:        mockTaskID,
+					SrcPid:        mockPeerID,
+					ParallelCount: 4,
+					MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+						Ip:      parent.Host.IP,
+						RpcPort: parent.Host.Port,
+						PeerId:  parent.ID,
+					},
+					StealPeers: []*rpcscheduler.PeerPacket_DestPeer{
+						{
+							Ip:      candidateParents[0].Host.IP,
+							RpcPort: candidateParents[0].Host.Port,
+							PeerId:  candidateParents[0].ID,
+						},
+					},
+					Code: base.Code_Success,
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+
+			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+			parent := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
+			candidateParents := []*resource.Peer{resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)}
+
+			tc.mock(dynconfig.EXPECT())
+			tc.expect(t, constructSuccessPeerPacket(dynconfig, peer, parent, candidateParents), parent, candidateParents)
+		})
+	}
+}
