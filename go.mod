@@ -102,7 +102,6 @@ require (
 	github.com/denisenkom/go-mssqldb v0.0.0-20200428022330-06a60b6afbbc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-echarts/go-echarts/v2 v2.2.3 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
@@ -177,7 +176,6 @@ require (
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
-	github.com/urfave/cli/v2 v2.3.0 // indirect
 	github.com/vmihailenco/bufpool v0.1.11 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.1.0 // indirect
