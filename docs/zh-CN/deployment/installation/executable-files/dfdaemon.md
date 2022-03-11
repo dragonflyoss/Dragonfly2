@@ -56,7 +56,7 @@
 ### 启动 dfdaemon
 
 ```sh
-dfget dfdaemon --options
+dfget daemon --options
 ```
 
 dfget 部署完成之后，运行以下命令以检查 **dfdaemon** 是否正在运行，以及 `65000`, `65001` 和 `65002` 端口是否可用。
