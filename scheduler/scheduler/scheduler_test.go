@@ -872,3 +872,47 @@ func TestScheduler_FindParent(t *testing.T) {
 		})
 	}
 }
+
+func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder)
+		expect func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool)
+	}{
+		{
+			name: "task peers is empty",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.False(ok)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+
+			var mockPeers []*resource.Peer
+			for i := 0; i < 11; i++ {
+				peer := resource.NewPeer(idgen.PeerID(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
+				mockPeers = append(mockPeers, peer)
+			}
+
+			blocklist := set.NewSafeSet()
+			tc.mock(peer, mockPeers, blocklist, dynconfig.EXPECT())
+			scheduler := New(mockSchedulerConfig, dynconfig, mockPluginDir)
+			parent, ok := constructSuccessPeerPacket(dynconfig, peer, blocklist)
+			tc.expect(t, mockPeers, parent, ok)
+		})
+	}
+}
