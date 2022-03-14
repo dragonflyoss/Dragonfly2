@@ -67,8 +67,8 @@ func New() *Config {
 			Algorithm:            "default",
 			BackSourceCount:      3,
 			RetryBackSourceLimit: 5,
-			RetryLimit:           20,
-			RetryInterval:        200 * time.Millisecond,
+			RetryLimit:           10,
+			RetryInterval:        50 * time.Millisecond,
 			GC: &GCConfig{
 				PeerGCInterval: 10 * time.Minute,
 				PeerTTL:        24 * time.Hour,
