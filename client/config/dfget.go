@@ -163,12 +163,6 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
-	var err error
-
-	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
-		return err
-	}
-
 	if cfg.URL == "" && len(args) > 0 {
 		cfg.URL = args[0]
 	}
