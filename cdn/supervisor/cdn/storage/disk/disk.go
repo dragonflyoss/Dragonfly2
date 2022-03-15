@@ -304,6 +304,5 @@ func (s *diskStorageManager) GC() error {
 		synclock.UnLock(taskID, false)
 	}
 	logger.StorageGCLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), len(remainingTasks))
-	logger.StorageGCLogger.With("type", "disk").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
 	return nil
 }
