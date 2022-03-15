@@ -214,6 +214,7 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
 	}
+
 	return &config, nil
 }
 

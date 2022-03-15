@@ -183,7 +183,12 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
 			{Name: PeerEventDownload, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
 			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
-			{Name: PeerEventDownloadSucceeded, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateSucceeded},
+			{Name: PeerEventDownloadSucceeded, Src: []string{
+				// Since ReportPeerResult and ReportPieceResult are called in no order,
+				// the result may be reported after the register is successful.
+				PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
+				PeerStateRunning, PeerStateBackToSource,
+			}, Dst: PeerStateSucceeded},
 			{Name: PeerEventDownloadFailed, Src: []string{
 				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
@@ -210,6 +215,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.Task.BackToSourcePeers.Add(p)
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -219,6 +225,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				}
 
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -228,11 +235,13 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				}
 
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},

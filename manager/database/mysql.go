@@ -33,10 +33,13 @@ import (
 
 const (
 	// Default number of cdn load limit
-	defaultCDNLoadLimit = 300
+	DefaultCDNLoadLimit = 300
 
 	// Default number of client load limit
-	defaultClientLoadLimit = 50
+	DefaultClientLoadLimit = 50
+
+	// Default number of pieces to download in parallel
+	DefaultClientParallelCount = 4
 )
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
@@ -130,7 +133,7 @@ func seed(db *gorm.DB) error {
 			},
 			Name: "cdn-cluster-1",
 			Config: map[string]interface{}{
-				"load_limit": defaultCDNLoadLimit,
+				"load_limit": DefaultCDNLoadLimit,
 			},
 			IsDefault: true,
 		}).Error; err != nil {
@@ -150,7 +153,8 @@ func seed(db *gorm.DB) error {
 			Name:   "scheduler-cluster-1",
 			Config: map[string]interface{}{},
 			ClientConfig: map[string]interface{}{
-				"load_limit": defaultClientLoadLimit,
+				"load_limit":     DefaultClientLoadLimit,
+				"parallel_count": DefaultClientParallelCount,
 			},
 			Scopes:    map[string]interface{}{},
 			IsDefault: true,

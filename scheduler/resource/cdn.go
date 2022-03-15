@@ -259,7 +259,7 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 	for _, cdn := range cdns {
 		var netTopology string
 		options := []HostOption{WithIsCDN(true)}
-		if config, ok := cdn.GetCDNClusterConfig(); ok {
+		if config, ok := cdn.GetCDNClusterConfig(); ok && config.LoadLimit > 0 {
 			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
 			netTopology = config.NetTopology
 		}
