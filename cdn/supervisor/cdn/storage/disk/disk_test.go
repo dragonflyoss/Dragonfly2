@@ -140,7 +140,6 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 
 func (suite *DiskStorageManagerSuite) TestDeleteTask() {
 	workHome, _ := os.MkdirTemp("/tmp", "cdn-storageManager-")
-	fmt.Printf("workHome: %s", workHome)
 	diskDriver, err := local.NewStorageDriver(&storedriver.Config{BaseDir: workHome})
 	suite.Nil(err)
 	suite.m = &diskStorageManager{
