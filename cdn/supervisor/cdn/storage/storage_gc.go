@@ -87,8 +87,6 @@ func (cleaner *cleaner) GC(storagePattern string, force bool) ([]string, error) 
 	walkTaskIds := make(map[string]bool)
 	var gcTaskIDs []string
 	walkFn := func(path string, info os.FileInfo, err error) error {
-		logger.StorageGCLogger.With("type", storagePattern).Debugf("start to walk path(%s)", path)
-
 		if err != nil {
 			logger.StorageGCLogger.With("type", storagePattern).Errorf("failed to access path(%s): %v", path, err)
 			return err

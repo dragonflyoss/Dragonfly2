@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/cdn/gc"
@@ -203,6 +202,12 @@ func (s *diskStorageManager) ResetRepo(seedTask *task.SeedTask) error {
 }
 
 func (s *diskStorageManager) DeleteTask(taskID string) error {
+	if err := s.diskDriver.Remove(storage.GetUploadRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := s.diskDriver.Remove(storage.GetUploadParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		logger.StorageGCLogger.Warnf("taskID: %s failed remove upload parent bucket: %v", taskID, err)
+	}
 	if err := s.diskDriver.Remove(storage.GetTaskMetadataRaw(taskID)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -212,12 +217,9 @@ func (s *diskStorageManager) DeleteTask(taskID string) error {
 	if err := s.diskDriver.Remove(storage.GetDownloadRaw(taskID)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	if err := s.diskDriver.Remove(storage.GetUploadRaw(taskID)); err != nil && !os.IsNotExist(err) {
-		return err
-	}
 	// try to clean the parent bucket
-	if err := s.diskDriver.Remove(storage.GetParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
-		logrus.Warnf("taskID: %s failed remove parent bucket: %v", taskID, err)
+	if err := s.diskDriver.Remove(storage.GetDownloadParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		logger.StorageGCLogger.Warnf("taskID: %s failed remove download parent bucket: %v", taskID, err)
 	}
 	return nil
 }
@@ -280,22 +282,22 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (s *diskStorageManager) GC() error {
-	logger.StorageGCLogger.With("type", "disk").Info("start the disk storage gc job")
+	logger.StorageGCLogger.With("type", "disk").Debug("start the disk storage gc job")
 	gcTaskIDs, err := s.diskCleaner.GC("disk", false)
 	if err != nil {
 		logger.StorageGCLogger.With("type", "disk").Error("failed to get gcTaskIDs")
 	}
-	var gcTasks []string
+	var actualGCTasks []string
 	var remainingTasks []string
 	for _, taskID := range gcTaskIDs {
 		synclock.Lock(taskID, false)
 		// try to ensure the taskID is not using again
 		if _, exist := s.taskManager.Exist(taskID); exist {
-			synclock.UnLock(taskID, false)
 			remainingTasks = append(remainingTasks, taskID)
+			synclock.UnLock(taskID, false)
 			continue
 		}
-		gcTasks = append(gcTasks, taskID)
+		actualGCTasks = append(actualGCTasks, taskID)
 		if err := s.DeleteTask(taskID); err != nil {
 			logger.StorageGCLogger.With("type", "disk").Errorf("failed to delete disk files with taskID(%s): %v", taskID, err)
 			synclock.UnLock(taskID, false)
@@ -303,7 +305,8 @@ func (s *diskStorageManager) GC() error {
 		}
 		synclock.UnLock(taskID, false)
 	}
-	logger.StorageGCLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks", len(gcTaskIDs), len(remainingTasks))
-	logger.StorageGCLogger.With("type", "disk").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", gcTasks, remainingTasks)
+	logger.StorageGCLogger.With("type", "disk").Infof("at most %d tasks can be cleaned up, actual gc %d tasks, remaining %d tasks", len(gcTaskIDs),
+		len(actualGCTasks), len(remainingTasks))
+	logger.StorageGCLogger.With("type", "disk").Debugf("tasks %s were successfully cleared, leaving tasks %s remaining", actualGCTasks, remainingTasks)
 	return nil
 }
