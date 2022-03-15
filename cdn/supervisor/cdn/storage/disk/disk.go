@@ -282,7 +282,7 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 }
 
 func (s *diskStorageManager) GC() error {
-	logger.StorageGCLogger.With("type", "disk").Info("start the disk storage gc job")
+	logger.StorageGCLogger.With("type", "disk").Debug("start the disk storage gc job")
 	gcTaskIDs, err := s.diskCleaner.GC("disk", false)
 	if err != nil {
 		logger.StorageGCLogger.With("type", "disk").Error("failed to get gcTaskIDs")

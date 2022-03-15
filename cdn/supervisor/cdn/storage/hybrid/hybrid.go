@@ -382,7 +382,7 @@ func (h *hybridStorageManager) tryShmSpace(url, taskID string, fileLength int64)
 }
 
 func (h *hybridStorageManager) GC() error {
-	logger.StorageGCLogger.With("type", "hybrid").Info("start the hybrid storage gc job")
+	logger.StorageGCLogger.With("type", "hybrid").Debug("start the hybrid storage gc job")
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
