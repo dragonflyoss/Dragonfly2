@@ -290,7 +290,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.99))
+				assert.Equal(score, float64(0.98))
 			},
 		},
 		{
