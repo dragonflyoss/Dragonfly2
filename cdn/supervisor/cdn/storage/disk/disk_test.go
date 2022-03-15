@@ -22,15 +22,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
-	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -152,9 +152,11 @@ func (suite *DiskStorageManagerSuite) TestDeleteTask() {
 	uploadFile, _ := os.Stat(filepath.Join(workHome, "upload", "foo", "fooTask"))
 	suite.NotNil(downloadFile)
 	suite.NotNil(uploadFile)
-	suite.m.DeleteTask(testTask.ID)
-	downloadFile, _ = os.Stat(filepath.Join(workHome, "download", "foo", "fooTask"))
-	uploadFile, _ = os.Stat(filepath.Join(workHome, "upload", "foo", "fooTask"))
+	suite.Nil(suite.m.DeleteTask(testTask.ID))
+	downloadFile, err = os.Stat(filepath.Join(workHome, "download", "foo", "fooTask"))
+	suite.True(os.IsNotExist(err))
+	uploadFile, err = os.Stat(filepath.Join(workHome, "upload", "foo", "fooTask"))
+	suite.True(os.IsNotExist(err))
 	suite.Nil(downloadFile)
 	suite.Nil(uploadFile)
 	os.RemoveAll(workHome)
