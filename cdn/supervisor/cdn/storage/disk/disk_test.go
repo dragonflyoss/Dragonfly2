@@ -18,14 +18,19 @@ package disk
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	taskMock "d7y.io/dragonfly/v2/cdn/supervisor/mocks/task"
+	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -131,4 +136,27 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 			suite.True(tt.success(suite.m.TryFreeSpace(tt.fileLength)))
 		})
 	}
+}
+
+func (suite *DiskStorageManagerSuite) TestDeleteTask() {
+	workHome, _ := os.MkdirTemp("/tmp", "cdn-storageManager-")
+	diskDriver, err := local.NewStorageDriver(&storedriver.Config{BaseDir: workHome})
+	suite.Nil(err)
+	suite.m = &diskStorageManager{
+		diskDriver: diskDriver,
+	}
+	testTask := task.NewSeedTask("fooTask", "http://www.dragonfly", &base.UrlMeta{})
+	suite.Nil(suite.m.ResetRepo(testTask))
+	downloadFile, _ := os.Stat(filepath.Join(workHome, "download", "foo", "fooTask"))
+	uploadFile, _ := os.Stat(filepath.Join(workHome, "upload", "foo", "fooTask"))
+	suite.NotNil(downloadFile)
+	suite.NotNil(uploadFile)
+	suite.Nil(suite.m.DeleteTask(testTask.ID))
+	downloadFile, err = os.Stat(filepath.Join(workHome, "download", "foo", "fooTask"))
+	suite.True(os.IsNotExist(err))
+	uploadFile, err = os.Stat(filepath.Join(workHome, "upload", "foo", "fooTask"))
+	suite.True(os.IsNotExist(err))
+	suite.Nil(downloadFile)
+	suite.Nil(uploadFile)
+	os.RemoveAll(workHome)
 }
