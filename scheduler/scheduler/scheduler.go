@@ -23,6 +23,7 @@ import (
 	"sort"
 	"time"
 
+	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -32,9 +33,6 @@ import (
 )
 
 const (
-	// Default number of pieces downloaded in parallel
-	defaultParallelCount = 4
-
 	// Default limit the number of filter traversals
 	defaultFilterParentLimit = 10
 
@@ -120,8 +118,6 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				}
 			}
 
-			// If the peer downloads back-to-source, its parent needs to be deleted
-			peer.DeleteParent()
 			return
 		}
 
@@ -281,7 +277,8 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Debugf("parent %s is not selected because its free upload is empty", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, peer count is %d",
+				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.PeerCount.Load())
 			return true
 		}
 
@@ -296,7 +293,7 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 // Construct peer successful packet
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
-	parallelCount := defaultParallelCount
+	parallelCount := database.DefaultClientParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}

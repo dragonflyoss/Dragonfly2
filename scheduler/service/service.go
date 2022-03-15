@@ -376,7 +376,6 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		return true
 	})
 
-	peer.DeleteParent()
 	s.resource.PeerManager().Delete(peer.ID)
 	return nil
 }
@@ -420,7 +419,7 @@ func (s *Service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRe
 	if !ok {
 		// Get scheduler cluster client config by manager
 		var options []resource.HostOption
-		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok {
+		if clientConfig, ok := s.dynconfig.GetSchedulerClusterClientConfig(); ok && clientConfig.LoadLimit > 0 {
 			options = append(options, resource.WithUploadLoadLimit(int32(clientConfig.LoadLimit)))
 		}
 
