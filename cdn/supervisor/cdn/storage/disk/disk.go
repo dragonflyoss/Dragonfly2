@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/cdn/gc"
@@ -203,6 +202,12 @@ func (s *diskStorageManager) ResetRepo(seedTask *task.SeedTask) error {
 }
 
 func (s *diskStorageManager) DeleteTask(taskID string) error {
+	if err := s.diskDriver.Remove(storage.GetUploadRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	if err := s.diskDriver.Remove(storage.GetUploadParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		logger.StorageGCLogger.Warnf("taskID: %s failed remove upload parent bucket: %v", taskID, err)
+	}
 	if err := s.diskDriver.Remove(storage.GetTaskMetadataRaw(taskID)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -212,12 +217,9 @@ func (s *diskStorageManager) DeleteTask(taskID string) error {
 	if err := s.diskDriver.Remove(storage.GetDownloadRaw(taskID)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	if err := s.diskDriver.Remove(storage.GetUploadRaw(taskID)); err != nil && !os.IsNotExist(err) {
-		return err
-	}
 	// try to clean the parent bucket
-	if err := s.diskDriver.Remove(storage.GetParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
-		logrus.Warnf("taskID: %s failed remove parent bucket: %v", taskID, err)
+	if err := s.diskDriver.Remove(storage.GetDownloadParentRaw(taskID)); err != nil && !os.IsNotExist(err) {
+		logger.StorageGCLogger.Warnf("taskID: %s failed remove download parent bucket: %v", taskID, err)
 	}
 	return nil
 }

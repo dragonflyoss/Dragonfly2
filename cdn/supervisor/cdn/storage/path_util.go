@@ -86,9 +86,16 @@ func GetAppendPieceMetadataRaw(taskID string) *storedriver.Raw {
 	}
 }
 
-func GetParentRaw(taskID string) *storedriver.Raw {
+func GetDownloadParentRaw(taskID string) *storedriver.Raw {
 	return &storedriver.Raw{
 		Bucket: DownloadHome,
+		Key:    getParentKey(taskID),
+	}
+}
+
+func GetUploadParentRaw(taskID string) *storedriver.Raw {
+	return &storedriver.Raw{
+		Bucket: UploadHome,
 		Key:    getParentKey(taskID),
 	}
 }

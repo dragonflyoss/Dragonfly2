@@ -303,6 +303,10 @@ func (h *hybridStorageManager) deleteTaskFiles(taskID string, deleteHardLink boo
 	if err := h.diskDriver.Remove(storage.GetUploadRaw(taskID)); err != nil && !os.IsNotExist(err) {
 		return err
 	}
+	if err := h.diskDriver.Remove(storage.GetUploadParentRaw(taskID)); err != nil &&
+		!os.IsNotExist(err) {
+		logger.WithTaskID(taskID).Warnf("failed to remove upload parent bucket: %v", err)
+	}
 	exists := h.diskDriver.Exits(getHardLinkRaw(taskID))
 	if !deleteHardLink && exists {
 		if err := h.diskDriver.MoveFile(h.diskDriver.GetPath(getHardLinkRaw(taskID)), h.diskDriver.GetPath(storage.GetDownloadRaw(taskID))); err != nil {
@@ -322,9 +326,9 @@ func (h *hybridStorageManager) deleteTaskFiles(taskID string, deleteHardLink boo
 		}
 	}
 	// try to clean the parent bucket
-	if err := h.diskDriver.Remove(storage.GetParentRaw(taskID)); err != nil &&
+	if err := h.diskDriver.Remove(storage.GetDownloadParentRaw(taskID)); err != nil &&
 		!os.IsNotExist(err) {
-		logger.WithTaskID(taskID).Warnf("failed to remove parent bucket: %v", err)
+		logger.WithTaskID(taskID).Warnf("failed to remove download parent bucket: %v", err)
 	}
 	return nil
 }
