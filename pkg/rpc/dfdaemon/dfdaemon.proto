@@ -65,4 +65,6 @@ service Daemon{
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket);
   // Check daemon health
   rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty);
+  // Sync piece tasks with other peers
+  rpc SyncPieceTasks(stream base.PieceTaskRequest)returns(stream base.PiecePacket);
 }

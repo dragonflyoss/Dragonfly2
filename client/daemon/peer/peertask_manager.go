@@ -50,6 +50,8 @@ type TaskManager interface {
 	StartStreamTask(ctx context.Context, req *StreamTaskRequest) (
 		readCloser io.ReadCloser, attribute map[string]string, err error)
 
+	Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool)
+
 	IsPeerTaskRunning(id string) bool
 
 	// Stop stops the PeerTaskManager
@@ -312,6 +314,28 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
 	readCloser, attribute, err := pt.Start(ctx)
 	return readCloser, attribute, err
+}
+
+type SubscribeResult struct {
+	Storage          storage.TaskStorageDriver
+	PieceInfoChannel chan *PieceInfo
+	Success          chan struct{}
+	Fail             chan struct{}
+}
+
+func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool) {
+	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
+	if !ok {
+		return nil, false
+	}
+
+	result := &SubscribeResult{
+		Storage:          ptc.storage,
+		PieceInfoChannel: ptc.broker.Subscribe(),
+		Success:          ptc.successCh,
+		Fail:             ptc.failCh,
+	}
+	return result, true
 }
 
 func (ptm *peerTaskManager) Stop(ctx context.Context) error {

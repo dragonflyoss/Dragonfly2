@@ -53,7 +53,7 @@ type fileTask struct {
 	ctx               context.Context
 	span              trace.Span
 	peerTaskConductor *peerTaskConductor
-	pieceCh           chan *pieceInfo
+	pieceCh           chan *PieceInfo
 
 	request *FileTaskRequest
 	// progressCh holds progress status
@@ -135,7 +135,7 @@ func (f *fileTask) syncProgress() {
 			return
 		case <-f.ctx.Done():
 		case piece := <-f.pieceCh:
-			if piece.finished {
+			if piece.Finished {
 				continue
 			}
 			pg := &FileTaskProgress{

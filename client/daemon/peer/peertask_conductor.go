@@ -1344,8 +1344,8 @@ func (pt *peerTaskConductor) PublishPieceInfo(pieceNum int32, size uint32) {
 		pt.Done()
 	}
 	pt.broker.Publish(
-		&pieceInfo{
-			num:      pieceNum,
-			finished: finished,
+		&PieceInfo{
+			Num:      pieceNum,
+			Finished: finished,
 		})
 }

@@ -59,7 +59,7 @@ type streamTask struct {
 	ctx               context.Context
 	span              trace.Span
 	peerTaskConductor *peerTaskConductor
-	pieceCh           chan *pieceInfo
+	pieceCh           chan *PieceInfo
 }
 
 func (ptm *peerTaskManager) newStreamTask(
@@ -97,7 +97,7 @@ func (ptm *peerTaskManager) newStreamTask(
 
 func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]string, error) {
 	// wait first piece to get content length and attribute (eg, response header for http/https)
-	var firstPiece *pieceInfo
+	var firstPiece *PieceInfo
 
 	attr := map[string]string{}
 	attr[config.HeaderDragonflyTask] = s.peerTaskConductor.taskID
@@ -163,22 +163,22 @@ func (s *streamTask) writeOnePiece(w io.Writer, pieceNum int32) (int64, error) {
 	return n, pc.Close()
 }
 
-func (s *streamTask) writeToPipe(firstPiece *pieceInfo, pw *io.PipeWriter) {
+func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
 	defer func() {
 		s.span.End()
 	}()
 	var (
 		desired int32
-		cur     *pieceInfo
+		cur     *PieceInfo
 		wrote   int64
 		err     error
 		cache   = make(map[int32]bool)
 	)
 	// update first piece to cache and check cur with desired
-	cache[firstPiece.num] = true
+	cache[firstPiece.Num] = true
 	cur = firstPiece
 	for {
-		if desired == cur.num {
+		if desired == cur.Num {
 			for {
 				delete(cache, desired)
 				_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
@@ -202,9 +202,9 @@ func (s *streamTask) writeToPipe(firstPiece *pieceInfo, pw *io.PipeWriter) {
 			}
 		} else {
 			// not desired piece, cache it
-			cache[cur.num] = true
-			if cur.num < desired {
-				s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur.num)
+			cache[cur.Num] = true
+			if cur.Num < desired {
+				s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur.Num)
 			}
 		}
 

@@ -32,13 +32,16 @@ import (
 	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
+//go:generate mockgen -source server.go -destination ../../../../client/daemon/test/mock/daemon/daemon_server.go
 // DaemonServer refer to dfdaemon.DaemonServer
 type DaemonServer interface {
-	// Trigger client to download file
+	// Download triggers client to download file
 	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
-	// Get piece tasks from other peers
+	// GetPieceTasks get piece tasks from other peers
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
-	// Check daemon health
+	// SyncPieceTasks sync piece tasks info with other peers
+	SyncPieceTasks(dfdaemon.Daemon_SyncPieceTasksServer) error
+	// CheckHealth check daemon health
 	CheckHealth(context.Context) error
 }
 
@@ -87,6 +90,10 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 
 func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
+}
+
+func (p *proxy) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error {
+	return p.server.SyncPieceTasks(sync)
 }
 
 func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {

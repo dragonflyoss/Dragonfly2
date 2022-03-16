@@ -12,6 +12,7 @@ import (
 	peer "d7y.io/dragonfly/v2/client/daemon/peer"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -96,6 +97,21 @@ func (m *MockTaskManager) Stop(ctx context.Context) error {
 func (mr *MockTaskManagerMockRecorder) Stop(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockTaskManager)(nil).Stop), ctx)
+}
+
+// Subscribe mocks base method.
+func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*peer.SubscribeResult, bool) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subscribe", request)
+	ret0, _ := ret[0].(*peer.SubscribeResult)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
+}
+
+// Subscribe indicates an expected call of Subscribe.
+func (mr *MockTaskManagerMockRecorder) Subscribe(request interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockTaskManager)(nil).Subscribe), request)
 }
 
 // MockTask is a mock of Task interface.
