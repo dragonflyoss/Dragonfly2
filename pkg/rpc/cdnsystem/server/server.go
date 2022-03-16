@@ -37,10 +37,12 @@ import (
 
 // SeederServer  refer to cdnsystem.SeederServer
 type SeederServer interface {
-	// Generate seeds and return to scheduler
+	// ObtainSeeds generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
-	// Get piece tasks from cdn
+	// GetPieceTasks get piece tasks from cdn
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	// SyncPieceTasks sync piece tasks info with other peers
+	SyncPieceTasks(cdnsystem.Seeder_SyncPieceTasksServer) error
 }
 
 type proxy struct {
@@ -89,6 +91,10 @@ func (p *proxy) ObtainSeeds(sr *cdnsystem.SeedRequest, stream cdnsystem.Seeder_O
 
 func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
+}
+
+func (p *proxy) SyncPieceTasks(sync cdnsystem.Seeder_SyncPieceTasksServer) error {
+	return p.server.SyncPieceTasks(sync)
 }
 
 func send(psc chan *cdnsystem.PieceSeed, closePsc func(), stream cdnsystem.Seeder_ObtainSeedsServer, errChan chan error) {

@@ -35,6 +35,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -127,6 +128,60 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos))
 	p.DstAddr = m.uploadAddr
 	return p, nil
+}
+
+// sendExistPieces will send as much as possible pieces
+func (m *server) sendExistPieces(request *base.PieceTaskRequest, sync dfdaemon.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+	return sendExistPieces(sync.Context(), m.GetPieceTasks, request, sync, sentMap)
+}
+
+func (m *server) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error {
+	request, err := sync.Recv()
+	if err != nil {
+		return err
+	}
+	skipPieceCount := request.StartNum
+	var sentMap = make(map[int32]struct{})
+	total, sent, err := m.sendExistPieces(request, sync, sentMap)
+	if err != nil {
+		return err
+	}
+
+	// task is done, just return
+	if int(total) == sent {
+		return nil
+	}
+
+	// subscribe peer task message for remaining pieces
+	result, ok := m.peerTaskManager.Subscribe(request)
+	if !ok {
+		// task not found, double check for done task
+		total, sent, err = m.sendExistPieces(request, sync, sentMap)
+		if err != nil {
+			return err
+		}
+
+		if int(total) > sent {
+			return status.Errorf(codes.Unavailable, "peer task not finish, but no running task found")
+		}
+		return nil
+	}
+
+	var sub = &subscriber{
+		SubscribeResult: result,
+		sync:            sync,
+		request:         request,
+		skipPieceCount:  skipPieceCount,
+		totalPieces:     total,
+		sentMap:         sentMap,
+		done:            make(chan struct{}),
+		uploadAddr:      m.uploadAddr,
+		SugaredLoggerOnWith: logger.With("taskID", request.TaskId,
+			"localPeerID", request.DstPid, "remotePeerID", request.SrcPid),
+	}
+
+	go sub.receiveRemainingPieceTaskRequests()
+	return sub.sendRemainingPieceTasks()
 }
 
 func (m *server) CheckHealth(context.Context) error {
