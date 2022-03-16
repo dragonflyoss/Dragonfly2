@@ -29,17 +29,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
-)
-
-const (
-	// Default number of cdn load limit
-	DefaultCDNLoadLimit = 300
-
-	// Default number of client load limit
-	DefaultClientLoadLimit = 50
-
-	// Default number of pieces to download in parallel
-	DefaultClientParallelCount = 4
+	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
 )
 
 func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
@@ -133,7 +123,7 @@ func seed(db *gorm.DB) error {
 			},
 			Name: "cdn-cluster-1",
 			Config: map[string]interface{}{
-				"load_limit": DefaultCDNLoadLimit,
+				"load_limit": schedulerconfig.DefaultCDNLoadLimit,
 			},
 			IsDefault: true,
 		}).Error; err != nil {
@@ -150,11 +140,13 @@ func seed(db *gorm.DB) error {
 			Model: model.Model{
 				ID: uint(1),
 			},
-			Name:   "scheduler-cluster-1",
-			Config: map[string]interface{}{},
+			Name: "scheduler-cluster-1",
+			Config: map[string]interface{}{
+				"filter_parent_limit": schedulerconfig.DefaultSchedulerFilterParentLimit,
+			},
 			ClientConfig: map[string]interface{}{
-				"load_limit":     DefaultClientLoadLimit,
-				"parallel_count": DefaultClientParallelCount,
+				"load_limit":     schedulerconfig.DefaultClientLoadLimit,
+				"parallel_count": schedulerconfig.DefaultClientParallelCount,
 			},
 			Scopes:    map[string]interface{}{},
 			IsDefault: true,

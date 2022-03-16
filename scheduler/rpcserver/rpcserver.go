@@ -25,6 +25,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
@@ -47,13 +48,18 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 
 // RegisterPeerTask registers peer and triggers CDN download task
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
-	metrics.RegisterPeerTaskCount.WithLabelValues(req.UrlMeta.Tag).Inc()
+	bizTag := resource.DefaultBizTag
+	if req.UrlMeta.Tag != "" {
+		bizTag = req.UrlMeta.Tag
+	}
+
+	metrics.RegisterPeerTaskCount.WithLabelValues(bizTag).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
 	if err != nil {
-		metrics.RegisterPeerTaskFailureCount.WithLabelValues(req.UrlMeta.Tag).Inc()
+		metrics.RegisterPeerTaskFailureCount.WithLabelValues(bizTag).Inc()
 	} else {
-		metrics.PeerTaskCounter.WithLabelValues(req.UrlMeta.Tag, resp.SizeScope.String()).Inc()
+		metrics.PeerTaskCounter.WithLabelValues(bizTag, resp.SizeScope.String()).Inc()
 	}
 
 	return resp, err
