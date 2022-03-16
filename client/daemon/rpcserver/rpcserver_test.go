@@ -398,8 +398,8 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 					success := make(chan struct{})
 					fail := make(chan struct{})
 
-					go func() {
-						for i, p := range tc.followingPieces {
+					go func(followingPieces []pieceRange) {
+						for i, p := range followingPieces {
 							if p.end == 0 {
 								p.end = p.start
 							}
@@ -420,7 +420,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 								lock.Unlock()
 
 								var finished bool
-								if i == len(tc.followingPieces)-1 && j == p.end {
+								if i == len(followingPieces)-1 && j == p.end {
 									finished = true
 								}
 								ch <- &peer.PieceInfo{
@@ -430,7 +430,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 							}
 						}
 						close(success)
-					}()
+					}(tc.followingPieces)
 
 					return &peer.SubscribeResult{
 						Storage:          mockStorageManger,
