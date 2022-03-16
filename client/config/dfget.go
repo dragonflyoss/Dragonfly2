@@ -163,34 +163,6 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
-	var err error
-
-	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
-		return err
-	}
-
-	if cfg.URL == "" && len(args) > 0 {
-		cfg.URL = args[0]
-	}
-
-	if cfg.Digest != "" {
-		cfg.Tag = ""
-	}
-
-	if cfg.Console {
-		cfg.ShowProgress = false
-	}
-
-	return nil
-}
-
-func (cfg *ClientOption) String() string {
-	js, _ := json.Marshal(cfg)
-	return string(js)
-}
-
-// This function must be called after checkURL
-func (cfg *ClientOption) checkOutput() error {
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
@@ -207,7 +179,30 @@ func (cfg *ClientOption) checkOutput() error {
 		}
 		cfg.Output = absPath
 	}
+	if cfg.URL == "" && len(args) > 0 {
+		cfg.URL = args[0]
+	}
 
+	if cfg.Digest != "" {
+		cfg.Tag = ""
+	}
+
+	if cfg.Console {
+		cfg.ShowProgress = false
+	}
+	return nil
+}
+
+func (cfg *ClientOption) String() string {
+	js, _ := json.Marshal(cfg)
+	return string(js)
+}
+
+// This function must be called after checkURL
+func (cfg *ClientOption) checkOutput() error {
+	if !filepath.IsAbs(cfg.Output) {
+		return fmt.Errorf("path[%s] is not absolute path", cfg.Output)
+	}
 	outputDir, _ := path.Split(cfg.Output)
 	if err := MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
 		return err
