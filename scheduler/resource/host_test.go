@@ -21,9 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
@@ -73,7 +73,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Location, mockRawHost.Location)
 				assert.Equal(host.IDC, mockRawHost.Idc)
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(database.DefaultClientLoadLimit))
+				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
@@ -96,7 +96,7 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.Location, mockRawCDNHost.Location)
 				assert.Equal(host.IDC, mockRawCDNHost.Idc)
 				assert.Equal(host.NetTopology, mockRawCDNHost.NetTopology)
-				assert.Equal(host.UploadLoadLimit.Load(), int32(database.DefaultClientLoadLimit))
+				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				assert.Equal(host.IsCDN, true)
 				assert.NotEqual(host.CreateAt.Load(), 0)
@@ -384,7 +384,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 				host.StorePeer(mockPeer)
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
 				host.StorePeer(mockPeer)
-				assert.Equal(host.FreeUploadLoad(), int32(database.DefaultClientLoadLimit-2))
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-2))
 			},
 		},
 		{
@@ -392,7 +392,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				assert.Equal(host.FreeUploadLoad(), int32(database.DefaultClientLoadLimit))
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
 		},
 	}
