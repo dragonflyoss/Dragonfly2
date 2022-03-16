@@ -382,20 +382,21 @@ func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
 }
 
 func (pt *peerTaskConductor) backSource() {
-	backSourceCtx, backSourceSpan := tracer.Start(pt.ctx, config.SpanBackSource)
-	defer backSourceSpan.End()
+	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
 	pt.contentLength.Store(-1)
-	err := pt.pieceManager.DownloadSource(backSourceCtx, pt, pt.request)
+	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
-		backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
-		backSourceSpan.RecordError(err)
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
 		pt.cancel(base.Code_ClientError, err.Error())
+		span.End()
 		return
 	}
 	pt.Done()
 	pt.Infof("download from source ok")
-	backSourceSpan.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	span.End()
 	return
 }
 
@@ -675,6 +676,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 		pt.Infof("single piece download success")
 	} else {
 		// fallback to download from other peers
+		span.RecordError(err)
 		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
 		span.End()
 
@@ -1075,6 +1077,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 		})
 	if err != nil {
 		pt.Errorf("report piece task error: %v", err)
+		span.RecordError(err)
 	}
 
 	span.End()

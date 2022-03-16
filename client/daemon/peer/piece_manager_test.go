@@ -197,7 +197,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			pm, err := NewPieceManager(storageManager, pieceDownloadTimeout)
+			pm, err := NewPieceManager(pieceDownloadTimeout)
 			assert.Nil(err)
 			pm.(*pieceManager).computePieceSize = func(length int64) uint32 {
 				return tc.pieceSize

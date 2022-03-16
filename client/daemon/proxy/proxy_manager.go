@@ -64,6 +64,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 
 	options := []Option{
 		WithPeerHost(peerHost),
+		WithPeerIDGenerator(peer.NewPeerIDGenerator(peerHost.Ip)),
 		WithPeerTaskManager(peerTaskManager),
 		WithRules(proxies),
 		WithWhiteList(whiteList),

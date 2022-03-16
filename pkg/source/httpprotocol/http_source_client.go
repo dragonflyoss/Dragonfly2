@@ -196,6 +196,9 @@ func (client *httpSourceClient) Download(request *source.Request) (*source.Respo
 				ETag:         resp.Header.Get(headers.ETag),
 			},
 		))
+	if resp.ContentLength > 0 {
+		response.ContentLength = resp.ContentLength
+	}
 	return response, nil
 }
 
