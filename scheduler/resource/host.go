@@ -23,8 +23,8 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 // HostOption is a functional option for configuring the host
@@ -110,7 +110,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		IDC:             rawHost.Idc,
 		NetTopology:     rawHost.NetTopology,
 		Location:        rawHost.Location,
-		UploadLoadLimit: atomic.NewInt32(database.DefaultClientLoadLimit),
+		UploadLoadLimit: atomic.NewInt32(config.DefaultClientLoadLimit),
 		Peers:           &sync.Map{},
 		PeerCount:       atomic.NewInt32(0),
 		IsCDN:           false,

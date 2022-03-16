@@ -23,7 +23,6 @@ import (
 	"sort"
 	"time"
 
-	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -33,9 +32,6 @@ import (
 )
 
 const (
-	// Default limit the number of filter traversals
-	defaultFilterParentLimit = 10
-
 	// Default tree available depth
 	defaultAvailableDepth = 2
 
@@ -219,7 +215,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
-	filterParentLimit := defaultFilterParentLimit
+	filterParentLimit := config.DefaultSchedulerFilterParentLimit
 	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
 		filterParentLimit = int(config.FilterParentLimit)
 	}
@@ -293,7 +289,7 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 // Construct peer successful packet
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
-	parallelCount := database.DefaultClientParallelCount
+	parallelCount := config.DefaultClientParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}
