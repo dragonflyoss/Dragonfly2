@@ -56,4 +56,6 @@ service Seeder{
   rpc ObtainSeeds(SeedRequest)returns(stream PieceSeed);
   // Get piece tasks from cdn
   rpc GetPieceTasks(base.PieceTaskRequest)returns(base.PiecePacket);
+  // Sync piece tasks with other peers
+  rpc SyncPieceTasks(stream base.PieceTaskRequest)returns(stream base.PiecePacket);
 }

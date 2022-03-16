@@ -399,7 +399,11 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		t.Warnf("invalid start num: %d", req.StartNum)
 	}
 	for i := int32(0); i < int32(req.Limit); i++ {
-		if piece, ok := t.Pieces[int32(req.StartNum)+i]; ok {
+		num := int32(req.StartNum) + i
+		if t.TotalPieces > -1 && num >= t.TotalPieces {
+			break
+		}
+		if piece, ok := t.Pieces[num]; ok {
 			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &base.PieceInfo{
 				PieceNum:    piece.Num,
 				RangeStart:  uint64(piece.Range.Start),

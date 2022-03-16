@@ -69,6 +69,8 @@ type CdnClient interface {
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 
+	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error)
+
 	UpdateState(addrs []dfnet.NetAddr)
 
 	Close() error
@@ -113,4 +115,20 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		return nil, err
 	}
 	return res.(*base.PiecePacket), nil
+}
+
+func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+		if err != nil {
+			return nil, err
+		}
+		return client.GetPieceTasks(ctx, req, opts...)
+	}, 0.2, 2.0, 3, nil)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Infof("SyncPieceTasks: invoke cdn node %s SyncPieceTasks failed: %v", addr.GetEndpoint(), err)
+		return nil, err
+	}
+	client := res.(cdnsystem.Seeder_SyncPieceTasksClient)
+	return client, client.Send(req)
 }

@@ -25,7 +25,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/cdn/constants"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
@@ -240,6 +242,10 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	}
 	span.SetAttributes(constants.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil
+}
+
+func (css *Server) SyncPieceTasks(sync cdnsystem.Seeder_SyncPieceTasksServer) error {
+	return status.Error(codes.Unimplemented, "TODO")
 }
 
 func (css *Server) ListenAndServe() error {

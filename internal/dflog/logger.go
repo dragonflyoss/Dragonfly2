@@ -35,6 +35,8 @@ var (
 	KeepAliveLogger  *zap.SugaredLogger
 	StatSeedLogger   *zap.Logger
 	DownloaderLogger *zap.Logger
+
+	coreLogLevelEnabler zapcore.LevelEnabler
 )
 
 func init() {
@@ -65,6 +67,7 @@ func SetLevel(level zapcore.Level) {
 
 func SetCoreLogger(log *zap.SugaredLogger) {
 	CoreLogger = log
+	coreLogLevelEnabler = log.Desugar().Core()
 }
 
 func SetGCLogger(log *zap.SugaredLogger) {
@@ -142,34 +145,58 @@ func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 }
 
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
+		return
+	}
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
+		return
+	}
 	CoreLogger.Infow(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
+		return
+	}
 	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warn(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
+		return
+	}
 	CoreLogger.Warnw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
+		return
+	}
 	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
+		return
+	}
 	CoreLogger.Errorw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
+		return
+	}
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
+		return
+	}
 	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
