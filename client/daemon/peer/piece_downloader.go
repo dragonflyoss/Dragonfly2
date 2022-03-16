@@ -135,16 +135,27 @@ func WithTransport(rt http.RoundTripper) func(*pieceDownloader) error {
 }
 
 func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceRequest) (io.Reader, io.Closer, error) {
-	resp, err := p.httpClient.Do(buildDownloadPieceHTTPRequest(ctx, req))
+	httpRequest := buildDownloadPieceHTTPRequest(ctx, req)
+	resp, err := p.httpClient.Do(httpRequest)
 	if err != nil {
 		logger.Errorf("task id: %s, piece num: %d, dst: %s, download piece failed: %s",
 			req.TaskID, req.piece.PieceNum, req.DstAddr, err)
-		return nil, nil, &pieceDownloadError{err: err, connectionError: true}
+		return nil, nil, &pieceDownloadError{
+			target:          httpRequest.URL.String(),
+			err:             err,
+			connectionError: true,
+		}
 	}
 	if resp.StatusCode > 299 {
 		_, _ = io.Copy(io.Discard, resp.Body)
 		_ = resp.Body.Close()
-		return nil, nil, &pieceDownloadError{err: err, connectionError: false, status: resp.Status, statusCode: resp.StatusCode}
+		return nil, nil, &pieceDownloadError{
+			target:          httpRequest.URL.String(),
+			err:             err,
+			connectionError: false,
+			status:          resp.Status,
+			statusCode:      resp.StatusCode,
+		}
 	}
 	reader, closer := resp.Body.(io.Reader), resp.Body.(io.Closer)
 	if req.CalcDigest {

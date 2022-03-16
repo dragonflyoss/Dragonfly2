@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {
@@ -52,7 +51,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 		},
 	)
 	rt, _ := New(
-		WithPeerHost(&scheduler.PeerHost{}),
+		WithPeerIDGenerator(peer.NewPeerIDGenerator("127.0.0.1")),
 		WithPeerTaskManager(peerTaskManager),
 		WithCondition(func(r *http.Request) bool {
 			return true

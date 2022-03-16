@@ -79,6 +79,9 @@ type Proxy struct {
 	// directHandler are used to handle non-proxy requests
 	directHandler http.Handler
 
+	// transport is used to handle http proxy requests
+	transport http.RoundTripper
+
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
@@ -101,6 +104,8 @@ type Proxy struct {
 
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
+
+	peerIDGenerator peer.IDGenerator
 }
 
 // Option is a functional option for configuring the proxy
@@ -110,6 +115,14 @@ type Option func(p *Proxy) *Proxy
 func WithPeerHost(peerHost *scheduler.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
+		return p
+	}
+}
+
+// WithPeerIDGenerator sets the *transport.PeerIDGenerator
+func WithPeerIDGenerator(peerIDGenerator peer.IDGenerator) Option {
+	return func(p *Proxy) *Proxy {
+		p.peerIDGenerator = peerIDGenerator
 		return p
 	}
 }
@@ -230,6 +243,9 @@ func NewProxyWithOptions(options ...Option) (*Proxy, error) {
 		opt(proxy)
 	}
 
+	if proxy.transport == nil {
+		proxy.transport = proxy.newTransport(nil)
+	}
 	return proxy, nil
 }
 
@@ -246,9 +262,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
 	span.SetAttributes(semconv.HTTPURLKey.String(r.URL.String()))
 	span.SetAttributes(semconv.HTTPMethodKey.String(r.Method))
-	defer func() {
-		span.End()
-	}()
+	defer span.End()
 
 	// update ctx to transfer trace id
 	r = r.WithContext(ctx)
@@ -258,6 +272,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		user, pass, ok := proxyBasicAuth(r)
 		if !ok {
 			status := http.StatusProxyAuthRequired
+			span.SetAttributes(semconv.HTTPStatusCodeKey.Int(status))
 			http.Error(w, http.StatusText(status), status)
 			logger.Debugf("empty auth info: %s, url：%s", r.Host, r.URL.String())
 			return
@@ -265,6 +280,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// TODO dynamic auth config via manager
 		if user != proxy.basicAuth.Username || pass != proxy.basicAuth.Password {
 			status := http.StatusUnauthorized
+			span.SetAttributes(semconv.HTTPStatusCodeKey.Int(status))
 			http.Error(w, http.StatusText(status), status)
 			logger.Debugf("mismatch auth info (%s/%s): %s, url：%s", user, pass, r.Host, r.URL.String())
 			return
@@ -277,6 +293,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// check whiteList
 	if !directRequest && !proxy.checkWhiteList(r) {
 		status := http.StatusUnauthorized
+		span.SetAttributes(semconv.HTTPStatusCodeKey.Int(status))
 		http.Error(w, http.StatusText(status), status)
 		logger.Debugf("not in whitelist: %s, url：%s", r.Host, r.URL.String())
 		return
@@ -334,9 +351,9 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 }
 
 func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http.Request) {
-	// FIXME did not need create a transport per request
-	resp, err := proxy.newTransport(nil).RoundTrip(req)
+	resp, err := proxy.transport.RoundTrip(req)
 	if err != nil {
+		span.RecordError(err)
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
@@ -458,7 +475,7 @@ func (proxy *Proxy) handleHTTPS(w http.ResponseWriter, r *http.Request) {
 
 func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 	rt, _ := transport.New(
-		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
@@ -472,7 +489,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 	reverseProxy := newReverseProxy(proxy.registry)
 	t, err := transport.New(
-		transport.WithPeerHost(proxy.peerHost),
+		transport.WithPeerIDGenerator(proxy.peerIDGenerator),
 		transport.WithPeerTaskManager(proxy.peerTaskManager),
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
