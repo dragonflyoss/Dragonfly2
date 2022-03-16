@@ -78,7 +78,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	}
 	host := s.registerHost(ctx, req)
 	peer := s.registerPeer(ctx, req, task, host)
-	peer.Log.Infof("register peer task request: %#v", req)
+	peer.Log.Infof("register peer task request: %#v %#v %#v", req, req.UrlMeta, req.HostLoad)
 
 	// Task has been successful
 	if task.FSM.Is(resource.TaskStateSucceeded) {
@@ -435,7 +435,12 @@ func (s *Service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRe
 
 // registerPeer creates a new peer or reuses a previous peer
 func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) *resource.Peer {
-	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(req.PeerId, task, host, resource.WithBizTag(req.UrlMeta.Tag)))
+	var options []resource.PeerOption
+	if req.UrlMeta.Tag != "" {
+		options = append(options, resource.WithBizTag(req.UrlMeta.Tag))
+	}
+
+	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(req.PeerId, task, host, options...))
 	if !loaded {
 		peer.Log.Info("create new peer")
 		return peer
