@@ -35,7 +35,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -72,23 +71,23 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storage
 	return svr, nil
 }
 
-func (m *server) ServeDownload(listener net.Listener) error {
-	return m.downloadServer.Serve(listener)
+func (s *server) ServeDownload(listener net.Listener) error {
+	return s.downloadServer.Serve(listener)
 }
 
-func (m *server) ServePeer(listener net.Listener) error {
-	m.uploadAddr = fmt.Sprintf("%s:%d", m.peerHost.Ip, m.peerHost.DownPort)
-	return m.peerServer.Serve(listener)
+func (s *server) ServePeer(listener net.Listener) error {
+	s.uploadAddr = fmt.Sprintf("%s:%d", s.peerHost.Ip, s.peerHost.DownPort)
+	return s.peerServer.Serve(listener)
 }
 
-func (m *server) Stop() {
-	m.peerServer.GracefulStop()
-	m.downloadServer.GracefulStop()
+func (s *server) Stop() {
+	s.peerServer.GracefulStop()
+	s.downloadServer.GracefulStop()
 }
 
-func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
-	m.Keep()
-	p, err := m.storageManager.GetPieces(ctx, request)
+func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	s.Keep()
+	p, err := s.storageManager.GetPieces(ctx, request)
 	if err != nil {
 		code := base.Code_UnknownError
 		if err == dferrors.ErrInvalidArgument {
@@ -100,7 +99,7 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 			return nil, dferrors.New(code, err.Error())
 		}
 		// dst peer is not running
-		if !m.peerTaskManager.IsPeerTaskRunning(request.TaskId) {
+		if !s.peerTaskManager.IsPeerTaskRunning(request.TaskId) {
 			code = base.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
@@ -116,7 +115,7 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		return &base.PiecePacket{
 			TaskId:        request.TaskId,
 			DstPid:        request.DstPid,
-			DstAddr:       m.uploadAddr,
+			DstAddr:       s.uploadAddr,
 			PieceInfos:    nil,
 			TotalPiece:    -1,
 			ContentLength: -1,
@@ -126,23 +125,23 @@ func (m *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 
 	logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d, length: %d",
 		request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit, len(p.PieceInfos))
-	p.DstAddr = m.uploadAddr
+	p.DstAddr = s.uploadAddr
 	return p, nil
 }
 
 // sendExistPieces will send as much as possible pieces
-func (m *server) sendExistPieces(request *base.PieceTaskRequest, sync dfdaemon.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(sync.Context(), m.GetPieceTasks, request, sync, sentMap)
+func (s *server) sendExistPieces(request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap)
 }
 
-func (m *server) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error {
+func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
 	request, err := sync.Recv()
 	if err != nil {
 		return err
 	}
 	skipPieceCount := request.StartNum
 	var sentMap = make(map[int32]struct{})
-	total, sent, err := m.sendExistPieces(request, sync, sentMap)
+	total, sent, err := s.sendExistPieces(request, sync, sentMap)
 	if err != nil {
 		return err
 	}
@@ -153,10 +152,10 @@ func (m *server) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error
 	}
 
 	// subscribe peer task message for remaining pieces
-	result, ok := m.peerTaskManager.Subscribe(request)
+	result, ok := s.peerTaskManager.Subscribe(request)
 	if !ok {
 		// task not found, double check for done task
-		total, sent, err = m.sendExistPieces(request, sync, sentMap)
+		total, sent, err = s.sendExistPieces(request, sync, sentMap)
 		if err != nil {
 			return err
 		}
@@ -175,7 +174,7 @@ func (m *server) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error
 		totalPieces:     total,
 		sentMap:         sentMap,
 		done:            make(chan struct{}),
-		uploadAddr:      m.uploadAddr,
+		uploadAddr:      s.uploadAddr,
 		SugaredLoggerOnWith: logger.With("taskID", request.TaskId,
 			"localPeerID", request.DstPid, "remotePeerID", request.SrcPid),
 	}
@@ -184,14 +183,14 @@ func (m *server) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error
 	return sub.sendRemainingPieceTasks()
 }
 
-func (m *server) CheckHealth(context.Context) error {
-	m.Keep()
+func (s *server) CheckHealth(context.Context) error {
+	s.Keep()
 	return nil
 }
 
-func (m *server) Download(ctx context.Context,
+func (s *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
-	m.Keep()
+	s.Keep()
 	if req.UrlMeta == nil {
 		req.UrlMeta = &base.UrlMeta{}
 	}
@@ -200,8 +199,8 @@ func (m *server) Download(ctx context.Context,
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:      req.Url,
 			UrlMeta:  req.UrlMeta,
-			PeerId:   idgen.PeerID(m.peerHost.Ip),
-			PeerHost: m.peerHost,
+			PeerId:   idgen.PeerID(s.peerHost.Ip),
+			PeerHost: s.peerHost,
 		},
 		Output:             req.Output,
 		Limit:              req.Limit,
@@ -223,7 +222,7 @@ func (m *server) Download(ctx context.Context,
 	}
 	log := logger.With("peer", peerTask.PeerId, "component", "downloadService")
 
-	peerTaskProgress, tiny, err := m.peerTaskManager.StartFileTask(ctx, peerTask)
+	peerTaskProgress, tiny, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
 		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
 	}

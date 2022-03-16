@@ -466,7 +466,6 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 			assert.Nil(err, "client sync piece tasks grpc call should be ok")
 
 			var (
-				pieceTasks  []*base.PiecePacket
 				total       = make(map[int32]bool)
 				maxNum      int32
 				requestSent = make(chan bool)
@@ -499,7 +498,6 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 						maxNum = info.PieceNum
 					}
 				}
-				pieceTasks = append(pieceTasks, p)
 				if tc.success {
 					assert.Nil(err, "receive piece tasks should be ok")
 				}
