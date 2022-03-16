@@ -39,9 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
@@ -66,9 +64,6 @@ type transport struct {
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
-	// peerHost is the peer host info
-	peerHost *scheduler.PeerHost
-
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
 
@@ -77,15 +72,17 @@ type transport struct {
 
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
+
+	peerIDGenerator peer.IDGenerator
 }
 
 // Option is functional config for transport.
 type Option func(rt *transport) *transport
 
-// WithPeerHost sets the peerHost for transport
-func WithPeerHost(peerHost *scheduler.PeerHost) Option {
+// WithPeerIDGenerator sets the peerIDGenerator for transport
+func WithPeerIDGenerator(peerIDGenerator peer.IDGenerator) Option {
 	return func(rt *transport) *transport {
-		rt.peerHost = peerHost
+		rt.peerIDGenerator = peerIDGenerator
 		return rt
 	}
 }
@@ -200,7 +197,7 @@ func NeedUseDragonfly(req *http.Request) bool {
 // the ctx has span info from transport, did not use the ctx from request
 func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
-	peerID := idgen.PeerID(rt.peerHost.Ip)
+	peerID := rt.peerIDGenerator.PeerID()
 	log := logger.With("peer", peerID, "component", "transport")
 	log.Infof("start download with url: %s", url)
 
