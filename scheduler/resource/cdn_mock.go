@@ -160,6 +160,26 @@ func (mr *MockCDNClientMockRecorder) OnNotify(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockCDNClient)(nil).OnNotify), arg0)
 }
 
+// SyncPieceTasks mocks base method.
+func (m *MockCDNClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, addr, ptr}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
+	ret0, _ := ret[0].(cdnsystem.Seeder_SyncPieceTasksClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SyncPieceTasks indicates an expected call of SyncPieceTasks.
+func (mr *MockCDNClientMockRecorder) SyncPieceTasks(ctx, addr, ptr interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, addr, ptr}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockCDNClient)(nil).SyncPieceTasks), varargs...)
+}
+
 // UpdateState mocks base method.
 func (m *MockCDNClient) UpdateState(addrs []dfnet.NetAddr) {
 	m.ctrl.T.Helper()

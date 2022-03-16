@@ -28,10 +28,14 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func GetPieceTasks(ctx context.Context,
+	destPeer *scheduler.PeerPacket_DestPeer,
+	ptr *base.PieceTaskRequest,
+	opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
 	peerID := destPeer.PeerId
 	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
@@ -48,6 +52,28 @@ func GetPieceTasks(ctx context.Context, destPeer *scheduler.PeerPacket_DestPeer,
 		return client.(cdnclient.CdnClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
 	}
 	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+}
+
+func SyncPieceTasks(ctx context.Context,
+	destPeer *scheduler.PeerPacket_DestPeer,
+	ptr *base.PieceTaskRequest,
+	opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
+	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
+	peerID := destPeer.PeerId
+	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
+	var err error
+	netAddr := dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: destAddr,
+	}
+	client, err := getClient(netAddr, toCdn)
+	if err != nil {
+		return nil, err
+	}
+	if toCdn {
+		return client.(cdnclient.CdnClient).SyncPieceTasks(ctx, netAddr, ptr, opts...)
+	}
+	return client.(DaemonClient).SyncPieceTasks(ctx, netAddr, ptr, opts...)
 }
 
 func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
