@@ -35,11 +35,11 @@ import (
 )
 
 const (
+	// Default value of biz tag
+	DefaultBizTag = "unknow"
+
 	// Download tiny file timeout
 	downloadTinyFileContextTimeout = 2 * time.Minute
-
-	// Default value of biz tag
-	defaultBizTag = "unknow"
 )
 
 const (
@@ -159,7 +159,7 @@ type Peer struct {
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:         id,
-		BizTag:     defaultBizTag,
+		BizTag:     DefaultBizTag,
 		Pieces:     &bitset.BitSet{},
 		pieceCosts: []int64{},
 		Stream:     &atomic.Value{},
