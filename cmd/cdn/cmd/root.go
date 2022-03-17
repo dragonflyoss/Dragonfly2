@@ -56,7 +56,7 @@ from remote source repeatedly.`,
 		}
 
 		// Initialize logger
-		if err := logger.InitCdnSystem(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitCdnSystem(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init cdn system logger")
 		}
 
@@ -104,7 +104,7 @@ func runCdnSystem() error {
 	// cdn system config values
 	logger.Infof("cdn system configuration:\n%s", cfg)
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := cdn.New(cfg)

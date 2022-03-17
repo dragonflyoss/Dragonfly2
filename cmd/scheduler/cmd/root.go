@@ -56,7 +56,7 @@ generate and maintain a P2P network during the download process, and push suitab
 		}
 
 		// Initialize logger
-		if err := logger.InitScheduler(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
 
@@ -106,7 +106,7 @@ func runScheduler(ctx context.Context, d dfpath.Dfpath) error {
 
 	logger.Infof("scheduler configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := scheduler.New(ctx, cfg, d)

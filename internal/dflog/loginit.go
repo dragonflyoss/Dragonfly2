@@ -29,32 +29,11 @@ type logInitMeta struct {
 	setLoggerFunc        func(log *zap.Logger)
 }
 
-func createLogger(console bool, meta []logInitMeta, logDir string) error {
+func InitManager(verbose, console bool, dir string) error {
 	if console {
-		startLoggerSignalHandler()
-		return nil
+		return createConsoleLogger(verbose)
 	}
-	// drop console level
-	levels = nil
 
-	for _, m := range meta {
-		log, level, err := CreateLogger(path.Join(logDir, m.fileName), false, false)
-		if err != nil {
-			return err
-		}
-		if m.setSugaredLoggerFunc != nil {
-			m.setSugaredLoggerFunc(log.Sugar())
-		} else {
-			m.setLoggerFunc(log)
-		}
-
-		levels = append(levels, level)
-	}
-	startLoggerSignalHandler()
-	return nil
-}
-
-func InitManager(console bool, dir string) error {
 	logDir := filepath.Join(dir, "manager")
 
 	var meta = []logInitMeta{
@@ -76,10 +55,14 @@ func InitManager(console bool, dir string) error {
 		},
 	}
 
-	return createLogger(console, meta, logDir)
+	return createFileLogger(verbose, meta, logDir)
 }
 
-func InitScheduler(console bool, dir string) error {
+func InitScheduler(verbose, console bool, dir string) error {
+	if console {
+		return createConsoleLogger(verbose)
+	}
+
 	logDir := filepath.Join(dir, "scheduler")
 
 	var meta = []logInitMeta{
@@ -101,10 +84,13 @@ func InitScheduler(console bool, dir string) error {
 		},
 	}
 
-	return createLogger(console, meta, logDir)
+	return createFileLogger(verbose, meta, logDir)
 }
 
-func InitCdnSystem(console bool, dir string) error {
+func InitCdnSystem(verbose, console bool, dir string) error {
+	if console {
+		return createConsoleLogger(verbose)
+	}
 	logDir := filepath.Join(dir, "cdn")
 	var meta = []logInitMeta{
 		{
@@ -141,10 +127,14 @@ func InitCdnSystem(console bool, dir string) error {
 		},
 	}
 
-	return createLogger(console, meta, logDir)
+	return createFileLogger(verbose, meta, logDir)
 }
 
-func InitDaemon(console bool, dir string) error {
+func InitDaemon(verbose, console bool, dir string) error {
+	if console {
+		return createConsoleLogger(verbose)
+	}
+
 	logDir := filepath.Join(dir, "daemon")
 
 	var meta = []logInitMeta{
@@ -162,10 +152,14 @@ func InitDaemon(console bool, dir string) error {
 		},
 	}
 
-	return createLogger(console, meta, logDir)
+	return createFileLogger(verbose, meta, logDir)
 }
 
-func InitDfget(console bool, dir string) error {
+func InitDfget(verbose, console bool, dir string) error {
+	if console {
+		return createConsoleLogger(verbose)
+	}
+
 	logDir := filepath.Join(dir, "dfget")
 
 	var meta = []logInitMeta{
@@ -179,5 +173,49 @@ func InitDfget(console bool, dir string) error {
 		},
 	}
 
-	return createLogger(console, meta, logDir)
+	return createFileLogger(verbose, meta, logDir)
+}
+
+func createConsoleLogger(verbose bool) error {
+	levels = nil
+	config := zap.NewDevelopmentConfig()
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
+	if verbose {
+		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
+	if err == nil {
+		sugar := log.Sugar()
+		SetCoreLogger(sugar)
+		SetGrpcLogger(sugar)
+		SetGCLogger(sugar)
+		SetStorageGCLogger(sugar)
+		SetKeepAliveLogger(sugar)
+		SetStatSeedLogger(log)
+		SetDownloadLogger(log)
+		SetJobLogger(sugar)
+	}
+	levels = append(levels, config.Level)
+	startLoggerSignalHandler()
+	return nil
+}
+
+func createFileLogger(verbose bool, meta []logInitMeta, logDir string) error {
+	levels = nil
+
+	for _, m := range meta {
+		log, level, err := CreateLogger(path.Join(logDir, m.fileName), false, false, verbose)
+		if err != nil {
+			return err
+		}
+		if m.setSugaredLoggerFunc != nil {
+			m.setSugaredLoggerFunc(log.Sugar())
+		} else {
+			m.setLoggerFunc(log)
+		}
+
+		levels = append(levels, level)
+	}
+	startLoggerSignalHandler()
+	return nil
 }
