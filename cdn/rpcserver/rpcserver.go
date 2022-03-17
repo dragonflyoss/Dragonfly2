@@ -159,7 +159,7 @@ func (css *server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 			logger.WithTaskID(req.TaskId).Errorf("%v", err)
 		}
 	}()
-	logger.Infof("get piece tasks: %#v", req)
+	logger.Infof("get piece tasks: %s", req)
 	task, err := css.taskMgr.Get(req.TaskId)
 	if err != nil {
 		if cdnerrors.IsDataNotFound(err) {
