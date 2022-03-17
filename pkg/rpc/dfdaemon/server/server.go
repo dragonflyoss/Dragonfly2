@@ -51,7 +51,7 @@ type proxy struct {
 }
 
 func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 	dfdaemon.RegisterDaemonServer(grpcServer, &proxy{server: daemonServer})
 	return grpcServer
 }
