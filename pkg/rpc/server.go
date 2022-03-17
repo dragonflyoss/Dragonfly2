@@ -35,31 +35,28 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 )
 
-func DefaultServerOptions() []grpc.ServerOption {
-	return []grpc.ServerOption{
-		grpc.ConnectionTimeout(10 * time.Second),
-		grpc.InitialConnWindowSize(8 * 1024 * 1024),
-		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime: 1 * time.Minute,
-		}),
-		grpc.KeepaliveParams(keepalive.ServerParameters{
-			MaxConnectionIdle: 5 * time.Minute,
-		}),
-		grpc.MaxConcurrentStreams(100),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			streamServerInterceptor,
-			grpc_prometheus.StreamServerInterceptor,
-			grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
-			grpc_validator.StreamServerInterceptor(),
-		)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			unaryServerInterceptor,
-			grpc_prometheus.UnaryServerInterceptor,
-			grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
-			grpc_validator.UnaryServerInterceptor(),
-		)),
-	}
-
+var DefaultServerOptions = []grpc.ServerOption{
+	grpc.ConnectionTimeout(10 * time.Second),
+	grpc.InitialConnWindowSize(8 * 1024 * 1024),
+	grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+		MinTime: 1 * time.Minute,
+	}),
+	grpc.KeepaliveParams(keepalive.ServerParameters{
+		MaxConnectionIdle: 5 * time.Minute,
+	}),
+	grpc.MaxConcurrentStreams(100),
+	grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+		streamServerInterceptor,
+		grpc_prometheus.StreamServerInterceptor,
+		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.StreamServerInterceptor(),
+	)),
+	grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+		unaryServerInterceptor,
+		grpc_prometheus.UnaryServerInterceptor,
+		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_validator.UnaryServerInterceptor(),
+	)),
 }
 
 func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
