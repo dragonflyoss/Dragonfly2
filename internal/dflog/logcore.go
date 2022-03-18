@@ -19,6 +19,7 @@ package logger
 import (
 	"strings"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -36,8 +37,8 @@ var (
 )
 
 const (
-	defaultRotateMaxSize    = 300
-	defaultRotateMaxBackups = 50
+	defaultRotateMaxSize    = 100
+	defaultRotateMaxBackups = 10
 	defaultRotateMaxAge     = 7
 )
 
@@ -46,9 +47,11 @@ const (
 )
 
 var coreLevel = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+var customCoreLevel atomic.Bool
 var grpcLevel = zap.NewAtomicLevelAt(zapcore.WarnLevel)
+var customGrpcLevel atomic.Bool
 
-func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, zap.AtomicLevel, error) {
+func CreateLogger(filePath string, compress bool, stats bool, verbose bool) (*zap.Logger, zap.AtomicLevel, error) {
 	rotateConfig := &lumberjack.Logger{
 		Filename:   filePath,
 		MaxSize:    defaultRotateMaxSize,
@@ -61,11 +64,13 @@ func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, zap.
 
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(encodeTimeFormat)
-
-	level := zap.NewAtomicLevel()
-	if strings.HasSuffix(filePath, GrpcLogFileName) {
+	var level = zap.NewAtomicLevel()
+	if verbose {
+		level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+	}
+	if strings.HasSuffix(filePath, GrpcLogFileName) && customGrpcLevel.Load() {
 		level = grpcLevel
-	} else if strings.HasSuffix(filePath, CoreLogFileName) {
+	} else if strings.HasSuffix(filePath, CoreLogFileName) && customCoreLevel.Load() {
 		level = coreLevel
 	}
 
@@ -84,9 +89,11 @@ func CreateLogger(filePath string, compress bool, stats bool) (*zap.Logger, zap.
 }
 
 func SetCoreLevel(level zapcore.Level) {
+	customCoreLevel.Store(true)
 	coreLevel.SetLevel(level)
 }
 
 func SetGrpcLevel(level zapcore.Level) {
+	customGrpcLevel.Store(true)
 	grpcLevel.SetLevel(level)
 }

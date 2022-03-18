@@ -211,6 +211,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					hostManager.Delete(gomock.Eq("foo-0_CDN")).Return().Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -351,7 +352,7 @@ func TestCDNClient_cdnsToHosts(t *testing.T) {
 				assert.Equal(hosts[mockRawCDNHost.Uuid].IDC, mockRawCDNHost.Idc)
 				assert.Equal(hosts[mockRawCDNHost.Uuid].NetTopology, "")
 				assert.Equal(hosts[mockRawCDNHost.Uuid].Location, mockRawCDNHost.Location)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(defaultUploadLoadLimit))
+				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Empty(hosts[mockRawCDNHost.Uuid].Peers)
 				assert.Equal(hosts[mockRawCDNHost.Uuid].IsCDN, true)
 				assert.NotEqual(hosts[mockRawCDNHost.Uuid].CreateAt.Load(), 0)

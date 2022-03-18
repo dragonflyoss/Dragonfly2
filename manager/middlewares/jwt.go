@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func Jwt(service service.REST) (*jwt.GinJWTMiddleware, error) {
+func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 	identityKey := "id"
 
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{

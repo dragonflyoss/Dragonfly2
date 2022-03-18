@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
+func (s *service) CreateApplication(ctx context.Context, json types.CreateApplicationRequest) (*model.Application, error) {
 	application := model.Application{
 		Name:              json.Name,
 		DownloadRateLimit: json.DownloadRateLimit,
@@ -40,7 +40,7 @@ func (s *rest) CreateApplication(ctx context.Context, json types.CreateApplicati
 	return &application, nil
 }
 
-func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
+func (s *service) DestroyApplication(ctx context.Context, id uint) error {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
@@ -53,7 +53,7 @@ func (s *rest) DestroyApplication(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
+func (s *service) UpdateApplication(ctx context.Context, id uint, json types.UpdateApplicationRequest) (*model.Application, error) {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Updates(model.Application{
 		Name:              json.Name,
@@ -69,7 +69,7 @@ func (s *rest) UpdateApplication(ctx context.Context, id uint, json types.Update
 	return &application, nil
 }
 
-func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
+func (s *service) GetApplication(ctx context.Context, id uint) (*model.Application, error) {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").First(&application, id).Error; err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (s *rest) GetApplication(ctx context.Context, id uint) (*model.Application,
 	return &application, nil
 }
 
-func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
+func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
 	var count int64
 	applications := []model.Application{}
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("CDNClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Count(&count).Error; err != nil {
@@ -88,7 +88,7 @@ func (s *rest) GetApplications(ctx context.Context, q types.GetApplicationsQuery
 	return &applications, count, nil
 }
 
-func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
+func (s *service) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
@@ -106,7 +106,7 @@ func (s *rest) AddSchedulerClusterToApplication(ctx context.Context, id, schedul
 	return nil
 }
 
-func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
+func (s *service) DeleteSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
@@ -124,7 +124,7 @@ func (s *rest) DeleteSchedulerClusterToApplication(ctx context.Context, id, sche
 	return nil
 }
 
-func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
+func (s *service) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err
@@ -142,7 +142,7 @@ func (s *rest) AddCDNClusterToApplication(ctx context.Context, id, cdnClusterID 
 	return nil
 }
 
-func (s *rest) DeleteCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
+func (s *service) DeleteCDNClusterToApplication(ctx context.Context, id, cdnClusterID uint) error {
 	application := model.Application{}
 	if err := s.db.WithContext(ctx).First(&application, id).Error; err != nil {
 		return err

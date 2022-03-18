@@ -37,6 +37,11 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+const (
+	// Default value of biz tag for cdn peer
+	cdnBizTag = "d7y/cdn"
+)
+
 type CDN interface {
 	// TriggerTask start to trigger cdn task
 	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
@@ -146,7 +151,7 @@ func (c *cdn) initPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
 	}
 
 	// New cdn peer
-	peer = NewPeer(ps.PeerId, task, host)
+	peer = NewPeer(ps.PeerId, task, host, WithBizTag(cdnBizTag))
 	peer.Log.Info("new cdn peer successfully")
 
 	// Store cdn peer
@@ -231,6 +236,7 @@ func (c *cdnClient) OnNotify(data *config.DynconfigData) {
 		id := idgen.CDNHostID(v.Hostname, v.Port)
 		if host, ok := c.hostManager.Load(id); ok {
 			host.LeavePeers()
+			c.hostManager.Delete(id)
 		}
 	}
 
@@ -253,7 +259,7 @@ func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
 	for _, cdn := range cdns {
 		var netTopology string
 		options := []HostOption{WithIsCDN(true)}
-		if config, ok := cdn.GetCDNClusterConfig(); ok {
+		if config, ok := cdn.GetCDNClusterConfig(); ok && config.LoadLimit > 0 {
 			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
 			netTopology = config.NetTopology
 		}

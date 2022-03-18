@@ -132,7 +132,9 @@ func TestService_RegisterPeerTask(t *testing.T) {
 	}{
 		{
 			name: "task register failed",
-			req:  &rpcscheduler.PeerTaskRequest{},
+			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
+			},
 			mock: func(
 				req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockCDNPeer *resource.Peer,
 				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
@@ -154,6 +156,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -184,6 +187,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task state is TaskStateFailed and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -215,6 +219,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -250,6 +255,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is empty",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -283,6 +289,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error, peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -316,6 +323,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_TINY and direct piece content is error",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -349,6 +357,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and load piece error, parent state is PeerStateRunning",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -389,6 +398,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and load piece error, peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -428,6 +438,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -467,6 +478,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_SMALL",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -506,6 +518,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL and peer state is PeerStateFailed",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -539,6 +552,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 		{
 			name: "task scope size is SizeScope_NORMAL",
 			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
 					Uuid: mockRawHost.Uuid,
 				},
@@ -1752,7 +1766,8 @@ func TestService_registerPeer(t *testing.T) {
 		{
 			name: "peer already exists",
 			req: &rpcscheduler.PeerTaskRequest{
-				PeerId: mockPeerID,
+				PeerId:  mockPeerID,
+				UrlMeta: &base.UrlMeta{},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
@@ -1763,12 +1778,14 @@ func TestService_registerPeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
+				assert.Equal(peer.BizTag, resource.DefaultBizTag)
 			},
 		},
 		{
 			name: "peer does not exists",
 			req: &rpcscheduler.PeerTaskRequest{
-				PeerId: mockPeerID,
+				PeerId:  mockPeerID,
+				UrlMeta: &base.UrlMeta{},
 			},
 			mock: func(mockPeer *resource.Peer, peerManager resource.PeerManager, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
 				gomock.InOrder(
@@ -1779,6 +1796,7 @@ func TestService_registerPeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
+				assert.Equal(peer.BizTag, resource.DefaultBizTag)
 			},
 		},
 	}
@@ -2110,9 +2128,9 @@ func TestService_handlePieceFail(t *testing.T) {
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
 				)
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1)
 				mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1)
 				mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().AnyTimes()
 
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)

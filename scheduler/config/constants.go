@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package idgen
+package config
 
-import (
-	"fmt"
-	"os"
+const (
+	// Default number of cdn load limit
+	DefaultCDNLoadLimit = 300
 
-	"github.com/google/uuid"
+	// Default number of client load limit
+	DefaultClientLoadLimit = 50
+
+	// Default number of pieces to download in parallel
+	DefaultClientParallelCount = 4
+
+	// Default limit the number of filter traversals
+	DefaultSchedulerFilterParentLimit = 3
 )
-
-var pid int
-
-func init() {
-	pid = os.Getpid()
-}
-
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
-}
-
-func PeerID(ip string) string {
-	return fmt.Sprintf("%s-%d-%s", ip, pid, uuid.New())
-}

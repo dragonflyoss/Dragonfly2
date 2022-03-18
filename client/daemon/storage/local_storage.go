@@ -294,7 +294,12 @@ func (t *localTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiecesRe
 	}
 
 	if req.Range == nil {
-		return file, nil
+		// by jim: for some corner case, avoid the io.Copy call superfluous sendfile syscall
+		// then increase network latency
+		return &limitedReadFile{
+			reader: io.LimitReader(file, t.ContentLength),
+			closer: file,
+		}, nil
 	}
 
 	if _, err = file.Seek(req.Range.Start, io.SeekStart); err != nil {
@@ -394,7 +399,11 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		t.Warnf("invalid start num: %d", req.StartNum)
 	}
 	for i := int32(0); i < int32(req.Limit); i++ {
-		if piece, ok := t.Pieces[int32(req.StartNum)+i]; ok {
+		num := int32(req.StartNum) + i
+		if t.TotalPieces > -1 && num >= t.TotalPieces {
+			break
+		}
+		if piece, ok := t.Pieces[num]; ok {
 			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &base.PieceInfo{
 				PieceNum:    piece.Num,
 				RangeStart:  uint64(piece.Range.Start),

@@ -104,7 +104,7 @@ func (h *hostManager) RunGC() error {
 		host := value.(*Host)
 		elapsed := time.Since(host.UpdateAt.Load())
 
-		if elapsed > h.ttl && host.PeerCount.Load() == 0 {
+		if elapsed > h.ttl && host.PeerCount.Load() == 0 && !host.IsCDN {
 			host.Log.Info("host has been reclaimed")
 			h.Delete(host.ID)
 		}

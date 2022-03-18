@@ -19,6 +19,8 @@ package clientutil
 import (
 	"time"
 
+	"go.uber.org/atomic"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
@@ -31,26 +33,28 @@ type KeepAlive interface {
 
 type keepAlive struct {
 	name   string
-	access time.Time
+	access atomic.Int64
 }
 
 var _ KeepAlive = (*keepAlive)(nil)
 
 func NewKeepAlive(name string) KeepAlive {
 	return &keepAlive{
-		name:   name,
-		access: time.Now(),
+		name: name,
 	}
 }
 
-func (k keepAlive) Keep() {
-	k.access = time.Now()
-	logger.Debugf("update %s keepalive access time: %s", k.name, k.access.Format(time.RFC3339))
+func (k *keepAlive) Keep() {
+	k.access.Store(time.Now().UnixNano())
 }
 
-func (k keepAlive) Alive(alive time.Duration) bool {
-	var now = time.Now()
+func (k *keepAlive) Alive(alive time.Duration) bool {
+	var (
+		now    = time.Now()
+		access = time.Unix(0, k.access.Load())
+	)
+
 	logger.Debugf("%s keepalive check, last access: %s, alive time: %f seconds, current time: %s",
-		k.name, k.access.Format(time.RFC3339), alive.Seconds(), now)
-	return k.access.Add(alive).After(now)
+		k.name, access.Format(time.RFC3339), alive.Seconds(), now)
+	return access.Add(alive).After(now)
 }

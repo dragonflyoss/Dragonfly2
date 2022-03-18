@@ -35,6 +35,9 @@ import (
 )
 
 const (
+	// Default value of biz tag
+	DefaultBizTag = "unknow"
+
 	// Download tiny file timeout
 	downloadTinyFileContextTimeout = 2 * time.Minute
 )
@@ -94,9 +97,23 @@ const (
 	PeerEventLeave = "Leave"
 )
 
+// PeerOption is a functional option for configuring the peer
+type PeerOption func(p *Peer) *Peer
+
+// WithBizTag sets peer's BizTag
+func WithBizTag(bizTag string) PeerOption {
+	return func(p *Peer) *Peer {
+		p.BizTag = bizTag
+		return p
+	}
+}
+
 type Peer struct {
 	// ID is peer id
 	ID string
+
+	// BizTag is peer biz tag
+	BizTag string
 
 	// Pieces is piece bitset
 	Pieces *bitset.BitSet
@@ -139,9 +156,10 @@ type Peer struct {
 }
 
 // New Peer instance
-func NewPeer(id string, task *Task, host *Host) *Peer {
+func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:         id,
+		BizTag:     DefaultBizTag,
 		Pieces:     &bitset.BitSet{},
 		pieceCosts: []int64{},
 		Stream:     &atomic.Value{},
@@ -165,7 +183,12 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			{Name: PeerEventRegisterNormal, Src: []string{PeerStatePending}, Dst: PeerStateReceivedNormal},
 			{Name: PeerEventDownload, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal}, Dst: PeerStateRunning},
 			{Name: PeerEventDownloadFromBackToSource, Src: []string{PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal, PeerStateRunning}, Dst: PeerStateBackToSource},
-			{Name: PeerEventDownloadSucceeded, Src: []string{PeerStateRunning, PeerStateBackToSource}, Dst: PeerStateSucceeded},
+			{Name: PeerEventDownloadSucceeded, Src: []string{
+				// Since ReportPeerResult and ReportPieceResult are called in no order,
+				// the result may be reported after the register is successful.
+				PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
+				PeerStateRunning, PeerStateBackToSource,
+			}, Dst: PeerStateSucceeded},
 			{Name: PeerEventDownloadFailed, Src: []string{
 				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
@@ -192,6 +215,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.Task.BackToSourcePeers.Add(p)
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -201,6 +225,7 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				}
 
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -210,15 +235,21 @@ func NewPeer(id string, task *Task, host *Host) *Peer {
 				}
 
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
 				p.DeleteParent()
+				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 		},
 	)
+
+	for _, opt := range options {
+		opt(p)
+	}
 
 	return p
 }

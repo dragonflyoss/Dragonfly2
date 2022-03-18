@@ -226,13 +226,11 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	source.UnRegister("http")
 	require.Nil(t, source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")
-	sourceClient.EXPECT().GetContentLength(gomock.Any()).DoAndReturn(
-		func(request *source.Request) (int64, error) {
-			return int64(len(testBytes)), nil
-		})
 	sourceClient.EXPECT().Download(gomock.Any()).DoAndReturn(
 		func(request *source.Request) (*source.Response, error) {
-			return source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes))), nil
+			response := source.NewResponse(io.NopCloser(bytes.NewBuffer(testBytes)))
+			response.ContentLength = int64(len(testBytes))
+			return response, nil
 		})
 
 	pm := &pieceManager{

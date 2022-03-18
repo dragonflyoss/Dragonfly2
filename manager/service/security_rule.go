@@ -23,7 +23,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateSecurityRule(ctx context.Context, json types.CreateSecurityRuleRequest) (*model.SecurityRule, error) {
+func (s *service) CreateSecurityRule(ctx context.Context, json types.CreateSecurityRuleRequest) (*model.SecurityRule, error) {
 	securityRule := model.SecurityRule{
 		Name:        json.Name,
 		BIO:         json.BIO,
@@ -38,7 +38,7 @@ func (s *rest) CreateSecurityRule(ctx context.Context, json types.CreateSecurity
 	return &securityRule, nil
 }
 
-func (s *rest) DestroySecurityRule(ctx context.Context, id uint) error {
+func (s *service) DestroySecurityRule(ctx context.Context, id uint) error {
 	securityRule := model.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, id).Error; err != nil {
 		return err
@@ -51,7 +51,7 @@ func (s *rest) DestroySecurityRule(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateSecurityRule(ctx context.Context, id uint, json types.UpdateSecurityRuleRequest) (*model.SecurityRule, error) {
+func (s *service) UpdateSecurityRule(ctx context.Context, id uint, json types.UpdateSecurityRuleRequest) (*model.SecurityRule, error) {
 	securityRule := model.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, id).Updates(model.SecurityRule{
 		Name:        json.Name,
@@ -65,7 +65,7 @@ func (s *rest) UpdateSecurityRule(ctx context.Context, id uint, json types.Updat
 	return &securityRule, nil
 }
 
-func (s *rest) GetSecurityRule(ctx context.Context, id uint) (*model.SecurityRule, error) {
+func (s *service) GetSecurityRule(ctx context.Context, id uint) (*model.SecurityRule, error) {
 	securityRule := model.SecurityRule{}
 	if err := s.db.WithContext(ctx).First(&securityRule, id).Error; err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (s *rest) GetSecurityRule(ctx context.Context, id uint) (*model.SecurityRul
 	return &securityRule, nil
 }
 
-func (s *rest) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error) {
+func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error) {
 	var count int64
 	var securityRules []model.SecurityRule
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityRule{

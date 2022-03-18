@@ -51,7 +51,7 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Cd
 	once.Do(func() {
 		elasticCdnClient = &cdnClient{
 			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(30 * time.Second),
+				rpc.WithConnExpireTime(60 * time.Second),
 				rpc.WithDialOption(opts),
 			}),
 		}
@@ -68,6 +68,8 @@ type CdnClient interface {
 	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
+
+	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error)
 
 	UpdateState(addrs []dfnet.NetAddr)
 
@@ -113,4 +115,20 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 		return nil, err
 	}
 	return res.(*base.PiecePacket), nil
+}
+
+func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
+	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+		if err != nil {
+			return nil, err
+		}
+		return client.SyncPieceTasks(ctx, opts...)
+	}, 0.2, 2.0, 3, nil)
+	if err != nil {
+		logger.WithTaskID(req.TaskId).Infof("SyncPieceTasks: invoke cdn node %s SyncPieceTasks failed: %v", addr.GetEndpoint(), err)
+		return nil, err
+	}
+	client := res.(cdnsystem.Seeder_SyncPieceTasksClient)
+	return client, client.Send(req)
 }

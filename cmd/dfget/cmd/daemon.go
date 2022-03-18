@@ -60,7 +60,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 		}
 
 		// Initialize logger
-		if err := logger.InitDaemon(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitDaemon(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client daemon logger")
 		}
 
@@ -170,7 +170,7 @@ func runDaemon(d dfpath.Dfpath) error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("client daemon configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := server.New(cfg, d)

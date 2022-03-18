@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -33,6 +32,15 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+)
+
+const (
+	// Identifier of message transmitted or received.
+	RPCMessageIDKey = attribute.Key("message.id")
+
+	// The uncompressed size of the message transmitted or received in
+	// bytes.
+	RPCMessageUncompressedSizeKey = attribute.Key("message.uncompressed_size")
 )
 
 func (conn *Connection) startGC() {
@@ -124,8 +132,8 @@ func (m messageType) Event(ctx context.Context, id int, message interface{}) {
 		content, _ := proto.Marshal(p)
 		span.AddEvent("message", trace.WithAttributes(
 			attribute.KeyValue(m),
-			semconv.RPCMessageIDKey.Int(id),
-			semconv.RPCMessageUncompressedSizeKey.String(string(content)),
+			RPCMessageIDKey.Int(id),
+			RPCMessageUncompressedSizeKey.String(string(content)),
 		))
 	}
 }

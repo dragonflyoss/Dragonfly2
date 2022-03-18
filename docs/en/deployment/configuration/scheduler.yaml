@@ -31,9 +31,9 @@ scheduler:
   # retry scheduling back-to-source limit times
   retryBackSourceLimit: 5
   # retry scheduling limit times
-  retryLimit: 20
+  retryLimit: 10
   # retry scheduling interval
-  retryInterval: 200ms
+  retryInterval: 50ms
   # gc metadata configuration
   gc:
     # peerGCInterval is peer's gc interval

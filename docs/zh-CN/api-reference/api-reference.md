@@ -3284,6 +3284,50 @@ Get User by id
 * User
 
 
+<a name="api-v1-users-id-patch"></a>
+### Update User
+```
+PATCH /api/v1/users/{id}
+```
+
+
+#### 说明
+Update by json config
+
+
+#### 参数
+
+|类型|名称|说明|类型|
+|---|---|---|---|
+|**Path**|**id**  <br>*必填*|id|string|
+|**Body**|**User**  <br>*必填*|User|[types.UpdateUserRequest](#types-updateuserrequest)|
+
+
+#### 响应
+
+|HTTP代码|说明|类型|
+|---|---|---|
+|**200**|OK|[model.User](#model-user)|
+|**400**||无内容|
+|**404**||无内容|
+|**500**||无内容|
+
+
+#### 消耗
+
+* `application/json`
+
+
+#### 生成
+
+* `application/json`
+
+
+#### 标签
+
+* User
+
+
 <a name="api-v1-users-id-reset_password-post"></a>
 ### Reset Password For User
 ```
@@ -3651,7 +3695,7 @@ delete role by uri config
 
 |名称|类型|
 |---|---|
-|**action**  <br>*必填*|string|
+|**action**  <br>*必填*|enum (read, *)|
 |**object**  <br>*必填*|string|
 
 
@@ -3660,17 +3704,17 @@ delete role by uri config
 
 |名称|类型|
 |---|---|
-|**action**  <br>*必填*|string|
+|**action**  <br>*必填*|enum (read, *)|
 |**object**  <br>*必填*|string|
 
 
 <a name="types-cdnclusterconfig"></a>
 ### types.CDNClusterConfig
 
-|名称|类型|
-|---|---|
-|**load_limit**  <br>*可选*|integer|
-|**net_topology**  <br>*可选*|string|
+|名称|说明|类型|
+|---|---|---|
+|**load_limit**  <br>*可选*|**最小值** : `1`  <br>**最大值** : `10000`|integer|
+|**net_topology**  <br>*可选*||string|
 
 
 <a name="types-createapplicationrequest"></a>
@@ -3681,7 +3725,7 @@ delete role by uri config
 |**bio**  <br>*可选*|string|
 |**download_rate_limit**  <br>*可选*|integer|
 |**name**  <br>*必填*|string|
-|**state**  <br>*可选*|string|
+|**state**  <br>*可选*|enum (enable, disable)|
 |**url**  <br>*可选*|string|
 |**user_id**  <br>*必填*|integer|
 
@@ -3744,7 +3788,7 @@ delete role by uri config
 |**bio**  <br>*可选*|string|
 |**client_id**  <br>*必填*|string|
 |**client_secret**  <br>*必填*|string|
-|**name**  <br>*必填*|string|
+|**name**  <br>*必填*|enum (github, google)|
 |**redirect_url**  <br>*可选*|string|
 
 
@@ -3813,7 +3857,7 @@ delete role by uri config
 |---|---|
 |**filter**  <br>*可选*|string|
 |**headers**  <br>*可选*|< string, string > map|
-|**type**  <br>*必填*|string|
+|**type**  <br>*必填*|enum (image, file)|
 |**url**  <br>*必填*|string|
 
 
@@ -3830,7 +3874,7 @@ delete role by uri config
 
 |名称|类型|
 |---|---|
-|**action**  <br>*必填*|string|
+|**action**  <br>*必填*|enum (read, *)|
 |**object**  <br>*必填*|string|
 
 
@@ -3848,23 +3892,27 @@ delete role by uri config
 <a name="types-resetpasswordrequest"></a>
 ### types.ResetPasswordRequest
 
-|名称|类型|
-|---|---|
-|**new_password**  <br>*必填*|string|
-|**old_password**  <br>*必填*|string|
+|名称|说明|类型|
+|---|---|---|
+|**new_password**  <br>*必填*|**长度** : `8 - 20`|string|
+|**old_password**  <br>*必填*|**长度** : `8 - 20`|string|
 
 
 <a name="types-schedulerclusterclientconfig"></a>
 ### types.SchedulerClusterClientConfig
 
-|名称|类型|
-|---|---|
-|**load_limit**  <br>*可选*|integer|
+|名称|说明|类型|
+|---|---|---|
+|**load_limit**  <br>*可选*|**最小值** : `1`  <br>**最大值** : `10000`|integer|
+|**parallel_count**  <br>*可选*|**最小值** : `1`  <br>**最大值** : `50`|integer|
 
 
 <a name="types-schedulerclusterconfig"></a>
 ### types.SchedulerClusterConfig
-*类型* : object
+
+|名称|说明|类型|
+|---|---|---|
+|**filter_parent_limit**  <br>*可选*|**最小值** : `1`  <br>**最大值** : `100`|integer|
 
 
 <a name="types-schedulerclusterscopes"></a>
@@ -3880,15 +3928,15 @@ delete role by uri config
 <a name="types-signuprequest"></a>
 ### types.SignUpRequest
 
-|名称|类型|
-|---|---|
-|**avatar**  <br>*可选*|string|
-|**bio**  <br>*可选*|string|
-|**email**  <br>*必填*|string|
-|**location**  <br>*可选*|string|
-|**name**  <br>*必填*|string|
-|**password**  <br>*必填*|string|
-|**phone**  <br>*可选*|string|
+|名称|说明|类型|
+|---|---|---|
+|**avatar**  <br>*可选*||string|
+|**bio**  <br>*可选*||string|
+|**email**  <br>*必填*||string|
+|**location**  <br>*可选*||string|
+|**name**  <br>*必填*|**长度** : `3 - 10`|string|
+|**password**  <br>*必填*|**长度** : `8 - 20`|string|
+|**phone**  <br>*可选*||string|
 
 
 <a name="types-updateapplicationrequest"></a>
@@ -3899,7 +3947,7 @@ delete role by uri config
 |**bio**  <br>*可选*|string|
 |**download_rate_limit**  <br>*可选*|integer|
 |**name**  <br>*可选*|string|
-|**state**  <br>*可选*|string|
+|**state**  <br>*可选*|enum (enable, disable)|
 |**url**  <br>*可选*|string|
 |**user_id**  <br>*必填*|integer|
 
@@ -3956,7 +4004,7 @@ delete role by uri config
 |**bio**  <br>*可选*|string|
 |**client_id**  <br>*可选*|string|
 |**client_secret**  <br>*可选*|string|
-|**name**  <br>*可选*|string|
+|**name**  <br>*可选*|enum (github, google)|
 |**redirect_url**  <br>*可选*|string|
 
 
@@ -4007,6 +4055,18 @@ delete role by uri config
 |**domain**  <br>*可选*|string|
 |**name**  <br>*可选*|string|
 |**proxy_domain**  <br>*可选*|string|
+
+
+<a name="types-updateuserrequest"></a>
+### types.UpdateUserRequest
+
+|名称|类型|
+|---|---|
+|**avatar**  <br>*可选*|string|
+|**bio**  <br>*可选*|string|
+|**email**  <br>*可选*|string|
+|**location**  <br>*可选*|string|
+|**phone**  <br>*可选*|string|
 
 
 

@@ -18,27 +18,27 @@ package peer
 
 type pieceBroker struct {
 	stopCh    chan struct{}
-	publishCh chan *pieceInfo
-	subCh     chan chan *pieceInfo
-	unsubCh   chan chan *pieceInfo
+	publishCh chan *PieceInfo
+	subCh     chan chan *PieceInfo
+	unsubCh   chan chan *PieceInfo
 }
 
-type pieceInfo struct {
-	num      int32
-	finished bool
+type PieceInfo struct {
+	Num      int32
+	Finished bool
 }
 
 func newPieceBroker() *pieceBroker {
 	return &pieceBroker{
 		stopCh:    make(chan struct{}),
-		publishCh: make(chan *pieceInfo, 10),
-		subCh:     make(chan chan *pieceInfo),
-		unsubCh:   make(chan chan *pieceInfo),
+		publishCh: make(chan *PieceInfo, 10),
+		subCh:     make(chan chan *PieceInfo),
+		unsubCh:   make(chan chan *PieceInfo),
 	}
 }
 
 func (b *pieceBroker) Start() {
-	subs := map[chan *pieceInfo]struct{}{}
+	subs := map[chan *PieceInfo]struct{}{}
 	for {
 		select {
 		case <-b.stopCh:
@@ -66,8 +66,8 @@ func (b *pieceBroker) Stop() {
 	close(b.stopCh)
 }
 
-func (b *pieceBroker) Subscribe() chan *pieceInfo {
-	msgCh := make(chan *pieceInfo, 5)
+func (b *pieceBroker) Subscribe() chan *PieceInfo {
+	msgCh := make(chan *PieceInfo, 5)
 	select {
 	case <-b.stopCh:
 	case b.subCh <- msgCh:
@@ -76,11 +76,11 @@ func (b *pieceBroker) Subscribe() chan *pieceInfo {
 	return msgCh
 }
 
-func (b *pieceBroker) Unsubscribe(msgCh chan *pieceInfo) {
+func (b *pieceBroker) Unsubscribe(msgCh chan *PieceInfo) {
 	b.unsubCh <- msgCh
 }
 
-func (b *pieceBroker) Publish(msg *pieceInfo) {
+func (b *pieceBroker) Publish(msg *PieceInfo) {
 	select {
 	case b.publishCh <- msg:
 	case <-b.stopCh:

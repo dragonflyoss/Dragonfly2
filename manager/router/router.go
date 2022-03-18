@@ -43,7 +43,7 @@ const (
 
 var GinLogFileName = "gin.log"
 
-func Init(cfg *config.Config, logDir string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -93,6 +93,7 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 
 	// User
 	u := apiv1.Group("/users")
+	u.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateUser)
 	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
 	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
 	u.POST("/signin", jwt.LoginHandler)

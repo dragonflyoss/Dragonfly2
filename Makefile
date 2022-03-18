@@ -196,6 +196,7 @@ build-dfget-man-page:
 	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
 .PHONY: build-dfget-man-page
 
+# Generate e2e sha256sum
 build-e2e-sha256sum:
 	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
 .PHONY: build-e2e-sha256sum
@@ -236,6 +237,8 @@ e2e-test-coverage: install-e2e-test build-e2e-sha256sum
 # Clean E2E tests
 clean-e2e-test: 
 	@kind delete cluster
+	@echo "cleaning log file"
+	@rm -rf test/e2e/*.log
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
@@ -285,6 +288,7 @@ generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
+# Generate swagger files
 swag:
 	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
 
@@ -293,6 +297,7 @@ changelog:
 	@git-chglog -o CHANGELOG.md
 .PHONY: changelog
 
+# Clear compiled files
 clean:
 	@go clean
 	@rm -rf bin .go .cache

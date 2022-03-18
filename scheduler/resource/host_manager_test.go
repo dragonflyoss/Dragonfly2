@@ -336,6 +336,23 @@ func TestHostManager_RunGC(t *testing.T) {
 				assert.Equal(host.ID, mockHost.ID)
 			},
 		},
+		{
+			name: "host is cdn",
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+				hostManager.Store(mockCDNHost)
+				err := hostManager.RunGC()
+				assert.NoError(err)
+
+				host, ok := hostManager.Load(mockCDNHost.ID)
+				assert.Equal(ok, true)
+				assert.Equal(host.ID, mockCDNHost.ID)
+			},
+		},
 	}
 
 	for _, tc := range tests {

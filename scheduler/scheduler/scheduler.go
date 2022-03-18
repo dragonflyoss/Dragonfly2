@@ -32,12 +32,6 @@ import (
 )
 
 const (
-	// Default number of pieces downloaded in parallel
-	defaultParallelCount = 4
-
-	// Default limit the number of filter traversals
-	defaultFilterParentLimit = 10
-
 	// Default tree available depth
 	defaultAvailableDepth = 2
 
@@ -120,8 +114,6 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				}
 			}
 
-			// If the peer downloads back-to-source, its parent needs to be deleted
-			peer.DeleteParent()
 			return
 		}
 
@@ -223,7 +215,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 // Filter the parent that can be scheduled
 func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
-	filterParentLimit := defaultFilterParentLimit
+	filterParentLimit := config.DefaultSchedulerFilterParentLimit
 	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
 		filterParentLimit = int(config.FilterParentLimit)
 	}
@@ -281,7 +273,8 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Debugf("parent %s is not selected because its free upload is empty", parent.ID)
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, peer count is %d",
+				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.PeerCount.Load())
 			return true
 		}
 
@@ -296,7 +289,7 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 // Construct peer successful packet
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
-	parallelCount := defaultParallelCount
+	parallelCount := config.DefaultClientParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}

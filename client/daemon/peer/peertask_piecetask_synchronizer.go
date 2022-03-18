@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,4 @@
  * limitations under the License.
  */
 
-package idgen
-
-import (
-	"fmt"
-	"os"
-
-	"github.com/google/uuid"
-)
-
-var pid int
-
-func init() {
-	pid = os.Getpid()
-}
-
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
-}
-
-func PeerID(ip string) string {
-	return fmt.Sprintf("%s-%d-%s", ip, pid, uuid.New())
-}
+package peer

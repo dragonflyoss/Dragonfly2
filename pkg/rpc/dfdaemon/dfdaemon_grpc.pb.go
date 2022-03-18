@@ -30,6 +30,8 @@ type DaemonClient interface {
 	GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error)
 	// Check daemon health
 	CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Sync piece tasks with other peers
+	SyncPieceTasks(ctx context.Context, opts ...grpc.CallOption) (Daemon_SyncPieceTasksClient, error)
 }
 
 type daemonClient struct {
@@ -90,6 +92,37 @@ func (c *daemonClient) CheckHealth(ctx context.Context, in *emptypb.Empty, opts 
 	return out, nil
 }
 
+func (c *daemonClient) SyncPieceTasks(ctx context.Context, opts ...grpc.CallOption) (Daemon_SyncPieceTasksClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Daemon_ServiceDesc.Streams[1], "/dfdaemon.Daemon/SyncPieceTasks", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &daemonSyncPieceTasksClient{stream}
+	return x, nil
+}
+
+type Daemon_SyncPieceTasksClient interface {
+	Send(*base.PieceTaskRequest) error
+	Recv() (*base.PiecePacket, error)
+	grpc.ClientStream
+}
+
+type daemonSyncPieceTasksClient struct {
+	grpc.ClientStream
+}
+
+func (x *daemonSyncPieceTasksClient) Send(m *base.PieceTaskRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *daemonSyncPieceTasksClient) Recv() (*base.PiecePacket, error) {
+	m := new(base.PiecePacket)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // DaemonServer is the server API for Daemon service.
 // All implementations must embed UnimplementedDaemonServer
 // for forward compatibility
@@ -100,6 +133,8 @@ type DaemonServer interface {
 	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
 	// Check daemon health
 	CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
+	// Sync piece tasks with other peers
+	SyncPieceTasks(Daemon_SyncPieceTasksServer) error
 	mustEmbedUnimplementedDaemonServer()
 }
 
@@ -115,6 +150,9 @@ func (UnimplementedDaemonServer) GetPieceTasks(context.Context, *base.PieceTaskR
 }
 func (UnimplementedDaemonServer) CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckHealth not implemented")
+}
+func (UnimplementedDaemonServer) SyncPieceTasks(Daemon_SyncPieceTasksServer) error {
+	return status.Errorf(codes.Unimplemented, "method SyncPieceTasks not implemented")
 }
 func (UnimplementedDaemonServer) mustEmbedUnimplementedDaemonServer() {}
 
@@ -186,6 +224,32 @@ func _Daemon_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Daemon_SyncPieceTasks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(DaemonServer).SyncPieceTasks(&daemonSyncPieceTasksServer{stream})
+}
+
+type Daemon_SyncPieceTasksServer interface {
+	Send(*base.PiecePacket) error
+	Recv() (*base.PieceTaskRequest, error)
+	grpc.ServerStream
+}
+
+type daemonSyncPieceTasksServer struct {
+	grpc.ServerStream
+}
+
+func (x *daemonSyncPieceTasksServer) Send(m *base.PiecePacket) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *daemonSyncPieceTasksServer) Recv() (*base.PieceTaskRequest, error) {
+	m := new(base.PieceTaskRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // Daemon_ServiceDesc is the grpc.ServiceDesc for Daemon service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -207,6 +271,12 @@ var Daemon_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Download",
 			Handler:       _Daemon_Download_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "SyncPieceTasks",
+			Handler:       _Daemon_SyncPieceTasks_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "pkg/rpc/dfdaemon/dfdaemon.proto",
