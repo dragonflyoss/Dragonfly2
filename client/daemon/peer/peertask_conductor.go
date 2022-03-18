@@ -851,7 +851,10 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *base.PiecePacket) {
 	}
 
 	if metadataChanged {
-		_ = pt.UpdateStorage()
+		err := pt.UpdateStorage()
+		if err != nil {
+			pt.Errorf("update storage error: %s", err)
+		}
 	}
 }
 

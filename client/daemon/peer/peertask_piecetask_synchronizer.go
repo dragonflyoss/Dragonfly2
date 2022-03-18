@@ -162,20 +162,42 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 			Limit:    16,
 		}
 		err := s.newPieceTaskSynchronizer(s.ctx, peer, request)
-		if err != nil {
-			// fallback to legacy get piece grpc
+		if err == nil {
+			continue
+		}
+		// when err is codes.Unimplemented, fallback to legacy get piece grpc
+		stat, ok := status.FromError(err)
+		if ok && stat.Code() == codes.Unimplemented {
 			legacyPeers = append(legacyPeers, peer)
-			// TODO ignore error which is not codes.Unimplemented
-			// and report to scheduler
-			//if stat, ok := status.FromError(err); ok {
-			//	if stat.Code() != codes.Unimplemented {
-			//	}
-			//}
 			s.peerTaskConductor.Warnf("connect peer %s error: %s, fallback to legacy get piece grpc", peer.PeerId, err)
+		} else {
+			s.reportError(peer)
+			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented, did not fallback to legacy", peer.PeerId, err)
 		}
 	}
 	s.cleanStaleWorker(destPeers)
 	return legacyPeers
+}
+
+func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer) *scheduler.PieceResult {
+	return &scheduler.PieceResult{
+		TaskId:        peerTaskConductor.taskID,
+		SrcPid:        peerTaskConductor.peerID,
+		DstPid:        destPeer.PeerId,
+		PieceInfo:     &base.PieceInfo{},
+		Success:       false,
+		Code:          base.Code_ClientPieceRequestFail,
+		HostLoad:      nil,
+		FinishedCount: peerTaskConductor.readyPieces.Settled(),
+	}
+}
+
+func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPeer) {
+	sendError := s.peerTaskConductor.peerPacketStream.Send(compositePieceResult(s.peerTaskConductor, destPeer))
+	if sendError != nil {
+		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
+	}
 }
 
 func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) {
@@ -274,21 +296,10 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
 }
 
 func (s *pieceTaskSynchronizer) reportError() {
-	result := &scheduler.PieceResult{
-		TaskId:        s.peerTaskConductor.taskID,
-		SrcPid:        s.peerTaskConductor.peerID,
-		DstPid:        s.dstPeer.PeerId,
-		PieceInfo:     &base.PieceInfo{},
-		Success:       false,
-		Code:          base.Code_ClientPieceRequestFail,
-		HostLoad:      nil,
-		FinishedCount: s.peerTaskConductor.readyPieces.Settled(),
-	}
-
-	sendError := s.peerTaskConductor.peerPacketStream.Send(result)
+	sendError := s.peerTaskConductor.peerPacketStream.Send(compositePieceResult(s.peerTaskConductor, s.dstPeer))
 	if sendError != nil {
 		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
-		s.peerTaskConductor.Errorf("sync piece info with base.Code_ClientPieceRequestFail error: %s", sendError)
+		s.peerTaskConductor.Errorf("sync piece info failed and send piece result with error: %s", sendError)
 	}
 }
 
