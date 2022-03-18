@@ -123,7 +123,7 @@ func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req
 		if err != nil {
 			return nil, err
 		}
-		return client.GetPieceTasks(ctx, req, opts...)
+		return client.SyncPieceTasks(ctx, opts...)
 	}, 0.2, 2.0, 3, nil)
 	if err != nil {
 		logger.WithTaskID(req.TaskId).Infof("SyncPieceTasks: invoke cdn node %s SyncPieceTasks failed: %v", addr.GetEndpoint(), err)
