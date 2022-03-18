@@ -91,17 +91,17 @@ var _ = Describe("Preheat with manager", func() {
 		})
 
 		It("preheat image should be ok", func() {
-			url := "https://registry-1.docker.io/v2/library/alpine/manifests/3.14"
+			url := "https://registry-1.docker.io/v2/dragonflyoss/busybox/manifests/1.35.0"
 			fmt.Println("download image: " + url)
 
 			var (
 				cdnTaskIDs = []string{
-					"1e8a4f36f5eaa7d9711de14675329dde55738c8d602244dff8d9444e3b9a6f90",
-					"408611293f7525215c51d0f92b04922eb970746144f4aaa73e10f93d74132bff",
+					"20ef8c24e608bbf6604e7b485037081f0a225dd585161c669ae727041bce3130",
+					"cfe7646d2c749e6e02ab7fec617c56e5fd11d2a1da0e1e39851cad27878064b6",
 				}
 				sha256sum1 = []string{
-					"0a97eee8041e2b6c0e65abb2700b0705d0da5525ca69060b9e0bde8a3d17afdb",
-					"97518928ae5f3d52d4164b314a7e73654eb686ecd8aafa0b79acd980773a740d",
+					"a711f05d33845e2e9deffcfcc5adf082d7c6e97e3e3a881d193d9aae38f092a8",
+					"f643e116a03d9604c344edb345d7592c48cc00f2a4848aaf773411f4fb30d2f5",
 				}
 			)
 
