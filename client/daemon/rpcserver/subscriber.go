@@ -154,6 +154,7 @@ loop:
 				break loop
 			}
 			if info.Finished {
+				s.Unlock()
 				break loop
 			}
 			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
