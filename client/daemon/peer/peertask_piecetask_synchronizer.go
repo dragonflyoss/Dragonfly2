@@ -200,12 +200,22 @@ func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPe
 	}
 }
 
+// acquire send the target piece to other peers
 func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) {
 	s.RLock()
 	for _, p := range s.workers {
 		p.acquire(request)
 	}
 	s.RUnlock()
+}
+
+func (s *pieceTaskSyncManager) cancel() {
+	s.RLock()
+	for _, p := range s.workers {
+		p.close()
+	}
+	s.RUnlock()
+	s.ctxCancel()
 }
 
 func (s *pieceTaskSynchronizer) close() {

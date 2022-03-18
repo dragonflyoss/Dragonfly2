@@ -565,7 +565,7 @@ loop:
 		if peerPacket.Code != base.Code_Success {
 			if peerPacket.Code == base.Code_SchedNeedBackSource {
 				pt.needBackSource.Store(true)
-				pt.pieceTaskSyncManager.ctxCancel()
+				pt.pieceTaskSyncManager.cancel()
 				close(pt.peerPacketReady)
 				pt.Infof("receive back source code")
 				return
@@ -1266,7 +1266,7 @@ func (pt *peerTaskConductor) done() {
 		pt.broker.Stop()
 		pt.span.End()
 		if pt.pieceTaskSyncManager != nil {
-			pt.pieceTaskSyncManager.ctxCancel()
+			pt.pieceTaskSyncManager.cancel()
 		}
 	}()
 	var (
@@ -1353,7 +1353,7 @@ func (pt *peerTaskConductor) fail() {
 		pt.broker.Stop()
 		pt.span.End()
 		if pt.pieceTaskSyncManager != nil {
-			pt.pieceTaskSyncManager.ctxCancel()
+			pt.pieceTaskSyncManager.cancel()
 		}
 	}()
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
