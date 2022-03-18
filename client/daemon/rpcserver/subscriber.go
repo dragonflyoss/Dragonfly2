@@ -153,11 +153,12 @@ loop:
 				s.Unlock()
 				break loop
 			}
-			s.Unlock()
 			if info.Finished {
+				s.Unlock()
 				break loop
 			}
 			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
+			s.Unlock()
 		case <-s.Success:
 			s.Lock()
 			// all pieces already sent
