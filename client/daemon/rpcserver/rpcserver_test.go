@@ -337,6 +337,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, delay := range []bool{false, true} {
+				delay := delay
 				mockStorageManger := mock_storage.NewMockManager(ctrl)
 
 				if tc.limit == 0 {
