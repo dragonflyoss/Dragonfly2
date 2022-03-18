@@ -20,6 +20,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
@@ -50,8 +52,8 @@ type dfpath struct {
 // Cache of the dfpath
 var cache struct {
 	sync.Once
-	d   *dfpath
-	err error
+	d    *dfpath
+	errs []error
 }
 
 // Option is a functional option for configuring the dfpath
@@ -105,17 +107,18 @@ func New(options ...Option) (Dfpath, error) {
 		d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
 
 		// Create directories
-		for _, dir := range []string{d.workHome, d.cacheDir, d.logDir, d.dataDir, d.pluginDir} {
+		for name, dir := range map[string]string{"workHome": d.workHome, "cacheDir": d.cacheDir, "logDir": d.logDir, "dataDir": d.dataDir,
+			"pluginDir": d.pluginDir} {
 			if err := fileutils.MkdirAll(dir); err != nil {
-				cache.err = err
+				cache.errs = append(cache.errs, errors.Errorf("create %s dir %s failed: %v", name, dir, err))
 			}
 		}
 
 		cache.d = d
 	})
 
-	if cache.err != nil {
-		return nil, cache.err
+	if len(cache.errs) > 0 {
+		return nil, errors.Errorf("create dfpath failed: %s", cache.errs)
 	}
 
 	d := *cache.d
