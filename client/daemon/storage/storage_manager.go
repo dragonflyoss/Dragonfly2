@@ -770,7 +770,7 @@ func (s *storageManager) TryGC() (bool, error) {
 			}
 			// task is not done, and is active in s.gcInterval
 			// next gc loop will check it again
-			if !task.Done && time.Now().Sub(time.Unix(0, task.lastAccess.Load())) < s.gcInterval {
+			if !task.Done && time.Since(time.Unix(0, task.lastAccess.Load())) < s.gcInterval {
 				return true
 			}
 			tasks = append(tasks, task)

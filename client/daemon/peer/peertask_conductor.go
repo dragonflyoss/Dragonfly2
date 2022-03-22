@@ -814,7 +814,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
 			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-				time.Now().Sub(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+				time.Since(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -1170,7 +1170,7 @@ func (pt *peerTaskConductor) done() {
 		pt.span.End()
 	}()
 	var (
-		cost    = time.Now().Sub(pt.startTime).Milliseconds()
+		cost    = time.Since(pt.startTime).Milliseconds()
 		success = true
 		code    = base.Code_Success
 	)
