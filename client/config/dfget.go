@@ -159,6 +159,10 @@ func (cfg *ClientOption) Validate() error {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
 	}
 
+	if err := cfg.checkHeader(); err != nil {
+		return errors.Wrapf(dferrors.ErrInvalidHeader, "output: %v", err)
+	}
+
 	return nil
 }
 
@@ -196,6 +200,25 @@ func (cfg *ClientOption) Convert(args []string) error {
 func (cfg *ClientOption) String() string {
 	js, _ := json.Marshal(cfg)
 	return string(js)
+}
+
+// checkHeader is for checking the header format
+func (cfg *ClientOption) checkHeader() error {
+	if len(cfg.Header) == 0 {
+		return nil
+	}
+
+	for _, header := range cfg.Header {
+		if !strings.Contains(header, ":") {
+			return fmt.Errorf("header format error: %v", header)
+		}
+		idx := strings.Index(header, ":")
+		if len(strings.TrimSpace(header[:idx])) == 0 || len(strings.TrimSpace(header[idx+1:])) == 0 {
+			return fmt.Errorf("header format error: %v", header)
+		}
+	}
+
+	return nil
 }
 
 // This function must be called after checkURL

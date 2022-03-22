@@ -138,3 +138,28 @@ func TestMkdirAll(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckHeader(t *testing.T) {
+	cfg := NewDfgetConfig()
+
+	// test empty header
+	testifyassert.Nil(t, cfg.checkHeader())
+
+	// test normal headers
+	cfg.Header = []string{
+		"a:b",
+		"1:1",
+		"1:a",
+		"a:1",
+	}
+	testifyassert.Nil(t, cfg.checkHeader())
+
+	// test error headers
+	cfg.Header = []string{
+		":",
+		"a",
+		" :a",
+		"a: ",
+	}
+	testifyassert.NotNil(t, cfg.checkHeader())
+}
