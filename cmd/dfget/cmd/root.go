@@ -105,7 +105,7 @@ var rootCmd = &cobra.Command{
 			errInfo = fmt.Sprintf("error: %v", err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Now().Sub(start).Milliseconds(), errInfo)
+		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Since(start).Milliseconds(), errInfo)
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 
