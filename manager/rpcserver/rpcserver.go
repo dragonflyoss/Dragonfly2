@@ -410,9 +410,9 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	// Search optimal scheduler cluster
+	// Search optimal scheduler clusters
 	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
-	schedulerCluster, err := s.searcher.FindSchedulerCluster(ctx, schedulerClusters, req)
+	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
 		log.Errorf("can not matching scheduler cluster %v", err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
@@ -420,11 +420,10 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
 
 	schedulers := []model.Scheduler{}
-	if err := s.db.WithContext(ctx).Find(&schedulers, &model.Scheduler{
-		State:              model.SchedulerStateActive,
-		SchedulerClusterID: schedulerCluster.ID,
-	}).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	for _, schedulerCluster := range schedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			schedulers = append(schedulers, scheduler)
+		}
 	}
 
 	for _, scheduler := range schedulers {

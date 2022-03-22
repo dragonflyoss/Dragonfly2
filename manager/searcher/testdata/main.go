@@ -33,13 +33,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	cluster, err := s.FindSchedulerCluster(context.Background(), []model.SchedulerCluster{}, &manager.ListSchedulersRequest{})
+	clusters, err := s.FindSchedulerClusters(context.Background(), []model.SchedulerCluster{}, &manager.ListSchedulersRequest{})
 	if err != nil {
 		fmt.Println("scheduler cluster not found")
 		os.Exit(1)
 	}
 
-	if cluster.Name != "foo" {
+	if clusters[0].Name != "foo" {
 		fmt.Println("scheduler cluster name wrong")
 		os.Exit(1)
 	}
