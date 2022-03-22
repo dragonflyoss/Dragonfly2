@@ -127,7 +127,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 		return nil, false
 	}
 
-	var cost = time.Now().Sub(start).Milliseconds()
+	var cost = time.Since(start).Milliseconds()
 	log.Infof("reuse file peer task done, cost: %dms", cost)
 
 	pg := &FileTaskProgress{
