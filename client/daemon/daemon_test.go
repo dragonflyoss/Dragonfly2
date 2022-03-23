@@ -42,12 +42,14 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 			name: "available ip",
 			schedulers: []*manager.Scheduler{
 				{
-					Ip:   "127.0.0.1",
-					Port: int32(3000),
+					Ip:                 "127.0.0.1",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:   "127.0.0.1",
-					Port: int32(3001),
+					Ip:                 "127.0.0.1",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 			},
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
@@ -59,14 +61,16 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 			name: "available host",
 			schedulers: []*manager.Scheduler{
 				{
-					Ip:       "foo",
-					HostName: "localhost",
-					Port:     int32(3000),
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "foo",
-					HostName: "localhost",
-					Port:     int32(3001),
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 			},
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
@@ -78,29 +82,34 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 			name: "available ip and host",
 			schedulers: []*manager.Scheduler{
 				{
-					Ip:       "foo",
-					HostName: "localhost",
-					Port:     int32(3000),
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "foo",
-					HostName: "localhost",
-					Port:     int32(3001),
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "127.0.0.1",
-					HostName: "foo",
-					Port:     int32(3001),
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "127.0.0.1",
-					HostName: "foo",
-					Port:     int32(3000),
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "127.0.0.1",
-					HostName: "foo",
-					Port:     int32(3001),
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 			},
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
@@ -115,14 +124,16 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 			name: "unreachable",
 			schedulers: []*manager.Scheduler{
 				{
-					Ip:       "foo",
-					HostName: "localhost",
-					Port:     int32(3001),
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 				{
-					Ip:       "127.0.0.1",
-					HostName: "foo",
-					Port:     int32(3001),
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
 				},
 			},
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
@@ -136,6 +147,102 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.EqualValues(addrs, []dfnet.NetAddr{})
+			},
+		},
+		{
+			name: "available ip with different scheduler cluster",
+			schedulers: []*manager.Scheduler{
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
+				},
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
+				},
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 2,
+				},
+			},
+			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
+				assert := assert.New(t)
+				assert.EqualValues(addrs, []dfnet.NetAddr{
+					{Type: dfnet.TCP, Addr: "127.0.0.1:3000"},
+					{Type: dfnet.TCP, Addr: "127.0.0.1:3000"},
+				})
+			},
+		},
+		{
+			name: "available host with different scheduler cluster",
+			schedulers: []*manager.Scheduler{
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
+				},
+				{
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3000),
+					SchedulerClusterId: 2,
+				},
+				{
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3000),
+					SchedulerClusterId: 2,
+				},
+			},
+			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
+				assert := assert.New(t)
+				assert.EqualValues(addrs, []dfnet.NetAddr{
+					{Type: dfnet.TCP, Addr: "localhost:3000"},
+					{Type: dfnet.TCP, Addr: "localhost:3000"},
+				})
+			},
+		},
+		{
+			name: "available host and ip with different scheduler cluster",
+			schedulers: []*manager.Scheduler{
+				{
+					Ip:                 "foo",
+					HostName:           "localhost",
+					Port:               int32(3000),
+					SchedulerClusterId: 2,
+				},
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3001),
+					SchedulerClusterId: 1,
+				},
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "goo",
+					Port:               int32(3000),
+					SchedulerClusterId: 2,
+				},
+				{
+					Ip:                 "127.0.0.1",
+					HostName:           "foo",
+					Port:               int32(3000),
+					SchedulerClusterId: 1,
+				},
+			},
+			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
+				assert := assert.New(t)
+				assert.EqualValues(addrs, []dfnet.NetAddr{
+					{Type: dfnet.TCP, Addr: "localhost:3000"},
+					{Type: dfnet.TCP, Addr: "127.0.0.1:3000"},
+				})
 			},
 		},
 	}
