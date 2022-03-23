@@ -19,6 +19,7 @@ package rpcserver
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	cachev8 "github.com/go-redis/cache/v8"
@@ -93,7 +94,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster").First(&cdn, &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("CDNCluster").Preload("CDNCluster.SchedulerClusters.Schedulers").First(&cdn, &model.CDN{
 		HostName:     req.HostName,
 		CDNClusterID: uint(req.CdnClusterId),
 	}).Error; err != nil {
@@ -104,7 +105,12 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
-
+	var schedulers []*manager.ServiceInstance
+	for _, schedulerCluster := range cdn.CDNCluster.SchedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			schedulers = append(schedulers, &manager.ServiceInstance{Addr: fmt.Sprintf("%s:%d", scheduler.IP, scheduler.Port)})
+		}
+	}
 	pbCDN = manager.CDN{
 		Id:           uint64(cdn.ID),
 		HostName:     cdn.HostName,
@@ -121,6 +127,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 			Bio:    cdn.CDNCluster.BIO,
 			Config: config,
 		},
+		Schedulers: schedulers,
 	}
 
 	if err := s.cache.Once(&cachev8.Item{

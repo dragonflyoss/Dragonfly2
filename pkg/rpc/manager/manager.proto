@@ -45,6 +45,10 @@ message SecurityGroup {
   string proxy_domain = 5;
 }
 
+message ServiceInstance {
+  string addr = 1;
+}
+
 message CDN {
   uint64 id = 1;
   string host_name = 2;
@@ -56,6 +60,7 @@ message CDN {
   string state = 8;
   uint64 cdn_cluster_id = 9;
   CDNCluster cdn_cluster = 10;
+  repeated ServiceInstance schedulers = 12;
 }
 
 message GetCDNRequest {
