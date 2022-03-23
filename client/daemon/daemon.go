@@ -447,26 +447,30 @@ func (cd *clientDaemon) Serve() error {
 
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
-			select {
-			case <-time.After(cd.Option.AliveTime.Duration):
-				var keepalives = []clientutil.KeepAlive{
-					cd.StorageManager,
-					cd.RPCManager,
-				}
-				var keep bool
-				for _, keepalive := range keepalives {
-					if keepalive.Alive(cd.Option.AliveTime.Duration) {
-						keep = true
+			for {
+				select {
+				case <-time.After(cd.Option.AliveTime.Duration):
+					var keepalives = []clientutil.KeepAlive{
+						cd.StorageManager,
+						cd.RPCManager,
 					}
+					var keep bool
+					for _, keepalive := range keepalives {
+						if keepalive.Alive(cd.Option.AliveTime.Duration) {
+							keep = true
+							break
+						}
+					}
+					if !keep {
+						cd.Stop()
+						logger.Infof("alive time reached, stop daemon")
+						return nil
+					}
+				case <-cd.done:
+					logger.Infof("peer host done, stop watch alive time")
+					return nil
 				}
-				if !keep {
-					cd.Stop()
-					logger.Infof("alive time reached, stop daemon")
-				}
-			case <-cd.done:
-				logger.Infof("peer host done, stop watch alive time")
 			}
-			return nil
 		})
 	}
 
