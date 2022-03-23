@@ -125,6 +125,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	request.DstPid = dstPeer.PeerId
 	client, err := dfclient.SyncPieceTasks(ctx, dstPeer, request)
 	if err != nil {
+		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
 		return err
 	}
 
@@ -132,6 +133,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	// when remove legacy get piece grpc, can move this check into synchronizer.receive
 	piecePacket, err := client.Recv()
 	if err != nil {
+		s.peerTaskConductor.Warnf("receive from SyncPieceTasksClient error: %s, dest peer: %s", err, dstPeer.PeerId)
 		_ = client.CloseSend()
 		return err
 	}
@@ -165,14 +167,14 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 		if err == nil {
 			continue
 		}
+		legacyPeers = append(legacyPeers, peer)
 		// when err is codes.Unimplemented, fallback to legacy get piece grpc
 		stat, ok := status.FromError(err)
 		if ok && stat.Code() == codes.Unimplemented {
-			legacyPeers = append(legacyPeers, peer)
 			s.peerTaskConductor.Warnf("connect peer %s error: %s, fallback to legacy get piece grpc", peer.PeerId, err)
 		} else {
 			s.reportError(peer)
-			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented, did not fallback to legacy", peer.PeerId, err)
+			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented", peer.PeerId, err)
 		}
 	}
 	s.cleanStaleWorker(destPeers)
