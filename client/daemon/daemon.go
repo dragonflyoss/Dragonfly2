@@ -586,18 +586,24 @@ func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 
 // schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
 func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+	var schedulerClusterID uint64
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
+		// Check whether scheduler is in the same cluster
+		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
+			continue
+		}
+
 		// Check whether the ip can be reached
 		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
 		if err := ipReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
 			})
-
 			continue
 		}
 
@@ -606,6 +612,7 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 		if err := hostReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
