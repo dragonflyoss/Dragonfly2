@@ -35,6 +35,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -46,6 +48,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -92,6 +95,9 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			ContentLength: opt.contentLength,
 			TotalPiece:    pieceCount,
 		}, nil
+	})
+	daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemon.Daemon_SyncPieceTasksServer) error {
+		return status.Error(codes.Unimplemented, "TODO")
 	})
 	ln, _ := rpc.Listen(dfnet.NetAddr{
 		Type: "tcp",
