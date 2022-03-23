@@ -616,6 +616,115 @@ func TestSchedulerCluster(t *testing.T) {
 				assert.Equal(len(data), 4)
 			},
 		},
+		{
+			name: "match according to all conditions with the case insensitive",
+			schedulerClusters: []model.SchedulerCluster{
+				{
+					Name: "foo",
+					Scopes: map[string]interface{}{
+						"idc":      "IDC-1",
+						"location": "LOCATION-2",
+					},
+					SecurityGroup: model.SecurityGroup{
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "DOMAIN-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "foo",
+							State:    "active",
+						},
+					},
+				},
+				{
+					Name: "bar",
+					Scopes: map[string]interface{}{
+						"idc":      "IDC-1",
+						"location": "LOCATION-1",
+					},
+					SecurityGroup: model.SecurityGroup{
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "DOMAIN-1",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bar",
+							State:    "active",
+						},
+					},
+				},
+				{
+					Name: "baz",
+					Scopes: map[string]interface{}{
+						"idc":          "IDC-1",
+						"location":     "LOCATION-1|LOCATION-2",
+						"net_topology": "NET_TOPOLOGY-1",
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "baz",
+							State:    "active",
+						},
+					},
+				},
+				{
+					Name: "bax",
+					Scopes: map[string]interface{}{
+						"idc":          "IDC-1",
+						"location":     "LOCATION-2",
+						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bax",
+							State:    "active",
+						},
+					},
+					IsDefault: true,
+				},
+				{
+					Name: "bac",
+					Scopes: map[string]interface{}{
+						"idc":          "IDC-1",
+						"location":     "LOCATION-2",
+						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
+					},
+					SecurityGroup: model.SecurityGroup{
+						SecurityRules: []model.SecurityRule{
+							{
+								Domain: "DOMAIN-2",
+							},
+						},
+					},
+					Schedulers: []model.Scheduler{
+						{
+							HostName: "bac",
+							State:    "active",
+						},
+					},
+				},
+			},
+			conditions: map[string]string{
+				"security_domain": "domain-1",
+				"idc":             "idc-1|idc-2",
+				"location":        "location-1|location-2",
+				"net_topology":    "net_topology-1|net_topology-1",
+			},
+			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
+				assert := assert.New(t)
+				assert.Equal(data[0].Name, "bar")
+				assert.Equal(data[1].Name, "foo")
+				assert.Equal(data[2].Name, "baz")
+				assert.Equal(data[3].Name, "bax")
+				assert.Equal(len(data), 4)
+			},
+		},
 	}
 
 	for _, tc := range tests {
