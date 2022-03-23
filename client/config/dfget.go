@@ -167,6 +167,12 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
+	if cfg.URL == "" && len(args) == 0 {
+		return fmt.Errorf("url must be specified")
+	}
+	if cfg.URL == "" {
+		cfg.URL = args[0]
+	}
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
@@ -182,9 +188,6 @@ func (cfg *ClientOption) Convert(args []string) error {
 			return fmt.Errorf("get absolute path[%s] error: %v", cfg.Output, err)
 		}
 		cfg.Output = absPath
-	}
-	if cfg.URL == "" && len(args) > 0 {
-		cfg.URL = args[0]
 	}
 
 	if cfg.Digest != "" {
