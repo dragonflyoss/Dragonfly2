@@ -36,8 +36,11 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 	testifyrequire "github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -51,6 +54,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -59,6 +63,11 @@ import (
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
+
+func TestMain(m *testing.M) {
+	logger.SetLevel(zapcore.DebugLevel)
+	os.Exit(m.Run())
+}
 
 type componentsOption struct {
 	taskID             string
@@ -71,8 +80,10 @@ type componentsOption struct {
 	backSource         bool
 	scope              base.SizeScope
 	content            []byte
+	getPieceTasks      bool
 }
 
+//go:generate mockgen -package mock_server_grpc -source ../../../pkg/rpc/dfdaemon/dfdaemon_grpc.pb.go -destination ../test/mock/daemongrpc/daemon_server_grpc.go
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
@@ -86,37 +97,72 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		pieces[i] = digestutils.Md5Reader(io.LimitReader(r, int64(opt.pieceSize)))
 	}
 	totalDigests := digestutils.Sha256(pieces...)
-	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
-		DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
-			var tasks []*base.PieceInfo
-			for i := uint32(0); i < request.Limit; i++ {
-				start := opt.pieceSize * (request.StartNum + i)
-				if int64(start)+1 > opt.contentLength {
+	genPiecePacket := func(request *base.PieceTaskRequest) *base.PiecePacket {
+		var tasks []*base.PieceInfo
+		for i := uint32(0); i < request.Limit; i++ {
+			start := opt.pieceSize * (request.StartNum + i)
+			if int64(start)+1 > opt.contentLength {
+				break
+			}
+			size := opt.pieceSize
+			if int64(start+opt.pieceSize) > opt.contentLength {
+				size = uint32(opt.contentLength) - start
+			}
+			tasks = append(tasks,
+				&base.PieceInfo{
+					PieceNum:    int32(request.StartNum + i),
+					RangeStart:  uint64(start),
+					RangeSize:   size,
+					PieceMd5:    pieces[request.StartNum+i],
+					PieceOffset: 0,
+					PieceStyle:  0,
+				})
+		}
+		return &base.PiecePacket{
+			TaskId:        request.TaskId,
+			DstPid:        "peer-x",
+			PieceInfos:    tasks,
+			ContentLength: opt.contentLength,
+			TotalPiece:    int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize))),
+			PieceMd5Sign:  totalDigests,
+		}
+	}
+	if opt.getPieceTasks {
+		daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
+			DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+				return genPiecePacket(request), nil
+			})
+		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemon.Daemon_SyncPieceTasksServer) error {
+			return status.Error(codes.Unimplemented, "TODO")
+		})
+	} else {
+		daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
+			DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+				return nil, status.Error(codes.Unimplemented, "TODO")
+			})
+		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(s dfdaemon.Daemon_SyncPieceTasksServer) error {
+			request, err := s.Recv()
+			if err != nil {
+				return err
+			}
+			if err = s.Send(genPiecePacket(request)); err != nil {
+				return err
+			}
+			for {
+				request, err = s.Recv()
+				if err == io.EOF {
 					break
 				}
-				size := opt.pieceSize
-				if int64(start+opt.pieceSize) > opt.contentLength {
-					size = uint32(opt.contentLength) - start
+				if err != nil {
+					return err
 				}
-				tasks = append(tasks,
-					&base.PieceInfo{
-						PieceNum:    int32(request.StartNum + i),
-						RangeStart:  uint64(start),
-						RangeSize:   size,
-						PieceMd5:    pieces[request.StartNum+i],
-						PieceOffset: 0,
-						PieceStyle:  0,
-					})
+				if err = s.Send(genPiecePacket(request)); err != nil {
+					return err
+				}
 			}
-			return &base.PiecePacket{
-				TaskId:        request.TaskId,
-				DstPid:        "peer-x",
-				PieceInfos:    tasks,
-				ContentLength: opt.contentLength,
-				TotalPiece:    int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize))),
-				PieceMd5Sign:  totalDigests,
-			}, nil
+			return nil
 		})
+	}
 	ln, _ := rpc.Listen(dfnet.NetAddr{
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
@@ -289,6 +335,7 @@ type testSpec struct {
 	sizeScope          base.SizeScope
 	peerID             string
 	url                string
+	legacyFeature      bool
 	// when urlGenerator is not nil, use urlGenerator instead url
 	// it's useful for httptest server
 	urlGenerator func(ts *testSpec) string
@@ -324,7 +371,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		return downloader
 	}
 
-	taskTypes := []int{taskTypeFile, taskTypeStream, taskTypeConductor}
+	taskTypes := []int{taskTypeConductor, taskTypeFile, taskTypeStream}
+	taskTypeNames := []string{"conductor", "file", "stream"}
 
 	testCases := []testSpec{
 		{
@@ -500,72 +548,77 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		t.Run(_tc.name, func(t *testing.T) {
 			assert := testifyassert.New(t)
 			require := testifyrequire.New(t)
-			for _, typ := range taskTypes {
-				// dup a new test case with the task type
-				logger.Infof("-------------------- test %s - type %d, started --------------------", _tc.name, typ)
-				tc := _tc
-				tc.taskType = typ
-				func() {
-					ctrl := gomock.NewController(t)
-					defer ctrl.Finish()
-					mockContentLength := len(tc.taskData)
+			for _, legacy := range []bool{true, false} {
+				for _, typ := range taskTypes {
+					// dup a new test case with the task type
+					logger.Infof("-------------------- test %s - type %s, legacy feature: %v started --------------------",
+						_tc.name, taskTypeNames[typ], legacy)
+					tc := _tc
+					tc.taskType = typ
+					tc.legacyFeature = legacy
+					func() {
+						ctrl := gomock.NewController(t)
+						defer ctrl.Finish()
+						mockContentLength := len(tc.taskData)
 
-					urlMeta := &base.UrlMeta{
-						Tag: "d7y-test",
-					}
+						urlMeta := &base.UrlMeta{
+							Tag: "d7y-test",
+						}
 
-					if tc.httpRange != nil {
-						urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
-					}
+						if tc.httpRange != nil {
+							urlMeta.Range = strings.TrimLeft(tc.httpRange.String(), "bytes=")
+						}
 
-					if tc.urlGenerator != nil {
-						tc.url = tc.urlGenerator(&tc)
-					}
-					taskID := idgen.TaskID(tc.url, urlMeta)
+						if tc.urlGenerator != nil {
+							tc.url = tc.urlGenerator(&tc)
+						}
+						taskID := idgen.TaskID(tc.url, urlMeta)
 
-					var (
-						downloader   PieceDownloader
-						sourceClient source.ResourceClient
-					)
+						var (
+							downloader   PieceDownloader
+							sourceClient source.ResourceClient
+						)
 
-					if tc.mockPieceDownloader != nil {
-						downloader = tc.mockPieceDownloader(ctrl, tc.taskData, tc.pieceSize)
-					}
+						if tc.mockPieceDownloader != nil {
+							downloader = tc.mockPieceDownloader(ctrl, tc.taskData, tc.pieceSize)
+						}
 
-					if tc.mockHTTPSourceClient != nil {
-						source.UnRegister("http")
-						defer func() {
-							// reset source client
+						if tc.mockHTTPSourceClient != nil {
 							source.UnRegister("http")
-							require.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
-						}()
-						// replace source client
-						sourceClient = tc.mockHTTPSourceClient(t, ctrl, tc.httpRange, tc.taskData, tc.url)
-						require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
-					}
+							defer func() {
+								// reset source client
+								source.UnRegister("http")
+								require.Nil(source.Register("http", httpprotocol.NewHTTPSourceClient(), httpprotocol.Adapter))
+							}()
+							// replace source client
+							sourceClient = tc.mockHTTPSourceClient(t, ctrl, tc.httpRange, tc.taskData, tc.url)
+							require.Nil(source.Register("http", sourceClient, httpprotocol.Adapter))
+						}
 
-					option := componentsOption{
-						taskID:             taskID,
-						contentLength:      int64(mockContentLength),
-						pieceSize:          uint32(tc.pieceSize),
-						pieceParallelCount: tc.pieceParallelCount,
-						pieceDownloader:    downloader,
-						sourceClient:       sourceClient,
-						content:            tc.taskData,
-						scope:              tc.sizeScope,
-						peerPacketDelay:    tc.peerPacketDelay,
-						backSource:         tc.backSource,
-					}
-					// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
-					if tc.taskType == taskTypeConductor {
-						option.peerPacketDelay = []time.Duration{time.Second}
-					}
-					mm := setupMockManager(ctrl, &tc, option)
-					defer mm.CleanUp()
+						option := componentsOption{
+							taskID:             taskID,
+							contentLength:      int64(mockContentLength),
+							pieceSize:          uint32(tc.pieceSize),
+							pieceParallelCount: tc.pieceParallelCount,
+							pieceDownloader:    downloader,
+							sourceClient:       sourceClient,
+							content:            tc.taskData,
+							scope:              tc.sizeScope,
+							peerPacketDelay:    tc.peerPacketDelay,
+							backSource:         tc.backSource,
+							getPieceTasks:      tc.legacyFeature,
+						}
+						// keep peer task running in enough time to check "getOrCreatePeerTaskConductor" always return same
+						if tc.taskType == taskTypeConductor {
+							option.peerPacketDelay = []time.Duration{time.Second}
+						}
+						mm := setupMockManager(ctrl, &tc, option)
+						defer mm.CleanUp()
 
-					tc.run(assert, require, mm, urlMeta)
-				}()
-				logger.Infof("-------------------- test %s - type %d, finished --------------------", _tc.name, typ)
+						tc.run(assert, require, mm, urlMeta)
+					}()
+					logger.Infof("-------------------- test %s - type %s, finished --------------------", _tc.name, taskTypeNames[typ])
+				}
 			}
 		})
 	}
@@ -665,7 +718,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	go func(ptc *peerTaskConductor) {
 		defer wg.Done()
 		select {
-		case <-time.After(10 * time.Second):
+		case <-time.After(5 * time.Minute):
 			ptc.Fail()
 		case <-ptc.successCh:
 			return

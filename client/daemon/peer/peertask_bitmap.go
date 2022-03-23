@@ -56,6 +56,11 @@ func (b *Bitmap) Set(i int32) {
 	b.bits[i/8] |= 1 << uint(7-i%8)
 }
 
+func (b *Bitmap) Clean(i int32) {
+	b.settled.Dec()
+	b.bits[i/8] ^= 1 << uint(7-i%8)
+}
+
 func (b *Bitmap) Settled() int32 {
 	return b.settled.Load()
 }
