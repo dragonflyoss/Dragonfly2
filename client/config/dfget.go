@@ -173,6 +173,9 @@ func (cfg *ClientOption) Convert(args []string) error {
 	if cfg.URL == "" {
 		cfg.URL = args[0]
 	}
+	if strings.LastIndexByte(cfg.URL, '/') < 0 {
+		cfg.URL = fmt.Sprintf("http://%s", cfg.URL)
+	}
 	if stringutils.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
