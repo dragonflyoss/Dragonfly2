@@ -440,3 +440,7 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 
 	logger.GrpcLogger.Infof("update grpc client addresses %v", addresses)
 }
+
+func (conn *Connection) GetState() []dfnet.NetAddr {
+	return conn.serverNodes
+}
