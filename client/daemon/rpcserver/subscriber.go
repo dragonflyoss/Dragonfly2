@@ -21,6 +21,9 @@ import (
 	"io"
 	"sync"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -53,6 +56,9 @@ func sendExistPieces(
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
 	sendMap map[int32]struct{}) (total int32, sent int, err error) {
+	if request.Limit <= 0 {
+		request.Limit = 16
+	}
 	for {
 		pp, err := get(ctx, request)
 		if err != nil {
@@ -91,8 +97,15 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 			return
 		}
 		if err != nil {
-			s.Errorf("SyncPieceTasks receive error: %s", err)
-			return
+			stat, ok := status.FromError(err)
+			if !ok {
+				s.Errorf("SyncPieceTasks receive error: %s", err)
+				return
+			}
+			if stat.Code() == codes.Canceled {
+				s.Debugf("SyncPieceTasks canceled, exit receiving")
+				return
+			}
 		}
 		s.Debugf("receive request: %#v", request)
 		pp, err := s.getPieces(s.sync.Context(), request)
@@ -141,10 +154,19 @@ loop:
 			}
 			s.Lock()
 			total, _, err := s.sendExistPieces(uint32(info.Num))
+
 			if err != nil {
-				s.Unlock()
-				s.Errorf("sent exist pieces error: %s", err)
-				return err
+				stat, ok := status.FromError(err)
+				if !ok {
+					s.Unlock()
+					s.Errorf("sent exist pieces error: %s", err)
+					return err
+				}
+				if stat.Code() == codes.Canceled {
+					s.Debugf("SyncPieceTasks canceled, exit sending")
+					s.Unlock()
+					return nil
+				}
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
@@ -168,9 +190,17 @@ loop:
 			}
 			total, _, err := s.sendExistPieces(nextPieceNum)
 			if err != nil {
-				s.Unlock()
-				s.Errorf("sent exist pieces error: %s", err)
-				return err
+				stat, ok := status.FromError(err)
+				if !ok {
+					s.Unlock()
+					s.Errorf("sent exist pieces error: %s", err)
+					return err
+				}
+				if stat.Code() == codes.Canceled {
+					s.Debugf("SyncPieceTasks canceled, exit sending")
+					s.Unlock()
+					return nil
+				}
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
