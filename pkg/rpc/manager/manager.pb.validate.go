@@ -225,6 +225,21 @@ func (m *CDN) Validate() error {
 		}
 	}
 
+	for idx, item := range m.GetSchedulers() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return CDNValidationError{
+					field:  fmt.Sprintf("Schedulers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	return nil
 }
 
