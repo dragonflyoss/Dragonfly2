@@ -564,7 +564,8 @@ func (cd *clientDaemon) Stop() {
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Infof("scheduler addresses deep equal: %v", ips)
+		logger.Infof("scheduler addresses deep equal: %v, used: %#v",
+			ips, cd.schedulerClient.GetState())
 		return
 	}
 
@@ -575,7 +576,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
 
-	logger.Infof("scheduler addresses have been updated: %v", ips)
+	logger.Infof("scheduler addresses have been updated: %#v", addrs)
 }
 
 // getSchedulerIPs get ips by schedulers.

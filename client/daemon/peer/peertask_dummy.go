@@ -55,6 +55,10 @@ func (d *dummySchedulerClient) Close() error {
 func (d *dummySchedulerClient) UpdateState(addrs []dfnet.NetAddr) {
 }
 
+func (d *dummySchedulerClient) GetState() []dfnet.NetAddr {
+	return nil
+}
+
 type dummyPeerPacketStream struct {
 }
 

@@ -58,7 +58,9 @@ type SchedulerClient interface {
 
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
-	UpdateState(addrs []dfnet.NetAddr)
+	UpdateState([]dfnet.NetAddr)
+
+	GetState() []dfnet.NetAddr
 
 	Close() error
 }
@@ -239,5 +241,3 @@ func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarg
 	}
 	return
 }
-
-var _ SchedulerClient = (*schedulerClient)(nil)

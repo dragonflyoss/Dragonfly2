@@ -52,6 +52,20 @@ func (mr *MockSchedulerClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSchedulerClient)(nil).Close))
 }
 
+// GetState mocks base method.
+func (m *MockSchedulerClient) GetState() []dfnet.NetAddr {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetState")
+	ret0, _ := ret[0].([]dfnet.NetAddr)
+	return ret0
+}
+
+// GetState indicates an expected call of GetState.
+func (mr *MockSchedulerClientMockRecorder) GetState() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockSchedulerClient)(nil).GetState))
+}
+
 // LeaveTask mocks base method.
 func (m *MockSchedulerClient) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
@@ -131,13 +145,13 @@ func (mr *MockSchedulerClientMockRecorder) ReportPieceResult(arg0, arg1, arg2 in
 }
 
 // UpdateState mocks base method.
-func (m *MockSchedulerClient) UpdateState(addrs []dfnet.NetAddr) {
+func (m *MockSchedulerClient) UpdateState(arg0 []dfnet.NetAddr) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateState", addrs)
+	m.ctrl.Call(m, "UpdateState", arg0)
 }
 
 // UpdateState indicates an expected call of UpdateState.
-func (mr *MockSchedulerClientMockRecorder) UpdateState(addrs interface{}) *gomock.Call {
+func (mr *MockSchedulerClientMockRecorder) UpdateState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockSchedulerClient)(nil).UpdateState), addrs)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockSchedulerClient)(nil).UpdateState), arg0)
 }
