@@ -285,9 +285,10 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		port int
 		err  error
 	)
-	if opt.TCPListen != nil {
-		ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
+	if opt.TCPListen == nil {
+		return nil, -1, errors.New("empty tcp listen option")
 	}
+	ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -326,11 +327,13 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
-	// TODO remove this field, and use directly dfpath.DaemonSockPath
-	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
+	}
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
+	if cd.Option.Download.DownloadGRPC.UnixListen.Socket == "" {
+		return errors.New("download grpc unix listen socket is empty")
 	}
 	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
