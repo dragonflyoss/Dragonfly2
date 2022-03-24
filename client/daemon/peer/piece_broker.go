@@ -24,8 +24,11 @@ type pieceBroker struct {
 }
 
 type PieceInfo struct {
-	Num      int32
-	Finished bool
+	// Num is the current piece num
+	Num int32
+	// OrderedNum is the max pieces num with ordered, eg: 0 1 2 3 5 7 8, the OrderedNum is 3
+	OrderedNum int32
+	Finished   bool
 }
 
 func newPieceBroker() *pieceBroker {
@@ -38,7 +41,12 @@ func newPieceBroker() *pieceBroker {
 }
 
 func (b *pieceBroker) Start() {
-	subs := map[chan *PieceInfo]struct{}{}
+	var (
+		orderedNum int32 = -1
+		subs             = map[chan *PieceInfo]struct{}{}
+		pieces           = map[int32]struct{}{}
+	)
+
 	for {
 		select {
 		case <-b.stopCh:
@@ -51,6 +59,19 @@ func (b *pieceBroker) Start() {
 		case msgCh := <-b.unsubCh:
 			delete(subs, msgCh)
 		case msg := <-b.publishCh:
+			pieces[msg.Num] = struct{}{}
+			if orderedNum+1 == msg.Num {
+				orderedNum++
+				// search cached pieces
+				for {
+					if _, ok := pieces[orderedNum+1]; ok {
+						orderedNum++
+					} else {
+						break
+					}
+				}
+			}
+			msg.OrderedNum = orderedNum
 			for msgCh := range subs {
 				// msgCh is buffered, use non-blocking send to protect the broker
 				select {
