@@ -93,7 +93,9 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster").First(&cdn, &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("CDNCluster").Preload("CDNCluster.SchedulerClusters.Schedulers", &model.Scheduler{
+		State: model.SchedulerStateActive,
+	}).First(&cdn, &model.CDN{
 		HostName:     req.HostName,
 		CDNClusterID: uint(req.CdnClusterId),
 	}).Error; err != nil {
@@ -103,6 +105,21 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	config, err := cdn.CDNCluster.Config.MarshalJSON()
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	var pbSchedulers []*manager.Scheduler
+	for _, schedulerCluster := range cdn.CDNCluster.SchedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			pbSchedulers = append(pbSchedulers, &manager.Scheduler{
+				Id:       uint64(scheduler.ID),
+				HostName: scheduler.HostName,
+				Idc:      scheduler.IDC,
+				Location: scheduler.Location,
+				Ip:       scheduler.IP,
+				Port:     scheduler.Port,
+				State:    scheduler.State,
+			})
+		}
 	}
 
 	pbCDN = manager.CDN{
@@ -121,6 +138,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 			Bio:    cdn.CDNCluster.BIO,
 			Config: config,
 		},
+		Schedulers: pbSchedulers,
 	}
 
 	if err := s.cache.Once(&cachev8.Item{
