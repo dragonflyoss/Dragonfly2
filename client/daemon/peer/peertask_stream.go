@@ -169,89 +169,91 @@ func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
 	}()
 	var (
 		desired int32
-		cur     *PieceInfo
-		wrote   int64
+		piece   *PieceInfo
 		err     error
-		cache   = make(map[int32]bool)
 	)
-	// update first piece to cache and check cur with desired
-	cache[firstPiece.Num] = true
-	cur = firstPiece
+	piece = firstPiece
 	for {
-		if desired == cur.Num {
-			for {
-				delete(cache, desired)
-				_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
-				span.SetAttributes(config.AttributePiece.Int(int(desired)))
-				wrote, err = s.writeOnePiece(pw, desired)
-				if err != nil {
-					span.RecordError(err)
-					span.End()
-					s.Errorf("write to pipe error: %s", err)
-					_ = pw.CloseWithError(err)
-					return
-				}
-				span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
-				s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
-				span.End()
-				desired++
-				cached := cache[desired]
-				if !cached {
-					break
-				}
-			}
-		} else {
-			// not desired piece, cache it
-			cache[cur.Num] = true
-			if cur.Num < desired {
-				s.Warnf("piece number should be equal or greater than %d, received piece number: %d", desired, cur.Num)
+		if desired == piece.Num || desired <= piece.OrderedNum {
+			desired, err = s.writeOrderedPieces(desired, piece.OrderedNum, pw)
+			if err != nil {
+				return
 			}
 		}
 
 		select {
 		case <-s.ctx.Done():
-			s.Errorf("context done due to: %s", s.ctx.Err())
-			s.span.RecordError(s.ctx.Err())
-			if err = pw.CloseWithError(s.ctx.Err()); err != nil {
-				s.Errorf("CloseWithError failed: %s", err)
-			}
-			return
-		case cur = <-s.pieceCh:
-			// FIXME check missing piece for non-block broker channel
+			err = fmt.Errorf("context done due to: %s", s.ctx.Err())
+			s.closeWithError(pw, err)
+			break
+		case piece = <-s.pieceCh:
 			continue
 		case <-s.peerTaskConductor.failCh:
-			ptError := fmt.Errorf("context done due to peer task fail: %d/%s",
+			err = fmt.Errorf("context done due to peer task fail: %d/%s",
 				s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
-			s.Error(ptError.Error())
-			s.span.RecordError(ptError)
-			if err = pw.CloseWithError(ptError); err != nil {
-				s.Errorf("CloseWithError failed: %s", err)
-			}
-			return
+			s.closeWithError(pw, err)
+			break
 		case <-s.peerTaskConductor.successCh:
-			for {
-				// all data wrote to local storage, and all data wrote to pipe write
-				if s.peerTaskConductor.readyPieces.Settled() == desired {
-					s.Debugf("all %d pieces wrote to pipe", desired)
-					pw.Close()
-					return
-				}
-				_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
-				span.SetAttributes(config.AttributePiece.Int(int(desired)))
-				wrote, err = s.writeOnePiece(pw, desired)
-				if err != nil {
-					span.RecordError(err)
-					span.End()
-					s.span.RecordError(err)
-					s.Errorf("write to pipe error: %s", err)
-					_ = pw.CloseWithError(err)
-					return
-				}
-				span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
-				span.End()
-				s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
-				desired++
-			}
+			s.writeRemainingPieces(desired, pw)
+			break
 		}
+	}
+}
+
+func (s *streamTask) writeOrderedPieces(desired, orderedNum int32, pw *io.PipeWriter) (int32, error) {
+	for {
+		_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+		span.SetAttributes(config.AttributePiece.Int(int(desired)))
+		wrote, err := s.writeOnePiece(pw, desired)
+		if err != nil {
+			span.RecordError(err)
+			span.End()
+			s.Errorf("write to pipe error: %s", err)
+			_ = pw.CloseWithError(err)
+			return desired, err
+		}
+		span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
+		s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+		span.End()
+
+		desired++
+		if desired > orderedNum {
+			break
+		}
+	}
+	return desired, nil
+}
+
+func (s *streamTask) writeRemainingPieces(desired int32, pw *io.PipeWriter) {
+	for {
+		// all data wrote to local storage, and all data wrote to pipe write
+		if s.peerTaskConductor.readyPieces.Settled() == desired {
+			s.Debugf("all %d pieces wrote to pipe", desired)
+			pw.Close()
+			return
+		}
+		_, span := tracer.Start(s.ctx, config.SpanWriteBackPiece)
+		span.SetAttributes(config.AttributePiece.Int(int(desired)))
+		wrote, err := s.writeOnePiece(pw, desired)
+		if err != nil {
+			span.RecordError(err)
+			span.End()
+			s.span.RecordError(err)
+			s.Errorf("write to pipe error: %s", err)
+			_ = pw.CloseWithError(err)
+			return
+		}
+		span.SetAttributes(config.AttributePieceSize.Int(int(wrote)))
+		span.End()
+		s.Debugf("wrote piece %d to pipe, size %d", desired, wrote)
+		desired++
+	}
+}
+
+func (s *streamTask) closeWithError(pw *io.PipeWriter, err error) {
+	s.Error(err)
+	s.span.RecordError(err)
+	if err = pw.CloseWithError(err); err != nil {
+		s.Errorf("CloseWithError failed: %s", err)
 	}
 }
