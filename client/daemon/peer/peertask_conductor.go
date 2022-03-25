@@ -561,7 +561,7 @@ loop:
 			break loop
 		}
 
-		pt.Debugf("receive peerPacket %v for peer %s", peerPacket, pt.peerID)
+		pt.Debugf("receive peerPacket %v", peerPacket)
 		if peerPacket.Code != base.Code_Success {
 			if peerPacket.Code == base.Code_SchedNeedBackSource {
 				pt.needBackSource.Store(true)
@@ -783,6 +783,7 @@ loop:
 		default:
 		}
 
+	retry:
 		// 2, try to get pieces
 		pt.Debugf("try to get pieces, number: %d, limit: %d", num, limit)
 		piecePacket, err := pt.pieceTaskPoller.preparePieceTasks(
@@ -823,6 +824,7 @@ loop:
 		}
 		// just need one piece
 		limit = 1
+		goto retry
 	}
 }
 
@@ -978,6 +980,7 @@ func (pt *peerTaskConductor) waitFailedPiece() (int32, bool) {
 	if pt.isCompleted() {
 		return -1, false
 	}
+wait:
 	// use no default branch select to wait failed piece or exit
 	select {
 	case <-pt.successCh:
@@ -989,6 +992,17 @@ func (pt *peerTaskConductor) waitFailedPiece() (int32, bool) {
 	case failed := <-pt.failedPieceCh:
 		pt.Warnf("download piece/%d failed, retry", failed)
 		return failed, true
+	case _, ok := <-pt.peerPacketReady:
+		if ok {
+			// preparePieceTasksByPeer func already send piece result with error
+			pt.Infof("new peer client ready, but all pieces are already downloading, just wait failed pieces")
+			goto wait
+		}
+		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
+		pt.Infof("start download from source due to base.Code_SchedNeedBackSource")
+		pt.span.AddEvent("back source due to scheduler says need back source")
+		pt.backSource()
+		return -1, false
 	}
 }
 
@@ -1056,6 +1070,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 				StartNum: uint32(request.piece.PieceNum),
 				Limit:    1,
 			})
+		// Deprecated
 		// send to fail chan and retry
 		// try to send directly first, if failed channel is busy, create a new goroutine to do this
 		select {
