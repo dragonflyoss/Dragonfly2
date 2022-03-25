@@ -544,12 +544,7 @@ func (m *PieceResult) Validate() error {
 
 	// no validation rules for Success
 
-	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PieceResultValidationError{
-			field:  "Code",
-			reason: "value must be one of the defined enum values",
-		}
-	}
+	// no validation rules for Code
 
 	if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
@@ -673,12 +668,7 @@ func (m *PeerPacket) Validate() error {
 
 	}
 
-	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PeerPacketValidationError{
-			field:  "Code",
-			reason: "value must be one of the defined enum values",
-		}
-	}
+	// no validation rules for Code
 
 	return nil
 }
@@ -790,12 +780,7 @@ func (m *PeerResult) Validate() error {
 
 	// no validation rules for Success
 
-	if _, ok := base.Code_name[int32(m.GetCode())]; !ok {
-		return PeerResultValidationError{
-			field:  "Code",
-			reason: "value must be one of the defined enum values",
-		}
-	}
+	// no validation rules for Code
 
 	// no validation rules for TotalPieceCount
 
