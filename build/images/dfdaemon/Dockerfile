@@ -14,12 +14,19 @@ COPY . /go/src/d7y.io/dragonfly/v2
 
 RUN make build-dfget && make install-dfget
 
+FROM alpine:3.14 as health
+
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.8 && \
+    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    chmod +x /bin/grpc_health_probe
+
 FROM ${BASE_IMAGE}
 
 ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
 COPY --from=builder /opt/dragonfly/bin/dfget /opt/dragonfly/bin/dfget
+COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
 EXPOSE 65001
 
