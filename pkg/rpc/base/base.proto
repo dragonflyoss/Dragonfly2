@@ -79,7 +79,7 @@ enum SizeScope{
   TINY = 2;
 }
 message GrpcDfError {
-  Code code = 1 [(validate.rules).enum.defined_only = true];
+  Code code = 1;
   string message = 2;
 }
 
