@@ -218,7 +218,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check
-	r.GET("/healthy/*action", h.GetHealth)
+	r.GET("/healthy", h.GetHealth)
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

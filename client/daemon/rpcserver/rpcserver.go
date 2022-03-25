@@ -26,6 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -66,8 +68,12 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storage
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
 	}
+
 	svr.downloadServer = dfdaemonserver.New(svr, downloadOpts...)
+	healthpb.RegisterHealthServer(svr.downloadServer, health.NewServer())
+
 	svr.peerServer = dfdaemonserver.New(svr, peerOpts...)
+	healthpb.RegisterHealthServer(svr.peerServer, health.NewServer())
 	return svr, nil
 }
 
