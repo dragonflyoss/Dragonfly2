@@ -41,12 +41,7 @@ func (m *GrpcDfError) Validate() error {
 		return nil
 	}
 
-	if _, ok := Code_name[int32(m.GetCode())]; !ok {
-		return GrpcDfErrorValidationError{
-			field:  "Code",
-			reason: "value must be one of the defined enum values",
-		}
-	}
+	// no validation rules for Code
 
 	// no validation rules for Message
 
