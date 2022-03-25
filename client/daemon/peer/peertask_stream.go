@@ -182,20 +182,20 @@ func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
 		}
 
 		select {
+		case piece = <-s.pieceCh:
+			continue
+		case <-s.peerTaskConductor.successCh:
+			s.writeRemainingPieces(desired, pw)
+			return
 		case <-s.ctx.Done():
 			err = fmt.Errorf("context done due to: %s", s.ctx.Err())
 			s.closeWithError(pw, err)
-			break
-		case piece = <-s.pieceCh:
-			continue
+			return
 		case <-s.peerTaskConductor.failCh:
 			err = fmt.Errorf("context done due to peer task fail: %d/%s",
 				s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
 			s.closeWithError(pw, err)
-			break
-		case <-s.peerTaskConductor.successCh:
-			s.writeRemainingPieces(desired, pw)
-			break
+			return
 		}
 	}
 }
