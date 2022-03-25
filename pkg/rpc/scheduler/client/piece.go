@@ -14,40 +14,31 @@
  * limitations under the License.
  */
 
-package scheduler
+package client
 
 import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func NewZeroPieceResult(taskID, peerID string) *PieceResult {
-	return &PieceResult{
+func NewBeginOfPiece(taskID, peerID string) *scheduler.PieceResult {
+	return &scheduler.PieceResult{
 		TaskId: taskID,
 		SrcPid: peerID,
 		PieceInfo: &base.PieceInfo{
-			PieceNum:    common.BeginOfPiece,
-			RangeStart:  0,
-			RangeSize:   0,
-			PieceMd5:    "",
-			PieceOffset: 0,
-			PieceStyle:  0,
+			PieceNum: common.BeginOfPiece,
 		},
 	}
 }
 
-func NewEndPieceResult(taskID, peerID string, finishedCount int32) *PieceResult {
-	return &PieceResult{
+func NewEndOfPiece(taskID, peerID string, finishedCount int32) *scheduler.PieceResult {
+	return &scheduler.PieceResult{
 		TaskId:        taskID,
 		SrcPid:        peerID,
 		FinishedCount: finishedCount,
 		PieceInfo: &base.PieceInfo{
-			PieceNum:    common.EndOfPiece,
-			RangeStart:  0,
-			RangeSize:   0,
-			PieceMd5:    "",
-			PieceOffset: 0,
-			PieceStyle:  0,
+			PieceNum: common.EndOfPiece,
 		},
 	}
 }
