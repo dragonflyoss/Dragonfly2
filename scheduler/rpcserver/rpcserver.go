@@ -20,6 +20,8 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -42,7 +44,10 @@ type Server struct {
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+
+	// Register servers on grpc server
 	scheduler.RegisterSchedulerServer(grpcServer, svr)
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 

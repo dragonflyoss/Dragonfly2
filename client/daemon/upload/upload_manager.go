@@ -73,6 +73,10 @@ func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 
 func (um *uploadManager) initRouter() {
 	r := mux.NewRouter()
+	// Health Check
+	r.HandleFunc("/healthy", um.handleHealth).Methods("GET")
+
+	// Peer download task
 	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", um.handleUpload).Queries("peerId", "{.*}").Methods("GET")
 	um.Server.Handler = r
 }
@@ -83,6 +87,11 @@ func (um *uploadManager) Serve(lis net.Listener) error {
 
 func (um *uploadManager) Stop() error {
 	return um.Server.Shutdown(context.Background())
+}
+
+// handleHealth uses to check server health.
+func (um *uploadManager) handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
 
 // handleUpload uses to upload a task file when other peers download from it.
