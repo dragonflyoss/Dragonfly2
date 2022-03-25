@@ -1315,7 +1315,7 @@ func (pt *peerTaskConductor) done() {
 
 	// send EOF piece result to scheduler
 	err := pt.peerPacketStream.Send(
-		scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
+		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
 	err = pt.schedulerClient.ReportPeerResult(
@@ -1362,7 +1362,7 @@ func (pt *peerTaskConductor) fail() {
 
 	// send EOF piece result to scheduler
 	err := pt.peerPacketStream.Send(
-		scheduler.NewEndPieceResult(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
+		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
 	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(pt.ctx))
