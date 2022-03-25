@@ -23,6 +23,8 @@ import (
 
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -52,7 +54,10 @@ type proxy struct {
 
 func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+
+	// Register servers on grpc server
 	cdnsystem.RegisterSeederServer(grpcServer, &proxy{server: seederServer})
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 

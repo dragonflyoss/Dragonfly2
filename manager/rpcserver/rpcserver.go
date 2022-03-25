@@ -30,6 +30,8 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
@@ -76,7 +78,9 @@ func New(database *database.Database, cache *cache.Cache, searcher searcher.Sear
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
 	}, opts...)...)
 
+	// Register servers on grpc server
 	manager.RegisterManagerServer(grpcServer, server)
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 
