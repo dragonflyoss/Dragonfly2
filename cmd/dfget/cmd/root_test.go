@@ -39,30 +39,30 @@ func TestInitDaemonArgs(t *testing.T) {
 	}
 
 	// Test daemon args with workhome and without logdir
-	dfgetConfig.WorkHome = "/tmp"
+	dfgetConfig.WorkHome = "/workhome1"
 	daemonArgs = initDaemonArgs(dfgetConfig)
-	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--workhome", "/tmp")) == false {
-		t.Errorf("Expected %v, got %v", append(baseArgs, "--workhome", "/tmp"), daemonArgs)
+	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--workhome", "/workhome1")) == false {
+		t.Errorf("Expected %v, got %v", append(baseArgs, "--workhome", "/workhome1"), daemonArgs)
 	}
 	// unset workhome
 	dfgetConfig.WorkHome = ""
 
 	// Test daemon args with logdir and without workhome
-	dfgetConfig.LogDir = "/tmp"
+	dfgetConfig.LogDir = "/logdir1"
 	daemonArgs = initDaemonArgs(dfgetConfig)
-	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--logdir", "/tmp")) == false {
-		t.Errorf("Expected %v, got %v", append(baseArgs, "--logdir", "/tmp"), daemonArgs)
+	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--logdir", "/logdir1")) == false {
+		t.Errorf("Expected %v, got %v", append(baseArgs, "--logdir", "/logdir1"), daemonArgs)
 	}
 
 	// unset logdir
 	dfgetConfig.LogDir = ""
 
 	// Test daemon args with workhome and logdir
-	dfgetConfig.WorkHome = "/tmp"
-	dfgetConfig.LogDir = "/tmp"
+	dfgetConfig.WorkHome = "/workhome2"
+	dfgetConfig.LogDir = "/logdir2"
 
 	daemonArgs = initDaemonArgs(dfgetConfig)
-	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--workhome", "/tmp", "--logdir", "/tmp")) == false {
+	if reflect.DeepEqual(daemonArgs, append(baseArgs, "--workhome", "/workhome2", "--logdir", "/logdir2")) == false {
 		t.Errorf("Expected %v, got %v", append(baseArgs, "--workhome", "/tmp", "--logdir", "/tmp"), daemonArgs)
 	}
 }
