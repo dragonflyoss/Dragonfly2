@@ -265,7 +265,8 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 		return daemonClient, nil
 	}
 
-	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()))
+	daemonArgs := initDaemonArgs(dfgetConfig)
+	cmd := exec.Command(os.Args[0], daemonArgs...)
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil
@@ -294,4 +295,17 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 			return daemonClient, nil
 		}
 	}
+}
+
+func initDaemonArgs(cfg *config.ClientOption) []string {
+	args := []string{"daemon", "--launcher", strconv.Itoa(os.Getpid())}
+
+	if cfg.WorkHome != "" {
+		args = append(args, []string{"--workhome", cfg.WorkHome}...)
+	}
+
+	if cfg.LogDir != "" {
+		args = append(args, []string{"--logdir", cfg.LogDir}...)
+	}
+	return args
 }
