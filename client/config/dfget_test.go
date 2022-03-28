@@ -145,21 +145,50 @@ func TestCheckHeader(t *testing.T) {
 	// test empty header
 	testifyassert.Nil(t, cfg.checkHeader())
 
-	// test normal headers
-	cfg.Header = []string{
-		"a:b",
-		"1:1",
-		"1:a",
-		"a:1",
+	tests := []struct {
+		header string
+		hasErr bool
+	}{
+		{
+			header: "",
+			hasErr: true,
+		},
+		{
+			header: "#",
+			hasErr: true,
+		},
+		{
+			header: "a:b",
+			hasErr: false,
+		},
+		{
+			header: "1:2",
+			hasErr: false,
+		},
+		{
+			header: "a:b:c",
+			hasErr: false,
+		},
+		{
+			header: ":",
+			hasErr: true,
+		},
+		{
+			header: " :b",
+			hasErr: true,
+		},
+		{
+			header: "a: ",
+			hasErr: true,
+		},
 	}
-	testifyassert.Nil(t, cfg.checkHeader())
 
-	// test error headers
-	cfg.Header = []string{
-		":",
-		"a",
-		" :a",
-		"a: ",
+	for _, test := range tests {
+		cfg.Header = []string{test.header}
+		if test.hasErr {
+			testifyassert.NotNil(t, cfg.checkHeader())
+		} else {
+			testifyassert.Nil(t, cfg.checkHeader())
+		}
 	}
-	testifyassert.NotNil(t, cfg.checkHeader())
 }
