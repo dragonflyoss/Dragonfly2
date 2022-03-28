@@ -368,11 +368,8 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		}
 
 		// Reschedule a new parent to children of peer to exclude the current leave peer
-		blocklist := set.NewSafeSet()
-		blocklist.Add(peer.ID)
-
 		child.Log.Infof("schedule parent because of parent peer %s is leaving", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, blocklist)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 		return true
 	})
 
@@ -496,13 +493,8 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		// It’s not a case of back-to-source or small task downloading,
-		// to help peer to schedule the parent node
-		blocklist := set.NewSafeSet()
-		blocklist.Add(peer.ID)
-
 		peer.Log.Infof("schedule parent because of peer receive begin of piece")
-		s.scheduler.ScheduleParent(ctx, peer, blocklist)
+		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 	default:
 		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}
@@ -535,7 +527,8 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	parent, ok := s.resource.PeerManager().Load(piece.DstPid)
 	if !ok {
 		peer.Log.Errorf("schedule parent because of peer can not found parent %s", piece.DstPid)
-		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
+		peer.BlockPeers.Add(piece.DstPid)
+		s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 		return
 	}
 
@@ -574,11 +567,9 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		return
 	}
 
-	blocklist := set.NewSafeSet()
-	blocklist.Add(parent.ID)
-
 	peer.Log.Infof("schedule parent because of peer receive failed piece")
-	s.scheduler.ScheduleParent(ctx, peer, blocklist)
+	peer.BlockPeers.Add(parent.ID)
+	s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 }
 
 // handlePeerSuccess handles successful peer
@@ -609,9 +600,6 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer
-	blocklist := set.NewSafeSet()
-	blocklist.Add(peer.ID)
-
 	peer.Children.Range(func(_, value interface{}) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
@@ -619,7 +607,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 		}
 
 		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, blocklist)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 		return true
 	})
 }
