@@ -20,6 +20,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -173,7 +174,11 @@ func (cfg *ClientOption) Convert(args []string) error {
 	if cfg.URL == "" {
 		cfg.URL = args[0]
 	}
-	if strings.LastIndexByte(cfg.URL, '/') < 0 {
+	url, err := url.Parse(cfg.URL)
+	if err != nil {
+		return err
+	}
+	if !url.IsAbs() {
 		cfg.URL = fmt.Sprintf("http://%s", cfg.URL)
 	}
 	if stringutils.IsBlank(cfg.Output) {
