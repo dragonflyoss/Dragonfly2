@@ -99,7 +99,7 @@ message PieceResult{
   // whether the piece downloading is successfully
   bool success = 7;
   // result code
-  base.Code code = 8 [(validate.rules).enum = {defined_only:true}];
+  base.Code code = 8;
   // current host resource usage
   base.HostLoad host_load = 9;
   // currently completed piece count, -1 represent download failed
@@ -126,7 +126,7 @@ message PeerPacket{
   DestPeer main_peer = 5;
   repeated DestPeer steal_peers = 6;
   // result code
-  base.Code code = 7 [(validate.rules).enum.defined_only = true];
+  base.Code code = 7;
 }
 
 message PeerResult{
@@ -145,7 +145,7 @@ message PeerResult{
   // whether peer downloading file is successfully
   bool success = 10;
   // result code
-  base.Code code = 11 [(validate.rules).enum = {defined_only:true}];
+  base.Code code = 11;
   // -1 represent task is running or download failed
   int32 total_piece_count = 12;
 }
