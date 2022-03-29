@@ -78,6 +78,7 @@ func (c DeprecatedConfig) Convert() *Config {
 	newConfig.CDN.MaxBandwidth = baseProperties.MaxBandwidth
 	newConfig.RPCServer = rpcserver.Config{
 		AdvertiseIP:  baseProperties.AdvertiseIP,
+		Listen:       "0.0.0.0",
 		ListenPort:   baseProperties.ListenPort,
 		DownloadPort: baseProperties.DownloadPort,
 	}

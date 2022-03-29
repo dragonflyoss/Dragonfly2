@@ -33,6 +33,7 @@ func TestConfig_Load(t *testing.T) {
 		Server: &ServerConfig{
 			IP:       "127.0.0.1",
 			Host:     "foo",
+			Listen:   "0.0.0.0",
 			Port:     8002,
 			CacheDir: "foo",
 			LogDir:   "bar",
