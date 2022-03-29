@@ -250,7 +250,7 @@ func (css *Server) SyncPieceTasks(sync cdnsystem.Seeder_SyncPieceTasksServer) er
 
 func (css *Server) ListenAndServe() error {
 	// Generate GRPC listener
-	lis, _, err := rpc.ListenWithPortRange(css.config.AdvertiseIP, css.config.ListenPort, css.config.ListenPort)
+	lis, _, err := rpc.ListenWithPortRange(css.config.Listen, css.config.ListenPort, css.config.ListenPort)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,7 @@
 server:
   ip: 127.0.0.1
   host: foo
+  listen: 0.0.0.0
   port: 8002
   cacheDir: foo
   logDir: bar

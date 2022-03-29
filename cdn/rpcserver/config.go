@@ -28,6 +28,9 @@ type Config struct {
 	// By default, the first non-loop address is advertised.
 	AdvertiseIP string `yaml:"advertiseIP" mapstructure:"advertiseIP"`
 
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	Listen string `yaml:"listen" mapstructure:"listen"`
+
 	// ListenPort is the port cdn server listens on.
 	// default: 8002
 	ListenPort int `yaml:"listenPort" mapstructure:"listenPort"`
@@ -45,6 +48,9 @@ func DefaultConfig() Config {
 func (c Config) applyDefaults() Config {
 	if c.AdvertiseIP == "" {
 		c.AdvertiseIP = iputils.IPv4
+	}
+	if c.Listen == "" {
+		c.Listen = "0.0.0.0"
 	}
 	if c.ListenPort == 0 {
 		c.ListenPort = DefaultListenPort
