@@ -46,6 +46,7 @@ enum Code{
   ClientPieceDownloadFail = 4005;
   ClientRequestLimitFail = 4006;
   ClientConnectionError = 4007;
+  ClientBackSourceError = 4008;
   ClientPieceNotFound = 4404;
 
   // scheduler response error 5000-5999

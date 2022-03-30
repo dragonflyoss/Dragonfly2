@@ -234,3 +234,59 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		})
 	}
 }
+
+func TestDetectBackSourceError(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		name              string
+		genError          func() error
+		detectError       bool
+		isBackSourceError bool
+	}{
+		{
+			name: "is back source error - connect error",
+			genError: func() error {
+				_, err := http.Get("http://127.0.0.1:12345")
+				return err
+			},
+			detectError:       true,
+			isBackSourceError: true,
+		},
+		{
+			name: "is back source error - timeout",
+			genError: func() error {
+				client := http.Client{
+					Timeout: 10 * time.Millisecond,
+				}
+				request, _ := http.NewRequest(http.MethodGet, "http://127.0.0.2:12345", nil)
+				_, err := client.Do(request)
+				return err
+			},
+			detectError:       true,
+			isBackSourceError: true,
+		},
+		{
+			name: "not back source error",
+			genError: func() error {
+				return fmt.Errorf("test")
+			},
+			detectError:       true,
+			isBackSourceError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.genError()
+
+			err = detectBackSourceError(err)
+			if tc.detectError {
+				assert.NotNil(err)
+			} else {
+				assert.Nil(err)
+			}
+
+			assert.Equal(tc.isBackSourceError, isBackSourceError(err))
+		})
+	}
+}

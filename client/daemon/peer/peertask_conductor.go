@@ -1164,6 +1164,8 @@ func (pt *peerTaskConductor) ReportPieceResult(request *DownloadPieceRequest, re
 		code = base.Code_ClientConnectionError
 	} else if isPieceNotFound(err) {
 		code = base.Code_ClientPieceNotFound
+	} else if isBackSourceError(err) {
+		code = base.Code_ClientBackSourceError
 	}
 	pt.reportFailResult(request, result, code)
 }
