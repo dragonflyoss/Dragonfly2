@@ -27,11 +27,15 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 const (
 	// Tiny file size is 128 bytes
 	TinyFileSize = 128
+
+	// Peer failure limit in task
+	FailedPeerCountLimit = 200
 )
 
 const (
@@ -96,6 +100,10 @@ type Task struct {
 	// PeerCount is peer count
 	PeerCount *atomic.Int32
 
+	// PeerFailedCount is peer failed count,
+	// if one peer succeeds, the value is reset to zero
+	PeerFailedCount *atomic.Int32
+
 	// CreateAt is task create time
 	CreateAt *atomic.Time
 
@@ -119,6 +127,7 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 		Pieces:            &sync.Map{},
 		Peers:             &sync.Map{},
 		PeerCount:         atomic.NewInt32(0),
+		PeerFailedCount:   atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
 		Log:               logger.WithTaskIDAndURL(id, url),
@@ -280,4 +289,30 @@ func (t *Task) SizeScope() base.SizeScope {
 // CanBackToSource represents whether peer can back-to-source
 func (t *Task) CanBackToSource() bool {
 	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load()
+}
+
+// NotifyPeers notify all peers in the task with the state code
+func (t *Task) NotifyPeers(code base.Code, event string) {
+	t.Peers.Range(func(_, value interface{}) bool {
+		peer := value.(*Peer)
+		if peer.FSM.Is(PeerStateRunning) {
+			stream, ok := peer.LoadStream()
+			if !ok {
+				return true
+			}
+
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: code}); err != nil {
+				t.Log.Errorf("send packet to peer %s failed: %v", peer.ID, err)
+				return true
+			}
+			t.Log.Infof("task notify peer %s code %s", peer.ID, code)
+
+			if err := peer.FSM.Event(event); err != nil {
+				peer.Log.Errorf("peer fsm event failed: %v", err)
+				return true
+			}
+		}
+
+		return true
+	})
 }
