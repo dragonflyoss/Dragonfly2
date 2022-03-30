@@ -23,6 +23,7 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -333,13 +334,13 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		}
 		if err != nil {
 			log.Errorf("download piece %d error: %s", pieceNum, err)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 
 		if result.Size != int64(size) {
 			log.Errorf("download piece %d size not match, desired: %d, actual: %d", pieceNum, size, result.Size)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return storage.ErrShortRead
 		}
 
@@ -356,7 +357,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 				})
 			if err != nil {
 				log.Errorf("update task failed %s", err)
-				pt.ReportPieceResult(request, result, err)
+				pt.ReportPieceResult(request, result, detectBackSourceError(err))
 				return err
 			}
 		}
@@ -401,7 +402,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			},
 		}
 		if err != nil {
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			log.Errorf("download piece %d error: %s", pieceNum, err)
 			return err
 		}
@@ -412,7 +413,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		} else if result.Size > int64(size) {
 			err = fmt.Errorf("piece %d size %d should not great than %d", pieceNum, result.Size, size)
 			log.Errorf(err.Error())
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 
@@ -430,7 +431,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			})
 		if err != nil {
 			log.Errorf("update task failed %s", err)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 		// content length is aligning at piece size
@@ -445,4 +446,12 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 	pt.SetContentLength(contentLength)
 	log.Infof("download from source ok")
 	return nil
+}
+
+func detectBackSourceError(err error) error {
+	// TODO ensure all source plugin use *url.Error for back source
+	if e, ok := err.(*url.Error); ok {
+		return &backSourceError{err: e}
+	}
+	return err
 }
