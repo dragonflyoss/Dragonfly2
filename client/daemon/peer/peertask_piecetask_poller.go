@@ -93,7 +93,7 @@ retry:
 	ptc.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := poller.getPieceTasksByPeer(span, curPeerPacket, peer, request)
 	if err == nil {
-		ptc.Infof("got piece task from peer %s ok, pieces length: %d, totalPiece: %d, content length: %d, piece md5 sign: %s",
+		ptc.Infof("get piece task from peer %s ok, pieces length: %d, totalPiece: %d, content length: %d, piece md5 sign: %s",
 			peer.PeerId, len(p.PieceInfos), p.TotalPiece, p.ContentLength, p.PieceMd5Sign)
 		span.SetAttributes(config.AttributeGetPieceCount.Int(len(p.PieceInfos)))
 		return p, nil
