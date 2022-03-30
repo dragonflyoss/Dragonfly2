@@ -231,11 +231,13 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 
 				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
+				p.Task.PeerFailedCount.Store(0)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadFailed: func(e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
+					p.Task.PeerFailedCount.Inc()
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
