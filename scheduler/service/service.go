@@ -634,6 +634,13 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
 func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
+	// If the number of failed peers in the task is greater than FailedPeerCountLimit,
+	// then scheduler notifies running peers of failure
+	if task.PeerFailedCount.Load() > resource.FailedPeerCountLimit {
+		task.PeerFailedCount.Store(0)
+		task.NotifyPeers(base.Code_SchedTaskStatusError, resource.PeerEventDownloadFailed)
+	}
+
 	if task.FSM.Is(resource.TaskStateFailed) {
 		return
 	}

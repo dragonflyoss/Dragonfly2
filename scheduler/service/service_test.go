@@ -2520,6 +2520,18 @@ func TestService_handleTaskFail(t *testing.T) {
 				assert.True(task.FSM.Is(resource.TaskStateFailed))
 			},
 		},
+		{
+			name: "number of failed peers in the task is greater than FailedPeerCountLimit",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateFailed)
+				task.PeerFailedCount.Store(201)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+				assert.Equal(task.PeerFailedCount.Load(), int32(0))
+			},
+		},
 	}
 
 	for _, tc := range tests {
