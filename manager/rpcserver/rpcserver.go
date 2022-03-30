@@ -578,6 +578,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 				logger.Infof("%s close keepalive in cluster %d", hostName, clusterID)
 				return nil
 			}
+
 			logger.Errorf("%s keepalive failed in cluster %d: %v", hostName, clusterID, err)
 			return status.Error(codes.Unknown, err.Error())
 		}
