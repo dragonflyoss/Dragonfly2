@@ -109,8 +109,10 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		s.span.End()
 		return nil, attr, ctx.Err()
 	case <-s.peerTaskConductor.failCh:
-		return nil, attr, fmt.Errorf("peer task failed: %d/%s",
+		err := fmt.Errorf("peer task failed: %d/%s",
 			s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
+		s.Errorf("wait first piece failed due to %s ", err.Error())
+		return nil, attr, err
 	case <-s.peerTaskConductor.successCh:
 		if s.peerTaskConductor.GetContentLength() != -1 {
 			attr[headers.ContentLength] = fmt.Sprintf("%d", s.peerTaskConductor.GetContentLength())
@@ -189,11 +191,13 @@ func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
 			return
 		case <-s.ctx.Done():
 			err = fmt.Errorf("context done due to: %s", s.ctx.Err())
+			s.Errorf(err.Error())
 			s.closeWithError(pw, err)
 			return
 		case <-s.peerTaskConductor.failCh:
-			err = fmt.Errorf("context done due to peer task fail: %d/%s",
+			err = fmt.Errorf("stream close with peer task fail: %d/%s",
 				s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
+			s.Errorf(err.Error())
 			s.closeWithError(pw, err)
 			return
 		}
