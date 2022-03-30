@@ -80,7 +80,7 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 			name: "try a small file",
 			setupSuite: func() {
 				// call GetFreeSpace 1 time in TryFreeSpace
-				diskDriver.EXPECT().GetFreeSpace().Return(100*unit.GB, nil)
+				diskDriver.EXPECT().GetFreeSpace().Return(5*unit.GB, nil)
 				// call Walk 1 time in TryFreeSpace
 				diskDriver.EXPECT().Walk(gomock.Any())
 			},
@@ -93,7 +93,7 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 			name: "try a very large file",
 			setupSuite: func() {
 				// call GetFreeSpace 2 times in TryFreeSpace, 1 time in GC
-				diskDriver.EXPECT().GetFreeSpace().Return(100*unit.GB, nil).Times(3)
+				diskDriver.EXPECT().GetFreeSpace().Return(5*unit.GB, nil).Times(3)
 				// call Walk 2 times in TryFreeSpace, 1 time in GC
 				diskDriver.EXPECT().Walk(gomock.Any()).Times(3)
 			},
@@ -119,7 +119,7 @@ func (suite *DiskStorageManagerSuite) TestTryFreeSpace() {
 				// first call GetFreeSpace 1 times in TryFreeSpace, 1 time in GC
 				diskDriver.EXPECT().GetFreeSpace().Return(100*unit.MB, nil).Times(2)
 				// then call GetFreeSpace 1 times in TryFreeSpace, get another value
-				diskDriver.EXPECT().GetFreeSpace().Return(100*unit.GB, nil)
+				diskDriver.EXPECT().GetFreeSpace().Return(5*unit.GB, nil)
 				// call Walk 2 times in TryFreeSpace, 1 time in GC
 				diskDriver.EXPECT().Walk(gomock.Any()).Times(3)
 			},

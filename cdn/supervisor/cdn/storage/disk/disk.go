@@ -229,7 +229,7 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if freeSpace > 100*unit.GB && freeSpace.ToNumber() > fileLength {
+	if freeSpace > 5*unit.GB && freeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 	// TODO Optimize this code by iterating through the task list
@@ -258,7 +258,7 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 		return false, err
 	}
 
-	enoughSpace := freeSpace.ToNumber()-remainder.Load() > (fileLength + int64(5*unit.GB))
+	enoughSpace := freeSpace.ToNumber()-remainder.Load() > (fileLength + int64(200*unit.MB))
 	if !enoughSpace {
 		if _, err := s.diskCleaner.GC("disk", true); err != nil {
 			return false, err
@@ -272,7 +272,7 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		enoughSpace = freeSpace.ToNumber()-remainder.Load() > (fileLength + int64(5*unit.GB))
+		enoughSpace = freeSpace.ToNumber()-remainder.Load() > (fileLength + int64(200*unit.MB))
 	}
 	if !enoughSpace {
 		return false, nil

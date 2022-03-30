@@ -230,7 +230,7 @@ func (h *hybridStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if diskFreeSpace > 100*unit.GB && diskFreeSpace.ToNumber() > fileLength {
+	if diskFreeSpace > 5*unit.GB && diskFreeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 
@@ -259,7 +259,7 @@ func (h *hybridStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 		return false, err
 	}
 
-	enoughSpace := diskFreeSpace.ToNumber()-remainder.Load() > (fileLength + int64(5*unit.GB))
+	enoughSpace := diskFreeSpace.ToNumber()-remainder.Load() > (fileLength + int64(200*unit.MB))
 	if !enoughSpace {
 		if _, err := h.diskDriverCleaner.GC("hybrid", true); err != nil {
 			return false, err
@@ -273,7 +273,7 @@ func (h *hybridStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		enoughSpace = diskFreeSpace.ToNumber()-remainder.Load() > (fileLength + int64(5*unit.GB))
+		enoughSpace = diskFreeSpace.ToNumber()-remainder.Load() > (fileLength + int64(200*unit.MB))
 	}
 	if !enoughSpace {
 		return false, nil
