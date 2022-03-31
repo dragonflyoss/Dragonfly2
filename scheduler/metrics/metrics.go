@@ -41,6 +41,12 @@ var (
 
 	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics
 	PeerHostTrafficDownloadType = "download"
+
+	// DownloadFailureBackToSourceType is back-to-source type for download failure count metrics
+	DownloadFailureBackToSourceType = "back_to_source"
+
+	// DownloadFailureP2PType is p2p type for download failure count metrics
+	DownloadFailureP2PType = "p2p"
 )
 
 // Variables declared for metrics.
@@ -71,7 +77,7 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
-	}, []string{"biz_tag"})
+	}, []string{"biz_tag", "type"})
 
 	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,

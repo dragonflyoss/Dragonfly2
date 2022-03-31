@@ -326,10 +326,12 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			s.handleTaskFail(ctx, peer.Task)
+			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
+		} else {
+			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
 		}
-		s.handlePeerFail(ctx, peer)
 
-		metrics.DownloadFailureCount.WithLabelValues(peer.BizTag).Inc()
+		s.handlePeerFail(ctx, peer)
 		return nil
 	}
 
