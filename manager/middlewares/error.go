@@ -109,6 +109,8 @@ func Error() gin.HandlerFunc {
 		}
 
 		// Unknown error
-		c.JSON(http.StatusInternalServerError, nil)
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Message: err.Err.Error(),
+		})
 	}
 }

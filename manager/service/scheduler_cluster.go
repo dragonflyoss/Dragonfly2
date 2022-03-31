@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -64,8 +65,12 @@ func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateS
 
 func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Schedulers").First(&schedulerCluster, id).Error; err != nil {
 		return err
+	}
+
+	if len(schedulerCluster.Schedulers) != 0 {
+		return errors.New("scheduler cluster exists scheduler")
 	}
 
 	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
