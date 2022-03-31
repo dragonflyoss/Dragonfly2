@@ -34,7 +34,7 @@ const (
 	// Free load weight
 	freeLoadWeight = 0.2
 
-	// host type affinity weight
+	// Host type affinity weight
 	hostTypeAffinityWeight = 0.2
 
 	// IDC affinity weight
