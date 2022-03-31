@@ -126,7 +126,7 @@ func Parse(digest string) []string {
 }
 
 func NewMd5Digest(hexDigest string) string {
-	return DigestRaw(hexDigest, hexDigest)
+	return DigestRaw(hexDigest, Md5Hash.String())
 }
 
 func DigestRaw(hexDigest, algorithm string) string {
