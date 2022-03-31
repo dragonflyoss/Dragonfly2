@@ -17,10 +17,9 @@
 package digestutils
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"hash"
 	"io"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -31,11 +30,11 @@ var (
 	ErrDigestNotMatch = errors.New("digest not match")
 )
 
-// digestReader reads stream with RateLimiter.
+// digestReader reads stream with digest.
 type digestReader struct {
-	r      io.Reader
-	hash   hash.Hash
-	digest string
+	r         io.Reader
+	hash      hash.Hash
+	hexDigest string
 	*logger.SugaredLoggerOnWith
 }
 
@@ -46,18 +45,36 @@ type DigestReader interface {
 
 // TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
 
-func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) io.Reader {
-	var d string
-	if len(digest) > 0 {
-		d = digest[0]
+// NewDigestReader digest format is <algorithm>:<hex_digest_string>. If digest is not specified, use default md5
+func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) (io.Reader, error) {
+	var hexDigest string
+	hashType := Md5Hash.String()
+	if len(digest) > 1 {
+		return nil, errors.Errorf("only zero or one number digest can be specified, but got %d", len(digest))
+	}
+	if len(digest) == 1 && digest[0] != "" {
+		if strings.Contains(digest[0], ":") {
+			parsedHash := Parse(digest[0])
+			if len(parsedHash) != 2 {
+				return nil, errors.Errorf("malformed digest format, expect  <algorithm>:<hex_digest_string>, but got %s", digest[0])
+			}
+			hashType = parsedHash[0]
+			hexDigest = parsedHash[1]
+		} else {
+			hashType = Md5Hash.String()
+			hexDigest = digest[0]
+		}
+	}
+	hash := CreateHash(hashType)
+	if hash == nil {
+		return nil, errors.Errorf("digest algorithm %s is not support", hashType)
 	}
 	return &digestReader{
 		SugaredLoggerOnWith: log,
-		digest:              d,
-		// TODO support more digest method like sha1, sha256
-		hash: md5.New(),
-		r:    reader,
-	}
+		hexDigest:           hexDigest,
+		hash:                hash,
+		r:                   reader,
+	}, nil
 }
 
 func (dr *digestReader) Read(p []byte) (int, error) {
@@ -68,10 +85,10 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 	if n > 0 {
 		dr.hash.Write(p[:n])
 	}
-	if err == io.EOF && dr.digest != "" {
+	if err == io.EOF && dr.hexDigest != "" {
 		digest := dr.Digest()
-		if digest != dr.digest {
-			dr.Warnf("digest not match, desired: %s, actual: %s", dr.digest, digest)
+		if digest != dr.hexDigest {
+			dr.Warnf("digest not match, desired: %s, actual: %s", dr.hexDigest, digest)
 			return n, ErrDigestNotMatch
 		}
 		dr.Debugf("digest match: %s", digest)
@@ -81,5 +98,5 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 
 // Digest returns the digest of contents.
 func (dr *digestReader) Digest() string {
-	return hex.EncodeToString(dr.hash.Sum(nil)[:16])
+	return ToHashString(dr.hash)
 }

@@ -18,33 +18,92 @@ package digestutils
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
+	"fmt"
 	"io"
-	"os"
 	"testing"
 
-	testifyassert "github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/assert"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
 func TestNewDigestReader(t *testing.T) {
-	assert := testifyassert.New(t)
-
 	testBytes := []byte("hello world")
-	hash := md5.New()
-	hash.Write(testBytes)
-	digest := hex.EncodeToString(hash.Sum(nil)[:16])
+	tests := []struct {
+		name   string
+		digest string
+		expect func(t *testing.T, reader io.Reader, err error)
+	}{
+		{
+			name:   "md5",
+			digest: fmt.Sprintf("md5:%s", Md5Bytes(testBytes)),
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(err)
+				data, err := io.ReadAll(reader)
+				assert.Nil(err)
+				assert.Equal(testBytes, data)
+			},
+		},
+		{
+			name:   "sha256",
+			digest: fmt.Sprintf("sha256:%s", Sha256Bytes(testBytes)),
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(err)
+				data, err := io.ReadAll(reader)
+				assert.Nil(err)
+				assert.Equal(testBytes, data)
+			},
+		},
+		{
+			name:   "md5 and not specified hex algorithm",
+			digest: Md5Bytes(testBytes),
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(err)
+				data, err := io.ReadAll(reader)
+				assert.Nil(err)
+				assert.Equal(testBytes, data)
+			},
+		},
+		{
+			name:   "sha256 and not specified hex algorithm should return error",
+			digest: Sha256Bytes(testBytes),
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(err)
+				_, err = io.ReadAll(reader)
+				assert.NotNil(err)
+			},
+		},
+		{
+			name:   "not specified hex algorithm and use default md5",
+			digest: "",
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(err)
+				data, err := io.ReadAll(reader)
+				assert.Nil(err)
+				assert.Equal(testBytes, data)
+			},
+		},
+		{
+			name:   "not support sh1 hex algorithm",
+			digest: "sha1:xxx",
+			expect: func(t *testing.T, reader io.Reader, err error) {
+				assert := assert.New(t)
+				assert.Nil(reader)
+				assert.EqualError(err, "digest algorithm sha1 is not support")
+			},
+		},
+	}
 
-	buf := bytes.NewBuffer(testBytes)
-	reader := NewDigestReader(logger.With("test", "test"), buf, digest)
-	data, err := io.ReadAll(reader)
-
-	assert.Nil(err)
-	assert.Equal(testBytes, data)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := bytes.NewBuffer(testBytes)
+			reader, err := NewDigestReader(logger.With("test", "test"), buf, tc.digest)
+			tc.expect(t, reader, err)
+		})
+	}
 }

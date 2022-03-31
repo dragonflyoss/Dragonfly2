@@ -77,6 +77,12 @@ func Md5Bytes(bytes []byte) string {
 	return ToHashString(h)
 }
 
+func Sha256Bytes(bytes []byte) string {
+	h := sha256.New()
+	h.Write(bytes)
+	return ToHashString(h)
+}
+
 // HashFile computes hash value corresponding to hashType,
 // hashType is from digestutils.Md5Hash and digestutils.Sha256Hash.
 func HashFile(file string, hashType digest.Algorithm) string {
@@ -117,6 +123,14 @@ func ToHashString(h hash.Hash) string {
 func Parse(digest string) []string {
 	digest = strings.Trim(digest, " ")
 	return strings.Split(digest, ":")
+}
+
+func NewMd5Digest(hexDigest string) string {
+	return DigestRaw(hexDigest, hexDigest)
+}
+
+func DigestRaw(hexDigest, algorithm string) string {
+	return strings.Join([]string{algorithm, hexDigest}, ":")
 }
 
 func CreateHash(hashType string) hash.Hash {

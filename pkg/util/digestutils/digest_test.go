@@ -39,6 +39,11 @@ func TestMd5Bytes(t *testing.T) {
 	assert.Equal(t, expected, Md5Bytes([]byte("hello")))
 }
 
+func TestSha256Bytes(t *testing.T) {
+	var expected = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+	assert.Equal(t, expected, Sha256Bytes([]byte("hello")))
+}
+
 func TestToHashString(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
 	h := md5.New()
