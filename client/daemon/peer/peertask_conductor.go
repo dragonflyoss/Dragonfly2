@@ -397,7 +397,11 @@ func (pt *peerTaskConductor) backSource() {
 		pt.Errorf("download from source error: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
 		span.RecordError(err)
-		pt.cancel(base.Code_ClientError, err.Error())
+		if isBackSourceError(err) {
+			pt.cancel(base.Code_ClientBackSourceError, err.Error())
+		} else {
+			pt.cancel(base.Code_ClientError, err.Error())
+		}
 		span.End()
 		return
 	}
@@ -1310,7 +1314,7 @@ func (pt *peerTaskConductor) done() {
 			pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 			pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
 			pt.Errorf("validate digest failed: %s", err)
-			metrics.PeerTaskFailedCount.Add(1)
+			metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
 		}
 	} else {
 		close(pt.failCh)
@@ -1323,7 +1327,7 @@ func (pt *peerTaskConductor) done() {
 		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
 		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
 		pt.Errorf("update storage error: %v", err)
-		metrics.PeerTaskFailedCount.Add(1)
+		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
 	}
 
 	pt.peerTaskManager.PeerTaskDone(pt.taskID)
@@ -1364,7 +1368,11 @@ func (pt *peerTaskConductor) Fail() {
 }
 
 func (pt *peerTaskConductor) fail() {
-	metrics.PeerTaskFailedCount.Add(1)
+	if pt.failedCode == base.Code_ClientBackSourceError {
+		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeBackSource).Add(1)
+	} else {
+		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeP2P).Add(1)
+	}
 	defer func() {
 		close(pt.failCh)
 		pt.broker.Stop()
