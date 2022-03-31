@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
@@ -90,6 +91,9 @@ func isPieceNotFound(err error) bool {
 
 func isBackSourceError(err error) bool {
 	if _, ok := err.(*backSourceError); ok {
+		return true
+	}
+	if _, ok := err.(*source.UnexpectedStatusCodeError); ok {
 		return true
 	}
 	return false
