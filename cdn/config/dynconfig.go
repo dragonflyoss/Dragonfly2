@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination mocks/dynconfig_mock.go -source dynconfig.go -package mocks
-
 package config
 
 import (
@@ -39,24 +37,10 @@ var (
 	watchInterval = 10 * time.Second
 )
 
-type DynconfigData struct {
-	CDNs             []*CDN            `yaml:"cdns" mapstructure:"cdns" json:"cdns"`
-	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
-}
-
-type CDN struct {
-	ID           uint        `yaml:"id" mapstructure:"id" json:"id"`
-	Hostname     string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	IP           string      `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port         int32       `yaml:"port" mapstructure:"port" json:"port"`
-	DownloadPort int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
-	Location     string      `yaml:"location" mapstructure:"location" json:"location"`
-	IDC          string      `yaml:"idc" mapstructure:"idc" json:"idc"`
-	CDNCluster   *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`
-}
-
-type CDNCluster struct {
-	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
+type SchedulerInstance struct {
+	Hostname string `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	IP       string `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port     int32  `yaml:"port" mapstructure:"port" json:"port"`
 }
 
 type SchedulerCluster struct {
@@ -64,25 +48,9 @@ type SchedulerCluster struct {
 	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
 }
 
-func (c *CDN) GetCDNClusterConfig() (types.CDNClusterConfig, bool) {
-	if c.CDNCluster == nil {
-		return types.CDNClusterConfig{}, false
-	}
-
-	var config types.CDNClusterConfig
-	if err := json.Unmarshal(c.CDNCluster.Config, &config); err != nil {
-		return types.CDNClusterConfig{}, false
-	}
-
-	return config, true
-}
-
 type DynconfigInterface interface {
-	// Get the cdn cluster config.
-	GetCDNClusterConfig(uint) (types.CDNClusterConfig, bool)
-
 	// Get the dynamic config from manager.
-	Get() (*DynconfigData, error)
+	Get() ([]*SchedulerInstance, error)
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -109,11 +77,9 @@ type dynconfig struct {
 	*dc.Dynconfig
 	observers map[Observer]struct{}
 	done      chan bool
-	cdnDir    string
 	cachePath string
 }
 
-// TODO(Gaius) Rely on manager to delete cdnDirPath
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
@@ -159,14 +125,6 @@ func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, b
 
 func (d *dynconfig) Get() (*DynconfigData, error) {
 	var config DynconfigData
-	if d.cdnDir != "" {
-		cdns, err := d.getCDNFromDirPath()
-		if err != nil {
-			return nil, err
-		}
-		config.CDNs = cdns
-		return &config, nil
-	}
 
 	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
@@ -243,14 +201,14 @@ func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	scheduler, err := mc.GetCDN(&manager.GetSchedulerRequest{
-		HostName:           mc.config.Server.Host,
-		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
-		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
+	cdn, err := mc.GetCDN(&manager.GetCDNRequest{
+		HostName:     mc.config.Host.Hostname,
+		SourceType:   manager.SourceType_SCHEDULER_SOURCE,
+		CdnClusterId: uint64(mc.config.Manager.CDNClusterID),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return scheduler, nil
+	return cdn, nil
 }

@@ -17,6 +17,7 @@
 package config
 
 import (
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"fmt"
 	"time"
 
@@ -48,6 +49,7 @@ func New() *Config {
 		Host: HostConfig{
 			Location: "",
 			IDC:      "",
+			Hostname: hostutils.FQDNHostname,
 		},
 		LogDir: "",
 	}
@@ -125,9 +127,12 @@ func (c KeepAliveConfig) Validate() []error {
 }
 
 type HostConfig struct {
-	// Location for scheduler
+	// Location for cdn
 	Location string `mapstructure:"location" yaml:"location"`
 
-	// IDC for scheduler
+	// IDC for cdn
 	IDC string `mapstructure:"idc" yaml:"idc"`
+
+	// Hostname for cdn
+	Hostname string `mapstructure:"idc" yaml:"idc"`
 }
