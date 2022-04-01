@@ -49,6 +49,9 @@ type Client interface {
 	// Update scheduler configuration
 	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 
+	// Get CDN configuration
+	GetCDN(request *manager.GetCDNRequest) (*manager.CDN, error)
+
 	// Update CDN configuration
 	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
 
@@ -120,6 +123,13 @@ func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.
 	defer cancel()
 
 	return c.ManagerClient.UpdateScheduler(ctx, req)
+}
+
+func (c *client) GetCDN(req *manager.GetCDNRequest) (*manager.CDN, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.GetCDN(ctx, req)
 }
 
 func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {

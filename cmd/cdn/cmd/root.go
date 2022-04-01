@@ -63,7 +63,7 @@ from remote source repeatedly.`,
 		// update plugin directory
 		source.UpdatePluginDir(d.PluginDir())
 
-		return runCdnSystem()
+		return runCdnSystem(d)
 	},
 }
 
@@ -95,7 +95,7 @@ func initDfpath(logDir, workHome string) (dfpath.Dfpath, error) {
 	return dfpath.New(options...)
 }
 
-func runCdnSystem() error {
+func runCdnSystem(d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 	// validate config
 	if errs := cfg.Validate(); len(errs) != 0 {
@@ -107,7 +107,7 @@ func runCdnSystem() error {
 	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := cdn.New(cfg)
+	svr, err := cdn.New(cfg, d)
 	if err != nil {
 		return err
 	}

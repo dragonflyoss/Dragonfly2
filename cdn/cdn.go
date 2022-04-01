@@ -19,6 +19,7 @@ package cdn
 import (
 	"context"
 
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -52,14 +53,31 @@ type Server struct {
 	// Manager client
 	configServer managerClient.Client
 
+	// dynamic config
+	dynconfig config.DynconfigInterface
+
 	// gc Server
 	gcServer *gc.Server
 }
 
 // New creates a brand-new server instance.
-func New(config *config.Config) (*Server, error) {
+func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
+	// Initialize configServer
+	var configServer managerClient.Client
+	var dynconfig config.DynconfigInterface
+	if cfg.Manager.Addr != "" {
+		configServer, err := managerClient.New(cfg.Manager.Addr)
+		if err != nil {
+			return nil, errors.Wrap(err, "create configServer")
+		}
+		// Initialize dynconfig client
+		dynConfig, err := config.NewDynconfig(configServer, d.CacheDir(), cfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "create dynamic config")
+		}
+	}
 	// Initialize task manager
-	taskManager, err := task.NewManager(config.Task)
+	taskManager, err := task.NewManager(cfg.Task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
@@ -71,13 +89,13 @@ func New(config *config.Config) (*Server, error) {
 	}
 
 	// Initialize storage manager
-	storageManager, err := storage.NewManager(config.Storage, taskManager)
+	storageManager, err := storage.NewManager(cfg.Storage, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create storage manager")
 	}
 
 	// Initialize CDN manager
-	cdnManager, err := cdn.NewManager(config.CDN, storageManager, progressManager, taskManager)
+	cdnManager, err := cdn.NewManager(cfg.CDN, storageManager, progressManager, taskManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create cdn manager")
 	}
@@ -89,10 +107,10 @@ func New(config *config.Config) (*Server, error) {
 	}
 	// Initialize storage manager
 	var opts []grpc.ServerOption
-	if config.Options.Telemetry.Jaeger != "" {
+	if cfg.Options.Telemetry.Jaeger != "" {
 		opts = append(opts, grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()), grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()))
 	}
-	grpcServer, err := rpcserver.New(config.RPCServer, service, opts...)
+	grpcServer, err := rpcserver.New(cfg.RPCServer, service, opts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
@@ -104,27 +122,19 @@ func New(config *config.Config) (*Server, error) {
 	}
 
 	var metricsServer *metrics.Server
-	if config.Metrics.Addr != "" {
+	if cfg.Metrics.Addr != "" {
 		// Initialize metrics server
-		metricsServer, err = metrics.New(config.Metrics, grpcServer.Server)
+		metricsServer, err = metrics.New(cfg.Metrics, grpcServer.Server)
 		if err != nil {
 			return nil, errors.Wrap(err, "create metricsServer")
 		}
 	}
-
-	// Initialize configServer
-	var configServer managerClient.Client
-	if config.Manager.Addr != "" {
-		configServer, err = managerClient.New(config.Manager.Addr)
-		if err != nil {
-			return nil, errors.Wrap(err, "create configServer")
-		}
-	}
 	return &Server{
-		config:        config,
+		config:        cfg,
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
+		dynconfig:     dynconfig,
 		gcServer:      gcServer,
 	}, nil
 }
