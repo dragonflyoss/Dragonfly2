@@ -137,7 +137,12 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 
 // sendExistPieces will send as much as possible pieces
 func (s *server) sendExistPieces(request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap)
+	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap, true)
+}
+
+// sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
+func (s *server) sendFirstPieceTasks(request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap, false)
 }
 
 func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
@@ -147,7 +152,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	}
 	skipPieceCount := request.StartNum
 	var sentMap = make(map[int32]struct{})
-	total, sent, err := s.sendExistPieces(request, sync, sentMap)
+	total, sent, err := s.sendFirstPieceTasks(request, sync, sentMap)
 	if err != nil {
 		return err
 	}
