@@ -31,12 +31,12 @@ func TestSafeSetAdd(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  interface{}
-		expect func(t *testing.T, ok bool, s Set, value interface{})
+		expect func(t *testing.T, ok bool, s SafeSet, value interface{})
 	}{
 		{
 			name:  "add value",
 			value: "foo",
-			expect: func(t *testing.T, ok bool, s Set, value interface{}) {
+			expect: func(t *testing.T, ok bool, s SafeSet, value interface{}) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
 				assert.Equal(s.Values(), []interface{}{value})
@@ -45,7 +45,7 @@ func TestSafeSetAdd(t *testing.T) {
 		{
 			name:  "add value failed",
 			value: "foo",
-			expect: func(t *testing.T, _ bool, s Set, value interface{}) {
+			expect: func(t *testing.T, _ bool, s SafeSet, value interface{}) {
 				assert := assert.New(t)
 				ok := s.Add("foo")
 				assert.Equal(ok, false)
@@ -89,12 +89,12 @@ func TestSafeSetDelete(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  interface{}
-		expect func(t *testing.T, s Set, value interface{})
+		expect func(t *testing.T, s SafeSet, value interface{})
 	}{
 		{
 			name:  "delete value",
 			value: "foo",
-			expect: func(t *testing.T, s Set, value interface{}) {
+			expect: func(t *testing.T, s SafeSet, value interface{}) {
 				assert := assert.New(t)
 				s.Delete(value)
 				assert.Equal(s.Len(), uint(0))
@@ -103,7 +103,7 @@ func TestSafeSetDelete(t *testing.T) {
 		{
 			name:  "delete value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s Set, _ interface{}) {
+			expect: func(t *testing.T, s SafeSet, _ interface{}) {
 				assert := assert.New(t)
 				s.Delete("bar")
 				assert.Equal(s.Len(), uint(1))
@@ -148,12 +148,12 @@ func TestSafeSetContains(t *testing.T) {
 	tests := []struct {
 		name   string
 		value  interface{}
-		expect func(t *testing.T, s Set, value interface{})
+		expect func(t *testing.T, s SafeSet, value interface{})
 	}{
 		{
 			name:  "contains value",
 			value: "foo",
-			expect: func(t *testing.T, s Set, value interface{}) {
+			expect: func(t *testing.T, s SafeSet, value interface{}) {
 				assert := assert.New(t)
 				assert.Equal(s.Contains(value), true)
 			},
@@ -161,7 +161,7 @@ func TestSafeSetContains(t *testing.T) {
 		{
 			name:  "contains value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s Set, _ interface{}) {
+			expect: func(t *testing.T, s SafeSet, _ interface{}) {
 				assert := assert.New(t)
 				assert.Equal(s.Contains("bar"), false)
 			},
@@ -202,11 +202,11 @@ func TestSafeSetContains_Concurrent(t *testing.T) {
 func TestSetSafeLen(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s Set)
+		expect func(t *testing.T, s SafeSet)
 	}{
 		{
 			name: "get length",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				s.Add("foo")
 				assert.Equal(s.Len(), uint(1))
@@ -214,7 +214,7 @@ func TestSetSafeLen(t *testing.T) {
 		},
 		{
 			name: "get empty set length",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				assert.Equal(s.Len(), uint(0))
 			},
@@ -256,11 +256,11 @@ func TestSafeSetLen_Concurrent(t *testing.T) {
 func TestSafeSetValues(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s Set)
+		expect func(t *testing.T, s SafeSet)
 	}{
 		{
 			name: "get values",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				s.Add("foo")
 				assert.Equal(s.Values(), []interface{}{"foo"})
@@ -268,14 +268,14 @@ func TestSafeSetValues(t *testing.T) {
 		},
 		{
 			name: "get empty values",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				assert.Equal(s.Values(), []interface{}(nil))
 			},
 		},
 		{
 			name: "get multi values",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
@@ -320,11 +320,11 @@ func TestSafeSetValues_Concurrent(t *testing.T) {
 func TestSafeSetRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s Set)
+		expect func(t *testing.T, s SafeSet)
 	}{
 		{
 			name: "range values",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Range(func(v interface{}) bool {
@@ -335,7 +335,7 @@ func TestSafeSetRange(t *testing.T) {
 		},
 		{
 			name: "range values failed",
-			expect: func(t *testing.T, s Set) {
+			expect: func(t *testing.T, s SafeSet) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
@@ -379,4 +379,62 @@ func TestSafeSetRange_Concurrent(t *testing.T) {
 		s.Add(rand.Int())
 	}
 	wg.Wait()
+}
+
+func TestSafeSetClear(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, s SafeSet)
+	}{
+		{
+			name: "clear empty set",
+			expect: func(t *testing.T, s SafeSet) {
+				assert := assert.New(t)
+				s.Clear()
+				assert.Equal(s.Values(), []interface{}(nil))
+			},
+		},
+		{
+			name: "clear set",
+			expect: func(t *testing.T, s SafeSet) {
+				assert := assert.New(t)
+				assert.Equal(s.Add("foo"), true)
+				s.Clear()
+				assert.Equal(s.Values(), []interface{}(nil))
+				assert.Equal(s.Add("foo"), true)
+				assert.Equal(s.Values(), []interface{}{"foo"})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewSafeSet()
+			tc.expect(t, s)
+		})
+	}
+}
+
+func TestSafeSetClear_Concurrent(t *testing.T) {
+	runtime.GOMAXPROCS(2)
+
+	s := NewSafeSet()
+	nums := rand.Perm(N)
+
+	var wg sync.WaitGroup
+	wg.Add(len(nums))
+	for i := 0; i < len(nums); i++ {
+		go func(i int) {
+			s.Add(i)
+			s.Clear()
+			wg.Done()
+		}(i)
+	}
+
+	wg.Wait()
+	for _, n := range nums {
+		if s.Contains(n) {
+			t.Errorf("SafeSet contains element: %v", n)
+		}
+	}
 }

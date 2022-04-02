@@ -27,6 +27,7 @@ type SafeSet interface {
 	Contains(...interface{}) bool
 	Len() uint
 	Range(func(interface{}) bool)
+	Clear()
 }
 
 type safeSet struct {
@@ -98,4 +99,10 @@ func (s *safeSet) Range(fn func(interface{}) bool) {
 			break
 		}
 	}
+}
+
+func (s *safeSet) Clear() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.data = make(map[interface{}]struct{})
 }
