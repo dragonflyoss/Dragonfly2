@@ -21,11 +21,9 @@ import (
 	"testing"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/dynconfig"
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/plugins"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
@@ -34,7 +32,9 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
