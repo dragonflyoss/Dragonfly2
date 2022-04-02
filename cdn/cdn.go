@@ -19,13 +19,13 @@ package cdn
 import (
 	"context"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
@@ -54,7 +55,7 @@ type Server struct {
 	configServer managerClient.Client
 
 	// dynamic config
-	dynconfig config.DynconfigInterface
+	dynconfig dynconfig.Interface
 
 	// gc Server
 	gcServer *gc.Server
@@ -64,7 +65,7 @@ type Server struct {
 func New(cfg *config.Config) (*Server, error) {
 	// Initialize configServer
 	var configServer managerClient.Client
-	var dynconfig config.DynconfigInterface
+	var dynamicconfig dynconfig.Interface
 	var err error
 	if cfg.Manager.Addr != "" {
 		configServer, err = managerClient.New(cfg.Manager.Addr)
@@ -73,7 +74,7 @@ func New(cfg *config.Config) (*Server, error) {
 		}
 		// Initialize dynconfig client
 		if cfg.DynConfig.SourceType == dc.ManagerSourceType {
-			dynconfig, err = config.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
+			dynamicconfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
 				cdn, err := configServer.GetCDN(&manager.GetCDNRequest{
 					HostName:     cfg.Host.Hostname,
 					SourceType:   manager.SourceType_SCHEDULER_SOURCE,
@@ -96,7 +97,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
 
-	notifyScheduler, err := task.NewNotifySchedulerTaskGCSubscriber(dynconfig)
+	notifyScheduler, err := task.NewNotifySchedulerTaskGCSubscriber(dynamicconfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create notify scheduler task gc subscriber")
 	}
@@ -153,7 +154,7 @@ func New(cfg *config.Config) (*Server, error) {
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
-		dynconfig:     dynconfig,
+		dynconfig:     dynamicconfig,
 		gcServer:      gcServer,
 	}, nil
 }

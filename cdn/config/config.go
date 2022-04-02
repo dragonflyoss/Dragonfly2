@@ -20,18 +20,16 @@ import (
 	"fmt"
 	"time"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/pkg/dfpath"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-
 	"gopkg.in/yaml.v3"
 
+	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 )
 
 // New creates an instant with default values.
@@ -55,11 +53,7 @@ func New() *Config {
 			IDC:      "",
 			Hostname: hostutils.FQDNHostname,
 		},
-		DynConfig: DynConfig{
-			RefreshInterval: 1 * time.Minute,
-			CachePath:       dfpath.DefaultCacheDir,
-			SourceType:      dc.ManagerSourceType,
-		},
+		DynConfig: dynconfig.DefaultConfig(),
 	}
 }
 
@@ -78,8 +72,8 @@ type Config struct {
 	// Log directory
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 	// WorkHome directory
-	WorkHome  string    `yaml:"workHome" mapstructure:"workHome"`
-	DynConfig DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
+	WorkHome  string           `yaml:"workHome" mapstructure:"workHome"`
+	DynConfig dynconfig.Config `yaml:"dynConfig" mapstructure:"dynConfig"`
 }
 
 func (c *Config) String() string {
@@ -131,32 +125,6 @@ func (c KeepAliveConfig) Validate() []error {
 	var errors []error
 	if c.Interval <= 0 {
 		errors = append(errors, fmt.Errorf("keep alive interval %d can't be a negative number", c.Interval))
-	}
-	return errors
-}
-
-type DynConfig struct {
-	// RefreshInterval is refresh interval for manager cache.
-	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
-
-	// CachePath is cache file path.
-	CachePath string `yaml:"cachePath" mapstructure:"cachePath"`
-
-	// sourceType is source type of dynConfig,
-	SourceType dc.SourceType `yaml:"sourceType" mapstructure:"sourceType"`
-}
-
-func (dyn DynConfig) Validate() []error {
-	var errors []error
-	if dyn.SourceType != dc.ManagerSourceType {
-		errors = append(errors, fmt.Errorf("dynamic config sourceType only support manager but current is %s",
-			dyn.SourceType))
-	}
-	if dyn.CachePath == "" {
-		errors = append(errors, fmt.Errorf("dynamic config cache path can't be empty"))
-	}
-	if dyn.RefreshInterval <= 0 {
-		errors = append(errors, fmt.Errorf("dynamic config refresh interval %d can't be a negative number", dyn.RefreshInterval))
 	}
 	return errors
 }

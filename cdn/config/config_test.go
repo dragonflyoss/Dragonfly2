@@ -21,6 +21,9 @@ import (
 	"testing"
 	"time"
 
+	"d7y.io/dragonfly/v2/cdn/dynconfig"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/cdn/metrics"
@@ -167,5 +170,10 @@ func TestConfig_Convert(t *testing.T) {
 		},
 		LogDir:   "aaa",
 		WorkHome: "/workHome",
+		DynConfig: dynconfig.Config{
+			RefreshInterval: time.Minute,
+			CachePath:       dfpath.DefaultCacheDir,
+			SourceType:      dc.ManagerSourceType,
+		},
 	}, cfg)
 }

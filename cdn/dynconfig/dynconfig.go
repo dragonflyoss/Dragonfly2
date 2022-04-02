@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ./mocks/mock_dynconfig.go -package mocks d7y.io/dragonfly/v2/cdn/config DynconfigInterface
+//go:generate mockgen -destination ./mocks/mock_dynconfig.go -package mocks d7y.io/dragonfly/v2/cdn/dynconfig DynconfigInterface
 
-package config
+package dynconfig
 
 import (
 	"path/filepath"
@@ -35,7 +35,7 @@ var (
 )
 
 // todo move this interface to internal/dynconfig
-type DynconfigInterface interface {
+type Interface interface {
 	// Get the dynamic config from manager.
 	Get() (interface{}, error)
 
@@ -66,7 +66,7 @@ type dynConfig struct {
 	done      chan bool
 }
 
-func NewDynconfig(cfg DynConfig, drawFunc func() (interface{}, error)) (DynconfigInterface, error) {
+func NewDynconfig(cfg Config, drawFunc func() (interface{}, error)) (Interface, error) {
 	d := &dynConfig{
 		done: make(chan bool),
 	}
@@ -82,7 +82,6 @@ func NewDynconfig(cfg DynConfig, drawFunc func() (interface{}, error)) (Dynconfi
 	}
 
 	d.ds = ds
-	d.Serve()
 	return d, nil
 }
 
