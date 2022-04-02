@@ -55,7 +55,8 @@ func sendExistPieces(
 	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
-	sendMap map[int32]struct{}) (total int32, sent int, err error) {
+	sendMap map[int32]struct{},
+	skipSendZeroPiece bool) (total int32, sent int, err error) {
 	if request.Limit <= 0 {
 		request.Limit = 16
 	}
@@ -64,7 +65,7 @@ func sendExistPieces(
 		if err != nil {
 			return -1, -1, err
 		}
-		if len(pp.PieceInfos) == 0 {
+		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
 			return pp.TotalPiece, sent, nil
 		}
 		if err = sync.Send(pp); err != nil {
@@ -85,7 +86,7 @@ func sendExistPieces(
 // sendExistPieces will send as much as possible pieces
 func (s *subscriber) sendExistPieces(startNum uint32) (total int32, sent int, err error) {
 	s.request.StartNum = startNum
-	return sendExistPieces(s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap)
+	return sendExistPieces(s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap, true)
 }
 
 func (s *subscriber) receiveRemainingPieceTaskRequests() {
