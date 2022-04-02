@@ -91,11 +91,16 @@ func New(cfg *config.Config) (*Server, error) {
 		// todo implements local dynamic config
 	}
 	// Initialize task manager
-	taskManager, err := task.NewManager(cfg.Task, dynconfig)
+	taskManager, err := task.NewManager(cfg.Task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
 
+	notifyScheduler, err := task.NewNotifySchedulerTaskGCSubscriber(dynconfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "create notify scheduler task gc subscriber")
+	}
+	taskManager.GCSubscribe(notifyScheduler)
 	// Initialize progress manager
 	progressManager, err := progress.NewManager(taskManager)
 	if err != nil {

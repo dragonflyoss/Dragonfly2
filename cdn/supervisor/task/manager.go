@@ -23,7 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"d7y.io/dragonfly/v2/cdn/config"
+	"github.com/pkg/errors"
+
 	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -31,7 +32,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"github.com/pkg/errors"
 )
 
 // Manager as an interface defines all operations against SeedTask.
@@ -66,6 +66,9 @@ type Manager interface {
 	// Delete a task with specified taskID.
 	Delete(taskID string)
 
+	// GCSubscribe add a gc subscriber
+	GCSubscribe(subscriber GCSubscriber)
+
 	// AddGCSubscriber add a task GC subscriber
 	AddGCSubscriber(taskID string, subscriber *GCSubscriberInstance)
 }
@@ -99,13 +102,10 @@ type manager struct {
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(cfg Config, dynconfig config.DynconfigInterface) (Manager, error) {
+func NewManager(cfg Config) (Manager, error) {
 	manager := &manager{
 		config: cfg,
 	}
-	notifyScheduler := NewNotifySchedulerTaskGC()
-	dynconfig.Register(notifyScheduler)
-	manager.GCSubscribe(notifyScheduler)
 	gc.Register("task", cfg.GCInitialDelay, cfg.GCMetaInterval, manager)
 	return manager, nil
 }

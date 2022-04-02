@@ -34,6 +34,18 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
+// AddGCSubscriber mocks base method.
+func (m *MockManager) AddGCSubscriber(arg0 string, arg1 *task.GCSubscriberInstance) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddGCSubscriber", arg0, arg1)
+}
+
+// AddGCSubscriber indicates an expected call of AddGCSubscriber.
+func (mr *MockManagerMockRecorder) AddGCSubscriber(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddGCSubscriber", reflect.TypeOf((*MockManager)(nil).AddGCSubscriber), arg0, arg1)
+}
+
 // AddOrUpdate mocks base method.
 func (m *MockManager) AddOrUpdate(arg0 *task.SeedTask) (*task.SeedTask, error) {
 	m.ctrl.T.Helper()
@@ -74,6 +86,18 @@ func (m *MockManager) Exist(arg0 string) (*task.SeedTask, bool) {
 func (mr *MockManagerMockRecorder) Exist(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exist", reflect.TypeOf((*MockManager)(nil).Exist), arg0)
+}
+
+// GCSubscribe mocks base method.
+func (m *MockManager) GCSubscribe(arg0 task.GCSubscriber) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "GCSubscribe", arg0)
+}
+
+// GCSubscribe indicates an expected call of GCSubscribe.
+func (mr *MockManagerMockRecorder) GCSubscribe(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GCSubscribe", reflect.TypeOf((*MockManager)(nil).GCSubscribe), arg0)
 }
 
 // Get mocks base method.

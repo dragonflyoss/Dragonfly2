@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ./mocks/mock_dynconfig.go -package mocks d7y.io/dragonfly/v2/cdn/config DynconfigInterface
+
 package config
 
 import (
@@ -64,7 +66,7 @@ type dynConfig struct {
 	done      chan bool
 }
 
-func NewDynconfig(cfg *DynConfig, drawFunc func() (interface{}, error)) (DynconfigInterface, error) {
+func NewDynconfig(cfg DynConfig, drawFunc func() (interface{}, error)) (DynconfigInterface, error) {
 	d := &dynConfig{
 		done: make(chan bool),
 	}

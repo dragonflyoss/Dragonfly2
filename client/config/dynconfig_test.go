@@ -26,8 +26,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/config/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
 func TestDynconfigNewDynconfig(t *testing.T) {

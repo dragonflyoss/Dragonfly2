@@ -35,6 +35,18 @@ func (m *MockCDNService) EXPECT() *MockCDNServiceMockRecorder {
 	return m.recorder
 }
 
+// AddTaskGCSubscriber mocks base method.
+func (m *MockCDNService) AddTaskGCSubscriber(arg0 string, arg1 *task.GCSubscriberInstance) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddTaskGCSubscriber", arg0, arg1)
+}
+
+// AddTaskGCSubscriber indicates an expected call of AddTaskGCSubscriber.
+func (mr *MockCDNServiceMockRecorder) AddTaskGCSubscriber(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTaskGCSubscriber", reflect.TypeOf((*MockCDNService)(nil).AddTaskGCSubscriber), arg0, arg1)
+}
+
 // GetSeedPieces mocks base method.
 func (m *MockCDNService) GetSeedPieces(arg0 string) ([]*task.PieceInfo, error) {
 	m.ctrl.T.Helper()

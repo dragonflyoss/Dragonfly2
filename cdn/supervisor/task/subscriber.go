@@ -20,9 +20,10 @@ import (
 	"context"
 	"sync"
 
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/cdn/config"
 	"google.golang.org/grpc"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -34,11 +35,13 @@ type GCSubscriber interface {
 	AddGCSubscriberInstance(taskID string, instance *GCSubscriberInstance)
 }
 
-func NewNotifySchedulerTaskGC() *notifySchedulerGCSubscriber {
-	return &notifySchedulerGCSubscriber{
-		scheduler:       nil,
-		taskSubscribers: nil,
+func NewNotifySchedulerTaskGCSubscriber(dynconfig config.DynconfigInterface) (GCSubscriber, error) {
+	gcSubscriber := &notifySchedulerGCSubscriber{
+		scheduler:       map[string]string{},
+		taskSubscribers: map[string][]*GCSubscriberInstance{},
 	}
+	dynconfig.Register(gcSubscriber)
+	return gcSubscriber, nil
 }
 
 type notifySchedulerGCSubscriber struct {
@@ -71,6 +74,7 @@ func (sub *notifySchedulerGCSubscriber) AddGCSubscriberInstance(taskID string, i
 	subs, ok := sub.taskSubscribers[taskID]
 	if ok {
 		subs = append(subs, instance)
+		sub.taskSubscribers[taskID] = subs
 	}
 }
 
