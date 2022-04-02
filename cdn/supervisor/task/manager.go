@@ -23,8 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"d7y.io/dragonfly/v2/cdn/config"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
@@ -32,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"github.com/pkg/errors"
 )
 
 // Manager as an interface defines all operations against SeedTask.
@@ -65,6 +65,9 @@ type Manager interface {
 
 	// Delete a task with specified taskID.
 	Delete(taskID string)
+
+	// AddGCSubscriber add a task GC subscriber
+	AddGCSubscriber(taskID string, subscriber *GCSubscriberInstance)
 }
 
 // Ensure that manager implements the Manager and gc.Executor interfaces
@@ -87,18 +90,23 @@ func IsTaskNotFound(err error) bool {
 type manager struct {
 	config                  Config
 	taskStore               sync.Map
+	schedulerSubs           sync.Map
 	accessTimeMap           sync.Map
 	taskURLUnreachableStore sync.Map
+
+	locker        sync.Mutex
+	gcSubscribers []GCSubscriber
 }
 
 // NewManager returns a new Manager Object.
-func NewManager(config Config) (Manager, error) {
-
+func NewManager(cfg Config, dynconfig config.DynconfigInterface) (Manager, error) {
 	manager := &manager{
-		config: config,
+		config: cfg,
 	}
-
-	gc.Register("task", config.GCInitialDelay, config.GCMetaInterval, manager)
+	notifyScheduler := NewNotifySchedulerTaskGC()
+	dynconfig.Register(notifyScheduler)
+	manager.GCSubscribe(notifyScheduler)
+	gc.Register("task", cfg.GCInitialDelay, cfg.GCMetaInterval, manager)
 	return manager, nil
 }
 
@@ -228,10 +236,24 @@ func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
 	return tm.getTask(taskID)
 }
 
+func (tm *manager) AddGCSubscriber(taskID string, subscriber *GCSubscriberInstance) {
+	synclock.Lock(taskID, false)
+	defer synclock.UnLock(taskID, false)
+	for _, gcSubscriber := range tm.gcSubscribers {
+		gcSubscriber.AddGCSubscriberInstance(taskID, subscriber)
+	}
+}
+
 func (tm *manager) Delete(taskID string) {
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
 	tm.deleteTask(taskID)
+}
+
+func (tm *manager) GCSubscribe(subscriber GCSubscriber) {
+	tm.locker.Lock()
+	tm.gcSubscribers = append(tm.gcSubscribers, subscriber)
+	tm.locker.Unlock()
 }
 
 const (
@@ -258,6 +280,9 @@ func (tm *manager) GC() error {
 		// gc task memory data
 		logger.GCLogger.With("type", "meta").Infof("gc task: %s", taskID)
 		tm.deleteTask(taskID)
+		for _, subscriber := range tm.gcSubscribers {
+			go subscriber.GC(taskID)
+		}
 		return true
 	})
 

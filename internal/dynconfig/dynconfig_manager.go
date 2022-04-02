@@ -82,6 +82,10 @@ func (d *dynconfigManager) Unmarshal(rawVal interface{}) error {
 	return decode(dynconfig, defaultDecoderConfig(rawVal))
 }
 
+func (d *dynconfigManager) Get() (interface{}, error) {
+	return d.get()
+}
+
 // Load dynamic config from manager
 func (d *dynconfigManager) load() error {
 	dynconfig, err := d.client.Get()

@@ -45,3 +45,7 @@ func (d *dynconfigLocal) Unmarshal(rawVal interface{}) error {
 
 	return yaml.Unmarshal(b, rawVal)
 }
+
+func (d *dynconfigLocal) Get() (interface{}, error) {
+	return os.ReadFile(d.filepath)
+}

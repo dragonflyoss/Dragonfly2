@@ -48,6 +48,9 @@ type CDNService interface {
 
 	// GetSeedTask returns seed task associated with taskID
 	GetSeedTask(taskID string) (seedTask *task.SeedTask, err error)
+
+	// AddTaskGCSubscriber add task GC subscriber
+	AddTaskGCSubscriber(taskID string, instance *task.GCSubscriberInstance)
 }
 
 type cdnService struct {
@@ -129,4 +132,8 @@ func (service *cdnService) GetSeedPieces(taskID string) ([]*task.PieceInfo, erro
 
 func (service *cdnService) GetSeedTask(taskID string) (*task.SeedTask, error) {
 	return service.taskManager.Get(taskID)
+}
+
+func (service *cdnService) AddTaskGCSubscriber(taskID string, instance *task.GCSubscriberInstance) {
+	service.taskManager.AddGCSubscriber(taskID, instance)
 }

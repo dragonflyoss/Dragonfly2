@@ -218,3 +218,8 @@ const (
 func IsEqual(task1, task2 SeedTask) bool {
 	return cmp.Equal(task1, task2, cmpopts.IgnoreFields(SeedTask{}, "Pieces"), cmpopts.IgnoreUnexported(SeedTask{}))
 }
+
+type GCSubscriberInstance struct {
+	ClientAddr string
+	PeerID     string
+}

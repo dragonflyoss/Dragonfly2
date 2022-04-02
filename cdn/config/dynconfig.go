@@ -17,16 +17,11 @@
 package config
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
 var (
@@ -37,20 +32,10 @@ var (
 	watchInterval = 10 * time.Second
 )
 
-type SchedulerInstance struct {
-	Hostname string `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	IP       string `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port     int32  `yaml:"port" mapstructure:"port" json:"port"`
-}
-
-type SchedulerCluster struct {
-	Config       []byte `yaml:"config" mapstructure:"config" json:"config"`
-	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
-}
-
+// todo move this interface to internal/dynconfig
 type DynconfigInterface interface {
 	// Get the dynamic config from manager.
-	Get() ([]*SchedulerInstance, error)
+	Get() (interface{}, error)
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -70,79 +55,49 @@ type DynconfigInterface interface {
 
 type Observer interface {
 	// OnNotify allows an event to be "published" to interface implementations.
-	OnNotify(*DynconfigData)
+	OnNotify(interface{})
 }
 
-type dynconfig struct {
-	*dc.Dynconfig
+type dynConfig struct {
+	ds        *dc.Dynconfig
 	observers map[Observer]struct{}
 	done      chan bool
-	cachePath string
 }
 
-func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
-	cachePath := filepath.Join(cacheDir, cacheFileName)
-	d := &dynconfig{
-		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
-		cachePath: cachePath,
+func NewDynconfig(cfg *DynConfig, drawFunc func() (interface{}, error)) (DynconfigInterface, error) {
+	d := &dynConfig{
+		done: make(chan bool),
 	}
 
-	if rawManagerClient != nil {
-		client, err := dc.New(
-			dc.ManagerSourceType,
-			dc.WithCachePath(cachePath),
-			dc.WithExpireTime(cfg.DynConfig.RefreshInterval),
-			dc.WithManagerClient(newManagerClient(rawManagerClient, cfg)),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		d.Dynconfig = client
-	}
-
-	return d, nil
-}
-
-func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
-	data, err := d.Get()
+	ds, err := dc.New(
+		cfg.SourceType,
+		dc.WithCachePath(filepath.Join(cfg.CachePath, cacheFileName)),
+		dc.WithExpireTime(cfg.RefreshInterval),
+		dc.WithManagerClient(newManagerClient(drawFunc)),
+	)
 	if err != nil {
-		return types.SchedulerClusterConfig{}, false
-	}
-
-	if data.SchedulerCluster != nil {
-		return types.SchedulerClusterConfig{}, false
-	}
-
-	var config types.SchedulerClusterConfig
-	if err := json.Unmarshal(data.SchedulerCluster.Config, &config); err != nil {
-		return types.SchedulerClusterConfig{}, false
-	}
-
-	return config, true
-}
-
-func (d *dynconfig) Get() (*DynconfigData, error) {
-	var config DynconfigData
-
-	if err := d.Unmarshal(&config); err != nil {
 		return nil, err
 	}
 
-	return &config, nil
+	d.ds = ds
+	d.Serve()
+	return d, nil
 }
 
-func (d *dynconfig) Register(l Observer) {
+func (d *dynConfig) Register(l Observer) {
 	d.observers[l] = struct{}{}
 }
 
-func (d *dynconfig) Deregister(l Observer) {
+func (d *dynConfig) Deregister(l Observer) {
 	delete(d.observers, l)
 }
 
-func (d *dynconfig) Notify() error {
-	config, err := d.Get()
+func (d *dynConfig) Get() (interface{}, error) {
+	return d.ds.Get()
+}
+
+func (d *dynConfig) Notify() error {
+	config, err := d.ds.Get()
 	if err != nil {
 		return err
 	}
@@ -154,7 +109,7 @@ func (d *dynconfig) Notify() error {
 	return nil
 }
 
-func (d *dynconfig) Serve() error {
+func (d *dynConfig) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
 	}
@@ -163,7 +118,7 @@ func (d *dynconfig) Serve() error {
 	return nil
 }
 
-func (d *dynconfig) watch() {
+func (d *dynConfig) watch() {
 	tick := time.NewTicker(watchInterval)
 
 	for {
@@ -178,37 +133,21 @@ func (d *dynconfig) watch() {
 	}
 }
 
-func (d *dynconfig) Stop() error {
+func (d *dynConfig) Stop() error {
 	close(d.done)
-	if err := os.Remove(d.cachePath); err != nil {
-		return err
-	}
-
-	return nil
+	return d.ds.Clean()
 }
 
-// Manager client for dynconfig
 type managerClient struct {
-	managerclient.Client
-	config *Config
+	drawFunc func() (interface{}, error)
 }
 
-func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
+func newManagerClient(drawFunc func() (interface{}, error)) dc.ManagerClient {
 	return &managerClient{
-		Client: client,
-		config: cfg,
+		drawFunc: drawFunc,
 	}
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	cdn, err := mc.GetCDN(&manager.GetCDNRequest{
-		HostName:     mc.config.Host.Hostname,
-		SourceType:   manager.SourceType_SCHEDULER_SOURCE,
-		CdnClusterId: uint64(mc.config.Manager.CDNClusterID),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return cdn, nil
+	return mc.drawFunc()
 }

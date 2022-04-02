@@ -18,6 +18,7 @@ package dynconfig
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -39,6 +40,7 @@ const (
 
 type strategy interface {
 	Unmarshal(rawVal interface{}) error
+	Get() (interface{}, error)
 }
 
 type Dynconfig struct {
@@ -154,6 +156,17 @@ func (d *Dynconfig) validate() error {
 // on the fields of the structure are properly set.
 func (d *Dynconfig) Unmarshal(rawVal interface{}) error {
 	return d.strategy.Unmarshal(rawVal)
+}
+
+func (d *Dynconfig) Get() (interface{}, error) {
+	return d.strategy.Get()
+}
+
+func (d *Dynconfig) Clean() error {
+	if err := os.Remove(d.cachePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 // A DecoderConfigOption can be passed to dynconfig Unmarshal to configure

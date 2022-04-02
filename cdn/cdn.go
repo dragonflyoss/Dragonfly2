@@ -19,7 +19,7 @@ package cdn
 import (
 	"context"
 
-	"d7y.io/dragonfly/v2/pkg/dfpath"
+	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -61,23 +61,37 @@ type Server struct {
 }
 
 // New creates a brand-new server instance.
-func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
+func New(cfg *config.Config) (*Server, error) {
 	// Initialize configServer
 	var configServer managerClient.Client
 	var dynconfig config.DynconfigInterface
+	var err error
 	if cfg.Manager.Addr != "" {
-		configServer, err := managerClient.New(cfg.Manager.Addr)
+		configServer, err = managerClient.New(cfg.Manager.Addr)
 		if err != nil {
 			return nil, errors.Wrap(err, "create configServer")
 		}
 		// Initialize dynconfig client
-		dynConfig, err := config.NewDynconfig(configServer, d.CacheDir(), cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "create dynamic config")
+		if cfg.DynConfig.SourceType == dc.ManagerSourceType {
+			dynconfig, err = config.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
+				cdn, err := configServer.GetCDN(&manager.GetCDNRequest{
+					HostName:     cfg.Host.Hostname,
+					SourceType:   manager.SourceType_SCHEDULER_SOURCE,
+					CdnClusterId: uint64(cfg.Manager.CDNClusterID),
+				})
+				if err != nil {
+					return nil, err
+				}
+				return cdn, nil
+			})
+			if err != nil {
+				return nil, errors.Wrap(err, "create dynamic config")
+			}
 		}
+		// todo implements local dynamic config
 	}
 	// Initialize task manager
-	taskManager, err := task.NewManager(cfg.Task)
+	taskManager, err := task.NewManager(cfg.Task, dynconfig)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
