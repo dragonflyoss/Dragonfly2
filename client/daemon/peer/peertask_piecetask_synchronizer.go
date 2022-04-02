@@ -165,6 +165,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 		}
 		err := s.newPieceTaskSynchronizer(s.ctx, peer, request)
 		if err == nil {
+			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
 			continue
 		}
 		legacyPeers = append(legacyPeers, peer)
