@@ -172,7 +172,7 @@ func TestConfig_Convert(t *testing.T) {
 		WorkHome: "/workHome",
 		DynConfig: dynconfig.Config{
 			RefreshInterval: time.Minute,
-			CachePath:       dfpath.DefaultCacheDir,
+			CachePath:       filepath.Join(dfpath.DefaultCacheDir, "cdn_dynconfig"),
 			SourceType:      dc.ManagerSourceType,
 		},
 	}, cfg)
