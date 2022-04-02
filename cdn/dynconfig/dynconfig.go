@@ -19,7 +19,8 @@
 package dynconfig
 
 import (
-	"path/filepath"
+	"reflect"
+	"sync"
 	"time"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -28,16 +29,13 @@ import (
 
 var (
 	// Cache filename
-	cacheFileName = "cdn_dynconfig"
-
-	// Notify observer interval
 	watchInterval = 10 * time.Second
 )
 
 // todo move this interface to internal/dynconfig
 type Interface interface {
-	// Get the dynamic config from manager.
-	Get() (interface{}, error)
+	// Get the dynamic config from configServer or local file.
+	Get(dest interface{}) error
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
@@ -48,11 +46,8 @@ type Interface interface {
 	// Notify publishes new events to listeners.
 	Notify() error
 
-	// Serve the dynconfig listening service.
-	Serve() error
-
 	// Stop the dynconfig listening service.
-	Stop() error
+	Stop()
 }
 
 type Observer interface {
@@ -61,40 +56,53 @@ type Observer interface {
 }
 
 type dynConfig struct {
-	ds        *dc.Dynconfig
+	ds *dc.Dynconfig
+
 	observers map[Observer]struct{}
-	done      chan bool
+	data      interface{}
+	stopOnce  sync.Once
+	done      chan struct{}
 }
 
 func NewDynconfig(cfg Config, drawFunc func() (interface{}, error)) (Interface, error) {
-	d := &dynConfig{
-		done: make(chan bool),
-	}
-
 	ds, err := dc.New(
 		cfg.SourceType,
-		dc.WithCachePath(filepath.Join(cfg.CachePath, cacheFileName)),
+		dc.WithCachePath(cfg.CachePath),
 		dc.WithExpireTime(cfg.RefreshInterval),
+		dc.WithLocalConfigPath(cfg.CachePath),
 		dc.WithManagerClient(newManagerClient(drawFunc)),
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	d.ds = ds
+	configData, err := ds.Get()
+	if err != nil {
+		return nil, err
+	}
+	if cfg.RefreshInterval < watchInterval {
+		watchInterval = cfg.RefreshInterval
+	}
+	d := &dynConfig{
+		ds:        ds,
+		observers: map[Observer]struct{}{},
+		data:      configData,
+		done:      make(chan struct{}),
+	}
+	go d.watch()
 	return d, nil
 }
 
 func (d *dynConfig) Register(l Observer) {
 	d.observers[l] = struct{}{}
+	l.OnNotify(d.data)
 }
 
 func (d *dynConfig) Deregister(l Observer) {
 	delete(d.observers, l)
 }
 
-func (d *dynConfig) Get() (interface{}, error) {
-	return d.ds.Get()
+func (d *dynConfig) Get(dest interface{}) error {
+	return d.ds.Unmarshal(dest)
 }
 
 func (d *dynConfig) Notify() error {
@@ -102,20 +110,12 @@ func (d *dynConfig) Notify() error {
 	if err != nil {
 		return err
 	}
-
-	for o := range d.observers {
-		o.OnNotify(config)
+	if !reflect.DeepEqual(config, d.data) {
+		d.data = config
+		for o := range d.observers {
+			o.OnNotify(config)
+		}
 	}
-
-	return nil
-}
-
-func (d *dynConfig) Serve() error {
-	if err := d.Notify(); err != nil {
-		return err
-	}
-
-	go d.watch()
 	return nil
 }
 
@@ -134,9 +134,13 @@ func (d *dynConfig) watch() {
 	}
 }
 
-func (d *dynConfig) Stop() error {
-	close(d.done)
-	return d.ds.Clean()
+func (d *dynConfig) Stop() {
+	d.stopOnce.Do(func() {
+		close(d.done)
+		if err := d.ds.Clean(); err != nil {
+			logger.Errorf("clean dataSource failed", err)
+		}
+	})
 }
 
 type managerClient struct {

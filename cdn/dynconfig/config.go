@@ -18,6 +18,7 @@ package dynconfig
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
@@ -33,14 +34,20 @@ type Config struct {
 
 	// sourceType is source type of dynConfig,
 	SourceType dc.SourceType `yaml:"sourceType" mapstructure:"sourceType"`
+
+	//// ConfigPath is dynamic config path when sourceType is local
+	//ConfigPath string `yaml:"configPath" mapstructure:"configPath"`
 }
 
 func (c Config) Validate() []error {
 	var errors []error
-	if c.SourceType != dc.ManagerSourceType {
-		errors = append(errors, fmt.Errorf("dynamic config sourceType only support manager but current is %s",
+	if c.SourceType != dc.ManagerSourceType && c.SourceType != dc.LocalSourceType {
+		errors = append(errors, fmt.Errorf("dynamic config sourceType only support manager or local but current is %s",
 			c.SourceType))
 	}
+	//if c.SourceType == dc.LocalSourceType && c.ConfigPath == "" {
+	//	errors = append(errors, fmt.Errorf("dynamic config sourceType is local but dynamic config path is empty"))
+	//}
 	if c.CachePath == "" {
 		errors = append(errors, fmt.Errorf("dynamic config cache path can't be empty"))
 	}
@@ -60,7 +67,7 @@ func (c Config) applyDefaults() Config {
 		c.RefreshInterval = time.Minute
 	}
 	if c.CachePath == "" {
-		c.CachePath = dfpath.DefaultCacheDir
+		c.CachePath = filepath.Join(dfpath.DefaultCacheDir, "cdn_dynconfig")
 	}
 	if c.SourceType == "" {
 		c.SourceType = dc.ManagerSourceType
