@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination ../mocks/client_mock.go -package mocks d7y.io/dragonfly/v2/pkg/rpc/manager/client Client
+
 package client
 
 import (
