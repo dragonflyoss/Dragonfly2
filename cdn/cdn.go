@@ -66,44 +66,13 @@ type Server struct {
 // New creates a brand-new server instance.
 func New(cfg *config.Config) (*Server, error) {
 	// Initialize configServer
-	var configServer managerClient.Client
-	var dynamicConfig dynconfig.Interface
-	var err error
-	if cfg.Manager.Addr != "" {
-		configServer, err = managerClient.New(cfg.Manager.Addr)
-		if err != nil {
-			return nil, errors.Wrap(err, "create configServer")
-		}
-		// Initialize dynconfig client
-		if cfg.DynConfig.SourceType == dc.ManagerSourceType {
-			dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
-				cdn, err := configServer.GetCDN(&manager.GetCDNRequest{
-					HostName:     cfg.Host.Hostname,
-					SourceType:   manager.SourceType_SCHEDULER_SOURCE,
-					CdnClusterId: uint64(cfg.Manager.CDNClusterID),
-				})
-				if err != nil {
-					return nil, err
-				}
-				return cdn, nil
-			})
-			if err != nil {
-				return nil, errors.Wrap(err, "create dynamic config")
-			}
-		} else {
-			dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
-				b, err := os.ReadFile(cfg.DynConfig.CachePath)
-				if err != nil {
-					return nil, err
-				}
-				cdn := new(manager.CDN)
-				if err = yaml.Unmarshal(b, cdn); err != nil {
-					return nil, err
-				}
-				return cdn, nil
-			})
-		}
-		// todo implements local dynamic config
+	configServer, err := managerClient.New(cfg.Manager.Addr)
+	if err != nil {
+		return nil, errors.Wrap(err, "create configServer")
+	}
+	dynamicConfig, err := initDynamicConfig(configServer, cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "create dynamic config")
 	}
 	// Initialize task manager
 	taskManager, err := task.NewManager(cfg.Task)
@@ -171,6 +140,39 @@ func New(cfg *config.Config) (*Server, error) {
 		dynconfig:     dynamicConfig,
 		gcServer:      gcServer,
 	}, nil
+}
+
+func initDynamicConfig(configServer managerClient.Client, cfg *config.Config) (dynamicConfig dynconfig.Interface, err error) {
+	// Initialize dynconfig client
+	if cfg.DynConfig.SourceType == dc.ManagerSourceType {
+		dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
+			cdn, err := configServer.GetCDN(&manager.GetCDNRequest{
+				HostName:     cfg.Host.Hostname,
+				SourceType:   manager.SourceType_SCHEDULER_SOURCE,
+				CdnClusterId: uint64(cfg.Manager.CDNClusterID),
+			})
+			if err != nil {
+				return nil, err
+			}
+			return cdn, nil
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "create dynamic config")
+		}
+	} else {
+		dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
+			b, err := os.ReadFile(cfg.DynConfig.CachePath)
+			if err != nil {
+				return nil, err
+			}
+			cdn := new(manager.CDN)
+			if err = yaml.Unmarshal(b, cdn); err != nil {
+				return nil, err
+			}
+			return cdn, nil
+		})
+	}
+	return
 }
 
 func (s *Server) Serve() error {
@@ -242,5 +244,11 @@ func (s *Server) Stop() error {
 		// Stop grpc server
 		return s.grpcServer.Shutdown()
 	})
+	if s.dynconfig != nil {
+		g.Go(func() error {
+			s.dynconfig.Stop()
+			return nil
+		})
+	}
 	return g.Wait()
 }

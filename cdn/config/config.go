@@ -42,8 +42,7 @@ func New() *Config {
 		Task:      task.DefaultConfig(),
 		CDN:       cdn.DefaultConfig(),
 		Manager: ManagerConfig{
-			Addr:         "",
-			CDNClusterID: 0,
+			CDNClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},

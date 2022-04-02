@@ -162,7 +162,7 @@ func TestGetFromManagerSourceType(t *testing.T) {
 			cdn := new(manager.CDN)
 			err = d.Get(cdn)
 			tc.beforeSleepExpect(t, cdn, err)
-			tc.sleepFunc()
+			assert.Nil(t, tc.sleepFunc())
 			err = d.Get(cdn)
 			tc.afterSleepExpect(t, cdn, err)
 			d.Stop()
@@ -211,7 +211,9 @@ func TestGetDataFromLocalType(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				file.Write(bytes)
+				if _, err := file.Write(bytes); err != nil {
+					return err
+				}
 				return file.Sync()
 			},
 			beforeSleepExcept: func(t *testing.T, cdn *manager.CDN, err error) {
@@ -267,7 +269,9 @@ func TestGetDataFromLocalType(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				file.Write(bytes)
+				if _, err := file.Write(bytes); err != nil {
+					return err
+				}
 				return file.Sync()
 			},
 			beforeSleepExcept: func(t *testing.T, cdn *manager.CDN, err error) {
@@ -301,8 +305,12 @@ func TestGetDataFromLocalType(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				file.Write(bytes)
-				return file.Sync()
+				if _, err := file.Write(bytes); err != nil {
+					return err
+				}
+				if err := file.Sync(); err != nil {
+					return err
+				}
 				time.Sleep(10 * time.Millisecond)
 				return nil
 			},
@@ -321,7 +329,7 @@ func TestGetDataFromLocalType(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.initDataFunc(tc.cfg.CachePath)
+			assert.Nil(t, tc.initDataFunc(tc.cfg.CachePath))
 			d, err := NewDynconfig(tc.cfg, func() (interface{}, error) {
 				b, err := os.ReadFile(tc.cfg.CachePath)
 				if err != nil {
