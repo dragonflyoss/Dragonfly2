@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/unit"
+	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
@@ -227,11 +228,16 @@ func NewDefaultBaseProperties() *BaseProperties {
 		TaskExpireTime:          3 * time.Minute,
 		StorageMode:             "disk",
 		Manager: ManagerConfig{
+			CDNClusterID: 1,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
 		},
-		Host: HostConfig{},
+		Host: HostConfig{
+			Location: "",
+			IDC:      "",
+			Hostname: hostutils.FQDNHostname,
+		},
 		Metrics: &RestConfig{
 			Addr: ":8000",
 		},

@@ -136,5 +136,5 @@ type HostConfig struct {
 	IDC string `mapstructure:"idc" yaml:"idc"`
 
 	// Hostname for cdn
-	Hostname string `mapstructure:"idc" yaml:"idc"`
+	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 }

@@ -70,6 +70,20 @@ func New(cfg *config.Config) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "create configServer")
 	}
+	cdnInstance, err := configServer.UpdateCDN(&manager.UpdateCDNRequest{
+		SourceType:   manager.SourceType_CDN_SOURCE,
+		HostName:     hostutils.FQDNHostname,
+		Ip:           cfg.RPCServer.AdvertiseIP,
+		Port:         int32(cfg.RPCServer.ListenPort),
+		DownloadPort: int32(cfg.RPCServer.DownloadPort),
+		Idc:          cfg.Host.IDC,
+		Location:     cfg.Host.Location,
+		CdnClusterId: uint64(cfg.Manager.CDNClusterID),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "update cdn instance")
+	}
+	logger.Info("success update cdn instance: %s", cdnInstance)
 	dynamicConfig, err := initDynamicConfig(configServer, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "create dynamic config")
@@ -194,22 +208,8 @@ func (s *Server) Serve() error {
 
 	go func() {
 		if s.configServer != nil {
-			var rpcServerConfig = s.grpcServer.GetConfig()
-			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
-				SourceType:   manager.SourceType_CDN_SOURCE,
-				HostName:     hostutils.FQDNHostname,
-				Ip:           rpcServerConfig.AdvertiseIP,
-				Port:         int32(rpcServerConfig.ListenPort),
-				DownloadPort: int32(rpcServerConfig.DownloadPort),
-				Idc:          s.config.Host.IDC,
-				Location:     s.config.Host.Location,
-				CdnClusterId: uint64(s.config.Manager.CDNClusterID),
-			})
-			if err != nil {
-				logger.Fatalf("update cdn instance failed: %v", err)
-			}
 			// Serve Keepalive
-			logger.Infof("====starting keepalive cdn instance %s to manager %s====", CDNInstance, s.config.Manager.Addr)
+			logger.Infof("====starting keepalive cdn instance to manager %s====", s.config.Manager.Addr)
 			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,
