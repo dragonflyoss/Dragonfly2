@@ -232,3 +232,37 @@ func TestSetRange(t *testing.T) {
 		})
 	}
 }
+
+func TestSetClear(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, s Set)
+	}{
+		{
+			name: "clear empty set",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				s.Clear()
+				assert.Equal(s.Values(), []interface{}(nil))
+			},
+		},
+		{
+			name: "clear set",
+			expect: func(t *testing.T, s Set) {
+				assert := assert.New(t)
+				assert.Equal(s.Add("foo"), true)
+				s.Clear()
+				assert.Equal(s.Values(), []interface{}(nil))
+				assert.Equal(s.Add("foo"), true)
+				assert.Equal(s.Values(), []interface{}{"foo"})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := New()
+			tc.expect(t, s)
+		})
+	}
+}

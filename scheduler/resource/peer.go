@@ -143,6 +143,9 @@ type Peer struct {
 	// ChildCount is child count
 	ChildCount *atomic.Int32
 
+	// StealPeers is steal peer ids
+	StealPeers set.SafeSet
+
 	// BlockPeers is bad peer ids
 	BlockPeers set.SafeSet
 
@@ -172,6 +175,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
 		ChildCount: atomic.NewInt32(0),
+		StealPeers: set.NewSafeSet(),
 		BlockPeers: set.NewSafeSet(),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
