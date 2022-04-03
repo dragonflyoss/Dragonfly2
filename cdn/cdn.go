@@ -84,21 +84,21 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "update cdn instance")
 	}
 	logger.Info("success update cdn instance: %s", cdnInstance)
-	dynamicConfig, err := initDynamicConfig(configServer, cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "create dynamic config")
-	}
+	//dynamicConfig, err := initDynamicConfig(configServer, cfg)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "create dynamic config")
+	//}
 	// Initialize task manager
 	taskManager, err := task.NewManager(cfg.Task)
 	if err != nil {
 		return nil, errors.Wrapf(err, "create task manager")
 	}
 
-	notifyScheduler, err := task.NewNotifySchedulerTaskGCSubscriber(dynamicConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "create notify scheduler task gc subscriber")
-	}
-	taskManager.GCSubscribe(notifyScheduler)
+	//notifyScheduler, err := task.NewNotifySchedulerTaskGCSubscriber(dynamicConfig)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "create notify scheduler task gc subscriber")
+	//}
+	//taskManager.GCSubscribe(notifyScheduler)
 	// Initialize progress manager
 	progressManager, err := progress.NewManager(taskManager)
 	if err != nil {
@@ -151,8 +151,8 @@ func New(cfg *config.Config) (*Server, error) {
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
-		dynconfig:     dynamicConfig,
-		gcServer:      gcServer,
+		//dynconfig:     dynamicConfig,
+		gcServer: gcServer,
 	}, nil
 }
 
