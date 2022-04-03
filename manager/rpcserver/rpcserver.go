@@ -30,6 +30,8 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
@@ -76,7 +78,9 @@ func New(database *database.Database, cache *cache.Cache, searcher searcher.Sear
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
 	}, opts...)...)
 
+	// Register servers on grpc server
 	manager.RegisterManagerServer(grpcServer, server)
+	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 
@@ -93,7 +97,9 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	// Cache Miss
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster").First(&cdn, &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("CDNCluster").Preload("CDNCluster.SchedulerClusters.Schedulers", &model.Scheduler{
+		State: model.SchedulerStateActive,
+	}).First(&cdn, &model.CDN{
 		HostName:     req.HostName,
 		CDNClusterID: uint(req.CdnClusterId),
 	}).Error; err != nil {
@@ -103,6 +109,21 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	config, err := cdn.CDNCluster.Config.MarshalJSON()
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	var pbSchedulers []*manager.Scheduler
+	for _, schedulerCluster := range cdn.CDNCluster.SchedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			pbSchedulers = append(pbSchedulers, &manager.Scheduler{
+				Id:       uint64(scheduler.ID),
+				HostName: scheduler.HostName,
+				Idc:      scheduler.IDC,
+				Location: scheduler.Location,
+				Ip:       scheduler.IP,
+				Port:     scheduler.Port,
+				State:    scheduler.State,
+			})
+		}
 	}
 
 	pbCDN = manager.CDN{
@@ -121,6 +142,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 			Bio:    cdn.CDNCluster.BIO,
 			Config: config,
 		},
+		Schedulers: pbSchedulers,
 	}
 
 	if err := s.cache.Once(&cachev8.Item{
@@ -410,9 +432,9 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	// Search optimal scheduler cluster
+	// Search optimal scheduler clusters
 	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
-	schedulerCluster, err := s.searcher.FindSchedulerCluster(ctx, schedulerClusters, req)
+	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
 		log.Errorf("can not matching scheduler cluster %v", err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
@@ -420,11 +442,10 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
 
 	schedulers := []model.Scheduler{}
-	if err := s.db.WithContext(ctx).Find(&schedulers, &model.Scheduler{
-		State:              model.SchedulerStateActive,
-		SchedulerClusterID: schedulerCluster.ID,
-	}).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
+	for _, schedulerCluster := range schedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			schedulers = append(schedulers, scheduler)
+		}
 	}
 
 	for _, scheduler := range schedulers {
@@ -557,6 +578,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 				logger.Infof("%s close keepalive in cluster %d", hostName, clusterID)
 				return nil
 			}
+
 			logger.Errorf("%s keepalive failed in cluster %d: %v", hostName, clusterID, err)
 			return status.Error(codes.Unknown, err.Error())
 		}

@@ -47,24 +47,11 @@ prepare:
 	retryCount++
 	poller.peerTaskConductor.Debugf("prepare piece tasks, retry count: %d", retryCount)
 	peerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
-	ptc.pieceParallelCount.Store(peerPacket.ParallelCount)
 
 	if poller.peerTaskConductor.needBackSource.Load() {
 		return nil, fmt.Errorf("need back source")
 	}
 
-	request.DstPid = peerPacket.MainPeer.PeerId
-	pp, err = poller.preparePieceTasksByPeer(peerPacket, peerPacket.MainPeer, request)
-	if err == nil {
-		return
-	}
-	if err == errPeerPacketChanged {
-		if poller.getPiecesMaxRetry > 0 && retryCount > poller.getPiecesMaxRetry {
-			err = fmt.Errorf("get pieces max retry count reached")
-			return
-		}
-		goto prepare
-	}
 	for _, peer := range peerPacket.StealPeers {
 		if poller.peerTaskConductor.needBackSource.Load() {
 			return nil, fmt.Errorf("need back source")
@@ -106,7 +93,7 @@ retry:
 	ptc.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := poller.getPieceTasksByPeer(span, curPeerPacket, peer, request)
 	if err == nil {
-		ptc.Infof("got piece task from peer %s ok, pieces length: %d, totalPiece: %d, content length: %d, piece md5 sign: %s",
+		ptc.Infof("get piece task from peer %s ok, pieces length: %d, totalPiece: %d, content length: %d, piece md5 sign: %s",
 			peer.PeerId, len(p.PieceInfos), p.TotalPiece, p.ContentLength, p.PieceMd5Sign)
 		span.SetAttributes(config.AttributeGetPieceCount.Int(len(p.PieceInfos)))
 		return p, nil
@@ -193,9 +180,9 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 
 			// fast way 2 to exit retry
 			lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
-			if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
+			if curPeerPacket.StealPeers[0].PeerId != lastPeerPacket.StealPeers[0].PeerId {
 				ptc.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s", getError,
-					curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
+					curPeerPacket.StealPeers[0].PeerId, lastPeerPacket.StealPeers[0].PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}
@@ -206,7 +193,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			return piecePacket, false, nil
 		}
 		// need update metadata
-		if piecePacket.ContentLength > ptc.contentLength.Load() || piecePacket.TotalPiece > ptc.totalPiece {
+		if piecePacket.ContentLength > ptc.contentLength.Load() || piecePacket.TotalPiece > ptc.GetTotalPieces() {
 			return piecePacket, false, nil
 		}
 		// invalid request num
@@ -227,16 +214,16 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			FinishedCount: ptc.readyPieces.Settled(),
 		})
 		if sendError != nil {
-			ptc.cancel(base.Code_SchedError, sendError.Error())
+			ptc.cancel(base.Code_ClientPieceRequestFail, sendError.Error())
 			span.RecordError(sendError)
 			ptc.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
 			return nil, true, sendError
 		}
 		// fast way to exit retry
 		lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
-		if curPeerPacket.MainPeer.PeerId != lastPeerPacket.MainPeer.PeerId {
+		if curPeerPacket.StealPeers[0].PeerId != lastPeerPacket.StealPeers[0].PeerId {
 			ptc.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
-				curPeerPacket.MainPeer.PeerId, lastPeerPacket.MainPeer.PeerId)
+				curPeerPacket.StealPeers[0].PeerId, lastPeerPacket.StealPeers[0].PeerId)
 			peerPacketChanged = true
 			return nil, true, nil
 		}

@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -46,8 +47,12 @@ func (s *service) CreateCDNCluster(ctx context.Context, json types.CreateCDNClus
 
 func (s *service) DestroyCDNCluster(ctx context.Context, id uint) error {
 	cdnCluster := model.CDNCluster{}
-	if err := s.db.WithContext(ctx).First(&cdnCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("CDNs").First(&cdnCluster, id).Error; err != nil {
 		return err
+	}
+
+	if len(cdnCluster.CDNs) != 0 {
+		return errors.New("cdn cluster exists cdn")
 	}
 
 	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.CDNCluster{}, id).Error; err != nil {

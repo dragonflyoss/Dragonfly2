@@ -76,7 +76,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		if err := logger.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
+		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 
@@ -105,7 +105,7 @@ var rootCmd = &cobra.Command{
 			errInfo = fmt.Sprintf("error: %v", err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Now().Sub(start).Milliseconds(), errInfo)
+		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Since(start).Milliseconds(), errInfo)
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 
@@ -215,7 +215,7 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 	s, _ := yaml.Marshal(dfgetConfig)
 	logger.Infof("client dfget configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(dfgetConfig.Verbose, dfgetConfig.PProfPort, dfgetConfig.Telemetry)
+	ff := dependency.InitMonitor(dfgetConfig.PProfPort, dfgetConfig.Telemetry)
 	defer ff()
 
 	var (

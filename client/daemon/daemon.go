@@ -285,9 +285,10 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		port int
 		err  error
 	)
-	if opt.TCPListen != nil {
-		ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
+	if opt.TCPListen == nil {
+		return nil, -1, errors.New("empty tcp listen option")
 	}
+	ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -326,11 +327,13 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
-	// TODO remove this field, and use directly dfpath.DaemonSockPath
-	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
+	}
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
+	if cd.Option.Download.DownloadGRPC.UnixListen.Socket == "" {
+		return errors.New("download grpc unix listen socket is empty")
 	}
 	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
@@ -447,26 +450,30 @@ func (cd *clientDaemon) Serve() error {
 
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
-			select {
-			case <-time.After(cd.Option.AliveTime.Duration):
-				var keepalives = []clientutil.KeepAlive{
-					cd.StorageManager,
-					cd.RPCManager,
-				}
-				var keep bool
-				for _, keepalive := range keepalives {
-					if keepalive.Alive(cd.Option.AliveTime.Duration) {
-						keep = true
+			for {
+				select {
+				case <-time.After(cd.Option.AliveTime.Duration):
+					var keepalives = []clientutil.KeepAlive{
+						cd.StorageManager,
+						cd.RPCManager,
 					}
+					var keep bool
+					for _, keepalive := range keepalives {
+						if keepalive.Alive(cd.Option.AliveTime.Duration) {
+							keep = true
+							break
+						}
+					}
+					if !keep {
+						cd.Stop()
+						logger.Infof("alive time reached, stop daemon")
+						return nil
+					}
+				case <-cd.done:
+					logger.Infof("peer host done, stop watch alive time")
+					return nil
 				}
-				if !keep {
-					cd.Stop()
-					logger.Infof("alive time reached, stop daemon")
-				}
-			case <-cd.done:
-				logger.Infof("peer host done, stop watch alive time")
 			}
-			return nil
 		})
 	}
 
@@ -560,7 +567,8 @@ func (cd *clientDaemon) Stop() {
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Infof("scheduler addresses deep equal: %v", ips)
+		logger.Infof("scheduler addresses deep equal: %v, used: %#v",
+			ips, cd.schedulerClient.GetState())
 		return
 	}
 
@@ -571,7 +579,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
 
-	logger.Infof("scheduler addresses have been updated: %v", ips)
+	logger.Infof("scheduler addresses have been updated: %#v", addrs)
 }
 
 // getSchedulerIPs get ips by schedulers.
@@ -586,18 +594,24 @@ func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 
 // schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
 func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+	var schedulerClusterID uint64
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
+		// Check whether scheduler is in the same cluster
+		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
+			continue
+		}
+
 		// Check whether the ip can be reached
 		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
 		if err := ipReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
 			})
-
 			continue
 		}
 
@@ -606,6 +620,7 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 		if err := hostReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),

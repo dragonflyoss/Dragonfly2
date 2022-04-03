@@ -27,6 +27,7 @@ import (
 // common and framework errors
 var (
 	ErrInvalidArgument = errors.New("invalid argument")
+	ErrInvalidHeader   = errors.New("invalid Header")
 	ErrDataNotFound    = errors.New("data not found")
 	ErrEmptyValue      = errors.New("empty value")
 	ErrConvertFailed   = errors.New("convert failed")

@@ -46,6 +46,7 @@ enum Code{
   ClientPieceDownloadFail = 4005;
   ClientRequestLimitFail = 4006;
   ClientConnectionError = 4007;
+  ClientBackSourceError = 4008;
   ClientPieceNotFound = 4404;
 
   // scheduler response error 5000-5999
@@ -79,7 +80,7 @@ enum SizeScope{
   TINY = 2;
 }
 message GrpcDfError {
-  Code code = 1 [(validate.rules).enum.defined_only = true];
+  Code code = 1;
   string message = 2;
 }
 

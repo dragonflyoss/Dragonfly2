@@ -31,6 +31,7 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -142,6 +143,9 @@ type Peer struct {
 	// ChildCount is child count
 	ChildCount *atomic.Int32
 
+	// BlockPeers is bad peer ids
+	BlockPeers set.SafeSet
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -168,6 +172,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
 		ChildCount: atomic.NewInt32(0),
+		BlockPeers: set.NewSafeSet(),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
 		mu:         &sync.RWMutex{},
@@ -226,11 +231,13 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 
 				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
+				p.Task.PeerFailedCount.Store(0)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadFailed: func(e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
+					p.Task.PeerFailedCount.Inc()
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 

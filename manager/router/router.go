@@ -197,10 +197,10 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 
 	// Config
 	config := apiv1.Group("/configs")
-	config.POST("", h.CreateConfig)
-	config.DELETE(":id", h.DestroyConfig)
-	config.PATCH(":id", h.UpdateConfig)
-	config.GET(":id", h.GetConfig)
+	config.POST("", h.CreateConfig, jwt.MiddlewareFunc(), rbac)
+	config.DELETE(":id", h.DestroyConfig, jwt.MiddlewareFunc(), rbac)
+	config.PATCH(":id", h.UpdateConfig, jwt.MiddlewareFunc(), rbac)
+	config.GET(":id", h.GetConfig, jwt.MiddlewareFunc(), rbac)
 	config.GET("", h.GetConfigs)
 
 	// Job
@@ -218,7 +218,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check
-	r.GET("/healthy/*action", h.GetHealth)
+	r.GET("/healthy", h.GetHealth)
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

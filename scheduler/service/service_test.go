@@ -1159,12 +1159,10 @@ func TestService_LeaveTask(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateSucceeded)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				blocklist := set.NewSafeSet()
-				blocklist.Add(peer.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(peer, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
 				)
@@ -1210,12 +1208,10 @@ func TestService_LeaveTask(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateFailed)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				blocklist := set.NewSafeSet()
-				blocklist.Add(peer.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(peer, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return().Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
 				)
@@ -1291,6 +1287,8 @@ func TestService_registerTask(t *testing.T) {
 			},
 			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				mockTask.FSM.SetState(resource.TaskStateRunning)
+				mockTask.StorePeer(mockPeer)
+				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
@@ -1716,9 +1714,7 @@ func TestService_handleBeginOfPiece(t *testing.T) {
 			name: "peer state is PeerStateReceivedNormal",
 			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(peer.ID)
-				scheduler.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1)
+				scheduler.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -1942,10 +1938,12 @@ func TestService_handlePieceFail(t *testing.T) {
 			parent: resource.NewPeer(mockCDNPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, cdn resource.CDN, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
+				blocklist := set.NewSafeSet()
+				blocklist.Add(mockCDNPeerID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(parent.ID)).Return(nil, false).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet())).Return().Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
 				)
 
 				svc.handlePieceFail(context.Background(), peer, piece)
@@ -2361,9 +2359,7 @@ func TestService_handlePeerFail(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				blocklist := set.NewSafeSet()
-				blocklist.Add(peer.ID)
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(blocklist)).Return().Times(1)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
 				assert := assert.New(t)
@@ -2524,6 +2520,18 @@ func TestService_handleTaskFail(t *testing.T) {
 			expect: func(t *testing.T, task *resource.Task) {
 				assert := assert.New(t)
 				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+		{
+			name: "number of failed peers in the task is greater than FailedPeerCountLimit",
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateFailed)
+				task.PeerFailedCount.Store(201)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+				assert.Equal(task.PeerFailedCount.Load(), int32(0))
 			},
 		},
 	}

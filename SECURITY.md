@@ -12,4 +12,4 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-Report to email: <Dragonfly2@noreply.github.com>
+Report to email: <dragonfly-developers@googlegroups.com>

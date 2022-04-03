@@ -326,10 +326,12 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			s.handleTaskFail(ctx, peer.Task)
+			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
+		} else {
+			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
 		}
-		s.handlePeerFail(ctx, peer)
 
-		metrics.DownloadFailureCount.WithLabelValues(peer.BizTag).Inc()
+		s.handlePeerFail(ctx, peer)
 		return nil
 	}
 
@@ -368,11 +370,8 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		}
 
 		// Reschedule a new parent to children of peer to exclude the current leave peer
-		blocklist := set.NewSafeSet()
-		blocklist.Add(peer.ID)
-
 		child.Log.Infof("schedule parent because of parent peer %s is leaving", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, blocklist)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 		return true
 	})
 
@@ -384,19 +383,9 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded {
-		if task.FSM.Is(resource.TaskStateRunning) {
-			task.Log.Info("task state is running and it has available peer")
-			return task, nil
-		}
-
-		hasAvailablePeer := task.HasAvailablePeer()
-		if hasAvailablePeer && task.FSM.Is(resource.TaskStateSucceeded) {
-			task.Log.Info("task state is succeeded and it has available peer")
-			return task, nil
-		}
-
-		task.Log.Infof("task state is %s and it has available peer %t", task.FSM.Current(), hasAvailablePeer)
+	if loaded && task.HasAvailablePeer() && (task.FSM.Is(resource.TaskStateSucceeded) || task.FSM.Is(resource.TaskStateRunning)) {
+		task.Log.Infof("task state is %s and it has available peer", task.FSM.Current())
+		return task, nil
 	}
 
 	// Trigger task
@@ -496,13 +485,8 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 			return
 		}
 
-		// It’s not a case of back-to-source or small task downloading,
-		// to help peer to schedule the parent node
-		blocklist := set.NewSafeSet()
-		blocklist.Add(peer.ID)
-
 		peer.Log.Infof("schedule parent because of peer receive begin of piece")
-		s.scheduler.ScheduleParent(ctx, peer, blocklist)
+		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
 	default:
 		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}
@@ -535,7 +519,8 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	parent, ok := s.resource.PeerManager().Load(piece.DstPid)
 	if !ok {
 		peer.Log.Errorf("schedule parent because of peer can not found parent %s", piece.DstPid)
-		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
+		peer.BlockPeers.Add(piece.DstPid)
+		s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 		return
 	}
 
@@ -574,11 +559,9 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		return
 	}
 
-	blocklist := set.NewSafeSet()
-	blocklist.Add(parent.ID)
-
 	peer.Log.Infof("schedule parent because of peer receive failed piece")
-	s.scheduler.ScheduleParent(ctx, peer, blocklist)
+	peer.BlockPeers.Add(parent.ID)
+	s.scheduler.ScheduleParent(ctx, peer, peer.BlockPeers)
 }
 
 // handlePeerSuccess handles successful peer
@@ -609,9 +592,6 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer
-	blocklist := set.NewSafeSet()
-	blocklist.Add(peer.ID)
-
 	peer.Children.Range(func(_, value interface{}) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
@@ -619,7 +599,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 		}
 
 		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
-		s.scheduler.ScheduleParent(ctx, child, blocklist)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 		return true
 	})
 }
@@ -646,6 +626,13 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // 1. CDN downloads the resource falied
 // 2. Dfdaemon back-to-source to download failed
 func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
+	// If the number of failed peers in the task is greater than FailedPeerCountLimit,
+	// then scheduler notifies running peers of failure
+	if task.PeerFailedCount.Load() > resource.FailedPeerCountLimit {
+		task.PeerFailedCount.Store(0)
+		task.NotifyPeers(base.Code_SchedTaskStatusError, resource.PeerEventDownloadFailed)
+	}
+
 	if task.FSM.Is(resource.TaskStateFailed) {
 		return
 	}

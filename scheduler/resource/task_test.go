@@ -17,13 +17,17 @@
 package resource
 
 import (
+	"errors"
 	"testing"
 	"time"
 
+	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	rpcschedulermocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
 
 var (
@@ -746,6 +750,87 @@ func TestTask_CanBackToSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
 			tc.expect(t, task)
+		})
+	}
+}
+
+func TestTask_NotifyPeers(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder)
+	}{
+		{
+			name: "peer state is PeerStatePending",
+			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				mockPeer.FSM.SetState(PeerStatePending)
+				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+
+				assert := assert.New(t)
+				assert.True(mockPeer.FSM.Is(PeerStatePending))
+			},
+		},
+		{
+			name: "peer state is PeerStateRunning and stream is empty",
+			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				mockPeer.FSM.SetState(PeerStateRunning)
+				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+
+				assert := assert.New(t)
+				assert.True(mockPeer.FSM.Is(PeerStateRunning))
+			},
+		},
+		{
+			name: "peer state is PeerStateRunning and stream sending failed",
+			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				mockPeer.FSM.SetState(PeerStateRunning)
+				mockPeer.StoreStream(stream)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
+
+				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+
+				assert := assert.New(t)
+				assert.True(mockPeer.FSM.Is(PeerStateRunning))
+			},
+		},
+		{
+			name: "peer state is PeerStateRunning and state changing failed",
+			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				mockPeer.FSM.SetState(PeerStateRunning)
+				mockPeer.StoreStream(stream)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
+
+				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventRegisterNormal)
+
+				assert := assert.New(t)
+				assert.True(mockPeer.FSM.Is(PeerStateRunning))
+			},
+		},
+		{
+			name: "peer state is PeerStateRunning and notify peer successfully",
+			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
+				mockPeer.FSM.SetState(PeerStateRunning)
+				mockPeer.StoreStream(stream)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1)
+
+				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+
+				assert := assert.New(t)
+				assert.True(mockPeer.FSM.Is(PeerStateFailed))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
+
+			mockHost := NewHost(mockRawHost)
+			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+			task.StorePeer(mockPeer)
+			tc.run(t, task, mockPeer, stream, stream.EXPECT())
 		})
 	}
 }

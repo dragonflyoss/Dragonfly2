@@ -56,6 +56,7 @@ message CDN {
   string state = 8;
   uint64 cdn_cluster_id = 9;
   CDNCluster cdn_cluster = 10;
+  repeated Scheduler schedulers = 11;
 }
 
 message GetCDNRequest {

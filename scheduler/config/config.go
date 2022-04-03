@@ -59,9 +59,10 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:   iputils.IPv4,
-			Host: hostutils.FQDNHostname,
-			Port: 8002,
+			IP:     iputils.IPv4,
+			Host:   hostutils.FQDNHostname,
+			Listen: "0.0.0.0",
+			Port:   8002,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            "default",
@@ -121,6 +122,10 @@ func (c *Config) Validate() error {
 
 	if c.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
+	}
+
+	if c.Server.Listen == "" {
+		return errors.New("server requires parameter listen")
 	}
 
 	if c.Scheduler.Algorithm == "" {
@@ -212,6 +217,9 @@ type ServerConfig struct {
 
 	// Server hostname
 	Host string `yaml:"host" mapstructure:"host"`
+
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	Listen string `yaml:"listen" mapstructure:"listen"`
 
 	// Server port
 	Port int `yaml:"port" mapstructure:"port"`

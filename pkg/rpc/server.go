@@ -39,7 +39,7 @@ var DefaultServerOptions = []grpc.ServerOption{
 	grpc.ConnectionTimeout(10 * time.Second),
 	grpc.InitialConnWindowSize(8 * 1024 * 1024),
 	grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-		MinTime: 30 * time.Second,
+		MinTime: 1 * time.Minute,
 	}),
 	grpc.KeepaliveParams(keepalive.ServerParameters{
 		MaxConnectionIdle: 5 * time.Minute,

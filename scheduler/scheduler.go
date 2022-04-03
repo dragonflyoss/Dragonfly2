@@ -199,7 +199,7 @@ func (s *Server) Serve() error {
 	}
 
 	// Generate GRPC limit listener
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.IP, s.config.Server.Port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.Listen, s.config.Server.Port))
 	if err != nil {
 		logger.Fatalf("net listener failed to start: %v", err)
 	}

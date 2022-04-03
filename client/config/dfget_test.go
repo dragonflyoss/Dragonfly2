@@ -138,3 +138,57 @@ func TestMkdirAll(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckHeader(t *testing.T) {
+	cfg := NewDfgetConfig()
+
+	// test empty header
+	testifyassert.Nil(t, cfg.checkHeader())
+
+	tests := []struct {
+		header string
+		hasErr bool
+	}{
+		{
+			header: "",
+			hasErr: true,
+		},
+		{
+			header: "#",
+			hasErr: true,
+		},
+		{
+			header: "a:b",
+			hasErr: false,
+		},
+		{
+			header: "1:2",
+			hasErr: false,
+		},
+		{
+			header: "a:b:c",
+			hasErr: false,
+		},
+		{
+			header: ":",
+			hasErr: true,
+		},
+		{
+			header: " :b",
+			hasErr: true,
+		},
+		{
+			header: "a: ",
+			hasErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		cfg.Header = []string{test.header}
+		if test.hasErr {
+			testifyassert.NotNil(t, cfg.checkHeader())
+		} else {
+			testifyassert.Nil(t, cfg.checkHeader())
+		}
+	}
+}

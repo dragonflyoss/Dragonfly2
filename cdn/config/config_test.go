@@ -139,6 +139,7 @@ func TestConfig_Convert(t *testing.T) {
 		},
 		RPCServer: rpcserver.Config{
 			AdvertiseIP:  "127.0.0.1",
+			Listen:       "0.0.0.0",
 			ListenPort:   8006,
 			DownloadPort: 8000,
 		},
