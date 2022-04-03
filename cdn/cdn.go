@@ -156,7 +156,8 @@ func New(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
-func initDynamicConfig(configServer managerClient.Client, cfg *config.Config) (dynamicConfig dynconfig.Interface, err error) {
+// InitDynamicConfig init cdn dynamic config
+func InitDynamicConfig(configServer managerClient.Client, cfg *config.Config) (dynamicConfig dynconfig.Interface, err error) {
 	// Initialize dynconfig client
 	if cfg.DynConfig.SourceType == dc.ManagerSourceType {
 		dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {

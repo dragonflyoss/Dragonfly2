@@ -104,10 +104,10 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
-	css.service.AddTaskGCSubscriber(req.TaskId, &task.GCSubscriberInstance{
-		ClientAddr: clientAddr,
-		PeerID:     peerID,
-	})
+	//css.service.AddTaskGCSubscriber(req.TaskId, &task.GCSubscriberInstance{
+	//	ClientAddr: clientAddr,
+	//	PeerID:     peerID,
+	//})
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
 			PeerId:   peerID,
