@@ -151,8 +151,8 @@ func New(cfg *config.Config) (*Server, error) {
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
-		//dynconfig:     dynamicConfig,
-		gcServer: gcServer,
+		dynconfig:     dynamicConfig,
+		gcServer:      gcServer,
 	}, nil
 }
 

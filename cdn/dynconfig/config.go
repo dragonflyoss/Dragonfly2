@@ -35,8 +35,8 @@ type Config struct {
 	// sourceType is source type of dynConfig,
 	SourceType dc.SourceType `yaml:"sourceType" mapstructure:"sourceType"`
 
-	//// ConfigPath is dynamic config path when sourceType is local
-	//ConfigPath string `yaml:"configPath" mapstructure:"configPath"`
+	// ConfigPath is dynamic config path when sourceType is local
+	ConfigPath string `yaml:"configPath" mapstructure:"configPath"`
 }
 
 func (c Config) Validate() []error {
@@ -45,9 +45,9 @@ func (c Config) Validate() []error {
 		errors = append(errors, fmt.Errorf("dynamic config sourceType only support manager or local but current is %s",
 			c.SourceType))
 	}
-	//if c.SourceType == dc.LocalSourceType && c.ConfigPath == "" {
-	//	errors = append(errors, fmt.Errorf("dynamic config sourceType is local but dynamic config path is empty"))
-	//}
+	if c.SourceType == dc.LocalSourceType && c.ConfigPath == "" {
+		errors = append(errors, fmt.Errorf("dynamic config sourceType is local but dynamic config path is empty"))
+	}
 	if c.CachePath == "" {
 		errors = append(errors, fmt.Errorf("dynamic config cache path can't be empty"))
 	}
