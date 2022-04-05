@@ -97,7 +97,7 @@ type manager struct {
 	accessTimeMap           sync.Map
 	taskURLUnreachableStore sync.Map
 
-	locker        sync.Mutex
+	locker        sync.RWMutex
 	gcSubscribers []GCSubscriber
 }
 
@@ -239,6 +239,8 @@ func (tm *manager) Exist(taskID string) (*SeedTask, bool) {
 func (tm *manager) AddGCSubscriber(taskID string, subscriber *GCSubscriberInstance) {
 	synclock.Lock(taskID, false)
 	defer synclock.UnLock(taskID, false)
+	tm.locker.RLock()
+	defer tm.locker.RUnlock()
 	for _, gcSubscriber := range tm.gcSubscribers {
 		gcSubscriber.AddGCSubscriberInstance(taskID, subscriber)
 	}
