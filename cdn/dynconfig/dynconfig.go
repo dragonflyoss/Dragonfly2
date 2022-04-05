@@ -61,7 +61,7 @@ type dynConfig struct {
 	stopOnce sync.Once
 	done     chan struct{}
 
-	locker    sync.Locker
+	locker    sync.Mutex
 	observers map[Observer]struct{}
 	data      interface{}
 }
