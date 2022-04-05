@@ -72,6 +72,9 @@ func TestNotifySchedulerGCSubscriber_OnNotify(t *testing.T) {
 	mockManagerClient.EXPECT().GetCDN(gomock.Any()).Return(&managerGRPC.CDN{
 		Schedulers: beforeSchedulers,
 	}, nil).Times(1)
+	mockManagerClient.EXPECT().GetCDN(gomock.Any()).Return(&managerGRPC.CDN{
+		Schedulers: afterSchedulers,
+	}, nil).Times(1)
 	d, err := dynconfig.NewDynconfig(dynconfig.Config{
 		RefreshInterval: 10 * time.Millisecond,
 		CachePath:       filepath.Join(cacheDir, "cdn"),
@@ -95,9 +98,6 @@ func TestNotifySchedulerGCSubscriber_OnNotify(t *testing.T) {
 	assert.Nil(t, err)
 	schedulerMap := gcSubscriber.GetSchedulers()
 	testEqual(t, schedulerMap, beforeSchedulers)
-	mockManagerClient.EXPECT().GetCDN(gomock.Any()).Return(&managerGRPC.CDN{
-		Schedulers: afterSchedulers,
-	}, nil).Times(1)
 	time.Sleep(15 * time.Millisecond)
 	schedulerMap = gcSubscriber.GetSchedulers()
 	testEqual(t, schedulerMap, afterSchedulers)
