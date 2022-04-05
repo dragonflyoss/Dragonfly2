@@ -79,7 +79,7 @@ func newDefaultConnection(ctx context.Context) *Connection {
 	return &Connection{
 		ctx:            childCtx,
 		cancelFun:      cancel,
-		dialOpts:       defaultClientOpts,
+		dialOpts:       DefaultClientOpts,
 		connExpireTime: defaultConnExpireTime,
 		gcConnTimeout:  defaultGcConnTimeout,
 		gcConnInterval: defaultGcConnInterval,
@@ -87,7 +87,7 @@ func newDefaultConnection(ctx context.Context) *Connection {
 	}
 }
 
-var defaultClientOpts = []grpc.DialOption{
+var DefaultClientOpts = []grpc.DialOption{
 	grpc.FailOnNonTempDialError(true),
 	grpc.WithBlock(),
 	grpc.WithDisableServiceConfig(),
@@ -127,7 +127,7 @@ func WithConnExpireTime(duration time.Duration) ConnOption {
 
 func WithDialOption(opts []grpc.DialOption) ConnOption {
 	return newFuncConnOption(func(conn *Connection) {
-		conn.dialOpts = append(defaultClientOpts, opts...)
+		conn.dialOpts = append(DefaultClientOpts, opts...)
 	})
 }
 
@@ -249,7 +249,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes sets.
 			}, nil
 		}
 		logger.GrpcLogger.With("conn", conn.name).Debugf("attempt to connect candidateNode %s for hash key %s", candidateNode, key)
-		clientConn, err := conn.createClient(candidateNode, append(defaultClientOpts, conn.dialOpts...)...)
+		clientConn, err := conn.createClient(candidateNode, append(DefaultClientOpts, conn.dialOpts...)...)
 		if err == nil {
 			logger.GrpcLogger.With("conn", conn.name).Infof("success connect to candidateNode %s for hash key %s", candidateNode, key)
 			return &candidateClient{
@@ -313,7 +313,7 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 	}
 
 	logger.GrpcLogger.With("conn", conn.name).Debugf("failed to load clientConn associated with node %s, attempt to create it", node)
-	clientConn, err = conn.createClient(node, append(defaultClientOpts, conn.dialOpts...)...)
+	clientConn, err = conn.createClient(node, append(DefaultClientOpts, conn.dialOpts...)...)
 	if err == nil {
 		logger.GrpcLogger.With("conn", conn.name).Infof("success connect to node %s", node)
 		// bind

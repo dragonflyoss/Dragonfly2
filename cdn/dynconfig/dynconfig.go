@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ./mocks/mock_dynconfig.go -package mocks d7y.io/dragonfly/v2/cdn/dynconfig DynconfigInterface
+//go:generate mockgen -destination ./mocks/mock_dynconfig.go -package mocks d7y.io/dragonfly/v2/cdn/dynconfig Interface
 
 package dynconfig
 

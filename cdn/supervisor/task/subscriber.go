@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"sync"
 
+	"d7y.io/dragonfly/v2/pkg/retry"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/dynconfig"
@@ -60,20 +62,31 @@ func (sub *notifySchedulerGCSubscriber) GC(taskID string) {
 	sub.locker.RLock()
 	defer sub.locker.RUnlock()
 	if subs, ok := sub.taskSubscribers[taskID]; ok {
+		wg := sync.WaitGroup{}
 		for _, s := range subs {
 			if schedulerTarget, ok := sub.schedulers[s.ClientIP]; ok {
-				clientConn, err := grpc.Dial(schedulerTarget)
-				if err != nil {
-					logger.Errorf("dail scheduler %s failed: %v", schedulerTarget, err)
-				}
-				if err, _ := scheduler.NewSchedulerClient(clientConn).LeaveTask(context.Background(), &scheduler.PeerTarget{
-					TaskId: taskID,
-					PeerId: s.PeerID,
-				}); err != nil {
-					logger.Errorf("notify scheduler %s task %s peerID %s failed: %v", schedulerTarget, taskID, s.PeerID, err)
-				}
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					retry.Run(context.Background(), func() (interface{}, bool, error) {
+						clientConn, err := grpc.Dial(schedulerTarget, rpc.DefaultClientOpts...)
+						if err != nil {
+							logger.Errorf("dail scheduler %s failed: %v", schedulerTarget, err)
+							return nil, false, err
+						}
+						if _, err := scheduler.NewSchedulerClient(clientConn).LeaveTask(context.Background(), &scheduler.PeerTarget{
+							TaskId: taskID,
+							PeerId: s.PeerID,
+						}); err != nil {
+							logger.Errorf("notify scheduler %s task %s peerID %s failed: %v", schedulerTarget, taskID, s.PeerID, err)
+							return nil, false, err
+						}
+						return nil, true, nil
+					}, 0.05, 0.2, 3, nil)
+				}()
 			}
 		}
+		wg.Wait()
 		delete(sub.taskSubscribers, taskID)
 	}
 }
@@ -82,10 +95,11 @@ func (sub *notifySchedulerGCSubscriber) AddGCSubscriberInstance(taskID string, i
 	sub.locker.Lock()
 	defer sub.locker.Unlock()
 	subs, ok := sub.taskSubscribers[taskID]
-	if ok {
-		subs = append(subs, instance)
-		sub.taskSubscribers[taskID] = subs
+	if !ok {
+		subs = []*GCSubscriberInstance{}
 	}
+	subs = append(subs, instance)
+	sub.taskSubscribers[taskID] = subs
 }
 
 func (sub *notifySchedulerGCSubscriber) OnNotify(data interface{}) {

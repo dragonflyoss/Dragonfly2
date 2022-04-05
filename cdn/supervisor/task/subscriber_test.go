@@ -17,19 +17,26 @@
 package task
 
 import (
+	"context"
 	"fmt"
+	"log"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-
 	"d7y.io/dragonfly/v2/cdn/dynconfig"
+	dynconfigMocks "d7y.io/dragonfly/v2/cdn/dynconfig/mocks"
 	dynconfigInternal "d7y.io/dragonfly/v2/internal/dynconfig"
 	managerGRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestNotifySchedulerGCSubscriber_OnNotify(t *testing.T) {
@@ -104,4 +111,105 @@ func testEqual(t *testing.T, actualMap map[string]string, schedulers []*managerG
 	for key, value := range actualMap {
 		assert.Equal(t, expectedMap[key], value)
 	}
+}
+
+func TestNotifySchedulerGCSubscriber_GC(t *testing.T) {
+	ctl := gomock.NewController(t)
+	d := dynconfigMocks.NewMockInterface(ctl)
+	testServerData, err := startTestServers(2)
+	assert.Nil(t, err)
+	d.EXPECT().Register(gomock.Any()).DoAndReturn(
+		func(observer dynconfig.Observer) {
+			observer.OnNotify(&managerGRPC.CDN{
+				Schedulers: []*managerGRPC.Scheduler{
+					{
+						HostName: "host1",
+						Ip:       testServerData.addressesIP[0],
+						Port:     testServerData.addressesPort[0],
+					},
+					{
+						HostName: "host2",
+						Ip:       testServerData.addressesIP[1],
+						Port:     testServerData.addressesPort[1],
+					},
+				},
+			})
+		})
+	gcSubscriberInterface, err := NewNotifySchedulerTaskGCSubscriber(d)
+	assert.Nil(t, err)
+	gcSubscriber := gcSubscriberInterface.(*notifySchedulerGCSubscriber)
+	gcSubscriber.AddGCSubscriberInstance("task1", &GCSubscriberInstance{
+		ClientIP: testServerData.addressesIP[0],
+		PeerID:   "peer1",
+	})
+	gcSubscriber.AddGCSubscriberInstance("task1", &GCSubscriberInstance{
+		ClientIP: testServerData.addressesIP[1],
+		PeerID:   "peer2",
+	})
+	gcSubscriber.AddGCSubscriberInstance("task2", &GCSubscriberInstance{
+		ClientIP: testServerData.addressesIP[0],
+		PeerID:   "peer2",
+	})
+	assert.Equal(t, 2, len(gcSubscriber.taskSubscribers))
+	gcSubscriber.GC("task1")
+	assert.Equal(t, 1, len(gcSubscriber.taskSubscribers))
+	gcSubscriber.GC("task2")
+	assert.Equal(t, 0, len(gcSubscriber.taskSubscribers))
+}
+
+type testServer struct {
+	scheduler.UnimplementedSchedulerServer
+}
+
+func (s *testServer) LeaveTask(context.Context, *scheduler.PeerTarget) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
+}
+
+type testServerData struct {
+	servers       []*grpc.Server
+	serverImpls   []*testServer
+	addressesIP   []string
+	addressesPort []int32
+}
+
+func (t *testServerData) cleanup() {
+	for _, s := range t.servers {
+		s.Stop()
+	}
+}
+
+func startTestServers(count int) (_ *testServerData, err error) {
+	t := &testServerData{}
+	defer func() {
+		if err != nil {
+			t.cleanup()
+		}
+	}()
+	for i := 0; i < count; i++ {
+		lis, err := net.Listen("tcp", "localhost:0")
+		if err != nil {
+			return nil, fmt.Errorf("failed to listen %v", err)
+		}
+
+		s := grpc.NewServer()
+		sImpl := new(testServer)
+		scheduler.RegisterSchedulerServer(s, sImpl)
+		t.servers = append(t.servers, s)
+		t.serverImpls = append(t.serverImpls, sImpl)
+		host, port, err := net.SplitHostPort(lis.Addr().String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to split lis addr %v", err)
+		}
+		t.addressesIP = append(t.addressesIP, host)
+		portInt, _ := strconv.Atoi(port)
+		t.addressesPort = append(t.addressesPort, int32(portInt))
+
+		go func(s *grpc.Server, l net.Listener) {
+			if err := s.Serve(l); err != nil {
+				log.Fatalf("failed to serve %v", err)
+			}
+		}(s, lis)
+	}
+
+	return t, nil
 }
