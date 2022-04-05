@@ -57,7 +57,7 @@ type Server struct {
 	configServer managerClient.Client
 
 	// dynamic config
-	dynconfig dynconfig.Interface
+	d dynconfig.Interface
 
 	// gc Server
 	gcServer *gc.Server
@@ -151,7 +151,7 @@ func New(cfg *config.Config) (*Server, error) {
 		grpcServer:    grpcServer,
 		metricsServer: metricsServer,
 		configServer:  configServer,
-		dynconfig:     dynamicConfig,
+		d:             dynamicConfig,
 		gcServer:      gcServer,
 	}, nil
 }
@@ -170,22 +170,19 @@ func initDynamicConfig(configServer managerClient.Client, cfg *config.Config) (d
 			}
 			return cdn, nil
 		})
-		if err != nil {
-			return nil, errors.Wrap(err, "create dynamic config")
-		}
-	} else {
-		dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
-			b, err := os.ReadFile(cfg.DynConfig.CachePath)
-			if err != nil {
-				return nil, err
-			}
-			cdn := new(manager.CDN)
-			if err = yaml.Unmarshal(b, cdn); err != nil {
-				return nil, err
-			}
-			return cdn, nil
-		})
+		return
 	}
+	dynamicConfig, err = dynconfig.NewDynconfig(cfg.DynConfig, func() (interface{}, error) {
+		b, err := os.ReadFile(cfg.DynConfig.CachePath)
+		if err != nil {
+			return nil, err
+		}
+		cdn := new(manager.CDN)
+		if err = yaml.Unmarshal(b, cdn); err != nil {
+			return nil, err
+		}
+		return cdn, nil
+	})
 	return
 }
 
@@ -244,9 +241,9 @@ func (s *Server) Stop() error {
 		// Stop grpc server
 		return s.grpcServer.Shutdown()
 	})
-	if s.dynconfig != nil {
+	if s.d != nil {
 		g.Go(func() error {
-			s.dynconfig.Stop()
+			s.d.Stop()
 			return nil
 		})
 	}
