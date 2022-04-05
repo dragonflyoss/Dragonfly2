@@ -45,12 +45,14 @@ func NewNotifySchedulerTaskGCSubscriber(dynconfig dynconfig.Interface) (GCSubscr
 }
 
 type notifySchedulerGCSubscriber struct {
-	locker          sync.Mutex
+	locker          sync.RWMutex
 	scheduler       map[string]string
 	taskSubscribers map[string][]*GCSubscriberInstance
 }
 
 func (sub *notifySchedulerGCSubscriber) GC(taskID string) {
+	sub.locker.RLock()
+	defer sub.locker.RUnlock()
 	if subs, ok := sub.taskSubscribers[taskID]; ok {
 		for _, s := range subs {
 			if schedulerTarget, ok := sub.scheduler[s.ClientAddr]; ok {
@@ -71,6 +73,7 @@ func (sub *notifySchedulerGCSubscriber) GC(taskID string) {
 
 func (sub *notifySchedulerGCSubscriber) AddGCSubscriberInstance(taskID string, instance *GCSubscriberInstance) {
 	sub.locker.Lock()
+	defer sub.locker.Unlock()
 	subs, ok := sub.taskSubscribers[taskID]
 	if ok {
 		subs = append(subs, instance)
@@ -79,5 +82,4 @@ func (sub *notifySchedulerGCSubscriber) AddGCSubscriberInstance(taskID string, i
 }
 
 func (sub *notifySchedulerGCSubscriber) OnNotify(data interface{}) {
-
 }
