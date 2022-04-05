@@ -1,0 +1,1 @@
+Error: create dynamic config: create dynamic config: rpc error: code = InvalidArgument desc = invalid GetCDNRequest.HostName: value must be a valid hostname | caused by: hostname part must be non-empty and cannot exceed 63 characters

@@ -85,7 +85,7 @@ func TestServer_ObtainSeeds(t *testing.T) {
 					regTask.CdnStatus = task.StatusSuccess
 					return regTask, nil
 				}).Times(1)
-				cdnServiceMock.EXPECT().AddTaskGCSubscriber(regTask.ID, gomock.Any()).Times(1)
+				//cdnServiceMock.EXPECT().AddTaskGCSubscriber(regTask.ID, gomock.Any()).Times(1)
 				server, _ := New(Config{}, cdnServiceMock)
 				return server
 			},
@@ -147,7 +147,7 @@ func TestServer_ObtainSeeds(t *testing.T) {
 					regTask.CdnStatus = task.StatusFailed
 					return regTask, nil
 				}).Times(1)
-				cdnServiceMock.EXPECT().AddTaskGCSubscriber(regTask.ID, gomock.Any()).Times(1)
+				//cdnServiceMock.EXPECT().AddTaskGCSubscriber(regTask.ID, gomock.Any()).Times(1)
 				server, _ := New(Config{}, cdnServiceMock)
 				return server
 			},
