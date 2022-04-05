@@ -58,10 +58,12 @@ type Observer interface {
 type dynConfig struct {
 	ds *dc.Dynconfig
 
+	stopOnce sync.Once
+	done     chan struct{}
+
+	locker    sync.Locker
 	observers map[Observer]struct{}
 	data      interface{}
-	stopOnce  sync.Once
-	done      chan struct{}
 }
 
 func NewDynconfig(cfg Config, drawFunc func() (interface{}, error)) (Interface, error) {
@@ -93,12 +95,16 @@ func NewDynconfig(cfg Config, drawFunc func() (interface{}, error)) (Interface, 
 }
 
 func (d *dynConfig) Register(l Observer) {
+	d.locker.Lock()
 	d.observers[l] = struct{}{}
 	l.OnNotify(d.data)
+	d.locker.Unlock()
 }
 
 func (d *dynConfig) Deregister(l Observer) {
+	d.locker.Lock()
 	delete(d.observers, l)
+	d.locker.Unlock()
 }
 
 func (d *dynConfig) Get(dest interface{}) error {
@@ -106,6 +112,8 @@ func (d *dynConfig) Get(dest interface{}) error {
 }
 
 func (d *dynConfig) Notify() error {
+	d.locker.Lock()
+	defer d.locker.Unlock()
 	config, err := d.ds.Get()
 	if err != nil {
 		return err

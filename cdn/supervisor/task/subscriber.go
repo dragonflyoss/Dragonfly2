@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"sync"
 
-	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/retry"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerGRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -68,21 +68,21 @@ func (sub *notifySchedulerGCSubscriber) GC(taskID string) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					retry.Run(context.Background(), func() (interface{}, bool, error) {
+					if _, _, err := retry.Run(context.Background(), func() (interface{}, bool, error) {
 						clientConn, err := grpc.Dial(schedulerTarget, rpc.DefaultClientOpts...)
 						if err != nil {
-							logger.Errorf("dail scheduler %s failed: %v", schedulerTarget, err)
 							return nil, false, err
 						}
 						if _, err := scheduler.NewSchedulerClient(clientConn).LeaveTask(context.Background(), &scheduler.PeerTarget{
 							TaskId: taskID,
 							PeerId: s.PeerID,
 						}); err != nil {
-							logger.Errorf("notify scheduler %s task %s peerID %s failed: %v", schedulerTarget, taskID, s.PeerID, err)
 							return nil, false, err
 						}
 						return nil, true, nil
-					}, 0.05, 0.2, 3, nil)
+					}, 0.05, 0.2, 3, nil); err != nil {
+						logger.Errorf("notify scheduler %s task %s peerID %s failed: %v", schedulerTarget, taskID, s.PeerID, err)
+					}
 				}()
 			}
 		}

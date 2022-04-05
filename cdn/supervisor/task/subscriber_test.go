@@ -27,16 +27,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	dynconfigMocks "d7y.io/dragonfly/v2/cdn/dynconfig/mocks"
 	dynconfigInternal "d7y.io/dragonfly/v2/internal/dynconfig"
 	managerGRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestNotifySchedulerGCSubscriber_OnNotify(t *testing.T) {
