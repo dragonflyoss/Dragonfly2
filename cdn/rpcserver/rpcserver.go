@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -104,8 +105,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		return err
 	}
 	css.service.AddTaskGCSubscriber(req.TaskId, &task.GCSubscriberInstance{
-		ClientAddr: clientAddr,
-		PeerID:     peerID,
+		ClientIP: strings.Split(clientAddr, ":")[0],
+		PeerID:   peerID,
 	})
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{

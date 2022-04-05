@@ -18,26 +18,32 @@ package task
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/dynconfig"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	managerGRPC "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type GCSubscriber interface {
+	dynconfig.Observer
 	// GC Clean up the taskID
 	GC(taskID string)
 
 	// AddGCSubscriberInstance add gcSubscriber instance for taskID
 	AddGCSubscriberInstance(taskID string, instance *GCSubscriberInstance)
+
+	// GetSchedulers get schedulers map
+	GetSchedulers() map[string]string
 }
 
 func NewNotifySchedulerTaskGCSubscriber(dynconfig dynconfig.Interface) (GCSubscriber, error) {
 	gcSubscriber := &notifySchedulerGCSubscriber{
-		scheduler:       map[string]string{},
+		schedulers:      map[string]string{},
 		taskSubscribers: map[string][]*GCSubscriberInstance{},
 	}
 	dynconfig.Register(gcSubscriber)
@@ -46,7 +52,7 @@ func NewNotifySchedulerTaskGCSubscriber(dynconfig dynconfig.Interface) (GCSubscr
 
 type notifySchedulerGCSubscriber struct {
 	locker          sync.RWMutex
-	scheduler       map[string]string
+	schedulers      map[string]string
 	taskSubscribers map[string][]*GCSubscriberInstance
 }
 
@@ -55,19 +61,20 @@ func (sub *notifySchedulerGCSubscriber) GC(taskID string) {
 	defer sub.locker.RUnlock()
 	if subs, ok := sub.taskSubscribers[taskID]; ok {
 		for _, s := range subs {
-			if schedulerTarget, ok := sub.scheduler[s.ClientAddr]; ok {
+			if schedulerTarget, ok := sub.schedulers[s.ClientIP]; ok {
 				clientConn, err := grpc.Dial(schedulerTarget)
 				if err != nil {
-					logger.Errorf("")
+					logger.Errorf("dail scheduler %s failed: %v", schedulerTarget, err)
 				}
 				if err, _ := scheduler.NewSchedulerClient(clientConn).LeaveTask(context.Background(), &scheduler.PeerTarget{
 					TaskId: taskID,
 					PeerId: s.PeerID,
 				}); err != nil {
-					logger.Errorf("")
+					logger.Errorf("notify scheduler %s task %s peerID %s failed: %v", schedulerTarget, taskID, s.PeerID, err)
 				}
 			}
 		}
+		delete(sub.taskSubscribers, taskID)
 	}
 }
 
@@ -82,4 +89,22 @@ func (sub *notifySchedulerGCSubscriber) AddGCSubscriberInstance(taskID string, i
 }
 
 func (sub *notifySchedulerGCSubscriber) OnNotify(data interface{}) {
+	cdn, ok := data.(*managerGRPC.CDN)
+	if !ok {
+		logger.Errorf("dynamic data type is not *manager.CDN")
+	}
+	schedulers := cdn.Schedulers
+	var schedulerMap = make(map[string]string, 2*len(schedulers))
+	for _, s := range schedulers {
+		schedulerMap[s.Ip] = fmt.Sprintf("%s:%d", s.Ip, s.Port)
+	}
+	sub.locker.Lock()
+	sub.schedulers = schedulerMap
+	sub.locker.Unlock()
+}
+
+func (sub *notifySchedulerGCSubscriber) GetSchedulers() map[string]string {
+	sub.locker.Lock()
+	defer sub.locker.Unlock()
+	return sub.schedulers
 }

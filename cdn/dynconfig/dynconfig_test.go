@@ -159,13 +159,13 @@ func TestGetFromManagerSourceType(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer d.Stop()
 			cdn := new(manager.CDN)
 			err = d.Get(cdn)
 			tc.beforeSleepExpect(t, cdn, err)
 			assert.Nil(t, tc.sleepFunc())
 			err = d.Get(cdn)
 			tc.afterSleepExpect(t, cdn, err)
-			d.Stop()
 		})
 	}
 	assert.Nil(t, os.RemoveAll(cacheDir))
@@ -344,6 +344,7 @@ func TestGetDataFromLocalType(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer d.Stop()
 			cdn := new(manager.CDN)
 			err = d.Get(cdn)
 			tc.beforeSleepExcept(t, cdn, err)
@@ -351,7 +352,6 @@ func TestGetDataFromLocalType(t *testing.T) {
 			cdn = new(manager.CDN)
 			err = d.Get(cdn)
 			tc.afterSleepExpect(t, cdn, err)
-			d.Stop()
 		})
 	}
 	assert.Nil(t, os.RemoveAll(cacheDir))

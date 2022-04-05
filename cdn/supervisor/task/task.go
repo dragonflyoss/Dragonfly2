@@ -220,6 +220,6 @@ func IsEqual(task1, task2 SeedTask) bool {
 }
 
 type GCSubscriberInstance struct {
-	ClientAddr string
-	PeerID     string
+	ClientIP string
+	PeerID   string
 }
