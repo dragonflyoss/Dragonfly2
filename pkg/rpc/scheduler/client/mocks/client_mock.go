@@ -38,6 +38,25 @@ func (m *MockSchedulerClient) EXPECT() *MockSchedulerClientMockRecorder {
 	return m.recorder
 }
 
+// AnnounceTask mocks base method.
+func (m *MockSchedulerClient) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AnnounceTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnounceTask indicates an expected call of AnnounceTask.
+func (mr *MockSchedulerClientMockRecorder) AnnounceTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerClient)(nil).AnnounceTask), varargs...)
+}
+
 // Close mocks base method.
 func (m *MockSchedulerClient) Close() error {
 	m.ctrl.T.Helper()
