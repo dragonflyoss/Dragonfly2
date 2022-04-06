@@ -144,6 +144,25 @@ func (mr *MockSchedulerClientMockRecorder) ReportPieceResult(arg0, arg1, arg2 in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPieceResult), varargs...)
 }
 
+// StatPeerTask mocks base method.
+func (m *MockSchedulerClient) StatPeerTask(arg0 context.Context, arg1 *scheduler.StatPeerTaskRequest, arg2 ...grpc.CallOption) error {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StatPeerTask", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StatPeerTask indicates an expected call of StatPeerTask.
+func (mr *MockSchedulerClientMockRecorder) StatPeerTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatPeerTask", reflect.TypeOf((*MockSchedulerClient)(nil).StatPeerTask), varargs...)
+}
+
 // UpdateState mocks base method.
 func (m *MockSchedulerClient) UpdateState(arg0 []dfnet.NetAddr) {
 	m.ctrl.T.Helper()

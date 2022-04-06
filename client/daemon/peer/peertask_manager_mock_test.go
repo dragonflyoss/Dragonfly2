@@ -84,6 +84,20 @@ func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamTask), ctx, req)
 }
 
+// StatPeerTask mocks base method.
+func (m *MockTaskManager) StatPeerTask(ctx context.Context, taskID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatPeerTask", ctx, taskID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StatPeerTask indicates an expected call of StatPeerTask.
+func (mr *MockTaskManagerMockRecorder) StatPeerTask(ctx, taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatPeerTask", reflect.TypeOf((*MockTaskManager)(nil).StatPeerTask), ctx, taskID)
+}
+
 // Stop mocks base method.
 func (m *MockTaskManager) Stop(ctx context.Context) error {
 	m.ctrl.T.Helper()
