@@ -23,6 +23,7 @@ type Set interface {
 	Contains(...interface{}) bool
 	Len() uint
 	Range(func(interface{}) bool)
+	Clear()
 }
 
 type set map[interface{}]struct{}
@@ -75,4 +76,8 @@ func (s *set) Range(fn func(interface{}) bool) {
 			break
 		}
 	}
+}
+
+func (s *set) Clear() {
+	*s = set{}
 }
