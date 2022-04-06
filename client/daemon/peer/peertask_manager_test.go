@@ -83,7 +83,7 @@ type componentsOption struct {
 	getPieceTasks      bool
 }
 
-//go:generate mockgen -package mock_server_grpc -source ../../../pkg/rpc/dfdaemon/dfdaemon_grpc.pb.go -destination ../test/mock/daemongrpc/daemon_server_grpc.go
+//go:generate mockgen -package mock_server_grpc -source ../../../pkg/rpc/dfdaemon/dfdaemon.pb.go -destination ../test/mock/daemongrpc/daemon_server_grpc.go
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
 	schedulerclient.SchedulerClient, storage.Manager) {
 	port := int32(freeport.GetPort())
