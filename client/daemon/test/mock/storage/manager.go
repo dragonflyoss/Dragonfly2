@@ -458,6 +458,20 @@ func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockManager)(nil).Store), ctx, req)
 }
 
+// UnregisterTask mocks base method.
+func (m *MockManager) UnregisterTask(ctx context.Context, req storage.CommonTaskRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnregisterTask", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnregisterTask indicates an expected call of UnregisterTask.
+func (mr *MockManagerMockRecorder) UnregisterTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnregisterTask", reflect.TypeOf((*MockManager)(nil).UnregisterTask), ctx, req)
+}
+
 // UpdateTask mocks base method.
 func (m *MockManager) UpdateTask(ctx context.Context, req *storage.UpdateTaskRequest) error {
 	m.ctrl.T.Helper()
