@@ -280,3 +280,25 @@ func mockCachePath() (string, error) {
 
 	return filepath.Join(userDir, ".dynconfig"), nil
 }
+
+func TestDynamic_Clean(t *testing.T) {
+	testCachePath := filepath.Join(os.TempDir(), "cache")
+	var testStr = "foo"
+	ctl := gomock.NewController(t)
+	mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
+	mockManagerClient.EXPECT().Get().Return(testStr, nil).AnyTimes()
+	d, err := New(ManagerSourceType,
+		WithManagerClient(mockManagerClient), WithCachePath(testCachePath), WithExpireTime(time.Millisecond))
+	assert.Nil(t, err)
+	var str string
+	err = d.Unmarshal(&str)
+	assert.Nil(t, err)
+	assert.Equal(t, testStr, str)
+	f, err := os.Stat(testCachePath)
+	assert.NotNil(t, f)
+	assert.Nil(t, err)
+	assert.Nil(t, d.Clean())
+	f, err = os.Stat(testCachePath)
+	assert.True(t, os.IsNotExist(err))
+	assert.Nil(t, f)
+}
