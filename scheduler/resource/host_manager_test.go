@@ -337,6 +337,25 @@ func TestHostManager_RunGC(t *testing.T) {
 			},
 		},
 		{
+			name: "host has upload peers",
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				hostManager.Store(mockHost)
+				mockHost.StorePeer(mockPeer)
+				mockHost.PeerCount.Add(0)
+				mockPeer.StoreParent(mockPeer)
+				err := hostManager.RunGC()
+				assert.NoError(err)
+
+				host, ok := hostManager.Load(mockHost.ID)
+				assert.Equal(ok, true)
+				assert.Equal(host.ID, mockHost.ID)
+			},
+		},
+		{
 			name: "host is cdn",
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)

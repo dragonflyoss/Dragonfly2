@@ -79,6 +79,9 @@ type Host struct {
 	// UploadLoadLimit is upload load limit count
 	UploadLoadLimit *atomic.Int32
 
+	// UploadPeerCount is upload peer count
+	UploadPeerCount *atomic.Int32
+
 	// Peer sync map
 	Peers *sync.Map
 
@@ -111,6 +114,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		NetTopology:     rawHost.NetTopology,
 		Location:        rawHost.Location,
 		UploadLoadLimit: atomic.NewInt32(config.DefaultClientLoadLimit),
+		UploadPeerCount: atomic.NewInt32(0),
 		Peers:           &sync.Map{},
 		PeerCount:       atomic.NewInt32(0),
 		IsCDN:           false,
@@ -184,5 +188,5 @@ func (h *Host) LeavePeers() {
 
 // FreeUploadLoad return free upload load of host
 func (h *Host) FreeUploadLoad() int32 {
-	return h.UploadLoadLimit.Load() - h.PeerCount.Load()
+	return h.UploadLoadLimit.Load() - h.UploadPeerCount.Load()
 }
