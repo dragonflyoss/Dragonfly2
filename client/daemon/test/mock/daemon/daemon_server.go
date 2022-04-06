@@ -64,6 +64,21 @@ func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1, arg2)
 }
 
+// ExportTask mocks base method.
+func (m *MockDaemonServer) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportTask", arg0, arg1)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportTask indicates an expected call of ExportTask.
+func (mr *MockDaemonServerMockRecorder) ExportTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonServer)(nil).ExportTask), arg0, arg1)
+}
+
 // GetPieceTasks mocks base method.
 func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()

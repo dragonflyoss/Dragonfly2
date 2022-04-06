@@ -79,6 +79,26 @@ func (mr *MockDaemonClientMockRecorder) Download(ctx, in interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonClient)(nil).Download), varargs...)
 }
 
+// ExportTask mocks base method.
+func (m *MockDaemonClient) ExportTask(ctx context.Context, in *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExportTask", varargs...)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportTask indicates an expected call of ExportTask.
+func (mr *MockDaemonClientMockRecorder) ExportTask(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonClient)(nil).ExportTask), varargs...)
+}
+
 // GetPieceTasks mocks base method.
 func (m *MockDaemonClient) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -469,6 +489,21 @@ func (m *MockDaemonServer) Download(arg0 *dfdaemon.DownRequest, arg1 dfdaemon.Da
 func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1)
+}
+
+// ExportTask mocks base method.
+func (m *MockDaemonServer) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportTask", arg0, arg1)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportTask indicates an expected call of ExportTask.
+func (mr *MockDaemonServerMockRecorder) ExportTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonServer)(nil).ExportTask), arg0, arg1)
 }
 
 // GetPieceTasks mocks base method.
