@@ -50,6 +50,20 @@ func (mr *MockDaemonServerMockRecorder) CheckHealth(arg0 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockDaemonServer)(nil).CheckHealth), arg0)
 }
 
+// DeleteTask mocks base method.
+func (m *MockDaemonServer) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteTask", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteTask indicates an expected call of DeleteTask.
+func (mr *MockDaemonServerMockRecorder) DeleteTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockDaemonServer)(nil).DeleteTask), arg0, arg1)
+}
+
 // Download mocks base method.
 func (m *MockDaemonServer) Download(arg0 context.Context, arg1 *dfdaemon.DownRequest, arg2 chan<- *dfdaemon.DownResult) error {
 	m.ctrl.T.Helper()
