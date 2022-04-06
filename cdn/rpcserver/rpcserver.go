@@ -249,44 +249,6 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	return pp, nil
 }
 
-//func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) error {
-//	for {
-//		req, err := stream.Recv()
-//		if err == io.EOF {
-//			return nil
-//		}
-//		if err != nil {
-//			return err
-//		}
-//		seedTask, err := css.service.GetSeedTask(req.TaskId)
-//		if err != nil {
-//			if task.IsTaskNotFound(err) {
-//				return status.Errorf(codes.Code(base.Code_CDNTaskNotFound), "failed to get task(%s): %v", req.TaskId, err)
-//			}
-//			return status.Errorf(codes.Code(base.Code_CDNError), "failed to get task(%s): %v", req.TaskId, err)
-//		}
-//		if seedTask.IsError() {
-//			return status.Errorf(codes.Code(base.Code_CDNError), "task(%s) status is FAIL, cdnStatus: %s", seedTask.ID, seedTask.CdnStatus)
-//		}
-//		taskPieces, err := css.getTaskPieces(req)
-//		if err != nil {
-//			return status.Errorf(codes.Code(base.Code_CDNError), "failed to get pieces of task(%s) from cdn: %v", req.TaskId, err)
-//		}
-//		pp := &base.PiecePacket{
-//			TaskId:        req.TaskId,
-//			DstPid:        req.DstPid,
-//			DstAddr:       fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
-//			PieceInfos:    taskPieces,
-//			TotalPiece:    seedTask.TotalPieceCount,
-//			ContentLength: seedTask.SourceFileLength,
-//			PieceMd5Sign:  seedTask.PieceMd5Sign,
-//		}
-//		if err := stream.Send(pp); err != nil {
-//			return err
-//		}
-//	}
-//}
-
 func (css *Server) SyncPieceTasks(sync cdnsystem.Seeder_SyncPieceTasksServer) error {
 	return status.Error(codes.Unimplemented, "TODO")
 }
