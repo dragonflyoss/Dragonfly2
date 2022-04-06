@@ -13,6 +13,7 @@ import (
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -83,6 +84,21 @@ func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *peer.StreamT
 func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamTask), ctx, req)
+}
+
+// StatTask mocks base method.
+func (m *MockTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatTask", ctx, taskID)
+	ret0, _ := ret[0].(*scheduler.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockTaskManagerMockRecorder) StatTask(ctx, taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockTaskManager)(nil).StatTask), ctx, taskID)
 }
 
 // Stop mocks base method.
