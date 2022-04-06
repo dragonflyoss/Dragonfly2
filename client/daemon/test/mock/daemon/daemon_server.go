@@ -79,6 +79,21 @@ func (mr *MockDaemonServerMockRecorder) GetPieceTasks(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonServer)(nil).GetPieceTasks), arg0, arg1)
 }
 
+// ImportTask mocks base method.
+func (m *MockDaemonServer) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ImportTask", arg0, arg1)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ImportTask indicates an expected call of ImportTask.
+func (mr *MockDaemonServerMockRecorder) ImportTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonServer)(nil).ImportTask), arg0, arg1)
+}
+
 // StatTask mocks base method.
 func (m *MockDaemonServer) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error) {
 	m.ctrl.T.Helper()

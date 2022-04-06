@@ -39,6 +39,34 @@ func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 	return m.recorder
 }
 
+// AnnouncePeerTask mocks base method.
+func (m *MockTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnnouncePeerTask", ctx, meta, cid, urlMeta)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnouncePeerTask indicates an expected call of AnnouncePeerTask.
+func (mr *MockTaskManagerMockRecorder) AnnouncePeerTask(ctx, meta, cid, urlMeta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnouncePeerTask", reflect.TypeOf((*MockTaskManager)(nil).AnnouncePeerTask), ctx, meta, cid, urlMeta)
+}
+
+// GetPieceManager mocks base method.
+func (m *MockTaskManager) GetPieceManager() peer.PieceManager {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPieceManager")
+	ret0, _ := ret[0].(peer.PieceManager)
+	return ret0
+}
+
+// GetPieceManager indicates an expected call of GetPieceManager.
+func (mr *MockTaskManagerMockRecorder) GetPieceManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceManager", reflect.TypeOf((*MockTaskManager)(nil).GetPieceManager))
+}
+
 // IsPeerTaskRunning mocks base method.
 func (m *MockTaskManager) IsPeerTaskRunning(id string) bool {
 	m.ctrl.T.Helper()

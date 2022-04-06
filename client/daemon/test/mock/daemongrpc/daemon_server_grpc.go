@@ -99,6 +99,26 @@ func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).GetPieceTasks), varargs...)
 }
 
+// ImportTask mocks base method.
+func (m *MockDaemonClient) ImportTask(ctx context.Context, in *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ImportTask", varargs...)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ImportTask indicates an expected call of ImportTask.
+func (mr *MockDaemonClientMockRecorder) ImportTask(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonClient)(nil).ImportTask), varargs...)
+}
+
 // StatTask mocks base method.
 func (m *MockDaemonClient) StatTask(ctx context.Context, in *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error) {
 	m.ctrl.T.Helper()
@@ -464,6 +484,21 @@ func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *base.PieceT
 func (mr *MockDaemonServerMockRecorder) GetPieceTasks(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonServer)(nil).GetPieceTasks), arg0, arg1)
+}
+
+// ImportTask mocks base method.
+func (m *MockDaemonServer) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ImportTask", arg0, arg1)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ImportTask indicates an expected call of ImportTask.
+func (mr *MockDaemonServerMockRecorder) ImportTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonServer)(nil).ImportTask), arg0, arg1)
 }
 
 // StatTask mocks base method.
