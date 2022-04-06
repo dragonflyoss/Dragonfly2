@@ -99,6 +99,26 @@ func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).GetPieceTasks), varargs...)
 }
 
+// StatTask mocks base method.
+func (m *MockDaemonClient) StatTask(ctx context.Context, in *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StatTask", varargs...)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockDaemonClientMockRecorder) StatTask(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonClient)(nil).StatTask), varargs...)
+}
+
 // SyncPieceTasks mocks base method.
 func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
@@ -444,6 +464,21 @@ func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *base.PieceT
 func (mr *MockDaemonServerMockRecorder) GetPieceTasks(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonServer)(nil).GetPieceTasks), arg0, arg1)
+}
+
+// StatTask mocks base method.
+func (m *MockDaemonServer) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest) (*base.GrpcDfResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatTask", arg0, arg1)
+	ret0, _ := ret[0].(*base.GrpcDfResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockDaemonServerMockRecorder) StatTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonServer)(nil).StatTask), arg0, arg1)
 }
 
 // SyncPieceTasks mocks base method.
