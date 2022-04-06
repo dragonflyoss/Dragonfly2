@@ -163,3 +163,50 @@ func TestCheckHeader(t *testing.T) {
 	}
 	testifyassert.NotNil(t, cfg.checkHeader())
 }
+
+func TestConvert(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      ClientOption
+		args     []string
+		testFunc func(t *testing.T, cfg ClientOption)
+	}{
+		{
+			name: "url path without scheme",
+			cfg:  ClientOption{},
+			args: []string{"www.dragonfly.com/xxx/yy/"},
+			testFunc: func(t *testing.T, cfg ClientOption) {
+				testifyassert.Equal(t, "http://www.dragonfly.com/xxx/yy/", cfg.URL)
+			},
+		}, {
+			name: "url path with scheme",
+			cfg:  ClientOption{},
+			args: []string{"http://www.dragonfly.com/xxx/yy/"},
+			testFunc: func(t *testing.T, cfg ClientOption) {
+				testifyassert.Equal(t, "http://www.dragonfly.com/xxx/yy/", cfg.URL)
+			},
+		}, {
+			name: "without scheme",
+			cfg:  ClientOption{},
+			args: []string{"www.dragonfly.com"},
+			testFunc: func(t *testing.T, cfg ClientOption) {
+				testifyassert.Equal(t, "http://www.dragonfly.com", cfg.URL)
+			},
+		},
+		{
+			name: "with scheme",
+			cfg:  ClientOption{},
+			args: []string{"http://www.dragonfly.com"},
+			testFunc: func(t *testing.T, cfg ClientOption) {
+				testifyassert.Equal(t, "http://www.dragonfly.com", cfg.URL)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.cfg.Convert(tc.args)
+			tc.testFunc(t, tc.cfg)
+		})
+	}
+}
