@@ -47,6 +47,7 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerC
 	return sc, nil
 }
 
+//go:generate mockgen -package mocks -source client.go -destination ./mocks/client_mock.go
 // SchedulerClient see scheduler.SchedulerClient
 type SchedulerClient interface {
 	// RegisterPeerTask register peer task to scheduler
