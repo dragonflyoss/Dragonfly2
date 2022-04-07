@@ -79,7 +79,6 @@ archives:
       - LICENSE
       - README.md
       - CHANGELOG.md
-      - docs/*
 
 checksum:
   name_template: "checksums.txt"
@@ -112,7 +111,7 @@ nfpms:
         dst: /etc/dragonfly/dfget.yaml
         type: config
 
-      - src: docs/en/cli-reference/dfget.1
+      - src: build/package/docs/dfget.1
         dst: /usr/share/man/man1/dfget.1
 
       - src: LICENSE
