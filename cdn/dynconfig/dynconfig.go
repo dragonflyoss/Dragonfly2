@@ -34,8 +34,8 @@ var (
 
 // todo move this interface to internal/dynconfig
 type Interface interface {
-	// Get the dynamic config from configServer or local file.
-	Get(dest interface{}) error
+	// Unmarshal the dynamic config from configServer or local file.
+	Unmarshal(dest interface{}) error
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
