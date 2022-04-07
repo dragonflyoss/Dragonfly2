@@ -6,7 +6,11 @@
 - print client stream task error log ([#1210](https://github.com/dragonflyoss/Dragonfly2/issues/1210))
 - report client back source error ([#1209](https://github.com/dragonflyoss/Dragonfly2/issues/1209))
 
+### Docs
+- move document from /docs to d7y.io ([#1229](https://github.com/dragonflyoss/Dragonfly2/issues/1229))
+
 ### Feat
+- update to v2.0.2 ([#1232](https://github.com/dragonflyoss/Dragonfly2/issues/1232))
 - scheduler blocks steal peers ([#1224](https://github.com/dragonflyoss/Dragonfly2/issues/1224))
 - update manager console ([#1222](https://github.com/dragonflyoss/Dragonfly2/issues/1222))
 - manager validate with config ([#1218](https://github.com/dragonflyoss/Dragonfly2/issues/1218))
@@ -18,6 +22,7 @@
 - optimize get available task ([#1208](https://github.com/dragonflyoss/Dragonfly2/issues/1208))
 
 ### Fix
+- goreleaser config
 - make generate ([#1228](https://github.com/dragonflyoss/Dragonfly2/issues/1228))
 - calculate FreeUploadLoad ([#1226](https://github.com/dragonflyoss/Dragonfly2/issues/1226))
 - sync pieces hang ([#1221](https://github.com/dragonflyoss/Dragonfly2/issues/1221))
