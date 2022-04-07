@@ -16,67 +16,47 @@
 
 package storage
 
-import "time"
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
 
-type Storage interface {
-	AddPeer()
-	LoadPeers()
-}
-
-type storage struct {
-	baseDir    string
-	maxSize    uint
-	maxBackups uint
-}
-
-// Option is a functional option for configuring the Storage
-type Option func(s *storage)
-
-// WithMaxSize set the maximum size in megabytes of storage file
-func WithMaxSize(maxSize uint) Option {
-	return func(s *storage) {
-		s.maxSize = maxSize
-	}
-}
-
-// WithMaxBackups set the maximum number of storage files to retain
-func WithMaxBackups(maxBackups uint) Option {
-	return func(s *storage) {
-		s.maxBackups = maxBackups
-	}
-}
-
-func New(baseDir string, options ...Option) Storage {
-	s := &storage{
-		baseDir: baseDir,
-	}
-
-	for _, opt := range options {
-		opt(s)
-	}
-
-	return s
-}
+	"github.com/gocarina/gocsv"
+)
 
 const (
+	// RecordFilePrefix is prefix of record file name
+	RecordFilePrefix = "record"
+)
+
+const (
+	// Peer has been downloaded successfully
 	PeerStateSucceeded = iota
+
+	// Peer has been downloaded failed
 	PeerStateFailed
+
+	// Peer has been back-to-source downloaded successfully
 	PeerStateBackToSourceSucceeded
+
+	// Peer has been back-to-source downloaded failed
 	PeerStateBackToSourceFailed
 )
 
-type Peer struct {
+type Record struct {
 	// ID is peer id
-	ID string
+	ID string `csv:"id"`
 
 	// IP is host ip
-	IP string
+	IP string `csv:"ip"`
 
 	// Hostname is host name
-	Hostname string
+	Hostname string `csv:"hostname"`
 
 	// BizTag is peer biz tag
-	BizTag string
+	BizTag string `csv:"bizTag"`
 
 	// Cost is the task download time(millisecond)
 	Cost uint32
@@ -108,7 +88,7 @@ type Peer struct {
 	FreeUploadLoad int32
 
 	// State is the download state of the peer
-	State string
+	State int
 
 	// CreateAt is peer create time
 	CreateAt time.Time
@@ -130,6 +110,15 @@ type Peer struct {
 
 	// ParentCost is the parent task download time(millisecond)
 	ParentCost uint32
+
+	// ParentPieceCount is parent total piece count
+	ParentPieceCount int32
+
+	// ParentTotalPieceCount is parent total piece count
+	ParentTotalPieceCount int32
+
+	// ParentContentLength is parent task total content length
+	ParentContentLength int64
 
 	// ParentSecurityDomain is parent security domain of host
 	ParentSecurityDomain string
@@ -158,10 +147,65 @@ type Peer struct {
 	ParentUpdateAt time.Time
 }
 
-func (s *storage) AddPeer() {
+// Storage is the interface used for storage
+type Storage interface {
+	// Create inserts the record into csv file
+	Create(context.Context, Record) error
 
+	// Get returns the record in csv file
+	Get(context.Context, string) (Record error)
+
+	// List returns all of records in csv file
+	List(context.Context) ([]Record, error)
 }
 
-func (s *storage) LoadPeers() {
+// storage provides storage function
+type storage struct {
+	baseDir    string
+	maxSize    uint
+	maxBackups uint
+}
 
+// Option is a functional option for configuring the Storage
+type Option func(s *storage)
+
+// WithMaxSize set the maximum size in megabytes of storage file
+func WithMaxSize(maxSize uint) Option {
+	return func(s *storage) {
+		s.maxSize = maxSize
+	}
+}
+
+// WithMaxBackups set the maximum number of storage files to retain
+func WithMaxBackups(maxBackups uint) Option {
+	return func(s *storage) {
+		s.maxBackups = maxBackups
+	}
+}
+
+// New returns a new Storage instence
+func New(baseDir string, options ...Option) Storage {
+	s := &storage{
+		baseDir: baseDir,
+	}
+
+	for _, opt := range options {
+		opt(s)
+	}
+
+	return s
+}
+
+// Create inserts the record into csv file
+func (s *storage) Create(ctx context.Context, record Record) error {
+	file, err := os.OpenFile(filepath.Join(s.baseDir, fmt.Sprintf("%s.csv", RecordFilePrefix)), os.O_RDWR|os.O_CREATE|os.O_APPEND, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(items, file); err != nil {
+		return err
+	}
+	return nil
 }

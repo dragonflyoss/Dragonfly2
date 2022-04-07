@@ -381,10 +381,12 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				host.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				host.StorePeer(mockPeer)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-2))
+				mockPeer.StoreParent(mockPeer)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				mockPeer.StoreParent(mockPeer)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				mockPeer.DeleteParent()
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
 		},
 		{

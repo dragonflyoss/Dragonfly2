@@ -1,3 +1,0 @@
-# WIP Upgrade guide
-
-TODO
