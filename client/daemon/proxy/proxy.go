@@ -97,6 +97,9 @@ type Proxy struct {
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
 
+	// defaultFilter is used for registering steam task
+	defaultPattern scheduler.Pattern
+
 	// tracer is used for telemetry
 	tracer trace.Tracer
 
@@ -208,6 +211,14 @@ func WithMaxConcurrency(con int64) Option {
 func WithDefaultFilter(f string) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultFilter = f
+		return p
+	}
+}
+
+// WithDefaultPattern sets default pattern for downloading
+func WithDefaultPattern(pattern scheduler.Pattern) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultPattern = pattern
 		return p
 	}
 }
@@ -480,6 +491,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
+		transport.WithDefaultPattern(proxy.defaultPattern),
 		transport.WithDefaultBiz(bizTag),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)

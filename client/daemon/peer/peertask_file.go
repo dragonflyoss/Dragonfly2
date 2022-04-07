@@ -37,7 +37,6 @@ type FileTaskRequest struct {
 	Output             string
 	Limit              float64
 	DisableBackSource  bool
-	Pattern            string
 	Callsystem         string
 	Range              *clientutil.Range
 	KeepOriginalOffset bool
@@ -112,7 +111,6 @@ func (ptm *peerTaskManager) newFileTask(
 		progressCh:        make(chan *FileTaskProgress),
 		progressStopCh:    make(chan bool),
 		disableBackSource: request.DisableBackSource,
-		pattern:           request.Pattern,
 		callsystem:        request.Callsystem,
 	}
 	return ctx, pt, nil

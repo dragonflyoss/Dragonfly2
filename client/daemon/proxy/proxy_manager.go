@@ -51,7 +51,7 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, opts *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern scheduler.Pattern, opts *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
 	if opts == nil {
 		logger.Infof("proxy config is empty, disabled")
@@ -70,6 +70,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 		WithWhiteList(whiteList),
 		WithMaxConcurrency(opts.MaxConcurrency),
 		WithDefaultFilter(opts.DefaultFilter),
+		WithDefaultPattern(defaultPattern),
 		WithBasicAuth(opts.BasicAuth),
 		WithDumpHTTPContent(opts.DumpHTTPContent),
 	}

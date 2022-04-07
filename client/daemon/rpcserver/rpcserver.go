@@ -31,6 +31,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -55,18 +56,22 @@ type server struct {
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
+	defaultPattern  scheduler.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
 }
 
-func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
+func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
+	storageManager storage.Manager, defaultPattern scheduler.Pattern,
+	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	svr := &server{
 		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
+		defaultPattern:  defaultPattern,
 	}
 
 	svr.downloadServer = dfdaemonserver.New(svr, downloadOpts...)
@@ -212,11 +217,11 @@ func (s *server) Download(ctx context.Context,
 			UrlMeta:  req.UrlMeta,
 			PeerId:   idgen.PeerID(s.peerHost.Ip),
 			PeerHost: s.peerHost,
+			Pattern:  config.ConvertPattern(req.Pattern, s.defaultPattern),
 		},
 		Output:             req.Output,
 		Limit:              req.Limit,
 		DisableBackSource:  req.DisableBackSource,
-		Pattern:            req.Pattern,
 		Callsystem:         req.Callsystem,
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
