@@ -46,20 +46,6 @@ func (mr *MockInterfaceMockRecorder) Deregister(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockInterface)(nil).Deregister), arg0)
 }
 
-// Get mocks base method.
-func (m *MockInterface) Get(arg0 interface{}) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Get indicates an expected call of Get.
-func (mr *MockInterfaceMockRecorder) Get(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockInterface)(nil).Get), arg0)
-}
-
 // Notify mocks base method.
 func (m *MockInterface) Notify() error {
 	m.ctrl.T.Helper()
@@ -96,4 +82,18 @@ func (m *MockInterface) Stop() {
 func (mr *MockInterfaceMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockInterface)(nil).Stop))
+}
+
+// Unmarshal mocks base method.
+func (m *MockInterface) Unmarshal(arg0 interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unmarshal", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unmarshal indicates an expected call of Unmarshal.
+func (mr *MockInterfaceMockRecorder) Unmarshal(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*MockInterface)(nil).Unmarshal), arg0)
 }
