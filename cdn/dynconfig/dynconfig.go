@@ -107,7 +107,7 @@ func (d *dynConfig) Deregister(l Observer) {
 	d.locker.Unlock()
 }
 
-func (d *dynConfig) Get(dest interface{}) error {
+func (d *dynConfig) Unmarshal(dest interface{}) error {
 	return d.ds.Unmarshal(dest)
 }
 
