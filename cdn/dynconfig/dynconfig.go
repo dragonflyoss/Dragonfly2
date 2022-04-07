@@ -32,7 +32,7 @@ var (
 	watchInterval = 10 * time.Second
 )
 
-// todo move this interface to internal/dynconfig
+// TODO move this interface to internal/dynconfig
 type Interface interface {
 	// Unmarshal the dynamic config from configServer or local file.
 	Unmarshal(dest interface{}) error
