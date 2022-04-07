@@ -286,8 +286,8 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, peer count is %d",
-				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.PeerCount.Load())
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload peer count is %d",
+				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.UploadPeerCount.Load())
 			return true
 		}
 
