@@ -254,6 +254,7 @@ func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) 
 		if err != nil {
 			return err
 		}
+		logger.WithTaskID(req.TaskId).Debugf("receive piece task request: %s", req)
 		seedTask, err := css.service.GetSeedTask(req.TaskId)
 		if err != nil {
 			if task.IsTaskNotFound(err) {
@@ -277,6 +278,7 @@ func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) 
 			ContentLength: seedTask.SourceFileLength,
 			PieceMd5Sign:  seedTask.PieceMd5Sign,
 		}
+		logger.WithTaskID(req.TaskId).Debugf("send piece task result: %s", pp)
 		if err := stream.Send(pp); err != nil {
 			return err
 		}

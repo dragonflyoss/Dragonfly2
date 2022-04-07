@@ -137,7 +137,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		_ = client.CloseSend()
 		return err
 	}
-
+	s.peerTaskConductor.Warnf("receive from SyncPieceTasksClient result: %s", piecePacket)
 	synchronizer := &pieceTaskSynchronizer{
 		peerTaskConductor: s.peerTaskConductor,
 		pieceRequestCh:    s.pieceRequestCh,
