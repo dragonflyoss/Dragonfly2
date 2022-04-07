@@ -162,7 +162,7 @@ build-rpm-dfget: build-linux-dfget
 	@echo "Begin to build rpm dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
-	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
@@ -179,7 +179,7 @@ build-deb-dfget: build-linux-dfget
 	@echo "Begin to build deb dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
-	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
@@ -193,7 +193,7 @@ build-deb-dfget: build-linux-dfget
 
 # Generate dfget man page
 build-dfget-man-page:
-	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
+	@pandoc -s -t man ./build/package/docs/dfget.1.md -o ./build/package/docs/dfget.1
 .PHONY: build-dfget-man-page
 
 # Generate e2e sha256sum

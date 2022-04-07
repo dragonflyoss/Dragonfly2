@@ -25,16 +25,17 @@ file distribution system. Its goal is to
 tackle all distribution problems in cloud native scenarios.
 Currently Dragonfly focuses on being:
 
-- Simple: well-defined user-facing API (HTTP), non-invasive to all container engines;
-- Efficient: CDN support, P2P based file distribution to save enterprise bandwidth;
-- Intelligent: host-level speed limit, intelligent flow control due to host detection;
-- Secure: block transmission encryption, HTTPS connection support.
+- **Simple**: Well-defined user-facing API (HTTP), non-invasive to all container engines;
+- **Efficient**: CDN support, P2P based file distribution to save enterprise bandwidth;
+- **Intelligent**: Host-level speed limit, intelligent flow control due to host detection;
+- **Secure**: Block transmission encryption, HTTPS connection support.
 
-Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as
+Dragonfly is now hosted by the Cloud Native Computing Foundation ([CNCF](https://cncf.io/)) as
 an Incubating Level Project. Originally it was born to
 solve all kinds of distribution at very large scales,
 such as application distribution, cache distribution,
 log distribution, image distribution, and so on.
+You can visit [d7y.io][d7y.io] for more information.
 
 ## Features
 
@@ -87,7 +88,7 @@ downloading files. It's similar to wget.
 
 ## Documentation
 
-You can find the full documentation [on the repo][document].
+You can find the full documentation on the [d7y.io][d7y.io].
 
 ## Community
 
@@ -95,16 +96,16 @@ Welcome developers to actively participate in community discussions
 and contribute code to Dragonfly. We will remain
 concerned about the issues discussed in the community and respond quickly.
 
-- Slack Channel: [#dragonfly](https://cloud-native.slack.com/messages/dragonfly/) on [CNCF Slack](https://slack.cncf.io/)
-- Discussion Group: <dragonfly-discuss@googlegroups.com>
-- Developer Group: <dragonfly-developers@googlegroups.com>
-- Github Discussions: [Dragonfly Discussion Forum][discussion]
-- Twitter: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
-- DingTalk: `23304666`
+- **Slack Channel**: [#dragonfly](https://cloud-native.slack.com/messages/dragonfly/) on [CNCF Slack](https://slack.cncf.io/)
+- **Discussion Group**: <dragonfly-discuss@googlegroups.com>
+- **Developer Group**: <dragonfly-developers@googlegroups.com>
+- **Github Discussions**: [Dragonfly Discussion Forum][discussion]
+- **Twitter**: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
+- **DingTalk**: `23304666`
 
 <!-- markdownlint-disable -->
 <div align="center">
-  <img src="docs/en/images/community/dingtalk-group.jpeg" width="300" title="dingtalk">
+  <img src="docs/images/community/dingtalk-group.jpeg" width="300" title="dingtalk">
 </div>
 <!-- markdownlint-restore -->
 
@@ -117,11 +118,11 @@ You should check out our
 
 Please refer to our [Code of Conduct][codeconduct].
 
-[arch]: docs/en/images/arch.png
-[logo-linear]: docs/en/images/logo/dragonfly-linear.svg
+[arch]: docs/images/arch.png
+[logo-linear]: docs/images/logo/dragonfly-linear.svg
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
-[document]: docs/README.md
-[dingtalk]: docs/en/images/community/dingtalk-group.jpeg
+[d7y.io]: https://d7y.io/
+[dingtalk]: docs/images/community/dingtalk-group.jpeg
