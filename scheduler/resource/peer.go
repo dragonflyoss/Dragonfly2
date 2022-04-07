@@ -143,6 +143,9 @@ type Peer struct {
 	// ChildCount is child count
 	ChildCount *atomic.Int32
 
+	// StealPeers is steal peer ids
+	StealPeers set.SafeSet
+
 	// BlockPeers is bad peer ids
 	BlockPeers set.SafeSet
 
@@ -172,6 +175,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Parent:     &atomic.Value{},
 		Children:   &sync.Map{},
 		ChildCount: atomic.NewInt32(0),
+		StealPeers: set.NewSafeSet(),
 		BlockPeers: set.NewSafeSet(),
 		CreateAt:   atomic.NewTime(time.Now()),
 		UpdateAt:   atomic.NewTime(time.Now()),
@@ -278,7 +282,9 @@ func (p *Peer) StoreChild(child *Peer) {
 
 	if _, loaded := p.Children.LoadOrStore(child.ID, child); !loaded {
 		p.ChildCount.Inc()
+		p.Host.UploadPeerCount.Inc()
 	}
+
 	child.Parent.Store(p)
 }
 
@@ -291,8 +297,10 @@ func (p *Peer) DeleteChild(key string) {
 	if !ok {
 		return
 	}
+
 	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
 		p.ChildCount.Dec()
+		p.Host.UploadPeerCount.Dec()
 	}
 
 	child.Parent = &atomic.Value{}
@@ -316,6 +324,7 @@ func (p *Peer) StoreParent(parent *Peer) {
 	p.Parent.Store(parent)
 	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
 		parent.ChildCount.Inc()
+		parent.Host.UploadPeerCount.Inc()
 	}
 }
 
@@ -332,6 +341,7 @@ func (p *Peer) DeleteParent() {
 
 	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
 		parent.ChildCount.Dec()
+		parent.Host.UploadPeerCount.Dec()
 	}
 }
 

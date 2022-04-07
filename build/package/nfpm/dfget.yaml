@@ -23,7 +23,7 @@ contents:
     dst: /etc/dragonfly/dfget.yaml
     type: config
 
-  - src: /root/docs/en/cli-reference/dfget.1
+  - src: /root/docs/dfget.1
     dst: /usr/share/man/man1/dfget.1
 
   - src: /root/License

@@ -186,8 +186,16 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
+	// Add steal peers to current peer
+	peer.StealPeers.Clear()
+	for _, parent := range parents[1:] {
+		peer.StealPeers.Add(parent.ID)
+	}
+
+	// Replace peer's parent with scheduled parent
 	peer.ReplaceParent(parents[0])
-	peer.Log.Infof("schedule parent successful, replace parent to %s", parents[0].ID)
+	peer.Log.Infof("schedule parent successful, replace parent to %s and steal peers is %v",
+		parents[0].ID, peer.StealPeers.Values())
 	return parents, true
 }
 
@@ -239,6 +247,11 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
+		if parent.StealPeers.Contains(peer.ID) {
+			peer.Log.Debugf("parent %s is not selected because it is in steal peers", parent.ID)
+			return true
+		}
+
 		if parent.ID == peer.ID {
 			peer.Log.Debug("parent is not selected because it is same")
 			return true
@@ -273,8 +286,8 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 		}
 
 		if parent.Host.FreeUploadLoad() <= 0 {
-			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, peer count is %d",
-				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.PeerCount.Load())
+			peer.Log.Debugf("parent %s is not selected because its free upload is empty, upload limit is %d, upload peer count is %d",
+				parent.ID, parent.Host.UploadLoadLimit.Load(), parent.Host.UploadPeerCount.Load())
 			return true
 		}
 

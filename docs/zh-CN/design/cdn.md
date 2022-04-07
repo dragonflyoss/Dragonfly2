@@ -1,3 +1,0 @@
-# WIP CDN
-
-TODO
