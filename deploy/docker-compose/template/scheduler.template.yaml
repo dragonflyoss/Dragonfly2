@@ -115,10 +115,10 @@ metrics:
   enablePeerHost: false
 
 # console shows log on console
-console: true
+console: false
 
 # whether to enable debug level logger and enable pprof
-verbose: true
+verbose: false
 
 # listen port for pprof, only valid when the verbose option is true
 # default is -1. If it is 0, pprof will use a random port.
