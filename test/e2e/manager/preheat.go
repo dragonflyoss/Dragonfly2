@@ -68,7 +68,7 @@ var _ = Describe("Preheat with manager", func() {
 
 				out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
 					fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
-				fmt.Println(string(out))
+				fmt.Printf("preheat file %s outout: %s\n", url, string(out))
 				Expect(err).NotTo(HaveOccurred())
 
 				// wait for success
