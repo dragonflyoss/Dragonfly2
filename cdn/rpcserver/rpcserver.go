@@ -21,10 +21,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
@@ -246,10 +248,12 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 }
 
 func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) error {
+	g, ctx := errgroup.WithContext(stream.Context())
+	locker := sync.Mutex{}
 	for {
 		req, err := stream.Recv()
 		if err == io.EOF {
-			return nil
+			break
 		}
 		if err != nil {
 			return err
@@ -265,24 +269,55 @@ func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) 
 		if seedTask.IsError() {
 			return status.Errorf(codes.Code(base.Code_CDNError), "task(%s) status is FAIL, cdnStatus: %s", seedTask.ID, seedTask.CdnStatus)
 		}
-		taskPieces, err := css.getTaskPieces(req)
-		if err != nil {
-			return status.Errorf(codes.Code(base.Code_CDNError), "failed to get pieces of task(%s) from cdn: %v", req.TaskId, err)
-		}
-		pp := &base.PiecePacket{
-			TaskId:        req.TaskId,
-			DstPid:        req.DstPid,
-			DstAddr:       fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
-			PieceInfos:    taskPieces,
-			TotalPiece:    seedTask.TotalPieceCount,
-			ContentLength: seedTask.SourceFileLength,
-			PieceMd5Sign:  seedTask.PieceMd5Sign,
-		}
-		logger.WithTaskID(req.TaskId).Debugf("send piece task result: %s", pp)
-		if err := stream.Send(pp); err != nil {
-			return err
+		g.Go(func() error {
+			return css.sendTaskPieces(ctx, req, seedTask, stream, &locker)
+		})
+	}
+	return g.Wait()
+}
+
+func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskRequest, seedTask *task.SeedTask, stream cdnsystem.Seeder_SyncPieceTasksServer,
+	locker sync.Locker) error {
+	ch, err := css.service.WatchTaskProgress(ctx, req.TaskId)
+	if err != nil {
+		return err
+	}
+	var count uint32
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case piece := <-ch:
+			if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
+				p := &base.PieceInfo{
+					PieceNum:     int32(piece.PieceNum),
+					RangeStart:   piece.PieceRange.StartIndex,
+					RangeSize:    piece.PieceLen,
+					PieceMd5:     piece.PieceMd5,
+					PieceOffset:  piece.OriginRange.StartIndex,
+					PieceStyle:   piece.PieceStyle,
+					DownloadCost: piece.DownloadCost,
+				}
+				pp := &base.PiecePacket{
+					TaskId:        req.TaskId,
+					DstPid:        req.DstPid,
+					DstAddr:       fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
+					PieceInfos:    []*base.PieceInfo{p},
+					TotalPiece:    seedTask.TotalPieceCount,
+					ContentLength: seedTask.SourceFileLength,
+					PieceMd5Sign:  seedTask.PieceMd5Sign,
+				}
+				locker.Lock()
+				if err := stream.Send(pp); err != nil {
+					locker.Unlock()
+					return err
+				}
+				locker.Unlock()
+				count++
+			}
 		}
 	}
+	return nil
 }
 
 func (css *Server) getTaskPieces(req *base.PieceTaskRequest) ([]*base.PieceInfo, error) {

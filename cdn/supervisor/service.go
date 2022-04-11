@@ -43,6 +43,9 @@ type CDNService interface {
 	// RegisterSeedTask registers seed task
 	RegisterSeedTask(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error)
 
+	// WatchTaskProgress watch task progress changed
+	WatchTaskProgress(ctx context.Context, taskID string) (<-chan *task.PieceInfo, error)
+
 	// GetSeedPieces returns pieces associated with taskID, which are sorted by pieceNum
 	GetSeedPieces(taskID string) (pieces []*task.PieceInfo, err error)
 
@@ -129,4 +132,8 @@ func (service *cdnService) GetSeedPieces(taskID string) ([]*task.PieceInfo, erro
 
 func (service *cdnService) GetSeedTask(taskID string) (*task.SeedTask, error) {
 	return service.taskManager.Get(taskID)
+}
+
+func (service *cdnService) WatchTaskProgress(ctx context.Context, taskID string) (<-chan *task.PieceInfo, error) {
+	return service.progressManager.WatchSeedProgress(ctx, "", taskID)
 }

@@ -80,3 +80,18 @@ func (mr *MockCDNServiceMockRecorder) RegisterSeedTask(arg0, arg1, arg2 interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSeedTask", reflect.TypeOf((*MockCDNService)(nil).RegisterSeedTask), arg0, arg1, arg2)
 }
+
+// WatchTaskProgress mocks base method.
+func (m *MockCDNService) WatchTaskProgress(arg0 context.Context, arg1 string) (<-chan *task.PieceInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WatchTaskProgress", arg0, arg1)
+	ret0, _ := ret[0].(<-chan *task.PieceInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WatchTaskProgress indicates an expected call of WatchTaskProgress.
+func (mr *MockCDNServiceMockRecorder) WatchTaskProgress(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchTaskProgress", reflect.TypeOf((*MockCDNService)(nil).WatchTaskProgress), arg0, arg1)
+}

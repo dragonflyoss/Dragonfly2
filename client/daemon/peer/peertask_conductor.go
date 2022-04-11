@@ -762,6 +762,7 @@ func (pt *peerTaskConductor) pullPiecesFromPeers(pieceRequestCh chan *DownloadPi
 	// ensure first peer packet is not nil
 	peerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
 	if len(peerPacket.StealPeers) == 0 {
+		pt.Debug("pull pieces peer packet stealPeers is empty")
 		num, ok = pt.waitAvailablePeerPacket()
 		if !ok {
 			return
