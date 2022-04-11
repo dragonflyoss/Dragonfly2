@@ -143,6 +143,8 @@ type peerTaskConductor struct {
 	requestedPieces *Bitmap
 	// lock used by piece download worker
 	requestedPiecesLock sync.Mutex
+	// lock used by send piece result
+	sendPieceResultLock sync.Mutex
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 
@@ -1099,7 +1101,7 @@ func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPie
 	waitSpan.End()
 
 	// send error piece result
-	sendError := pt.peerPacketStream.Send(&scheduler.PieceResult{
+	sendError := pt.sendPieceResult(&scheduler.PieceResult{
 		TaskId:        pt.GetTaskID(),
 		SrcPid:        pt.GetPeerID(),
 		DstPid:        request.DstPid,
@@ -1168,7 +1170,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		&scheduler.PieceResult{
 			TaskId:        pt.GetTaskID(),
 			SrcPid:        pt.GetPeerID(),
@@ -1195,7 +1197,7 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
-	err := pt.peerPacketStream.Send(&scheduler.PieceResult{
+	err := pt.sendPieceResult(&scheduler.PieceResult{
 		TaskId:        pt.GetTaskID(),
 		SrcPid:        pt.GetPeerID(),
 		DstPid:        request.DstPid,
@@ -1324,7 +1326,7 @@ func (pt *peerTaskConductor) done() {
 	defer peerResultSpan.End()
 
 	// send EOF piece result to scheduler
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
@@ -1375,7 +1377,7 @@ func (pt *peerTaskConductor) fail() {
 	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
 	// send EOF piece result to scheduler
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
@@ -1465,4 +1467,11 @@ func (pt *peerTaskConductor) PublishPieceInfo(pieceNum int32, size uint32) {
 			Num:      pieceNum,
 			Finished: finished,
 		})
+}
+
+func (pt *peerTaskConductor) sendPieceResult(pr *scheduler.PieceResult) error {
+	pt.sendPieceResultLock.Lock()
+	err := pt.peerPacketStream.Send(pr)
+	pt.sendPieceResultLock.Unlock()
+	return err
 }
