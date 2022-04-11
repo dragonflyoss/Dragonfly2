@@ -317,7 +317,7 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 				locker.Unlock()
 				count++
 			}
-			if int32(piece.PieceNum) == seedTask.TotalPieceCount-1 {
+			if int32(piece.PieceNum) == seedTask.TotalPieceCount-1 || count == req.Limit {
 				return nil
 			}
 		}
