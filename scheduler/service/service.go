@@ -407,6 +407,7 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 	task.Log.Debug("task has been found in P2P network")
 	return &rpcscheduler.Task{
 		Id:               task.ID,
+		Type:             int32(task.Type),
 		ContentLength:    task.ContentLength.Load(),
 		TotalPieceCount:  task.TotalPieceCount.Load(),
 		State:            task.FSM.Current(),
@@ -427,7 +428,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 		return dferrors.New(base.Code_BadRequest, msg)
 	}
 
-	task := resource.NewTask(taskID, req.Cid, s.config.Scheduler.BackSourceCount, req.UrlMeta)
+	task := resource.NewTask(taskID, req.Cid, resource.TaskTypeDfcache, req.UrlMeta)
 	task, _ = s.resource.TaskManager().LoadOrStore(task)
 	host := s.registerHost(ctx, req.PeerHost)
 	peer := s.registerPeer(ctx, peerID, task, host, req.UrlMeta.Tag)
@@ -500,7 +501,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 
 // registerTask creates a new task or reuses a previous task
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
-	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
+	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
 	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
 		task.Log.Infof("task state is %s", task.FSM.Current())
