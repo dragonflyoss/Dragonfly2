@@ -45,9 +45,10 @@ import (
 )
 
 const (
-	//reasonContextCanceled       = "context canceled"
+	// TODO implement peer task health check
+	// reasonContextCanceled       = "context canceled"
+	// reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 	reasonBackSourceDisabled    = "download from source disabled"
 
@@ -925,18 +926,6 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		pt.span.AddEvent("back source due to scheduler says need back source ")
 		// TODO optimize back source when already downloaded some pieces
 		pt.backSource()
-	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		if pt.schedulerOption.DisableAutoBackSource {
-			pt.cancel(base.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
-			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
-			pt.span.RecordError(err)
-			pt.Errorf(err.Error())
-		} else {
-			pt.Warnf("start download from source due to %s", reasonReScheduleTimeout)
-			pt.span.AddEvent("back source due to schedule timeout")
-			pt.needBackSource.Store(true)
-			pt.backSource()
-		}
 	}
 	return -1, false
 }
