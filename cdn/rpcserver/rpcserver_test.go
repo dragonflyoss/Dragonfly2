@@ -346,3 +346,132 @@ func TestServer_GetPieceTasks(t *testing.T) {
 		})
 	}
 }
+
+func TestServer_SyncPieceTasks(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		req *cdnsystem.SeedRequest
+		psc chan *cdnsystem.PieceSeed
+	}
+	tests := []struct {
+		name             string
+		createCallArgs   func() args
+		createCallObject func(t *testing.T, args args) cdnRPCServer.SeederServer
+		wantErr          assert.ErrorAssertionFunc
+	}{
+		{
+			name: "obtain piece seeds success",
+			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+				ctrl := gomock.NewController(t)
+				cdnServiceMock := mocks.NewMockCDNService(ctrl)
+				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
+				cdnServiceMock.EXPECT().RegisterSeedTask(gomock.Any(), gomock.Any(), gomock.Eq(regTask)).DoAndReturn(
+					func(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error) {
+						registerTask.CdnStatus = task.StatusRunning
+						registerTask.TotalPieceCount = 5
+						registerTask.SourceFileLength = 10000
+						pieceChan := make(chan *task.PieceInfo)
+						go func() {
+							pieceChan <- &task.PieceInfo{
+								PieceNum: 0,
+								PieceMd5: "xxxxxmd5",
+								PieceRange: &rangeutils.Range{
+									StartIndex: 0,
+									EndIndex:   99,
+								},
+								OriginRange: &rangeutils.Range{
+									StartIndex: 0,
+									EndIndex:   99,
+								},
+								PieceLen:   100,
+								PieceStyle: 0,
+							}
+							close(pieceChan)
+						}()
+						return registerTask, pieceChan, nil
+					}).Times(1)
+				cdnServiceMock.EXPECT().GetSeedTask(regTask.ID).DoAndReturn(func(taskID string) (*task.SeedTask, error) {
+					regTask.CdnStatus = task.StatusSuccess
+					return regTask, nil
+				}).Times(1)
+				server, _ := New(Config{}, cdnServiceMock)
+				return server
+			},
+			createCallArgs: func() args {
+				return args{
+					ctx: context.Background(),
+					req: &cdnsystem.SeedRequest{
+						TaskId:  "task1",
+						Url:     "https://www.dragonfly.com",
+						UrlMeta: nil,
+					},
+					psc: make(chan *cdnsystem.PieceSeed),
+				}
+			},
+			wantErr: assert.NoError,
+		}, {
+			name: "task download fail",
+			createCallArgs: func() args {
+				return args{
+					ctx: context.Background(),
+					req: &cdnsystem.SeedRequest{
+						TaskId:  "task1",
+						Url:     "https://www.dragonfly.com",
+						UrlMeta: nil,
+					},
+					psc: make(chan *cdnsystem.PieceSeed),
+				}
+			},
+			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+				ctrl := gomock.NewController(t)
+				cdnServiceMock := mocks.NewMockCDNService(ctrl)
+				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
+				cdnServiceMock.EXPECT().RegisterSeedTask(gomock.Any(), gomock.Any(), gomock.Eq(regTask)).DoAndReturn(
+					func(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error) {
+						registerTask.CdnStatus = task.StatusRunning
+						registerTask.TotalPieceCount = 5
+						registerTask.SourceFileLength = 10000
+						pieceChan := make(chan *task.PieceInfo)
+						go func() {
+							pieceChan <- &task.PieceInfo{
+								PieceNum: 0,
+								PieceMd5: "xxxxxmd5",
+								PieceRange: &rangeutils.Range{
+									StartIndex: 0,
+									EndIndex:   99,
+								},
+								OriginRange: &rangeutils.Range{
+									StartIndex: 0,
+									EndIndex:   99,
+								},
+								PieceLen:   100,
+								PieceStyle: 0,
+							}
+							close(pieceChan)
+						}()
+						return registerTask, pieceChan, nil
+					}).Times(1)
+				cdnServiceMock.EXPECT().GetSeedTask(regTask.ID).DoAndReturn(func(taskID string) (*task.SeedTask, error) {
+					regTask.CdnStatus = task.StatusFailed
+					return regTask, nil
+				}).Times(1)
+				server, _ := New(Config{}, cdnServiceMock)
+				return server
+			},
+			wantErr: assert.Error,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := tt.createCallArgs()
+			svr := tt.createCallObject(t, args)
+			go func() {
+				for seed := range args.psc {
+					fmt.Println(seed)
+				}
+			}()
+			tt.wantErr(t, svr.ObtainSeeds(args.ctx, args.req, args.psc), fmt.Sprintf("ObtainSeeds(%v, %v, %v)", args.ctx, args.req, args.psc))
+		})
+	}
+}
