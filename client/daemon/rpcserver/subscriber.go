@@ -32,7 +32,7 @@ import (
 )
 
 type subscriber struct {
-	sync.Mutex
+	sync.Mutex // lock for sent map and grpc Send
 	*logger.SugaredLoggerOnWith
 	*peer.SubscribeResult
 	sync           dfdaemon.Daemon_SyncPieceTasksServer
@@ -116,12 +116,13 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 		}
 
 		// TODO if not found, try to send to peer task conductor, then download it first
+		s.Lock()
 		err = s.sync.Send(pp)
 		if err != nil {
+			s.Unlock()
 			s.Errorf("SyncPieceTasks send error: %s", err)
 			return
 		}
-		s.Lock()
 		for _, p := range pp.PieceInfos {
 			s.sentMap[p.PieceNum] = struct{}{}
 		}

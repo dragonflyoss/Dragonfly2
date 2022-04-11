@@ -196,7 +196,7 @@ func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedu
 }
 
 func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPeer) {
-	sendError := s.peerTaskConductor.peerPacketStream.Send(compositePieceResult(s.peerTaskConductor, destPeer))
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer))
 	if sendError != nil {
 		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
@@ -309,7 +309,7 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
 }
 
 func (s *pieceTaskSynchronizer) reportError() {
-	sendError := s.peerTaskConductor.peerPacketStream.Send(compositePieceResult(s.peerTaskConductor, s.dstPeer))
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer))
 	if sendError != nil {
 		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.peerTaskConductor.Errorf("sync piece info failed and send piece result with error: %s", sendError)
