@@ -45,9 +45,10 @@ import (
 )
 
 const (
-	//reasonContextCanceled       = "context canceled"
+	// TODO implement peer task health check
+	// reasonContextCanceled       = "context canceled"
+	// reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 	reasonBackSourceDisabled    = "download from source disabled"
 
