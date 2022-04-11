@@ -74,6 +74,10 @@ plugins:
       enable: true
       config:
         baseDir: /tmp/cdn
+    - name: memory
+      enable: false
+      config:
+        baseDir: /dev/shm/dragonfly
 
   storagemanager:
     - name: disk
@@ -108,7 +112,7 @@ plugins:
               intervalThreshold: 2h0m0s
 
 # console shows log on console
-console: true
+console: false
 
 # whether to enable debug level logger and enable pprof
 verbose: true
