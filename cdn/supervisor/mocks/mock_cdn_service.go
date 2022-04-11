@@ -35,6 +35,21 @@ func (m *MockCDNService) EXPECT() *MockCDNServiceMockRecorder {
 	return m.recorder
 }
 
+// GetPieceMd5Sign mocks base method.
+func (m *MockCDNService) GetPieceMd5Sign(arg0 string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPieceMd5Sign", arg0)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPieceMd5Sign indicates an expected call of GetPieceMd5Sign.
+func (mr *MockCDNServiceMockRecorder) GetPieceMd5Sign(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceMd5Sign", reflect.TypeOf((*MockCDNService)(nil).GetPieceMd5Sign), arg0)
+}
+
 // GetSeedPieces mocks base method.
 func (m *MockCDNService) GetSeedPieces(arg0 string) ([]*task.PieceInfo, error) {
 	m.ctrl.T.Helper()
