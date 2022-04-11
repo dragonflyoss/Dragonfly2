@@ -53,7 +53,7 @@ services:
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=0.0.0.0:65000 || exit 1"]
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:65000 || exit 1"]
       interval: 1s
       timeout: 3s
       retries: 30
