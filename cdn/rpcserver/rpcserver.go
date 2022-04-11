@@ -288,21 +288,23 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 		case <-ctx.Done():
 			return nil
 		case piece := <-ch:
+			if piece == nil {
+				return nil
+			}
 			if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
-				p := &base.PieceInfo{
-					PieceNum:     int32(piece.PieceNum),
-					RangeStart:   piece.PieceRange.StartIndex,
-					RangeSize:    piece.PieceLen,
-					PieceMd5:     piece.PieceMd5,
-					PieceOffset:  piece.OriginRange.StartIndex,
-					PieceStyle:   piece.PieceStyle,
-					DownloadCost: piece.DownloadCost,
-				}
 				pp := &base.PiecePacket{
-					TaskId:        req.TaskId,
-					DstPid:        req.DstPid,
-					DstAddr:       fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
-					PieceInfos:    []*base.PieceInfo{p},
+					TaskId:  req.TaskId,
+					DstPid:  req.DstPid,
+					DstAddr: fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
+					PieceInfos: []*base.PieceInfo{{
+						PieceNum:     int32(piece.PieceNum),
+						RangeStart:   piece.PieceRange.StartIndex,
+						RangeSize:    piece.PieceLen,
+						PieceMd5:     piece.PieceMd5,
+						PieceOffset:  piece.OriginRange.StartIndex,
+						PieceStyle:   piece.PieceStyle,
+						DownloadCost: piece.DownloadCost,
+					}},
 					TotalPiece:    seedTask.TotalPieceCount,
 					ContentLength: seedTask.SourceFileLength,
 					PieceMd5Sign:  seedTask.PieceMd5Sign,
@@ -315,9 +317,11 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 				locker.Unlock()
 				count++
 			}
+			if int32(piece.PieceNum) == seedTask.TotalPieceCount-1 {
+				return nil
+			}
 		}
 	}
-	return nil
 }
 
 func (css *Server) getTaskPieces(req *base.PieceTaskRequest) ([]*base.PieceInfo, error) {
