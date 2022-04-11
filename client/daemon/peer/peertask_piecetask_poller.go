@@ -121,7 +121,7 @@ retry:
 		code = de.Code
 	}
 	ptc.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
-	sendError := ptc.peerPacketStream.Send(&scheduler.PieceResult{
+	sendError := ptc.sendPieceResult(&scheduler.PieceResult{
 		TaskId:        ptc.taskID,
 		SrcPid:        ptc.peerID,
 		DstPid:        peer.PeerId,
@@ -203,7 +203,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		}
 
 		// by santong: when peer return empty, retry later
-		sendError := ptc.peerPacketStream.Send(&scheduler.PieceResult{
+		sendError := ptc.sendPieceResult(&scheduler.PieceResult{
 			TaskId:        ptc.taskID,
 			SrcPid:        ptc.peerID,
 			DstPid:        peer.PeerId,
