@@ -1015,6 +1015,13 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
+	if m.GetUrlMeta() == nil {
+		return AnnounceTaskRequestValidationError{
+			field:  "UrlMeta",
+			reason: "value is required",
+		}
+	}
+
 	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AnnounceTaskRequestValidationError{
@@ -1032,6 +1039,13 @@ func (m *AnnounceTaskRequest) Validate() error {
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
+		}
+	}
+
+	if m.GetPiecePacket() == nil {
+		return AnnounceTaskRequestValidationError{
+			field:  "PiecePacket",
+			reason: "value is required",
 		}
 	}
 

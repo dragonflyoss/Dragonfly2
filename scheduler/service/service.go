@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -379,112 +380,118 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	return nil
 }
 
-// StatPeerTask checks if the given task exists in P2P network
+// StatePeerTask checks the current state of the task
 func (s *Service) StatPeerTask(ctx context.Context, req *rpcscheduler.StatPeerTaskRequest) (*base.GrpcDfResult, error) {
-	log := logger.With("function", "StatPeerTask", "TaskID", req.TaskId)
-
-	// Check if task exists
 	task, loaded := s.resource.TaskManager().Load(req.TaskId)
-	if !loaded || task == nil {
-		msg := "task not found in P2P network"
-		log.Info(msg)
+	if !loaded {
+		msg := fmt.Sprintf("task %s not found", req.TaskId)
+		logger.Info(msg)
+		// TODO(eryugey) use dferrors.Newf
 		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
 	}
+
 	if task.FSM.Current() != resource.TaskStateSucceeded {
-		msg := fmt.Sprintf("task found but not in %s state: %s", resource.TaskStateSucceeded, task.FSM.Current())
-		log.Info(msg)
+		msg := fmt.Sprintf("task has been found but state is %s", task.FSM.Current())
+		task.Log.Info(msg)
+		// TODO(eryugey) use dferrors.Newf
 		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
 	}
 
-	lenPeers := task.PeerCount.Load()
-	if lenPeers <= 0 {
-		msg := fmt.Sprintf("task found but with %d active peers", lenPeers)
-		log.Info(msg)
+	if !task.HasAvailablePeer() {
+		msg := "task has been found but task has no available peers"
+		task.Log.Info(msg)
+		// TODO(eryugey) use dferrors.Newf
 		return common.NewGrpcDfResult(base.Code_PeerTaskNotFound, msg), nil
 	}
 
-	msg := "task found in P2P network"
-	log.Info(msg)
+	msg := "task has been found"
+	task.Log.Info(msg)
+	// TODO(eryugey) use dferrors.Newf
 	return common.NewGrpcDfResult(base.Code_Success, msg), nil
 }
 
 // AnnounceTask informs scheduler a peer has completed task
 func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTaskRequest) (*base.GrpcDfResult, error) {
-	log := logger.With("function", "AnnounceTask", "TaskID", req.TaskId, "CID", req.Cid)
-
-	// Must contain valid PiecePacket.PieceInfos
-	if req.PiecePacket == nil || req.PiecePacket.PieceInfos == nil {
-		msg := "no piece info found in request"
-		log.Warn(msg)
-		return common.NewGrpcDfResult(base.Code_BadRequest, msg), nil
-	}
-
+	taskID := req.TaskId
+	peerID := req.PiecePacket.DstPid
 	pieceInfos := req.PiecePacket.PieceInfos
 	totalPiece := req.PiecePacket.TotalPiece
-	contentLength := req.PiecePacket.ContentLength
-	peerID := req.PiecePacket.DstPid
-	if totalPiece != int32(len(pieceInfos)) {
-		msg := fmt.Sprintf("total piece count mismatch in request: %d != %d", totalPiece, len(pieceInfos))
-		log.Warn(msg)
+	if len(pieceInfos) <= 0 || totalPiece != int32(len(pieceInfos)) {
+		msg := fmt.Sprintf("length of pieces is invalid, total piece id %d, length of piece infos is %d", totalPiece, len(pieceInfos))
+		logger.WithTaskAndPeerID(taskID, peerID).Warn(msg)
+		// TODO(eryugey) use dferrors.Newf
 		return common.NewGrpcDfResult(base.Code_BadRequest, msg), nil
 	}
 
-	// Check if taskID is valid
-	if req.TaskId != req.PiecePacket.TaskId {
-		msg := fmt.Sprintf("task ID mismatch %s != %s", req.TaskId, req.PiecePacket.TaskId)
-		log.Warn(msg)
-		return common.NewGrpcDfResult(base.Code_BadRequest, msg), nil
-	}
-
-	task := resource.NewTask(req.TaskId, req.Cid, 0, req.UrlMeta)
+	task := resource.NewTask(taskID, req.Cid, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 	task, _ = s.resource.TaskManager().LoadOrStore(task)
-
 	host := s.registerHost(ctx, req.PeerHost)
-	peer := s.registerPeer(ctx, peerID, task, host, "")
-	peer.Log.Infof("announce peer task request: %#v", req)
+	peer := s.registerPeer(ctx, peerID, task, host, req.UrlMeta.Tag)
+	peer.Log.Infof("announce peer task request: %#v %#v %#v %#v", req, req.UrlMeta, req.PeerHost, req.PiecePacket)
 
-	// Update task piece infos, and mark task as Success
+	// If the task state is not TaskStateSucceeded,
+	// advance the task state to TaskStateSucceeded
 	if !task.FSM.Is(resource.TaskStateSucceeded) {
 		if task.FSM.Is(resource.TaskStatePending) {
 			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+				task.Log.Errorf("task fsm event failed: %s", err)
+				// TODO(eryugey) use dferrors.Newf
 				return nil, err
 			}
 		}
-		for _, info := range pieceInfos {
-			task.StorePiece(info)
-			peer.Pieces.Set(uint(info.PieceNum))
+
+		if task.FSM.Is(resource.TaskStateFailed) {
+			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+				task.Log.Errorf("task fsm event failed: %s", err)
+				// TODO(eryugey) use dferrors.Newf
+				return nil, err
+			}
 		}
-		peerResult := rpcscheduler.PeerResult{
-			TaskId:          req.TaskId,
+
+		// Load downloaded piece infos
+		for _, pieceInfo := range pieceInfos {
+			peer.Pieces.Set(uint(pieceInfo.PieceNum))
+			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
+			task.StorePiece(pieceInfo)
+		}
+
+		s.handleTaskSuccess(ctx, task, &rpcscheduler.PeerResult{
+			TaskId:          taskID,
 			PeerId:          peerID,
 			SrcIp:           req.PeerHost.Ip,
 			Url:             req.Cid,
 			Success:         true,
 			TotalPieceCount: totalPiece,
-			ContentLength:   contentLength,
+			ContentLength:   req.PiecePacket.ContentLength,
 			Code:            base.Code_Success,
-		}
-		s.handleTaskSuccess(ctx, task, &peerResult)
+		})
 	}
 
-	// Trigger the peer state machine, so we could change peer state to success as well
+	// If the peer state is not PeerStateSucceeded,
+	// advance the peer state to PeerStateSucceeded
 	if !peer.FSM.Is(resource.PeerStateSucceeded) {
 		if peer.FSM.Is(resource.PeerStatePending) {
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err)
+				// TODO(eryugey) use dferrors.Newf
+				return nil, err
 			}
 		}
+
 		if peer.FSM.Is(resource.PeerStateReceivedTiny) ||
 			peer.FSM.Is(resource.PeerStateReceivedSmall) ||
 			peer.FSM.Is(resource.PeerStateReceivedNormal) {
 			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err)
-			} else {
-				s.handlePeerSuccess(ctx, peer)
+				// TODO(eryugey) use dferrors.Newf
+				return nil, err
 			}
+
+			s.handlePeerSuccess(ctx, peer)
 		}
 	}
 
+	// TODO(eryugey) use dferrors.Newf
 	return common.NewGrpcDfResult(base.Code_Success, "announce task succeeded"), nil
 }
 
