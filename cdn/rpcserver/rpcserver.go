@@ -283,15 +283,24 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 		return err
 	}
 	var count uint32
+	var alreadyCount int32
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case piece := <-ch:
+			alreadyCount++
 			if piece == nil {
 				return nil
 			}
 			if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
+				pieceMd5Sign := seedTask.PieceMd5Sign
+				if alreadyCount == seedTask.TotalPieceCount && pieceMd5Sign == "" {
+					pieceMd5Sign, err = css.service.GetPieceMd5Sign(req.TaskId)
+					if err != nil {
+						return err
+					}
+				}
 				pp := &base.PiecePacket{
 					TaskId:  req.TaskId,
 					DstPid:  req.DstPid,
@@ -307,7 +316,7 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 					}},
 					TotalPiece:    seedTask.TotalPieceCount,
 					ContentLength: seedTask.SourceFileLength,
-					PieceMd5Sign:  seedTask.PieceMd5Sign,
+					PieceMd5Sign:  pieceMd5Sign,
 				}
 				locker.Lock()
 				if err := stream.Send(pp); err != nil {
@@ -317,7 +326,7 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 				locker.Unlock()
 				count++
 			}
-			if int32(piece.PieceNum) == seedTask.TotalPieceCount-1 || count == req.Limit {
+			if alreadyCount == seedTask.TotalPieceCount || count == req.Limit {
 				return nil
 			}
 		}

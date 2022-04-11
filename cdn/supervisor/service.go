@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/synclock"
+	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 var (
@@ -51,6 +52,8 @@ type CDNService interface {
 
 	// GetSeedTask returns seed task associated with taskID
 	GetSeedTask(taskID string) (seedTask *task.SeedTask, err error)
+
+	GetPieceMd5Sign(taskID string) (string, error)
 }
 
 type cdnService struct {
@@ -136,4 +139,27 @@ func (service *cdnService) GetSeedTask(taskID string) (*task.SeedTask, error) {
 
 func (service *cdnService) WatchTaskProgress(ctx context.Context, taskID string) (<-chan *task.PieceInfo, error) {
 	return service.progressManager.WatchSeedProgress(ctx, "", taskID)
+}
+
+func (service *cdnService) GetPieceMd5Sign(taskID string) (string, error) {
+	seedTask, err := service.GetSeedTask(taskID)
+	if err != nil {
+		return "", err
+	}
+	if seedTask.PieceMd5Sign != "" {
+		return seedTask.PieceMd5Sign, nil
+	}
+	taskPieces, err := service.GetSeedPieces(taskID)
+	if err != nil {
+		return "", err
+	}
+	if len(taskPieces) == int(seedTask.TotalPieceCount) {
+		var pieceMd5s []string
+		for i := 0; i < len(taskPieces); i++ {
+			pieceMd5s = append(pieceMd5s, taskPieces[i].PieceMd5)
+		}
+		pieceMd5Sign := digestutils.Sha256(pieceMd5s...)
+		return pieceMd5Sign, nil
+	}
+	return "", nil
 }

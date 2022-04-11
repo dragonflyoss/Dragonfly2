@@ -108,11 +108,13 @@ func (pm *manager) PublishPiece(ctx context.Context, taskID string, record *task
 	}
 	span.AddEvent(constants.EventPublishPiece, trace.WithAttributes(constants.AttributeSeedPiece.String(string(jsonRecord))))
 	logger.Debugf("publish task %s seed piece record: %s", taskID, jsonRecord)
-	var progressPublisher, ok = pm.seedTaskSubjects.Load(taskID)
-	if ok {
+	if err := pm.taskManager.UpdateProgress(taskID, record); err != nil {
+		return err
+	}
+	if progressPublisher, ok := pm.seedTaskSubjects.Load(taskID); ok {
 		progressPublisher.(*publisher).NotifySubscribers(record)
 	}
-	return pm.taskManager.UpdateProgress(taskID, record)
+	return nil
 }
 
 func (pm *manager) PublishTask(ctx context.Context, taskID string, seedTask *task.SeedTask) error {
