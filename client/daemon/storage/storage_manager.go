@@ -875,7 +875,7 @@ func (s *storageManager) diskUsageExceed() (exceed bool, bytes int64) {
 		return false, 0
 	}
 
-	bs := (usage.UsedPercent - s.storeOption.DiskGCThresholdPercent) * float64(usage.Total)
+	bs := (usage.UsedPercent - s.storeOption.DiskGCThresholdPercent) * float64(usage.Total) / 100.0
 	logger.Infof("disk used percent %f, exceed threshold percent %f, %d bytes to reclaim",
 		usage.UsedPercent, s.storeOption.DiskGCThresholdPercent, int64(bs))
 	return true, int64(bs)
