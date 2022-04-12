@@ -296,6 +296,7 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 			if piece.PieceNum >= req.StartNum && (count < req.Limit || req.Limit <= 0) {
 				pieceMd5Sign := seedTask.PieceMd5Sign
 				if alreadyCount == seedTask.TotalPieceCount && pieceMd5Sign == "" {
+					logger.WithTaskID(req.TaskId).Info("calculate pieceMd5sign")
 					pieceMd5Sign, err = css.service.GetPieceMd5Sign(req.TaskId)
 					if err != nil {
 						return err
