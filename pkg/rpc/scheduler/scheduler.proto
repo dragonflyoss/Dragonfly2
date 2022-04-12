@@ -117,24 +117,32 @@ message PeerPacket{
     string peer_id = 3 [(validate.rules).string.min_len = 1];
   }
 
+  // task id
   string task_id = 2 [(validate.rules).string.min_len = 1];
   // source peer id
   string src_pid = 3 [(validate.rules).string.min_len = 1];
-
   // concurrent downloading count from main peer
   int32 parallel_count = 4 [(validate.rules).int32.gte = 1];
+  // main peer
   DestPeer main_peer = 5;
+  // steal peers
   repeated DestPeer steal_peers = 6;
   // result code
   base.Code code = 7;
 }
 
 message PeerResult{
+  // task id
   string task_id = 1 [(validate.rules).string.min_len = 1];
+  // peer id
   string peer_id = 2 [(validate.rules).string.min_len = 1];
+  // source host ip
   string src_ip = 3 [(validate.rules).string.ip = true];
+  // security domain
   string security_domain = 4;
+  // host idc
   string idc = 5;
+  // task download url
   string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
   int64 content_length = 7;
@@ -151,7 +159,9 @@ message PeerResult{
 }
 
 message PeerTarget{
+  // task id
   string task_id = 1 [(validate.rules).string.min_len = 1];
+  // peer id
   string peer_id = 2 [(validate.rules).string.min_len = 1];
 }
 

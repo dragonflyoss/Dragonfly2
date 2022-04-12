@@ -557,13 +557,16 @@ type PeerPacket struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// task id
 	TaskId string `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	// source peer id
 	SrcPid string `protobuf:"bytes,3,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
 	// concurrent downloading count from main peer
-	ParallelCount int32                  `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
-	MainPeer      *PeerPacket_DestPeer   `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
-	StealPeers    []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
+	ParallelCount int32 `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
+	// main peer
+	MainPeer *PeerPacket_DestPeer `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
+	// steal peers
+	StealPeers []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
 	// result code
 	Code base.Code `protobuf:"varint,7,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
 }
@@ -647,12 +650,18 @@ type PeerResult struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TaskId         string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	PeerId         string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	SrcIp          string `protobuf:"bytes,3,opt,name=src_ip,json=srcIp,proto3" json:"src_ip,omitempty"`
+	// task id
+	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	// peer id
+	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
+	// source host ip
+	SrcIp string `protobuf:"bytes,3,opt,name=src_ip,json=srcIp,proto3" json:"src_ip,omitempty"`
+	// security domain
 	SecurityDomain string `protobuf:"bytes,4,opt,name=security_domain,json=securityDomain,proto3" json:"security_domain,omitempty"`
-	Idc            string `protobuf:"bytes,5,opt,name=idc,proto3" json:"idc,omitempty"`
-	Url            string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
+	// host idc
+	Idc string `protobuf:"bytes,5,opt,name=idc,proto3" json:"idc,omitempty"`
+	// task download url
+	Url string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
 	// total content length(byte)
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
 	// total network traffic(byte)
@@ -788,7 +797,9 @@ type PeerTarget struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// task id
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	// peer id
 	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
