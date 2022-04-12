@@ -38,6 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 const (
@@ -131,8 +132,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize scheduler
 	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
 
+	// Initialize Storage
+	storage, err := storage.New(d.DataDir())
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize scheduler service
-	service := service.New(cfg, resource, scheduler, dynconfig)
+	service := service.New(cfg, resource, scheduler, dynconfig, storage)
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)

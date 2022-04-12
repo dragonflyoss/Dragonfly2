@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/storage_mock.go -source storage.go -package mocks
+
 package storage
 
 import (
@@ -44,6 +46,9 @@ const (
 
 	// defaultMaxBackups is the default maximum count of backup
 	defaultMaxBackups = 10
+
+	// defaultBufferSize is the default size of buffer container
+	defaultBufferSize = 100
 )
 
 const (
@@ -113,11 +118,11 @@ type Record struct {
 	// State is the download state of the peer
 	State int `csv:"state"`
 
-	// CreateAt is peer create time
-	CreateAt time.Time `csv:"createAt"`
+	// CreateAt is peer create nanosecond time
+	CreateAt int64 `csv:"createAt"`
 
-	// UpdateAt is peer update time
-	UpdateAt time.Time `csv:"updateAt"`
+	// UpdateAt is peer update nanosecond time
+	UpdateAt int64 `csv:"updateAt"`
 
 	// ParentID is parent peer id
 	ParentID string `csv:"parentID"`
@@ -131,17 +136,8 @@ type Record struct {
 	// ParentBizTag is parent peer biz tag
 	ParentBizTag string `csv:"parentBizTag"`
 
-	// ParentCost is the parent task download time(millisecond)
-	ParentCost uint32 `csv:"parentCost"`
-
 	// ParentPieceCount is parent total piece count
 	ParentPieceCount int32 `csv:"parentPieceCount"`
-
-	// ParentTotalPieceCount is parent total piece count
-	ParentTotalPieceCount int32 `csv:"parentTotalPieceCount"`
-
-	// ParentContentLength is parent task total content length
-	ParentContentLength int64 `csv:"parentContentLength"`
 
 	// ParentSecurityDomain is parent security domain of host
 	ParentSecurityDomain string `csv:"parentSecurityDomain"`
@@ -163,17 +159,17 @@ type Record struct {
 	// ParentIsCDN is used as tag cdn
 	ParentIsCDN bool `csv:"parentIsCDN"`
 
-	// ParentCreateAt is parent peer create time
-	ParentCreateAt time.Time `csv:"parentCreateAt"`
+	// ParentCreateAt is parent peer create nanosecond time
+	ParentCreateAt int64 `csv:"parentCreateAt"`
 
-	// ParentUpdateAt is parent peer update time
-	ParentUpdateAt time.Time `csv:"parentUpdateAt"`
+	// ParentUpdateAt is parent peer update nanosecond time
+	ParentUpdateAt int64 `csv:"parentUpdateAt"`
 }
 
 // Storage is the interface used for storage
 type Storage interface {
 	// Create inserts the record into csv file
-	Create(...Record) error
+	Create(Record) error
 
 	// List returns all of records in csv file
 	List() ([]Record, error)
@@ -188,6 +184,8 @@ type storage struct {
 	filename   string
 	maxSize    int64
 	maxBackups int
+	buffer     []Record
+	bufferSize int
 	mu         *sync.RWMutex
 }
 
@@ -208,13 +206,24 @@ func WithMaxBackups(maxBackups int) Option {
 	}
 }
 
+// WithCacheSize the size of buffer container,
+// if the buffer is full, write all the records in the buffer to the file
+func WithBufferSize(bufferSize int) Option {
+	return func(s *storage) {
+		s.bufferSize = bufferSize
+		s.buffer = make([]Record, 0, bufferSize)
+	}
+}
+
 // New returns a new Storage instence
 func New(baseDir string, options ...Option) (Storage, error) {
 	s := &storage{
 		baseDir:    baseDir,
 		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)),
-		maxSize:    defaultMaxSize,
+		maxSize:    defaultMaxSize * megabyte,
 		maxBackups: defaultMaxBackups,
+		buffer:     make([]Record, 0, defaultBufferSize),
+		bufferSize: defaultBufferSize,
 		mu:         &sync.RWMutex{},
 	}
 
@@ -232,18 +241,20 @@ func New(baseDir string, options ...Option) (Storage, error) {
 }
 
 // Create inserts the record into csv file
-func (s *storage) Create(records ...Record) error {
+func (s *storage) Create(record Record) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	file, err := s.openFile()
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+	// Write records to buffer
+	s.buffer = append(s.buffer, record)
 
-	if err := gocsv.MarshalWithoutHeaders(records, file); err != nil {
-		return err
+	// Write records to file
+	if len(s.buffer) >= s.bufferSize {
+		if err := s.create(s.buffer...); err != nil {
+			return err
+		}
+		// Keep allocated memory
+		s.buffer = s.buffer[:0]
 	}
 
 	return nil
@@ -297,6 +308,21 @@ func (s *storage) Clear() error {
 	return nil
 }
 
+// create inserts the records into csv file
+func (s *storage) create(records ...Record) error {
+	file, err := s.openFile()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := gocsv.MarshalWithoutHeaders(records, file); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // openFile opens the record file and removes record files that exceed the total size
 func (s *storage) openFile() (*os.File, error) {
 	fileInfo, err := os.Stat(s.filename)
@@ -304,7 +330,7 @@ func (s *storage) openFile() (*os.File, error) {
 		return nil, err
 	}
 
-	if s.maxSize < fileInfo.Size() {
+	if s.maxSize <= fileInfo.Size() {
 		if err := os.Rename(s.filename, s.backupFilename()); err != nil {
 			return nil, err
 		}
@@ -315,7 +341,7 @@ func (s *storage) openFile() (*os.File, error) {
 		return nil, err
 	}
 
-	if s.maxBackups < len(fileInfos) {
+	if s.maxBackups < len(fileInfos)+1 {
 		filename := filepath.Join(s.baseDir, fileInfos[0].Name())
 		if err := os.Remove(filename); err != nil {
 			return nil, err
@@ -356,7 +382,7 @@ func (s *storage) backups() ([]fs.FileInfo, error) {
 	}
 
 	sort.Slice(backups, func(i, j int) bool {
-		return backups[i].ModTime().After(backups[j].ModTime())
+		return backups[i].ModTime().Before(backups[j].ModTime())
 	})
 
 	return backups, nil

@@ -17,6 +17,7 @@
 package storage
 
 import (
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -43,8 +44,13 @@ func TestStorage_New(t *testing.T) {
 			options: []Option{},
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
 				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
+				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -54,11 +60,16 @@ func TestStorage_New(t *testing.T) {
 		{
 			name:    "new storage with maxSize",
 			baseDir: os.TempDir(),
-			options: []Option{WithMaxSize(100)},
+			options: []Option{WithMaxSize(1)},
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
 				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
+				assert.Equal(s.(*storage).maxSize, int64(1*megabyte))
+				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -68,11 +79,35 @@ func TestStorage_New(t *testing.T) {
 		{
 			name:    "new storage with maxBackups",
 			baseDir: os.TempDir(),
-			options: []Option{WithMaxBackups(100)},
+			options: []Option{WithMaxBackups(1)},
 			expect: func(t *testing.T, s Storage, err error) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
 				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
+				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, 1)
+				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(len(s.(*storage).buffer), 0)
+
+				if err := s.Clear(); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:    "new storage with bufferSize",
+			baseDir: os.TempDir(),
+			options: []Option{WithBufferSize(1)},
+			expect: func(t *testing.T, s Storage, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
+				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, 1)
+				assert.Equal(cap(s.(*storage).buffer), 1)
+				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -109,7 +144,7 @@ func TestStorage_Create(t *testing.T) {
 		{
 			name:    "create record",
 			baseDir: os.TempDir(),
-			options: []Option{},
+			options: []Option{WithBufferSize(1)},
 			mock:    func(s Storage) {},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -120,7 +155,7 @@ func TestStorage_Create(t *testing.T) {
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			options: []Option{},
+			options: []Option{WithBufferSize(1)},
 			mock: func(s Storage) {
 				s.(*storage).baseDir = "foo"
 			},
@@ -174,7 +209,7 @@ func TestStorage_List(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = "bar"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
@@ -203,56 +238,61 @@ func TestStorage_List(t *testing.T) {
 		{
 			name:    "list records of a file",
 			baseDir: os.TempDir(),
-			options: []Option{},
-			record:  Record{},
+			options: []Option{WithBufferSize(2)},
+			record: Record{
+				ID:                   "1",
+				IP:                   "127.0.0.1",
+				Hostname:             "hostname",
+				BizTag:               "biz_tag",
+				Cost:                 1,
+				PieceCount:           1,
+				TotalPieceCount:      1,
+				ContentLength:        1,
+				SecurityDomain:       "security_domain",
+				IDC:                  "idc",
+				NetTopology:          "net_topology",
+				Location:             "location",
+				FreeUploadLoad:       1,
+				State:                PeerStateSucceeded,
+				CreateAt:             time.Now().UnixNano(),
+				UpdateAt:             time.Now().UnixNano(),
+				ParentID:             "2",
+				ParentIP:             "127.0.0.1",
+				ParentHostname:       "parent_hostname",
+				ParentBizTag:         "parent_biz_tag",
+				ParentPieceCount:     1,
+				ParentSecurityDomain: "parent_security_domain",
+				ParentIDC:            "parent_idc",
+				ParentNetTopology:    "parent_net_topology",
+				ParentLocation:       "parent_location",
+				ParentFreeUploadLoad: 1,
+				ParentIsCDN:          true,
+				ParentCreateAt:       time.Now().UnixNano(),
+				ParentUpdateAt:       time.Now().UnixNano(),
+			},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
-				s.Create(Record{
-					ID:                    "1",
-					IP:                    "127.0.0.1",
-					Hostname:              "hostname",
-					BizTag:                "biz_tag",
-					Cost:                  1,
-					PieceCount:            1,
-					TotalPieceCount:       1,
-					ContentLength:         1,
-					SecurityDomain:        "security_domain",
-					IDC:                   "idc",
-					NetTopology:           "net_topology",
-					Location:              "location",
-					FreeUploadLoad:        1,
-					State:                 PeerStateSucceeded,
-					CreateAt:              time.Now(),
-					UpdateAt:              time.Now(),
-					ParentID:              "2",
-					ParentIP:              "127.0.0.1",
-					ParentHostname:        "parent_hostname",
-					ParentBizTag:          "parent_biz_tag",
-					ParentCost:            1,
-					ParentPieceCount:      1,
-					ParentTotalPieceCount: 1,
-					ParentContentLength:   1,
-					ParentSecurityDomain:  "parent_security_domain",
-					ParentIDC:             "parent_idc",
-					ParentNetTopology:     "parent_net_topology",
-					ParentLocation:        "parent_location",
-					ParentFreeUploadLoad:  1,
-					ParentIsCDN:           true,
-					ParentCreateAt:        time.Now(),
-					ParentUpdateAt:        time.Now(),
-				})
+				if err := s.Create(record); err != nil {
+					t.Fatal(err)
+				}
 			},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
+				_, err := s.List()
+				assert.Error(err)
+
+				if err := s.Create(record); err != nil {
+					t.Fatal(err)
+				}
 				records, err := s.List()
-				assert.NoError(err)
-				assert.Equal(len(records), 1)
+				assert.Equal(len(records), 2)
 				assert.EqualValues(records[0], record)
+				assert.EqualValues(records[1], record)
 			},
 		},
 		{
 			name:    "list records of multi files",
 			baseDir: os.TempDir(),
-			options: []Option{},
+			options: []Option{WithBufferSize(1)},
 			record:  Record{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
@@ -265,15 +305,17 @@ func TestStorage_List(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				s.Create(Record{ID: "1"})
+				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
 			},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
 				records, err := s.List()
 				assert.NoError(err)
 				assert.Equal(len(records), 2)
-				assert.EqualValues(records[0], record)
-				assert.Equal(records[1].ID, "2")
+				assert.Equal(records[0].ID, "2")
+				assert.Equal(records[1].ID, "1")
 			},
 		},
 	}
@@ -328,7 +370,7 @@ func TestStorage_Clear(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{},
 			mock: func(s Storage) {
-				s.(*storage).baseDir = "foo"
+				s.(*storage).baseDir = "baz"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -348,6 +390,237 @@ func TestStorage_Clear(t *testing.T) {
 			}
 
 			tc.mock(s)
+			tc.expect(t, s, tc.baseDir)
+		})
+	}
+}
+
+func TestStorage_create(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		options []Option
+		mock    func(s Storage)
+		expect  func(t *testing.T, s Storage, baseDir string)
+	}{
+		{
+			name:    "create record",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock:    func(s Storage) {},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				err := s.(*storage).create(Record{})
+				assert.NoError(err)
+			},
+		},
+		{
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock: func(s Storage) {
+				s.(*storage).baseDir = "foo"
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				err := s.(*storage).create(Record{})
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, tc.options...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(s)
+			tc.expect(t, s, tc.baseDir)
+			if err := s.Clear(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_openFile(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		options []Option
+		mock    func(t *testing.T, s Storage)
+		expect  func(t *testing.T, s Storage, baseDir string)
+	}{
+		{
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock: func(t *testing.T, s Storage) {
+				s.(*storage).baseDir = "baz"
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				_, err := s.(*storage).openFile()
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "open new record file",
+			baseDir: os.TempDir(),
+			options: []Option{WithMaxSize(0), WithBufferSize(1)},
+			mock: func(t *testing.T, s Storage) {
+				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				file, err := s.(*storage).openFile()
+				assert.NoError(err)
+				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)))
+				file.Close()
+
+				fileInfos, err := s.(*storage).backups()
+				assert.NoError(err)
+				assert.Equal(len(fileInfos), 3)
+				assert.Equal(fileInfos[2].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
+			},
+		},
+		{
+			name:    "remove record file",
+			baseDir: os.TempDir(),
+			options: []Option{WithMaxSize(0), WithMaxBackups(1), WithBufferSize(1)},
+			mock: func(t *testing.T, s Storage) {
+				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				file, err := s.(*storage).openFile()
+				assert.NoError(err)
+				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)))
+				file.Close()
+
+				fileInfos, err := s.(*storage).backups()
+				assert.NoError(err)
+				assert.Equal(len(fileInfos), 1)
+				assert.Equal(fileInfos[0].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, tc.options...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(t, s)
+			tc.expect(t, s, tc.baseDir)
+			if err := s.Clear(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestStorage_backupFilename(t *testing.T) {
+	baseDir := os.TempDir()
+	s, err := New(baseDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	filename := s.(*storage).backupFilename()
+	regexp := regexp.MustCompile(fmt.Sprintf("%s-.*.%s$", RecordFilePrefix, RecordFileExt))
+	assert := assert.New(t)
+	assert.True(regexp.MatchString(filename))
+
+	if err := s.Clear(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestStorage_backups(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		options []Option
+		mock    func(t *testing.T, s Storage)
+		expect  func(t *testing.T, s Storage, baseDir string)
+	}{
+		{
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock: func(t *testing.T, s Storage) {
+				s.(*storage).baseDir = "bar"
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				_, err := s.(*storage).backups()
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+				if err := s.Clear(); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name:    "not found record file",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock:    func(t *testing.T, s Storage) {},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				if err := s.Clear(); err != nil {
+					t.Fatal(err)
+				}
+
+				_, err := s.(*storage).backups()
+				assert.Error(err)
+			},
+		},
+		{
+			name:    "get backups",
+			baseDir: os.TempDir(),
+			options: []Option{WithMaxSize(0), WithBufferSize(1)},
+			mock: func(t *testing.T, s Storage) {
+				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.Create(Record{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				backups, err := s.(*storage).backups()
+				assert.NoError(err)
+				assert.Equal(len(backups), 3)
+				assert.Equal(backups[2].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
+				if err := s.Clear(); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, tc.options...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(t, s)
 			tc.expect(t, s, tc.baseDir)
 		})
 	}
