@@ -115,7 +115,7 @@ metrics:
   enablePeerHost: false
 
 # console shows log on console
-console: true
+console: false
 
 # whether to enable debug level logger and enable pprof
 verbose: true

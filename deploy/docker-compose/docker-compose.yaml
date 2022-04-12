@@ -28,7 +28,7 @@ services:
       retries: 30
 
   manager:
-    image: dragonflyoss/manager:v2.0.2-rc.20
+    image: dragonflyoss/manager:v2.0.2
     container_name: manager
     network_mode: host
     depends_on:
@@ -37,15 +37,15 @@ services:
     restart: always
     volumes:
       - /tmp/log/dragonfly:/var/log/dragonfly
-      - ./config/manager.yaml:/etc/dragonfly/manager.yaml
+      - ./config/manager.yaml:/etc/dragonfly/manager.yaml:ro
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8080 || exit 1"]
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:65003 || exit 1"]
       interval: 1s
       timeout: 3s
       retries: 30
 
   dfdaemon:
-    image: dragonflyoss/dfdaemon:v2.0.2-rc.20
+    image: dragonflyoss/dfdaemon:v2.0.2
     depends_on:
       - scheduler
       - cdn
@@ -53,16 +53,16 @@ services:
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 65001 || exit 1"]
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:65000 || exit 1"]
       interval: 1s
       timeout: 3s
       retries: 30
     volumes:
       - /tmp/log/dragonfly:/var/log/dragonfly
-      - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml
+      - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml:ro
 
   scheduler:
-    image: dragonflyoss/scheduler:v2.0.2-rc.20
+    image: dragonflyoss/scheduler:v2.0.2
     depends_on:
       - cdn
       - manager
@@ -70,25 +70,25 @@ services:
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8002 || exit 1"]
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:8002 || exit 1"]
       interval: 1s
       timeout: 3s
       retries: 30
     volumes:
       - /tmp/log/dragonfly:/var/log/dragonfly
-      - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml
+      - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml:ro
 
   cdn:
-    image: dragonflyoss/cdn:v2.0.2-rc.20
+    image: dragonflyoss/cdn:v2.0.2
     container_name: cdn
     network_mode: host
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "nc -z 127.0.0.1 8001 || exit 1"]
+      test: ["CMD-SHELL", "/bin/grpc_health_probe -addr=:8003 || exit 1"]
       interval: 1s
       timeout: 3s
       retries: 30
     volumes:
       - /tmp/log/dragonfly:/var/log/dragonfly
-      - ./config/cdn.yaml:/etc/dragonfly/cdn.yaml
-      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/cdn.yaml:/etc/dragonfly/cdn.yaml:ro
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
