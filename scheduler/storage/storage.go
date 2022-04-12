@@ -270,7 +270,7 @@ func (s *storage) List() ([]Record, error) {
 	}
 
 	var records []Record
-	if err := gocsv.Unmarshal(io.MultiReader(files...), records); err != nil {
+	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(files...), &records); err != nil {
 		return nil, err
 	}
 
@@ -279,6 +279,9 @@ func (s *storage) List() ([]Record, error) {
 
 // Clear removes all records
 func (s *storage) Clear() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	fileInfos, err := s.backups()
 	if err != nil {
 		return err
