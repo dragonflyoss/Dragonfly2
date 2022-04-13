@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,10 @@ func TestStorage_New(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
 				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
@@ -66,9 +66,9 @@ func TestStorage_New(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
 				assert.Equal(s.(*storage).maxSize, int64(1*megabyte))
-				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
-				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
+				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
 				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
@@ -84,10 +84,10 @@ func TestStorage_New(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
 				assert.Equal(s.(*storage).maxBackups, 1)
-				assert.Equal(s.(*storage).bufferSize, defaultBufferSize)
-				assert.Equal(cap(s.(*storage).buffer), defaultBufferSize)
+				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
+				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
 				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
@@ -103,8 +103,8 @@ func TestStorage_New(t *testing.T) {
 				assert := assert.New(t)
 				assert.NoError(err)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "storage")
-				assert.Equal(s.(*storage).maxSize, int64(defaultMaxSize*megabyte))
-				assert.Equal(s.(*storage).maxBackups, defaultMaxBackups)
+				assert.Equal(s.(*storage).maxSize, int64(DefaultMaxSize*megabyte))
+				assert.Equal(s.(*storage).maxBackups, DefaultMaxBackups)
 				assert.Equal(s.(*storage).bufferSize, 1)
 				assert.Equal(cap(s.(*storage).buffer), 1)
 				assert.Equal(len(s.(*storage).buffer), 0)
@@ -155,7 +155,7 @@ func TestStorage_Create(t *testing.T) {
 		{
 			name:    "open file failed",
 			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(1)},
+			options: []Option{WithBufferSize(0)},
 			mock: func(s Storage) {
 				s.(*storage).baseDir = "foo"
 			},
@@ -238,7 +238,7 @@ func TestStorage_List(t *testing.T) {
 		{
 			name:    "list records of a file",
 			baseDir: os.TempDir(),
-			options: []Option{WithBufferSize(2)},
+			options: []Option{WithBufferSize(1)},
 			record: Record{
 				ID:                   "1",
 				IP:                   "127.0.0.1",
@@ -284,9 +284,9 @@ func TestStorage_List(t *testing.T) {
 					t.Fatal(err)
 				}
 				records, err := s.List()
-				assert.Equal(len(records), 2)
+				assert.NoError(err)
+				assert.Equal(len(records), 1)
 				assert.EqualValues(records[0], record)
-				assert.EqualValues(records[1], record)
 			},
 		},
 		{
@@ -306,6 +306,10 @@ func TestStorage_List(t *testing.T) {
 				}
 
 				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.Create(Record{ID: "3"}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -476,6 +480,10 @@ func TestStorage_openFile(t *testing.T) {
 				if err := s.Create(Record{ID: "1"}); err != nil {
 					t.Fatal(err)
 				}
+
+				if err := s.Create(Record{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
@@ -597,6 +605,10 @@ func TestStorage_backups(t *testing.T) {
 				}
 
 				if err := s.Create(Record{ID: "2"}); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.Create(Record{ID: "3"}); err != nil {
 					t.Fatal(err)
 				}
 			},

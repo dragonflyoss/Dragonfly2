@@ -49,21 +49,17 @@ func (mr *MockStorageMockRecorder) Clear() *gomock.Call {
 }
 
 // Create mocks base method.
-func (m *MockStorage) Create(arg0 ...storage.Record) error {
+func (m *MockStorage) Create(arg0 storage.Record) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{}
-	for _, a := range arg0 {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "Create", varargs...)
+	ret := m.ctrl.Call(m, "Create", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockStorageMockRecorder) Create(arg0 ...interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Create(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockStorage)(nil).Create), arg0...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockStorage)(nil).Create), arg0)
 }
 
 // List mocks base method.

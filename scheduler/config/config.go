@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 type Config struct {
@@ -50,6 +51,9 @@ type Config struct {
 
 	// Job configuration
 	Job *JobConfig `yaml:"job" mapstructure:"job"`
+
+	// Storage configuration
+	Storage *StorageConfig `yaml:"storage" mapstructure:"storage"`
 
 	// Metrics configuration
 	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
@@ -102,6 +106,11 @@ func New() *Config {
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
+		},
+		Storage: &StorageConfig{
+			MaxSize:    storage.DefaultMaxSize,
+			MaxBackups: storage.DefaultMaxBackups,
+			BufferSize: storage.DefaultBufferSize,
 		},
 		Metrics: &MetricsConfig{
 			Enable:         false,
@@ -200,6 +209,18 @@ func (c *Config) Validate() error {
 		if c.Job.Redis.BackendDB <= 0 {
 			return errors.New("job requires parameter redis backendDB")
 		}
+	}
+
+	if c.Storage.MaxSize <= 0 {
+		return errors.New("storage requires parameter maxSize")
+	}
+
+	if c.Storage.MaxBackups <= 0 {
+		return errors.New("storage requires parameter maxBackups")
+	}
+
+	if c.Storage.BufferSize <= 0 {
+		return errors.New("storage requires parameter bufferSize")
 	}
 
 	if c.Metrics.Enable {
@@ -326,6 +347,18 @@ type JobConfig struct {
 
 	// Redis configuration
 	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
+}
+
+type StorageConfig struct {
+	// MaxSize sets the maximum size in megabytes of storage file
+	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
+
+	// MaxBackups sets the maximum number of storage files to retain
+	MaxBackups int `yaml:"maxBackups" mapstructure:"maxBackups"`
+
+	// BufferSize sets the size of buffer container,
+	// if the buffer is full, write all the records in the buffer to the file
+	BufferSize int `yaml:"bufferSize" mapstructure:"bufferSize"`
 }
 
 type RedisConfig struct {

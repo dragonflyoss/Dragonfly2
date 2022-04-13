@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,23 +32,19 @@ import (
 	"time"
 
 	"github.com/gocarina/gocsv"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 const (
-	// megabyte is the converted factor of MaxSize and bytes
-	megabyte = 1024 * 1024
+	// DefaultMaxSize is the default maximum size of record file
+	DefaultMaxSize = 100
 
-	// backupTimeFormat is the timestamp format of backup filename
-	backupTimeFormat = "2006-01-02T15-04-05.000"
+	// DefaultMaxBackups is the default maximum count of backup
+	DefaultMaxBackups = 10
 
-	// defaultMaxSize is the default maximum size of record file
-	defaultMaxSize = 100
-
-	// defaultMaxBackups is the default maximum count of backup
-	defaultMaxBackups = 10
-
-	// defaultBufferSize is the default size of buffer container
-	defaultBufferSize = 100
+	// DefaultBufferSize is the default size of buffer container
+	DefaultBufferSize = 100
 )
 
 const (
@@ -73,6 +69,15 @@ const (
 	PeerStateBackToSourceFailed
 )
 
+const (
+	// megabyte is the converted factor of MaxSize and bytes
+	megabyte = 1024 * 1024
+
+	// backupTimeFormat is the timestamp format of backup filename
+	backupTimeFormat = "2006-01-02T15-04-05.000"
+)
+
+// Record contains content for record
 type Record struct {
 	// ID is peer id
 	ID string `csv:"id"`
@@ -192,21 +197,21 @@ type storage struct {
 // Option is a functional option for configuring the Storage
 type Option func(s *storage)
 
-// WithMaxSize set the maximum size in megabytes of storage file
+// WithMaxSize sets the maximum size in megabytes of storage file
 func WithMaxSize(maxSize int) Option {
 	return func(s *storage) {
 		s.maxSize = int64(maxSize * megabyte)
 	}
 }
 
-// WithMaxBackups set the maximum number of storage files to retain
+// WithMaxBackups sets the maximum number of storage files to retain
 func WithMaxBackups(maxBackups int) Option {
 	return func(s *storage) {
 		s.maxBackups = maxBackups
 	}
 }
 
-// WithCacheSize the size of buffer container,
+// WithCacheSize sets the size of buffer container,
 // if the buffer is full, write all the records in the buffer to the file
 func WithBufferSize(bufferSize int) Option {
 	return func(s *storage) {
@@ -220,10 +225,10 @@ func New(baseDir string, options ...Option) (Storage, error) {
 	s := &storage{
 		baseDir:    baseDir,
 		filename:   filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)),
-		maxSize:    defaultMaxSize * megabyte,
-		maxBackups: defaultMaxBackups,
-		buffer:     make([]Record, 0, defaultBufferSize),
-		bufferSize: defaultBufferSize,
+		maxSize:    DefaultMaxSize * megabyte,
+		maxBackups: DefaultMaxBackups,
+		buffer:     make([]Record, 0, DefaultBufferSize),
+		bufferSize: DefaultBufferSize,
 		mu:         &sync.RWMutex{},
 	}
 
@@ -245,18 +250,18 @@ func (s *storage) Create(record Record) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Write records to buffer
-	s.buffer = append(s.buffer, record)
-
 	// Write records to file
 	if len(s.buffer) >= s.bufferSize {
 		if err := s.create(s.buffer...); err != nil {
 			return err
 		}
+
 		// Keep allocated memory
 		s.buffer = s.buffer[:0]
 	}
 
+	// Write records to buffer
+	s.buffer = append(s.buffer, record)
 	return nil
 }
 
@@ -270,18 +275,28 @@ func (s *storage) List() ([]Record, error) {
 		return nil, err
 	}
 
-	var files []io.Reader
+	var readers []io.Reader
+	var closers []io.ReadCloser
+	defer func() {
+		for _, closer := range closers {
+			if err := closer.Close(); err != nil {
+				logger.Error(err)
+			}
+		}
+	}()
+
 	for _, fileInfo := range fileInfos {
 		file, err := os.Open(filepath.Join(s.baseDir, fileInfo.Name()))
 		if err != nil {
 			return nil, err
 		}
-		defer file.Close()
-		files = append(files, file)
+
+		readers = append(readers, file)
+		closers = append(closers, file)
 	}
 
 	var records []Record
-	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(files...), &records); err != nil {
+	if err := gocsv.UnmarshalWithoutHeaders(io.MultiReader(readers...), &records); err != nil {
 		return nil, err
 	}
 
