@@ -35,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 type Service struct {
@@ -49,6 +50,9 @@ type Service struct {
 
 	// Dynamic config
 	dynconfig config.DynconfigInterface
+
+	// Storage interface
+	storage storage.Storage
 }
 
 // New service instance
@@ -57,6 +61,7 @@ func New(
 	resource resource.Resource,
 	scheduler scheduler.Scheduler,
 	dynconfig config.DynconfigInterface,
+	storage storage.Storage,
 ) *Service {
 
 	return &Service{
@@ -64,6 +69,7 @@ func New(
 		scheduler: scheduler,
 		config:    cfg,
 		dynconfig: dynconfig,
+		storage:   storage,
 	}
 }
 
@@ -321,27 +327,36 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 	}
 
 	metrics.DownloadCount.WithLabelValues(peer.BizTag).Inc()
-
 	if !req.Success {
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			s.handleTaskFail(ctx, peer.Task)
+			s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
 			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
-		} else {
-			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
+
+			s.handleTaskFail(ctx, peer.Task)
+			s.handlePeerFail(ctx, peer)
+			return nil
 		}
+
+		s.createRecord(peer, storage.PeerStateFailed, req)
+		metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
 
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
 
 	peer.Log.Infof("report peer result: %#v", req)
-	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		s.handleTaskSuccess(ctx, peer.Task, req)
-	}
-	s.handlePeerSuccess(ctx, peer)
-
 	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.BizTag).Observe(float64(req.Cost))
+
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
+		s.createRecord(peer, storage.PeerStateBackToSourceSucceeded, req)
+		s.handleTaskSuccess(ctx, peer.Task, req)
+		s.handlePeerSuccess(ctx, peer)
+		return nil
+	}
+
+	s.createRecord(peer, storage.PeerStateSucceeded, req)
+	s.handlePeerSuccess(ctx, peer)
 	return nil
 }
 
@@ -640,5 +655,47 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
 	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
+	}
+}
+
+// createRecord stores peer download records
+func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcscheduler.PeerResult) {
+	record := storage.Record{
+		ID:              peer.ID,
+		IP:              peer.Host.IP,
+		Hostname:        peer.Host.Hostname,
+		BizTag:          peer.BizTag,
+		Cost:            req.Cost,
+		PieceCount:      int32(peer.Pieces.Count()),
+		TotalPieceCount: peer.Task.TotalPieceCount.Load(),
+		ContentLength:   peer.Task.ContentLength.Load(),
+		SecurityDomain:  peer.Host.SecurityDomain,
+		IDC:             peer.Host.IDC,
+		NetTopology:     peer.Host.NetTopology,
+		Location:        peer.Host.Location,
+		FreeUploadLoad:  peer.Host.FreeUploadLoad(),
+		State:           peerState,
+		CreateAt:        peer.CreateAt.Load().UnixNano(),
+		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
+	}
+
+	if parent, ok := peer.LoadParent(); ok {
+		record.ParentID = parent.ID
+		record.ParentIP = parent.Host.IP
+		record.ParentHostname = parent.Host.Hostname
+		record.ParentBizTag = parent.BizTag
+		record.ParentPieceCount = int32(parent.Pieces.Count())
+		record.ParentSecurityDomain = parent.Host.SecurityDomain
+		record.ParentIDC = parent.Host.IDC
+		record.ParentNetTopology = parent.Host.NetTopology
+		record.ParentLocation = parent.Host.Location
+		record.ParentFreeUploadLoad = parent.Host.FreeUploadLoad()
+		record.ParentIsCDN = parent.Host.IsCDN
+		record.ParentCreateAt = parent.CreateAt.Load().UnixNano()
+		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano()
+	}
+
+	if err := s.storage.Create(record); err != nil {
+		peer.Log.Error(err)
 	}
 }
