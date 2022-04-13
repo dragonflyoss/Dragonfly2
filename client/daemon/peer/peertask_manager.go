@@ -47,10 +47,11 @@ type TaskManager interface {
 	StartFileTask(ctx context.Context, req *FileTaskRequest) (
 		progress chan *FileTaskProgress, tiny *TinyData, err error)
 	// StartStreamTask starts a peer task with stream io
-	// tiny stands task file is tiny and task is done
 	StartStreamTask(ctx context.Context, req *StreamTaskRequest) (
 		readCloser io.ReadCloser, attribute map[string]string, err error)
-
+	// StartSeedTask starts a seed peer task
+	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
+		progress chan *SeedTaskProgress, err error)
 	Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool)
 
 	IsPeerTaskRunning(id string) bool
@@ -179,8 +180,9 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *clientutil.Range,
-	desiredLocation string) (*peerTaskConductor, error) {
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation)
+	desiredLocation string,
+	seed bool) (*peerTaskConductor, error) {
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
 	if err != nil {
 		return nil, err
 	}
@@ -201,12 +203,13 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *clientutil.Range,
-	desiredLocation string) (*peerTaskConductor, bool, error) {
+	desiredLocation string,
+	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg)
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
 
 	ptm.conductorLock.Lock()
 	// double check
@@ -256,7 +259,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 	}
 
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
-	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation)
+	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation, false)
 	if err != nil {
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
 		return nil
@@ -323,6 +326,29 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	// FIXME when failed due to schedulerClient error, relocate schedulerClient and retry
 	readCloser, attribute, err := pt.Start(ctx)
 	return readCloser, attribute, err
+}
+
+func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (progress chan *SeedTaskProgress, err error) {
+	pg, ok := ptm.tryReuseSeedPeerTask(ctx, req)
+	if ok {
+		metrics.PeerTaskCacheHitCount.Add(1)
+		return pg, nil
+	}
+
+	var limit = rate.Inf
+	if ptm.perPeerRateLimit > 0 {
+		limit = ptm.perPeerRateLimit
+	}
+	if req.Limit > 0 {
+		limit = rate.Limit(req.Limit)
+	}
+
+	ctx, st, err := ptm.newSeedTask(ctx, req, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return st.Start(ctx)
 }
 
 type SubscribeResult struct {

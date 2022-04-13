@@ -263,3 +263,77 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	return rc, attr, true
 }
+
+func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
+	request *SeedTaskRequest) (chan *SeedTaskProgress, bool) {
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	var (
+		reuse      *storage.ReusePeerTask
+		reuseRange *clientutil.Range // the range of parent peer task data to read
+		log        *logger.SugaredLoggerOnWith
+		length     int64
+	)
+
+	if ptm.enabledPrefetch(request.Range) {
+		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+	} else {
+		reuse = ptm.storageManager.FindCompletedTask(taskID)
+	}
+
+	if reuse == nil {
+		if request.Range == nil {
+			return nil, false
+		}
+		// for ranged request, check the parent task
+		reuseRange = request.Range
+		taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
+		reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
+		if reuse == nil {
+			return nil, false
+		}
+	}
+
+	if reuseRange == nil {
+		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseSeedPeerTask")
+		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
+		length = reuse.ContentLength
+	} else {
+		log = logger.With("peer", request.PeerId, "task", taskID, "range", request.UrlMeta.Range,
+			"component", "reuseRangeSeedPeerTask")
+		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
+			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
+		length = reuseRange.Length
+	}
+
+	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributeTaskID.String(taskID))
+	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
+	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
+	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+	if reuseRange != nil {
+		span.SetAttributes(config.AttributeReuseRange.String(request.UrlMeta.Range))
+	}
+	defer span.End()
+
+	pg := &SeedTaskProgress{
+		State: &ProgressState{
+			Success: true,
+			Code:    base.Code_Success,
+			Msg:     "Success",
+		},
+		TaskID:          taskID,
+		PeerID:          request.PeerId,
+		ContentLength:   length,
+		CompletedLength: length,
+		PeerTaskDone:    true,
+	}
+
+	// make a new buffered channel, because we did not need to call newFileTask
+	progressCh := make(chan *SeedTaskProgress, 1)
+	progressCh <- pg
+
+	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	return progressCh, true
+}

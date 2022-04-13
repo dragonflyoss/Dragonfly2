@@ -363,10 +363,10 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
 		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
-			logger.Errorf("failed to write http body: %v, peer: %s, task: %s",
-				err, peerID, resp.Header.Get(config.HeaderDragonflyTask))
+			logger.Errorf("failed to write http body: %v, peer: %s, task: %s, written bytes: %d",
+				err, peerID, resp.Header.Get(config.HeaderDragonflyTask), n)
 		} else {
-			logger.Errorf("failed to write http body: %v", err)
+			logger.Errorf("failed to write http body: %v, written bytes: %d", err, n)
 		}
 		span.RecordError(err)
 	} else {

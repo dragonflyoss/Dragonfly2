@@ -97,6 +97,21 @@ func (mr *MockTaskManagerMockRecorder) StartFileTask(ctx, req interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartFileTask", reflect.TypeOf((*MockTaskManager)(nil).StartFileTask), ctx, req)
 }
 
+// StartSeedTask mocks base method.
+func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (chan *SeedTaskProgress, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartSeedTask", ctx, req)
+	ret0, _ := ret[0].(chan *SeedTaskProgress)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartSeedTask indicates an expected call of StartSeedTask.
+func (mr *MockTaskManagerMockRecorder) StartSeedTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartSeedTask", reflect.TypeOf((*MockTaskManager)(nil).StartSeedTask), ctx, req)
+}
+
 // StartStreamTask mocks base method.
 func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 	m.ctrl.T.Helper()
