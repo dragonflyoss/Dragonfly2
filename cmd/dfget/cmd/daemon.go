@@ -66,7 +66,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 			return errors.Wrap(err, "init client daemon logger")
 		}
 
-		redirectStdoutAndStderr(d.LogDir())
+		redirectStdoutAndStderr(cfg.Console, d.LogDir())
 
 		// Convert config
 		if err := cfg.Convert(); err != nil {
@@ -84,12 +84,19 @@ it supports container engine, wget and other downloading tools through proxy fun
 
 // daemon will be launched by dfget command
 // redirect stdout and stderr to file for debugging
-func redirectStdoutAndStderr(logDir string) {
-	stdoutPath := path.Join(logDir, "stdout.log")
-	if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
-		logger.Warnf("open %s error: %s", stdoutPath, err)
-	} else if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
-		logger.Warnf("redirect stdout error: %s", err)
+func redirectStdoutAndStderr(console bool, logDir string) {
+	// only redirect the daemon which is launched by dfget
+	if viper.GetInt("launcher") == -1 {
+		return
+	}
+	// when console log is enabled, skip redirect stdout
+	if !console {
+		stdoutPath := path.Join(logDir, "stdout.log")
+		if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+			logger.Warnf("open %s error: %s", stdoutPath, err)
+		} else if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
+			logger.Warnf("redirect stdout error: %s", err)
+		}
 	}
 	stderrPath := path.Join(logDir, "stderr.log")
 	if stderr, err := os.OpenFile(stderrPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
