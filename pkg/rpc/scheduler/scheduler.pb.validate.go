@@ -919,16 +919,16 @@ var _ interface {
 	ErrorName() string
 } = PeerTargetValidationError{}
 
-// Validate checks the field values on StatPeerTaskRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *StatPeerTaskRequest) Validate() error {
+// Validate checks the field values on StatTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *StatTaskRequest) Validate() error {
 	if m == nil {
 		return nil
 	}
 
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
-		return StatPeerTaskRequestValidationError{
+		return StatTaskRequestValidationError{
 			field:  "TaskId",
 			reason: "value length must be at least 1 runes",
 		}
@@ -937,9 +937,9 @@ func (m *StatPeerTaskRequest) Validate() error {
 	return nil
 }
 
-// StatPeerTaskRequestValidationError is the validation error returned by
-// StatPeerTaskRequest.Validate if the designated constraints aren't met.
-type StatPeerTaskRequestValidationError struct {
+// StatTaskRequestValidationError is the validation error returned by
+// StatTaskRequest.Validate if the designated constraints aren't met.
+type StatTaskRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -947,24 +947,22 @@ type StatPeerTaskRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e StatPeerTaskRequestValidationError) Field() string { return e.field }
+func (e StatTaskRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e StatPeerTaskRequestValidationError) Reason() string { return e.reason }
+func (e StatTaskRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e StatPeerTaskRequestValidationError) Cause() error { return e.cause }
+func (e StatTaskRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e StatPeerTaskRequestValidationError) Key() bool { return e.key }
+func (e StatTaskRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e StatPeerTaskRequestValidationError) ErrorName() string {
-	return "StatPeerTaskRequestValidationError"
-}
+func (e StatTaskRequestValidationError) ErrorName() string { return "StatTaskRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e StatPeerTaskRequestValidationError) Error() string {
+func (e StatTaskRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -976,14 +974,14 @@ func (e StatPeerTaskRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sStatPeerTaskRequest.%s: %s%s",
+		"invalid %sStatTaskRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = StatPeerTaskRequestValidationError{}
+var _ error = StatTaskRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -991,7 +989,115 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = StatPeerTaskRequestValidationError{}
+} = StatTaskRequestValidationError{}
+
+// Validate checks the field values on Task with the rules defined in the proto
+// definition for this message. If any rules are violated, an error is returned.
+func (m *Task) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetId()) < 1 {
+		return TaskValidationError{
+			field:  "Id",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetType() < 0 {
+		return TaskValidationError{
+			field:  "Type",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if m.GetContentLength() < 1 {
+		return TaskValidationError{
+			field:  "ContentLength",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if m.GetTotalPieceCount() < 1 {
+		return TaskValidationError{
+			field:  "TotalPieceCount",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetState()) < 1 {
+		return TaskValidationError{
+			field:  "State",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetPeerCount() < 0 {
+		return TaskValidationError{
+			field:  "PeerCount",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	// no validation rules for HasAvailablePeer
+
+	return nil
+}
+
+// TaskValidationError is the validation error returned by Task.Validate if the
+// designated constraints aren't met.
+type TaskValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TaskValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TaskValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TaskValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TaskValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TaskValidationError) ErrorName() string { return "TaskValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TaskValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTask.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TaskValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TaskValidationError{}
 
 // Validate checks the field values on AnnounceTaskRequest with the rules
 // defined in the proto definition for this message. If any rules are
