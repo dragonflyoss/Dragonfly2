@@ -247,7 +247,11 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 	return pp, nil
 }
 
-func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) error {
+func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) (err error) {
+	var taskID string
+	defer func() {
+		logger.WithTaskID(taskID).Errorf("receive piece task request: %v", err)
+	}()
 	g, ctx := errgroup.WithContext(stream.Context())
 	locker := sync.Mutex{}
 	for {
@@ -256,8 +260,10 @@ func (css *Server) SyncPieceTasks(stream cdnsystem.Seeder_SyncPieceTasksServer) 
 			break
 		}
 		if err != nil {
+			logger.WithTaskID(taskID).Errorf("receive client stream error request: %v", err)
 			return err
 		}
+		taskID = req.TaskId
 		logger.WithTaskID(req.TaskId).Debugf("receive piece task request: %s", req)
 		seedTask, err := css.service.GetSeedTask(req.TaskId)
 		if err != nil {
@@ -286,8 +292,8 @@ func (css *Server) sendTaskPieces(ctx context.Context, req *base.PieceTaskReques
 	var alreadyDownloadCount int32
 	for {
 		select {
-		//case <-ctx.Done():
-		//	return nil
+		case <-ctx.Done():
+			return nil
 		case piece := <-ch:
 			alreadyDownloadCount++
 			if piece == nil {
