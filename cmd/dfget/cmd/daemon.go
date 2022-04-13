@@ -66,16 +66,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 			return errors.Wrap(err, "init client daemon logger")
 		}
 
-		// daemon will be launched by dfget command
-		// redirect stdout and stderr to file for debugging
-		stdout, _ := os.OpenFile(path.Join(d.LogDir(), "stdout.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0644)
-		if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
-			logger.Warnf("redirect stdout error: %s", err)
-		}
-		stderr, _ := os.OpenFile(path.Join(d.LogDir(), "stderr.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0644)
-		if err := syscall.Dup2(int(stderr.Fd()), 2); err != nil {
-			logger.Warnf("redirect stderr error: %s", err)
-		}
+		redirectStdoutAndStderr(d.LogDir())
 
 		// Convert config
 		if err := cfg.Convert(); err != nil {
@@ -89,6 +80,23 @@ it supports container engine, wget and other downloading tools through proxy fun
 
 		return runDaemon(d)
 	},
+}
+
+// daemon will be launched by dfget command
+// redirect stdout and stderr to file for debugging
+func redirectStdoutAndStderr(logDir string) {
+	stdoutPath := path.Join(logDir, "stdout.log")
+	if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+		logger.Warnf("open %s error: %s", stdoutPath, err)
+	} else if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
+		logger.Warnf("redirect stdout error: %s", err)
+	}
+	stderrPath := path.Join(logDir, "stderr.log")
+	if stderr, err := os.OpenFile(stderrPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+		logger.Warnf("open %s error: %s", stderrPath, err)
+	} else if err := syscall.Dup2(int(stderr.Fd()), 2); err != nil {
+		logger.Warnf("redirect stderr error: %s", err)
+	}
 }
 
 func init() {
