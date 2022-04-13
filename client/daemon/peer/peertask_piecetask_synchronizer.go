@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -46,6 +47,7 @@ type pieceTaskSynchronizer struct {
 	dstPeer           *scheduler.PeerPacket_DestPeer
 	client            dfdaemon.Daemon_SyncPieceTasksClient
 	error             atomic.Value
+	*logger.SugaredLoggerOnWith
 }
 
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
@@ -139,11 +141,12 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	}
 
 	synchronizer := &pieceTaskSynchronizer{
-		peerTaskConductor: s.peerTaskConductor,
-		pieceRequestCh:    s.pieceRequestCh,
-		client:            client,
-		dstPeer:           dstPeer,
-		error:             atomic.Value{},
+		peerTaskConductor:   s.peerTaskConductor,
+		pieceRequestCh:      s.pieceRequestCh,
+		client:              client,
+		dstPeer:             dstPeer,
+		error:               atomic.Value{},
+		SugaredLoggerOnWith: s.peerTaskConductor.With("targetPeerID", request.DstPid),
 	}
 	s.workers[dstPeer.PeerId] = synchronizer
 	go synchronizer.receive(piecePacket)
