@@ -19,6 +19,8 @@ package cmd
 import (
 	"context"
 	"os"
+	"path"
+	"syscall"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -62,6 +64,17 @@ it supports container engine, wget and other downloading tools through proxy fun
 		// Initialize logger
 		if err := logger.InitDaemon(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client daemon logger")
+		}
+
+		// daemon will be launched by dfget command
+		// redirect stdout and stderr to file for debugging
+		stdout, _ := os.OpenFile(path.Join(d.LogDir(), "stdout.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0644)
+		if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
+			logger.Warnf("redirect stdout error: %s", err)
+		}
+		stderr, _ := os.OpenFile(path.Join(d.LogDir(), "stderr.log"), os.O_WRONLY|os.O_CREATE|os.O_SYNC, 0644)
+		if err := syscall.Dup2(int(stderr.Fd()), 2); err != nil {
+			logger.Warnf("redirect stderr error: %s", err)
 		}
 
 		// Convert config
