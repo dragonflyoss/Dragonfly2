@@ -19,6 +19,7 @@ package rpcserver
 import (
 	"context"
 	"fmt"
+	"io"
 	"sort"
 	"sync"
 	"testing"
@@ -33,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnRPCMocks "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/mocks"
 	cdnRPCServer "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
@@ -348,130 +350,266 @@ func TestServer_GetPieceTasks(t *testing.T) {
 }
 
 func TestServer_SyncPieceTasks(t *testing.T) {
-	type args struct {
-		ctx context.Context
-		req *cdnsystem.SeedRequest
-		psc chan *cdnsystem.PieceSeed
-	}
 	tests := []struct {
-		name             string
-		createCallArgs   func() args
-		createCallObject func(t *testing.T, args args) cdnRPCServer.SeederServer
-		wantErr          assert.ErrorAssertionFunc
+		name                           string
+		createTestTask                 func() *task.SeedTask
+		createCallObject               func(t *testing.T, seedTask *task.SeedTask, syncServer cdnsystem.Seeder_SyncPieceTasksServer) cdnRPCServer.SeederServer
+		createMockSyncPieceTasksServer func(t *testing.T, ctx context.Context, seedTask *task.SeedTask) cdnsystem.Seeder_SyncPieceTasksServer
+		wantErr                        assert.ErrorAssertionFunc
 	}{
 		{
-			name: "obtain piece seeds success",
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			name: "task not found",
+			createTestTask: func() *task.SeedTask {
+				return task.NewSeedTask("notfoundTaskID", "https://www.notfound.com", nil)
+			},
+			createCallObject: func(t *testing.T, task *task.SeedTask, syncServer cdnsystem.Seeder_SyncPieceTasksServer) cdnRPCServer.SeederServer {
 				ctrl := gomock.NewController(t)
 				cdnServiceMock := mocks.NewMockCDNService(ctrl)
-				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
-				cdnServiceMock.EXPECT().RegisterSeedTask(gomock.Any(), gomock.Any(), gomock.Eq(regTask)).DoAndReturn(
-					func(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error) {
-						registerTask.CdnStatus = task.StatusRunning
-						registerTask.TotalPieceCount = 5
-						registerTask.SourceFileLength = 10000
-						pieceChan := make(chan *task.PieceInfo)
-						go func() {
-							pieceChan <- &task.PieceInfo{
-								PieceNum: 0,
-								PieceMd5: "xxxxxmd5",
-								PieceRange: &rangeutils.Range{
-									StartIndex: 0,
-									EndIndex:   99,
-								},
-								OriginRange: &rangeutils.Range{
-									StartIndex: 0,
-									EndIndex:   99,
-								},
-								PieceLen:   100,
-								PieceStyle: 0,
-							}
-							close(pieceChan)
-						}()
-						return registerTask, pieceChan, nil
-					}).Times(1)
-				cdnServiceMock.EXPECT().GetSeedTask(regTask.ID).DoAndReturn(func(taskID string) (*task.SeedTask, error) {
-					regTask.CdnStatus = task.StatusSuccess
-					return regTask, nil
-				}).Times(1)
+				cdnServiceMock.EXPECT().GetSeedTask(task.ID).Return(nil, dferrors.Newf(base.Code_CDNTaskNotFound, "failed to get task(%s)",
+					task.ID)).Times(1)
+				cdnServiceMock.EXPECT().GetSeedPieces(gomock.Any()).Times(0)
 				server, _ := New(Config{}, cdnServiceMock)
 				return server
 			},
-			createCallArgs: func() args {
-				return args{
-					ctx: context.Background(),
-					req: &cdnsystem.SeedRequest{
-						TaskId:  "task1",
-						Url:     "https://www.dragonfly.com",
-						UrlMeta: nil,
-					},
-					psc: make(chan *cdnsystem.PieceSeed),
-				}
-			},
-			wantErr: assert.NoError,
-		}, {
-			name: "task download fail",
-			createCallArgs: func() args {
-				return args{
-					ctx: context.Background(),
-					req: &cdnsystem.SeedRequest{
-						TaskId:  "task1",
-						Url:     "https://www.dragonfly.com",
-						UrlMeta: nil,
-					},
-					psc: make(chan *cdnsystem.PieceSeed),
-				}
-			},
-			createCallObject: func(t *testing.T, args args) cdnRPCServer.SeederServer {
+			createMockSyncPieceTasksServer: func(t *testing.T, ctx context.Context, seedTask *task.SeedTask) cdnsystem.Seeder_SyncPieceTasksServer {
 				ctrl := gomock.NewController(t)
-				cdnServiceMock := mocks.NewMockCDNService(ctrl)
-				regTask := task.NewSeedTask(args.req.TaskId, args.req.Url, args.req.UrlMeta)
-				cdnServiceMock.EXPECT().RegisterSeedTask(gomock.Any(), gomock.Any(), gomock.Eq(regTask)).DoAndReturn(
-					func(ctx context.Context, clientAddr string, registerTask *task.SeedTask) (*task.SeedTask, <-chan *task.PieceInfo, error) {
-						registerTask.CdnStatus = task.StatusRunning
-						registerTask.TotalPieceCount = 5
-						registerTask.SourceFileLength = 10000
-						pieceChan := make(chan *task.PieceInfo)
-						go func() {
-							pieceChan <- &task.PieceInfo{
-								PieceNum: 0,
-								PieceMd5: "xxxxxmd5",
-								PieceRange: &rangeutils.Range{
-									StartIndex: 0,
-									EndIndex:   99,
-								},
-								OriginRange: &rangeutils.Range{
-									StartIndex: 0,
-									EndIndex:   99,
-								},
-								PieceLen:   100,
-								PieceStyle: 0,
-							}
-							close(pieceChan)
-						}()
-						return registerTask, pieceChan, nil
-					}).Times(1)
-				cdnServiceMock.EXPECT().GetSeedTask(regTask.ID).DoAndReturn(func(taskID string) (*task.SeedTask, error) {
-					regTask.CdnStatus = task.StatusFailed
-					return regTask, nil
-				}).Times(1)
-				server, _ := New(Config{}, cdnServiceMock)
-				return server
+				syncServer := cdnRPCMocks.NewMockSeeder_SyncPieceTasksServer(ctrl)
+				syncServer.EXPECT().Context().Return(ctx).Times(1)
+				syncServer.EXPECT().Recv().Return(&base.PieceTaskRequest{
+					TaskId:   seedTask.ID,
+					SrcPid:   "srcPeerID",
+					DstPid:   "dstPeerID",
+					StartNum: 0,
+					Limit:    2,
+				}, nil).Times(1)
+				syncServer.EXPECT().Send(gomock.Any()).Times(0)
+				return syncServer
 			},
 			wantErr: assert.Error,
 		},
-	}
+		{
+			name: "task has been downloaded",
+			createTestTask: func() *task.SeedTask {
+				testTask := &task.SeedTask{
+					ID:               "taskID",
+					RawURL:           "https://www.dragonfly.com",
+					TaskURL:          "https://www.dragonfly.com",
+					SourceFileLength: 250,
+					CdnFileLength:    250,
+					PieceSize:        100,
+					CdnStatus:        task.StatusSuccess,
+					TotalPieceCount:  3,
+					SourceRealDigest: "xxxxx111",
+					PieceMd5Sign:     "bbbbb222",
+					Digest:           "xxxxx111",
+					Tag:              "xx",
+					Range:            "",
+					Filter:           "",
+					Header:           nil,
+					Pieces:           new(sync.Map),
+				}
+				testTask.Pieces.Store(0, &task.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "xxxx0",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(1, &task.PieceInfo{
+					PieceNum: 1,
+					PieceMd5: "xxxx1",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(2, &task.PieceInfo{
+					PieceNum: 2,
+					PieceMd5: "xxxx2",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   299,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   249,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				return testTask
+			},
+			createCallObject: func(t *testing.T, seedTask *task.SeedTask, syncServer cdnsystem.Seeder_SyncPieceTasksServer) cdnRPCServer.SeederServer {
+				ctrl := gomock.NewController(t)
+				cdnServiceMock := mocks.NewMockCDNService(ctrl)
+				cdnServiceMock.EXPECT().GetSeedTask(seedTask.ID).Return(seedTask, nil).Times(2)
+				ch1 := make(chan *task.PieceInfo)
+				ch2 := make(chan *task.PieceInfo)
+				go func() {
+					seedTask.Pieces.Range(func(key, value interface{}) bool {
+						ch1 <- value.(*task.PieceInfo)
+						ch2 <- value.(*task.PieceInfo)
+						return true
+					})
+				}()
+				gomock.InOrder(
+					cdnServiceMock.EXPECT().WatchTaskProgress(gomock.Any(), seedTask.ID).Return(ch1, nil).Times(1),
+					cdnServiceMock.EXPECT().WatchTaskProgress(gomock.Any(), seedTask.ID).Return(ch2, nil).Times(1),
+				)
 
+				server, _ := New(Config{}, cdnServiceMock)
+				return server
+			},
+			createMockSyncPieceTasksServer: func(t *testing.T, ctx context.Context, task *task.SeedTask) cdnsystem.Seeder_SyncPieceTasksServer {
+				ctrl := gomock.NewController(t)
+				syncServer := cdnRPCMocks.NewMockSeeder_SyncPieceTasksServer(ctrl)
+				syncServer.EXPECT().Context().Return(ctx).AnyTimes()
+				gomock.InOrder(
+					syncServer.EXPECT().Recv().Return(&base.PieceTaskRequest{
+						TaskId:   task.ID,
+						SrcPid:   "srcPeerID",
+						DstPid:   "dstPeerID",
+						StartNum: 0,
+						Limit:    2,
+					}, nil).Times(1),
+					syncServer.EXPECT().Recv().Return(&base.PieceTaskRequest{
+						TaskId:   task.ID,
+						SrcPid:   "srcPeerID",
+						DstPid:   "dstPeerID",
+						StartNum: 0,
+						Limit:    3,
+					}, nil).Times(1),
+					syncServer.EXPECT().Recv().Return(nil, io.EOF).Times(1),
+				)
+
+				syncServer.EXPECT().Send(gomock.Any()).Times(5)
+				return syncServer
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "task has been partially downloaded",
+			createTestTask: func() *task.SeedTask {
+				testTask := &task.SeedTask{
+					ID:               "taskID",
+					RawURL:           "https://www.dragonfly.com",
+					TaskURL:          "https://www.dragonfly.com",
+					SourceFileLength: 250,
+					CdnFileLength:    250,
+					PieceSize:        100,
+					CdnStatus:        task.StatusRunning,
+					TotalPieceCount:  3,
+					SourceRealDigest: "xxxxx111",
+					PieceMd5Sign:     "bbbbb222",
+					Digest:           "xxxxx111",
+					Tag:              "xx",
+					Range:            "",
+					Filter:           "",
+					Header:           nil,
+					Pieces:           new(sync.Map),
+				}
+				testTask.Pieces.Store(0, &task.PieceInfo{
+					PieceNum: 0,
+					PieceMd5: "xxxx0",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 0,
+						EndIndex:   99,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(1, &task.PieceInfo{
+					PieceNum: 1,
+					PieceMd5: "xxxx1",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 100,
+						EndIndex:   199,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				testTask.Pieces.Store(2, &task.PieceInfo{
+					PieceNum: 2,
+					PieceMd5: "xxxx2",
+					PieceRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   299,
+					},
+					OriginRange: &rangeutils.Range{
+						StartIndex: 200,
+						EndIndex:   249,
+					},
+					PieceLen:   100,
+					PieceStyle: 0,
+				})
+				return testTask
+			},
+			createCallObject: func(t *testing.T, seedTask *task.SeedTask, syncServer cdnsystem.Seeder_SyncPieceTasksServer) cdnRPCServer.SeederServer {
+				ctrl := gomock.NewController(t)
+				cdnServiceMock := mocks.NewMockCDNService(ctrl)
+				cdnServiceMock.EXPECT().GetSeedTask(seedTask.ID).Return(seedTask, nil).Times(1)
+				ch := make(chan *task.PieceInfo)
+				go func() {
+					seedTask.Pieces.Range(func(key, value interface{}) bool {
+						ch <- value.(*task.PieceInfo)
+						return true
+					})
+				}()
+				cdnServiceMock.EXPECT().WatchTaskProgress(gomock.Any(), seedTask.ID).Return(ch, nil).Times(1)
+				server, _ := New(Config{}, cdnServiceMock)
+				return server
+			},
+			createMockSyncPieceTasksServer: func(t *testing.T, ctx context.Context, task *task.SeedTask) cdnsystem.Seeder_SyncPieceTasksServer {
+				ctrl := gomock.NewController(t)
+				syncServer := cdnRPCMocks.NewMockSeeder_SyncPieceTasksServer(ctrl)
+				syncServer.EXPECT().Context().Return(ctx).AnyTimes()
+				gomock.InOrder(
+					syncServer.EXPECT().Recv().Return(&base.PieceTaskRequest{
+						TaskId:   task.ID,
+						SrcPid:   "srcPeerID",
+						DstPid:   "dstPeerID",
+						StartNum: 0,
+						Limit:    2,
+					}, nil).Times(1),
+					syncServer.EXPECT().Recv().Return(nil, io.EOF).Times(1),
+				)
+
+				syncServer.EXPECT().Send(gomock.Any()).Times(2)
+				return syncServer
+			},
+			wantErr: assert.NoError,
+		},
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			args := tt.createCallArgs()
-			svr := tt.createCallObject(t, args)
-			go func() {
-				for seed := range args.psc {
-					fmt.Println(seed)
-				}
-			}()
-			tt.wantErr(t, svr.ObtainSeeds(args.ctx, args.req, args.psc), fmt.Sprintf("ObtainSeeds(%v, %v, %v)", args.ctx, args.req, args.psc))
+			ctx, cancel := context.WithCancel(context.Background())
+			testTask := tt.createTestTask()
+			mockSyncServer := tt.createMockSyncPieceTasksServer(t, ctx, testTask)
+			svr := tt.createCallObject(t, testTask, mockSyncServer)
+			err := svr.SyncPieceTasks(mockSyncServer)
+			cancel()
+			assert.True(t, tt.wantErr(t, err))
 		})
 	}
 }

@@ -214,8 +214,9 @@ func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) {
 
 func (s *pieceTaskSyncManager) cancel() {
 	s.RLock()
-	for _, p := range s.workers {
+	for peerID, p := range s.workers {
 		p.close()
+		s.peerTaskConductor.Debugf("close peer %s sync stream", peerID)
 	}
 	s.RUnlock()
 	s.ctxCancel()

@@ -53,6 +53,7 @@ type CDNService interface {
 	// GetSeedTask returns seed task associated with taskID
 	GetSeedTask(taskID string) (seedTask *task.SeedTask, err error)
 
+	// GetPieceMd5Sign return pieceMd5sign if task has been downloaded, otherwise return empty string
 	GetPieceMd5Sign(taskID string) (string, error)
 }
 
