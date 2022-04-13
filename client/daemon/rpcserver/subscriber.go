@@ -96,7 +96,8 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 		if err == io.EOF {
 			s.Infof("SyncPieceTasks done, exit receiving")
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			if stat, ok := status.FromError(err); !ok {
 				s.Errorf("SyncPieceTasks receive error: %s", err)
 			} else if stat.Code() == codes.Canceled {
