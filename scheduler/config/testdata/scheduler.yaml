@@ -50,6 +50,11 @@ job:
     brokerDB: 1
     backendDB: 2
 
+storage:
+  maxSize: 1
+  maxBackups: 1
+  bufferSize: 1
+
 metrics:
   enable: false
   addr: ":8000"
