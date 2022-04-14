@@ -131,7 +131,7 @@ func TestPeerManager_Load(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -186,7 +186,7 @@ func TestPeerManager_Store(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -239,7 +239,7 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -294,7 +294,7 @@ func TestPeerManager_Delete(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -398,7 +398,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {

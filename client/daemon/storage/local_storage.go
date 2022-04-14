@@ -380,6 +380,9 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 }
 
 func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	if req == nil {
+		return nil, ErrBadRequest
+	}
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")
 		return nil, ErrInvalidDigest
@@ -415,6 +418,16 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		}
 	}
 	return piecePacket, nil
+}
+
+func (t *localTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return -1, ErrInvalidDigest
+	}
+
+	t.touch()
+	return t.TotalPieces, nil
 }
 
 func (t *localTaskStore) CanReclaim() bool {

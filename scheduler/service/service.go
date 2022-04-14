@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -35,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 type Service struct {
@@ -49,6 +51,9 @@ type Service struct {
 
 	// Dynamic config
 	dynconfig config.DynconfigInterface
+
+	// Storage interface
+	storage storage.Storage
 }
 
 // New service instance
@@ -57,6 +62,7 @@ func New(
 	resource resource.Resource,
 	scheduler scheduler.Scheduler,
 	dynconfig config.DynconfigInterface,
+	storage storage.Storage,
 ) *Service {
 
 	return &Service{
@@ -64,6 +70,7 @@ func New(
 		scheduler: scheduler,
 		config:    cfg,
 		dynconfig: dynconfig,
+		storage:   storage,
 	}
 }
 
@@ -76,8 +83,8 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 		logger.Errorf("peer %s register is failed: %v", req.PeerId, err)
 		return nil, dferr
 	}
-	host := s.registerHost(ctx, req)
-	peer := s.registerPeer(ctx, req, task, host)
+	host := s.registerHost(ctx, req.PeerHost)
+	peer := s.registerPeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag)
 	peer.Log.Infof("register peer task request: %#v %#v %#v", req, req.UrlMeta, req.HostLoad)
 
 	// Task has been successful
@@ -321,27 +328,36 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 	}
 
 	metrics.DownloadCount.WithLabelValues(peer.BizTag).Inc()
-
 	if !req.Success {
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
-			s.handleTaskFail(ctx, peer.Task)
+			s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
 			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
-		} else {
-			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
+
+			s.handleTaskFail(ctx, peer.Task)
+			s.handlePeerFail(ctx, peer)
+			return nil
 		}
+
+		s.createRecord(peer, storage.PeerStateFailed, req)
+		metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
 
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
 
 	peer.Log.Infof("report peer result: %#v", req)
-	if peer.FSM.Is(resource.PeerStateBackToSource) {
-		s.handleTaskSuccess(ctx, peer.Task, req)
-	}
-	s.handlePeerSuccess(ctx, peer)
-
 	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.BizTag).Observe(float64(req.Cost))
+
+	if peer.FSM.Is(resource.PeerStateBackToSource) {
+		s.createRecord(peer, storage.PeerStateBackToSourceSucceeded, req)
+		s.handleTaskSuccess(ctx, peer.Task, req)
+		s.handlePeerSuccess(ctx, peer)
+		return nil
+	}
+
+	s.createRecord(peer, storage.PeerStateSucceeded, req)
+	s.handlePeerSuccess(ctx, peer)
 	return nil
 }
 
@@ -379,12 +395,116 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	return nil
 }
 
+// StatTask checks the current state of the task
+func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskRequest) (*rpcscheduler.Task, error) {
+	task, loaded := s.resource.TaskManager().Load(req.TaskId)
+	if !loaded {
+		msg := fmt.Sprintf("task %s not found", req.TaskId)
+		logger.Info(msg)
+		return nil, dferrors.New(base.Code_PeerTaskNotFound, msg)
+	}
+
+	task.Log.Debug("task has been found in P2P network")
+	return &rpcscheduler.Task{
+		Id:               task.ID,
+		Type:             int32(task.Type),
+		ContentLength:    task.ContentLength.Load(),
+		TotalPieceCount:  task.TotalPieceCount.Load(),
+		State:            task.FSM.Current(),
+		PeerCount:        task.PeerCount.Load(),
+		HasAvailablePeer: task.HasAvailablePeer(),
+	}, nil
+}
+
+// AnnounceTask informs scheduler a peer has completed task
+func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTaskRequest) error {
+	taskID := req.TaskId
+	peerID := req.PiecePacket.DstPid
+	pieceInfos := req.PiecePacket.PieceInfos
+	totalPiece := req.PiecePacket.TotalPiece
+	if len(pieceInfos) <= 0 || totalPiece != int32(len(pieceInfos)) {
+		msg := fmt.Sprintf("length of pieces is invalid, total piece id %d, length of piece infos is %d", totalPiece, len(pieceInfos))
+		logger.WithTaskAndPeerID(taskID, peerID).Warn(msg)
+		return dferrors.New(base.Code_BadRequest, msg)
+	}
+
+	task := resource.NewTask(taskID, req.Cid, resource.TaskTypeDfcache, req.UrlMeta)
+	task, _ = s.resource.TaskManager().LoadOrStore(task)
+	host := s.registerHost(ctx, req.PeerHost)
+	peer := s.registerPeer(ctx, peerID, task, host, req.UrlMeta.Tag)
+	peer.Log.Infof("announce peer task request: %#v %#v %#v %#v", req, req.UrlMeta, req.PeerHost, req.PiecePacket)
+
+	// If the task state is not TaskStateSucceeded,
+	// advance the task state to TaskStateSucceeded
+	if !task.FSM.Is(resource.TaskStateSucceeded) {
+		if task.FSM.Is(resource.TaskStatePending) {
+			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+				msg := fmt.Sprintf("task fsm Pending -> Download event failed: %s", err)
+				task.Log.Error(msg)
+				return dferrors.New(base.Code_SchedError, msg)
+			}
+		}
+
+		if task.FSM.Is(resource.TaskStateFailed) {
+			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
+				msg := fmt.Sprintf("task fsm Failed -> Download event failed: %s", err)
+				task.Log.Error(msg)
+				return dferrors.New(base.Code_SchedError, msg)
+			}
+		}
+
+		// Load downloaded piece infos
+		for _, pieceInfo := range pieceInfos {
+			peer.Pieces.Set(uint(pieceInfo.PieceNum))
+			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
+			task.StorePiece(pieceInfo)
+		}
+
+		s.handleTaskSuccess(ctx, task, &rpcscheduler.PeerResult{
+			TaskId:          taskID,
+			PeerId:          peerID,
+			SrcIp:           req.PeerHost.Ip,
+			Url:             req.Cid,
+			Success:         true,
+			TotalPieceCount: totalPiece,
+			ContentLength:   req.PiecePacket.ContentLength,
+			Code:            base.Code_Success,
+		})
+	}
+
+	// If the peer state is not PeerStateSucceeded,
+	// advance the peer state to PeerStateSucceeded
+	if !peer.FSM.Is(resource.PeerStateSucceeded) {
+		if peer.FSM.Is(resource.PeerStatePending) {
+			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+				msg := fmt.Sprintf("peer fsm Pending -> Normal event failed: %s", err)
+				task.Log.Error(msg)
+				return dferrors.New(base.Code_SchedError, msg)
+			}
+		}
+
+		if peer.FSM.Is(resource.PeerStateReceivedTiny) ||
+			peer.FSM.Is(resource.PeerStateReceivedSmall) ||
+			peer.FSM.Is(resource.PeerStateReceivedNormal) {
+			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
+				msg := fmt.Sprintf("peer fsm Normal -> Download event failed: %s", err)
+				task.Log.Error(msg)
+				return dferrors.New(base.Code_SchedError, msg)
+			}
+
+			s.handlePeerSuccess(ctx, peer)
+		}
+	}
+
+	return nil
+}
+
 // registerTask creates a new task or reuses a previous task
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
-	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
+	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && task.HasAvailablePeer() && (task.FSM.Is(resource.TaskStateSucceeded) || task.FSM.Is(resource.TaskStateRunning)) {
-		task.Log.Infof("task state is %s and it has available peer", task.FSM.Current())
+	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
+		task.Log.Infof("task state is %s", task.FSM.Current())
 		return task, nil
 	}
 
@@ -402,8 +522,7 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 }
 
 // registerHost creates a new host or reuses a previous host
-func (s *Service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRequest) *resource.Host {
-	rawHost := req.PeerHost
+func (s *Service) registerHost(ctx context.Context, rawHost *rpcscheduler.PeerHost) *resource.Host {
 	host, ok := s.resource.HostManager().Load(rawHost.Uuid)
 	if !ok {
 		// Get scheduler cluster client config by manager
@@ -423,19 +542,19 @@ func (s *Service) registerHost(ctx context.Context, req *rpcscheduler.PeerTaskRe
 }
 
 // registerPeer creates a new peer or reuses a previous peer
-func (s *Service) registerPeer(ctx context.Context, req *rpcscheduler.PeerTaskRequest, task *resource.Task, host *resource.Host) *resource.Peer {
+func (s *Service) registerPeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host, tag string) *resource.Peer {
 	var options []resource.PeerOption
-	if req.UrlMeta.Tag != "" {
-		options = append(options, resource.WithBizTag(req.UrlMeta.Tag))
+	if tag != "" {
+		options = append(options, resource.WithBizTag(tag))
 	}
 
-	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(req.PeerId, task, host, options...))
+	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(peerID, task, host, options...))
 	if !loaded {
 		peer.Log.Info("create new peer")
 		return peer
 	}
 
-	peer.Log.Info("peer already exists")
+	peer.Log.Infof("peer already exists, state %s", peer.FSM.Current())
 	return peer
 }
 
@@ -607,6 +726,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. CDN downloads the resource successfully
 // 2. Dfdaemon back-to-source to download successfully
+// 3. Peer announces it has the task
 func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
 	if task.FSM.Is(resource.TaskStateSucceeded) {
 		return
@@ -640,5 +760,47 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
 	if err := task.FSM.Event(resource.TaskEventDownloadFailed); err != nil {
 		task.Log.Errorf("task fsm event failed: %v", err)
 		return
+	}
+}
+
+// createRecord stores peer download records
+func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcscheduler.PeerResult) {
+	record := storage.Record{
+		ID:              peer.ID,
+		IP:              peer.Host.IP,
+		Hostname:        peer.Host.Hostname,
+		BizTag:          peer.BizTag,
+		Cost:            req.Cost,
+		PieceCount:      int32(peer.Pieces.Count()),
+		TotalPieceCount: peer.Task.TotalPieceCount.Load(),
+		ContentLength:   peer.Task.ContentLength.Load(),
+		SecurityDomain:  peer.Host.SecurityDomain,
+		IDC:             peer.Host.IDC,
+		NetTopology:     peer.Host.NetTopology,
+		Location:        peer.Host.Location,
+		FreeUploadLoad:  peer.Host.FreeUploadLoad(),
+		State:           peerState,
+		CreateAt:        peer.CreateAt.Load().UnixNano(),
+		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
+	}
+
+	if parent, ok := peer.LoadParent(); ok {
+		record.ParentID = parent.ID
+		record.ParentIP = parent.Host.IP
+		record.ParentHostname = parent.Host.Hostname
+		record.ParentBizTag = parent.BizTag
+		record.ParentPieceCount = int32(parent.Pieces.Count())
+		record.ParentSecurityDomain = parent.Host.SecurityDomain
+		record.ParentIDC = parent.Host.IDC
+		record.ParentNetTopology = parent.Host.NetTopology
+		record.ParentLocation = parent.Host.Location
+		record.ParentFreeUploadLoad = parent.Host.FreeUploadLoad()
+		record.ParentIsCDN = parent.Host.IsCDN
+		record.ParentCreateAt = parent.CreateAt.Load().UnixNano()
+		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano()
+	}
+
+	if err := s.storage.Create(record); err != nil {
+		peer.Log.Error(err)
 	}
 }

@@ -43,7 +43,7 @@ type Server struct {
 // New returns a new transparent scheduler server from the given options
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 
 	// Register servers on grpc server
 	scheduler.RegisterSchedulerServer(grpcServer, svr)
@@ -86,4 +86,16 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 // LeaveTask makes the peer unschedulable
 func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
+}
+
+// StatTask checks if the given task exists in P2P network
+func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (*scheduler.Task, error) {
+	// TODO: add metrics
+	return s.service.StatTask(ctx, req)
+}
+
+// AnnounceTask informs scheduler a peer has completed task
+func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
+	// TODO: add metrics
+	return new(empty.Empty), s.service.AnnounceTask(ctx, req)
 }

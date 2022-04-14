@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,12 @@
  * limitations under the License.
  */
 
-package safe
+package main
 
 import (
-	"fmt"
-	"runtime/debug"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/cmd/dfcache/cmd"
 )
 
-// safe call function
-func Call(f func()) (err error) {
-	defer func() {
-		if desc := recover(); desc != nil {
-			err = fmt.Errorf("%v", desc)
-			logger.Errorf("panic stack: %s", string(debug.Stack()))
-			debug.PrintStack()
-		}
-	}()
-
-	f()
-
-	return
+func main() {
+	cmd.Execute()
 }
