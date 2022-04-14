@@ -89,7 +89,7 @@ func TestCDN_TriggerTask(t *testing.T) {
 			tc.mock(client.EXPECT())
 
 			cdn := newCDN(peerManager, hostManager, client)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer, result, err := cdn.TriggerTask(context.Background(), mockTask)
 			tc.expect(t, peer, result, err)
 		})

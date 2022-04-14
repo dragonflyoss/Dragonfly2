@@ -45,7 +45,7 @@ var (
 		RetryLimit:           2,
 		RetryBackSourceLimit: 1,
 		RetryInterval:        10 * time.Millisecond,
-		BackSourceCount:      mockTaskBackToSourceLimit,
+		BackSourceCount:      int(mockTaskBackToSourceLimit),
 		Algorithm:            evaluator.DefaultAlgorithm,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
@@ -79,11 +79,11 @@ var (
 			"content-length": "100",
 		},
 	}
-	mockTaskURL               = "http://example.com/foo"
-	mockTaskBackToSourceLimit = 200
-	mockTaskID                = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                = idgen.PeerID("127.0.0.1")
-	mockCDNPeerID             = idgen.CDNPeerID("127.0.0.1")
+	mockTaskBackToSourceLimit int32 = 200
+	mockTaskURL                     = "http://example.com/foo"
+	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                      = idgen.PeerID("127.0.0.1")
+	mockCDNPeerID                   = idgen.CDNPeerID("127.0.0.1")
 )
 
 func TestScheduler_New(t *testing.T) {
@@ -431,7 +431,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			ctx, cancel := context.WithCancel(context.Background())
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			mockCDNHost := resource.NewHost(mockRawCDNHost, resource.WithIsCDN(true))
 			cdnPeer := resource.NewPeer(mockCDNPeerID, mockTask, mockCDNHost)
@@ -673,7 +673,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				mockHost := resource.NewHost(mockRawHost)
-				mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+				mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 				stealPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
 				stealPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
@@ -704,7 +704,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
 			blocklist := set.NewSafeSet()
@@ -875,7 +875,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
@@ -963,7 +963,7 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			parent := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)

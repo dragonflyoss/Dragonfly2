@@ -94,7 +94,7 @@ docker-push-manager: docker-build-manager
 .PHONY: docker-push-manager
 
 # Build dragonfly
-build: build-cdn build-scheduler build-dfget build-manager
+build: build-cdn build-scheduler build-dfget build-dfcache build-manager
 .PHONY: build
 
 # Build cdn
@@ -114,6 +114,18 @@ build-linux-dfget: build-dirs
 	@echo "Begin to build linux dfget."
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
 .PHONY: build-linux-dfget
+
+# Build dfcache
+build-dfcache: build-dirs
+	@echo "Begin to build dfcache."
+	./hack/build.sh dfcache
+.PHONY: build-dfcache
+
+# Build linux dfcache
+build-linux-dfcache: build-dirs
+	@echo "Begin to build linux dfcache."
+	GOOS=linux GOARCH=amd64 ./hack/build.sh dfcache
+.PHONY: build-linux-dfcache
 
 # Build scheduler
 build-scheduler: build-dirs
@@ -322,6 +334,8 @@ help:
 	@echo "make build-cdn                      build CDN"
 	@echo "make build-dfget                    build dfget"
 	@echo "make build-dfget-linux              build linux dfget"
+	@echo "make build-dfcache                  build dfcache"
+	@echo "make build-dfcache-linux            build linux dfcache"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
 	@echo "make build-manager-console          build manager console"
