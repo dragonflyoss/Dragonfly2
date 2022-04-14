@@ -1333,6 +1333,33 @@ func TestService_registerTask(t *testing.T) {
 		run    func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder)
 	}{
 		{
+			name: "task already exists and state is TaskStatePending",
+			config: &config.Config{
+				Scheduler: mockSchedulerConfig,
+				CDN: &config.CDNConfig{
+					Enable: true,
+				},
+			},
+			req: &rpcscheduler.PeerTaskRequest{
+				Url:     mockTaskURL,
+				UrlMeta: mockTaskURLMeta,
+			},
+			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateRunning)
+				mockTask.StorePeer(mockPeer)
+				mockPeer.FSM.SetState(resource.PeerStateRunning)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+				)
+
+				task, err := svc.registerTask(context.Background(), req)
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(mockTask, task)
+			},
+		},
+		{
 			name: "task already exists and state is TaskStateRunning",
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
@@ -1406,7 +1433,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
 					mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1),
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, nil).Times(1),
 				)
@@ -1468,7 +1495,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
 					mr.CDN().Do(func() { wg.Done() }).Return(cdn).Times(1),
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, errors.New("foo")).Times(1),
 				)
@@ -1527,7 +1554,7 @@ func TestService_registerTask(t *testing.T) {
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
-					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
 				)
 
 				task, err := svc.registerTask(context.Background(), req)
