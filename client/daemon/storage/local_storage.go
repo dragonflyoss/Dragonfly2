@@ -380,6 +380,9 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 }
 
 func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	if req == nil {
+		return nil, ErrBadRequest
+	}
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")
 		return nil, ErrInvalidDigest
