@@ -98,15 +98,14 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 			return
 		}
 		if err != nil {
-			stat, ok := status.FromError(err)
-			if !ok {
+			if stat, ok := status.FromError(err); !ok {
 				s.Errorf("SyncPieceTasks receive error: %s", err)
-				return
-			}
-			if stat.Code() == codes.Canceled {
+			} else if stat.Code() == codes.Canceled {
 				s.Debugf("SyncPieceTasks canceled, exit receiving")
-				return
+			} else {
+				s.Warnf("SyncPieceTasks receive error code %d/%s", stat.Code(), stat.Message())
 			}
+			return
 		}
 		s.Debugf("receive request: %#v", request)
 		pp, err := s.getPieces(s.sync.Context(), request)
@@ -158,17 +157,17 @@ loop:
 			total, _, err := s.sendExistPieces(uint32(info.Num))
 
 			if err != nil {
-				stat, ok := status.FromError(err)
-				if !ok {
-					s.Unlock()
+				if stat, ok := status.FromError(err); !ok {
+					// not grpc error
 					s.Errorf("sent exist pieces error: %s", err)
-					return err
-				}
-				if stat.Code() == codes.Canceled {
+				} else if stat.Code() == codes.Canceled {
+					err = nil
 					s.Debugf("SyncPieceTasks canceled, exit sending")
-					s.Unlock()
-					return nil
+				} else {
+					s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
 				}
+				s.Unlock()
+				return err
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
@@ -192,17 +191,17 @@ loop:
 			}
 			total, _, err := s.sendExistPieces(nextPieceNum)
 			if err != nil {
-				stat, ok := status.FromError(err)
-				if !ok {
-					s.Unlock()
+				if stat, ok := status.FromError(err); !ok {
+					// not grpc error
 					s.Errorf("sent exist pieces error: %s", err)
-					return err
-				}
-				if stat.Code() == codes.Canceled {
+				} else if stat.Code() == codes.Canceled {
+					err = nil
 					s.Debugf("SyncPieceTasks canceled, exit sending")
-					s.Unlock()
-					return nil
+				} else {
+					s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
 				}
+				s.Unlock()
+				return err
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
