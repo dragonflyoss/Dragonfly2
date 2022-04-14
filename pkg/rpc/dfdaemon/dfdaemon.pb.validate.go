@@ -274,3 +274,375 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = DownResultValidationError{}
+
+// Validate checks the field values on StatTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *StatTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetCid()) < 1 {
+		return StatTaskRequestValidationError{
+			field:  "Cid",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return StatTaskRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for LocalOnly
+
+	return nil
+}
+
+// StatTaskRequestValidationError is the validation error returned by
+// StatTaskRequest.Validate if the designated constraints aren't met.
+type StatTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StatTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StatTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StatTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StatTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StatTaskRequestValidationError) ErrorName() string { return "StatTaskRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e StatTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStatTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StatTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StatTaskRequestValidationError{}
+
+// Validate checks the field values on ImportTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *ImportTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetCid()) < 1 {
+		return ImportTaskRequestValidationError{
+			field:  "Cid",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ImportTaskRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetPath()) < 1 {
+		return ImportTaskRequestValidationError{
+			field:  "Path",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	return nil
+}
+
+// ImportTaskRequestValidationError is the validation error returned by
+// ImportTaskRequest.Validate if the designated constraints aren't met.
+type ImportTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ImportTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ImportTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ImportTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ImportTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ImportTaskRequestValidationError) ErrorName() string {
+	return "ImportTaskRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ImportTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sImportTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ImportTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ImportTaskRequestValidationError{}
+
+// Validate checks the field values on ExportTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *ExportTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetCid()) < 1 {
+		return ExportTaskRequestValidationError{
+			field:  "Cid",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetOutput()) < 1 {
+		return ExportTaskRequestValidationError{
+			field:  "Output",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetTimeout() < 0 {
+		return ExportTaskRequestValidationError{
+			field:  "Timeout",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if m.GetLimit() < 0 {
+		return ExportTaskRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExportTaskRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Callsystem
+
+	// no validation rules for Uid
+
+	// no validation rules for Gid
+
+	// no validation rules for LocalOnly
+
+	return nil
+}
+
+// ExportTaskRequestValidationError is the validation error returned by
+// ExportTaskRequest.Validate if the designated constraints aren't met.
+type ExportTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExportTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExportTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExportTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExportTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExportTaskRequestValidationError) ErrorName() string {
+	return "ExportTaskRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ExportTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExportTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExportTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExportTaskRequestValidationError{}
+
+// Validate checks the field values on DeleteTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *DeleteTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetCid()) < 1 {
+		return DeleteTaskRequestValidationError{
+			field:  "Cid",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DeleteTaskRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// DeleteTaskRequestValidationError is the validation error returned by
+// DeleteTaskRequest.Validate if the designated constraints aren't met.
+type DeleteTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeleteTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeleteTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeleteTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeleteTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeleteTaskRequestValidationError) ErrorName() string {
+	return "DeleteTaskRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeleteTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeleteTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeleteTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeleteTaskRequestValidationError{}
