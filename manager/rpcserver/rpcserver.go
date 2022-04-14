@@ -43,18 +43,22 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
-var defaultStreamMiddleWares = []grpc.StreamServerInterceptor{
-	grpc_validator.StreamServerInterceptor(),
-	grpc_recovery.StreamServerInterceptor(),
-	grpc_prometheus.StreamServerInterceptor,
-	grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+func defaultStreamMiddleWares() []grpc.StreamServerInterceptor {
+	return []grpc.StreamServerInterceptor{
+		grpc_validator.StreamServerInterceptor(),
+		grpc_recovery.StreamServerInterceptor(),
+		grpc_prometheus.StreamServerInterceptor,
+		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+	}
 }
 
-var defaultUnaryMiddleWares = []grpc.UnaryServerInterceptor{
-	grpc_validator.UnaryServerInterceptor(),
-	grpc_recovery.UnaryServerInterceptor(),
-	grpc_prometheus.UnaryServerInterceptor,
-	grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+func defaultUnaryMiddleWares() []grpc.UnaryServerInterceptor {
+	return []grpc.UnaryServerInterceptor{
+		grpc_validator.UnaryServerInterceptor(),
+		grpc_recovery.UnaryServerInterceptor(),
+		grpc_prometheus.UnaryServerInterceptor,
+		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+	}
 }
 
 type Server struct {
@@ -74,8 +78,8 @@ func New(database *database.Database, cache *cache.Cache, searcher searcher.Sear
 	}
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares...)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares()...)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares()...)),
 	}, opts...)...)
 
 	// Register servers on grpc server
