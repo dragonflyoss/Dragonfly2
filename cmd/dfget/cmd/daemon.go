@@ -85,10 +85,6 @@ it supports container engine, wget and other downloading tools through proxy fun
 // daemon will be launched by dfget command
 // redirect stdout and stderr to file for debugging
 func redirectStdoutAndStderr(console bool, logDir string) {
-	// only redirect the daemon which is launched by dfget
-	if viper.GetInt("launcher") == -1 {
-		return
-	}
 	// when console log is enabled, skip redirect stdout
 	if !console {
 		stdoutPath := path.Join(logDir, "daemon", "stdout.log")
