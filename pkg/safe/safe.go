@@ -19,6 +19,8 @@ package safe
 import (
 	"fmt"
 	"runtime/debug"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 // safe call function
@@ -26,6 +28,7 @@ func Call(f func()) (err error) {
 	defer func() {
 		if desc := recover(); desc != nil {
 			err = fmt.Errorf("%v", desc)
+			logger.Errorf("panic stack: %s", string(debug.Stack()))
 			debug.PrintStack()
 		}
 	}()
