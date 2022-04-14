@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
@@ -41,11 +42,12 @@ type pieceTaskSyncManager struct {
 }
 
 type pieceTaskSynchronizer struct {
+	*logger.SugaredLoggerOnWith
+	client            dfdaemon.Daemon_SyncPieceTasksClient
+	dstPeer           *scheduler.PeerPacket_DestPeer
+	error             atomic.Value
 	peerTaskConductor *peerTaskConductor
 	pieceRequestCh    chan *DownloadPieceRequest
-	dstPeer           *scheduler.PeerPacket_DestPeer
-	client            dfdaemon.Daemon_SyncPieceTasksClient
-	error             atomic.Value
 }
 
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
@@ -139,11 +141,12 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	}
 
 	synchronizer := &pieceTaskSynchronizer{
-		peerTaskConductor: s.peerTaskConductor,
-		pieceRequestCh:    s.pieceRequestCh,
-		client:            client,
-		dstPeer:           dstPeer,
-		error:             atomic.Value{},
+		peerTaskConductor:   s.peerTaskConductor,
+		pieceRequestCh:      s.pieceRequestCh,
+		client:              client,
+		dstPeer:             dstPeer,
+		error:               atomic.Value{},
+		SugaredLoggerOnWith: s.peerTaskConductor.With("targetPeerID", request.DstPid),
 	}
 	s.workers[dstPeer.PeerId] = synchronizer
 	go synchronizer.receive(piecePacket)
@@ -224,7 +227,7 @@ func (s *pieceTaskSyncManager) cancel() {
 func (s *pieceTaskSynchronizer) close() {
 	if err := s.client.CloseSend(); err != nil {
 		s.error.Store(err)
-		s.peerTaskConductor.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
+		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
 	}
 }
 
@@ -232,7 +235,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 	s.peerTaskConductor.updateMetadata(piecePacket)
 
 	pieceCount := len(piecePacket.PieceInfos)
-	s.peerTaskConductor.Debugf("dispatch piece request, piece count: %d, dest peer: %s", pieceCount, s.dstPeer.PeerId)
+	s.Debugf("dispatch piece request, piece count: %d, dest peer: %s", pieceCount, s.dstPeer.PeerId)
 	// fix cdn return zero piece info, but with total piece count and content length
 	if pieceCount == 0 {
 		finished := s.peerTaskConductor.isCompleted()
@@ -241,7 +244,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		}
 	}
 	for _, piece := range piecePacket.PieceInfos {
-		s.peerTaskConductor.Infof("got piece %d from %s/%s, digest: %s, start: %d, size: %d, dest peer: %s",
+		s.Infof("got piece %d from %s/%s, digest: %s, start: %d, size: %d, dest peer: %s",
 			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize, s.dstPeer.PeerId)
 		// FIXME when set total piece but no total digest, fetch again
 		s.peerTaskConductor.requestedPiecesLock.Lock()
@@ -261,9 +264,9 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		select {
 		case s.pieceRequestCh <- req:
 		case <-s.peerTaskConductor.successCh:
-			s.peerTaskConductor.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
+			s.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		case <-s.peerTaskConductor.failCh:
-			s.peerTaskConductor.Warnf("peer task fail, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
+			s.Warnf("peer task fail, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		}
 	}
 }
@@ -276,17 +279,17 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	for {
 		piecePacket, err = s.client.Recv()
 		if err == io.EOF {
-			s.peerTaskConductor.Debugf("synchronizer receives io.EOF")
+			s.Debugf("synchronizer receives io.EOF")
 			return
 		}
 		if err != nil {
 			if s.canceled(err) {
-				s.peerTaskConductor.Debugf("synchronizer receives canceled")
+				s.Debugf("synchronizer receives canceled")
 				return
 			}
 			s.error.Store(err)
 			s.reportError()
-			s.peerTaskConductor.Errorf("synchronizer receives with error: %s", err)
+			s.Errorf("synchronizer receives with error: %s", err)
 			return
 		}
 
@@ -298,10 +301,10 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
 	err := s.client.Send(request)
 	if err != nil {
 		if s.canceled(err) {
-			s.peerTaskConductor.Debugf("synchronizer sends canceled")
+			s.Debugf("synchronizer sends canceled")
 			return
 		}
-		s.peerTaskConductor.Errorf("synchronizer sends with error: %s", err)
+		s.Errorf("synchronizer sends with error: %s", err)
 		s.error.Store(err)
 		s.reportError()
 		return
@@ -312,18 +315,18 @@ func (s *pieceTaskSynchronizer) reportError() {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer))
 	if sendError != nil {
 		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
-		s.peerTaskConductor.Errorf("sync piece info failed and send piece result with error: %s", sendError)
+		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
 	}
 }
 
 func (s *pieceTaskSynchronizer) canceled(err error) bool {
 	if err == context.Canceled {
-		s.peerTaskConductor.Debugf("context canceled, dst peer: %s", s.dstPeer.PeerId)
+		s.Debugf("context canceled, dst peer: %s", s.dstPeer.PeerId)
 		return true
 	}
 	if stat, ok := err.(interface{ GRPCStatus() *status.Status }); ok {
 		if stat.GRPCStatus().Code() == codes.Canceled {
-			s.peerTaskConductor.Debugf("grpc canceled, dst peer: %s", s.dstPeer.PeerId)
+			s.Debugf("grpc canceled, dst peer: %s", s.dstPeer.PeerId)
 			return true
 		}
 	}

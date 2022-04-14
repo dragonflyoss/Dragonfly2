@@ -103,6 +103,7 @@ var (
 	ErrPieceCountNotSet = errors.New("total piece count not set")
 	ErrDigestNotSet     = errors.New("digest not set")
 	ErrInvalidDigest    = errors.New("invalid digest")
+	ErrBadRequest       = errors.New("bad request")
 )
 
 const (
