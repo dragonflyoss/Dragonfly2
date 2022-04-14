@@ -12,6 +12,7 @@ import (
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	dflog "d7y.io/dragonfly/v2/internal/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,6 +37,34 @@ func NewMockTaskManager(ctrl *gomock.Controller) *MockTaskManager {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 	return m.recorder
+}
+
+// AnnouncePeerTask mocks base method.
+func (m *MockTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnnouncePeerTask", ctx, meta, cid, urlMeta)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnouncePeerTask indicates an expected call of AnnouncePeerTask.
+func (mr *MockTaskManagerMockRecorder) AnnouncePeerTask(ctx, meta, cid, urlMeta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnouncePeerTask", reflect.TypeOf((*MockTaskManager)(nil).AnnouncePeerTask), ctx, meta, cid, urlMeta)
+}
+
+// GetPieceManager mocks base method.
+func (m *MockTaskManager) GetPieceManager() PieceManager {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPieceManager")
+	ret0, _ := ret[0].(PieceManager)
+	return ret0
+}
+
+// GetPieceManager indicates an expected call of GetPieceManager.
+func (mr *MockTaskManagerMockRecorder) GetPieceManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceManager", reflect.TypeOf((*MockTaskManager)(nil).GetPieceManager))
 }
 
 // IsPeerTaskRunning mocks base method.
@@ -82,6 +111,21 @@ func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRe
 func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamTask), ctx, req)
+}
+
+// StatTask mocks base method.
+func (m *MockTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatTask", ctx, taskID)
+	ret0, _ := ret[0].(*scheduler.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockTaskManagerMockRecorder) StatTask(ctx, taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockTaskManager)(nil).StatTask), ctx, taskID)
 }
 
 // Stop mocks base method.

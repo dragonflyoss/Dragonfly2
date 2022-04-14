@@ -39,6 +39,17 @@ const (
 )
 
 const (
+	// TaskTypeNormal is normal type of task,
+	// normal task is a normal p2p task.
+	TaskTypeNormal = iota
+
+	// TaskTypeDfcache is dfcache type of task,
+	// dfcache task is a cache task, and the task url is fake url.
+	// It can only be used for caching and cannot be downloaded back to source.
+	TaskTypeDfcache
+)
+
+const (
 	// Task has been created but did not start running
 	TaskStatePending = "Pending"
 
@@ -63,12 +74,25 @@ const (
 	TaskEventDownloadFailed = "DownloadFailed"
 )
 
+// Option is a functional option for task
+type Option func(task *Task)
+
+// WithBackToSourceLimit set BackToSourceLimit for task
+func WithBackToSourceLimit(limit int32) Option {
+	return func(task *Task) {
+		task.BackToSourceLimit.Add(limit)
+	}
+}
+
 type Task struct {
 	// ID is task id
 	ID string
 
 	// URL is task download url
 	URL string
+
+	// Type is task type
+	Type int
 
 	// URLMeta is task download url meta
 	URLMeta *base.UrlMeta
@@ -115,14 +139,15 @@ type Task struct {
 }
 
 // New task instance
-func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
+func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
+		Type:              taskType,
 		URLMeta:           meta,
 		ContentLength:     atomic.NewInt64(0),
 		TotalPieceCount:   atomic.NewInt32(0),
-		BackToSourceLimit: atomic.NewInt32(int32(backToSourceLimit)),
+		BackToSourceLimit: atomic.NewInt32(0),
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
 		Peers:             &sync.Map{},
@@ -156,6 +181,10 @@ func NewTask(id, url string, backToSourceLimit int, meta *base.UrlMeta) *Task {
 			},
 		},
 	)
+
+	for _, opt := range options {
+		opt(t)
+	}
 
 	return t
 }
@@ -245,6 +274,12 @@ func (t *Task) LoadCDNPeer() (*Peer, bool) {
 	return nil, false
 }
 
+// IsCDNFailed returns whether the cdn in the task failed
+func (t *Task) IsCDNFailed() bool {
+	cdnPeer, ok := t.LoadCDNPeer()
+	return ok && cdnPeer.FSM.Is(PeerStateFailed)
+}
+
 // LoadPiece return piece for a key
 func (t *Task) LoadPiece(key int32) (*base.PieceInfo, bool) {
 	rawPiece, ok := t.Pieces.Load(key)
@@ -288,7 +323,7 @@ func (t *Task) SizeScope() base.SizeScope {
 
 // CanBackToSource represents whether peer can back-to-source
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load()
+	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && t.Type == TaskTypeNormal
 }
 
 // NotifyPeers notify all peers in the task with the state code

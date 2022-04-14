@@ -57,6 +57,8 @@ type TaskStorageDriver interface {
 
 	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
 
+	GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error)
+
 	UpdateTask(ctx context.Context, req *UpdateTaskRequest) error
 
 	// Store stores task data to the target path
@@ -87,6 +89,8 @@ type Manager interface {
 	RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error)
 	// RegisterSubTask registers a subtask in storage driver
 	RegisterSubTask(ctx context.Context, req *RegisterSubTaskRequest) (TaskStorageDriver, error)
+	// UnregisterTask unregisters a task in storage driver
+	UnregisterTask(ctx context.Context, req CommonTaskRequest) error
 	// FindCompletedTask try to find a completed task for fast path
 	FindCompletedTask(taskID string) *ReusePeerTask
 	// FindCompletedSubTask try to find a completed subtask for fast path
@@ -321,9 +325,30 @@ func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	return t.GetPieces(ctx, req)
 }
 
+func (s *storageManager) GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error) {
+	t, ok := s.LoadTask(
+		PeerTaskMetadata{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return -1, ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).GetTotalPieces(ctx, req)
+}
+
 func (s *storageManager) LoadTask(meta PeerTaskMetadata) (TaskStorageDriver, bool) {
 	s.Keep()
 	d, ok := s.tasks.Load(meta)
+	if !ok {
+		return nil, false
+	}
+	return d.(TaskStorageDriver), ok
+}
+
+func (s *storageManager) LoadAndDeleteTask(meta PeerTaskMetadata) (TaskStorageDriver, bool) {
+	s.Keep()
+	d, ok := s.tasks.LoadAndDelete(meta)
 	if !ok {
 		return nil, false
 	}
@@ -838,6 +863,30 @@ func (s *storageManager) TryGC() (bool, error) {
 	return true, nil
 }
 
+func (s *storageManager) deleteTask(meta PeerTaskMetadata) error {
+	task, ok := s.LoadAndDeleteTask(meta)
+	if !ok {
+		logger.Infof("deleteTask: task meta not found: %v", meta)
+		return nil
+	}
+
+	logger.Debugf("deleteTask: deleting task: %v", meta)
+	if _, ok := task.(*localTaskStore); ok {
+		s.cleanIndex(meta.TaskID, meta.PeerID)
+	} else {
+		s.cleanSubIndex(meta.TaskID, meta.PeerID)
+	}
+	task.(Reclaimer).MarkReclaim()
+	return task.(Reclaimer).Reclaim()
+}
+
+func (s *storageManager) UnregisterTask(ctx context.Context, req CommonTaskRequest) error {
+	return s.deleteTask(PeerTaskMetadata{
+		TaskID: req.TaskID,
+		PeerID: req.PeerID,
+	})
+}
+
 func (s *storageManager) CleanUp() {
 	_, _ = s.forceGC()
 }
@@ -845,15 +894,7 @@ func (s *storageManager) CleanUp() {
 func (s *storageManager) forceGC() (bool, error) {
 	s.tasks.Range(func(key, task interface{}) bool {
 		meta := key.(PeerTaskMetadata)
-		s.tasks.Delete(meta)
-		if _, ok := task.(*localTaskStore); ok {
-			s.cleanIndex(meta.TaskID, meta.PeerID)
-		} else {
-			s.cleanSubIndex(meta.TaskID, meta.PeerID)
-		}
-
-		task.(Reclaimer).MarkReclaim()
-		err := task.(Reclaimer).Reclaim()
+		err := s.deleteTask(meta)
 		if err != nil {
 			logger.Errorf("gc task store %s error: %s", key, err)
 		}

@@ -48,6 +48,14 @@ func (d *dummySchedulerClient) LeaveTask(ctx context.Context, target *scheduler.
 	return nil
 }
 
+func (d *dummySchedulerClient) StatTask(ctx context.Context, request *scheduler.StatTaskRequest, option ...grpc.CallOption) (*scheduler.Task, error) {
+	panic("should not call this function")
+}
+
+func (d *dummySchedulerClient) AnnounceTask(ctx context.Context, request *scheduler.AnnounceTaskRequest, option ...grpc.CallOption) error {
+	panic("should not call this function")
+}
+
 func (d *dummySchedulerClient) Close() error {
 	return nil
 }

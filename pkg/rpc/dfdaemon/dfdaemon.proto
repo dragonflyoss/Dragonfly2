@@ -57,6 +57,48 @@ message DownResult{
   bool done = 5;
 }
 
+message StatTaskRequest{
+  // content/cache id of the task
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  base.UrlMeta url_meta = 2;
+  // check local cache only
+  bool local_only = 3;
+}
+
+message ImportTaskRequest{
+  // content/cache id of the task
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  base.UrlMeta url_meta = 2;
+  // the file to be imported
+  string path = 3 [(validate.rules).string.min_len = 1];
+}
+
+message ExportTaskRequest{
+  // download cache file identified by this cid
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  // output path of downloaded file
+  string output = 2 [(validate.rules).string.min_len = 1];
+  // timeout duration
+  uint64 timeout = 3 [(validate.rules).uint64.gte = 0];
+  // rate limit in bytes per second
+  double limit = 4 [(validate.rules).double.gte = 0];
+  base.UrlMeta url_meta = 5;
+  // call system
+  string callsystem = 6;
+  // user id
+  int64 uid = 7;
+  // group id
+  int64 gid = 8;
+  // only export from local storage
+  bool local_only = 9;
+}
+
+message DeleteTaskRequest{
+  // content/cache id of the task
+  string cid = 1 [(validate.rules).string.min_len = 1];
+  base.UrlMeta url_meta = 2;
+}
+
 // Daemon Client RPC Service
 service Daemon{
   // Trigger client to download file
@@ -67,4 +109,12 @@ service Daemon{
   rpc CheckHealth(google.protobuf.Empty)returns(google.protobuf.Empty);
   // Sync piece tasks with other peers
   rpc SyncPieceTasks(stream base.PieceTaskRequest)returns(stream base.PiecePacket);
+  // Check if given task exists in P2P cache system
+  rpc StatTask(StatTaskRequest) returns(google.protobuf.Empty);
+  // Import the given file into P2P cache system
+  rpc ImportTask(ImportTaskRequest) returns(google.protobuf.Empty);
+  // Export or download file from P2P cache system
+  rpc ExportTask(ExportTaskRequest) returns(google.protobuf.Empty);
+  // Delete file from P2P cache system
+  rpc DeleteTask(DeleteTaskRequest) returns(google.protobuf.Empty);
 }

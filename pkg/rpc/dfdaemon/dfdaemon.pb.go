@@ -259,6 +259,311 @@ func (x *DownResult) GetDone() bool {
 	return false
 }
 
+type StatTaskRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// content/cache id of the task
+	Cid     string        `protobuf:"bytes,1,opt,name=cid,proto3" json:"cid,omitempty"`
+	UrlMeta *base.UrlMeta `protobuf:"bytes,2,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
+	// check local cache only
+	LocalOnly bool `protobuf:"varint,3,opt,name=local_only,json=localOnly,proto3" json:"local_only,omitempty"`
+}
+
+func (x *StatTaskRequest) Reset() {
+	*x = StatTaskRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StatTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StatTaskRequest) ProtoMessage() {}
+
+func (x *StatTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StatTaskRequest.ProtoReflect.Descriptor instead.
+func (*StatTaskRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StatTaskRequest) GetCid() string {
+	if x != nil {
+		return x.Cid
+	}
+	return ""
+}
+
+func (x *StatTaskRequest) GetUrlMeta() *base.UrlMeta {
+	if x != nil {
+		return x.UrlMeta
+	}
+	return nil
+}
+
+func (x *StatTaskRequest) GetLocalOnly() bool {
+	if x != nil {
+		return x.LocalOnly
+	}
+	return false
+}
+
+type ImportTaskRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// content/cache id of the task
+	Cid     string        `protobuf:"bytes,1,opt,name=cid,proto3" json:"cid,omitempty"`
+	UrlMeta *base.UrlMeta `protobuf:"bytes,2,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
+	// the file to be imported
+	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
+}
+
+func (x *ImportTaskRequest) Reset() {
+	*x = ImportTaskRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ImportTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ImportTaskRequest) ProtoMessage() {}
+
+func (x *ImportTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ImportTaskRequest.ProtoReflect.Descriptor instead.
+func (*ImportTaskRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ImportTaskRequest) GetCid() string {
+	if x != nil {
+		return x.Cid
+	}
+	return ""
+}
+
+func (x *ImportTaskRequest) GetUrlMeta() *base.UrlMeta {
+	if x != nil {
+		return x.UrlMeta
+	}
+	return nil
+}
+
+func (x *ImportTaskRequest) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+type ExportTaskRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// download cache file identified by this cid
+	Cid string `protobuf:"bytes,1,opt,name=cid,proto3" json:"cid,omitempty"`
+	// output path of downloaded file
+	Output string `protobuf:"bytes,2,opt,name=output,proto3" json:"output,omitempty"`
+	// timeout duration
+	Timeout uint64 `protobuf:"varint,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// rate limit in bytes per second
+	Limit   float64       `protobuf:"fixed64,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	UrlMeta *base.UrlMeta `protobuf:"bytes,5,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
+	// call system
+	Callsystem string `protobuf:"bytes,6,opt,name=callsystem,proto3" json:"callsystem,omitempty"`
+	// user id
+	Uid int64 `protobuf:"varint,7,opt,name=uid,proto3" json:"uid,omitempty"`
+	// group id
+	Gid int64 `protobuf:"varint,8,opt,name=gid,proto3" json:"gid,omitempty"`
+	// only export from local storage
+	LocalOnly bool `protobuf:"varint,9,opt,name=local_only,json=localOnly,proto3" json:"local_only,omitempty"`
+}
+
+func (x *ExportTaskRequest) Reset() {
+	*x = ExportTaskRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ExportTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ExportTaskRequest) ProtoMessage() {}
+
+func (x *ExportTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ExportTaskRequest.ProtoReflect.Descriptor instead.
+func (*ExportTaskRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ExportTaskRequest) GetCid() string {
+	if x != nil {
+		return x.Cid
+	}
+	return ""
+}
+
+func (x *ExportTaskRequest) GetOutput() string {
+	if x != nil {
+		return x.Output
+	}
+	return ""
+}
+
+func (x *ExportTaskRequest) GetTimeout() uint64 {
+	if x != nil {
+		return x.Timeout
+	}
+	return 0
+}
+
+func (x *ExportTaskRequest) GetLimit() float64 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ExportTaskRequest) GetUrlMeta() *base.UrlMeta {
+	if x != nil {
+		return x.UrlMeta
+	}
+	return nil
+}
+
+func (x *ExportTaskRequest) GetCallsystem() string {
+	if x != nil {
+		return x.Callsystem
+	}
+	return ""
+}
+
+func (x *ExportTaskRequest) GetUid() int64 {
+	if x != nil {
+		return x.Uid
+	}
+	return 0
+}
+
+func (x *ExportTaskRequest) GetGid() int64 {
+	if x != nil {
+		return x.Gid
+	}
+	return 0
+}
+
+func (x *ExportTaskRequest) GetLocalOnly() bool {
+	if x != nil {
+		return x.LocalOnly
+	}
+	return false
+}
+
+type DeleteTaskRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// content/cache id of the task
+	Cid     string        `protobuf:"bytes,1,opt,name=cid,proto3" json:"cid,omitempty"`
+	UrlMeta *base.UrlMeta `protobuf:"bytes,2,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
+}
+
+func (x *DeleteTaskRequest) Reset() {
+	*x = DeleteTaskRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DeleteTaskRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteTaskRequest) ProtoMessage() {}
+
+func (x *DeleteTaskRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteTaskRequest.ProtoReflect.Descriptor instead.
+func (*DeleteTaskRequest) Descriptor() ([]byte, []int) {
+	return file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DeleteTaskRequest) GetCid() string {
+	if x != nil {
+		return x.Cid
+	}
+	return ""
+}
+
+func (x *DeleteTaskRequest) GetUrlMeta() *base.UrlMeta {
+	if x != nil {
+		return x.UrlMeta
+	}
+	return nil
+}
+
 var File_pkg_rpc_dfdaemon_dfdaemon_proto protoreflect.FileDescriptor
 
 var file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDesc = []byte{
@@ -306,8 +611,47 @@ var file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDesc = []byte{
 	0x65, 0x74, 0x65, 0x64, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x04, 0x20, 0x01, 0x28,
 	0x04, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x32, 0x02, 0x28, 0x00, 0x52, 0x0f, 0x63, 0x6f, 0x6d, 0x70,
 	0x6c, 0x65, 0x74, 0x65, 0x64, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x12, 0x12, 0x0a, 0x04, 0x64,
-	0x6f, 0x6e, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x04, 0x64, 0x6f, 0x6e, 0x65, 0x32,
-	0xff, 0x01, 0x0a, 0x06, 0x44, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x12, 0x39, 0x0a, 0x08, 0x44, 0x6f,
+	0x6f, 0x6e, 0x65, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x04, 0x64, 0x6f, 0x6e, 0x65, 0x22,
+	0x75, 0x0a, 0x0f, 0x53, 0x74, 0x61, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x19, 0x0a, 0x03, 0x63, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x03, 0x63, 0x69, 0x64, 0x12, 0x28, 0x0a,
+	0x08, 0x75, 0x72, 0x6c, 0x5f, 0x6d, 0x65, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x0d, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x55, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x52, 0x07,
+	0x75, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x12, 0x1d, 0x0a, 0x0a, 0x6c, 0x6f, 0x63, 0x61, 0x6c,
+	0x5f, 0x6f, 0x6e, 0x6c, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x6c, 0x6f, 0x63,
+	0x61, 0x6c, 0x4f, 0x6e, 0x6c, 0x79, 0x22, 0x75, 0x0a, 0x11, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74,
+	0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x03, 0x63,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10,
+	0x01, 0x52, 0x03, 0x63, 0x69, 0x64, 0x12, 0x28, 0x0a, 0x08, 0x75, 0x72, 0x6c, 0x5f, 0x6d, 0x65,
+	0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e,
+	0x55, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x52, 0x07, 0x75, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61,
+	0x12, 0x1b, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07,
+	0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x22, 0xa5, 0x02,
+	0x0a, 0x11, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x03, 0x63, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x03, 0x63, 0x69, 0x64, 0x12, 0x1f,
+	0x0a, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07,
+	0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x06, 0x6f, 0x75, 0x74, 0x70, 0x75, 0x74, 0x12,
+	0x21, 0x0a, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f, 0x75, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04,
+	0x42, 0x07, 0xfa, 0x42, 0x04, 0x32, 0x02, 0x28, 0x00, 0x52, 0x07, 0x74, 0x69, 0x6d, 0x65, 0x6f,
+	0x75, 0x74, 0x12, 0x24, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x01, 0x42, 0x0e, 0xfa, 0x42, 0x0b, 0x12, 0x09, 0x29, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x12, 0x28, 0x0a, 0x08, 0x75, 0x72, 0x6c, 0x5f,
+	0x6d, 0x65, 0x74, 0x61, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x62, 0x61, 0x73,
+	0x65, 0x2e, 0x55, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x52, 0x07, 0x75, 0x72, 0x6c, 0x4d, 0x65,
+	0x74, 0x61, 0x12, 0x1e, 0x0a, 0x0a, 0x63, 0x61, 0x6c, 0x6c, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x63, 0x61, 0x6c, 0x6c, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x69, 0x64, 0x18, 0x07, 0x20, 0x01, 0x28, 0x03, 0x52,
+	0x03, 0x75, 0x69, 0x64, 0x12, 0x10, 0x0a, 0x03, 0x67, 0x69, 0x64, 0x18, 0x08, 0x20, 0x01, 0x28,
+	0x03, 0x52, 0x03, 0x67, 0x69, 0x64, 0x12, 0x1d, 0x0a, 0x0a, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x5f,
+	0x6f, 0x6e, 0x6c, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x6c, 0x6f, 0x63, 0x61,
+	0x6c, 0x4f, 0x6e, 0x6c, 0x79, 0x22, 0x58, 0x0a, 0x11, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54,
+	0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x19, 0x0a, 0x03, 0x63, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01,
+	0x52, 0x03, 0x63, 0x69, 0x64, 0x12, 0x28, 0x0a, 0x08, 0x75, 0x72, 0x6c, 0x5f, 0x6d, 0x65, 0x74,
+	0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x55,
+	0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x52, 0x07, 0x75, 0x72, 0x6c, 0x4d, 0x65, 0x74, 0x61, 0x32,
+	0x87, 0x04, 0x0a, 0x06, 0x44, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x12, 0x39, 0x0a, 0x08, 0x44, 0x6f,
 	0x77, 0x6e, 0x6c, 0x6f, 0x61, 0x64, 0x12, 0x15, 0x2e, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f,
 	0x6e, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x14, 0x2e,
 	0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2e, 0x44, 0x6f, 0x77, 0x6e, 0x52, 0x65, 0x73,
@@ -323,10 +667,26 @@ var file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDesc = []byte{
 	0x6b, 0x73, 0x12, 0x16, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x50, 0x69, 0x65, 0x63, 0x65, 0x54,
 	0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x11, 0x2e, 0x62, 0x61, 0x73,
 	0x65, 0x2e, 0x50, 0x69, 0x65, 0x63, 0x65, 0x50, 0x61, 0x63, 0x6b, 0x65, 0x74, 0x28, 0x01, 0x30,
-	0x01, 0x42, 0x26, 0x5a, 0x24, 0x64, 0x37, 0x79, 0x2e, 0x69, 0x6f, 0x2f, 0x64, 0x72, 0x61, 0x67,
-	0x6f, 0x6e, 0x66, 0x6c, 0x79, 0x2f, 0x76, 0x32, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x70, 0x63,
-	0x2f, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x01, 0x12, 0x3d, 0x0a, 0x08, 0x53, 0x74, 0x61, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x12, 0x19, 0x2e,
+	0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2e, 0x53, 0x74, 0x61, 0x74, 0x54, 0x61, 0x73,
+	0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c,
+	0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79,
+	0x12, 0x41, 0x0a, 0x0a, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x12, 0x1b,
+	0x2e, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2e, 0x49, 0x6d, 0x70, 0x6f, 0x72, 0x74,
+	0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d,
+	0x70, 0x74, 0x79, 0x12, 0x41, 0x0a, 0x0a, 0x45, 0x78, 0x70, 0x6f, 0x72, 0x74, 0x54, 0x61, 0x73,
+	0x6b, 0x12, 0x1b, 0x2e, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2e, 0x45, 0x78, 0x70,
+	0x6f, 0x72, 0x74, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x16,
+	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
+	0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x12, 0x41, 0x0a, 0x0a, 0x44, 0x65, 0x6c, 0x65, 0x74, 0x65,
+	0x54, 0x61, 0x73, 0x6b, 0x12, 0x1b, 0x2e, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f, 0x6e, 0x2e,
+	0x44, 0x65, 0x6c, 0x65, 0x74, 0x65, 0x54, 0x61, 0x73, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x16, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x62, 0x75, 0x66, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x42, 0x26, 0x5a, 0x24, 0x64, 0x37, 0x79,
+	0x2e, 0x69, 0x6f, 0x2f, 0x64, 0x72, 0x61, 0x67, 0x6f, 0x6e, 0x66, 0x6c, 0x79, 0x2f, 0x76, 0x32,
+	0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x70, 0x63, 0x2f, 0x64, 0x66, 0x64, 0x61, 0x65, 0x6d, 0x6f,
+	0x6e, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -341,30 +701,46 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP() []byte {
 	return file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescData
 }
 
-var file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_pkg_rpc_dfdaemon_dfdaemon_proto_goTypes = []interface{}{
 	(*DownRequest)(nil),           // 0: dfdaemon.DownRequest
 	(*DownResult)(nil),            // 1: dfdaemon.DownResult
-	(*base.UrlMeta)(nil),          // 2: base.UrlMeta
-	(*base.PieceTaskRequest)(nil), // 3: base.PieceTaskRequest
-	(*emptypb.Empty)(nil),         // 4: google.protobuf.Empty
-	(*base.PiecePacket)(nil),      // 5: base.PiecePacket
+	(*StatTaskRequest)(nil),       // 2: dfdaemon.StatTaskRequest
+	(*ImportTaskRequest)(nil),     // 3: dfdaemon.ImportTaskRequest
+	(*ExportTaskRequest)(nil),     // 4: dfdaemon.ExportTaskRequest
+	(*DeleteTaskRequest)(nil),     // 5: dfdaemon.DeleteTaskRequest
+	(*base.UrlMeta)(nil),          // 6: base.UrlMeta
+	(*base.PieceTaskRequest)(nil), // 7: base.PieceTaskRequest
+	(*emptypb.Empty)(nil),         // 8: google.protobuf.Empty
+	(*base.PiecePacket)(nil),      // 9: base.PiecePacket
 }
 var file_pkg_rpc_dfdaemon_dfdaemon_proto_depIdxs = []int32{
-	2, // 0: dfdaemon.DownRequest.url_meta:type_name -> base.UrlMeta
-	0, // 1: dfdaemon.Daemon.Download:input_type -> dfdaemon.DownRequest
-	3, // 2: dfdaemon.Daemon.GetPieceTasks:input_type -> base.PieceTaskRequest
-	4, // 3: dfdaemon.Daemon.CheckHealth:input_type -> google.protobuf.Empty
-	3, // 4: dfdaemon.Daemon.SyncPieceTasks:input_type -> base.PieceTaskRequest
-	1, // 5: dfdaemon.Daemon.Download:output_type -> dfdaemon.DownResult
-	5, // 6: dfdaemon.Daemon.GetPieceTasks:output_type -> base.PiecePacket
-	4, // 7: dfdaemon.Daemon.CheckHealth:output_type -> google.protobuf.Empty
-	5, // 8: dfdaemon.Daemon.SyncPieceTasks:output_type -> base.PiecePacket
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	6,  // 0: dfdaemon.DownRequest.url_meta:type_name -> base.UrlMeta
+	6,  // 1: dfdaemon.StatTaskRequest.url_meta:type_name -> base.UrlMeta
+	6,  // 2: dfdaemon.ImportTaskRequest.url_meta:type_name -> base.UrlMeta
+	6,  // 3: dfdaemon.ExportTaskRequest.url_meta:type_name -> base.UrlMeta
+	6,  // 4: dfdaemon.DeleteTaskRequest.url_meta:type_name -> base.UrlMeta
+	0,  // 5: dfdaemon.Daemon.Download:input_type -> dfdaemon.DownRequest
+	7,  // 6: dfdaemon.Daemon.GetPieceTasks:input_type -> base.PieceTaskRequest
+	8,  // 7: dfdaemon.Daemon.CheckHealth:input_type -> google.protobuf.Empty
+	7,  // 8: dfdaemon.Daemon.SyncPieceTasks:input_type -> base.PieceTaskRequest
+	2,  // 9: dfdaemon.Daemon.StatTask:input_type -> dfdaemon.StatTaskRequest
+	3,  // 10: dfdaemon.Daemon.ImportTask:input_type -> dfdaemon.ImportTaskRequest
+	4,  // 11: dfdaemon.Daemon.ExportTask:input_type -> dfdaemon.ExportTaskRequest
+	5,  // 12: dfdaemon.Daemon.DeleteTask:input_type -> dfdaemon.DeleteTaskRequest
+	1,  // 13: dfdaemon.Daemon.Download:output_type -> dfdaemon.DownResult
+	9,  // 14: dfdaemon.Daemon.GetPieceTasks:output_type -> base.PiecePacket
+	8,  // 15: dfdaemon.Daemon.CheckHealth:output_type -> google.protobuf.Empty
+	9,  // 16: dfdaemon.Daemon.SyncPieceTasks:output_type -> base.PiecePacket
+	8,  // 17: dfdaemon.Daemon.StatTask:output_type -> google.protobuf.Empty
+	8,  // 18: dfdaemon.Daemon.ImportTask:output_type -> google.protobuf.Empty
+	8,  // 19: dfdaemon.Daemon.ExportTask:output_type -> google.protobuf.Empty
+	8,  // 20: dfdaemon.Daemon.DeleteTask:output_type -> google.protobuf.Empty
+	13, // [13:21] is the sub-list for method output_type
+	5,  // [5:13] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_pkg_rpc_dfdaemon_dfdaemon_proto_init() }
@@ -397,6 +773,54 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StatTaskRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ImportTaskRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ExportTaskRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DeleteTaskRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -404,7 +828,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
@@ -438,6 +862,14 @@ type DaemonClient interface {
 	CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Sync piece tasks with other peers
 	SyncPieceTasks(ctx context.Context, opts ...grpc.CallOption) (Daemon_SyncPieceTasksClient, error)
+	// Check if given task exists in P2P cache system
+	StatTask(ctx context.Context, in *StatTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Import the given file into P2P cache system
+	ImportTask(ctx context.Context, in *ImportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Export or download file from P2P cache system
+	ExportTask(ctx context.Context, in *ExportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Delete file from P2P cache system
+	DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type daemonClient struct {
@@ -529,6 +961,42 @@ func (x *daemonSyncPieceTasksClient) Recv() (*base.PiecePacket, error) {
 	return m, nil
 }
 
+func (c *daemonClient) StatTask(ctx context.Context, in *StatTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/dfdaemon.Daemon/StatTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonClient) ImportTask(ctx context.Context, in *ImportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/dfdaemon.Daemon/ImportTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonClient) ExportTask(ctx context.Context, in *ExportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/dfdaemon.Daemon/ExportTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *daemonClient) DeleteTask(ctx context.Context, in *DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/dfdaemon.Daemon/DeleteTask", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DaemonServer is the server API for Daemon service.
 type DaemonServer interface {
 	// Trigger client to download file
@@ -539,6 +1007,14 @@ type DaemonServer interface {
 	CheckHealth(context.Context, *emptypb.Empty) (*emptypb.Empty, error)
 	// Sync piece tasks with other peers
 	SyncPieceTasks(Daemon_SyncPieceTasksServer) error
+	// Check if given task exists in P2P cache system
+	StatTask(context.Context, *StatTaskRequest) (*emptypb.Empty, error)
+	// Import the given file into P2P cache system
+	ImportTask(context.Context, *ImportTaskRequest) (*emptypb.Empty, error)
+	// Export or download file from P2P cache system
+	ExportTask(context.Context, *ExportTaskRequest) (*emptypb.Empty, error)
+	// Delete file from P2P cache system
+	DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error)
 }
 
 // UnimplementedDaemonServer can be embedded to have forward compatible implementations.
@@ -556,6 +1032,18 @@ func (*UnimplementedDaemonServer) CheckHealth(context.Context, *emptypb.Empty) (
 }
 func (*UnimplementedDaemonServer) SyncPieceTasks(Daemon_SyncPieceTasksServer) error {
 	return status.Errorf(codes.Unimplemented, "method SyncPieceTasks not implemented")
+}
+func (*UnimplementedDaemonServer) StatTask(context.Context, *StatTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StatTask not implemented")
+}
+func (*UnimplementedDaemonServer) ImportTask(context.Context, *ImportTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ImportTask not implemented")
+}
+func (*UnimplementedDaemonServer) ExportTask(context.Context, *ExportTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExportTask not implemented")
+}
+func (*UnimplementedDaemonServer) DeleteTask(context.Context, *DeleteTaskRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteTask not implemented")
 }
 
 func RegisterDaemonServer(s *grpc.Server, srv DaemonServer) {
@@ -645,6 +1133,78 @@ func (x *daemonSyncPieceTasksServer) Recv() (*base.PieceTaskRequest, error) {
 	return m, nil
 }
 
+func _Daemon_StatTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StatTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServer).StatTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/dfdaemon.Daemon/StatTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServer).StatTask(ctx, req.(*StatTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Daemon_ImportTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServer).ImportTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/dfdaemon.Daemon/ImportTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServer).ImportTask(ctx, req.(*ImportTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Daemon_ExportTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExportTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServer).ExportTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/dfdaemon.Daemon/ExportTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServer).ExportTask(ctx, req.(*ExportTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Daemon_DeleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DaemonServer).DeleteTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/dfdaemon.Daemon/DeleteTask",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DaemonServer).DeleteTask(ctx, req.(*DeleteTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Daemon_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "dfdaemon.Daemon",
 	HandlerType: (*DaemonServer)(nil),
@@ -656,6 +1216,22 @@ var _Daemon_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckHealth",
 			Handler:    _Daemon_CheckHealth_Handler,
+		},
+		{
+			MethodName: "StatTask",
+			Handler:    _Daemon_StatTask_Handler,
+		},
+		{
+			MethodName: "ImportTask",
+			Handler:    _Daemon_ImportTask_Handler,
+		},
+		{
+			MethodName: "ExportTask",
+			Handler:    _Daemon_ExportTask_Handler,
+		},
+		{
+			MethodName: "DeleteTask",
+			Handler:    _Daemon_DeleteTask_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

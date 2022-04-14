@@ -82,9 +82,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
 		// peer will download the task back-to-source
-		cdnPeer, ok := peer.Task.LoadCDNPeer()
-		if (n >= s.config.RetryBackSourceLimit ||
-			ok && cdnPeer.FSM.Is(resource.PeerStateFailed)) &&
+		if (n >= s.config.RetryBackSourceLimit || peer.Task.IsCDNFailed()) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -97,8 +95,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				peer.Log.Errorf("send packet failed: %v", err)
 				return
 			}
-			peer.Log.Infof("peer scheduling %d times and cdn peer is %#v, peer downloads back-to-source %d",
-				n, cdnPeer, base.Code_SchedNeedBackSource)
+			peer.Log.Infof("peer scheduling %d times, peer downloads back-to-source %d",
+				n, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %v", err)

@@ -40,10 +40,10 @@ var (
 			"content-length": "100",
 		},
 	}
-	mockTaskURL               = "http://example.com/foo"
-	mockTaskBackToSourceLimit = 200
-	mockTaskID                = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPieceInfo             = &base.PieceInfo{
+	mockTaskBackToSourceLimit int32 = 200
+	mockTaskURL                     = "http://example.com/foo"
+	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPieceInfo                   = &base.PieceInfo{
 		PieceNum:    1,
 		RangeStart:  0,
 		RangeSize:   100,
@@ -58,7 +58,7 @@ func TestTask_NewTask(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task)
 	}{
 		{
@@ -89,7 +89,7 @@ func TestTask_NewTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta))
+			tc.expect(t, NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit)))
 		})
 	}
 }
@@ -100,7 +100,7 @@ func TestTask_LoadPeer(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		peerID            string
 		expect            func(t *testing.T, peer *Peer, ok bool)
 	}{
@@ -146,7 +146,7 @@ func TestTask_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -162,7 +162,7 @@ func TestTask_StorePeer(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		peerID            string
 		expect            func(t *testing.T, peer *Peer, ok bool)
 	}{
@@ -197,7 +197,7 @@ func TestTask_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -213,7 +213,7 @@ func TestTask_LoadOrStorePeer(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		peerID            string
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
@@ -253,7 +253,7 @@ func TestTask_LoadOrStorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -268,7 +268,7 @@ func TestTask_DeletePeer(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		peerID            string
 		expect            func(t *testing.T, task *Task)
 	}{
@@ -304,7 +304,7 @@ func TestTask_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -320,7 +320,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
 	}{
 		{
@@ -353,7 +353,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, task, mockPeer)
@@ -361,7 +361,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	}
 }
 
-func TestTask_CDNPeers(t *testing.T) {
+func TestTask_LoadCDNPeer(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer)
@@ -416,7 +416,58 @@ func TestTask_CDNPeers(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
-			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockPeer := NewPeer(mockPeerID, task, mockHost)
+			mockCDNPeer := NewPeer(mockCDNPeerID, task, mockCDNHost)
+
+			tc.expect(t, task, mockPeer, mockCDNPeer)
+		})
+	}
+}
+
+func TestTask_IsCDNFailed(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer)
+	}{
+		{
+			name: "cdn state is PeerStateFailed",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				task.StorePeer(mockCDNPeer)
+				mockCDNPeer.FSM.SetState(PeerStateFailed)
+
+				assert.True(task.IsCDNFailed())
+			},
+		},
+		{
+			name: "can not find cdn peer",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+
+				assert.False(task.IsCDNFailed())
+			},
+		},
+		{
+			name: "cdn state is PeerStateSucceeded",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				task.StorePeer(mockCDNPeer)
+				mockCDNPeer.FSM.SetState(PeerStateSucceeded)
+
+				assert.False(task.IsCDNFailed())
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockCDNPeer := NewPeer(mockCDNPeerID, task, mockCDNHost)
 
@@ -431,7 +482,7 @@ func TestTask_LoadPiece(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		pieceInfo         *base.PieceInfo
 		pieceNum          int32
 		expect            func(t *testing.T, piece *base.PieceInfo, ok bool)
@@ -480,7 +531,7 @@ func TestTask_LoadPiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			piece, ok := task.LoadPiece(tc.pieceNum)
@@ -495,7 +546,7 @@ func TestTask_StorePiece(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		pieceInfo         *base.PieceInfo
 		pieceNum          int32
 		expect            func(t *testing.T, piece *base.PieceInfo, ok bool)
@@ -532,7 +583,7 @@ func TestTask_StorePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			tc.pieceInfo.PieceNum = tc.pieceNum
 			task.StorePiece(tc.pieceInfo)
@@ -548,7 +599,7 @@ func TestTask_LoadOrStorePiece(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		pieceInfo         *base.PieceInfo
 		pieceNum          int32
 		expect            func(t *testing.T, task *Task, mockPiece *base.PieceInfo)
@@ -590,7 +641,7 @@ func TestTask_LoadOrStorePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			tc.expect(t, task, tc.pieceInfo)
@@ -604,7 +655,7 @@ func TestTask_DeletePiece(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		pieceInfo         *base.PieceInfo
 		pieceNum          int32
 		expect            func(t *testing.T, task *Task)
@@ -642,7 +693,7 @@ func TestTask_DeletePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			task.DeletePiece(tc.pieceNum)
@@ -657,7 +708,7 @@ func TestTask_SizeScope(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		contentLength     int64
 		totalPieceCount   int32
 		expect            func(t *testing.T, task *Task)
@@ -705,7 +756,7 @@ func TestTask_SizeScope(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			task.ContentLength.Store(tc.contentLength)
 			task.TotalPieceCount.Store(tc.totalPieceCount)
 			tc.expect(t, task)
@@ -719,7 +770,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 		id                string
 		urlMeta           *base.UrlMeta
 		url               string
-		backToSourceLimit int
+		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task)
 	}{
 		{
@@ -744,11 +795,23 @@ func TestTask_CanBackToSource(t *testing.T) {
 				assert.Equal(task.CanBackToSource(), false)
 			},
 		},
+		{
+			name:              "task type is TaskTypeDfcache",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: 1,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				task.Type = TaskTypeDfcache
+				assert.Equal(task.CanBackToSource(), false)
+			},
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, tc.backToSourceLimit, tc.urlMeta)
+			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			tc.expect(t, task)
 		})
 	}
@@ -827,7 +890,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			task.StorePeer(mockPeer)
 			tc.run(t, task, mockPeer, stream, stream.EXPECT())
