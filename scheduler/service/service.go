@@ -383,8 +383,8 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, s.config.Scheduler.BackSourceCount, req.UrlMeta)
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
-	if loaded && task.HasAvailablePeer() && (task.FSM.Is(resource.TaskStateSucceeded) || task.FSM.Is(resource.TaskStateRunning)) {
-		task.Log.Infof("task state is %s and it has available peer", task.FSM.Current())
+	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
+		task.Log.Infof("task state is %s", task.FSM.Current())
 		return task, nil
 	}
 
