@@ -147,7 +147,7 @@ type peerTaskConductor struct {
 	// requestedPieces stands all pieces requested from peers
 	requestedPieces *Bitmap
 	// lock used by piece download worker
-	requestedPiecesLock sync.Mutex
+	requestedPiecesLock sync.RWMutex
 	// lock used by send piece result
 	sendPieceResultLock sync.Mutex
 	// limiter will be used when enable per peer task rate limit
@@ -546,7 +546,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 
 func (pt *peerTaskConductor) receivePeerPacket(pieceRequestCh chan *DownloadPieceRequest) {
 	var (
-		lastPieceNum        int32 = 0
+		lastNotReadyPiece   int32 = 0
 		peerPacket          *scheduler.PeerPacket
 		err                 error
 		firstPacketReceived bool
@@ -634,11 +634,13 @@ loop:
 			firstPeerSpan.End()
 		}
 		// updateSynchronizer will update legacy peers to peerPacket.StealPeers only
-		pt.updateSynchronizer(lastPieceNum, peerPacket)
+		lastNotReadyPiece = pt.updateSynchronizer(lastNotReadyPiece, peerPacket)
 		if !firstPacketReceived {
 			// trigger legacy get piece once to avoid first schedule timeout
 			firstPacketReceived = true
 		} else if len(peerPacket.StealPeers) == 0 {
+			pt.Debugf("no legacy peers, skip to send peerPacketReady")
+			pt.legacyPeerCount.Store(0)
 			continue
 		}
 
@@ -662,11 +664,11 @@ loop:
 }
 
 // updateSynchronizer will convert peers to synchronizer, if failed, will update failed peers to scheduler.PeerPacket
-func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.PeerPacket) {
-	num, ok := pt.getNextPieceNum(lastNum)
+func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.PeerPacket) int32 {
+	num, ok := pt.getNextNotReadyPieceNum(lastNum)
 	if !ok {
-		pt.Infof("peer task completed")
-		return
+		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
+		return num
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}
 	peers = append(peers, p.StealPeers...)
@@ -675,6 +677,7 @@ func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.Peer
 
 	p.MainPeer = nil
 	p.StealPeers = legacyPeers
+	return num
 }
 
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
@@ -840,7 +843,7 @@ loop:
 		// 3. dispatch piece request to all workers
 		pt.dispatchPieceRequest(pieceRequestCh, piecePacket)
 
-		// 4. get next piece
+		// 4. get next not request piece
 		if num, ok = pt.getNextPieceNum(num); ok {
 			// get next piece success
 			limit = config.DefaultPieceChanSize
@@ -1056,6 +1059,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	if pt.runningPieces.IsSet(request.piece.PieceNum) {
 		pt.runningPiecesLock.Unlock()
 		pt.Log().Debugf("piece %d is downloading, skip", request.piece.PieceNum)
+		// TODO save to queue for failed pieces
 		return
 	}
 	pt.runningPieces.Set(request.piece.PieceNum)
@@ -1165,12 +1169,16 @@ func (pt *peerTaskConductor) isCompleted() bool {
 	return pt.completedLength.Load() == pt.contentLength.Load()
 }
 
+// for legacy peers only
 func (pt *peerTaskConductor) getNextPieceNum(cur int32) (int32, bool) {
 	if pt.isCompleted() {
 		return -1, false
 	}
 	i := cur
 	// try to find next not requested piece
+	pt.requestedPiecesLock.Unlock()
+	defer pt.requestedPiecesLock.RUnlock()
+
 	for ; pt.requestedPieces.IsSet(i); i++ {
 	}
 	totalPiece := pt.GetTotalPieces()
@@ -1180,6 +1188,29 @@ func (pt *peerTaskConductor) getNextPieceNum(cur int32) (int32, bool) {
 		}
 		if totalPiece > 0 && i >= totalPiece {
 			return -1, false
+		}
+	}
+	return i, true
+}
+
+func (pt *peerTaskConductor) getNextNotReadyPieceNum(cur int32) (int32, bool) {
+	if pt.isCompleted() {
+		return 0, false
+	}
+	i := cur
+	// try to find next not ready piece
+	pt.readyPiecesLock.RLock()
+	defer pt.readyPiecesLock.RUnlock()
+
+	for ; pt.readyPieces.IsSet(i); i++ {
+	}
+	totalPiece := pt.GetTotalPieces()
+	if totalPiece > 0 && i >= totalPiece {
+		// double check, re-search
+		for i = int32(0); pt.readyPieces.IsSet(i); i++ {
+		}
+		if totalPiece > 0 && i >= totalPiece {
+			return 0, false
 		}
 	}
 	return i, true
