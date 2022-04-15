@@ -50,6 +50,10 @@ type pieceTaskSynchronizer struct {
 	pieceRequestCh    chan *DownloadPieceRequest
 }
 
+type pieceTaskSynchronizerError struct {
+	err error
+}
+
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
 func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, request *base.PieceTaskRequest) error {
 	var (
@@ -235,7 +239,7 @@ func (s *pieceTaskSyncManager) cancel() {
 
 func (s *pieceTaskSynchronizer) close() {
 	if err := s.client.CloseSend(); err != nil {
-		s.error.Store(err)
+		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
 	}
 }
@@ -294,10 +298,10 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	if err == io.EOF {
 		s.Debugf("synchronizer receives io.EOF")
 	} else if s.canceled(err) {
-		s.error.Store(err)
+		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("synchronizer receives canceled")
 	} else {
-		s.error.Store(err)
+		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.reportError()
 		s.Errorf("synchronizer receives with error: %s", err)
 	}
@@ -305,12 +309,12 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 
 func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
 	if s.error.Load() != nil {
-		s.Debugf("synchronizer already error %s, skip acquire more pieces", s.error.Load())
+		s.Debugf("synchronizer already error %s, skip acquire more pieces", s.error.Load().(*pieceTaskSynchronizerError).err)
 		return
 	}
 	err := s.client.Send(request)
 	if err != nil {
-		s.error.Store(err)
+		s.error.Store(&pieceTaskSynchronizerError{err})
 		if s.canceled(err) {
 			s.Debugf("synchronizer sends canceled")
 			return
