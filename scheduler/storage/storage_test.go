@@ -491,11 +491,6 @@ func TestStorage_openFile(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)))
 				file.Close()
-
-				fileInfos, err := s.(*storage).backups()
-				assert.NoError(err)
-				assert.Equal(len(fileInfos), 3)
-				assert.Equal(fileInfos[2].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
 			},
 		},
 		{
@@ -513,11 +508,6 @@ func TestStorage_openFile(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(file.Name(), filepath.Join(baseDir, fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt)))
 				file.Close()
-
-				fileInfos, err := s.(*storage).backups()
-				assert.NoError(err)
-				assert.Equal(len(fileInfos), 1)
-				assert.Equal(fileInfos[0].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
 			},
 		},
 	}

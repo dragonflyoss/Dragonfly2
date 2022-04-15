@@ -57,27 +57,27 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 
 	globalJob, err := internaljob.New(redisConfig, internaljob.GlobalQueue)
 	if err != nil {
-		logger.Errorf("create global job queue error: %v", err)
+		logger.Errorf("create global job queue error: %s", err.Error())
 		return nil, err
 	}
 	logger.Infof("create global job queue: %v", globalJob)
 
 	schedulerJob, err := internaljob.New(redisConfig, internaljob.SchedulersQueue)
 	if err != nil {
-		logger.Errorf("create scheduler job queue error: %v", err)
+		logger.Errorf("create scheduler job queue error: %s", err.Error())
 		return nil, err
 	}
 	logger.Infof("create scheduler job queue: %v", schedulerJob)
 
 	localQueue, err := internaljob.GetSchedulerQueue(cfg.Manager.SchedulerClusterID, cfg.Server.Host)
 	if err != nil {
-		logger.Errorf("get local job queue name error: %v", err)
+		logger.Errorf("get local job queue name error: %s", err.Error())
 		return nil, err
 	}
 
 	localJob, err := internaljob.New(redisConfig, localQueue)
 	if err != nil {
-		logger.Errorf("create local job queue error: %v", err)
+		logger.Errorf("create local job queue error: %s", err.Error())
 		return nil, err
 	}
 	logger.Infof("create local job queue: %v", localQueue)
@@ -95,7 +95,7 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 	}
 
 	if err := localJob.RegisterJob(namedJobFuncs); err != nil {
-		logger.Errorf("register preheat job to local queue error: %v", err)
+		logger.Errorf("register preheat job to local queue error: %s", err.Error())
 		return nil, err
 	}
 
@@ -106,21 +106,21 @@ func (j *job) Serve() {
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on global queue", j.config.Job.GlobalWorkerNum)
 		if err := j.globalJob.LaunchWorker("global_worker", int(j.config.Job.GlobalWorkerNum)); err != nil {
-			logger.Fatalf("global queue worker error: %v", err)
+			logger.Fatalf("global queue worker error: %s", err.Error())
 		}
 	}()
 
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on scheduler queue", j.config.Job.SchedulerWorkerNum)
 		if err := j.schedulerJob.LaunchWorker("scheduler_worker", int(j.config.Job.SchedulerWorkerNum)); err != nil {
-			logger.Fatalf("scheduler queue worker error: %v", err)
+			logger.Fatalf("scheduler queue worker error: %s", err.Error())
 		}
 	}()
 
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on local queue", j.config.Job.LocalWorkerNum)
 		if err := j.localJob.LaunchWorker("local_worker", int(j.config.Job.LocalWorkerNum)); err != nil {
-			logger.Fatalf("scheduler queue worker error: %v", err)
+			logger.Fatalf("scheduler queue worker error: %s", err.Error())
 		}
 	}()
 }
@@ -138,12 +138,12 @@ func (j *job) preheat(ctx context.Context, req string) error {
 
 	request := &internaljob.PreheatRequest{}
 	if err := internaljob.UnmarshalRequest(req, request); err != nil {
-		logger.Errorf("unmarshal request err: %v, request body: %s", err, req)
+		logger.Errorf("unmarshal request err: %s, request body: %s", err.Error(), req)
 		return err
 	}
 
 	if err := validator.New().Struct(request); err != nil {
-		logger.Errorf("url %s validate failed: %v", request.URL, err)
+		logger.Errorf("url %s validate failed: %s", request.URL, err.Error())
 		return err
 	}
 
@@ -172,14 +172,14 @@ func (j *job) preheat(ctx context.Context, req string) error {
 		UrlMeta: urlMeta,
 	})
 	if err != nil {
-		log.Errorf("preheat failed: %v", err)
+		log.Errorf("preheat failed: %s", err.Error())
 		return err
 	}
 
 	for {
 		piece, err := stream.Recv()
 		if err != nil {
-			log.Errorf("preheat recive piece failed: %v", err)
+			log.Errorf("preheat recive piece failed: %s", err.Error())
 			return err
 		}
 
