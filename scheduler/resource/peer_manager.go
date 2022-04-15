@@ -141,7 +141,7 @@ func (p *peerManager) RunGC() error {
 			// If the peer is not leave,
 			// first change the state to PeerEventLeave
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			}
 
 			peer.Log.Info("gc causes the peer to leave")
