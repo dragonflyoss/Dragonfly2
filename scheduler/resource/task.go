@@ -337,13 +337,13 @@ func (t *Task) NotifyPeers(code base.Code, event string) {
 			}
 
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: code}); err != nil {
-				t.Log.Errorf("send packet to peer %s failed: %v", peer.ID, err)
+				t.Log.Errorf("send packet to peer %s failed: %s", peer.ID, err.Error())
 				return true
 			}
 			t.Log.Infof("task notify peer %s code %s", peer.ID, code)
 
 			if err := peer.FSM.Event(event); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 		}
