@@ -219,12 +219,16 @@ func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPe
 }
 
 // acquire send the target piece to other peers
-func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) {
+func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) (attempt int, success int) {
 	s.RLock()
 	for _, p := range s.workers {
-		p.acquire(request)
+		attempt++
+		if p.acquire(request) == nil {
+			success++
+		}
 	}
 	s.RUnlock()
+	return
 }
 
 func (s *pieceTaskSyncManager) cancel() {
@@ -307,22 +311,23 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	}
 }
 
-func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
+func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 	if s.error.Load() != nil {
-		s.Debugf("synchronizer already error %s, skip acquire more pieces", s.error.Load().(*pieceTaskSynchronizerError).err)
-		return
+		err := s.error.Load().(*pieceTaskSynchronizerError).err
+		s.Debugf("synchronizer already error %s, skip acquire more pieces", err)
+		return err
 	}
 	err := s.client.Send(request)
 	if err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		if s.canceled(err) {
 			s.Debugf("synchronizer sends canceled")
-			return
+		} else {
+			s.Errorf("synchronizer sends with error: %s", err)
+			s.reportError()
 		}
-		s.Errorf("synchronizer sends with error: %s", err)
-		s.reportError()
-		return
 	}
+	return err
 }
 
 func (s *pieceTaskSynchronizer) reportError() {

@@ -1033,6 +1033,9 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 			}
 			pt.readyPiecesLock.RUnlock()
 			pt.downloadPiece(id, request)
+		case <-pt.pieceDownloadCtx.Done():
+			pt.Infof("piece download cancelled, peer download worker #%d exit", id)
+			return
 		case <-pt.successCh:
 			pt.Infof("peer task success, peer download worker #%d exit", id)
 			return
@@ -1085,13 +1088,18 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 			pt.Infof("switch to back source, skip send failed piece")
 			return
 		}
-		pt.pieceTaskSyncManager.acquire(
+		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskID,
 				SrcPid:   pt.peerID,
 				StartNum: uint32(request.piece.PieceNum),
 				Limit:    1,
 			})
+		pt.Infof("send failed piece to remote, attempt: %d, success: %s", attempt, success)
+		// when send to remote peer ok, skip send to failedPieceCh
+		if success > 0 {
+			return
+		}
 		// Deprecated
 		// send to fail chan and retry
 		// try to send directly first, if failed channel is busy, create a new goroutine to do this
