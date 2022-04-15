@@ -851,7 +851,7 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *base.PiecePacket) {
 	}
 
 	// update content length
-	if piecePacket.ContentLength > -1 {
+	if piecePacket.ContentLength > -1 && pt.GetContentLength() == -1 {
 		metadataChanged = true
 		pt.SetContentLength(piecePacket.ContentLength)
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))

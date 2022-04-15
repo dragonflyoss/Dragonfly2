@@ -103,10 +103,15 @@ func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacke
 
 	// cancel old workers
 	if len(s.workers) != len(peers) {
+		var peersToRemove []string
 		for p, worker := range s.workers {
 			if !peers[p] {
 				worker.close()
+				peersToRemove = append(peersToRemove, p)
 			}
+		}
+		for _, p := range peersToRemove {
+			delete(s.workers, p)
 		}
 	}
 }
@@ -118,10 +123,13 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 
 	request.DstPid = dstPeer.PeerId
 	if worker, ok := s.workers[dstPeer.PeerId]; ok {
-		// clean error worker
-		if worker.error.Load() != nil {
-			delete(s.workers, dstPeer.PeerId)
+		// worker is okay, keep it go on
+		if worker.error.Load() == nil {
+			s.peerTaskConductor.Infof("reuse PieceTaskSynchronizer %s", dstPeer.PeerId)
+			return nil
 		}
+		// clean error worker
+		delete(s.workers, dstPeer.PeerId)
 	}
 
 	request.DstPid = dstPeer.PeerId
@@ -216,12 +224,13 @@ func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) {
 }
 
 func (s *pieceTaskSyncManager) cancel() {
-	s.RLock()
+	s.ctxCancel()
+	s.Lock()
 	for _, p := range s.workers {
 		p.close()
 	}
-	s.RUnlock()
-	s.ctxCancel()
+	s.workers = map[string]*pieceTaskSynchronizer{}
+	s.Unlock()
 }
 
 func (s *pieceTaskSynchronizer) close() {
@@ -242,10 +251,11 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		if finished {
 			s.peerTaskConductor.Done()
 		}
+		return
 	}
 	for _, piece := range piecePacket.PieceInfos {
-		s.Infof("got piece %d from %s/%s, digest: %s, start: %d, size: %d, dest peer: %s",
-			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize, s.dstPeer.PeerId)
+		s.Infof("got piece %d from %s/%s, digest: %s, start: %d, size: %d",
+			piece.PieceNum, piecePacket.DstAddr, piecePacket.DstPid, piece.PieceMd5, piece.RangeStart, piece.RangeSize)
 		// FIXME when set total piece but no total digest, fetch again
 		s.peerTaskConductor.requestedPiecesLock.Lock()
 		if !s.peerTaskConductor.requestedPieces.IsSet(piece.PieceNum) {
@@ -272,40 +282,40 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 }
 
 func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
-	var (
-		err error
-	)
-	s.dispatchPieceRequest(piecePacket)
+	var err error
 	for {
-		piecePacket, err = s.client.Recv()
-		if err == io.EOF {
-			s.Debugf("synchronizer receives io.EOF")
-			return
-		}
-		if err != nil {
-			if s.canceled(err) {
-				s.Debugf("synchronizer receives canceled")
-				return
-			}
-			s.error.Store(err)
-			s.reportError()
-			s.Errorf("synchronizer receives with error: %s", err)
-			return
-		}
-
 		s.dispatchPieceRequest(piecePacket)
+		piecePacket, err = s.client.Recv()
+		if err != nil {
+			break
+		}
+	}
+
+	if err == io.EOF {
+		s.Debugf("synchronizer receives io.EOF")
+	} else if s.canceled(err) {
+		s.error.Store(err)
+		s.Debugf("synchronizer receives canceled")
+	} else {
+		s.error.Store(err)
+		s.reportError()
+		s.Errorf("synchronizer receives with error: %s", err)
 	}
 }
 
 func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) {
+	if s.error.Load() != nil {
+		s.Debugf("synchronizer already error %s, skip acquire more pieces", s.error.Load())
+		return
+	}
 	err := s.client.Send(request)
 	if err != nil {
+		s.error.Store(err)
 		if s.canceled(err) {
 			s.Debugf("synchronizer sends canceled")
 			return
 		}
 		s.Errorf("synchronizer sends with error: %s", err)
-		s.error.Store(err)
 		s.reportError()
 		return
 	}
