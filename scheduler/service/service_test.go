@@ -92,6 +92,7 @@ var (
 	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
 	mockPeerID                      = idgen.PeerID("127.0.0.1")
 	mockCDNPeerID                   = idgen.CDNPeerID("127.0.0.1")
+	mockCID                         = "d7y://foo"
 )
 
 func TestService_New(t *testing.T) {
@@ -1060,6 +1061,343 @@ func TestService_ReportPeerResult(t *testing.T) {
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(mockPeer, res, peerManager, res.EXPECT(), peerManager.EXPECT(), storage.EXPECT())
 			tc.expect(t, mockPeer, svc.ReportPeerResult(context.Background(), tc.req))
+		})
+	}
+}
+
+func TestService_StatTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder)
+		expect func(t *testing.T, task *rpcscheduler.Task, err error)
+	}{
+		{
+			name: "task not found",
+			mock: func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Any()).Return(nil, false).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *rpcscheduler.Task, err error) {
+				assert := assert.New(t)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "stat task",
+			mock: func(mockTask *resource.Task, taskManager resource.TaskManager, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder) {
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.Load(gomock.Any()).Return(mockTask, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, task *rpcscheduler.Task, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.EqualValues(task, &rpcscheduler.Task{
+					Id:               mockTaskID,
+					Type:             resource.TaskTypeNormal,
+					ContentLength:    0,
+					TotalPieceCount:  0,
+					State:            resource.TaskStatePending,
+					PeerCount:        0,
+					HasAvailablePeer: false,
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			taskManager := resource.NewMockTaskManager(ctl)
+			svc := New(&config.Config{Scheduler: mockSchedulerConfig, Metrics: &config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+
+			tc.mock(mockTask, taskManager, res.EXPECT(), taskManager.EXPECT())
+			task, err := svc.StatTask(context.Background(), &rpcscheduler.StatTaskRequest{TaskId: mockTaskID})
+			tc.expect(t, task, err)
+		})
+	}
+}
+
+func TestService_AnnounceTask(t *testing.T) {
+	tests := []struct {
+		name string
+		req  *rpcscheduler.AnnounceTaskRequest
+		mock func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+			hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+			mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder)
+		expect func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error)
+	}{
+		{
+			name: "PieceInfos is empty",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				PiecePacket: &base.PiecePacket{},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				dferr, ok := err.(*dferrors.DfError)
+				assert.True(ok)
+				assert.Equal(dferr.Code, base.Code_BadRequest)
+			},
+		},
+		{
+			name: "PieceInfos length not equal to TotalPiece",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				PiecePacket: &base.PiecePacket{
+					TotalPiece: 1,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				dferr, ok := err.(*dferrors.DfError)
+				assert.True(ok)
+				assert.Equal(dferr.Code, base.Code_BadRequest)
+			},
+		},
+		{
+			name: "task state is TaskStateSucceeded and peer state is PeerStateSucceeded",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				TaskId:  mockTaskID,
+				Cid:     mockCID,
+				UrlMeta: &base.UrlMeta{},
+				PeerHost: &rpcscheduler.PeerHost{
+					Uuid: mockRawHost.Uuid,
+				},
+				PiecePacket: &base.PiecePacket{
+					PieceInfos: []*base.PieceInfo{{PieceNum: 1}},
+					TotalPiece: 1,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateSucceeded)
+				mockPeer.FSM.SetState(resource.PeerStateSucceeded)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
+				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
+			},
+		},
+		{
+			name: "task state is TaskStatePending and peer state is PeerStateSucceeded",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				TaskId:   mockTaskID,
+				Cid:      mockCID,
+				UrlMeta:  &base.UrlMeta{},
+				PeerHost: mockRawHost,
+				PiecePacket: &base.PiecePacket{
+					PieceInfos:    []*base.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
+					TotalPiece:    1,
+					ContentLength: 1000,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.FSM.SetState(resource.PeerStateSucceeded)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
+				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
+				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
+				piece, ok := mockTask.LoadPiece(1)
+				assert.True(ok)
+				assert.EqualValues(piece, &base.PieceInfo{PieceNum: 1, DownloadCost: 1})
+
+				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
+				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
+			},
+		},
+		{
+			name: "task state is TaskStateFailed and peer state is PeerStateSucceeded",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				TaskId:   mockTaskID,
+				Cid:      mockCID,
+				UrlMeta:  &base.UrlMeta{},
+				PeerHost: mockRawHost,
+				PiecePacket: &base.PiecePacket{
+					PieceInfos:    []*base.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
+					TotalPiece:    1,
+					ContentLength: 1000,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStateFailed)
+				mockPeer.FSM.SetState(resource.PeerStateSucceeded)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
+				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
+				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
+				piece, ok := mockTask.LoadPiece(1)
+				assert.True(ok)
+
+				assert.EqualValues(piece, &base.PieceInfo{PieceNum: 1, DownloadCost: 1})
+				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
+				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
+			},
+		},
+		{
+			name: "task state is TaskStatePending and peer state is PeerStatePending",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				TaskId:   mockTaskID,
+				Cid:      mockCID,
+				UrlMeta:  &base.UrlMeta{},
+				PeerHost: mockRawHost,
+				PiecePacket: &base.PiecePacket{
+					PieceInfos:    []*base.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
+					TotalPiece:    1,
+					ContentLength: 1000,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.FSM.SetState(resource.PeerStatePending)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
+				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
+				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
+				piece, ok := mockTask.LoadPiece(1)
+				assert.True(ok)
+
+				assert.EqualValues(piece, &base.PieceInfo{PieceNum: 1, DownloadCost: 1})
+				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
+				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
+			},
+		},
+		{
+			name: "task state is TaskStatePending and peer state is PeerStateReceivedNormal",
+			req: &rpcscheduler.AnnounceTaskRequest{
+				TaskId:   mockTaskID,
+				Cid:      mockCID,
+				UrlMeta:  &base.UrlMeta{},
+				PeerHost: mockRawHost,
+				PiecePacket: &base.PiecePacket{
+					PieceInfos:    []*base.PieceInfo{{PieceNum: 1, DownloadCost: 1}},
+					TotalPiece:    1,
+					ContentLength: 1000,
+				},
+			},
+			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
+				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
+				mockTask.FSM.SetState(resource.TaskStatePending)
+				mockPeer.FSM.SetState(resource.PeerStateReceivedNormal)
+
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Any()).Return(mockHost, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(mockTask.FSM.Current(), resource.TaskStateSucceeded)
+				assert.Equal(mockTask.TotalPieceCount.Load(), int32(1))
+				assert.Equal(mockTask.ContentLength.Load(), int64(1000))
+				piece, ok := mockTask.LoadPiece(1)
+				assert.True(ok)
+
+				assert.EqualValues(piece, &base.PieceInfo{PieceNum: 1, DownloadCost: 1})
+				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
+				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			scheduler := mocks.NewMockScheduler(ctl)
+			res := resource.NewMockResource(ctl)
+			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
+			storage := storagemocks.NewMockStorage(ctl)
+			hostManager := resource.NewMockHostManager(ctl)
+			taskManager := resource.NewMockTaskManager(ctl)
+			peerManager := resource.NewMockPeerManager(ctl)
+			svc := New(&config.Config{Scheduler: mockSchedulerConfig, Metrics: &config.MetricsConfig{EnablePeerHost: true}}, res, scheduler, dynconfig, storage)
+			mockHost := resource.NewHost(mockRawHost)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
+
+			tc.mock(mockHost, mockTask, mockPeer, hostManager, taskManager, peerManager, res.EXPECT(), hostManager.EXPECT(), taskManager.EXPECT(), peerManager.EXPECT())
+			tc.expect(t, mockTask, mockPeer, svc.AnnounceTask(context.Background(), tc.req))
 		})
 	}
 }
