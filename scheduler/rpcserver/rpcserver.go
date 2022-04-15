@@ -57,7 +57,6 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	if req.UrlMeta.Tag != "" {
 		bizTag = req.UrlMeta.Tag
 	}
-
 	metrics.RegisterPeerTaskCount.WithLabelValues(bizTag).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
@@ -85,14 +84,25 @@ func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult
 
 // StatTask checks if the given task exists
 func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (*scheduler.Task, error) {
-	// TODO: add metrics
-	return s.service.StatTask(ctx, req)
+	metrics.StatTaskCount.Inc()
+	task, err := s.service.StatTask(ctx, req)
+	if err != nil {
+		metrics.StatTaskFailureCount.Inc()
+		return nil, err
+	}
+
+	return task, nil
 }
 
 // AnnounceTask informs scheduler a peer has completed task
 func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
-	// TODO: add metrics
-	return new(empty.Empty), s.service.AnnounceTask(ctx, req)
+	metrics.AnnounceCount.Inc()
+	if err := s.service.AnnounceTask(ctx, req); err != nil {
+		metrics.AnnounceFailureCount.Inc()
+		return new(empty.Empty), err
+	}
+
+	return new(empty.Empty), nil
 }
 
 // LeaveTask makes the peer unschedulable

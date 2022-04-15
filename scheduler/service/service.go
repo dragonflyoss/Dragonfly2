@@ -327,8 +327,8 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		logger.Error(msg)
 		return dferrors.New(base.Code_SchedPeerNotFound, msg)
 	}
-
 	metrics.DownloadCount.WithLabelValues(peer.BizTag).Inc()
+
 	if !req.Success {
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -346,10 +346,9 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
-
-	peer.Log.Infof("report peer result: %#v", req)
 	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.BizTag).Observe(float64(req.Cost))
 
+	peer.Log.Infof("report peer result: %#v", req)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
 		s.createRecord(peer, storage.PeerStateBackToSourceSucceeded, req)
 		s.handleTaskSuccess(ctx, peer.Task, req)
@@ -474,7 +473,6 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		logger.Error(msg)
 		return dferrors.New(base.Code_SchedPeerNotFound, msg)
 	}
-
 	metrics.LeaveTaskCount.WithLabelValues(peer.BizTag).Inc()
 
 	peer.Log.Infof("leave task: %#v", req)
