@@ -65,6 +65,10 @@ type peerTaskConductor struct {
 	// ctx is with span info for tracing
 	// we use successCh and failCh mark task success or fail
 	ctx context.Context
+	// piece download uses this context
+	pieceDownloadCtx context.Context
+	// when back source, cancel all piece download action
+	pieceDownloadCancel context.CancelFunc
 
 	// host info about current host
 	host *scheduler.PeerHost
@@ -230,6 +234,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		peerTaskConductor: ptc,
 	}
 
+	ptc.pieceDownloadCtx, ptc.pieceDownloadCancel = context.WithCancel(ptc.ctx)
+
 	return ptc
 }
 
@@ -391,7 +397,26 @@ func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
 	})
 }
 
+func (pt *peerTaskConductor) markBackSource() {
+	pt.needBackSource.Store(true)
+	// when close peerPacketReady, pullPiecesFromPeers will invoke backSource
+	close(pt.peerPacketReady)
+}
+
+// only use when schedule timeout
+func (pt *peerTaskConductor) forceBackSource() {
+	pt.needBackSource.Store(true)
+	pt.backSource()
+}
+
 func (pt *peerTaskConductor) backSource() {
+	// cancel all piece download
+	pt.pieceDownloadCancel()
+	// cancel all sync pieces
+	if pt.pieceTaskSyncManager != nil {
+		pt.pieceTaskSyncManager.cancel()
+	}
+
 	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
 	pt.contentLength.Store(-1)
 	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
@@ -570,9 +595,7 @@ loop:
 		pt.Debugf("receive peerPacket %v", peerPacket)
 		if peerPacket.Code != base.Code_Success {
 			if peerPacket.Code == base.Code_SchedNeedBackSource {
-				pt.needBackSource.Store(true)
-				pt.pieceTaskSyncManager.cancel()
-				close(pt.peerPacketReady)
+				pt.markBackSource()
 				pt.Infof("receive back source code")
 				return
 			}
@@ -664,8 +687,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 	)
 	de, ok := err.(*dferrors.DfError)
 	if ok && de.Code == base.Code_SchedNeedBackSource {
-		pt.needBackSource.Store(true)
-		close(pt.peerPacketReady)
+		pt.markBackSource()
 		pt.Infof("receive back source code")
 		return
 	} else if ok && de.Code != base.Code_SchedNeedBackSource {
@@ -900,8 +922,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		}
 		pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
 		pt.span.AddEvent("back source due to schedule timeout")
-		pt.needBackSource.Store(true)
-		pt.backSource()
+		pt.forceBackSource()
 		return false, true
 	}
 }
@@ -1039,7 +1060,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		pt.runningPiecesLock.Unlock()
 	}()
 
-	ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
+	ctx, span := tracer.Start(pt.pieceDownloadCtx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 	span.SetAttributes(config.AttributePieceWorker.Int(int(workerID)))
 
@@ -1057,6 +1078,13 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	// result is always not nil, pieceManager will report begin and end time
 	result, err := pt.pieceManager.DownloadPiece(ctx, request)
 	if err != nil {
+		pt.ReportPieceResult(request, result, err)
+		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+		span.End()
+		if pt.needBackSource.Load() {
+			pt.Infof("switch to back source, skip send failed piece")
+			return
+		}
 		pt.pieceTaskSyncManager.acquire(
 			&base.PieceTaskRequest{
 				TaskId:   pt.taskID,
@@ -1074,9 +1102,6 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 				pt.failedPieceCh <- request.piece.PieceNum
 			}()
 		}
-		pt.ReportPieceResult(request, result, err)
-		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
-		span.End()
 		return
 	}
 	// broadcast success piece
