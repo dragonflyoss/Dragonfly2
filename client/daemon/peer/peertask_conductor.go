@@ -1176,7 +1176,7 @@ func (pt *peerTaskConductor) getNextPieceNum(cur int32) (int32, bool) {
 	}
 	i := cur
 	// try to find next not requested piece
-	pt.requestedPiecesLock.Unlock()
+	pt.requestedPiecesLock.RLock()
 	defer pt.requestedPiecesLock.RUnlock()
 
 	for ; pt.requestedPieces.IsSet(i); i++ {
