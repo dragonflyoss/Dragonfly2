@@ -107,7 +107,8 @@ type peerTaskConductor struct {
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
 	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
-	peerPacket atomic.Value // *scheduler.PeerPacket
+	peerPacket      atomic.Value // *scheduler.PeerPacket
+	legacyPeerCount *atomic.Int64
 	// peerPacketReady will receive a ready signal for peerPacket ready
 	peerPacketReady chan bool
 	// pieceTaskPoller pulls piece task from other peers
@@ -209,6 +210,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		taskID:              taskID,
 		successCh:           make(chan struct{}),
 		failCh:              make(chan struct{}),
+		legacyPeerCount:     atomic.NewInt64(0),
 		span:                span,
 		readyPieces:         NewBitmap(),
 		runningPieces:       NewBitmap(),
@@ -640,7 +642,9 @@ loop:
 			continue
 		}
 
-		pt.Debugf("connect to %d legacy peers", len(peerPacket.StealPeers))
+		legacyPeerCount := int64(len(peerPacket.StealPeers))
+		pt.Debugf("connect to %d legacy peers", legacyPeerCount)
+		pt.legacyPeerCount.Store(legacyPeerCount)
 		pt.peerPacket.Store(peerPacket)
 
 		// legacy mode: send peerPacketReady
@@ -1090,14 +1094,17 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		}
 		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&base.PieceTaskRequest{
+				Limit:    1,
 				TaskId:   pt.taskID,
 				SrcPid:   pt.peerID,
 				StartNum: uint32(request.piece.PieceNum),
-				Limit:    1,
 			})
-		pt.Infof("send failed piece to remote, attempt: %d, success: %s", attempt, success)
-		// when send to remote peer ok, skip send to failedPieceCh
-		if success > 0 {
+		pt.Infof("send failed piece %d to remote, attempt: %d, success: %d",
+			request.piece.PieceNum, attempt, success)
+
+		// when there is no legacy peers, skip send to failedPieceCh for legacy peers in background
+		if pt.legacyPeerCount.Load() == 0 {
+			pt.Infof("there is no legacy peers, skip send to failedPieceCh for legacy peers")
 			return
 		}
 		// Deprecated
@@ -1105,9 +1112,12 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		// try to send directly first, if failed channel is busy, create a new goroutine to do this
 		select {
 		case pt.failedPieceCh <- request.piece.PieceNum:
+			pt.Infof("success to send failed piece %d to failedPieceCh", request.piece.PieceNum)
 		default:
+			pt.Infof("start to send failed piece %d to failedPieceCh in background", request.piece.PieceNum)
 			go func() {
 				pt.failedPieceCh <- request.piece.PieceNum
+				pt.Infof("success to send failed piece %d to failedPieceCh in background", request.piece.PieceNum)
 			}()
 		}
 		return
