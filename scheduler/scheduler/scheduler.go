@@ -92,14 +92,14 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 			// Notify peer back-to-source
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
-				peer.Log.Errorf("send packet failed: %v", err)
+				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
 			peer.Log.Infof("peer scheduling %d times, peer downloads back-to-source %d",
 				n, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return
 			}
 
@@ -107,7 +107,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			// peer back-to-source and reset task state to TaskStateRunning
 			if peer.Task.FSM.Is(resource.TaskStateFailed) {
 				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
-					peer.Task.Log.Errorf("task fsm event failed: %v", err)
+					peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
 					return
 				}
 			}
@@ -125,7 +125,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 			// Notify peer schedule failed
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
-				peer.Log.Errorf("send packet failed: %v", err)
+				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
 			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)

@@ -170,12 +170,12 @@ func (h *Host) LeavePeers() {
 	h.Peers.Range(func(_, value interface{}) bool {
 		if peer, ok := value.(*Peer); ok {
 			if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
