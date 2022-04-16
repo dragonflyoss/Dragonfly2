@@ -18,6 +18,10 @@ package cdn
 
 import (
 	"context"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
+	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -169,6 +173,17 @@ func (s *Server) Serve() error {
 				SourceType: manager.SourceType_CDN_SOURCE,
 				ClusterId:  uint64(s.config.Manager.CDNClusterID),
 			})
+		}
+	}()
+
+	go func() {
+		// Start file server
+		fileServer := http.Server{
+			Addr: fmt.Sprintf(":%d", s.config.RPCServer.DownloadPort),
+			Handler: http.StripPrefix(upload.PeerDownloadHTTPPathPrefix, http.FileServer(http.Dir(s.config.Storage.DriverConfigs[local.DiskDriverName].BaseDir))),
+		}
+		if err := fileServer.ListenAndServe(); err != nil {
+			logger.Fatalf("start cdn file server failed")
 		}
 	}()
 
