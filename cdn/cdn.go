@@ -18,8 +18,6 @@ package cdn
 
 import (
 	"context"
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
-	"d7y.io/dragonfly/v2/client/daemon/upload"
 	"fmt"
 	"net/http"
 
@@ -32,11 +30,13 @@ import (
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
+	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -179,7 +179,7 @@ func (s *Server) Serve() error {
 	go func() {
 		// Start file server
 		fileServer := http.Server{
-			Addr: fmt.Sprintf(":%d", s.config.RPCServer.DownloadPort),
+			Addr:    fmt.Sprintf(":%d", s.config.RPCServer.DownloadPort),
 			Handler: http.StripPrefix(upload.PeerDownloadHTTPPathPrefix, http.FileServer(http.Dir(s.config.Storage.DriverConfigs[local.DiskDriverName].BaseDir))),
 		}
 		if err := fileServer.ListenAndServe(); err != nil {
