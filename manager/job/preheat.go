@@ -228,7 +228,7 @@ func (p *preheat) getResolver(ctx context.Context, username, password string) re
 
 }
 
-func getAuthToken(ctx context.Context, header http.Header) (string, error) {
+func getAuthToken(ctx context.Context, header http.Header, preheatArgs types.PreheatArgs) (string, error) {
 	ctx, span := tracer.Start(ctx, config.SpanAuthWithRegistry, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
@@ -240,6 +240,9 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", authURL, nil)
 	if err != nil {
 		return "", err
+	}
+	if preheatArgs.Username != "" && preheatArgs.Password != "" {
+		req.SetBasicAuth(preheatArgs.Username, preheatArgs.Password)
 	}
 
 	client := &http.Client{
@@ -357,10 +360,6 @@ func (p *preheat) parseLayers(om ocispec.Manifest, preheatArgs types.PreheatArgs
 		return nil, err
 	}
 
-	if preheatArgs.Username != "" && preheatArgs.Password != "" {
-		req.SetBasicAuth(preheatArgs.Username, preheatArgs.Password)
-	}
-
 	client := &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
@@ -380,7 +379,7 @@ func (p *preheat) parseLayers(om ocispec.Manifest, preheatArgs types.PreheatArgs
 
 	layerHeader := httputils.MapToHeader(preheatArgs.Headers).Clone()
 	if resp.StatusCode == http.StatusUnauthorized {
-		token, err := getAuthToken(context.Background(), resp.Header)
+		token, err := getAuthToken(context.Background(), resp.Header, preheatArgs)
 		if err != nil {
 			return nil, err
 		}
