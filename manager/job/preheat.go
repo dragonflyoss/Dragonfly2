@@ -176,7 +176,7 @@ func (p *preheat) getLayers(ctx context.Context, image *preheatImage, preheatArg
 	if err != nil {
 		return nil, err
 	}
-	layers, err := p.parseLayers(ocispecManifest, preheatArgs.URL, preheatArgs.Filter, httputils.MapToHeader(preheatArgs.Headers), image)
+	layers, err := p.parseLayers(ocispecManifest, preheatArgs, image)
 	if err != nil {
 		return nil, err
 	}
@@ -348,14 +348,19 @@ func references(om ocispec.Manifest) []ocispec.Descriptor {
 	return references
 }
 
-func (p *preheat) parseLayers(om ocispec.Manifest, url, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(om ocispec.Manifest, preheatArgs types.PreheatArgs, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 
 	var layers []*internaljob.PreheatRequest
 
-	req, err := http.NewRequestWithContext(context.Background(), "GET", url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "GET", preheatArgs.URL, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	if preheatArgs.Username != "" && preheatArgs.Password != "" {
+		req.SetBasicAuth(preheatArgs.Username, preheatArgs.Password)
+	}
+
 	client := &http.Client{
 		Timeout: timeout,
 		Transport: &http.Transport{
@@ -373,7 +378,7 @@ func (p *preheat) parseLayers(om ocispec.Manifest, url, filter string, header ht
 		return nil, fmt.Errorf("request registry %d", resp.StatusCode)
 	}
 
-	layerHeader := header.Clone()
+	layerHeader := httputils.MapToHeader(preheatArgs.Headers).Clone()
 	if resp.StatusCode == http.StatusUnauthorized {
 		token, err := getAuthToken(context.Background(), resp.Header)
 		if err != nil {
@@ -391,7 +396,7 @@ func (p *preheat) parseLayers(om ocispec.Manifest, url, filter string, header ht
 		layer := &internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     p.bizTag,
-			Filter:  filter,
+			Filter:  preheatArgs.Filter,
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(layerHeader),
 		}
