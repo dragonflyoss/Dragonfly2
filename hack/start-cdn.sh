@@ -4,6 +4,6 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-nginx
+#nginx
 
 /opt/dragonfly/bin/cdn "$@"
