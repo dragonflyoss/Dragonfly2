@@ -155,6 +155,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	}
 	skipPieceCount := request.StartNum
 	var sentMap = make(map[int32]struct{})
+	// TODO if not found, try to send to peer task conductor, then download it first
 	total, sent, err := s.sendFirstPieceTasks(request, sync, sentMap)
 	if err != nil {
 		return err
