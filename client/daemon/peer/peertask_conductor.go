@@ -107,6 +107,7 @@ type peerTaskConductor struct {
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
 	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
+	// Deprecated: remove in future release
 	peerPacket      atomic.Value // *scheduler.PeerPacket
 	legacyPeerCount *atomic.Int64
 	// peerPacketReady will receive a ready signal for peerPacket ready
@@ -402,6 +403,21 @@ func (pt *peerTaskConductor) markBackSource() {
 	pt.needBackSource.Store(true)
 	// when close peerPacketReady, pullPiecesFromPeers will invoke backSource
 	close(pt.peerPacketReady)
+	// let legacy mode exit
+	pt.peerPacket.Store(&scheduler.PeerPacket{
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
+		ParallelCount: 1,
+		MainPeer:      nil,
+		StealPeers: []*scheduler.PeerPacket_DestPeer{
+			{
+				Ip:      pt.host.Ip,
+				RpcPort: pt.host.RpcPort,
+				PeerId:  pt.peerID,
+			},
+		},
+		Code: base.Code_SchedNeedBackSource,
+	})
 }
 
 // only use when schedule timeout
@@ -646,9 +662,9 @@ loop:
 		legacyPeerCount := int64(len(peerPacket.StealPeers))
 		pt.Debugf("connect to %d legacy peers", legacyPeerCount)
 		pt.legacyPeerCount.Store(legacyPeerCount)
-		pt.peerPacket.Store(peerPacket)
 
-		// legacy mode: send peerPacketReady
+		// legacy mode: update peer packet, then send peerPacketReady
+		pt.peerPacket.Store(peerPacket)
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.successCh:

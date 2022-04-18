@@ -21,6 +21,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -183,17 +184,23 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
 			continue
 		}
-		if err == context.DeadlineExceeded {
-			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
-			continue
-		}
-		legacyPeers = append(legacyPeers, peer)
 		// when err is codes.Unimplemented, fallback to legacy get piece grpc
 		stat, ok := status.FromError(err)
 		if ok && stat.Code() == codes.Unimplemented {
+			// for legacy peers, when get pieces error, will report the error
 			s.peerTaskConductor.Warnf("connect peer %s error: %s, fallback to legacy get piece grpc", peer.PeerId, err)
+			legacyPeers = append(legacyPeers, peer)
+			continue
+		}
+
+		// other errors, report to scheduler
+		if errors.Is(err, context.DeadlineExceeded) {
+			// connect timeout error, report to scheduler to get more available peers
+			s.reportInvalidPeer(peer, base.Code_ClientConnectionError)
+			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
 		} else {
-			s.reportError(peer)
+			// other errors, report to scheduler to get more available peers
+			s.reportInvalidPeer(peer, base.Code_ClientPieceRequestFail)
 			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented", peer.PeerId, err)
 		}
 	}
@@ -201,24 +208,26 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	return legacyPeers
 }
 
-func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer) *scheduler.PieceResult {
+func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer, code base.Code) *scheduler.PieceResult {
 	return &scheduler.PieceResult{
 		TaskId:        peerTaskConductor.taskID,
 		SrcPid:        peerTaskConductor.peerID,
 		DstPid:        destPeer.PeerId,
 		PieceInfo:     &base.PieceInfo{},
 		Success:       false,
-		Code:          base.Code_ClientPieceRequestFail,
+		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: peerTaskConductor.readyPieces.Settled(),
 	}
 }
 
-func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPeer) {
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer))
+func (s *pieceTaskSyncManager) reportInvalidPeer(destPeer *scheduler.PeerPacket_DestPeer, code base.Code) {
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer, code))
 	if sendError != nil {
 		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
 		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+	} else {
+		s.peerTaskConductor.Debugf("report invalid peer %s/%d to scheduler", destPeer.PeerId, code)
 	}
 }
 
@@ -335,10 +344,12 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 }
 
 func (s *pieceTaskSynchronizer) reportError() {
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer))
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, base.Code_ClientPieceRequestFail))
 	if sendError != nil {
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
 		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+	} else {
+		s.Debugf("report sync piece error to scheduler")
 	}
 }
 
