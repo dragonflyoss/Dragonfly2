@@ -119,7 +119,6 @@ type peerTaskConductor struct {
 
 	// same actions must be done only once, like close done channel and so on
 	statusOnce sync.Once
-	cancelOnce sync.Once
 	// done channel will be closed when peer task success
 	successCh chan struct{}
 	// fail channel will be closed after peer task fail
@@ -392,10 +391,10 @@ func (pt *peerTaskConductor) Log() *logger.SugaredLoggerOnWith {
 }
 
 func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
-	pt.cancelOnce.Do(func() {
+	pt.statusOnce.Do(func() {
 		pt.failedCode = code
 		pt.failedReason = reason
-		pt.Fail()
+		pt.fail()
 	})
 }
 

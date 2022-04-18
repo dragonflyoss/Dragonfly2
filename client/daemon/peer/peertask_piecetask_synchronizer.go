@@ -213,8 +213,8 @@ func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedu
 func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPeer) {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer))
 	if sendError != nil {
-		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
+		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 	}
 }
 
@@ -302,12 +302,12 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	if err == io.EOF {
 		s.Debugf("synchronizer receives io.EOF")
 	} else if s.canceled(err) {
-		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("synchronizer receives canceled")
+		s.error.Store(&pieceTaskSynchronizerError{err})
 	} else {
+		s.Errorf("synchronizer receives with error: %s", err)
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.reportError()
-		s.Errorf("synchronizer receives with error: %s", err)
 	}
 }
 
@@ -333,8 +333,8 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 func (s *pieceTaskSynchronizer) reportError() {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer))
 	if sendError != nil {
-		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
+		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 	}
 }
 
