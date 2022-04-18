@@ -14,6 +14,7 @@
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
+DFCACHE_NAME := "dfcache"
 SEMVER := "2.0.1"
 VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
@@ -21,6 +22,7 @@ PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)'
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
+DFCACHE_ARCHIVE_PREFIX := "$(DFCACHE_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
 
 all: help
 
@@ -186,6 +188,23 @@ build-rpm-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
+# Build rpm dfcache
+build-rpm-dfcache: build-linux-dfcache build-dfcache-man-page
+	@echo "Begin to build rpm dfcache"
+	@docker run --rm \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
+	-v "$(PWD)/LICENSE:/root/License" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
+	goreleaser/nfpm pkg \
+		--config /root/build/package/nfpm/dfcache.yaml \
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm"
+.PHONY: build-rpm-dfcache
+
 # Build deb dfget
 build-deb-dfget: build-linux-dfget
 	@echo "Begin to build deb dfget"
@@ -203,10 +222,39 @@ build-deb-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfget
 
+# Build deb dfcache
+build-deb-dfcache: build-linux-dfcache build-dfcache-man-page
+	@echo "Begin to build deb dfcache"
+	@docker run --rm \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
+	-v "$(PWD)/LICENSE:/root/License" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
+	goreleaser/nfpm pkg \
+		--config /root/build/package/nfpm/dfcache.yaml \
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb"
+.PHONY: build-deb-dfcache
+
 # Generate dfget man page
 build-dfget-man-page:
 	@pandoc -s -t man ./build/package/docs/dfget.1.md -o ./build/package/docs/dfget.1
 .PHONY: build-dfget-man-page
+
+# Genrate dfcache man pages
+build-dfcache-man-page:
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache.md -o ./build/package/docs/dfcache/dfcache.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_delete.md -o ./build/package/docs/dfcache/dfcache-delete.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_doc.md -o ./build/package/docs/dfcache/dfcache-doc.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_export.md -o ./build/package/docs/dfcache/dfcache-export.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_import.md -o ./build/package/docs/dfcache/dfcache-import.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_plugin.md -o ./build/package/docs/dfcache/dfcache-plugin.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_stat.md -o ./build/package/docs/dfcache/dfcache-stat.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_version.md -o ./build/package/docs/dfcache/dfcache-version.1
+.PHONY: build-dfcache-man-page
 
 # Generate e2e sha256sum
 build-e2e-sha256sum:
@@ -345,8 +393,11 @@ help:
 	@echo "make install-scheduler              install scheduler"
 	@echo "make install-manager                install manager"
 	@echo "make build-rpm-dfget                build rpm dfget"
+	@echo "make build-rpm-dfcache              build rpm dfcache"
 	@echo "make build-deb-dfget                build deb dfget"
+	@echo "make build-deb-dfcache              build deb dfcache"
 	@echo "make build-dfget-man-page           generate dfget man page"
+	@echo "make build-dfcache-man-page         generate dfcache man page"
 	@echo "make test                           run unit tests"
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
