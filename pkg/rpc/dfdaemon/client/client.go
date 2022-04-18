@@ -119,35 +119,25 @@ func (dc *daemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest,
 
 func (dc *daemonClient) GetPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket,
 	error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, ptr, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
 	if err != nil {
-		logger.WithTaskID(ptr.TaskId).Infof("GetPieceTasks: invoke daemon node %s GetPieceTasks failed: %v", target, err)
 		return nil, err
 	}
-	return res.(*base.PiecePacket), nil
+	return client.GetPieceTasks(ctx, ptr, opts...)
 }
 
 func (dc *daemonClient) SyncPieceTasks(ctx context.Context, target dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
-		if err != nil {
-			return nil, err
-		}
-		return client.SyncPieceTasks(ctx, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
+	if err != nil {
+		return nil, err
+	}
+	syncClient, err := client.SyncPieceTasks(ctx, opts...)
 	if err != nil {
 		logger.WithTaskID(ptr.TaskId).Infof("SyncPieceTasks: invoke daemon node %s SyncPieceTasks failed: %v", target, err)
 		return nil, err
 	}
 
-	client := res.(dfdaemon.Daemon_SyncPieceTasksClient)
-	return client, client.Send(ptr)
+	return syncClient, syncClient.Send(ptr)
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {

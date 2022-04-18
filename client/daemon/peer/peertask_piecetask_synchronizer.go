@@ -183,6 +183,10 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
 			continue
 		}
+		if err == context.DeadlineExceeded {
+			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
+			continue
+		}
 		legacyPeers = append(legacyPeers, peer)
 		// when err is codes.Unimplemented, fallback to legacy get piece grpc
 		stat, ok := status.FromError(err)

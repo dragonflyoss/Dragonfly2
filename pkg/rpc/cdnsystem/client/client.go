@@ -103,32 +103,22 @@ func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest,
 }
 
 func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
-		if err != nil {
-			return nil, err
-		}
-		return client.GetPieceTasks(ctx, req, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
 	if err != nil {
-		logger.WithTaskID(req.TaskId).Infof("GetPieceTasks: invoke cdn node %s GetPieceTasks failed: %v", addr.GetEndpoint(), err)
 		return nil, err
 	}
-	return res.(*base.PiecePacket), nil
+	return client.GetPieceTasks(ctx, req, opts...)
 }
 
 func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
-		if err != nil {
-			return nil, err
-		}
-		return client.SyncPieceTasks(ctx, opts...)
-	}, 0.2, 2.0, 3, nil)
+	client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+	if err != nil {
+		return nil, err
+	}
+	syncClient, err := client.SyncPieceTasks(ctx, opts...)
 	if err != nil {
 		logger.WithTaskID(req.TaskId).Infof("SyncPieceTasks: invoke cdn node %s SyncPieceTasks failed: %v", addr.GetEndpoint(), err)
 		return nil, err
 	}
-	client := res.(cdnsystem.Seeder_SyncPieceTasksClient)
-	return client, client.Send(req)
+	return syncClient, syncClient.Send(req)
 }
