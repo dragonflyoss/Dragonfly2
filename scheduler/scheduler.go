@@ -38,6 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/rpcserver"
 	"d7y.io/dragonfly/v2/scheduler/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/service"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
 const (
@@ -89,7 +90,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		Location:           s.config.Host.Location,
 		SchedulerClusterId: uint64(s.config.Manager.SchedulerClusterID),
 	}); err != nil {
-		logger.Fatalf("register to manager failed %v", err)
+		logger.Fatalf("register to manager failed %s", err.Error())
 	}
 
 	// Initialize dynconfig client
@@ -131,8 +132,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	// Initialize scheduler
 	scheduler := scheduler.New(cfg.Scheduler, dynconfig, d.PluginDir())
 
+	// Initialize Storage
+	storage, err := storage.New(d.DataDir())
+	if err != nil {
+		return nil, err
+	}
+
 	// Initialize scheduler service
-	service := service.New(cfg, resource, scheduler, dynconfig)
+	service := service.New(cfg, resource, scheduler, dynconfig, storage)
 
 	// Initialize grpc service
 	svr := rpcserver.New(service, serverOptions...)
@@ -158,7 +165,7 @@ func (s *Server) Serve() error {
 	// Serve dynConfig
 	go func() {
 		if err := s.dynconfig.Serve(); err != nil {
-			logger.Fatalf("dynconfig start failed %v", err)
+			logger.Fatalf("dynconfig start failed %s", err.Error())
 		}
 		logger.Info("dynconfig start successfully")
 	}()
@@ -181,7 +188,7 @@ func (s *Server) Serve() error {
 				if err == http.ErrServerClosed {
 					return
 				}
-				logger.Fatalf("metrics server closed unexpect: %v", err)
+				logger.Fatalf("metrics server closed unexpect: %s", err.Error())
 			}
 		}()
 	}
@@ -201,14 +208,14 @@ func (s *Server) Serve() error {
 	// Generate GRPC limit listener
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.config.Server.Listen, s.config.Server.Port))
 	if err != nil {
-		logger.Fatalf("net listener failed to start: %v", err)
+		logger.Fatalf("net listener failed to start: %s", err.Error())
 	}
 	defer listener.Close()
 
 	// Started GRPC server
 	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
 	if err := s.grpcServer.Serve(listener); err != nil {
-		logger.Errorf("stoped grpc server: %v", err)
+		logger.Errorf("stoped grpc server: %s", err.Error())
 		return err
 	}
 
@@ -218,14 +225,14 @@ func (s *Server) Serve() error {
 func (s *Server) Stop() {
 	// Stop dynconfig server
 	if err := s.dynconfig.Stop(); err != nil {
-		logger.Errorf("dynconfig client closed failed %v", err)
+		logger.Errorf("dynconfig client closed failed %s", err.Error())
 	}
 	logger.Info("dynconfig client closed")
 
 	// Stop manager client
 	if s.managerClient != nil {
 		if err := s.managerClient.Close(); err != nil {
-			logger.Errorf("manager client failed to stop: %v", err)
+			logger.Errorf("manager client failed to stop: %s", err.Error())
 		}
 		logger.Info("manager client closed")
 	}
@@ -237,7 +244,7 @@ func (s *Server) Stop() {
 	// Stop metrics server
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
-			logger.Errorf("metrics server failed to stop: %v", err)
+			logger.Errorf("metrics server failed to stop: %s", err.Error())
 		}
 		logger.Info("metrics server closed under request")
 	}

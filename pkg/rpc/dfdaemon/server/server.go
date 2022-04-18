@@ -43,6 +43,14 @@ type DaemonServer interface {
 	SyncPieceTasks(dfdaemon.Daemon_SyncPieceTasksServer) error
 	// CheckHealth check daemon health
 	CheckHealth(context.Context) error
+	// Check if the given task exists in P2P cache system
+	StatTask(context.Context, *dfdaemon.StatTaskRequest) error
+	// Import the given file into P2P cache system
+	ImportTask(context.Context, *dfdaemon.ImportTaskRequest) error
+	// Export or download file from P2P cache system
+	ExportTask(context.Context, *dfdaemon.ExportTaskRequest) error
+	// Delete file from P2P cache system
+	DeleteTask(context.Context, *dfdaemon.DeleteTaskRequest) error
 }
 
 type proxy struct {
@@ -51,7 +59,7 @@ type proxy struct {
 }
 
 func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 	dfdaemon.RegisterDaemonServer(grpcServer, &proxy{server: daemonServer})
 	return grpcServer
 }
@@ -98,6 +106,22 @@ func (p *proxy) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error 
 
 func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.CheckHealth(ctx)
+}
+
+func (p *proxy) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), p.server.StatTask(ctx, req)
+}
+
+func (p *proxy) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), p.server.ImportTask(ctx, req)
+}
+
+func (p *proxy) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), p.server.ExportTask(ctx, req)
+}
+
+func (p *proxy) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), p.server.DeleteTask(ctx, req)
 }
 
 func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {

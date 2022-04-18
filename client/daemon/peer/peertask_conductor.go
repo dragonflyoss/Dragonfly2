@@ -250,9 +250,9 @@ func (pt *peerTaskConductor) register() error {
 	)
 
 	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
-	schedulerClient := pt.peerTaskManager.schedulerClient
+	pt.schedulerClient = pt.peerTaskManager.schedulerClient
 
-	result, err := schedulerClient.RegisterPeerTask(regCtx, pt.request)
+	result, err := pt.schedulerClient.RegisterPeerTask(regCtx, pt.request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -269,7 +269,7 @@ func (pt *peerTaskConductor) register() error {
 		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
-		schedulerClient = &dummySchedulerClient{}
+		pt.schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: pt.taskID}
 		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
 	} else {
@@ -304,7 +304,7 @@ func (pt *peerTaskConductor) register() error {
 		}
 	}
 
-	peerPacketStream, err := schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
+	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
 	pt.Infof("step 2: start report piece result")
 	if err != nil {
 		pt.span.RecordError(err)
@@ -313,7 +313,6 @@ func (pt *peerTaskConductor) register() error {
 	}
 
 	pt.peerPacketStream = peerPacketStream
-	pt.schedulerClient = schedulerClient
 	pt.sizeScope = sizeScope
 	pt.singlePiece = singlePiece
 	pt.tinyData = tinyData

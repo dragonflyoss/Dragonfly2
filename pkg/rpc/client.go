@@ -94,7 +94,7 @@ var defaultClientOpts = []grpc.DialOption{
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:    2 * time.Minute,
+		Time:    1 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
