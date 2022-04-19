@@ -10,7 +10,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStartPre=/bin/bash /opt/dragonfly/fix.dfget-daemon.cpuset.sh
+ExecStartPre=-/bin/sh /opt/dragonfly/fix.dfget-daemon.cpuset.sh
 ExecStart=/usr/bin/dfget daemon
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
