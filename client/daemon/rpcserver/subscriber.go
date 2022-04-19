@@ -94,7 +94,7 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 	for {
 		request, err := s.sync.Recv()
 		if err == io.EOF {
-			s.Infof("SyncPieceTasks done, exit receiving")
+			s.Infof("remote SyncPieceTasks done, exit receiving")
 			return
 		}
 		if err != nil {
@@ -145,7 +145,7 @@ loop:
 	for {
 		select {
 		case <-s.done:
-			s.Infof("SyncPieceTasks done, exit sending, local task is running")
+			s.Infof("remote SyncPieceTasks done, exit sending, local task is running")
 			return nil
 		case info := <-s.PieceInfoChannel:
 			// not desired piece
@@ -157,15 +157,7 @@ loop:
 			total, _, err := s.sendExistPieces(uint32(info.Num))
 
 			if err != nil {
-				if stat, ok := status.FromError(err); !ok {
-					// not grpc error
-					s.Errorf("sent exist pieces error: %s", err)
-				} else if stat.Code() == codes.Canceled {
-					err = nil
-					s.Debugf("SyncPieceTasks canceled, exit sending")
-				} else {
-					s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
-				}
+				err = s.saveError(err)
 				s.Unlock()
 				return err
 			}
@@ -191,15 +183,7 @@ loop:
 			}
 			total, _, err := s.sendExistPieces(nextPieceNum)
 			if err != nil {
-				if stat, ok := status.FromError(err); !ok {
-					// not grpc error
-					s.Errorf("sent exist pieces error: %s", err)
-				} else if stat.Code() == codes.Canceled {
-					err = nil
-					s.Debugf("SyncPieceTasks canceled, exit sending")
-				} else {
-					s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
-				}
+				err = s.saveError(err)
 				s.Unlock()
 				return err
 			}
@@ -221,6 +205,19 @@ loop:
 		s.Infof("SyncPieceTasks done, exit sending, local task is also done")
 		return nil
 	}
+}
+
+func (s *subscriber) saveError(err error) error {
+	if stat, ok := status.FromError(err); !ok {
+		// not grpc error
+		s.Errorf("sent exist pieces error: %s", err)
+	} else if stat.Code() == codes.Canceled {
+		err = nil
+		s.Debugf("SyncPieceTasks canceled, exit sending")
+	} else {
+		s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
+	}
+	return err
 }
 
 func (s *subscriber) searchNextPieceNum(cur uint32) (nextPieceNum uint32) {

@@ -21,6 +21,23 @@ builds:
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
+  - main: ./cmd/dfcache
+    id: dfcache
+    binary: dfcache
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+
   - main: ./cmd/scheduler
     id: scheduler
     binary: scheduler
@@ -138,3 +155,45 @@ nfpms:
       postinstall: build/package/nfpm/dfget-postinstall.sh
       preremove: build/package/nfpm/dfget-preremove.sh
       postremove: build/package/nfpm/dfget-postremove.sh
+  - id: dfcache
+    file_name_template: "dfcache-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    package_name: dfcache
+    description: dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates on files in P2P network
+    license: "Apache 2.0"
+    homepage: https://d7y.io
+    bindir: /usr/bin
+    builds:
+      - dfcache
+    formats:
+      - rpm
+      - deb
+    contents:
+      - src: build/package/docs/dfcache/dfcache.1
+        dst: /usr/share/man/man1/dfcache.1
+
+      - src: build/package/docs/dfcache/dfcache-delete.1
+        dst: /usr/share/man/man1/dfcache-delete.1
+
+      - src: build/package/docs/dfcache/dfcache-doc.1
+        dst: /usr/share/man/man1/dfcache-doc.1
+
+      - src: build/package/docs/dfcache/dfcache-export.1
+        dst: /usr/share/man/man1/dfcache-export.1
+
+      - src: build/package/docs/dfcache/dfcache-import.1
+        dst: /usr/share/man/man1/dfcache-import.1
+
+      - src: build/package/docs/dfcache/dfcache-plugin.1
+        dst: /usr/share/man/man1/dfcache-plugin.1
+
+      - src: build/package/docs/dfcache/dfcache-stat.1
+        dst: /usr/share/man/man1/dfcache-stat.1
+
+      - src: build/package/docs/dfcache/dfcache-version.1
+        dst: /usr/share/man/man1/dfcache-version.1
+
+      - src: LICENSE
+        dst: /usr/share/doc/dfcache/License
+
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/dfcache/ChangeLog
