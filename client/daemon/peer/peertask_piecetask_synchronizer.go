@@ -139,6 +139,11 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 
 	request.DstPid = dstPeer.PeerId
 	client, err := dfclient.SyncPieceTasks(ctx, dstPeer, request)
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
+	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
+	if err == io.EOF && client != nil {
+		_, err = client.Recv()
+	}
 	if err != nil {
 		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
 		return err
