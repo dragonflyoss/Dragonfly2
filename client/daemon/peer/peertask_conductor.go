@@ -399,6 +399,7 @@ func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
 	})
 }
 
+// only use when receive back source code from scheduler
 func (pt *peerTaskConductor) markBackSource() {
 	pt.needBackSource.Store(true)
 	// when close peerPacketReady, pullPiecesFromPeers will invoke backSource
@@ -420,7 +421,7 @@ func (pt *peerTaskConductor) markBackSource() {
 	})
 }
 
-// only use when schedule timeout
+// only use when legacy get piece from peers schedule timeout
 func (pt *peerTaskConductor) forceBackSource() {
 	pt.needBackSource.Store(true)
 	pt.backSource()
