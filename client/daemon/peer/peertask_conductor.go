@@ -926,8 +926,8 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-				time.Since(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, scheduler time cost: %dus, peer count: %d",
+				time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -962,7 +962,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, peer count: %d", len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			// research from piece 0
 			return 0, true
 		}
