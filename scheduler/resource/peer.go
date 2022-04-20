@@ -369,7 +369,7 @@ func (p *Peer) Depth() int {
 
 		// Prevent traversal tree from infinite loop
 		if p.ID == parent.ID {
-			p.Log.Info("tree structure produces an infinite loop")
+			p.Log.Error("tree structure produces an infinite loop")
 			break
 		}
 
@@ -381,16 +381,22 @@ func (p *Peer) Depth() int {
 
 // IsDescendant determines whether it is ancestor of peer
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
-	return isDescendant(ancestor, p)
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	return p.isDescendant(ancestor, p)
 }
 
 // IsAncestor determines whether it is descendant of peer
 func (p *Peer) IsAncestor(descendant *Peer) bool {
-	return isDescendant(p, descendant)
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	return p.isDescendant(p, descendant)
 }
 
 // isDescendant determines whether it is ancestor of peer
-func isDescendant(ancestor, descendant *Peer) bool {
+func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
 	node := descendant
 	for node != nil {
 		parent, ok := node.LoadParent()
@@ -399,6 +405,12 @@ func isDescendant(ancestor, descendant *Peer) bool {
 		}
 
 		if parent.ID == ancestor.ID {
+			return true
+		}
+
+		// Prevent traversal tree from infinite loop
+		if parent.ID == descendant.ID {
+			p.Log.Error("tree structure produces an infinite loop")
 			return true
 		}
 
