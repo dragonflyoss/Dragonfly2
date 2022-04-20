@@ -668,6 +668,8 @@ func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.Peer
 	num, ok := pt.getNextNotReadyPieceNum(lastNum)
 	if !ok {
 		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
+		p.MainPeer = nil
+		p.StealPeers = nil
 		return num
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}
