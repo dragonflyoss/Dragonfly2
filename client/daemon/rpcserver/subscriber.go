@@ -80,7 +80,7 @@ func sendExistPieces(
 			sendMap[p.PieceNum] = struct{}{}
 		}
 		if uint32(len(pp.PieceInfos)) < request.Limit {
-			log.Infof("sent %d pieces, total: %d", pp.TotalPiece)
+			log.Infof("sent %d pieces, total: %d", len(pp.PieceInfos), pp.TotalPiece)
 			return pp.TotalPiece, nil
 		}
 		// the get piece func always return sorted pieces, use last piece num + 1 to get more pieces
