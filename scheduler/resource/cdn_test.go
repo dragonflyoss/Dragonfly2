@@ -27,8 +27,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
