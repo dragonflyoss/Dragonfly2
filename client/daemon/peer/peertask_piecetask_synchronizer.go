@@ -248,11 +248,12 @@ func (s *pieceTaskSyncManager) cancel() {
 }
 
 func (s *pieceTaskSynchronizer) close() {
-	s.span.End()
 	if err := s.client.CloseSend(); err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
+		s.span.RecordError(err)
 	}
+	s.span.End()
 }
 
 func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePacket) {
