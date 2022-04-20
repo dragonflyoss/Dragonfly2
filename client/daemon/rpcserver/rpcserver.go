@@ -152,7 +152,7 @@ func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *b
 func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
 	request, err := sync.Recv()
 	if err != nil {
-		logger.Errorf("receive first sync piece tasks request error: %s", err)
+		logger.Errorf("receive first sync piece tasks request error: %s", err.Error())
 		return err
 	}
 	log := logger.With("taskID", request.TaskId,
