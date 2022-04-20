@@ -141,12 +141,12 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 
 // sendExistPieces will send as much as possible pieces
 func (s *server) sendExistPieces(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(log, sync.Context(), s.GetPieceTasks, request, sync, sentMap, true)
+	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, true)
 }
 
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
 func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(log, sync.Context(), s.GetPieceTasks, request, sync, sentMap, false)
+	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, false)
 }
 
 func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {

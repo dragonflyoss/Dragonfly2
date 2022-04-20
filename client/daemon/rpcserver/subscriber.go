@@ -51,8 +51,8 @@ func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskReque
 }
 
 func sendExistPieces(
-	log *logger.SugaredLoggerOnWith,
 	ctx context.Context,
+	log *logger.SugaredLoggerOnWith,
 	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
@@ -92,7 +92,7 @@ func sendExistPieces(
 // sendExistPieces will send as much as possible pieces
 func (s *subscriber) sendExistPieces(startNum uint32) (total int32, sent int, err error) {
 	s.request.StartNum = startNum
-	return sendExistPieces(s.SugaredLoggerOnWith, s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap, true)
+	return sendExistPieces(s.sync.Context(), s.SugaredLoggerOnWith, s.getPieces, s.request, s.sync, s.sentMap, true)
 }
 
 func (s *subscriber) receiveRemainingPieceTaskRequests() {
