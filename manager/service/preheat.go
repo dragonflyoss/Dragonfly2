@@ -47,12 +47,7 @@ const (
 func (s *service) CreateV1Preheat(ctx context.Context, json types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
 	job, err := s.CreatePreheatJob(ctx, types.CreatePreheatJobRequest{
 		Type: internaljob.PreheatJob,
-		Args: types.PreheatArgs{
-			Type:    json.Type,
-			URL:     json.URL,
-			Filter:  json.Filter,
-			Headers: json.Headers,
-		},
+		Args: types.PreheatArgs(json),
 	})
 	if err != nil {
 		return nil, err

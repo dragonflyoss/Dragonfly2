@@ -6,14 +6,17 @@ linters-settings:
   gocyclo:
     min-complexity: 42
   gci:
-    local-prefixes: d7y.io/dragonfly/v2
+    sections:
+      - standard
+      - default
+      - prefix(d7y.io/dragonfly/v2)
 
 linters:
   disable-all: true
   enable:
     - gci
     - gofmt
-    - golint
+    - golint 
     - misspell
     - govet
     - goconst

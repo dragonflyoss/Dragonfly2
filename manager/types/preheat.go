@@ -17,10 +17,12 @@
 package types
 
 type CreateV1PreheatRequest struct {
-	Type    string            `json:"type" binding:"required,oneof=image file"`
-	URL     string            `json:"url" binding:"required"`
-	Filter  string            `json:"filter" binding:"omitempty"`
-	Headers map[string]string `json:"headers" binding:"omitempty"`
+	Type     string            `json:"type" binding:"required,oneof=image file"`
+	URL      string            `json:"url" binding:"required"`
+	Filter   string            `json:"filter" binding:"omitempty"`
+	Headers  map[string]string `json:"headers" binding:"omitempty"`
+	Username string            `json:"username" binding:"omiempty"`
+	Password string            `json:"password" binding:"omitempty"`
 }
 
 type CreateV1PreheatResponse struct {
