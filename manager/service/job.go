@@ -32,7 +32,6 @@ import (
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
 	var schedulerClusters []model.SchedulerCluster
-
 	if len(json.SchedulerClusterIDs) != 0 {
 		for _, schedulerClusterID := range json.SchedulerClusterIDs {
 			schedulerCluster := model.SchedulerCluster{}
@@ -78,6 +77,10 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
+	// Remove user privacy
+	delete(args, "username")
+	delete(args, "password")
+
 	job := model.Job{
 		TaskID:            groupJobState.GroupUUID,
 		BIO:               json.BIO,
@@ -99,7 +102,6 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 
 func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 	var job model.Job
-
 	if _, _, err := retry.Run(ctx, func() (interface{}, bool, error) {
 		groupJob, err := s.job.GetGroupJobState(taskID)
 		if err != nil {

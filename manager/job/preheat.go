@@ -52,10 +52,20 @@ type PreheatType string
 const (
 	PreheatImageType PreheatType = "image"
 	PreheatFileType  PreheatType = "file"
-	timeout                      = 1 * time.Minute
+)
+
+const (
+	timeout = 1 * time.Minute
 )
 
 var accessURLPattern, _ = regexp.Compile("^(.*)://(.*)/v2/(.*)/manifests/(.*)")
+
+var defaultHTTPClient = &http.Client{
+	Timeout: timeout,
+	Transport: &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	},
+}
 
 type Preheat interface {
 	CreatePreheat(context.Context, []model.Scheduler, types.PreheatArgs) (*internaljob.GroupJobState, error)
@@ -88,7 +98,6 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 	defer span.End()
 
 	url := json.URL
-	filter := json.Filter
 	rawheader := json.Headers
 
 	// Initialize queues
@@ -113,7 +122,6 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 			{
 				URL:     url,
 				Tag:     p.bizTag,
-				Filter:  filter,
 				Headers: rawheader,
 			},
 		}
@@ -210,17 +218,11 @@ func (p *preheat) getResolver(ctx context.Context, username, password string) re
 	creds := func(string) (string, string, error) {
 		return username, password, nil
 	}
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
 	options := docker.ResolverOptions{}
 	options.Hosts = docker.ConfigureDefaultRegistries(
-		docker.WithClient(client),
+		docker.WithClient(defaultHTTPClient),
 		docker.WithAuthorizer(docker.NewDockerAuthorizer(
-			docker.WithAuthClient(client),
+			docker.WithAuthClient(defaultHTTPClient),
 			docker.WithAuthCreds(creds),
 		)),
 	)
@@ -245,14 +247,7 @@ func getAuthToken(ctx context.Context, header http.Header, preheatArgs types.Pre
 		req.SetBasicAuth(preheatArgs.Username, preheatArgs.Password)
 	}
 
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
+	resp, err := defaultHTTPClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -360,14 +355,7 @@ func (p *preheat) parseLayers(om ocispec.Manifest, preheatArgs types.PreheatArgs
 		return nil, err
 	}
 
-	client := &http.Client{
-		Timeout: timeout,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
-	resp, err := client.Do(req)
+	resp, err := defaultHTTPClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
