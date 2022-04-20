@@ -460,7 +460,7 @@ func (pt *peerTaskConductor) pullPieces() {
 
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
-		// keep same size with pt.failedPieceCh for avoiding dead lock
+		// keep same size with pt.failedPieceCh for avoiding deadlock
 		pieceBufferSize = uint32(config.DefaultPieceChanSize)
 		pieceRequestCh  = make(chan *DownloadPieceRequest, pieceBufferSize)
 	)

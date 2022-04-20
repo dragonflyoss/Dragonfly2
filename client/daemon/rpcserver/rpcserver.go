@@ -139,13 +139,13 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 }
 
 // sendExistPieces will send as much as possible pieces
-func (s *server) sendExistPieces(request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap, true)
+func (s *server) sendExistPieces(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+	return sendExistPieces(log, sync.Context(), s.GetPieceTasks, request, sync, sentMap, true)
 }
 
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
-func (s *server) sendFirstPieceTasks(request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
-	return sendExistPieces(sync.Context(), s.GetPieceTasks, request, sync, sentMap, false)
+func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+	return sendExistPieces(log, sync.Context(), s.GetPieceTasks, request, sync, sentMap, false)
 }
 
 func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
@@ -153,10 +153,13 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	if err != nil {
 		return err
 	}
+	log := logger.With("taskID", request.TaskId,
+		"localPeerID", request.DstPid, "remotePeerID", request.SrcPid)
+
 	skipPieceCount := request.StartNum
 	var sentMap = make(map[int32]struct{})
 	// TODO if not found, try to send to peer task conductor, then download it first
-	total, sent, err := s.sendFirstPieceTasks(request, sync, sentMap)
+	total, sent, err := s.sendFirstPieceTasks(log, request, sync, sentMap)
 	if err != nil {
 		return err
 	}
@@ -170,7 +173,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	result, ok := s.peerTaskManager.Subscribe(request)
 	if !ok {
 		// task not found, double check for done task
-		total, sent, err = s.sendExistPieces(request, sync, sentMap)
+		total, sent, err = s.sendExistPieces(log, request, sync, sentMap)
 		if err != nil {
 			return err
 		}
@@ -182,16 +185,15 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	}
 
 	var sub = &subscriber{
-		SubscribeResult: result,
-		sync:            sync,
-		request:         request,
-		skipPieceCount:  skipPieceCount,
-		totalPieces:     total,
-		sentMap:         sentMap,
-		done:            make(chan struct{}),
-		uploadAddr:      s.uploadAddr,
-		SugaredLoggerOnWith: logger.With("taskID", request.TaskId,
-			"localPeerID", request.DstPid, "remotePeerID", request.SrcPid),
+		SubscribeResult:     result,
+		sync:                sync,
+		request:             request,
+		skipPieceCount:      skipPieceCount,
+		totalPieces:         total,
+		sentMap:             sentMap,
+		done:                make(chan struct{}),
+		uploadAddr:          s.uploadAddr,
+		SugaredLoggerOnWith: log,
 	}
 
 	go sub.receiveRemainingPieceTaskRequests()

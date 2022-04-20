@@ -55,6 +55,7 @@ const (
 	SpanBackSource        = "client-back-source"
 	SpanFirstSchedule     = "schedule-#1"
 	SpanGetPieceTasks     = "get-piece-tasks"
+	SpanSyncPieceTasks    = "sync-piece-tasks"
 	SpanDownloadPiece     = "download-piece-#%d"
 	SpanProxy             = "proxy"
 	SpanWritePiece        = "write-piece"

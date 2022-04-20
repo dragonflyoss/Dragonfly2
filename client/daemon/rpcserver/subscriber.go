@@ -51,6 +51,7 @@ func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskReque
 }
 
 func sendExistPieces(
+	log *logger.SugaredLoggerOnWith,
 	ctx context.Context,
 	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
 	request *base.PieceTaskRequest,
@@ -60,22 +61,27 @@ func sendExistPieces(
 	if request.Limit <= 0 {
 		request.Limit = 16
 	}
+	var pp *base.PiecePacket
 	for {
-		pp, err := get(ctx, request)
+		pp, err = get(ctx, request)
 		if err != nil {
+			log.Errorf("get piece error: %s", err)
 			return -1, -1, err
 		}
 		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
 			return pp.TotalPiece, sent, nil
 		}
 		if err = sync.Send(pp); err != nil {
+			log.Errorf("send pieces error: %s", err)
 			return pp.TotalPiece, sent, err
 		}
 		for _, p := range pp.PieceInfos {
+			log.Infof("send ready piece %d", p.PieceNum)
 			sendMap[p.PieceNum] = struct{}{}
 		}
 		sent += len(pp.PieceInfos)
 		if uint32(len(pp.PieceInfos)) < request.Limit {
+			log.Infof("sent %d pieces, total: %d", sent, pp.TotalPiece)
 			return pp.TotalPiece, sent, nil
 		}
 		// the get piece func always return sorted pieces, use last piece num + 1 to get more pieces
@@ -86,7 +92,7 @@ func sendExistPieces(
 // sendExistPieces will send as much as possible pieces
 func (s *subscriber) sendExistPieces(startNum uint32) (total int32, sent int, err error) {
 	s.request.StartNum = startNum
-	return sendExistPieces(s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap, true)
+	return sendExistPieces(s.SugaredLoggerOnWith, s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap, true)
 }
 
 func (s *subscriber) receiveRemainingPieceTaskRequests() {
@@ -123,6 +129,7 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 			return
 		}
 		for _, p := range pp.PieceInfos {
+			s.Infof("send ready piece %d", p.PieceNum)
 			s.sentMap[p.PieceNum] = struct{}{}
 		}
 		s.Unlock()
@@ -148,14 +155,14 @@ loop:
 			s.Infof("remote SyncPieceTasks done, exit sending, local task is running")
 			return nil
 		case info := <-s.PieceInfoChannel:
+			s.Infof("receive piece info, num: %d, %v", info.Num, info.Finished)
 			// not desired piece
-			s.Debugf("receive piece info, num: %d, %v", info.Num, info.Finished)
 			if s.totalPieces > -1 && uint32(info.Num) < nextPieceNum {
 				continue
 			}
+
 			s.Lock()
 			total, _, err := s.sendExistPieces(uint32(info.Num))
-
 			if err != nil {
 				err = s.saveError(err)
 				s.Unlock()
@@ -175,6 +182,7 @@ loop:
 			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
 			s.Unlock()
 		case <-s.Success:
+			s.Infof("peer task is success, send remaining pieces")
 			s.Lock()
 			// all pieces already sent
 			if s.totalPieces > -1 && nextPieceNum == uint32(s.totalPieces) {
@@ -192,11 +200,14 @@ loop:
 			}
 			if s.totalPieces > -1 && len(s.sentMap)+int(s.skipPieceCount) != int(s.totalPieces) {
 				s.Unlock()
-				return dferrors.Newf(base.Code_ClientError, "peer task success, but can not send all pieces")
+				msg := "peer task success, but can not send all pieces"
+				s.Errorf(msg)
+				return dferrors.Newf(base.Code_ClientError, msg)
 			}
 			s.Unlock()
 			break loop
 		case <-s.Fail:
+			s.Errorf("peer task failed")
 			return dferrors.Newf(base.Code_ClientError, "peer task failed")
 		}
 	}
