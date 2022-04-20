@@ -140,12 +140,12 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 }
 
 // sendExistPieces will send as much as possible pieces
-func (s *server) sendExistPieces(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+func (s *server) sendExistPieces(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, true)
 }
 
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
-func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, sent int, err error) {
+func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, false)
 }
 
@@ -162,7 +162,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	var sentMap = make(map[int32]struct{})
 
 	// TODO if not found, try to send to peer task conductor, then download it first
-	total, sent, err := s.sendFirstPieceTasks(log, request, sync, sentMap)
+	total, err := s.sendFirstPieceTasks(log, request, sync, sentMap)
 	if err != nil {
 		log.Errorf("send first piece tasks error: %s", err)
 		return err
@@ -178,7 +178,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 				logger.Errorf("receive reminding piece tasks request error: %s", err)
 				return err
 			}
-			total, sent, err = s.sendExistPieces(log, request, sync, sentMap)
+			total, err = s.sendExistPieces(log, request, sync, sentMap)
 			if err != nil {
 				logger.Errorf("send reminding piece tasks error: %s", err)
 				return err
@@ -187,7 +187,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	}
 
 	// task is done, just receive new piece tasks requests only
-	if int(total) == sent+int(skipPieceCount) {
+	if int(total) == len(sentMap)+int(skipPieceCount) {
 		log.Infof("all piece tasks sent, receive new piece tasks requests only")
 		return recvReminding()
 	}
@@ -196,13 +196,13 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	result, ok := s.peerTaskManager.Subscribe(request)
 	if !ok {
 		// running task not found, double check for done task
-		total, sent, err = s.sendExistPieces(log, request, sync, sentMap)
+		total, err = s.sendExistPieces(log, request, sync, sentMap)
 		if err != nil {
 			log.Errorf("send exist piece tasks error: %s", err)
 			return err
 		}
 
-		if int(total) > sent+int(skipPieceCount) {
+		if int(total) > len(sentMap)+int(skipPieceCount) {
 			return status.Errorf(codes.Unavailable, "peer task not finish, but no running task found")
 		}
 		return recvReminding()

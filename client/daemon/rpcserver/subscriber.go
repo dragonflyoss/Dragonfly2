@@ -57,7 +57,7 @@ func sendExistPieces(
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
 	sendMap map[int32]struct{},
-	skipSendZeroPiece bool) (total int32, sent int, err error) {
+	skipSendZeroPiece bool) (total int32, err error) {
 	if request.Limit <= 0 {
 		request.Limit = 16
 	}
@@ -66,23 +66,22 @@ func sendExistPieces(
 		pp, err = get(ctx, request)
 		if err != nil {
 			log.Errorf("get piece error: %s", err)
-			return -1, -1, err
+			return -1, err
 		}
 		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
-			return pp.TotalPiece, sent, nil
+			return pp.TotalPiece, nil
 		}
 		if err = sync.Send(pp); err != nil {
 			log.Errorf("send pieces error: %s", err)
-			return pp.TotalPiece, sent, err
+			return pp.TotalPiece, err
 		}
 		for _, p := range pp.PieceInfos {
 			log.Infof("send ready piece %d", p.PieceNum)
 			sendMap[p.PieceNum] = struct{}{}
 		}
-		sent += len(pp.PieceInfos)
 		if uint32(len(pp.PieceInfos)) < request.Limit {
-			log.Infof("sent %d pieces, total: %d", sent, pp.TotalPiece)
-			return pp.TotalPiece, sent, nil
+			log.Infof("sent %d pieces, total: %d", pp.TotalPiece)
+			return pp.TotalPiece, nil
 		}
 		// the get piece func always return sorted pieces, use last piece num + 1 to get more pieces
 		request.StartNum = uint32(pp.PieceInfos[request.Limit-1].PieceNum + 1)
@@ -90,7 +89,7 @@ func sendExistPieces(
 }
 
 // sendExistPieces will send as much as possible pieces
-func (s *subscriber) sendExistPieces(startNum uint32) (total int32, sent int, err error) {
+func (s *subscriber) sendExistPieces(startNum uint32) (total int32, err error) {
 	s.request.StartNum = startNum
 	return sendExistPieces(s.sync.Context(), s.SugaredLoggerOnWith, s.getPieces, s.request, s.sync, s.sentMap, true)
 }
@@ -162,7 +161,7 @@ loop:
 			}
 
 			s.Lock()
-			total, _, err := s.sendExistPieces(uint32(info.Num))
+			total, err := s.sendExistPieces(uint32(info.Num))
 			if err != nil {
 				err = s.saveError(err)
 				s.Unlock()
@@ -189,7 +188,7 @@ loop:
 				s.Unlock()
 				break loop
 			}
-			total, _, err := s.sendExistPieces(nextPieceNum)
+			total, err := s.sendExistPieces(nextPieceNum)
 			if err != nil {
 				err = s.saveError(err)
 				s.Unlock()
