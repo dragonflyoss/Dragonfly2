@@ -585,34 +585,6 @@ func TestStorage_backups(t *testing.T) {
 				assert.Error(err)
 			},
 		},
-		{
-			name:    "get backups",
-			baseDir: os.TempDir(),
-			options: []Option{WithMaxSize(0), WithBufferSize(1)},
-			mock: func(t *testing.T, s Storage) {
-				if err := s.Create(Record{ID: "1"}); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := s.Create(Record{ID: "2"}); err != nil {
-					t.Fatal(err)
-				}
-
-				if err := s.Create(Record{ID: "3"}); err != nil {
-					t.Fatal(err)
-				}
-			},
-			expect: func(t *testing.T, s Storage, baseDir string) {
-				assert := assert.New(t)
-				backups, err := s.(*storage).backups()
-				assert.NoError(err)
-				assert.Equal(len(backups), 3)
-				assert.Equal(backups[2].Name(), fmt.Sprintf("%s.%s", RecordFilePrefix, RecordFileExt))
-				if err := s.Clear(); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
 	}
 
 	for _, tc := range tests {
