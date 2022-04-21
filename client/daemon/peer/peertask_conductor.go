@@ -476,7 +476,7 @@ func (pt *peerTaskConductor) pullPieces() {
 
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
-		// keep same size with pt.failedPieceCh for avoiding dead lock
+		// keep same size with pt.failedPieceCh for avoiding deadlock
 		pieceBufferSize = uint32(config.DefaultPieceChanSize)
 		pieceRequestCh  = make(chan *DownloadPieceRequest, pieceBufferSize)
 	)
@@ -684,6 +684,8 @@ func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.Peer
 	num, ok := pt.getNextNotReadyPieceNum(lastNum)
 	if !ok {
 		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
+		p.MainPeer = nil
+		p.StealPeers = nil
 		return num
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}

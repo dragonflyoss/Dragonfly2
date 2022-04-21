@@ -18,14 +18,17 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
@@ -44,6 +47,7 @@ type pieceTaskSyncManager struct {
 
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
+	span              trace.Span
 	client            dfdaemon.Daemon_SyncPieceTasksClient
 	dstPeer           *scheduler.PeerPacket_DestPeer
 	error             atomic.Value
@@ -158,7 +162,9 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		return err
 	}
 
+	_, span := tracer.Start(s.ctx, config.SpanSyncPieceTasks)
 	synchronizer := &pieceTaskSynchronizer{
+		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
 		pieceRequestCh:      s.pieceRequestCh,
 		client:              client,
@@ -263,7 +269,9 @@ func (s *pieceTaskSynchronizer) close() {
 	if err := s.client.CloseSend(); err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
+		s.span.RecordError(err)
 	}
+	s.span.End()
 }
 
 func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePacket) {
@@ -299,6 +307,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		}
 		select {
 		case s.pieceRequestCh <- req:
+			s.span.AddEvent(fmt.Sprintf("send piece #%d request", piece.PieceNum))
 		case <-s.peerTaskConductor.successCh:
 			s.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		case <-s.peerTaskConductor.failCh:
@@ -325,7 +334,8 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	} else {
 		s.Errorf("synchronizer receives with error: %s", err)
 		s.error.Store(&pieceTaskSynchronizerError{err})
-		s.reportError()
+		s.reportError(err)
+		s.Errorf("synchronizer receives with error: %s", err)
 	}
 }
 
@@ -336,19 +346,21 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 		return err
 	}
 	err := s.client.Send(request)
+	s.span.AddEvent(fmt.Sprintf("send piece #%d request", request.StartNum))
 	if err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		if s.canceled(err) {
 			s.Debugf("synchronizer sends canceled")
 		} else {
 			s.Errorf("synchronizer sends with error: %s", err)
-			s.reportError()
+			s.reportError(err)
 		}
 	}
 	return err
 }
 
-func (s *pieceTaskSynchronizer) reportError() {
+func (s *pieceTaskSynchronizer) reportError(err error) {
+	s.span.RecordError(err)
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, base.Code_ClientPieceRequestFail))
 	if sendError != nil {
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
