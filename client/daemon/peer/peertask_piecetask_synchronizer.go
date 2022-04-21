@@ -60,44 +60,49 @@ type pieceTaskSynchronizerError struct {
 }
 
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
-func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, request *base.PieceTaskRequest) error {
+func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, desiredPiece int32) error {
 	var (
-		peers  = map[string]bool{}
-		errors []error
+		peers = map[string]bool{}
+		errs  []error
 	)
 	peers[pp.MainPeer.PeerId] = true
 	// TODO if the worker failed, reconnect and retry
 	s.Lock()
 	defer s.Unlock()
 	if _, ok := s.workers[pp.MainPeer.PeerId]; !ok {
-		err := s.newPieceTaskSynchronizer(s.ctx, pp.MainPeer, request)
+		err := s.newPieceTaskSynchronizer(s.ctx, pp.MainPeer, desiredPiece)
 		if err != nil {
 			s.peerTaskConductor.Errorf("main peer SyncPieceTasks error: %s", err)
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	}
 	for _, p := range pp.StealPeers {
 		peers[p.PeerId] = true
 		if _, ok := s.workers[p.PeerId]; !ok {
-			err := s.newPieceTaskSynchronizer(s.ctx, p, request)
+			err := s.newPieceTaskSynchronizer(s.ctx, p, desiredPiece)
 			if err != nil {
 				s.peerTaskConductor.Errorf("steal peer SyncPieceTasks error: %s", err)
-				errors = append(errors, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	// cancel old workers
 	if len(s.workers) != len(peers) {
+		var peersToRemove []string
 		for p, worker := range s.workers {
 			if !peers[p] {
 				worker.close()
+				peersToRemove = append(peersToRemove, p)
 			}
+		}
+		for _, p := range peersToRemove {
+			delete(s.workers, p)
 		}
 	}
 
-	if len(errors) > 0 {
-		return errors[0]
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }
@@ -128,9 +133,14 @@ func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacke
 func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	ctx context.Context,
 	dstPeer *scheduler.PeerPacket_DestPeer,
-	request *base.PieceTaskRequest) error {
-
-	request.DstPid = dstPeer.PeerId
+	lastNum int32) error {
+	request := &base.PieceTaskRequest{
+		TaskId:   s.peerTaskConductor.taskID,
+		SrcPid:   s.peerTaskConductor.peerID,
+		DstPid:   dstPeer.PeerId,
+		StartNum: uint32(lastNum),
+		Limit:    16,
+	}
 	if worker, ok := s.workers[dstPeer.PeerId]; ok {
 		// worker is okay, keep it go on
 		if worker.error.Load() == nil {
@@ -141,7 +151,6 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		delete(s.workers, dstPeer.PeerId)
 	}
 
-	request.DstPid = dstPeer.PeerId
 	client, err := dfclient.SyncPieceTasks(ctx, dstPeer, request)
 	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
 	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
@@ -179,18 +188,11 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 
 func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	destPeers []*scheduler.PeerPacket_DestPeer,
-	lastNum int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
+	desiredPiece int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
 	s.Lock()
 	defer s.Unlock()
 	for _, peer := range destPeers {
-		request := &base.PieceTaskRequest{
-			TaskId:   s.peerTaskConductor.taskID,
-			SrcPid:   s.peerTaskConductor.peerID,
-			DstPid:   "",
-			StartNum: uint32(lastNum),
-			Limit:    16,
-		}
-		err := s.newPieceTaskSynchronizer(s.ctx, peer, request)
+		err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
 		if err == nil {
 			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
 			continue

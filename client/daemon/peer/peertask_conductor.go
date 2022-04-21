@@ -681,21 +681,21 @@ loop:
 
 // updateSynchronizer will convert peers to synchronizer, if failed, will update failed peers to scheduler.PeerPacket
 func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.PeerPacket) int32 {
-	num, ok := pt.getNextNotReadyPieceNum(lastNum)
+	desiredPiece, ok := pt.getNextNotReadyPieceNum(lastNum)
 	if !ok {
 		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
 		p.MainPeer = nil
 		p.StealPeers = nil
-		return num
+		return desiredPiece
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}
 	peers = append(peers, p.StealPeers...)
 
-	legacyPeers := pt.pieceTaskSyncManager.newMultiPieceTaskSynchronizer(peers, num)
+	legacyPeers := pt.pieceTaskSyncManager.newMultiPieceTaskSynchronizer(peers, desiredPiece)
 
 	p.MainPeer = nil
 	p.StealPeers = legacyPeers
-	return num
+	return desiredPiece
 }
 
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
