@@ -594,6 +594,54 @@ func TestEvaluatorBase_IsBadNode(t *testing.T) {
 			},
 		},
 		{
+			name:            "peer state is PeerStatePending",
+			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			totalPieceCount: 1,
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStatePending)
+			},
+			expect: func(t *testing.T, isBadNode bool) {
+				assert := assert.New(t)
+				assert.True(isBadNode)
+			},
+		},
+		{
+			name:            "peer state is PeerStateReceivedTiny",
+			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			totalPieceCount: 1,
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateReceivedTiny)
+			},
+			expect: func(t *testing.T, isBadNode bool) {
+				assert := assert.New(t)
+				assert.True(isBadNode)
+			},
+		},
+		{
+			name:            "peer state is PeerStateReceivedSmall",
+			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			totalPieceCount: 1,
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateReceivedSmall)
+			},
+			expect: func(t *testing.T, isBadNode bool) {
+				assert := assert.New(t)
+				assert.True(isBadNode)
+			},
+		},
+		{
+			name:            "peer state is PeerStateReceivedNormal",
+			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
+			totalPieceCount: 1,
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateReceivedNormal)
+			},
+			expect: func(t *testing.T, isBadNode bool) {
+				assert := assert.New(t)
+				assert.True(isBadNode)
+			},
+		},
+		{
 			name:            "download costs does not meet the normal distribution and last cost is twenty times more than mean",
 			peer:            resource.NewPeer(mockPeerID, mockTask, mockHost),
 			totalPieceCount: 1,

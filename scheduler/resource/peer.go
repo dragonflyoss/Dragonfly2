@@ -353,6 +353,9 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 
 // Depth represents depth of tree
 func (p *Peer) Depth() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	node := p
 	var depth int
 	for node != nil {
@@ -381,22 +384,19 @@ func (p *Peer) Depth() int {
 
 // IsDescendant determines whether it is ancestor of peer
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	return p.isDescendant(ancestor, p)
 }
 
 // IsAncestor determines whether it is descendant of peer
 func (p *Peer) IsAncestor(descendant *Peer) bool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
 	return p.isDescendant(p, descendant)
 }
 
 // isDescendant determines whether it is ancestor of peer
 func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	node := descendant
 	for node != nil {
 		parent, ok := node.LoadParent()
