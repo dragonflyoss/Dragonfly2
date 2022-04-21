@@ -196,6 +196,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	result, ok := s.peerTaskManager.Subscribe(request)
 	if !ok {
 		// running task not found, double check for done task
+		request.StartNum = searchNextPieceNum(sentMap, skipPieceCount)
 		total, err = s.sendExistPieces(log, request, sync, sentMap)
 		if err != nil {
 			log.Errorf("send exist piece tasks error: %s", err)

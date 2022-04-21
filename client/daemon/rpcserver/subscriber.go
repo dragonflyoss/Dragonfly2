@@ -56,7 +56,7 @@ func sendExistPieces(
 	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
-	sendMap map[int32]struct{},
+	sentMap map[int32]struct{},
 	skipSendZeroPiece bool) (total int32, err error) {
 	if request.Limit <= 0 {
 		request.Limit = 16
@@ -77,7 +77,7 @@ func sendExistPieces(
 		}
 		for _, p := range pp.PieceInfos {
 			log.Infof("send ready piece %d", p.PieceNum)
-			sendMap[p.PieceNum] = struct{}{}
+			sentMap[p.PieceNum] = struct{}{}
 		}
 		if uint32(len(pp.PieceInfos)) < request.Limit {
 			log.Infof("sent %d pieces, total: %d", len(pp.PieceInfos), pp.TotalPiece)
@@ -86,6 +86,16 @@ func sendExistPieces(
 		// the get piece func always return sorted pieces, use last piece num + 1 to get more pieces
 		request.StartNum = uint32(pp.PieceInfos[request.Limit-1].PieceNum + 1)
 	}
+}
+
+func searchNextPieceNum(sentMap map[int32]struct{}, cur uint32) (nextPieceNum uint32) {
+	for i := int32(cur); ; i++ {
+		if _, ok := sentMap[i]; !ok {
+			nextPieceNum = uint32(i)
+			break
+		}
+	}
+	return nextPieceNum
 }
 
 // sendExistPieces will send as much as possible pieces
@@ -231,11 +241,5 @@ func (s *subscriber) saveError(err error) error {
 }
 
 func (s *subscriber) searchNextPieceNum(cur uint32) (nextPieceNum uint32) {
-	for i := int32(cur); ; i++ {
-		if _, ok := s.sentMap[i]; !ok {
-			nextPieceNum = uint32(i)
-			break
-		}
-	}
-	return nextPieceNum
+	return searchNextPieceNum(s.sentMap, cur)
 }
