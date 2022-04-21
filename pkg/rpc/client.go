@@ -269,7 +269,6 @@ type candidateClient struct {
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	// should not retry
 	ctx, cancel := context.WithTimeout(context.Background(), conn.dialTimeout)
 	defer cancel()
 	return grpc.DialContext(ctx, target, opts...)
