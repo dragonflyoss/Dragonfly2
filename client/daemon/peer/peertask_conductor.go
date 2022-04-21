@@ -107,6 +107,7 @@ type peerTaskConductor struct {
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
 	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
+	// Deprecated: remove in future release
 	peerPacket      atomic.Value // *scheduler.PeerPacket
 	legacyPeerCount *atomic.Int64
 	// peerPacketReady will receive a ready signal for peerPacket ready
@@ -119,7 +120,6 @@ type peerTaskConductor struct {
 
 	// same actions must be done only once, like close done channel and so on
 	statusOnce sync.Once
-	cancelOnce sync.Once
 	// done channel will be closed when peer task success
 	successCh chan struct{}
 	// fail channel will be closed after peer task fail
@@ -392,20 +392,36 @@ func (pt *peerTaskConductor) Log() *logger.SugaredLoggerOnWith {
 }
 
 func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
-	pt.cancelOnce.Do(func() {
+	pt.statusOnce.Do(func() {
 		pt.failedCode = code
 		pt.failedReason = reason
-		pt.Fail()
+		pt.fail()
 	})
 }
 
+// only use when receive back source code from scheduler
 func (pt *peerTaskConductor) markBackSource() {
 	pt.needBackSource.Store(true)
 	// when close peerPacketReady, pullPiecesFromPeers will invoke backSource
 	close(pt.peerPacketReady)
+	// let legacy mode exit
+	pt.peerPacket.Store(&scheduler.PeerPacket{
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
+		ParallelCount: 1,
+		MainPeer:      nil,
+		StealPeers: []*scheduler.PeerPacket_DestPeer{
+			{
+				Ip:      pt.host.Ip,
+				RpcPort: pt.host.RpcPort,
+				PeerId:  pt.peerID,
+			},
+		},
+		Code: base.Code_SchedNeedBackSource,
+	})
 }
 
-// only use when schedule timeout
+// only use when legacy get piece from peers schedule timeout
 func (pt *peerTaskConductor) forceBackSource() {
 	pt.needBackSource.Store(true)
 	pt.backSource()
@@ -647,9 +663,9 @@ loop:
 		legacyPeerCount := int64(len(peerPacket.StealPeers))
 		pt.Debugf("connect to %d legacy peers", legacyPeerCount)
 		pt.legacyPeerCount.Store(legacyPeerCount)
-		pt.peerPacket.Store(peerPacket)
 
-		// legacy mode: send peerPacketReady
+		// legacy mode: update peer packet, then send peerPacketReady
+		pt.peerPacket.Store(peerPacket)
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.successCh:
@@ -912,8 +928,8 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-				time.Since(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, scheduler time cost: %dus, peer count: %d",
+				time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -948,7 +964,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, peer count: %d", len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			// research from piece 0
 			return 0, true
 		}

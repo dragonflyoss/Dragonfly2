@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	dfnet "d7y.io/dragonfly/v2/internal/dfnet"
+	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	gomock "github.com/golang/mock/gomock"
