@@ -345,16 +345,14 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 		s.Debugf("synchronizer already error %s, skip acquire more pieces", err)
 		return err
 	}
+	request.DstPid = s.dstPeer.PeerId
 	err := s.client.Send(request)
 	s.span.AddEvent(fmt.Sprintf("send piece #%d request", request.StartNum))
 	if err != nil {
+		// send should always ok
 		s.error.Store(&pieceTaskSynchronizerError{err})
-		if s.canceled(err) {
-			s.Debugf("synchronizer sends canceled")
-		} else {
-			s.Errorf("synchronizer sends with error: %s", err)
-			s.reportError(err)
-		}
+		s.Errorf("synchronizer sends with error: %s", err)
+		s.reportError(err)
 	}
 	return err
 }
