@@ -1368,6 +1368,7 @@ func (pt *peerTaskConductor) done() {
 	defer func() {
 		pt.broker.Stop()
 		pt.span.End()
+		pt.pieceDownloadCancel()
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
@@ -1459,6 +1460,7 @@ func (pt *peerTaskConductor) fail() {
 		close(pt.failCh)
 		pt.broker.Stop()
 		pt.span.End()
+		pt.pieceDownloadCancel()
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
