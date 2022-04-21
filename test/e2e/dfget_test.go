@@ -99,7 +99,8 @@ func singleDfgetTest(name, ns, label, podNamePrefix, container string, fileDetai
 		pod := e2eutil.NewPodExec(ns, podName, container)
 
 		// install curl
-		_, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
+		out, err = pod.Command("apk", "add", "-U", "curl").CombinedOutput()
+		fmt.Println("apk output: " + string(out))
 		Expect(err).NotTo(HaveOccurred())
 
 		for path, size := range fileDetails {

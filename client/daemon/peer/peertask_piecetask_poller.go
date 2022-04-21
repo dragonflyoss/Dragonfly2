@@ -88,6 +88,7 @@ func (poller *pieceTaskPoller) preparePieceTasksByPeer(
 	span.SetAttributes(config.AttributeGetPieceLimit.Int(int(request.Limit)))
 	defer span.End()
 
+	var maxRetries = 60
 	// when cdn returns base.Code_CDNTaskNotFound, report it to scheduler and wait cdn download it.
 retry:
 	ptc.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
@@ -140,8 +141,10 @@ retry:
 	}
 
 	// currently, before cdn gc tasks, it did not notify scheduler, when cdn complains Code_CDNTaskNotFound, retry
-	if code == base.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*scheduler.PeerPacket) {
+	if maxRetries > 0 && code == base.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*scheduler.PeerPacket) {
 		span.AddEvent("retry for CdnTaskNotFound")
+		time.Sleep(time.Second)
+		maxRetries--
 		goto retry
 	}
 	return nil, err
