@@ -82,7 +82,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
 		// peer will download the task back-to-source
-		if (n >= s.config.RetryBackSourceLimit || peer.Task.IsCDNFailed()) &&
+		if (n >= s.config.RetryBackSourceLimit || peer.Task.IsCDNFailed() || peer.NeedBackToSource.Load()) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -237,6 +237,14 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 		parent, ok := value.(*resource.Peer)
 		if !ok {
+			return true
+		}
+
+		_, ok = parent.LoadParent()
+		isBackToSource := peer.Task.BackToSourcePeers.Contains(parent)
+		if !ok && !parent.Host.IsCDN && !isBackToSource {
+			peer.Log.Debugf("parent %s is not selected, because its download state is %t %t %t",
+				parent.ID, ok, parent.Host.IsCDN, isBackToSource)
 			return true
 		}
 

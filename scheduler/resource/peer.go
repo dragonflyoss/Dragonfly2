@@ -149,6 +149,9 @@ type Peer struct {
 	// BlockPeers is bad peer ids
 	BlockPeers set.SafeSet
 
+	// NeedBackToSource needs downloaded from source
+	NeedBackToSource *atomic.Bool
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -165,22 +168,23 @@ type Peer struct {
 // New Peer instance
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
-		ID:         id,
-		BizTag:     DefaultBizTag,
-		Pieces:     &bitset.BitSet{},
-		pieceCosts: []int64{},
-		Stream:     &atomic.Value{},
-		Task:       task,
-		Host:       host,
-		Parent:     &atomic.Value{},
-		Children:   &sync.Map{},
-		ChildCount: atomic.NewInt32(0),
-		StealPeers: set.NewSafeSet(),
-		BlockPeers: set.NewSafeSet(),
-		CreateAt:   atomic.NewTime(time.Now()),
-		UpdateAt:   atomic.NewTime(time.Now()),
-		mu:         &sync.RWMutex{},
-		Log:        logger.WithTaskAndPeerID(task.ID, id),
+		ID:               id,
+		BizTag:           DefaultBizTag,
+		Pieces:           &bitset.BitSet{},
+		pieceCosts:       []int64{},
+		Stream:           &atomic.Value{},
+		Task:             task,
+		Host:             host,
+		Parent:           &atomic.Value{},
+		Children:         &sync.Map{},
+		ChildCount:       atomic.NewInt32(0),
+		StealPeers:       set.NewSafeSet(),
+		BlockPeers:       set.NewSafeSet(),
+		NeedBackToSource: atomic.NewBool(false),
+		CreateAt:         atomic.NewTime(time.Now()),
+		UpdateAt:         atomic.NewTime(time.Now()),
+		mu:               &sync.RWMutex{},
+		Log:              logger.WithTaskAndPeerID(task.ID, id),
 	}
 
 	// Initialize state machine
