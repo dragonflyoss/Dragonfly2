@@ -154,6 +154,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedTaskStatusError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -185,6 +186,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.NoError(err)
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -217,6 +219,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -253,6 +256,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.DirectPiece, &rpcscheduler.RegisterResult_PieceContent{
 					PieceContent: peer.Task.DirectPiece,
 				})
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -287,6 +291,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -321,6 +326,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -355,6 +361,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -396,6 +403,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -436,6 +444,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -476,6 +485,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -516,6 +526,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, base.SizeScope_SMALL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedSmall))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -550,6 +561,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				dferr, ok := err.(*dferrors.DfError)
 				assert.True(ok)
 				assert.Equal(dferr.Code, base.Code_SchedError)
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{
@@ -584,6 +596,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				assert.Equal(result.TaskId, peer.Task.ID)
 				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
 				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 	}
@@ -1691,9 +1704,10 @@ func TestService_registerTask(t *testing.T) {
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1718,9 +1732,10 @@ func TestService_registerTask(t *testing.T) {
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1745,9 +1760,10 @@ func TestService_registerTask(t *testing.T) {
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1776,9 +1792,10 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, nil).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1807,9 +1824,10 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, nil).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1838,9 +1856,10 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, errors.New("foo")).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1869,9 +1888,10 @@ func TestService_registerTask(t *testing.T) {
 					mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(mockPeer, &rpcscheduler.PeerResult{}, errors.New("foo")).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.False(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1888,16 +1908,16 @@ func TestService_registerTask(t *testing.T) {
 				UrlMeta: mockTaskURLMeta,
 			},
 			run: func(t *testing.T, svc *Service, req *rpcscheduler.PeerTaskRequest, mockTask *resource.Task, mockPeer *resource.Peer, taskManager resource.TaskManager, cdn resource.CDN, mr *resource.MockResourceMockRecorder, mt *resource.MockTaskManagerMockRecorder, mc *resource.MockCDNMockRecorder) {
-
 				mockTask.FSM.SetState(resource.TaskStatePending)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, false).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.True(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
@@ -1920,9 +1940,10 @@ func TestService_registerTask(t *testing.T) {
 					mt.LoadOrStore(gomock.Any()).Return(mockTask, true).Times(1),
 				)
 
-				task, err := svc.registerTask(context.Background(), req)
+				task, loaded, err := svc.registerTask(context.Background(), req)
 				assert := assert.New(t)
 				assert.NoError(err)
+				assert.True(loaded)
 				assert.EqualValues(mockTask, task)
 			},
 		},
