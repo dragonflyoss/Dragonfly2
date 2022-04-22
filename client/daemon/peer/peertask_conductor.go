@@ -62,6 +62,7 @@ var _ Task = (*peerTaskConductor)(nil)
 // peerTaskConductor will fetch all pieces from other peers and send pieces info to broker
 type peerTaskConductor struct {
 	*logger.SugaredLoggerOnWith
+	ptm *peerTaskManager
 	// ctx is with span info for tracing
 	// we use successCh and failCh mark task success or fail
 	ctx context.Context
@@ -197,6 +198,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 
 	ptc := &peerTaskConductor{
+		ptm:                 ptm,
 		startTime:           time.Now(),
 		ctx:                 ctx,
 		broker:              newPieceBroker(),

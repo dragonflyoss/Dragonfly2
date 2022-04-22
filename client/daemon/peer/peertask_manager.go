@@ -128,6 +128,8 @@ type peerTaskManager struct {
 	enableMultiplex bool
 	// enablePrefetch indicates to prefetch the whole files of ranged requests
 	enablePrefetch bool
+	// enableWatchdog indicates to start watch dog for every single peer task
+	enableWatchdog bool
 
 	calculateDigest bool
 
@@ -144,7 +146,8 @@ func NewPeerTaskManager(
 	multiplex bool,
 	prefetch bool,
 	calculateDigest bool,
-	getPiecesMaxRetry int) (TaskManager, error) {
+	getPiecesMaxRetry int,
+	watchdog bool) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:              host,
@@ -157,6 +160,7 @@ func NewPeerTaskManager(
 		perPeerRateLimit:  perPeerRateLimit,
 		enableMultiplex:   multiplex,
 		enablePrefetch:    prefetch,
+		enableWatchdog:    watchdog,
 		calculateDigest:   calculateDigest,
 		getPiecesMaxRetry: getPiecesMaxRetry,
 	}

@@ -170,7 +170,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
+		opt.Download.GetPiecesMaxRetry, opt.Download.Watchdog)
 	if err != nil {
 		return nil, err
 	}
