@@ -82,7 +82,9 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 
 		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
 		// peer will download the task back-to-source
-		if (n >= s.config.RetryBackSourceLimit || peer.Task.IsCDNFailed()) &&
+		isCDNFailed := peer.Task.IsCDNFailed()
+		needBackToSource := peer.NeedBackToSource.Load()
+		if (n >= s.config.RetryBackSourceLimit || isCDNFailed || needBackToSource) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -90,13 +92,14 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
+			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, cdn is failed %t, peer need back-to-source %t",
+				n, isCDNFailed, needBackToSource)
+
 			// Notify peer back-to-source
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
-			peer.Log.Infof("peer scheduling %d times, peer downloads back-to-source %d",
-				n, base.Code_SchedNeedBackSource)
 
 			if err := peer.FSM.Event(resource.PeerEventDownloadFromBackToSource); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
@@ -194,6 +197,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	peer.ReplaceParent(parents[0])
 	peer.Log.Infof("schedule parent successful, replace parent to %s and steal peers is %v",
 		parents[0].ID, peer.StealPeers.Values())
+	peer.Log.Debugf("peer ancestors is %v", peer.Ancestors())
 	return parents, true
 }
 
@@ -245,11 +249,6 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 			return true
 		}
 
-		if parent.StealPeers.Contains(peer.ID) {
-			peer.Log.Debugf("parent %s is not selected because it is in steal peers", parent.ID)
-			return true
-		}
-
 		if parent.ID == peer.ID {
 			peer.Log.Debug("parent is not selected because it is same")
 			return true
@@ -257,6 +256,14 @@ func (s *scheduler) filterParents(peer *resource.Peer, blocklist set.SafeSet) []
 
 		if s.evaluator.IsBadNode(parent) {
 			peer.Log.Debugf("parent %s is not selected because it is bad node", parent.ID)
+			return true
+		}
+
+		_, ok = parent.LoadParent()
+		isBackToSource := peer.Task.BackToSourcePeers.Contains(parent)
+		if !ok && !parent.Host.IsCDN && !isBackToSource {
+			peer.Log.Debugf("parent %s is not selected, because its download state is %t %t %t",
+				parent.ID, ok, parent.Host.IsCDN, isBackToSource)
 			return true
 		}
 

@@ -194,6 +194,25 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
+			name: "peer need back-to-source and send Code_SchedNeedBackSource code success",
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, cdnPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				task := peer.Task
+				task.StorePeer(peer)
+				peer.NeedBackToSource.Store(true)
+				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.StoreStream(stream)
+
+				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
+			},
+		},
+		{
 			name: "cdn peer state is PeerStateFailed and task state is PeerStateFailed",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, cdnPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
@@ -651,6 +670,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.BackToSourcePeers.Add(mockPeer)
 				peer.Task.StorePeer(mockPeer)
 				mockPeer.Pieces.Set(0)
 				peer.StoreStream(stream)
@@ -678,6 +698,8 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				stealPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
 				peer.Task.StorePeer(stealPeer)
+				peer.Task.BackToSourcePeers.Add(mockPeer)
+				peer.Task.BackToSourcePeers.Add(stealPeer)
 				mockPeer.Pieces.Set(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
@@ -807,13 +829,61 @@ func TestScheduler_FindParent(t *testing.T) {
 			},
 		},
 		{
-			name: "find parent",
+			name: "find back-to-source parent",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
 				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0])
+				peer.Task.BackToSourcePeers.Add(mockPeers[1])
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
+			name: "find cdn parent",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].Host.IsCDN = true
+				mockPeers[1].Host.IsCDN = true
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
+			name: "find parent with ancestor",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].StoreParent(mockPeers[3])
+				mockPeers[1].StoreParent(mockPeers[3])
 				mockPeers[0].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(1)
@@ -835,6 +905,8 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0])
+				peer.Task.BackToSourcePeers.Add(mockPeers[1])
 				mockPeers[0].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(1)
