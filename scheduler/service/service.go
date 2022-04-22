@@ -167,12 +167,15 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				}, nil
 			}
 
-			peer.ReplaceParent(parent)
 			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
 				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 				peer.Log.Error(msg)
 				return nil, dferrors.New(base.Code_SchedError, msg)
 			}
+
+			peer.ReplaceParent(parent)
+			peer.Log.Infof("schedule parent successful, replace parent to %s ", parent.ID)
+			peer.Log.Debugf("peer ancestors is %v", peer.Ancestors())
 
 			singlePiece := &rpcscheduler.SinglePiece{
 				DstPid:  parent.ID,

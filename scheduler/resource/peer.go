@@ -386,6 +386,32 @@ func (p *Peer) Depth() int {
 	return depth
 }
 
+// Ancestors returns peer's ancestors
+func (p *Peer) Ancestors() []string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	var ancestors []string
+	node := p
+	for node != nil {
+		parent, ok := node.LoadParent()
+		if !ok {
+			return ancestors
+		}
+
+		// Prevent traversal tree from infinite loop
+		if parent.ID == node.ID {
+			p.Log.Error("tree structure produces an infinite loop")
+			return ancestors
+		}
+
+		node = parent
+		ancestors = append(ancestors, node.ID)
+	}
+
+	return ancestors
+}
+
 // IsDescendant determines whether it is ancestor of peer
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
 	return p.isDescendant(ancestor, p)
