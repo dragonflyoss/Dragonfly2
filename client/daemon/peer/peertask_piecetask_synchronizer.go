@@ -241,7 +241,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_DestPeer) {
 	if s.watchdog != nil {
 		close(s.watchdog.done)
-		s.peerTaskConductor.Debugf("close old watch dog")
+		s.peerTaskConductor.Debugf("close old watchdog")
 	}
 	s.watchdog = &synchronizerWatchdog{
 		done:              make(chan struct{}),
@@ -250,7 +250,7 @@ func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_Dest
 		peerTaskConductor: s.peerTaskConductor,
 	}
 	s.watchdog.mainPeer.Store(mainPeer)
-	s.peerTaskConductor.Infof("start new watch dog")
+	s.peerTaskConductor.Infof("start new watchdog")
 	go s.watchdog.watch(defaultWatchdogTimeout)
 }
 
@@ -429,9 +429,11 @@ func (s *synchronizerWatchdog) watch(timeout time.Duration) {
 			s.peerTaskConductor.Infof("watch sync pieces ok")
 		}
 	case <-s.peerTaskConductor.successCh:
-		s.peerTaskConductor.Debugf("peer task success, watch dog exit")
+		s.peerTaskConductor.Debugf("peer task success, watchdog exit")
 	case <-s.peerTaskConductor.failCh:
-		s.peerTaskConductor.Debugf("peer task fail, watch dog exit")
+		s.peerTaskConductor.Debugf("peer task fail, watchdog exit")
+	case <-s.done:
+		s.peerTaskConductor.Debugf("watchdog done, exit")
 	}
 }
 
@@ -439,9 +441,9 @@ func (s *synchronizerWatchdog) reportWatchFailed() {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(
 		s.peerTaskConductor, s.mainPeer.Load().(*scheduler.PeerPacket_DestPeer), base.Code_ClientPieceRequestFail))
 	if sendError != nil {
-		s.peerTaskConductor.Errorf("watch dog sync piece info failed and send piece result with error: %s", sendError)
+		s.peerTaskConductor.Errorf("watchdog sync piece info failed and send piece result with error: %s", sendError)
 		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 	} else {
-		s.peerTaskConductor.Debugf("report watch dog sync piece error to scheduler")
+		s.peerTaskConductor.Debugf("report watchdog sync piece error to scheduler")
 	}
 }
