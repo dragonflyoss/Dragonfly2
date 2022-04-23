@@ -11,17 +11,12 @@ cd $DIR
 prepare(){
     mkdir -p config
 
-    cat template/cdn.template.yaml > config/cdn.yaml
-    cat template/dfget.template.yaml > config/dfget.yaml
-    cat template/scheduler.template.yaml > config/scheduler.yaml
-    cat template/manager.template.yaml > config/manager.yaml
-
     ip=${IP:-$(hostname -i)}
 
-    sed -i "s,__IP__,$ip," config/dfget.yaml
-    sed -i "s,__IP__,$ip," config/cdn.yaml
-    sed -i "s,__IP__,$ip," config/scheduler.yaml
-    sed -i "s,__IP__,$ip," config/manager.yaml
+    sed "s,__IP__,$ip," config/dfget.yaml > config/dfget.yaml
+    sed "s,__IP__,$ip," config/cdn.yaml > config/cdn.yaml
+    sed "s,__IP__,$ip," config/scheduler.yaml > config/scheduler.yaml
+    sed "s,__IP__,$ip," config/manager.yaml > config/manager.yaml
 }
 
 run_container(){
