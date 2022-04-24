@@ -193,7 +193,7 @@ func (m *clientManager) ListClients() []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var clients []string
-	for c, _ := range m.clients {
+	for c := range m.clients {
 		clients = append(clients, c)
 	}
 	return clients
