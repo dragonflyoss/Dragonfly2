@@ -26,7 +26,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
