@@ -25,6 +25,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dfplugin"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 var PluginCmd = &cobra.Command{
@@ -35,11 +36,19 @@ var PluginCmd = &cobra.Command{
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	Run: func(cmd *cobra.Command, args []string) {
-		ListAvailablePlugins()
+		ListAvailableInTreePlugins()
+		ListAvailableOutOfTreePlugins()
 	},
 }
 
-func ListAvailablePlugins() {
+func ListAvailableInTreePlugins() {
+	clients := source.ListClients()
+	for _, scheme := range clients {
+		fmt.Printf("source plugin: %s, location: in-tree\n", scheme)
+	}
+}
+
+func ListAvailableOutOfTreePlugins() {
 	d, err := dfpath.New()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get plugin path: %q\n", err)
@@ -54,6 +63,10 @@ func ListAvailablePlugins() {
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read plugin dir %s error: %s\n", d.PluginDir(), err)
+		return
+	}
+	if len(files) == 0 {
+		fmt.Fprintf(os.Stderr, "no out of tree plugin found\n")
 		return
 	}
 	for _, file := range files {
@@ -86,6 +99,6 @@ func ListAvailablePlugins() {
 			continue
 		}
 
-		fmt.Printf("%s plugin %s, location: %s, attribute: %s\n", typ, name, fileName, string(attr))
+		fmt.Printf("%s plugin: %s, location: %s, attribute: %s\n", typ, name, fileName, string(attr))
 	}
 }

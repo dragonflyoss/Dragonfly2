@@ -36,7 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
