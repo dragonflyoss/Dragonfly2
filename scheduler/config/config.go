@@ -121,6 +121,10 @@ func New() *Config {
 
 // Validate config parameters
 func (c *Config) Validate() error {
+	if c.Server == nil {
+		return errors.New("server requires parameter server")
+	}
+
 	if c.Server.IP == "" {
 		return errors.New("server requires parameter ip")
 	}
@@ -147,6 +151,10 @@ func (c *Config) Validate() error {
 
 	if c.Scheduler.RetryInterval <= 0 {
 		return errors.New("scheduler requires parameter retryInterval")
+	}
+
+	if c.Scheduler.GC == nil {
+		return errors.New("scheduler requires parameter gc")
 	}
 
 	if c.Scheduler.GC.PeerGCInterval <= 0 {
@@ -181,7 +189,7 @@ func (c *Config) Validate() error {
 		return errors.New("manager requires parameter keepAlive interval")
 	}
 
-	if c.Job.Enable {
+	if c.Job != nil && c.Job.Enable {
 		if c.Job.GlobalWorkerNum == 0 {
 			return errors.New("job requires parameter globalWorkerNum")
 		}
@@ -211,6 +219,10 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Storage == nil {
+		return errors.New("server requires parameter storage")
+	}
+
 	if c.Storage.MaxSize <= 0 {
 		return errors.New("storage requires parameter maxSize")
 	}
@@ -223,7 +235,7 @@ func (c *Config) Validate() error {
 		return errors.New("storage requires parameter bufferSize")
 	}
 
-	if c.Metrics.Enable {
+	if c.Metrics != nil && c.Metrics.Enable {
 		if c.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}
