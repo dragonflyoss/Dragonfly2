@@ -40,7 +40,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
 
 func TestPieceDownloader_DownloadPiece(t *testing.T) {

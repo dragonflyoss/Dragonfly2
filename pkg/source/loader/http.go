@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package main
+package loader
 
 import (
-	"d7y.io/dragonfly/v2/cmd/dfget/cmd"
-	// register all source clients
-	_ "d7y.io/dragonfly/v2/pkg/source/loader"
+	_ "d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol" // Register http client
 )
-
-func main() {
-	cmd.Execute()
-}
