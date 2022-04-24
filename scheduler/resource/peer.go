@@ -150,7 +150,18 @@ type Peer struct {
 	BlockPeers set.SafeSet
 
 	// NeedBackToSource needs downloaded from source
+	//
+	// When peer is registering, at the same time,
+	// scheduler needs to create the new corresponding task and the cdn is disabled,
+	// NeedBackToSource is set to true
 	NeedBackToSource *atomic.Bool
+
+	// IsBackToSource is downloaded from source
+	//
+	// When peer is scheduling and NeedBackToSource is true,
+	// scheduler needs to return Code_SchedNeedBackSource and
+	// IsBackToSource is set to true
+	IsBackToSource *atomic.Bool
 
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
@@ -181,6 +192,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		StealPeers:       set.NewSafeSet(),
 		BlockPeers:       set.NewSafeSet(),
 		NeedBackToSource: atomic.NewBool(false),
+		IsBackToSource:   atomic.NewBool(false),
 		CreateAt:         atomic.NewTime(time.Now()),
 		UpdateAt:         atomic.NewTime(time.Now()),
 		mu:               &sync.RWMutex{},
@@ -226,6 +238,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
+				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p)
 				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
