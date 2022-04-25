@@ -266,11 +266,13 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		// 1. candidate parent has parent
 		// 2. candidate parent is CDN
 		// 3. candidate parent has been back-to-source
+		// 4. candidate parent has been succeeded
 		_, ok = candidateParent.LoadParent()
 		isBackToSource := candidateParent.IsBackToSource.Load()
-		if !ok && !candidateParent.Host.IsCDN && !isBackToSource {
-			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %t %t",
-				candidateParent.ID, ok, candidateParent.Host.IsCDN, isBackToSource)
+		if !ok && !candidateParent.Host.IsCDN && !isBackToSource &&
+			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
+			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %t %t %s",
+				candidateParent.ID, ok, candidateParent.Host.IsCDN, isBackToSource, candidateParent.FSM.Current())
 			return true
 		}
 
