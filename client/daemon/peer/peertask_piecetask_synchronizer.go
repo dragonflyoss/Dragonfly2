@@ -172,6 +172,7 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	}
 
 	_, span := tracer.Start(s.ctx, config.SpanSyncPieceTasks)
+	span.SetAttributes(config.AttributeTargetPeerID.String(dstPeer.PeerId))
 	synchronizer := &pieceTaskSynchronizer{
 		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
@@ -309,7 +310,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		}
 		select {
 		case s.pieceRequestCh <- req:
-			s.span.AddEvent(fmt.Sprintf("send piece #%d request", piece.PieceNum))
+			s.span.AddEvent(fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum))
 		case <-s.peerTaskConductor.successCh:
 			s.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		case <-s.peerTaskConductor.failCh:
