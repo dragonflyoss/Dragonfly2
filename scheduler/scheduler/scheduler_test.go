@@ -880,6 +880,27 @@ func TestScheduler_FindParent(t *testing.T) {
 			},
 		},
 		{
+			name: "parent state is PeerStateSucceeded",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
+				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
 			name: "find parent with ancestor",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
