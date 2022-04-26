@@ -18,8 +18,6 @@ package cdn
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -27,6 +25,7 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/fileserver"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
@@ -58,8 +57,8 @@ type Server struct {
 	// gc Server
 	gcServer *gc.Server
 
-	// uploadPath
-	uploadPath string
+	// fileServer
+	fileServer *fileserver.Server
 }
 
 // New creates a brand-new server instance.
@@ -103,7 +102,7 @@ func New(config *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
-	uploadPath := storageManager.GetUploadPath()
+	fileServer := fileserver.New(config.RPCServer.DownloadPort, upload.PeerDownloadHTTPPathPrefix, storageManager.GetUploadPath())
 
 	// Initialize gc server
 	gcServer, err := gc.New()
@@ -134,7 +133,7 @@ func New(config *config.Config) (*Server, error) {
 		metricsServer: metricsServer,
 		configServer:  configServer,
 		gcServer:      gcServer,
-		uploadPath:    uploadPath,
+		fileServer:    fileServer,
 	}, nil
 }
 
@@ -183,11 +182,7 @@ func (s *Server) Serve() error {
 
 	go func() {
 		// Start file server
-		fileServer := http.Server{
-			Addr:    fmt.Sprintf(":%d", s.config.RPCServer.DownloadPort),
-			Handler: http.StripPrefix(upload.PeerDownloadHTTPPathPrefix, http.FileServer(http.Dir(s.uploadPath))),
-		}
-		if err := fileServer.ListenAndServe(); err != nil {
+		if err := s.fileServer.ListenAndServe(); err != nil {
 			logger.Fatalf("start cdn file server failed")
 		}
 	}()
