@@ -30,7 +30,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
-	"d7y.io/dragonfly/v2/cdn/storedriver/local"
 	"d7y.io/dragonfly/v2/cdn/supervisor"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn"
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
@@ -58,6 +57,9 @@ type Server struct {
 
 	// gc Server
 	gcServer *gc.Server
+
+	// uploadPath
+	uploadPath string
 }
 
 // New creates a brand-new server instance.
@@ -101,6 +103,8 @@ func New(config *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
+	uploadPath := storageManager.GetUploadPath()
+
 	// Initialize gc server
 	gcServer, err := gc.New()
 	if err != nil {
@@ -130,6 +134,7 @@ func New(config *config.Config) (*Server, error) {
 		metricsServer: metricsServer,
 		configServer:  configServer,
 		gcServer:      gcServer,
+		uploadPath:    uploadPath,
 	}, nil
 }
 
@@ -180,7 +185,7 @@ func (s *Server) Serve() error {
 		// Start file server
 		fileServer := http.Server{
 			Addr:    fmt.Sprintf(":%d", s.config.RPCServer.DownloadPort),
-			Handler: http.StripPrefix(upload.PeerDownloadHTTPPathPrefix, http.FileServer(http.Dir(s.config.Storage.DriverConfigs[local.DiskDriverName].BaseDir))),
+			Handler: http.StripPrefix(upload.PeerDownloadHTTPPathPrefix, http.FileServer(http.Dir(s.uploadPath))),
 		}
 		if err := fileServer.ListenAndServe(); err != nil {
 			logger.Fatalf("start cdn file server failed")

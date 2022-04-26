@@ -381,6 +381,10 @@ func (h *hybridStorageManager) tryShmSpace(url, taskID string, fileLength int64)
 	return "", fmt.Errorf("shared memory is not allowed")
 }
 
+func (h *hybridStorageManager) GetUploadPath() string {
+	return h.diskDriver.GetPath(storage.GetUploadHomeRaw())
+}
+
 func (h *hybridStorageManager) GC() error {
 	logger.StorageGCLogger.With("type", "hybrid").Debug("start the hybrid storage gc job")
 	var wg sync.WaitGroup

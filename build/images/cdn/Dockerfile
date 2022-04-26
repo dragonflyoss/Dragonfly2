@@ -26,7 +26,6 @@ ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf
 
 COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/start-cdn.sh /root/start.sh
-#COPY --from=builder /go/src/d7y.io/dragonfly/v2/hack/cdn-nginx.conf /etc/nginx/nginx.conf
 COPY --from=builder /opt/dragonfly/bin/cdn /opt/dragonfly/bin/cdn
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
