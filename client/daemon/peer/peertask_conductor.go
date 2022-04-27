@@ -332,6 +332,7 @@ func (pt *peerTaskConductor) register() error {
 }
 
 func (pt *peerTaskConductor) start() error {
+	// when is seed task, setup back source
 	if pt.seed {
 		pt.peerPacketStream = &dummyPeerPacketStream{}
 		pt.schedulerClient = &dummySchedulerClient{}

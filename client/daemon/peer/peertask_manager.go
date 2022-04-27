@@ -51,12 +51,13 @@ type TaskManager interface {
 		readCloser io.ReadCloser, attribute map[string]string, err error)
 	// StartSeedTask starts a seed peer task
 	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
-		progress chan *SeedTaskProgress, err error)
-	Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool)
+		seedTaskResult *SeedTaskResponse, err error)
+
+	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
 
 	IsPeerTaskRunning(id string) bool
 
-	// Check if the given task exists in P2P network
+	// StatTask checks whether the given task exists in P2P network
 	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
 
 	// AnnouncePeerTask announces peer task info to P2P network
@@ -328,11 +329,11 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	return readCloser, attribute, err
 }
 
-func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (progress chan *SeedTaskProgress, err error) {
-	pg, ok := ptm.tryReuseSeedPeerTask(ctx, req)
+func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (response *SeedTaskResponse, err error) {
+	response, ok := ptm.tryReuseSeedPeerTask(ctx, req)
 	if ok {
 		metrics.PeerTaskCacheHitCount.Add(1)
-		return pg, nil
+		return response, nil
 	}
 
 	var limit = rate.Inf
@@ -343,28 +344,23 @@ func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequ
 		limit = rate.Limit(req.Limit)
 	}
 
-	ctx, st, err := ptm.newSeedTask(ctx, req, limit)
-	if err != nil {
-		return nil, err
-	}
-
-	return st.Start(ctx)
+	return ptm.newSeedTask(ctx, req, limit)
 }
 
-type SubscribeResult struct {
+type SubscribeResponse struct {
 	Storage          storage.TaskStorageDriver
 	PieceInfoChannel chan *PieceInfo
 	Success          chan struct{}
 	Fail             chan struct{}
 }
 
-func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool) {
+func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
 	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
 	if !ok {
 		return nil, false
 	}
 
-	result := &SubscribeResult{
+	result := &SubscribeResponse{
 		Storage:          ptc.storage,
 		PieceInfoChannel: ptc.broker.Subscribe(),
 		Success:          ptc.successCh,

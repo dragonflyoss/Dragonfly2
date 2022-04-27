@@ -98,10 +98,10 @@ func (mr *MockTaskManagerMockRecorder) StartFileTask(ctx, req interface{}) *gomo
 }
 
 // StartSeedTask mocks base method.
-func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (chan *SeedTaskProgress, error) {
+func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (*SeedTaskResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartSeedTask", ctx, req)
-	ret0, _ := ret[0].(chan *SeedTaskProgress)
+	ret0, _ := ret[0].(*SeedTaskResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -158,10 +158,10 @@ func (mr *MockTaskManagerMockRecorder) Stop(ctx interface{}) *gomock.Call {
 }
 
 // Subscribe mocks base method.
-func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool) {
+func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", request)
-	ret0, _ := ret[0].(*SubscribeResult)
+	ret0, _ := ret[0].(*SubscribeResponse)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
