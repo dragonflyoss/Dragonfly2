@@ -149,6 +149,20 @@ type Peer struct {
 	// BlockPeers is bad peer ids
 	BlockPeers set.SafeSet
 
+	// NeedBackToSource needs downloaded from source
+	//
+	// When peer is registering, at the same time,
+	// scheduler needs to create the new corresponding task and the cdn is disabled,
+	// NeedBackToSource is set to true
+	NeedBackToSource *atomic.Bool
+
+	// IsBackToSource is downloaded from source
+	//
+	// When peer is scheduling and NeedBackToSource is true,
+	// scheduler needs to return Code_SchedNeedBackSource and
+	// IsBackToSource is set to true
+	IsBackToSource *atomic.Bool
+
 	// CreateAt is peer create time
 	CreateAt *atomic.Time
 
@@ -165,22 +179,24 @@ type Peer struct {
 // New Peer instance
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
-		ID:         id,
-		BizTag:     DefaultBizTag,
-		Pieces:     &bitset.BitSet{},
-		pieceCosts: []int64{},
-		Stream:     &atomic.Value{},
-		Task:       task,
-		Host:       host,
-		Parent:     &atomic.Value{},
-		Children:   &sync.Map{},
-		ChildCount: atomic.NewInt32(0),
-		StealPeers: set.NewSafeSet(),
-		BlockPeers: set.NewSafeSet(),
-		CreateAt:   atomic.NewTime(time.Now()),
-		UpdateAt:   atomic.NewTime(time.Now()),
-		mu:         &sync.RWMutex{},
-		Log:        logger.WithTaskAndPeerID(task.ID, id),
+		ID:               id,
+		BizTag:           DefaultBizTag,
+		Pieces:           &bitset.BitSet{},
+		pieceCosts:       []int64{},
+		Stream:           &atomic.Value{},
+		Task:             task,
+		Host:             host,
+		Parent:           &atomic.Value{},
+		Children:         &sync.Map{},
+		ChildCount:       atomic.NewInt32(0),
+		StealPeers:       set.NewSafeSet(),
+		BlockPeers:       set.NewSafeSet(),
+		NeedBackToSource: atomic.NewBool(false),
+		IsBackToSource:   atomic.NewBool(false),
+		CreateAt:         atomic.NewTime(time.Now()),
+		UpdateAt:         atomic.NewTime(time.Now()),
+		mu:               &sync.RWMutex{},
+		Log:              logger.WithTaskAndPeerID(task.ID, id),
 	}
 
 	// Initialize state machine
@@ -222,6 +238,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
+				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p)
 				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
@@ -353,6 +370,9 @@ func (p *Peer) ReplaceParent(parent *Peer) {
 
 // Depth represents depth of tree
 func (p *Peer) Depth() int {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	node := p
 	var depth int
 	for node != nil {
@@ -369,7 +389,7 @@ func (p *Peer) Depth() int {
 
 		// Prevent traversal tree from infinite loop
 		if p.ID == parent.ID {
-			p.Log.Info("tree structure produces an infinite loop")
+			p.Log.Error("tree structure produces an infinite loop")
 			break
 		}
 
@@ -379,18 +399,47 @@ func (p *Peer) Depth() int {
 	return depth
 }
 
+// Ancestors returns peer's ancestors
+func (p *Peer) Ancestors() []string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	var ancestors []string
+	node := p
+	for node != nil {
+		parent, ok := node.LoadParent()
+		if !ok {
+			return ancestors
+		}
+
+		// Prevent traversal tree from infinite loop
+		if parent.ID == node.ID {
+			p.Log.Error("tree structure produces an infinite loop")
+			return ancestors
+		}
+
+		node = parent
+		ancestors = append(ancestors, node.ID)
+	}
+
+	return ancestors
+}
+
 // IsDescendant determines whether it is ancestor of peer
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
-	return isDescendant(ancestor, p)
+	return p.isDescendant(ancestor, p)
 }
 
 // IsAncestor determines whether it is descendant of peer
 func (p *Peer) IsAncestor(descendant *Peer) bool {
-	return isDescendant(p, descendant)
+	return p.isDescendant(p, descendant)
 }
 
 // isDescendant determines whether it is ancestor of peer
-func isDescendant(ancestor, descendant *Peer) bool {
+func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
 	node := descendant
 	for node != nil {
 		parent, ok := node.LoadParent()
@@ -399,6 +448,12 @@ func isDescendant(ancestor, descendant *Peer) bool {
 		}
 
 		if parent.ID == ancestor.ID {
+			return true
+		}
+
+		// Prevent traversal tree from infinite loop
+		if parent.ID == descendant.ID {
+			p.Log.Error("tree structure produces an infinite loop")
 			return true
 		}
 

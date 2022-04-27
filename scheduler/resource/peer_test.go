@@ -544,6 +544,55 @@ func TestPeer_Depth(t *testing.T) {
 	}
 }
 
+func TestPeer_Ancestors(t *testing.T) {
+	tests := []struct {
+		name    string
+		childID string
+		expect  func(t *testing.T, peer *Peer, mockChildPeer *Peer)
+	}{
+		{
+			name:    "parent is ancestor",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				peer.StoreChild(mockChildPeer)
+				assert.Equal(len(mockChildPeer.Ancestors()), 1)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string{peer.ID})
+			},
+		},
+		{
+			name:    "child has no parent",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(len(mockChildPeer.Ancestors()), 0)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string(nil))
+			},
+		},
+		{
+			name:    "infinite loop",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				peer.StoreChild(peer)
+				assert.Equal(len(peer.Ancestors()), 0)
+				assert.Equal(peer.Ancestors(), []string(nil))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
+			tc.expect(t, peer, mockChildPeer)
+		})
+	}
+}
+
 func TestPeer_IsDescendant(t *testing.T) {
 	tests := []struct {
 		name    string

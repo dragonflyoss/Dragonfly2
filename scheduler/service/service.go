@@ -77,7 +77,7 @@ func New(
 // RegisterPeerTask registers peer and triggers CDN download task
 func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
 	// Register task and trigger cdn download task
-	task, err := s.registerTask(ctx, req)
+	task, needBackToSource, err := s.registerTask(ctx, req)
 	if err != nil {
 		msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 		logger.Error(msg)
@@ -86,6 +86,10 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	host := s.registerHost(ctx, req.PeerHost)
 	peer := s.registerPeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag)
 	peer.Log.Infof("register peer task request: %#v %#v %#v", req, req.UrlMeta, req.HostLoad)
+
+	// When the peer registers for the first time and
+	// does not have a CDN, it will back-to-source.
+	peer.NeedBackToSource.Store(needBackToSource)
 
 	// Task has been successful
 	if task.FSM.Is(resource.TaskStateSucceeded) {
@@ -163,12 +167,15 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				}, nil
 			}
 
-			peer.ReplaceParent(parent)
 			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
 				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 				peer.Log.Error(msg)
 				return nil, dferrors.New(base.Code_SchedError, msg)
 			}
+
+			peer.ReplaceParent(parent)
+			peer.Log.Infof("schedule parent successful, replace parent to %s ", parent.ID)
+			peer.Log.Debugf("peer ancestors is %v", peer.Ancestors())
 
 			singlePiece := &rpcscheduler.SinglePiece{
 				DstPid:  parent.ID,
@@ -501,25 +508,26 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 }
 
 // registerTask creates a new task or reuses a previous task
-func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, error) {
+func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, bool, error) {
 	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
 	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
 		task.Log.Infof("task state is %s", task.FSM.Current())
-		return task, nil
+		return task, false, nil
 	}
 
 	// Trigger task
 	if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// Start trigger cdn task
 	if s.config.CDN.Enable {
 		go s.triggerCDNTask(ctx, task)
+		return task, false, nil
 	}
 
-	return task, nil
+	return task, true, nil
 }
 
 // registerHost creates a new host or reuses a previous host
@@ -664,7 +672,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		peer.Log.Infof("parent %s is cdn", piece.DstPid)
 		fallthrough
 	case base.Code_CDNTaskNotFound:
-		s.handlePeerFail(ctx, parent)
+		s.handleLegacyCDNPeer(ctx, parent)
 
 		// Start trigger cdn task
 		if s.config.CDN.Enable {
@@ -713,6 +721,32 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 // handlePeerFail handles failed peer
 func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+		return
+	}
+
+	// Reschedule a new parent to children of peer to exclude the current failed peer
+	peer.Children.Range(func(_, value interface{}) bool {
+		child, ok := value.(*resource.Peer)
+		if !ok {
+			return true
+		}
+
+		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
+		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
+		return true
+	})
+}
+
+// handleLegacyCDNPeer handles cdn server's task has left,
+// but did not notify the schduler to leave the task
+func (s *Service) handleLegacyCDNPeer(ctx context.Context, peer *resource.Peer) {
+	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
+		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+		return
+	}
+
+	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
 	}

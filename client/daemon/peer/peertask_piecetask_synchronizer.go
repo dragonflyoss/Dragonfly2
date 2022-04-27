@@ -18,13 +18,17 @@ package peer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
@@ -43,6 +47,7 @@ type pieceTaskSyncManager struct {
 
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
+	span              trace.Span
 	client            dfdaemon.Daemon_SyncPieceTasksClient
 	dstPeer           *scheduler.PeerPacket_DestPeer
 	error             atomic.Value
@@ -55,44 +60,49 @@ type pieceTaskSynchronizerError struct {
 }
 
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
-func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, request *base.PieceTaskRequest) error {
+func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, desiredPiece int32) error {
 	var (
-		peers  = map[string]bool{}
-		errors []error
+		peers = map[string]bool{}
+		errs  []error
 	)
 	peers[pp.MainPeer.PeerId] = true
 	// TODO if the worker failed, reconnect and retry
 	s.Lock()
 	defer s.Unlock()
 	if _, ok := s.workers[pp.MainPeer.PeerId]; !ok {
-		err := s.newPieceTaskSynchronizer(s.ctx, pp.MainPeer, request)
+		err := s.newPieceTaskSynchronizer(s.ctx, pp.MainPeer, desiredPiece)
 		if err != nil {
 			s.peerTaskConductor.Errorf("main peer SyncPieceTasks error: %s", err)
-			errors = append(errors, err)
+			errs = append(errs, err)
 		}
 	}
 	for _, p := range pp.StealPeers {
 		peers[p.PeerId] = true
 		if _, ok := s.workers[p.PeerId]; !ok {
-			err := s.newPieceTaskSynchronizer(s.ctx, p, request)
+			err := s.newPieceTaskSynchronizer(s.ctx, p, desiredPiece)
 			if err != nil {
 				s.peerTaskConductor.Errorf("steal peer SyncPieceTasks error: %s", err)
-				errors = append(errors, err)
+				errs = append(errs, err)
 			}
 		}
 	}
 
 	// cancel old workers
 	if len(s.workers) != len(peers) {
+		var peersToRemove []string
 		for p, worker := range s.workers {
 			if !peers[p] {
 				worker.close()
+				peersToRemove = append(peersToRemove, p)
 			}
+		}
+		for _, p := range peersToRemove {
+			delete(s.workers, p)
 		}
 	}
 
-	if len(errors) > 0 {
-		return errors[0]
+	if len(errs) > 0 {
+		return errs[0]
 	}
 	return nil
 }
@@ -123,9 +133,14 @@ func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacke
 func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	ctx context.Context,
 	dstPeer *scheduler.PeerPacket_DestPeer,
-	request *base.PieceTaskRequest) error {
-
-	request.DstPid = dstPeer.PeerId
+	lastNum int32) error {
+	request := &base.PieceTaskRequest{
+		TaskId:   s.peerTaskConductor.taskID,
+		SrcPid:   s.peerTaskConductor.peerID,
+		DstPid:   dstPeer.PeerId,
+		StartNum: uint32(lastNum),
+		Limit:    16,
+	}
 	if worker, ok := s.workers[dstPeer.PeerId]; ok {
 		// worker is okay, keep it go on
 		if worker.error.Load() == nil {
@@ -136,8 +151,12 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		delete(s.workers, dstPeer.PeerId)
 	}
 
-	request.DstPid = dstPeer.PeerId
 	client, err := dfclient.SyncPieceTasks(ctx, dstPeer, request)
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.44.0/stream.go#L104
+	// When receive io.EOF, the real error should be discovered using RecvMsg, here is client.Recv() here
+	if err == io.EOF && client != nil {
+		_, err = client.Recv()
+	}
 	if err != nil {
 		s.peerTaskConductor.Errorf("call SyncPieceTasks error: %s, dest peer: %s", err, dstPeer.PeerId)
 		return err
@@ -152,7 +171,10 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 		return err
 	}
 
+	_, span := tracer.Start(s.ctx, config.SpanSyncPieceTasks)
+	span.SetAttributes(config.AttributeTargetPeerID.String(dstPeer.PeerId))
 	synchronizer := &pieceTaskSynchronizer{
+		span:                span,
 		peerTaskConductor:   s.peerTaskConductor,
 		pieceRequestCh:      s.pieceRequestCh,
 		client:              client,
@@ -167,29 +189,32 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 
 func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	destPeers []*scheduler.PeerPacket_DestPeer,
-	lastNum int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
+	desiredPiece int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
 	s.Lock()
 	defer s.Unlock()
 	for _, peer := range destPeers {
-		request := &base.PieceTaskRequest{
-			TaskId:   s.peerTaskConductor.taskID,
-			SrcPid:   s.peerTaskConductor.peerID,
-			DstPid:   "",
-			StartNum: uint32(lastNum),
-			Limit:    16,
-		}
-		err := s.newPieceTaskSynchronizer(s.ctx, peer, request)
+		err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
 		if err == nil {
 			s.peerTaskConductor.Infof("connected to peer: %s", peer.PeerId)
 			continue
 		}
-		legacyPeers = append(legacyPeers, peer)
 		// when err is codes.Unimplemented, fallback to legacy get piece grpc
 		stat, ok := status.FromError(err)
 		if ok && stat.Code() == codes.Unimplemented {
+			// for legacy peers, when get pieces error, will report the error
 			s.peerTaskConductor.Warnf("connect peer %s error: %s, fallback to legacy get piece grpc", peer.PeerId, err)
+			legacyPeers = append(legacyPeers, peer)
+			continue
+		}
+
+		// other errors, report to scheduler
+		if errors.Is(err, context.DeadlineExceeded) {
+			// connect timeout error, report to scheduler to get more available peers
+			s.reportInvalidPeer(peer, base.Code_ClientConnectionError)
+			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
 		} else {
-			s.reportError(peer)
+			// other errors, report to scheduler to get more available peers
+			s.reportInvalidPeer(peer, base.Code_ClientPieceRequestFail)
 			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented", peer.PeerId, err)
 		}
 	}
@@ -197,24 +222,26 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	return legacyPeers
 }
 
-func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer) *scheduler.PieceResult {
+func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer, code base.Code) *scheduler.PieceResult {
 	return &scheduler.PieceResult{
 		TaskId:        peerTaskConductor.taskID,
 		SrcPid:        peerTaskConductor.peerID,
 		DstPid:        destPeer.PeerId,
 		PieceInfo:     &base.PieceInfo{},
 		Success:       false,
-		Code:          base.Code_ClientPieceRequestFail,
+		Code:          code,
 		HostLoad:      nil,
 		FinishedCount: peerTaskConductor.readyPieces.Settled(),
 	}
 }
 
-func (s *pieceTaskSyncManager) reportError(destPeer *scheduler.PeerPacket_DestPeer) {
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer))
+func (s *pieceTaskSyncManager) reportInvalidPeer(destPeer *scheduler.PeerPacket_DestPeer, code base.Code) {
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer, code))
 	if sendError != nil {
-		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
+		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+	} else {
+		s.peerTaskConductor.Debugf("report invalid peer %s/%d to scheduler", destPeer.PeerId, code)
 	}
 }
 
@@ -245,7 +272,9 @@ func (s *pieceTaskSynchronizer) close() {
 	if err := s.client.CloseSend(); err != nil {
 		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("close send error: %s, dest peer: %s", err, s.dstPeer.PeerId)
+		s.span.RecordError(err)
 	}
+	s.span.End()
 }
 
 func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePacket) {
@@ -281,6 +310,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 		}
 		select {
 		case s.pieceRequestCh <- req:
+			s.span.AddEvent(fmt.Sprintf("send piece #%d request to piece download queue", piece.PieceNum))
 		case <-s.peerTaskConductor.successCh:
 			s.Infof("peer task success, stop dispatch piece request, dest peer: %s", s.dstPeer.PeerId)
 		case <-s.peerTaskConductor.failCh:
@@ -302,11 +332,12 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	if err == io.EOF {
 		s.Debugf("synchronizer receives io.EOF")
 	} else if s.canceled(err) {
-		s.error.Store(&pieceTaskSynchronizerError{err})
 		s.Debugf("synchronizer receives canceled")
-	} else {
 		s.error.Store(&pieceTaskSynchronizerError{err})
-		s.reportError()
+	} else {
+		s.Errorf("synchronizer receives with error: %s", err)
+		s.error.Store(&pieceTaskSynchronizerError{err})
+		s.reportError(err)
 		s.Errorf("synchronizer receives with error: %s", err)
 	}
 }
@@ -317,24 +348,26 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 		s.Debugf("synchronizer already error %s, skip acquire more pieces", err)
 		return err
 	}
+	request.DstPid = s.dstPeer.PeerId
 	err := s.client.Send(request)
+	s.span.AddEvent(fmt.Sprintf("send piece #%d request", request.StartNum))
 	if err != nil {
+		// send should always ok
 		s.error.Store(&pieceTaskSynchronizerError{err})
-		if s.canceled(err) {
-			s.Debugf("synchronizer sends canceled")
-		} else {
-			s.Errorf("synchronizer sends with error: %s", err)
-			s.reportError()
-		}
+		s.Errorf("synchronizer sends with error: %s", err)
+		s.reportError(err)
 	}
 	return err
 }
 
-func (s *pieceTaskSynchronizer) reportError() {
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer))
+func (s *pieceTaskSynchronizer) reportError(err error) {
+	s.span.RecordError(err)
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, base.Code_ClientPieceRequestFail))
 	if sendError != nil {
-		s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
+		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+	} else {
+		s.Debugf("report sync piece error to scheduler")
 	}
 }
 
