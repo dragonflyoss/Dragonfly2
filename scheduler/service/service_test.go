@@ -2583,7 +2583,7 @@ func TestService_handlePieceFail(t *testing.T) {
 
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
+				assert.True(parent.FSM.Is(resource.PeerStateLeave))
 			},
 		},
 		{
@@ -2613,7 +2613,7 @@ func TestService_handlePieceFail(t *testing.T) {
 				svc.handlePieceFail(context.Background(), peer, piece)
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
+				assert.True(parent.FSM.Is(resource.PeerStateLeave))
 			},
 		},
 		{
