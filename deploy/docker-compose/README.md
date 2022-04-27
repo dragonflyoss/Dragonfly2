@@ -2,13 +2,6 @@
 
 > Currently, docker compose deploying is tested just in single host, no HA support.
 
-Please replace the `sed` with `gnu-sed` in macOS.
-
-```shell
-brew install gnu-sed
-alias sed=gsed
-```
-
 ## Deploy with Docker Compose
 
 The `run.sh` script will generate config and deploy all components with `docker-compose`.
