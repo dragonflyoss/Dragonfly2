@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -46,6 +46,14 @@ func (d *dummySchedulerClient) ReportPeerResult(ctx context.Context, result *sch
 
 func (d *dummySchedulerClient) LeaveTask(ctx context.Context, target *scheduler.PeerTarget, option ...grpc.CallOption) error {
 	return nil
+}
+
+func (d *dummySchedulerClient) StatTask(ctx context.Context, request *scheduler.StatTaskRequest, option ...grpc.CallOption) (*scheduler.Task, error) {
+	panic("should not call this function")
+}
+
+func (d *dummySchedulerClient) AnnounceTask(ctx context.Context, request *scheduler.AnnounceTaskRequest, option ...grpc.CallOption) error {
+	panic("should not call this function")
 }
 
 func (d *dummySchedulerClient) Close() error {

@@ -43,7 +43,7 @@ type Server struct {
 // New returns a new transparent scheduler server from the given options
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 
 	// Register servers on grpc server
 	scheduler.RegisterSchedulerServer(grpcServer, svr)
@@ -57,7 +57,6 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	if req.UrlMeta.Tag != "" {
 		bizTag = req.UrlMeta.Tag
 	}
-
 	metrics.RegisterPeerTaskCount.WithLabelValues(bizTag).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
@@ -81,6 +80,29 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 // ReportPeerResult handles peer result reported by dfdaemon
 func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.ReportPeerResult(ctx, req)
+}
+
+// StatTask checks if the given task exists
+func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (*scheduler.Task, error) {
+	metrics.StatTaskCount.Inc()
+	task, err := s.service.StatTask(ctx, req)
+	if err != nil {
+		metrics.StatTaskFailureCount.Inc()
+		return nil, err
+	}
+
+	return task, nil
+}
+
+// AnnounceTask informs scheduler a peer has completed task
+func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
+	metrics.AnnounceCount.Inc()
+	if err := s.service.AnnounceTask(ctx, req); err != nil {
+		metrics.AnnounceFailureCount.Inc()
+		return new(empty.Empty), err
+	}
+
+	return new(empty.Empty), nil
 }
 
 // LeaveTask makes the peer unschedulable

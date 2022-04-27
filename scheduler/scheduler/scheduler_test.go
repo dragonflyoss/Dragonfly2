@@ -45,7 +45,7 @@ var (
 		RetryLimit:           2,
 		RetryBackSourceLimit: 1,
 		RetryInterval:        10 * time.Millisecond,
-		BackSourceCount:      mockTaskBackToSourceLimit,
+		BackSourceCount:      int(mockTaskBackToSourceLimit),
 		Algorithm:            evaluator.DefaultAlgorithm,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
@@ -79,11 +79,11 @@ var (
 			"content-length": "100",
 		},
 	}
-	mockTaskURL               = "http://example.com/foo"
-	mockTaskBackToSourceLimit = 200
-	mockTaskID                = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPeerID                = idgen.PeerID("127.0.0.1")
-	mockCDNPeerID             = idgen.CDNPeerID("127.0.0.1")
+	mockTaskBackToSourceLimit int32 = 200
+	mockTaskURL                     = "http://example.com/foo"
+	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
+	mockPeerID                      = idgen.PeerID("127.0.0.1")
+	mockCDNPeerID                   = idgen.CDNPeerID("127.0.0.1")
 )
 
 func TestScheduler_New(t *testing.T) {
@@ -181,6 +181,25 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				cdnPeer.FSM.SetState(resource.PeerStateFailed)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.StoreParent(cdnPeer)
+				peer.StoreStream(stream)
+
+				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				_, ok := peer.LoadParent()
+				assert.False(ok)
+				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
+				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
+			},
+		},
+		{
+			name: "peer need back-to-source and send Code_SchedNeedBackSource code success",
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, cdnPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				task := peer.Task
+				task.StorePeer(peer)
+				peer.NeedBackToSource.Store(true)
+				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.StoreStream(stream)
 
 				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
@@ -431,7 +450,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			ctx, cancel := context.WithCancel(context.Background())
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			mockCDNHost := resource.NewHost(mockRawCDNHost, resource.WithIsCDN(true))
 			cdnPeer := resource.NewPeer(mockCDNPeerID, mockTask, mockCDNHost)
@@ -651,6 +670,8 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
+				peer.Task.BackToSourcePeers.Add(mockPeer)
+				mockPeer.IsBackToSource.Store(true)
 				peer.Task.StorePeer(mockPeer)
 				mockPeer.Pieces.Set(0)
 				peer.StoreStream(stream)
@@ -673,11 +694,15 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				mockHost := resource.NewHost(mockRawHost)
-				mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+				mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 				stealPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
 				stealPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
 				peer.Task.StorePeer(stealPeer)
+				peer.Task.BackToSourcePeers.Add(mockPeer)
+				peer.Task.BackToSourcePeers.Add(stealPeer)
+				mockPeer.IsBackToSource.Store(true)
+				stealPeer.IsBackToSource.Store(true)
 				mockPeer.Pieces.Set(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
@@ -704,7 +729,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
 			blocklist := set.NewSafeSet()
@@ -807,13 +832,84 @@ func TestScheduler_FindParent(t *testing.T) {
 			},
 		},
 		{
-			name: "find parent",
+			name: "find back-to-source parent",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
 				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0])
+				peer.Task.BackToSourcePeers.Add(mockPeers[1])
+				mockPeers[0].IsBackToSource.Store(true)
+				mockPeers[1].IsBackToSource.Store(true)
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
+			name: "find cdn parent",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].Host.IsCDN = true
+				mockPeers[1].Host.IsCDN = true
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
+			name: "parent state is PeerStateSucceeded",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateSucceeded)
+				mockPeers[1].FSM.SetState(resource.PeerStateSucceeded)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(0)
+				mockPeers[1].Pieces.Set(1)
+				mockPeers[1].Pieces.Set(2)
+
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[1].ID, parent.ID)
+			},
+		},
+		{
+			name: "find parent with ancestor",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				mockPeers[0].StoreParent(mockPeers[3])
+				mockPeers[1].StoreParent(mockPeers[3])
 				mockPeers[0].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(1)
@@ -835,6 +931,10 @@ func TestScheduler_FindParent(t *testing.T) {
 				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
+				peer.Task.BackToSourcePeers.Add(mockPeers[0])
+				peer.Task.BackToSourcePeers.Add(mockPeers[1])
+				mockPeers[0].IsBackToSource.Store(true)
+				mockPeers[1].IsBackToSource.Store(true)
 				mockPeers[0].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(0)
 				mockPeers[1].Pieces.Set(1)
@@ -875,7 +975,7 @@ func TestScheduler_FindParent(t *testing.T) {
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			var mockPeers []*resource.Peer
@@ -963,7 +1063,7 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 			defer ctl.Finish()
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			parent := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)

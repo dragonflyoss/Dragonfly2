@@ -19,7 +19,7 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.4.8 && \
     chmod +x /bin/grpc_health_probe
 
 # TODO support BASE_IMAGE
-FROM nginx:1.19-alpine
+FROM nginx:1.21-alpine
 
 ENV PATH=/opt/dragonfly/bin:$PATH
 RUN echo "hosts: files dns" > /etc/nsswitch.conf

@@ -27,8 +27,8 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
@@ -89,7 +89,7 @@ func TestCDN_TriggerTask(t *testing.T) {
 			tc.mock(client.EXPECT())
 
 			cdn := newCDN(peerManager, hostManager, client)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer, result, err := cdn.TriggerTask(context.Background(), mockTask)
 			tc.expect(t, peer, result, err)
 		})

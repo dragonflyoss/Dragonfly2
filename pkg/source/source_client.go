@@ -120,14 +120,17 @@ type ResourceLister interface {
 }
 
 type ClientManager interface {
-	// Register a source client with scheme
+	// Register registers a source client with scheme
 	Register(scheme string, resourceClient ResourceClient, adapter requestAdapter, hook ...Hook) error
 
-	// UnRegister a source client from manager
+	// UnRegister revoke a source client from manager
 	UnRegister(scheme string)
 
-	// GetClient a source client by scheme
+	// GetClient gets a source client by scheme
 	GetClient(scheme string, options ...Option) (ResourceClient, bool)
+
+	// ListClients lists all supported client scheme
+	ListClients() []string
 }
 
 // clientManager implements the interface ClientManager
@@ -186,6 +189,16 @@ func (m *clientManager) UnRegister(scheme string) {
 	delete(m.clients, scheme)
 }
 
+func (m *clientManager) ListClients() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var clients []string
+	for c := range m.clients {
+		clients = append(clients, c)
+	}
+	return clients
+}
+
 func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceClient, bool) {
 	logger.Debugf("current clients: %#v", m.clients)
 	m.mu.RLock()
@@ -224,6 +237,10 @@ func Register(scheme string, resourceClient ResourceClient, adaptor requestAdapt
 
 func UnRegister(scheme string) {
 	_defaultManager.UnRegister(scheme)
+}
+
+func ListClients() []string {
+	return _defaultManager.ListClients()
 }
 
 type requestAdapter func(request *Request) *Request

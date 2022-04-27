@@ -35,7 +35,7 @@ import (
 	storageMock "d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage/mock"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"

@@ -79,6 +79,34 @@ var (
 		Help:      "Counter of the number of failed of the downloading.",
 	}, []string{"biz_tag", "type"})
 
+	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "stat_task_total",
+		Help:      "Counter of the number of the stat task.",
+	})
+
+	StatTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "stat_task_failure_total",
+		Help:      "Counter of the number of failed of the stat task.",
+	})
+
+	AnnounceCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "announce_task_total",
+		Help:      "Counter of the number of the announce task.",
+	})
+
+	AnnounceFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "announce_task_failure_total",
+		Help:      "Counter of the number of failed of the announce task.",
+	})
+
 	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,

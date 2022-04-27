@@ -919,6 +919,311 @@ var _ interface {
 	ErrorName() string
 } = PeerTargetValidationError{}
 
+// Validate checks the field values on StatTaskRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *StatTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		return StatTaskRequestValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	return nil
+}
+
+// StatTaskRequestValidationError is the validation error returned by
+// StatTaskRequest.Validate if the designated constraints aren't met.
+type StatTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e StatTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e StatTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e StatTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e StatTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e StatTaskRequestValidationError) ErrorName() string { return "StatTaskRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e StatTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sStatTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = StatTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = StatTaskRequestValidationError{}
+
+// Validate checks the field values on Task with the rules defined in the proto
+// definition for this message. If any rules are violated, an error is returned.
+func (m *Task) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetId()) < 1 {
+		return TaskValidationError{
+			field:  "Id",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetType() < 0 {
+		return TaskValidationError{
+			field:  "Type",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if m.GetContentLength() < 1 {
+		return TaskValidationError{
+			field:  "ContentLength",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if m.GetTotalPieceCount() < 1 {
+		return TaskValidationError{
+			field:  "TotalPieceCount",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetState()) < 1 {
+		return TaskValidationError{
+			field:  "State",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetPeerCount() < 0 {
+		return TaskValidationError{
+			field:  "PeerCount",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	// no validation rules for HasAvailablePeer
+
+	return nil
+}
+
+// TaskValidationError is the validation error returned by Task.Validate if the
+// designated constraints aren't met.
+type TaskValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TaskValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TaskValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TaskValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TaskValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TaskValidationError) ErrorName() string { return "TaskValidationError" }
+
+// Error satisfies the builtin error interface
+func (e TaskValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTask.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TaskValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TaskValidationError{}
+
+// Validate checks the field values on AnnounceTaskRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *AnnounceTaskRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		return AnnounceTaskRequestValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if utf8.RuneCountInString(m.GetCid()) < 1 {
+		return AnnounceTaskRequestValidationError{
+			field:  "Cid",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
+	if m.GetUrlMeta() == nil {
+		return AnnounceTaskRequestValidationError{
+			field:  "UrlMeta",
+			reason: "value is required",
+		}
+	}
+
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnnounceTaskRequestValidationError{
+				field:  "UrlMeta",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetPeerHost()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnnounceTaskRequestValidationError{
+				field:  "PeerHost",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if m.GetPiecePacket() == nil {
+		return AnnounceTaskRequestValidationError{
+			field:  "PiecePacket",
+			reason: "value is required",
+		}
+	}
+
+	if v, ok := interface{}(m.GetPiecePacket()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnnounceTaskRequestValidationError{
+				field:  "PiecePacket",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// AnnounceTaskRequestValidationError is the validation error returned by
+// AnnounceTaskRequest.Validate if the designated constraints aren't met.
+type AnnounceTaskRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnnounceTaskRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnnounceTaskRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnnounceTaskRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnnounceTaskRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnnounceTaskRequestValidationError) ErrorName() string {
+	return "AnnounceTaskRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnnounceTaskRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnnounceTaskRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnnounceTaskRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnnounceTaskRequestValidationError{}
+
 // Validate checks the field values on PeerPacket_DestPeer with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, an error is returned.

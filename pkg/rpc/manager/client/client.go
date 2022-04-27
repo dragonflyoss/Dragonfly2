@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
@@ -107,10 +107,10 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
 			return New(netAddr.Addr)
 		}
-		logger.Warnf("%s address can not reachable", netAddr.Addr)
+		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}
 
-	return nil, errors.New("can not find available addresses")
+	return nil, errors.New("can not find available manager addresses")
 }
 
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {

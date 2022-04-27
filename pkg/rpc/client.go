@@ -33,7 +33,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
@@ -94,8 +94,8 @@ var DefaultClientOpts = []grpc.DialOption{
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:    20 * time.Second,
-		Timeout: 20 * time.Second,
+		Time:    1 * time.Minute,
+		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
 	grpc.WithUnaryInterceptor(unaryClientInterceptor),
@@ -269,7 +269,6 @@ type candidateClient struct {
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	// should not retry
 	ctx, cancel := context.WithTimeout(context.Background(), conn.dialTimeout)
 	defer cancel()
 	return grpc.DialContext(ctx, target, opts...)

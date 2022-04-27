@@ -92,7 +92,7 @@ func TestPeer_NewPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			tc.expect(t, NewPeer(tc.id, mockTask, mockHost, tc.options...), mockTask, mockHost)
 		})
 	}
@@ -138,7 +138,7 @@ func TestPeer_LoadChild(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -197,7 +197,7 @@ func TestPeer_StoreChild(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -252,7 +252,7 @@ func TestPeer_DeleteChild(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -302,7 +302,7 @@ func TestPeer_LoadParent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockParentPeer := NewPeer(tc.parentID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -361,7 +361,7 @@ func TestPeer_StoreParent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockParentPeer := NewPeer(tc.parentID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -411,7 +411,7 @@ func TestPeer_DeleteParent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockParentPeer := NewPeer(tc.parentID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -479,7 +479,7 @@ func TestPeer_ReplaceParent(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockOldParentPeer := NewPeer(tc.oldParentID, mockTask, mockHost)
 			mockNewParentPeer := NewPeer(tc.newParentID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
@@ -534,12 +534,61 @@ func TestPeer_Depth(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			parent := NewPeer(idgen.PeerID("127.0.0.2"), mockTask, mockHost)
 			cdnParent := NewPeer(mockCDNPeerID, mockTask, mockCDNHost)
 
 			tc.expect(t, peer, parent, cdnParent)
+		})
+	}
+}
+
+func TestPeer_Ancestors(t *testing.T) {
+	tests := []struct {
+		name    string
+		childID string
+		expect  func(t *testing.T, peer *Peer, mockChildPeer *Peer)
+	}{
+		{
+			name:    "parent is ancestor",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				peer.StoreChild(mockChildPeer)
+				assert.Equal(len(mockChildPeer.Ancestors()), 1)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string{peer.ID})
+			},
+		},
+		{
+			name:    "child has no parent",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				assert.Equal(len(mockChildPeer.Ancestors()), 0)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string(nil))
+			},
+		},
+		{
+			name:    "infinite loop",
+			childID: idgen.PeerID("127.0.0.1"),
+			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
+				assert := assert.New(t)
+				peer.StoreChild(peer)
+				assert.Equal(len(peer.Ancestors()), 0)
+				assert.Equal(peer.Ancestors(), []string(nil))
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+
+			tc.expect(t, peer, mockChildPeer)
 		})
 	}
 }
@@ -581,7 +630,7 @@ func TestPeer_IsDescendant(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -627,7 +676,7 @@ func TestPeer_IsAncestor(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockChildPeer := NewPeer(tc.childID, mockTask, mockHost)
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
@@ -663,7 +712,7 @@ func TestPeer_AppendPieceCost(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -698,7 +747,7 @@ func TestPeer_PieceCosts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -738,7 +787,7 @@ func TestPeer_LoadStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -769,7 +818,7 @@ func TestPeer_StoreStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -800,7 +849,7 @@ func TestPeer_DeleteStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -899,7 +948,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockRawHost.Ip = ip
 			mockRawHost.DownPort = int32(port)
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer = NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer)
 		})

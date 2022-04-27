@@ -45,9 +45,10 @@ import (
 )
 
 const (
-	//reasonContextCanceled       = "context canceled"
+	// TODO implement peer task health check
+	// reasonContextCanceled       = "context canceled"
+	// reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonScheduleTimeout       = "wait first peer packet from scheduler timeout"
-	reasonReScheduleTimeout     = "wait more available peers from scheduler timeout"
 	reasonPeerGoneFromScheduler = "scheduler says client should disconnect"
 	reasonBackSourceDisabled    = "download from source disabled"
 
@@ -64,6 +65,10 @@ type peerTaskConductor struct {
 	// ctx is with span info for tracing
 	// we use successCh and failCh mark task success or fail
 	ctx context.Context
+	// piece download uses this context
+	pieceDownloadCtx context.Context
+	// when back source, cancel all piece download action
+	pieceDownloadCancel context.CancelFunc
 
 	// host info about current host
 	host *scheduler.PeerHost
@@ -102,7 +107,9 @@ type peerTaskConductor struct {
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
 	peerPacketStream schedulerclient.PeerPacketStream
 	// peerPacket is the latest available peers from peerPacketCh
-	peerPacket atomic.Value // *scheduler.PeerPacket
+	// Deprecated: remove in future release
+	peerPacket      atomic.Value // *scheduler.PeerPacket
+	legacyPeerCount *atomic.Int64
 	// peerPacketReady will receive a ready signal for peerPacket ready
 	peerPacketReady chan bool
 	// pieceTaskPoller pulls piece task from other peers
@@ -113,7 +120,6 @@ type peerTaskConductor struct {
 
 	// same actions must be done only once, like close done channel and so on
 	statusOnce sync.Once
-	cancelOnce sync.Once
 	// done channel will be closed when peer task success
 	successCh chan struct{}
 	// fail channel will be closed after peer task fail
@@ -141,7 +147,9 @@ type peerTaskConductor struct {
 	// requestedPieces stands all pieces requested from peers
 	requestedPieces *Bitmap
 	// lock used by piece download worker
-	requestedPiecesLock sync.Mutex
+	requestedPiecesLock sync.RWMutex
+	// lock used by send piece result
+	sendPieceResultLock sync.Mutex
 	// limiter will be used when enable per peer task rate limit
 	limiter *rate.Limiter
 
@@ -202,6 +210,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		taskID:              taskID,
 		successCh:           make(chan struct{}),
 		failCh:              make(chan struct{}),
+		legacyPeerCount:     atomic.NewInt64(0),
 		span:                span,
 		readyPieces:         NewBitmap(),
 		runningPieces:       NewBitmap(),
@@ -227,6 +236,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		peerTaskConductor: ptc,
 	}
 
+	ptc.pieceDownloadCtx, ptc.pieceDownloadCancel = context.WithCancel(ptc.ctx)
+
 	return ptc
 }
 
@@ -247,9 +258,9 @@ func (pt *peerTaskConductor) register() error {
 	)
 
 	pt.Infof("step 1: peer %s start to register", pt.request.PeerId)
-	schedulerClient := pt.peerTaskManager.schedulerClient
+	pt.schedulerClient = pt.peerTaskManager.schedulerClient
 
-	result, err := schedulerClient.RegisterPeerTask(regCtx, pt.request)
+	result, err := pt.schedulerClient.RegisterPeerTask(regCtx, pt.request)
 	regSpan.RecordError(err)
 	regSpan.End()
 
@@ -266,7 +277,7 @@ func (pt *peerTaskConductor) register() error {
 		}
 		needBackSource = true
 		// can not detect source or scheduler error, create a new dummy scheduler client
-		schedulerClient = &dummySchedulerClient{}
+		pt.schedulerClient = &dummySchedulerClient{}
 		result = &scheduler.RegisterResult{TaskId: pt.taskID}
 		pt.Warnf("register peer task failed: %s, peer id: %s, try to back source", err, pt.request.PeerId)
 	} else {
@@ -301,7 +312,7 @@ func (pt *peerTaskConductor) register() error {
 		}
 	}
 
-	peerPacketStream, err := schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
+	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
 	pt.Infof("step 2: start report piece result")
 	if err != nil {
 		pt.span.RecordError(err)
@@ -310,7 +321,6 @@ func (pt *peerTaskConductor) register() error {
 	}
 
 	pt.peerPacketStream = peerPacketStream
-	pt.schedulerClient = schedulerClient
 	pt.sizeScope = sizeScope
 	pt.singlePiece = singlePiece
 	pt.tinyData = tinyData
@@ -382,14 +392,49 @@ func (pt *peerTaskConductor) Log() *logger.SugaredLoggerOnWith {
 }
 
 func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
-	pt.cancelOnce.Do(func() {
+	pt.statusOnce.Do(func() {
 		pt.failedCode = code
 		pt.failedReason = reason
-		pt.Fail()
+		pt.fail()
 	})
 }
 
+// only use when receive back source code from scheduler
+func (pt *peerTaskConductor) markBackSource() {
+	pt.needBackSource.Store(true)
+	// when close peerPacketReady, pullPiecesFromPeers will invoke backSource
+	close(pt.peerPacketReady)
+	// let legacy mode exit
+	pt.peerPacket.Store(&scheduler.PeerPacket{
+		TaskId:        pt.taskID,
+		SrcPid:        pt.peerID,
+		ParallelCount: 1,
+		MainPeer:      nil,
+		StealPeers: []*scheduler.PeerPacket_DestPeer{
+			{
+				Ip:      pt.host.Ip,
+				RpcPort: pt.host.RpcPort,
+				PeerId:  pt.peerID,
+			},
+		},
+		Code: base.Code_SchedNeedBackSource,
+	})
+}
+
+// only use when legacy get piece from peers schedule timeout
+func (pt *peerTaskConductor) forceBackSource() {
+	pt.needBackSource.Store(true)
+	pt.backSource()
+}
+
 func (pt *peerTaskConductor) backSource() {
+	// cancel all piece download
+	pt.pieceDownloadCancel()
+	// cancel all sync pieces
+	if pt.pieceTaskSyncManager != nil {
+		pt.pieceTaskSyncManager.cancel()
+	}
+
 	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
 	pt.contentLength.Store(-1)
 	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
@@ -431,7 +476,7 @@ func (pt *peerTaskConductor) pullPieces() {
 
 func (pt *peerTaskConductor) pullPiecesWithP2P() {
 	var (
-		// keep same size with pt.failedPieceCh for avoiding dead lock
+		// keep same size with pt.failedPieceCh for avoiding deadlock
 		pieceBufferSize = uint32(config.DefaultPieceChanSize)
 		pieceRequestCh  = make(chan *DownloadPieceRequest, pieceBufferSize)
 	)
@@ -517,7 +562,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 
 func (pt *peerTaskConductor) receivePeerPacket(pieceRequestCh chan *DownloadPieceRequest) {
 	var (
-		lastPieceNum        int32 = 0
+		lastNotReadyPiece   int32 = 0
 		peerPacket          *scheduler.PeerPacket
 		err                 error
 		firstPacketReceived bool
@@ -568,9 +613,7 @@ loop:
 		pt.Debugf("receive peerPacket %v", peerPacket)
 		if peerPacket.Code != base.Code_Success {
 			if peerPacket.Code == base.Code_SchedNeedBackSource {
-				pt.needBackSource.Store(true)
-				pt.pieceTaskSyncManager.cancel()
-				close(pt.peerPacketReady)
+				pt.markBackSource()
 				pt.Infof("receive back source code")
 				return
 			}
@@ -607,18 +650,22 @@ loop:
 			firstPeerSpan.End()
 		}
 		// updateSynchronizer will update legacy peers to peerPacket.StealPeers only
-		pt.updateSynchronizer(lastPieceNum, peerPacket)
+		lastNotReadyPiece = pt.updateSynchronizer(lastNotReadyPiece, peerPacket)
 		if !firstPacketReceived {
 			// trigger legacy get piece once to avoid first schedule timeout
 			firstPacketReceived = true
 		} else if len(peerPacket.StealPeers) == 0 {
+			pt.Debugf("no legacy peers, skip to send peerPacketReady")
+			pt.legacyPeerCount.Store(0)
 			continue
 		}
 
-		pt.Debugf("connect to %d legacy peers", len(peerPacket.StealPeers))
-		pt.peerPacket.Store(peerPacket)
+		legacyPeerCount := int64(len(peerPacket.StealPeers))
+		pt.Debugf("connect to %d legacy peers", legacyPeerCount)
+		pt.legacyPeerCount.Store(legacyPeerCount)
 
-		// legacy mode: send peerPacketReady
+		// legacy mode: update peer packet, then send peerPacketReady
+		pt.peerPacket.Store(peerPacket)
 		select {
 		case pt.peerPacketReady <- true:
 		case <-pt.successCh:
@@ -633,19 +680,22 @@ loop:
 }
 
 // updateSynchronizer will convert peers to synchronizer, if failed, will update failed peers to scheduler.PeerPacket
-func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.PeerPacket) {
-	num, ok := pt.getNextPieceNum(lastNum)
+func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.PeerPacket) int32 {
+	desiredPiece, ok := pt.getNextNotReadyPieceNum(lastNum)
 	if !ok {
-		pt.Infof("peer task completed")
-		return
+		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
+		p.MainPeer = nil
+		p.StealPeers = nil
+		return desiredPiece
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}
 	peers = append(peers, p.StealPeers...)
 
-	legacyPeers := pt.pieceTaskSyncManager.newMultiPieceTaskSynchronizer(peers, num)
+	legacyPeers := pt.pieceTaskSyncManager.newMultiPieceTaskSynchronizer(peers, desiredPiece)
 
 	p.MainPeer = nil
 	p.StealPeers = legacyPeers
+	return desiredPiece
 }
 
 func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
@@ -662,8 +712,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) {
 	)
 	de, ok := err.(*dferrors.DfError)
 	if ok && de.Code == base.Code_SchedNeedBackSource {
-		pt.needBackSource.Store(true)
-		close(pt.peerPacketReady)
+		pt.markBackSource()
 		pt.Infof("receive back source code")
 		return
 	} else if ok && de.Code != base.Code_SchedNeedBackSource {
@@ -812,7 +861,7 @@ loop:
 		// 3. dispatch piece request to all workers
 		pt.dispatchPieceRequest(pieceRequestCh, piecePacket)
 
-		// 4. get next piece
+		// 4. get next not request piece
 		if num, ok = pt.getNextPieceNum(num); ok {
 			// get next piece success
 			limit = config.DefaultPieceChanSize
@@ -849,7 +898,7 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *base.PiecePacket) {
 	}
 
 	// update content length
-	if piecePacket.ContentLength > -1 {
+	if piecePacket.ContentLength > -1 && pt.GetContentLength() == -1 {
 		metadataChanged = true
 		pt.SetContentLength(piecePacket.ContentLength)
 		pt.span.SetAttributes(config.AttributeTaskContentLength.Int64(piecePacket.ContentLength))
@@ -879,8 +928,8 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, scheduler time cost: %dus, main peer: %s",
-				time.Since(pt.startTime).Microseconds(), pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, scheduler time cost: %dus, peer count: %d",
+				time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -898,8 +947,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		}
 		pt.Warnf("start download from source due to %s", reasonScheduleTimeout)
 		pt.span.AddEvent("back source due to schedule timeout")
-		pt.needBackSource.Store(true)
-		pt.backSource()
+		pt.forceBackSource()
 		return false, true
 	}
 }
@@ -916,7 +964,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, main peer: %s", pt.peerPacket.Load().(*scheduler.PeerPacket).MainPeer)
+			pt.Infof("new peer client ready, peer count: %d", len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
 			// research from piece 0
 			return 0, true
 		}
@@ -925,18 +973,6 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 		pt.span.AddEvent("back source due to scheduler says need back source ")
 		// TODO optimize back source when already downloaded some pieces
 		pt.backSource()
-	case <-time.After(pt.schedulerOption.ScheduleTimeout.Duration):
-		if pt.schedulerOption.DisableAutoBackSource {
-			pt.cancel(base.Code_ClientScheduleTimeout, reasonBackSourceDisabled)
-			err := fmt.Errorf("%s, auto back source disabled", pt.failedReason)
-			pt.span.RecordError(err)
-			pt.Errorf(err.Error())
-		} else {
-			pt.Warnf("start download from source due to %s", reasonReScheduleTimeout)
-			pt.span.AddEvent("back source due to schedule timeout")
-			pt.needBackSource.Store(true)
-			pt.backSource()
-		}
 	}
 	return -1, false
 }
@@ -1022,6 +1058,9 @@ func (pt *peerTaskConductor) downloadPieceWorker(id int32, requests chan *Downlo
 			}
 			pt.readyPiecesLock.RUnlock()
 			pt.downloadPiece(id, request)
+		case <-pt.pieceDownloadCtx.Done():
+			pt.Infof("piece download cancelled, peer download worker #%d exit", id)
+			return
 		case <-pt.successCh:
 			pt.Infof("peer task success, peer download worker #%d exit", id)
 			return
@@ -1038,6 +1077,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	if pt.runningPieces.IsSet(request.piece.PieceNum) {
 		pt.runningPiecesLock.Unlock()
 		pt.Log().Debugf("piece %d is downloading, skip", request.piece.PieceNum)
+		// TODO save to queue for failed pieces
 		return
 	}
 	pt.runningPieces.Set(request.piece.PieceNum)
@@ -1049,7 +1089,7 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 		pt.runningPiecesLock.Unlock()
 	}()
 
-	ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
+	ctx, span := tracer.Start(pt.pieceDownloadCtx, fmt.Sprintf(config.SpanDownloadPiece, request.piece.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(request.piece.PieceNum)))
 	span.SetAttributes(config.AttributePieceWorker.Int(int(workerID)))
 
@@ -1067,26 +1107,41 @@ func (pt *peerTaskConductor) downloadPiece(workerID int32, request *DownloadPiec
 	// result is always not nil, pieceManager will report begin and end time
 	result, err := pt.pieceManager.DownloadPiece(ctx, request)
 	if err != nil {
-		pt.pieceTaskSyncManager.acquire(
+		pt.ReportPieceResult(request, result, err)
+		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
+		span.End()
+		if pt.needBackSource.Load() {
+			pt.Infof("switch to back source, skip send failed piece")
+			return
+		}
+		attempt, success := pt.pieceTaskSyncManager.acquire(
 			&base.PieceTaskRequest{
+				Limit:    1,
 				TaskId:   pt.taskID,
 				SrcPid:   pt.peerID,
 				StartNum: uint32(request.piece.PieceNum),
-				Limit:    1,
 			})
+		pt.Infof("send failed piece %d to remote, attempt: %d, success: %d",
+			request.piece.PieceNum, attempt, success)
+
+		// when there is no legacy peers, skip send to failedPieceCh for legacy peers in background
+		if pt.legacyPeerCount.Load() == 0 {
+			pt.Infof("there is no legacy peers, skip send to failedPieceCh for legacy peers")
+			return
+		}
 		// Deprecated
 		// send to fail chan and retry
 		// try to send directly first, if failed channel is busy, create a new goroutine to do this
 		select {
 		case pt.failedPieceCh <- request.piece.PieceNum:
+			pt.Infof("success to send failed piece %d to failedPieceCh", request.piece.PieceNum)
 		default:
+			pt.Infof("start to send failed piece %d to failedPieceCh in background", request.piece.PieceNum)
 			go func() {
 				pt.failedPieceCh <- request.piece.PieceNum
+				pt.Infof("success to send failed piece %d to failedPieceCh in background", request.piece.PieceNum)
 			}()
 		}
-		pt.ReportPieceResult(request, result, err)
-		span.SetAttributes(config.AttributePieceSuccess.Bool(false))
-		span.End()
 		return
 	}
 	// broadcast success piece
@@ -1110,7 +1165,7 @@ func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPie
 	waitSpan.End()
 
 	// send error piece result
-	sendError := pt.peerPacketStream.Send(&scheduler.PieceResult{
+	sendError := pt.sendPieceResult(&scheduler.PieceResult{
 		TaskId:        pt.GetTaskID(),
 		SrcPid:        pt.GetPeerID(),
 		DstPid:        request.DstPid,
@@ -1132,12 +1187,16 @@ func (pt *peerTaskConductor) isCompleted() bool {
 	return pt.completedLength.Load() == pt.contentLength.Load()
 }
 
+// for legacy peers only
 func (pt *peerTaskConductor) getNextPieceNum(cur int32) (int32, bool) {
 	if pt.isCompleted() {
 		return -1, false
 	}
 	i := cur
 	// try to find next not requested piece
+	pt.requestedPiecesLock.RLock()
+	defer pt.requestedPiecesLock.RUnlock()
+
 	for ; pt.requestedPieces.IsSet(i); i++ {
 	}
 	totalPiece := pt.GetTotalPieces()
@@ -1147,6 +1206,29 @@ func (pt *peerTaskConductor) getNextPieceNum(cur int32) (int32, bool) {
 		}
 		if totalPiece > 0 && i >= totalPiece {
 			return -1, false
+		}
+	}
+	return i, true
+}
+
+func (pt *peerTaskConductor) getNextNotReadyPieceNum(cur int32) (int32, bool) {
+	if pt.isCompleted() {
+		return 0, false
+	}
+	i := cur
+	// try to find next not ready piece
+	pt.readyPiecesLock.RLock()
+	defer pt.readyPiecesLock.RUnlock()
+
+	for ; pt.readyPieces.IsSet(i); i++ {
+	}
+	totalPiece := pt.GetTotalPieces()
+	if totalPiece > 0 && i >= totalPiece {
+		// double check, re-search
+		for i = int32(0); pt.readyPieces.IsSet(i); i++ {
+		}
+		if totalPiece > 0 && i >= totalPiece {
+			return 0, false
 		}
 	}
 	return i, true
@@ -1179,7 +1261,7 @@ func (pt *peerTaskConductor) reportSuccessResult(request *DownloadPieceRequest, 
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(true))
 
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		&scheduler.PieceResult{
 			TaskId:        pt.GetTaskID(),
 			SrcPid:        pt.GetPeerID(),
@@ -1206,7 +1288,7 @@ func (pt *peerTaskConductor) reportFailResult(request *DownloadPieceRequest, res
 	_, span := tracer.Start(pt.ctx, config.SpanReportPieceResult)
 	span.SetAttributes(config.AttributeWritePieceSuccess.Bool(false))
 
-	err := pt.peerPacketStream.Send(&scheduler.PieceResult{
+	err := pt.sendPieceResult(&scheduler.PieceResult{
 		TaskId:        pt.GetTaskID(),
 		SrcPid:        pt.GetPeerID(),
 		DstPid:        request.DstPid,
@@ -1286,6 +1368,7 @@ func (pt *peerTaskConductor) done() {
 	defer func() {
 		pt.broker.Stop()
 		pt.span.End()
+		pt.pieceDownloadCancel()
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
@@ -1335,7 +1418,7 @@ func (pt *peerTaskConductor) done() {
 	defer peerResultSpan.End()
 
 	// send EOF piece result to scheduler
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
@@ -1377,6 +1460,7 @@ func (pt *peerTaskConductor) fail() {
 		close(pt.failCh)
 		pt.broker.Stop()
 		pt.span.End()
+		pt.pieceDownloadCancel()
 		if pt.pieceTaskSyncManager != nil {
 			pt.pieceTaskSyncManager.cancel()
 		}
@@ -1386,7 +1470,7 @@ func (pt *peerTaskConductor) fail() {
 	pt.Log().Errorf("peer task failed, code: %d, reason: %s", pt.failedCode, pt.failedReason)
 
 	// send EOF piece result to scheduler
-	err := pt.peerPacketStream.Send(
+	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
@@ -1476,4 +1560,11 @@ func (pt *peerTaskConductor) PublishPieceInfo(pieceNum int32, size uint32) {
 			Num:      pieceNum,
 			Finished: finished,
 		})
+}
+
+func (pt *peerTaskConductor) sendPieceResult(pr *scheduler.PieceResult) error {
+	pt.sendPieceResultLock.Lock()
+	err := pt.peerPacketStream.Send(pr)
+	pt.sendPieceResultLock.Unlock()
+	return err
 }

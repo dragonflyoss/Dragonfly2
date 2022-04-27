@@ -32,7 +32,7 @@ import (
 )
 
 type subscriber struct {
-	sync.Mutex
+	sync.Mutex // lock for sent map and grpc Send
 	*logger.SugaredLoggerOnWith
 	*peer.SubscribeResult
 	sync           dfdaemon.Daemon_SyncPieceTasksServer
@@ -52,41 +52,56 @@ func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskReque
 
 func sendExistPieces(
 	ctx context.Context,
+	log *logger.SugaredLoggerOnWith,
 	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
 	request *base.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
-	sendMap map[int32]struct{},
-	skipSendZeroPiece bool) (total int32, sent int, err error) {
+	sentMap map[int32]struct{},
+	skipSendZeroPiece bool) (total int32, err error) {
 	if request.Limit <= 0 {
 		request.Limit = 16
 	}
+	var pp *base.PiecePacket
 	for {
-		pp, err := get(ctx, request)
+		pp, err = get(ctx, request)
 		if err != nil {
-			return -1, -1, err
+			log.Errorf("get piece error: %s", err)
+			return -1, err
 		}
 		if len(pp.PieceInfos) == 0 && skipSendZeroPiece {
-			return pp.TotalPiece, sent, nil
+			return pp.TotalPiece, nil
 		}
 		if err = sync.Send(pp); err != nil {
-			return pp.TotalPiece, sent, err
+			log.Errorf("send pieces error: %s", err)
+			return pp.TotalPiece, err
 		}
 		for _, p := range pp.PieceInfos {
-			sendMap[p.PieceNum] = struct{}{}
+			log.Infof("send ready piece %d", p.PieceNum)
+			sentMap[p.PieceNum] = struct{}{}
 		}
-		sent += len(pp.PieceInfos)
 		if uint32(len(pp.PieceInfos)) < request.Limit {
-			return pp.TotalPiece, sent, nil
+			log.Infof("sent %d pieces, total: %d", len(pp.PieceInfos), pp.TotalPiece)
+			return pp.TotalPiece, nil
 		}
 		// the get piece func always return sorted pieces, use last piece num + 1 to get more pieces
 		request.StartNum = uint32(pp.PieceInfos[request.Limit-1].PieceNum + 1)
 	}
 }
 
+func searchNextPieceNum(sentMap map[int32]struct{}, cur uint32) (nextPieceNum uint32) {
+	for i := int32(cur); ; i++ {
+		if _, ok := sentMap[i]; !ok {
+			nextPieceNum = uint32(i)
+			break
+		}
+	}
+	return nextPieceNum
+}
+
 // sendExistPieces will send as much as possible pieces
-func (s *subscriber) sendExistPieces(startNum uint32) (total int32, sent int, err error) {
+func (s *subscriber) sendExistPieces(startNum uint32) (total int32, err error) {
 	s.request.StartNum = startNum
-	return sendExistPieces(s.sync.Context(), s.getPieces, s.request, s.sync, s.sentMap, true)
+	return sendExistPieces(s.sync.Context(), s.SugaredLoggerOnWith, s.getPieces, s.request, s.sync, s.sentMap, true)
 }
 
 func (s *subscriber) receiveRemainingPieceTaskRequests() {
@@ -94,19 +109,18 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 	for {
 		request, err := s.sync.Recv()
 		if err == io.EOF {
-			s.Infof("SyncPieceTasks done, exit receiving")
+			s.Infof("remote SyncPieceTasks done, exit receiving")
 			return
 		}
 		if err != nil {
-			stat, ok := status.FromError(err)
-			if !ok {
+			if stat, ok := status.FromError(err); !ok {
 				s.Errorf("SyncPieceTasks receive error: %s", err)
-				return
-			}
-			if stat.Code() == codes.Canceled {
+			} else if stat.Code() == codes.Canceled {
 				s.Debugf("SyncPieceTasks canceled, exit receiving")
-				return
+			} else {
+				s.Warnf("SyncPieceTasks receive error code %d/%s", stat.Code(), stat.Message())
 			}
+			return
 		}
 		s.Debugf("receive request: %#v", request)
 		pp, err := s.getPieces(s.sync.Context(), request)
@@ -116,13 +130,15 @@ func (s *subscriber) receiveRemainingPieceTaskRequests() {
 		}
 
 		// TODO if not found, try to send to peer task conductor, then download it first
+		s.Lock()
 		err = s.sync.Send(pp)
 		if err != nil {
+			s.Unlock()
 			s.Errorf("SyncPieceTasks send error: %s", err)
 			return
 		}
-		s.Lock()
 		for _, p := range pp.PieceInfos {
+			s.Infof("send ready piece %d", p.PieceNum)
 			s.sentMap[p.PieceNum] = struct{}{}
 		}
 		s.Unlock()
@@ -145,29 +161,21 @@ loop:
 	for {
 		select {
 		case <-s.done:
-			s.Infof("SyncPieceTasks done, exit sending, local task is running")
+			s.Infof("remote SyncPieceTasks done, exit sending, local task is running")
 			return nil
 		case info := <-s.PieceInfoChannel:
+			s.Infof("receive piece info, num: %d, %v", info.Num, info.Finished)
 			// not desired piece
-			s.Debugf("receive piece info, num: %d, %v", info.Num, info.Finished)
 			if s.totalPieces > -1 && uint32(info.Num) < nextPieceNum {
 				continue
 			}
-			s.Lock()
-			total, _, err := s.sendExistPieces(uint32(info.Num))
 
+			s.Lock()
+			total, err := s.sendExistPieces(uint32(info.Num))
 			if err != nil {
-				stat, ok := status.FromError(err)
-				if !ok {
-					s.Unlock()
-					s.Errorf("sent exist pieces error: %s", err)
-					return err
-				}
-				if stat.Code() == codes.Canceled {
-					s.Debugf("SyncPieceTasks canceled, exit sending")
-					s.Unlock()
-					return nil
-				}
+				err = s.saveError(err)
+				s.Unlock()
+				return err
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
@@ -183,36 +191,32 @@ loop:
 			nextPieceNum = s.searchNextPieceNum(nextPieceNum)
 			s.Unlock()
 		case <-s.Success:
+			s.Infof("peer task is success, send remaining pieces")
 			s.Lock()
 			// all pieces already sent
 			if s.totalPieces > -1 && nextPieceNum == uint32(s.totalPieces) {
 				s.Unlock()
 				break loop
 			}
-			total, _, err := s.sendExistPieces(nextPieceNum)
+			total, err := s.sendExistPieces(nextPieceNum)
 			if err != nil {
-				stat, ok := status.FromError(err)
-				if !ok {
-					s.Unlock()
-					s.Errorf("sent exist pieces error: %s", err)
-					return err
-				}
-				if stat.Code() == codes.Canceled {
-					s.Debugf("SyncPieceTasks canceled, exit sending")
-					s.Unlock()
-					return nil
-				}
+				err = s.saveError(err)
+				s.Unlock()
+				return err
 			}
 			if total > -1 && s.totalPieces == -1 {
 				s.totalPieces = total
 			}
 			if s.totalPieces > -1 && len(s.sentMap)+int(s.skipPieceCount) != int(s.totalPieces) {
 				s.Unlock()
-				return dferrors.Newf(base.Code_ClientError, "peer task success, but can not send all pieces")
+				msg := "peer task success, but can not send all pieces"
+				s.Errorf(msg)
+				return dferrors.Newf(base.Code_ClientError, msg)
 			}
 			s.Unlock()
 			break loop
 		case <-s.Fail:
+			s.Errorf("peer task failed")
 			return dferrors.Newf(base.Code_ClientError, "peer task failed")
 		}
 	}
@@ -223,12 +227,19 @@ loop:
 	}
 }
 
-func (s *subscriber) searchNextPieceNum(cur uint32) (nextPieceNum uint32) {
-	for i := int32(cur); ; i++ {
-		if _, ok := s.sentMap[i]; !ok {
-			nextPieceNum = uint32(i)
-			break
-		}
+func (s *subscriber) saveError(err error) error {
+	if stat, ok := status.FromError(err); !ok {
+		// not grpc error
+		s.Errorf("sent exist pieces error: %s", err)
+	} else if stat.Code() == codes.Canceled {
+		err = nil
+		s.Debugf("SyncPieceTasks canceled, exit sending")
+	} else {
+		s.Warnf("SyncPieceTasks send error code %d/%s", stat.Code(), stat.Message())
 	}
-	return nextPieceNum
+	return err
+}
+
+func (s *subscriber) searchNextPieceNum(cur uint32) (nextPieceNum uint32) {
+	return searchNextPieceNum(s.sentMap, cur)
 }
