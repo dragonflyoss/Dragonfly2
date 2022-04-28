@@ -239,12 +239,12 @@ func (s *server) CheckHealth(context.Context) error {
 
 func (s *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	s.Keep()
 	return s.doDownload(ctx, req, results, "")
 }
 
 func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 	results chan<- *dfdaemongrpc.DownResult, peerID string) error {
-	s.Keep()
 	if req.UrlMeta == nil {
 		req.UrlMeta = &base.UrlMeta{}
 	}
@@ -345,6 +345,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 }
 
 func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
 
@@ -380,6 +381,7 @@ func (s *server) isTaskCompleted(taskID string) bool {
 }
 
 func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) error {
+	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "ImportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
@@ -441,6 +443,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 }
 
 func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
 
@@ -552,6 +555,7 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 }
 
 func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID)
 
