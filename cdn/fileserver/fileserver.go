@@ -30,6 +30,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	maxRetryAttempts = 5
+)
+
 // d7yDir is modified from http.Dir, for http.Dir does not treat syscall.EMFILE as we want.
 type d7yDir string
 
@@ -48,8 +52,9 @@ func mapDirOpenError(originalErr error, name string) error {
 			return originalErr
 		}
 		if !fi.IsDir() {
-			if pathError, ok := originalErr.(*fs.PathError); ok {
-				return pathError.Err
+			pathError, ok := originalErr.(*fs.PathError)
+			if ok && pathError.Err == syscall.EMFILE {
+				return syscall.EMFILE
 			}
 			return fs.ErrNotExist
 		}
@@ -70,8 +75,8 @@ func (d d7yDir) Open(name string) (http.File, error) {
 	f, err := os.Open(fullName)
 	if err != nil {
 		mappedErr := mapDirOpenError(err, fullName)
-		// retry until success when syscall.EMFILE
-		for mappedErr == syscall.EMFILE {
+		// retry when syscall.EMFILE
+		for i := 0; mappedErr == syscall.EMFILE && i < maxRetryAttempts; i++ {
 			time.Sleep(100 * time.Millisecond)
 			f, err = os.Open(fullName)
 			if err == nil {
