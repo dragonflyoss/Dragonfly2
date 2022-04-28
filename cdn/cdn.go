@@ -213,5 +213,10 @@ func (s *Server) Stop() error {
 		// Stop grpc server
 		return s.grpcServer.Shutdown()
 	})
+
+	g.Go(func() error {
+		// Stop file server
+		return s.fileServer.Shutdown(ctx)
+	})
 	return g.Wait()
 }

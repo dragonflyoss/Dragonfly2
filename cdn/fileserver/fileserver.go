@@ -17,6 +17,7 @@
 package fileserver
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -28,6 +29,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 const (
@@ -100,4 +103,9 @@ func New(port int, prefix, uploadPath string) *Server {
 			Handler: http.StripPrefix(prefix, http.FileServer(d7yDir(uploadPath))),
 		},
 	}
+}
+
+func (server *Server) Shutdown(ctx context.Context) error {
+	defer logger.Infof("====stopped file server====")
+	return server.Server.Shutdown(ctx)
 }
