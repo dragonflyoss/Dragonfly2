@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
-	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -47,19 +46,6 @@ type SeedTaskResponse struct {
 // SeedTask represents a seed peer task
 type SeedTask interface {
 	Start(ctx context.Context) (chan *SeedTaskProgress, error)
-}
-
-type seedTask struct {
-	*logger.SugaredLoggerOnWith
-	ctx               context.Context
-	span              trace.Span
-	pieceCh           chan *PieceInfo
-	peerTaskConductor *peerTaskConductor
-
-	request *SeedTaskRequest
-	// progressCh holds progress status
-	progressCh chan *SeedTaskProgress
-	callsystem string
 }
 
 type SeedTaskProgress struct {
