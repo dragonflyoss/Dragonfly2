@@ -223,6 +223,40 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 		},
 		{
+			name: "get task scope size failed",
+			req: &rpcscheduler.PeerTaskRequest{
+				UrlMeta: &base.UrlMeta{},
+				PeerHost: &rpcscheduler.PeerHost{
+					Uuid: mockRawHost.Uuid,
+				},
+			},
+			mock: func(
+				req *rpcscheduler.PeerTaskRequest, mockPeer *resource.Peer, mockCDNPeer *resource.Peer,
+				scheduler scheduler.Scheduler, res resource.Resource, hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
+				ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder,
+			) {
+				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
+				mockPeer.Task.StorePeer(mockCDNPeer)
+				mockPeer.Task.ContentLength.Store(-1)
+				gomock.InOrder(
+					mr.TaskManager().Return(taskManager).Times(1),
+					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
+					mr.HostManager().Return(hostManager).Times(1),
+					mh.Load(gomock.Eq(mockPeer.Host.ID)).Return(mockPeer.Host, true).Times(1),
+					mr.PeerManager().Return(peerManager).Times(1),
+					mp.LoadOrStore(gomock.Any()).Return(mockPeer, true).Times(1),
+				)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
+			},
+		},
+		{
 			name: "task scope size is SizeScope_TINY",
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
@@ -238,6 +272,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockCDNPeer)
 				mockPeer.Task.ContentLength.Store(1)
+				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.Task.DirectPiece = []byte{1}
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
@@ -275,6 +310,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockCDNPeer)
 				mockPeer.Task.ContentLength.Store(1)
+				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.Task.DirectPiece = []byte{1}
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
@@ -310,6 +346,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockCDNPeer)
 				mockPeer.Task.ContentLength.Store(1)
+				mockPeer.Task.TotalPieceCount.Store(1)
 				mockPeer.FSM.SetState(resource.PeerStateFailed)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
@@ -345,6 +382,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 				mockPeer.Task.FSM.SetState(resource.TaskStateSucceeded)
 				mockPeer.Task.StorePeer(mockCDNPeer)
 				mockPeer.Task.ContentLength.Store(1)
+				mockPeer.Task.TotalPieceCount.Store(1)
 				gomock.InOrder(
 					mr.TaskManager().Return(taskManager).Times(1),
 					mt.LoadOrStore(gomock.Any()).Return(mockPeer.Task, true).Times(1),
@@ -2686,10 +2724,24 @@ func TestService_handlePeerSuccess(t *testing.T) {
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateBackToSource)
 				peer.Task.ContentLength.Store(1)
+				peer.Task.TotalPieceCount.Store(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.Task.DirectPiece, []byte{1})
+				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
+			},
+		},
+		{
+			name: "get task size scope failed",
+			mock: func(peer *resource.Peer) {
+				peer.FSM.SetState(resource.PeerStateBackToSource)
+				peer.Task.ContentLength.Store(-1)
+				peer.Task.TotalPieceCount.Store(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer) {
+				assert := assert.New(t)
+				assert.Equal(peer.Task.DirectPiece, []byte(nil))
 				assert.True(peer.FSM.Is(resource.PeerStateSucceeded))
 			},
 		},
@@ -2709,6 +2761,7 @@ func TestService_handlePeerSuccess(t *testing.T) {
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateBackToSource)
 				peer.Task.ContentLength.Store(resource.TinyFileSize + 1)
+				peer.Task.TotalPieceCount.Store(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)

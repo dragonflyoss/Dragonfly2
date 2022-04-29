@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"errors"
 	"sort"
 	"sync"
 	"time"
@@ -309,16 +310,24 @@ func (t *Task) DeletePiece(key int32) {
 }
 
 // SizeScope return task size scope type
-func (t *Task) SizeScope() base.SizeScope {
+func (t *Task) SizeScope() (base.SizeScope, error) {
+	if t.ContentLength.Load() < 0 {
+		return -1, errors.New("invalid content length")
+	}
+
+	if t.TotalPieceCount.Load() <= 0 {
+		return -1, errors.New("invalid total piece count")
+	}
+
 	if t.ContentLength.Load() <= TinyFileSize {
-		return base.SizeScope_TINY
+		return base.SizeScope_TINY, nil
 	}
 
 	if t.TotalPieceCount.Load() == 1 {
-		return base.SizeScope_SMALL
+		return base.SizeScope_SMALL, nil
 	}
 
-	return base.SizeScope_NORMAL
+	return base.SizeScope_NORMAL, nil
 }
 
 // CanBackToSource represents whether peer can back-to-source

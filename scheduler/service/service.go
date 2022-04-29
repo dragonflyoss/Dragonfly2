@@ -91,10 +91,10 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	// does not have a CDN, it will back-to-source.
 	peer.NeedBackToSource.Store(needBackToSource)
 
-	// Task has been successful
-	if task.FSM.Is(resource.TaskStateSucceeded) {
-		peer.Log.Info("tasks can be reused")
-		sizeScope := task.SizeScope()
+	// The task state is TaskStateSucceeded and SizeScope is not invalid
+	sizeScope, err := task.SizeScope()
+	if task.FSM.Is(resource.TaskStateSucceeded) && err == nil {
+		peer.Log.Info("task can be reused")
 		switch sizeScope {
 		case base.SizeScope_TINY:
 			peer.Log.Info("task size scope is tiny and return piece content directly")
@@ -699,9 +699,15 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 		return
 	}
 
+	sizeScope, err := peer.Task.SizeScope()
+	if err != nil {
+		peer.Log.Errorf("get task size scope failed: %s", err.Error())
+		return
+	}
+
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece
-	if peer.Task.SizeScope() == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+	if sizeScope == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())

@@ -32,10 +32,10 @@ const (
 )
 
 type TaskManager interface {
-	// Load return task for a key
+	// Load returns task for a key
 	Load(string) (*Task, bool)
 
-	// Store set task
+	// Store sets task
 	Store(*Task)
 
 	// LoadOrStore returns task the key if present.

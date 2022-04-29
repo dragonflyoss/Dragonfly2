@@ -723,7 +723,9 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount:   1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				assert.Equal(task.SizeScope(), base.SizeScope_TINY)
+				sizeScope, err := task.SizeScope()
+				assert.NoError(err)
+				assert.Equal(sizeScope, base.SizeScope_TINY)
 			},
 		},
 		{
@@ -736,7 +738,9 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount:   1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				assert.Equal(task.SizeScope(), base.SizeScope_SMALL)
+				sizeScope, err := task.SizeScope()
+				assert.NoError(err)
+				assert.Equal(sizeScope, base.SizeScope_SMALL)
 			},
 		},
 		{
@@ -749,7 +753,37 @@ func TestTask_SizeScope(t *testing.T) {
 			totalPieceCount:   2,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				assert.Equal(task.SizeScope(), base.SizeScope_NORMAL)
+				sizeScope, err := task.SizeScope()
+				assert.NoError(err)
+				assert.Equal(sizeScope, base.SizeScope_NORMAL)
+			},
+		},
+		{
+			name:              "invalid content length",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			contentLength:     -1,
+			totalPieceCount:   2,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				_, err := task.SizeScope()
+				assert.Errorf(err, "invalid content length")
+			},
+		},
+		{
+			name:              "invalid total piece count",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: mockTaskBackToSourceLimit,
+			contentLength:     TinyFileSize + 1,
+			totalPieceCount:   0,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				_, err := task.SizeScope()
+				assert.Errorf(err, "invalid total piece count")
 			},
 		},
 	}
