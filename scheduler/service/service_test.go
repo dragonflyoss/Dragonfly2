@@ -249,9 +249,11 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer, result *rpcscheduler.RegisterResult, err error) {
 				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_SchedTaskStatusError)
+				assert.NoError(err)
+				assert.Equal(result.TaskId, peer.Task.ID)
+				assert.Equal(result.SizeScope, base.SizeScope_NORMAL)
+				assert.True(peer.FSM.Is(resource.PeerStateReceivedNormal))
+				assert.Equal(peer.NeedBackToSource.Load(), false)
 			},
 		},
 		{

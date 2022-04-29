@@ -772,37 +772,17 @@ func (m *PeerResult) Validate() error {
 		}
 	}
 
-	if m.GetContentLength() < -1 {
-		return PeerResultValidationError{
-			field:  "ContentLength",
-			reason: "value must be greater than or equal to -1",
-		}
-	}
+	// no validation rules for ContentLength
 
-	if m.GetTraffic() < 0 {
-		return PeerResultValidationError{
-			field:  "Traffic",
-			reason: "value must be greater than or equal to 0",
-		}
-	}
+	// no validation rules for Traffic
 
-	if m.GetCost() < 0 {
-		return PeerResultValidationError{
-			field:  "Cost",
-			reason: "value must be greater than or equal to 0",
-		}
-	}
+	// no validation rules for Cost
 
 	// no validation rules for Success
 
 	// no validation rules for Code
 
-	if m.GetTotalPieceCount() < 0 {
-		return PeerResultValidationError{
-			field:  "TotalPieceCount",
-			reason: "value must be greater than or equal to 0",
-		}
-	}
+	// no validation rules for TotalPieceCount
 
 	return nil
 }

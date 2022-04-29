@@ -145,17 +145,17 @@ message PeerResult{
   // task download url
   string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
-  int64 content_length = 7 [(validate.rules).int64.gte = -1];
+  int64 content_length = 7;
   // total network traffic(byte)
-  uint64 traffic = 8 [(validate.rules).uint64.gte = 0];
+  uint64 traffic = 8;
   // total time(millisecond) consumed
-  uint32 cost = 9 [(validate.rules).uint32.gte = 0];
+  uint32 cost = 9;
   // whether peer downloading file is successfully
   bool success = 10;
   // result code
   base.Code code = 11;
   // -1 represent task is running or download failed
-  int32 total_piece_count = 12 [(validate.rules).int32.gte = 0];
+  int32 total_piece_count = 12;
 }
 
 message PeerTarget{
