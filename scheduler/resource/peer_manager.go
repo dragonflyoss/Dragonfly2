@@ -32,10 +32,10 @@ const (
 )
 
 type PeerManager interface {
-	// Load return peer for a key
+	// Load returns peer for a key
 	Load(string) (*Peer, bool)
 
-	// Store set peer
+	// Store sets peer
 	Store(*Peer)
 
 	// LoadOrStore returns peer the key if present.

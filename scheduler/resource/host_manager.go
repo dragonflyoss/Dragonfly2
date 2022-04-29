@@ -32,10 +32,10 @@ const (
 )
 
 type HostManager interface {
-	// Load return host for a key
+	// Load returns host for a key
 	Load(string) (*Host, bool)
 
-	// Store set host
+	// Store sets host
 	Store(*Host)
 
 	// LoadOrStore returns host the key if present.
