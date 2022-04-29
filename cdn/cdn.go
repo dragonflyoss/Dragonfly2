@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -25,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/cdn/config"
+	"d7y.io/dragonfly/v2/cdn/fileserver"
 	"d7y.io/dragonfly/v2/cdn/gc"
 	"d7y.io/dragonfly/v2/cdn/metrics"
 	"d7y.io/dragonfly/v2/cdn/rpcserver"
@@ -33,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -54,6 +57,9 @@ type Server struct {
 
 	// gc Server
 	gcServer *gc.Server
+
+	// fileServer
+	fileServer *fileserver.Server
 }
 
 // New creates a brand-new server instance.
@@ -97,6 +103,8 @@ func New(config *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
+	fileServer := fileserver.New(config.RPCServer.DownloadPort, upload.PeerDownloadHTTPPathPrefix, storageManager.GetUploadPath())
+
 	// Initialize gc server
 	gcServer, err := gc.New()
 	if err != nil {
@@ -126,6 +134,7 @@ func New(config *config.Config) (*Server, error) {
 		metricsServer: metricsServer,
 		configServer:  configServer,
 		gcServer:      gcServer,
+		fileServer:    fileServer,
 	}, nil
 }
 
@@ -172,6 +181,16 @@ func (s *Server) Serve() error {
 		}
 	}()
 
+	go func() {
+		// Start file server
+		if err := s.fileServer.ListenAndServe(); err != nil {
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("start cdn file server failed: %v", err)
+		}
+	}()
+
 	// Start grpc server
 	return s.grpcServer.ListenAndServe()
 }
@@ -197,6 +216,11 @@ func (s *Server) Stop() error {
 	g.Go(func() error {
 		// Stop grpc server
 		return s.grpcServer.Shutdown()
+	})
+
+	g.Go(func() error {
+		// Stop file server
+		return s.fileServer.Shutdown(ctx)
 	})
 	return g.Wait()
 }
