@@ -772,7 +772,12 @@ func (m *PeerResult) Validate() error {
 		}
 	}
 
-	// no validation rules for ContentLength
+	if m.GetContentLength() < -1 {
+		return PeerResultValidationError{
+			field:  "ContentLength",
+			reason: "value must be greater than or equal to -1",
+		}
+	}
 
 	// no validation rules for Traffic
 
@@ -782,7 +787,12 @@ func (m *PeerResult) Validate() error {
 
 	// no validation rules for Code
 
-	// no validation rules for TotalPieceCount
+	if m.GetTotalPieceCount() < 0 {
+		return PeerResultValidationError{
+			field:  "TotalPieceCount",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
 
 	return nil
 }
