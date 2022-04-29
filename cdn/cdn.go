@@ -18,6 +18,7 @@ package cdn
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -183,7 +184,10 @@ func (s *Server) Serve() error {
 	go func() {
 		// Start file server
 		if err := s.fileServer.ListenAndServe(); err != nil {
-			logger.Fatalf("start cdn file server failed")
+			if err == http.ErrServerClosed {
+				return
+			}
+			logger.Fatalf("start cdn file server failed: %v", err)
 		}
 	}()
 
