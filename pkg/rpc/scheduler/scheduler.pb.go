@@ -672,7 +672,7 @@ type PeerResult struct {
 	Success bool `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
 	// result code
 	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
-	// -1 represent task is running or download failed
+	// task total piece count
 	TotalPieceCount int32 `protobuf:"varint,12,opt,name=total_piece_count,json=totalPieceCount,proto3" json:"total_piece_count,omitempty"`
 }
 
