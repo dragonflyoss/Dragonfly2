@@ -113,6 +113,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	t.RUnlock()
 
+	start := time.Now().UnixNano()
 	file, err := os.OpenFile(t.DataFilePath, os.O_RDWR, defaultFileMode)
 	if err != nil {
 		return 0, err
@@ -170,6 +171,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if _, ok := t.Pieces[req.Num]; ok {
 		return n, nil
 	}
+	req.PieceMetadata.Cost = uint64(time.Now().UnixNano() - start)
 	t.Pieces[req.Num] = req.PieceMetadata
 	t.genDigest(n, req)
 	return n, nil
@@ -407,14 +409,16 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 			break
 		}
 		if piece, ok := t.Pieces[num]; ok {
-			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &base.PieceInfo{
-				PieceNum:    piece.Num,
-				RangeStart:  uint64(piece.Range.Start),
-				RangeSize:   uint32(piece.Range.Length),
-				PieceMd5:    piece.Md5,
-				PieceOffset: piece.Offset,
-				PieceStyle:  piece.Style,
-			})
+			piecePacket.PieceInfos = append(piecePacket.PieceInfos,
+				&base.PieceInfo{
+					PieceNum:     piece.Num,
+					RangeStart:   uint64(piece.Range.Start),
+					RangeSize:    uint32(piece.Range.Length),
+					PieceMd5:     piece.Md5,
+					PieceOffset:  piece.Offset,
+					PieceStyle:   piece.Style,
+					DownloadCost: piece.Cost / 1000,
+				})
 		}
 	}
 	return piecePacket, nil
