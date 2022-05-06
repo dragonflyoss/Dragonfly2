@@ -47,6 +47,8 @@ type PieceMetadata struct {
 	Offset uint64           `json:"offset,omitempty"`
 	Range  clientutil.Range `json:"range,omitempty"`
 	Style  base.PieceStyle  `json:"style,omitempty"`
+	// time(nanosecond) consumed
+	Cost uint64 `json:"cost,omitempty"`
 }
 
 type CommonTaskRequest struct {

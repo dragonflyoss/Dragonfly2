@@ -77,6 +77,7 @@ type peerTaskConductor struct {
 
 	// needBackSource indicates downloading resource from instead of other peers
 	needBackSource *atomic.Bool
+	seed           bool
 
 	// pieceManager will be used for downloading piece
 	pieceManager    PieceManager
@@ -165,7 +166,8 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range) *peerTaskConductor {
+	rg *clientutil.Range,
+	seed bool) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
 	ctx, span := tracer.Start(ctx, config.SpanPeerTask, trace.WithSpanKind(trace.SpanKindClient))
@@ -226,6 +228,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
+		seed:                seed,
 
 		parent: parent,
 		rg:     rg,
@@ -329,9 +332,17 @@ func (pt *peerTaskConductor) register() error {
 }
 
 func (pt *peerTaskConductor) start() error {
-	// register to scheduler
-	if err := pt.register(); err != nil {
-		return err
+	// when is seed task, setup back source
+	if pt.seed {
+		pt.peerPacketStream = &dummyPeerPacketStream{}
+		pt.schedulerClient = &dummySchedulerClient{}
+		pt.sizeScope = base.SizeScope_NORMAL
+		pt.needBackSource = atomic.NewBool(true)
+	} else {
+		// register to scheduler
+		if err := pt.register(); err != nil {
+			return err
+		}
 	}
 
 	go pt.broker.Start()
