@@ -263,3 +263,70 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
 	return rc, attr, true
 }
+
+func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
+	request *SeedTaskRequest) (*SeedTaskResponse, bool) {
+	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	var (
+		reuse      *storage.ReusePeerTask
+		reuseRange *clientutil.Range // the range of parent peer task data to read
+		log        *logger.SugaredLoggerOnWith
+	)
+
+	if ptm.enabledPrefetch(request.Range) {
+		reuse = ptm.storageManager.FindCompletedSubTask(taskID)
+	} else {
+		reuse = ptm.storageManager.FindCompletedTask(taskID)
+	}
+
+	if reuse == nil {
+		if request.Range == nil {
+			return nil, false
+		}
+		// TODO, mock SeedTaskResponse for sub task
+		// for ranged request, check the parent task
+		//reuseRange = request.Range
+		//taskID = idgen.ParentTaskID(request.Url, request.UrlMeta)
+		//reuse = ptm.storageManager.FindPartialCompletedTask(taskID, reuseRange)
+		//if reuse == nil {
+		//	return nil, false
+		//}
+	}
+
+	if reuseRange == nil {
+		log = logger.With("peer", request.PeerId, "task", taskID, "component", "reuseSeedPeerTask")
+		log.Infof("reuse from peer task: %s, total size: %d", reuse.PeerID, reuse.ContentLength)
+	} else {
+		log = logger.With("peer", request.PeerId, "task", taskID, "range", request.UrlMeta.Range,
+			"component", "reuseRangeSeedPeerTask")
+		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
+			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
+	}
+
+	ctx, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
+	span.SetAttributes(config.AttributeTaskID.String(taskID))
+	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
+	span.SetAttributes(config.AttributeReusePeerID.String(reuse.PeerID))
+	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
+	if reuseRange != nil {
+		span.SetAttributes(config.AttributeReuseRange.String(request.UrlMeta.Range))
+	}
+
+	successCh := make(chan struct{}, 1)
+	successCh <- struct{}{}
+
+	span.SetAttributes(config.AttributePeerTaskSuccess.Bool(true))
+	return &SeedTaskResponse{
+		Context: ctx,
+		Span:    span,
+		TaskID:  taskID,
+		SubscribeResponse: SubscribeResponse{
+			Storage:          nil,
+			PieceInfoChannel: nil,
+			Success:          successCh,
+			Fail:             nil,
+		},
+	}, true
+}

@@ -34,7 +34,7 @@ import (
 type subscriber struct {
 	sync.Mutex // lock for sent map and grpc Send
 	*logger.SugaredLoggerOnWith
-	*peer.SubscribeResult
+	*peer.SubscribeResponse
 	sync           dfdaemon.Daemon_SyncPieceTasksServer
 	request        *base.PieceTaskRequest
 	skipPieceCount uint32
@@ -164,7 +164,7 @@ loop:
 			s.Infof("remote SyncPieceTasks done, exit sending, local task is running")
 			return nil
 		case info := <-s.PieceInfoChannel:
-			s.Infof("receive piece info, num: %d, %v", info.Num, info.Finished)
+			s.Infof("receive piece info, num: %d, finished: %v", info.Num, info.Finished)
 			// not desired piece
 			if s.totalPieces > -1 && uint32(info.Num) < nextPieceNum {
 				continue

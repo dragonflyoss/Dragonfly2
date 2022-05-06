@@ -323,9 +323,11 @@ const (
 	taskTypeFile = iota
 	taskTypeStream
 	taskTypeConductor
+	taskTypeSeed
 )
 
 type testSpec struct {
+	runTaskTypes       []int
 	taskType           int
 	name               string
 	taskData           []byte
@@ -371,8 +373,8 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		return downloader
 	}
 
-	taskTypes := []int{taskTypeConductor, taskTypeFile, taskTypeStream}
-	taskTypeNames := []string{"conductor", "file", "stream"}
+	taskTypes := []int{taskTypeConductor, taskTypeFile, taskTypeStream} // seed task need back source client
+	taskTypeNames := []string{"conductor", "file", "stream", "seed"}
 
 	testCases := []testSpec{
 		{
@@ -410,6 +412,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		},
 		{
 			name:                "normal size scope - back source - content length",
+			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
 			taskData:            testBytes,
 			pieceParallelCount:  4,
 			pieceSize:           1024,
@@ -432,18 +435,19 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			},
 		},
 		{
-			name:     "normal size scope - range - back source - content length",
-			taskData: testBytes[0:4096],
+			name:               "normal size scope - range - back source - content length",
+			runTaskTypes:       []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
+			taskData:           testBytes[0:4096],
+			pieceParallelCount: 4,
+			pieceSize:          1024,
+			peerID:             "normal-size-peer-range-back-source",
+			backSource:         true,
+			url:                "http://localhost/test/data",
+			sizeScope:          base.SizeScope_NORMAL,
 			httpRange: &clientutil.Range{
 				Start:  0,
 				Length: 4096,
 			},
-			pieceParallelCount:  4,
-			pieceSize:           1024,
-			peerID:              "normal-size-peer-range-back-source",
-			backSource:          true,
-			url:                 "http://localhost/test/data",
-			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourceMock.NewMockResourceClient(ctrl)
@@ -474,6 +478,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		},
 		{
 			name:                "normal size scope - back source - no content length",
+			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
 			taskData:            testBytes,
 			pieceParallelCount:  4,
 			pieceSize:           1024,
@@ -497,6 +502,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 		},
 		{
 			name:                "normal size scope - back source - no content length - aligning",
+			runTaskTypes:        []int{taskTypeConductor, taskTypeFile, taskTypeStream, taskTypeSeed},
 			taskData:            testBytes[:8192],
 			pieceParallelCount:  4,
 			pieceSize:           1024,
@@ -546,10 +552,14 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 
 	for _, _tc := range testCases {
 		t.Run(_tc.name, func(t *testing.T) {
+			var types = _tc.runTaskTypes
+			if _tc.runTaskTypes == nil {
+				types = taskTypes
+			}
 			assert := testifyassert.New(t)
 			require := testifyrequire.New(t)
 			for _, legacy := range []bool{true, false} {
-				for _, typ := range taskTypes {
+				for _, typ := range types {
 					// dup a new test case with the task type
 					logger.Infof("-------------------- test %s - type %s, legacy feature: %v started --------------------",
 						_tc.name, taskTypeNames[typ], legacy)
@@ -632,6 +642,8 @@ func (ts *testSpec) run(assert *testifyassert.Assertions, require *testifyrequir
 		ts.runStreamTaskTest(assert, require, mm, urlMeta)
 	case taskTypeConductor:
 		ts.runConductorTest(assert, require, mm, urlMeta)
+	case taskTypeSeed:
+		ts.runSeedTaskTest(assert, require, mm, urlMeta)
 	default:
 		panic("unknown test type")
 	}
@@ -686,6 +698,52 @@ func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *test
 	require.Equal(ts.taskData, outputBytes, "output and desired output must match")
 }
 
+func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+	r, err := mm.peerTaskManager.StartSeedTask(
+		context.Background(),
+		&SeedTaskRequest{
+			PeerTaskRequest: scheduler.PeerTaskRequest{
+				Url:         ts.url,
+				UrlMeta:     urlMeta,
+				PeerId:      ts.peerID,
+				PeerHost:    &scheduler.PeerHost{},
+				HostLoad:    nil,
+				IsMigrating: false,
+			},
+			Limit:      0,
+			Callsystem: "",
+			Range:      nil,
+		})
+
+	require.Nil(err, "start seed peer task")
+
+	var success bool
+
+loop:
+	for {
+		select {
+		case <-r.Context.Done():
+			break loop
+		case <-r.Success:
+			success = true
+			break loop
+		case <-r.Fail:
+			break loop
+		case p := <-r.PieceInfoChannel:
+			if p.Finished {
+				success = true
+				break loop
+			}
+		case <-time.After(5 * time.Minute):
+			buf := make([]byte, 16384)
+			buf = buf[:runtime.Stack(buf, true)]
+			fmt.Printf("=== BEGIN goroutine stack dump ===\n%s\n=== END goroutine stack dump ===", buf)
+		}
+	}
+
+	require.True(success, "seed task should success")
+}
+
 func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
 	var (
 		ptm       = mm.peerTaskManager
@@ -705,7 +763,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	}
 
 	ptc, created, err := ptm.getOrCreatePeerTaskConductor(
-		context.Background(), taskID, peerTaskRequest, rate.Limit(pieceSize*4), nil, nil, "")
+		context.Background(), taskID, peerTaskRequest, rate.Limit(pieceSize*4), nil, nil, "", false)
 	assert.Nil(err, "load first peerTaskConductor")
 	assert.True(created, "should create a new peerTaskConductor")
 
@@ -750,7 +808,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 			PeerHost: &scheduler.PeerHost{},
 		}
 		p, created, err := ptm.getOrCreatePeerTaskConductor(
-			context.Background(), taskID, request, rate.Limit(pieceSize*3), nil, nil, "")
+			context.Background(), taskID, request, rate.Limit(pieceSize*3), nil, nil, "", false)
 		assert.Nil(err, fmt.Sprintf("load peerTaskConductor %d", i))
 		assert.Equal(ptc.peerID, p.GetPeerID(), fmt.Sprintf("ptc %d should be same with ptc", i))
 		assert.False(created, "should not create a new peerTaskConductor")

@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,202 +21,30 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"os"
 	"sync"
 	"testing"
 
-	"github.com/distribution/distribution/v3/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
-
-func Test_ServeDownload(t *testing.T) {
-	assert := testifyassert.New(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockPeerTaskManager := mock_peer.NewMockTaskManager(ctrl)
-	mockPeerTaskManager.EXPECT().StartFileTask(gomock.Any(), gomock.Any()).DoAndReturn(
-		func(ctx context.Context, req *peer.FileTaskRequest) (chan *peer.FileTaskProgress, bool, error) {
-			ch := make(chan *peer.FileTaskProgress)
-			go func() {
-				for i := 0; i <= 100; i++ {
-					ch <- &peer.FileTaskProgress{
-						State: &peer.ProgressState{
-							Success: true,
-						},
-						TaskID:          "",
-						PeerID:          "",
-						ContentLength:   100,
-						CompletedLength: int64(i),
-						PeerTaskDone:    i == 100,
-						DoneCallback:    func() {},
-					}
-				}
-				close(ch)
-			}()
-			return ch, false, nil
-		})
-	m := &server{
-		KeepAlive:       clientutil.NewKeepAlive("test"),
-		peerHost:        &scheduler.PeerHost{},
-		peerTaskManager: mockPeerTaskManager,
-	}
-	m.downloadServer = dfdaemonserver.New(m)
-	_, client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
-	request := &dfdaemongrpc.DownRequest{
-		Uuid:              uuid.Generate().String(),
-		Url:               "http://localhost/test",
-		Output:            "./testdata/file1",
-		DisableBackSource: false,
-		UrlMeta: &base.UrlMeta{
-			Tag: "unit test",
-		},
-		Pattern:    "p2p",
-		Callsystem: "",
-	}
-	down, err := client.Download(context.Background(), request)
-	assert.Nil(err, "client download grpc call should be ok")
-
-	var (
-		lastResult *dfdaemongrpc.DownResult
-		curResult  *dfdaemongrpc.DownResult
-	)
-	for {
-		curResult, err = down.Recv()
-		if err == io.EOF {
-			break
-		}
-		assert.Nil(err)
-		lastResult = curResult
-	}
-	assert.NotNil(lastResult)
-	assert.True(lastResult.Done)
-}
-
-func Test_ServePeer(t *testing.T) {
-	assert := testifyassert.New(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	var maxPieceNum uint32 = 10
-	mockStorageManger := mock_storage.NewMockManager(ctrl)
-	mockStorageManger.EXPECT().GetPieces(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-		var (
-			pieces    []*base.PieceInfo
-			pieceSize = uint32(1024)
-		)
-		for i := req.StartNum; i < req.Limit+req.StartNum && i < maxPieceNum; i++ {
-			pieces = append(pieces, &base.PieceInfo{
-				PieceNum:    int32(i),
-				RangeStart:  uint64(i * pieceSize),
-				RangeSize:   pieceSize,
-				PieceMd5:    "",
-				PieceOffset: uint64(i * pieceSize),
-				PieceStyle:  base.PieceStyle_PLAIN,
-			})
-		}
-		return &base.PiecePacket{
-			TaskId:        "",
-			DstPid:        "",
-			DstAddr:       "",
-			PieceInfos:    pieces,
-			TotalPiece:    10,
-			ContentLength: 10 * int64(pieceSize),
-			PieceMd5Sign:  "",
-		}, nil
-	})
-	s := &server{
-		KeepAlive:      clientutil.NewKeepAlive("test"),
-		peerHost:       &scheduler.PeerHost{},
-		storageManager: mockStorageManger,
-	}
-	s.peerServer = dfdaemonserver.New(s)
-	port, client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
-	defer s.peerServer.GracefulStop()
-
-	var tests = []struct {
-		request           *base.PieceTaskRequest
-		responsePieceSize int
-	}{
-		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
-				StartNum: 0,
-				Limit:    1,
-			},
-			// 0
-			responsePieceSize: 1,
-		},
-		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
-				StartNum: 0,
-				Limit:    4,
-			},
-			// 0 1 2 3
-			responsePieceSize: 4,
-		},
-		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
-				StartNum: 8,
-				Limit:    1,
-			},
-			// 8
-			responsePieceSize: 1,
-		},
-		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
-				StartNum: 8,
-				Limit:    4,
-			},
-			// 8 9
-			responsePieceSize: 2,
-		},
-	}
-
-	for _, tc := range tests {
-		response, err := client.GetPieceTasks(
-			context.Background(),
-			dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("127.0.0.1:%d", port),
-			},
-			tc.request)
-		assert.Nil(err, "client get piece tasks grpc call should be ok")
-		assert.Equal(tc.responsePieceSize, len(response.PieceInfos))
-	}
-}
-
-func Test_SyncPieceTasks(t *testing.T) {
+func Test_ObtainSeeds(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -234,7 +62,6 @@ func Test_SyncPieceTasks(t *testing.T) {
 		existTaskID     string       // test for non-exists task
 		existPieces     []pieceRange // already exist pieces in storage
 		followingPieces []pieceRange // following pieces in running task subscribe channel
-		requestPieces   []int32
 		limit           uint32
 		totalPieces     uint32
 		success         bool
@@ -261,9 +88,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					end:   10,
 				},
 			},
-			totalPieces:   11,
-			requestPieces: []int32{1, 3, 5, 7},
-			success:       true,
+			totalPieces: 11,
+			success:     true,
 			verify: func(t *testing.T, assert *testifyassert.Assertions) {
 			},
 		},
@@ -288,9 +114,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					end:   1000,
 				},
 			},
-			totalPieces:   1001,
-			requestPieces: []int32{1, 3, 5, 7, 100, 500, 1000},
-			success:       true,
+			totalPieces: 1001,
+			success:     true,
 			verify: func(t *testing.T, assert *testifyassert.Assertions) {
 			},
 		},
@@ -327,9 +152,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					end:   2000,
 				},
 			},
-			totalPieces:   2001,
-			requestPieces: []int32{1000, 1010, 1020, 1040},
-			success:       true,
+			totalPieces: 2001,
+			success:     true,
 			verify: func(t *testing.T, assert *testifyassert.Assertions) {
 			},
 		},
@@ -354,9 +178,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					end:   2000,
 				},
 			},
-			totalPieces:   2001,
-			requestPieces: []int32{1000, 1010, 1020, 1040},
-			success:       true,
+			totalPieces: 2001,
+			success:     true,
 			verify: func(t *testing.T, assert *testifyassert.Assertions) {
 			},
 		},
@@ -422,8 +245,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 						}, nil
 					})
 				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
-				mockTaskManager.EXPECT().Subscribe(gomock.Any()).AnyTimes().DoAndReturn(
-					func(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
+				mockTaskManager.EXPECT().StartSeedTask(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, req *peer.SeedTaskRequest) (*peer.SeedTaskResponse, error) {
 						ch := make(chan *peer.PieceInfo)
 						success := make(chan struct{})
 						fail := make(chan struct{})
@@ -464,12 +287,19 @@ func Test_SyncPieceTasks(t *testing.T) {
 							close(success)
 						}(tc.followingPieces)
 
-						return &peer.SubscribeResponse{
-							Storage:          mockStorageManger,
-							PieceInfoChannel: ch,
-							Success:          success,
-							Fail:             fail,
-						}, true
+						tracer := otel.Tracer("test")
+						ctx, span := tracer.Start(ctx, config.SpanSeedTask, trace.WithSpanKind(trace.SpanKindClient))
+						return &peer.SeedTaskResponse{
+							SubscribeResponse: peer.SubscribeResponse{
+								Storage:          mockStorageManger,
+								PieceInfoChannel: ch,
+								Success:          success,
+								Fail:             fail,
+							},
+							Context: ctx,
+							Span:    span,
+							TaskID:  "fake-task-id",
+						}, nil
 					})
 
 				s := &server{
@@ -478,64 +308,38 @@ func Test_SyncPieceTasks(t *testing.T) {
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,
 				}
+				sd := &seeder{server: s}
 
-				port, client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
+				_, client := setupSeederServerAndClient(t, s, sd, assert, s.ServePeer)
 
-				syncClient, err := client.SyncPieceTasks(
+				pps, err := client.ObtainSeeds(
 					context.Background(),
-					dfnet.NetAddr{
-						Type: dfnet.TCP,
-						Addr: fmt.Sprintf("127.0.0.1:%d", port),
-					},
-					&base.PieceTaskRequest{
-						TaskId:   tc.name,
-						SrcPid:   idgen.PeerID(iputils.IPv4),
-						DstPid:   idgen.PeerID(iputils.IPv4),
-						StartNum: 0,
-						Limit:    tc.limit,
+					&cdnsystem.SeedRequest{
+						TaskId:  "fake-task-id",
+						Url:     "http://localhost/path/to/file",
+						UrlMeta: nil,
 					})
-				assert.Nil(err, "client sync piece tasks grpc call should be ok")
+				assert.Nil(err, "client obtain seeds grpc call should be ok")
 
 				var (
-					total       = make(map[int32]bool)
-					maxNum      int32
-					requestSent = make(chan bool)
+					total  = make(map[int32]bool)
+					maxNum int32
 				)
-				if len(tc.requestPieces) == 0 {
-					close(requestSent)
-				} else {
-					go func() {
-						for _, n := range tc.requestPieces {
-							request := &base.PieceTaskRequest{
-								TaskId:   tc.name,
-								SrcPid:   idgen.PeerID(iputils.IPv4),
-								DstPid:   idgen.PeerID(iputils.IPv4),
-								StartNum: uint32(n),
-								Limit:    tc.limit,
-							}
-							assert.Nil(syncClient.Send(request))
-						}
-						close(requestSent)
-					}()
-				}
+
 				for {
-					p, err := syncClient.Recv()
+					p, err := pps.Recv()
 					if err == io.EOF {
 						break
 					}
-					for _, info := range p.PieceInfos {
-						total[info.PieceNum] = true
-						if info.PieceNum >= maxNum {
-							maxNum = info.PieceNum
-						}
+					if p.PieceInfo.PieceNum == common.BeginOfPiece {
+						continue
+					}
+					total[p.PieceInfo.PieceNum] = true
+					if p.PieceInfo.PieceNum >= maxNum {
+						maxNum = p.PieceInfo.PieceNum
 					}
 					if tc.success {
-						assert.Nil(err, "receive piece tasks should be ok")
-					}
-					if int(p.TotalPiece) == len(total) {
-						<-requestSent
-						err = syncClient.CloseSend()
-						assert.Nil(err)
+						assert.Nil(err, "receive seed info should be ok")
 					}
 				}
 				if tc.success {
@@ -548,8 +352,10 @@ func Test_SyncPieceTasks(t *testing.T) {
 	}
 }
 
-func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, dfclient.DaemonClient) {
+func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, cdnclient.CdnClient) {
 	srv.peerServer = dfdaemonserver.New(srv)
+	cdnsystem.RegisterSeederServer(srv.peerServer, sd)
+
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		t.Fatal(err)
@@ -563,7 +369,7 @@ func setupPeerServerAndClient(t *testing.T, srv *server, assert *testifyassert.A
 		}
 	}()
 
-	client, err := dfclient.GetClientByAddr([]dfnet.NetAddr{
+	client, err := cdnclient.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),

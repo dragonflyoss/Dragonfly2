@@ -39,6 +39,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -66,19 +67,25 @@ type server struct {
 }
 
 func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, storageManager storage.Manager, downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
-	svr := &server{
+	s := &server{
 		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
 	}
 
-	svr.downloadServer = dfdaemonserver.New(svr, downloadOpts...)
-	healthpb.RegisterHealthServer(svr.downloadServer, health.NewServer())
+	sd := &seeder{
+		server: s,
+	}
 
-	svr.peerServer = dfdaemonserver.New(svr, peerOpts...)
-	healthpb.RegisterHealthServer(svr.peerServer, health.NewServer())
-	return svr, nil
+	s.downloadServer = dfdaemonserver.New(s, downloadOpts...)
+	healthpb.RegisterHealthServer(s.downloadServer, health.NewServer())
+
+	s.peerServer = dfdaemonserver.New(s, peerOpts...)
+	healthpb.RegisterHealthServer(s.peerServer, health.NewServer())
+
+	cdnsystem.RegisterSeederServer(s.peerServer, sd)
+	return s, nil
 }
 
 func (s *server) ServeDownload(listener net.Listener) error {
@@ -210,7 +217,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	}
 
 	var sub = &subscriber{
-		SubscribeResult:     result,
+		SubscribeResponse:   result,
 		sync:                sync,
 		request:             request,
 		skipPieceCount:      skipPieceCount,
@@ -232,12 +239,12 @@ func (s *server) CheckHealth(context.Context) error {
 
 func (s *server) Download(ctx context.Context,
 	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	s.Keep()
 	return s.doDownload(ctx, req, results, "")
 }
 
 func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 	results chan<- *dfdaemongrpc.DownResult, peerID string) error {
-	s.Keep()
 	if req.UrlMeta == nil {
 		req.UrlMeta = &base.UrlMeta{}
 	}
@@ -338,6 +345,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 }
 
 func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
 
@@ -373,6 +381,7 @@ func (s *server) isTaskCompleted(taskID string) bool {
 }
 
 func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) error {
+	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "ImportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
@@ -434,6 +443,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 }
 
 func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
 
@@ -545,6 +555,7 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 }
 
 func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
+	s.Keep()
 	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID)
 
