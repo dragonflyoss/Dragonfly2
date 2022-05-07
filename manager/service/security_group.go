@@ -100,6 +100,24 @@ func (s *service) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, sc
 	return nil
 }
 
+func (s *service) AddSeedPeerClusterToSecurityGroup(ctx context.Context, id, seedPeerClusterID uint) error {
+	securityGroup := model.SecurityGroup{}
+	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
+		return err
+	}
+
+	seedPeerCluster := model.SeedPeerCluster{}
+	if err := s.db.WithContext(ctx).First(&seedPeerCluster, seedPeerClusterID).Error; err != nil {
+		return err
+	}
+
+	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("SeedPeerClusters").Append(&seedPeerCluster); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *service) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {

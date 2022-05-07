@@ -159,7 +159,7 @@ message PeerResult{
   // result code
   base.Code code = 11;
   // task total piece count
-  int32 total_piece_count = 12 [(validate.rules).int32.gte = 0];
+  int32 total_piece_count = 12 [(validate.rules).int32.gte = -1];
 }
 
 message PeerTarget{

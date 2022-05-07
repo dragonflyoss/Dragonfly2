@@ -78,6 +78,26 @@ func (mr *MockManagerClientMockRecorder) GetScheduler(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerClient)(nil).GetScheduler), varargs...)
 }
 
+// GetSeedPeer mocks base method.
+func (m *MockManagerClient) GetSeedPeer(ctx context.Context, in *manager.GetSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetSeedPeer", varargs...)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeer indicates an expected call of GetSeedPeer.
+func (mr *MockManagerClientMockRecorder) GetSeedPeer(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerClient)(nil).GetSeedPeer), varargs...)
+}
+
 // KeepAlive mocks base method.
 func (m *MockManagerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (manager.Manager_KeepAliveClient, error) {
 	m.ctrl.T.Helper()
@@ -156,6 +176,26 @@ func (mr *MockManagerClientMockRecorder) UpdateScheduler(ctx, in interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerClient)(nil).UpdateScheduler), varargs...)
+}
+
+// UpdateSeedPeer mocks base method.
+func (m *MockManagerClient) UpdateSeedPeer(ctx context.Context, in *manager.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", varargs...)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
+func (mr *MockManagerClientMockRecorder) UpdateSeedPeer(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockManagerClient)(nil).UpdateSeedPeer), varargs...)
 }
 
 // MockManager_KeepAliveClient is a mock of Manager_KeepAliveClient interface.
@@ -348,6 +388,21 @@ func (mr *MockManagerServerMockRecorder) GetScheduler(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerServer)(nil).GetScheduler), arg0, arg1)
 }
 
+// GetSeedPeer mocks base method.
+func (m *MockManagerServer) GetSeedPeer(arg0 context.Context, arg1 *manager.GetSeedPeerRequest) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeedPeer", arg0, arg1)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeer indicates an expected call of GetSeedPeer.
+func (mr *MockManagerServerMockRecorder) GetSeedPeer(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerServer)(nil).GetSeedPeer), arg0, arg1)
+}
+
 // KeepAlive mocks base method.
 func (m *MockManagerServer) KeepAlive(arg0 manager.Manager_KeepAliveServer) error {
 	m.ctrl.T.Helper()
@@ -405,6 +460,21 @@ func (m *MockManagerServer) UpdateScheduler(arg0 context.Context, arg1 *manager.
 func (mr *MockManagerServerMockRecorder) UpdateScheduler(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerServer)(nil).UpdateScheduler), arg0, arg1)
+}
+
+// UpdateSeedPeer mocks base method.
+func (m *MockManagerServer) UpdateSeedPeer(arg0 context.Context, arg1 *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
+func (mr *MockManagerServerMockRecorder) UpdateSeedPeer(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockManagerServer)(nil).UpdateSeedPeer), arg0, arg1)
 }
 
 // MockManager_KeepAliveServer is a mock of Manager_KeepAliveServer interface.
