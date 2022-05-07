@@ -234,7 +234,7 @@ func (client *httpSourceClient) doRequest(method string, request *source.Request
 
 func exportPassThroughHeader(header http.Header) map[string]string {
 	var ph = map[string]string{}
-	for h := range PassThroughResponseHeader {
+	for h := range PassThroughHeaders {
 		val := header.Get(h)
 		if len(val) > 0 {
 			ph[h] = val
