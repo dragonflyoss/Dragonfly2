@@ -48,6 +48,8 @@ message PieceSeed{
   uint64 begin_time = 8;
   // end time for the piece downloading
   uint64 end_time = 9;
+  // task extend attribute
+  base.ExtendAttribute extend_attribute = 10;
 }
 
 // CDN System RPC Service

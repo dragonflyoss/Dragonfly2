@@ -42,11 +42,21 @@ type subscriber struct {
 	sentMap        map[int32]struct{}
 	done           chan struct{}
 	uploadAddr     string
+	attributeSent  bool
 }
 
 func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	p, err := s.Storage.GetPieces(ctx, request)
 	p.DstAddr = s.uploadAddr
+	if err == nil && !s.attributeSent && len(p.PieceInfos) > 0 {
+		exa, err := s.Storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("get extend attribute error: %s", err.Error())
+			return nil, err
+		}
+		p.ExtendAttribute = exa
+		s.attributeSent = true
+	}
 	return p, err
 }
 

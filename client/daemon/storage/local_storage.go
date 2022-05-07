@@ -211,6 +211,10 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 		t.PieceMd5Sign = req.PieceMd5Sign
 		t.Debugf("update piece md5 sign: %s", t.PieceMd5Sign)
 	}
+	if t.Header == nil && req.Header != nil {
+		t.Header = req.Header
+		t.Debugf("update response header: %#v", t.Header)
+	}
 	return nil
 }
 
@@ -432,6 +436,22 @@ func (t *localTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetada
 
 	t.touch()
 	return t.TotalPieces, nil
+}
+
+func (t *localTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return nil, ErrInvalidDigest
+	}
+	if t.Header == nil {
+		return nil, nil
+	}
+	hdr := map[string]string{}
+	for k, v := range *t.Header {
+		// FIXME currently, only use the first header
+		hdr[k] = v[0]
+	}
+	return &base.ExtendAttribute{Header: hdr}, nil
 }
 
 func (t *localTaskStore) CanReclaim() bool {

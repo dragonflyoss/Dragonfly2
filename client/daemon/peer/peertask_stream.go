@@ -119,6 +119,16 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		} else {
 			attr[headers.TransferEncoding] = "chunked"
 		}
+		exa, err := s.peerTaskConductor.storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("read extend attribute error due to %s ", err.Error())
+			return nil, attr, err
+		}
+		if exa != nil {
+			for k, v := range exa.Header {
+				attr[k] = v
+			}
+		}
 		rc, err := s.peerTaskConductor.peerTaskManager.storageManager.ReadAllPieces(
 			ctx,
 			&storage.ReadAllPiecesRequest{
@@ -129,6 +139,16 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		return rc, attr, err
 	case first := <-s.pieceCh:
 		firstPiece = first
+		exa, err := s.peerTaskConductor.storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("read extend attribute error due to %s ", err.Error())
+			return nil, attr, err
+		}
+		if exa != nil {
+			for k, v := range exa.Header {
+				attr[k] = v
+			}
+		}
 	}
 
 	if s.peerTaskConductor.GetContentLength() != -1 {

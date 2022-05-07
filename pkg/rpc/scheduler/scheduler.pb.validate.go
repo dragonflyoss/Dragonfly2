@@ -192,6 +192,16 @@ func (m *RegisterResult) Validate() error {
 		}
 	}
 
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return RegisterResultValidationError{
+				field:  "ExtendAttribute",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	switch m.DirectPiece.(type) {
 
 	case *RegisterResult_SinglePiece:
@@ -557,6 +567,16 @@ func (m *PieceResult) Validate() error {
 	}
 
 	// no validation rules for FinishedCount
+
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return PieceResultValidationError{
+				field:  "ExtendAttribute",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }

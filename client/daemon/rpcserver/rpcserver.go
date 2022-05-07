@@ -147,13 +147,23 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 }
 
 // sendExistPieces will send as much as possible pieces
-func (s *server) sendExistPieces(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, err error) {
-	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, true)
+func (s *server) sendExistPieces(
+	log *logger.SugaredLoggerOnWith,
+	request *base.PieceTaskRequest,
+	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
+	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	sentMap map[int32]struct{}) (total int32, err error) {
+	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, true)
 }
 
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
-func (s *server) sendFirstPieceTasks(log *logger.SugaredLoggerOnWith, request *base.PieceTaskRequest, sync dfdaemongrpc.Daemon_SyncPieceTasksServer, sentMap map[int32]struct{}) (total int32, err error) {
-	return sendExistPieces(sync.Context(), log, s.GetPieceTasks, request, sync, sentMap, false)
+func (s *server) sendFirstPieceTasks(
+	log *logger.SugaredLoggerOnWith,
+	request *base.PieceTaskRequest,
+	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
+	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	sentMap map[int32]struct{}) (total int32, err error) {
+	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, false)
 }
 
 func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
@@ -166,10 +176,32 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		"localPeerID", request.DstPid, "remotePeerID", request.SrcPid)
 
 	skipPieceCount := request.StartNum
-	var sentMap = make(map[int32]struct{})
+	var (
+		sentMap       = make(map[int32]struct{})
+		attributeSent bool
+	)
+
+	getPieces := func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+		p, e := s.GetPieceTasks(ctx, request)
+		p.DstAddr = s.uploadAddr
+		if e == nil && !attributeSent && len(p.PieceInfos) > 0 {
+			exa, e := s.storageManager.GetExtendAttribute(ctx,
+				&storage.PeerTaskMetadata{
+					PeerID: request.TaskId,
+					TaskID: request.DstPid,
+				})
+			if e != nil {
+				log.Errorf("get extend attribute error: %s", e.Error())
+				return nil, e
+			}
+			p.ExtendAttribute = exa
+			attributeSent = true
+		}
+		return p, e
+	}
 
 	// TODO if not found, try to send to peer task conductor, then download it first
-	total, err := s.sendFirstPieceTasks(log, request, sync, sentMap)
+	total, err := s.sendFirstPieceTasks(log, request, sync, getPieces, sentMap)
 	if err != nil {
 		log.Errorf("send first piece tasks error: %s", err)
 		return err
@@ -185,7 +217,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 				logger.Errorf("receive reminding piece tasks request error: %s", err)
 				return err
 			}
-			total, err = s.sendExistPieces(log, request, sync, sentMap)
+			total, err = s.sendExistPieces(log, request, sync, getPieces, sentMap)
 			if err != nil {
 				logger.Errorf("send reminding piece tasks error: %s", err)
 				return err
@@ -204,7 +236,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 	if !ok {
 		// running task not found, double check for done task
 		request.StartNum = searchNextPieceNum(sentMap, skipPieceCount)
-		total, err = s.sendExistPieces(log, request, sync, sentMap)
+		total, err = s.sendExistPieces(log, request, sync, getPieces, sentMap)
 		if err != nil {
 			log.Errorf("send exist piece tasks error: %s", err)
 			return err
@@ -226,6 +258,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		done:                make(chan struct{}),
 		uploadAddr:          s.uploadAddr,
 		SugaredLoggerOnWith: log,
+		attributeSent:       attributeSent,
 	}
 
 	go sub.receiveRemainingPieceTaskRequests()

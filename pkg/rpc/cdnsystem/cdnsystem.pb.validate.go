@@ -169,6 +169,16 @@ func (m *PieceSeed) Validate() error {
 
 	// no validation rules for EndTime
 
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return PieceSeedValidationError{
+				field:  "ExtendAttribute",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 

@@ -51,6 +51,8 @@ message RegisterResult{
     // for tiny file
     bytes piece_content = 5;
   }
+  // task extend attribute, only direct_piece will carry extend attribute
+  base.ExtendAttribute extend_attribute = 6;
 }
 
 message SinglePiece{
@@ -104,6 +106,8 @@ message PieceResult{
   base.HostLoad host_load = 9;
   // currently completed piece count, -1 represent download failed
   int32 finished_count = 10;
+  // task extend attribute, only first success back source piece will carry extend attribute
+  base.ExtendAttribute extend_attribute = 11;
 }
 
 message PeerPacket{

@@ -28,6 +28,9 @@ type Response struct {
 	Header        Header
 	Body          io.ReadCloser
 	ContentLength int64
+	// validate this response is okay to transfer in p2p network, like status 200 or 206 in http is valid to do this,
+	// otherwise return status code to original client
+	Validate func() error
 }
 
 func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
@@ -42,6 +45,9 @@ func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
 		StatusCode:    http.StatusOK,
 		Body:          rc,
 		ContentLength: -1,
+		Validate: func() error {
+			return nil
+		},
 	}
 
 	for _, opt := range opts {
@@ -75,6 +81,12 @@ func WithExpireInfo(info ExpireInfo) func(*Response) {
 	return func(resp *Response) {
 		resp.Header.Set(LastModified, info.LastModified)
 		resp.Header.Set(ETag, info.ETag)
+	}
+}
+
+func WithValidate(validate func() error) func(*Response) {
+	return func(resp *Response) {
+		resp.Validate = validate
 	}
 }
 

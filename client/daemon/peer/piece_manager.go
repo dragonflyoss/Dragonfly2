@@ -268,6 +268,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	if err != nil {
 		return err
 	}
+	err = response.Validate()
+	if err != nil {
+		return err
+	}
 	contentLength := response.ContentLength
 	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
@@ -280,6 +284,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 					TaskID: pt.GetTaskID(),
 				},
 				ContentLength: contentLength,
+				Header:        &response.Header,
 			})
 		if err != nil {
 			return err
