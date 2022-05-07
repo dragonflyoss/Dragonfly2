@@ -117,7 +117,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 			return nil, dferrors.New(code, err.Error())
 		}
 		// dst peer is not running
-		if !s.peerTaskManager.IsPeerTaskRunning(request.TaskId) {
+		if task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId); !ok || task.GetPeerID() != request.GetDstPid() {
 			code = base.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)

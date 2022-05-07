@@ -363,6 +363,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 					ContentLength: contentLength,
 					TotalPieces:   maxPieceNum,
 				})
+			pt.SetTotalPieces(maxPieceNum)
 			if err != nil {
 				log.Errorf("update task failed %s", err)
 				pt.ReportPieceResult(request, result, detectBackSourceError(err))

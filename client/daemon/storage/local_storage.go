@@ -213,7 +213,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	}
 	if t.Header == nil && req.Header != nil {
 		t.Header = req.Header
-		t.Debugf("update response header: %#v", t.Header)
+		t.Debugf("update header: %#v", t.Header)
 	}
 	return nil
 }
