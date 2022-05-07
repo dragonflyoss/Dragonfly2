@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
-// Server is grpc sercer
+// Server is grpc server
 type Server struct {
 	// Service interface
 	service *service.Service

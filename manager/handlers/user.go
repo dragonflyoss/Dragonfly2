@@ -90,12 +90,12 @@ func (h *Handlers) GetUser(ctx *gin.Context) {
 
 // @Summary Get Users
 // @Description Get Users
-// @Tags CDN
+// @Tags User
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.CDN
+// @Success 200 {object} []model.User
 // @Failure 400
 // @Failure 404
 // @Failure 500

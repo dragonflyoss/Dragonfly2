@@ -33,6 +33,81 @@ var (
 	_ = anypb.Any{}
 )
 
+// Validate checks the field values on SecurityGroup with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *SecurityGroup) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	// no validation rules for Bio
+
+	// no validation rules for Domain
+
+	// no validation rules for ProxyDomain
+
+	return nil
+}
+
+// SecurityGroupValidationError is the validation error returned by
+// SecurityGroup.Validate if the designated constraints aren't met.
+type SecurityGroupValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityGroupValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityGroupValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityGroupValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityGroupValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityGroupValidationError) ErrorName() string { return "SecurityGroupValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SecurityGroupValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityGroup.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityGroupValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityGroupValidationError{}
+
 // Validate checks the field values on CDNCluster with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
 func (m *CDNCluster) Validate() error {
@@ -114,81 +189,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CDNClusterValidationError{}
-
-// Validate checks the field values on SecurityGroup with the rules defined in
-// the proto definition for this message. If any rules are violated, an error
-// is returned.
-func (m *SecurityGroup) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	// no validation rules for Id
-
-	// no validation rules for Name
-
-	// no validation rules for Bio
-
-	// no validation rules for Domain
-
-	// no validation rules for ProxyDomain
-
-	return nil
-}
-
-// SecurityGroupValidationError is the validation error returned by
-// SecurityGroup.Validate if the designated constraints aren't met.
-type SecurityGroupValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e SecurityGroupValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e SecurityGroupValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e SecurityGroupValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e SecurityGroupValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e SecurityGroupValidationError) ErrorName() string { return "SecurityGroupValidationError" }
-
-// Error satisfies the builtin error interface
-func (e SecurityGroupValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sSecurityGroup.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = SecurityGroupValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = SecurityGroupValidationError{}
 
 // Validate checks the field values on CDN with the rules defined in the proto
 // definition for this message. If any rules are violated, an error is returned.
@@ -574,6 +574,501 @@ var _ interface {
 	ErrorName() string
 } = UpdateCDNRequestValidationError{}
 
+// Validate checks the field values on SeedPeerCluster with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *SeedPeerCluster) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Id
+
+	// no validation rules for Name
+
+	// no validation rules for Bio
+
+	// no validation rules for Config
+
+	// no validation rules for Scopes
+
+	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SeedPeerClusterValidationError{
+				field:  "SecurityGroup",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// SeedPeerClusterValidationError is the validation error returned by
+// SeedPeerCluster.Validate if the designated constraints aren't met.
+type SeedPeerClusterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SeedPeerClusterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SeedPeerClusterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SeedPeerClusterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SeedPeerClusterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SeedPeerClusterValidationError) ErrorName() string { return "SeedPeerClusterValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SeedPeerClusterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSeedPeerCluster.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SeedPeerClusterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SeedPeerClusterValidationError{}
+
+// Validate checks the field values on SeedPeer with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *SeedPeer) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Id
+
+	// no validation rules for HostName
+
+	// no validation rules for Type
+
+	// no validation rules for Idc
+
+	// no validation rules for NetTopology
+
+	// no validation rules for Location
+
+	// no validation rules for Ip
+
+	// no validation rules for Port
+
+	// no validation rules for DownloadPort
+
+	// no validation rules for State
+
+	// no validation rules for SeedPeerClusterId
+
+	if v, ok := interface{}(m.GetSeedPeerCluster()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SeedPeerValidationError{
+				field:  "SeedPeerCluster",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetSchedulers() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SeedPeerValidationError{
+					field:  fmt.Sprintf("Schedulers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// SeedPeerValidationError is the validation error returned by
+// SeedPeer.Validate if the designated constraints aren't met.
+type SeedPeerValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SeedPeerValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SeedPeerValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SeedPeerValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SeedPeerValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SeedPeerValidationError) ErrorName() string { return "SeedPeerValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SeedPeerValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSeedPeer.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SeedPeerValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SeedPeerValidationError{}
+
+// Validate checks the field values on GetSeedPeerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetSeedPeerRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return GetSeedPeerRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if err := m._validateHostname(m.GetHostName()); err != nil {
+		return GetSeedPeerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid hostname",
+			cause:  err,
+		}
+	}
+
+	if m.GetSeedPeerClusterId() < 1 {
+		return GetSeedPeerRequestValidationError{
+			field:  "SeedPeerClusterId",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	return nil
+}
+
+func (m *GetSeedPeerRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetSeedPeerRequestValidationError is the validation error returned by
+// GetSeedPeerRequest.Validate if the designated constraints aren't met.
+type GetSeedPeerRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetSeedPeerRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetSeedPeerRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetSeedPeerRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetSeedPeerRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetSeedPeerRequestValidationError) ErrorName() string {
+	return "GetSeedPeerRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetSeedPeerRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetSeedPeerRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetSeedPeerRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetSeedPeerRequestValidationError{}
+
+// Validate checks the field values on UpdateSeedPeerRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *UpdateSeedPeerRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if err := m._validateHostname(m.GetHostName()); err != nil {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid hostname",
+			cause:  err,
+		}
+	}
+
+	if l := utf8.RuneCountInString(m.GetType()); l < 1 || l > 1024 {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "Type",
+			reason: "value length must be between 1 and 1024 runes, inclusive",
+		}
+	}
+
+	if m.GetIdc() != "" {
+
+		if l := utf8.RuneCountInString(m.GetIdc()); l < 1 || l > 1024 {
+			return UpdateSeedPeerRequestValidationError{
+				field:  "Idc",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetNetTopology() != "" {
+
+		if l := utf8.RuneCountInString(m.GetNetTopology()); l < 1 || l > 1024 {
+			return UpdateSeedPeerRequestValidationError{
+				field:  "NetTopology",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetLocation() != "" {
+
+		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+			return UpdateSeedPeerRequestValidationError{
+				field:  "Location",
+				reason: "value length must be at most 1024 runes",
+			}
+		}
+
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
+	if val := m.GetPort(); val < 1024 || val >= 65535 {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "Port",
+			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	if val := m.GetDownloadPort(); val < 1024 || val >= 65535 {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "DownloadPort",
+			reason: "value must be inside range [1024, 65535)",
+		}
+	}
+
+	if m.GetSeedPeerClusterId() < 1 {
+		return UpdateSeedPeerRequestValidationError{
+			field:  "SeedPeerClusterId",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	return nil
+}
+
+func (m *UpdateSeedPeerRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+// UpdateSeedPeerRequestValidationError is the validation error returned by
+// UpdateSeedPeerRequest.Validate if the designated constraints aren't met.
+type UpdateSeedPeerRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e UpdateSeedPeerRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e UpdateSeedPeerRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e UpdateSeedPeerRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e UpdateSeedPeerRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e UpdateSeedPeerRequestValidationError) ErrorName() string {
+	return "UpdateSeedPeerRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e UpdateSeedPeerRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sUpdateSeedPeerRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = UpdateSeedPeerRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = UpdateSeedPeerRequestValidationError{}
+
 // Validate checks the field values on SchedulerCluster with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.
@@ -591,6 +1086,8 @@ func (m *SchedulerCluster) Validate() error {
 	// no validation rules for Config
 
 	// no validation rules for ClientConfig
+
+	// no validation rules for Scopes
 
 	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
@@ -710,6 +1207,23 @@ func (m *Scheduler) Validate() error {
 		}
 
 	}
+
+	for idx, item := range m.GetSeedPeers() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SchedulerValidationError{
+					field:  fmt.Sprintf("SeedPeers[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NetTopology
 
 	return nil
 }
@@ -910,6 +1424,13 @@ func (m *UpdateSchedulerRequest) Validate() error {
 		}
 	}
 
+	if m.GetSchedulerClusterId() < 1 {
+		return UpdateSchedulerRequestValidationError{
+			field:  "SchedulerClusterId",
+			reason: "value must be greater than or equal to 1",
+		}
+	}
+
 	if m.GetVips() != "" {
 
 		if l := utf8.RuneCountInString(m.GetVips()); l < 1 || l > 1024 {
@@ -934,10 +1455,10 @@ func (m *UpdateSchedulerRequest) Validate() error {
 
 	if m.GetLocation() != "" {
 
-		if utf8.RuneCountInString(m.GetLocation()) > 1024 {
+		if l := utf8.RuneCountInString(m.GetLocation()); l < 1 || l > 1024 {
 			return UpdateSchedulerRequestValidationError{
 				field:  "Location",
-				reason: "value length must be at most 1024 runes",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
 			}
 		}
 
@@ -968,11 +1489,15 @@ func (m *UpdateSchedulerRequest) Validate() error {
 		}
 	}
 
-	if m.GetSchedulerClusterId() < 1 {
-		return UpdateSchedulerRequestValidationError{
-			field:  "SchedulerClusterId",
-			reason: "value must be greater than or equal to 1",
+	if m.GetNetTopology() != "" {
+
+		if l := utf8.RuneCountInString(m.GetNetTopology()); l < 1 || l > 1024 {
+			return UpdateSchedulerRequestValidationError{
+				field:  "NetTopology",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
 		}
+
 	}
 
 	return nil

@@ -8,6 +8,13 @@ linters-settings:
   gci:
     local-prefixes: d7y.io/dragonfly/v2
 
+issues:
+  new: true
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+
 linters:
   disable-all: true
   enable:
