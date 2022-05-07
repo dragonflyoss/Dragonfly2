@@ -787,10 +787,10 @@ func (m *PeerResult) Validate() error {
 
 	// no validation rules for Code
 
-	if m.GetTotalPieceCount() < 0 {
+	if m.GetTotalPieceCount() < -1 {
 		return PeerResultValidationError{
 			field:  "TotalPieceCount",
-			reason: "value must be greater than or equal to 0",
+			reason: "value must be greater than or equal to -1",
 		}
 	}
 
