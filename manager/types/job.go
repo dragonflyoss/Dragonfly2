@@ -22,6 +22,7 @@ type CreateJobRequest struct {
 	Args                map[string]interface{} `json:"args" binding:"omitempty"`
 	Result              map[string]interface{} `json:"result" binding:"omitempty"`
 	UserID              uint                   `json:"user_id" binding:"omitempty"`
+	SeedPeerClusterIDs  []uint                 `json:"seed_peer_cluster_ids" binding:"omitempty"`
 	CDNClusterIDs       []uint                 `json:"cdn_cluster_ids" binding:"omitempty"`
 	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }

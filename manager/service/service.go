@@ -60,6 +60,20 @@ type Service interface {
 	GetOauth(context.Context, uint) (*model.Oauth, error)
 	GetOauths(context.Context, types.GetOauthsQuery) (*[]model.Oauth, int64, error)
 
+	CreateSeedPeerCluster(context.Context, types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error)
+	DestroySeedPeerCluster(context.Context, uint) error
+	UpdateSeedPeerCluster(context.Context, uint, types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error)
+	GetSeedPeerCluster(context.Context, uint) (*model.SeedPeerCluster, error)
+	GetSeedPeerClusters(context.Context, types.GetSeedPeerClustersQuery) (*[]model.SeedPeerCluster, int64, error)
+	AddSeedPeerToSeedPeerCluster(context.Context, uint, uint) error
+	AddSchedulerClusterToSeedPeerCluster(context.Context, uint, uint) error
+
+	CreateSeedPeer(context.Context, types.CreateSeedPeerRequest) (*model.SeedPeer, error)
+	DestroySeedPeer(context.Context, uint) error
+	UpdateSeedPeer(context.Context, uint, types.UpdateSeedPeerRequest) (*model.SeedPeer, error)
+	GetSeedPeer(context.Context, uint) (*model.SeedPeer, error)
+	GetSeedPeers(context.Context, types.GetSeedPeersQuery) (*[]model.SeedPeer, int64, error)
+
 	CreateCDNCluster(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
 	DestroyCDNCluster(context.Context, uint) error
 	UpdateCDNCluster(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
@@ -99,6 +113,7 @@ type Service interface {
 	GetSecurityGroup(context.Context, uint) (*model.SecurityGroup, error)
 	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error)
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
+	AddSeedPeerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
 	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
@@ -125,6 +140,8 @@ type Service interface {
 	GetApplications(context.Context, types.GetApplicationsQuery) (*[]model.Application, int64, error)
 	AddSchedulerClusterToApplication(context.Context, uint, uint) error
 	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
+	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
+	DeleteSeedPeerClusterToApplication(context.Context, uint, uint) error
 	AddCDNClusterToApplication(context.Context, uint, uint) error
 	DeleteCDNClusterToApplication(context.Context, uint, uint) error
 }
