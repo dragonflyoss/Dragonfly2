@@ -31,7 +31,7 @@ import (
 // @Tags Preheat
 // @Accept json
 // @Produce json
-// @Param CDN body types.CreateV1PreheatRequest true "Preheat"
+// @Param Preheat body types.CreateV1PreheatRequest true "Preheat"
 // @Success 200 {object} types.CreateV1PreheatResponse
 // @Failure 400
 // @Failure 404
