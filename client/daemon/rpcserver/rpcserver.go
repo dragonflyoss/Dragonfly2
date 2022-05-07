@@ -184,8 +184,11 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 
 	getPieces := func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		p, e := s.GetPieceTasks(ctx, request)
+		if e != nil {
+			return nil, e
+		}
 		p.DstAddr = s.uploadAddr
-		if e == nil && !attributeSent && len(p.PieceInfos) > 0 {
+		if !attributeSent && len(p.PieceInfos) > 0 {
 			exa, e := s.storageManager.GetExtendAttribute(ctx,
 				&storage.PeerTaskMetadata{
 					PeerID: request.TaskId,

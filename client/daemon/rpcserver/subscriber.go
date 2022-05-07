@@ -48,8 +48,11 @@ type subscriber struct {
 
 func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	p, err := s.Storage.GetPieces(ctx, request)
+	if err != nil {
+		return nil, err
+	}
 	p.DstAddr = s.uploadAddr
-	if err == nil && !s.attributeSent.Load() && len(p.PieceInfos) > 0 {
+	if !s.attributeSent.Load() && len(p.PieceInfos) > 0 {
 		exa, err := s.Storage.GetExtendAttribute(ctx, nil)
 		if err != nil {
 			s.Errorf("get extend attribute error: %s", err.Error())
