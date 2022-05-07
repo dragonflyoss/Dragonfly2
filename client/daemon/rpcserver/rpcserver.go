@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
@@ -258,7 +259,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		done:                make(chan struct{}),
 		uploadAddr:          s.uploadAddr,
 		SugaredLoggerOnWith: log,
-		attributeSent:       attributeSent,
+		attributeSent:       atomic.NewBool(attributeSent),
 	}
 
 	go sub.receiveRemainingPieceTaskRequests()
