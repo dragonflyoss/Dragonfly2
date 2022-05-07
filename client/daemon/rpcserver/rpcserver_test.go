@@ -32,6 +32,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/daemon/storage"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -419,6 +420,15 @@ func Test_SyncPieceTasks(t *testing.T) {
 							TotalPiece:    int32(tc.totalPieces),
 							ContentLength: int64(tc.totalPieces) * int64(pieceSize),
 							PieceMd5Sign:  "",
+						}, nil
+					})
+				mockStorageManger.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
 						}, nil
 					})
 				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
