@@ -65,7 +65,7 @@ func (conn *Connection) startGC() {
 				serverNode := node.(string)
 				totalNodeSize++
 				atime := accessTime.(time.Time)
-				if time.Since(atime) < conn.connExpireTime {
+				if conn.connExpireTime == 0 || time.Since(atime) < conn.connExpireTime {
 					return true
 				}
 				conn.gcConn(serverNode)
