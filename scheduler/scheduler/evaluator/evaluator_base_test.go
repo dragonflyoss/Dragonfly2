@@ -329,10 +329,10 @@ func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 			},
 		},
 		{
-			name: "host is cdn but peer state is PeerStateSucceeded",
+			name: "host is seed peer but peer state is PeerStateSucceeded",
 			mock: func(peer *resource.Peer) {
 				peer.FSM.SetState(resource.PeerStateSucceeded)
-				peer.Host.IsCDN = true
+				peer.Host.Type = resource.HostTypeSuperSeed
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -340,10 +340,10 @@ func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 			},
 		},
 		{
-			name: "host is cdn but peer state is PeerStateRunning",
+			name: "host is seed peer but peer state is PeerStateRunning",
 			mock: func(peer *resource.Peer) {
-				peer.Host.IsCDN = true
 				peer.FSM.SetState(resource.PeerStateRunning)
+				peer.Host.Type = resource.HostTypeSuperSeed
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)

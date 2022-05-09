@@ -54,7 +54,7 @@ const (
 	// Task has been created but did not start running.
 	TaskStatePending = "Pending"
 
-	// Task is downloading resources from CDN or back-to-source.
+	// Task is downloading resources from seed peer or back-to-source.
 	TaskStateRunning = "Running"
 
 	// Task has been downloaded successfully.
@@ -245,8 +245,8 @@ func (t *Task) HasAvailablePeer() bool {
 	return hasAvailablePeer
 }
 
-// LoadCDNPeer return latest cdn peer in peers sync map.
-func (t *Task) LoadCDNPeer() (*Peer, bool) {
+// LoadSeedPeer return latest seed peer in peers sync map.
+func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
 	t.Peers.Range(func(_, v interface{}) bool {
 		peer, ok := v.(*Peer)
@@ -254,7 +254,7 @@ func (t *Task) LoadCDNPeer() (*Peer, bool) {
 			return true
 		}
 
-		if peer.Host.IsCDN {
+		if peer.Host.Type != HostTypeNormal {
 			peers = append(peers, peer)
 		}
 
@@ -275,10 +275,10 @@ func (t *Task) LoadCDNPeer() (*Peer, bool) {
 	return nil, false
 }
 
-// IsCDNFailed returns whether the cdn in the task failed.
-func (t *Task) IsCDNFailed() bool {
-	cdnPeer, ok := t.LoadCDNPeer()
-	return ok && cdnPeer.FSM.Is(PeerStateFailed)
+// IsSeedPeerFailed returns whether the seed peer in the task failed.
+func (t *Task) IsSeedPeerFailed() bool {
+	seedPeer, ok := t.LoadSeedPeer()
+	return ok && seedPeer.FSM.Is(PeerStateFailed)
 }
 
 // LoadPiece return piece for a key.

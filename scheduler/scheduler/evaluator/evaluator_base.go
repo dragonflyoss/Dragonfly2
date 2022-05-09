@@ -122,9 +122,9 @@ func calculateFreeLoadScore(host *resource.Host) float64 {
 // calculateHostTypeAffinityScore 0.0~1.0 larger and better.
 func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
-	// peer will be scheduled to cdn first,
+	// peer will be scheduled to seed peer first,
 	// otherwise it will be scheduled to dfdaemon first.
-	if peer.Host.IsCDN {
+	if peer.Host.Type != resource.HostTypeNormal {
 		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
 			peer.FSM.Is(resource.PeerStateRunning) {
 			return maxScore

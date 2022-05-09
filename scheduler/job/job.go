@@ -132,8 +132,8 @@ func (j *job) Stop() {
 }
 
 func (j *job) preheat(ctx context.Context, req string) error {
-	if !j.config.CDN.Enable {
-		return errors.New("scheduler has disabled cdn")
+	if !j.config.SeedPeer.Enable {
+		return errors.New("scheduler has disabled seed peer")
 	}
 
 	request := &internaljob.PreheatRequest{}
@@ -162,11 +162,11 @@ func (j *job) preheat(ctx context.Context, req string) error {
 
 	taskID := idgen.TaskID(request.URL, urlMeta)
 
-	// Trigger CDN download seeds.
+	// Trigger seed peer download seeds.
 	log := logger.WithTaskIDAndURL(taskID, request.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
 		request.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
-	stream, err := j.resource.CDN().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  taskID,
 		Url:     request.URL,
 		UrlMeta: urlMeta,

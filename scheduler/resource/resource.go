@@ -26,8 +26,8 @@ import (
 )
 
 type Resource interface {
-	// CDN interface.
-	CDN() CDN
+	// SeedPeer interface.
+	SeedPeer() SeedPeer
 
 	// Host manager interface.
 	HostManager() HostManager
@@ -40,8 +40,8 @@ type Resource interface {
 }
 
 type resource struct {
-	// CDN interface.
-	cdn CDN
+	// seedPeer interface.
+	seedPeer SeedPeer
 
 	// Host manager interface.
 	hostManager HostManager
@@ -77,20 +77,21 @@ func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts
 	}
 	resource.peerManager = peerManager
 
-	// Initialize cdn interface.
-	if cfg.CDN.Enable {
-		client, err := newCDNClient(dynconfig, hostManager, opts...)
+	// Initialize seed peer interface.
+	if cfg.SeedPeer.Enable {
+		client, err := newSeedPeerClient(dynconfig, hostManager, opts...)
 		if err != nil {
 			return nil, err
 		}
-		resource.cdn = newCDN(peerManager, hostManager, client)
+
+		resource.seedPeer = newSeedPeer(client, peerManager, hostManager)
 	}
 
 	return resource, nil
 }
 
-func (r *resource) CDN() CDN {
-	return r.cdn
+func (r *resource) SeedPeer() SeedPeer {
+	return r.seedPeer
 }
 
 func (r *resource) HostManager() HostManager {

@@ -22,7 +22,6 @@ scheduler:
 
 dynconfig:
   refreshInterval: 300000000000
-  cdnDir: foo
 
 host:
   idc: foo
@@ -35,7 +34,7 @@ manager:
   keepAlive:
     interval: 5000000000
 
-cdn:
+seedPeer:
   enable: true
 
 job:

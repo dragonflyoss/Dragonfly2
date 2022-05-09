@@ -29,10 +29,14 @@ func init() {
 	pid = os.Getpid()
 }
 
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
-}
-
 func PeerID(ip string) string {
 	return fmt.Sprintf("%s-%d-%s", ip, pid, uuid.New())
+}
+
+func SeedPeerID(ip string) string {
+	return fmt.Sprintf("%s_%s", PeerID(ip), "Seed")
+}
+
+func CDNPeerID(ip string) string {
+	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
 }

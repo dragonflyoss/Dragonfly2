@@ -80,11 +80,11 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		default:
 		}
 
-		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
+		// If the scheduling exceeds the RetryBackSourceLimit or the latest seed peer state is PeerStateFailed,
 		// peer will download the task back-to-source.
-		isCDNFailed := peer.Task.IsCDNFailed()
+		isSeedPeerFailed := peer.Task.IsSeedPeerFailed()
 		needBackToSource := peer.NeedBackToSource.Load()
-		if (n >= s.config.RetryBackSourceLimit || isCDNFailed || needBackToSource) &&
+		if (n >= s.config.RetryBackSourceLimit || isSeedPeerFailed || needBackToSource) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -92,8 +92,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
-			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, cdn is failed %t, peer need back-to-source %t",
-				n, isCDNFailed, needBackToSource)
+			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, seed peer is failed %t, peer need back-to-source %t",
+				n, isSeedPeerFailed, needBackToSource)
 
 			// Notify peer back-to-source.
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
@@ -264,15 +264,15 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 
 		// Conditions for candidate parent to be a parent:
 		// 1. candidate parent has parent.
-		// 2. candidate parent is CDN.
+		// 2. candidate parent is seed peer.
 		// 3. candidate parent has been back-to-source.
 		// 4. candidate parent has been succeeded.
 		_, ok = candidateParent.LoadParent()
 		isBackToSource := candidateParent.IsBackToSource.Load()
-		if !ok && !candidateParent.Host.IsCDN && !isBackToSource &&
+		if !ok && candidateParent.Host.Type == resource.HostTypeNormal && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %t %t %s",
-				candidateParent.ID, ok, candidateParent.Host.IsCDN, isBackToSource, candidateParent.FSM.Current())
+			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %d %t %s",
+				candidateParent.ID, ok, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
 			return true
 		}
 
