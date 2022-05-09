@@ -28,43 +28,43 @@ import (
 )
 
 const (
-	// Finished piece weight
+	// Finished piece weight.
 	finishedPieceWeight float64 = 0.3
 
-	// Free load weight
+	// Free load weight.
 	freeLoadWeight = 0.2
 
-	// Host type affinity weight
+	// Host type affinity weight.
 	hostTypeAffinityWeight = 0.2
 
-	// IDC affinity weight
+	// IDC affinity weight.
 	idcAffinityWeight = 0.15
 
-	// NetTopology affinity weight
+	// NetTopology affinity weight.
 	netTopologyAffinityWeight = 0.1
 
-	// Location affinity weight
+	// Location affinity weight.
 	locationAffinityWeight = 0.05
 )
 
 const (
-	// Maximum score
+	// Maximum score.
 	maxScore float64 = 1
 
-	// Minimum score
+	// Minimum score.
 	minScore = 0
 )
 
 const (
 	// If the number of samples is greater than or equal to 30,
-	// it is close to the normal distribution
+	// it is close to the normal distribution.
 	normalDistributionLen = 30
 
 	// When costs len is greater than or equal to 2,
-	// the last cost can be compared and calculated
+	// the last cost can be compared and calculated.
 	minAvailableCostLen = 2
 
-	// Maximum number of elements
+	// Maximum number of elements.
 	maxElementLen = 5
 )
 
@@ -74,10 +74,10 @@ func NewEvaluatorBase() Evaluator {
 	return &evaluatorBase{}
 }
 
-// The larger the value after evaluation, the higher the priority
+// The larger the value after evaluation, the higher the priority.
 func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the SecurityDomain of hosts exists but is not equal,
-	// it cannot be scheduled as a parent
+	// it cannot be scheduled as a parent.
 	if parent.Host.SecurityDomain != "" &&
 		child.Host.SecurityDomain != "" &&
 		parent.Host.SecurityDomain != child.Host.SecurityDomain {
@@ -92,23 +92,23 @@ func (eb *evaluatorBase) Evaluate(parent *resource.Peer, child *resource.Peer, t
 		locationAffinityWeight*calculateMultiElementAffinityScore(parent.Host.Location, child.Host.Location)
 }
 
-// calculatePieceScore 0.0~unlimited larger and better
+// calculatePieceScore 0.0~unlimited larger and better.
 func calculatePieceScore(parent *resource.Peer, child *resource.Peer, totalPieceCount int32) float64 {
 	// If the total piece is determined, normalize the number of
-	// pieces downloaded by the parent node
+	// pieces downloaded by the parent node.
 	if totalPieceCount > 0 {
 		finishedPieceCount := parent.Pieces.Count()
 		return float64(finishedPieceCount) / float64(totalPieceCount)
 	}
 
 	// Use the difference between the parent node and the child node to
-	// download the piece to roughly represent the piece score
+	// download the piece to roughly represent the piece score.
 	parentFinishedPieceCount := parent.Pieces.Count()
 	childFinishedPieceCount := child.Pieces.Count()
 	return float64(parentFinishedPieceCount) - float64(childFinishedPieceCount)
 }
 
-// calculateFreeLoadScore 0.0~1.0 larger and better
+// calculateFreeLoadScore 0.0~1.0 larger and better.
 func calculateFreeLoadScore(host *resource.Host) float64 {
 	uploadLoadLimit := host.UploadLoadLimit.Load()
 	freeUploadLoad := host.FreeUploadLoad()
@@ -119,11 +119,11 @@ func calculateFreeLoadScore(host *resource.Host) float64 {
 	return minScore
 }
 
-// calculateHostTypeAffinityScore 0.0~1.0 larger and better
+// calculateHostTypeAffinityScore 0.0~1.0 larger and better.
 func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
 	// When the task is downloaded for the first time,
 	// peer will be scheduled to cdn first,
-	// otherwise it will be scheduled to dfdaemon first
+	// otherwise it will be scheduled to dfdaemon first.
 	if peer.Host.IsCDN {
 		if peer.FSM.Is(resource.PeerStateReceivedNormal) ||
 			peer.FSM.Is(resource.PeerStateRunning) {
@@ -136,7 +136,7 @@ func calculateHostTypeAffinityScore(peer *resource.Peer) float64 {
 	return maxScore * 0.5
 }
 
-// calculateIDCAffinityScore 0.0~1.0 larger and better
+// calculateIDCAffinityScore 0.0~1.0 larger and better.
 func calculateIDCAffinityScore(dst, src *resource.Host) float64 {
 	if dst.IDC != "" && src.IDC != "" && dst.IDC == src.IDC {
 		return maxScore
@@ -145,7 +145,7 @@ func calculateIDCAffinityScore(dst, src *resource.Host) float64 {
 	return minScore
 }
 
-// calculateMultiElementAffinityScore 0.0~1.0 larger and better
+// calculateMultiElementAffinityScore 0.0~1.0 larger and better.
 func calculateMultiElementAffinityScore(dst, src string) float64 {
 	if dst == "" || src == "" {
 		return minScore
@@ -155,13 +155,13 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 		return maxScore
 	}
 
-	// Calculate the number of multi-element matches divided by "|"
+	// Calculate the number of multi-element matches divided by "|".
 	var score, elementLen int
 	dstElements := strings.Split(dst, "|")
 	srcElements := strings.Split(src, "|")
 	elementLen = mathutils.MaxInt(len(dstElements), len(srcElements))
 
-	// Maximum element length is 5
+	// Maximum element length is 5.
 	if elementLen > maxElementLen {
 		elementLen = maxElementLen
 	}
@@ -183,10 +183,10 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 		return true
 	}
 
-	// Determine whether to bad node based on piece download costs
+	// Determine whether to bad node based on piece download costs.
 	costs := stats.LoadRawData(peer.PieceCosts())
 	len := len(costs)
-	// Peer has not finished downloading enough piece
+	// Peer has not finished downloading enough piece.
 	if len < minAvailableCostLen {
 		logger.Debugf("peer %s has not finished downloading enough piece, it can't be bad node", peer.ID)
 		return false
@@ -205,7 +205,7 @@ func (eb *evaluatorBase) IsBadNode(peer *resource.Peer) bool {
 
 	// Download costs satisfies the normal distribution,
 	// last cost falling outside of three-sigma effect need to be adjusted parent,
-	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule
+	// refer to https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule.
 	stdev, _ := stats.StandardDeviation(costs[:len-1]) // nolint: errcheck
 	isBadNode := big.NewFloat(lastCost).Cmp(big.NewFloat(mean+3*stdev)) > 0
 	logger.Debugf("peer %s meet the normal distribution, costs mean is %.2f and standard deviation is %.2f, peer is bad node: %t",

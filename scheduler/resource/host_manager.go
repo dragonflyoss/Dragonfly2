@@ -27,15 +27,15 @@ import (
 )
 
 const (
-	// GC host id
+	// GC host id.
 	GCHostID = "host"
 )
 
 type HostManager interface {
-	// Load returns host for a key
+	// Load returns host for a key.
 	Load(string) (*Host, bool)
 
-	// Store sets host
+	// Store sets host.
 	Store(*Host)
 
 	// LoadOrStore returns host the key if present.
@@ -43,22 +43,22 @@ type HostManager interface {
 	// The loaded result is true if the host was loaded, false if stored.
 	LoadOrStore(*Host) (*Host, bool)
 
-	// Delete deletes host for a key
+	// Delete deletes host for a key.
 	Delete(string)
 
-	// Try to reclaim host
+	// Try to reclaim host.
 	RunGC() error
 }
 
 type hostManager struct {
-	// Host sync map
+	// Host sync map.
 	*sync.Map
 
-	// Host time to live
+	// Host time to live.
 	ttl time.Duration
 }
 
-// New host manager interface
+// New host manager interface.
 func newHostManager(cfg *config.GCConfig, gc pkggc.GC) (HostManager, error) {
 	h := &hostManager{
 		Map: &sync.Map{},
