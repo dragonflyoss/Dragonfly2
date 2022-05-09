@@ -27,15 +27,15 @@ import (
 )
 
 const (
-	// GC task id
+	// GC task id.
 	GCTaskID = "task"
 )
 
 type TaskManager interface {
-	// Load returns task for a key
+	// Load returns task for a key.
 	Load(string) (*Task, bool)
 
-	// Store sets task
+	// Store sets task.
 	Store(*Task)
 
 	// LoadOrStore returns task the key if present.
@@ -43,22 +43,22 @@ type TaskManager interface {
 	// The loaded result is true if the task was loaded, false if stored.
 	LoadOrStore(*Task) (*Task, bool)
 
-	// Delete deletes task for a key
+	// Delete deletes task for a key.
 	Delete(string)
 
-	// Try to reclaim task
+	// Try to reclaim task.
 	RunGC() error
 }
 
 type taskManager struct {
-	// Task sync map
+	// Task sync map.
 	*sync.Map
 
-	// Task time to live
+	// Task time to live.
 	ttl time.Duration
 }
 
-// New task manager interface
+// New task manager interface.
 func newTaskManager(cfg *config.GCConfig, gc pkggc.GC) (TaskManager, error) {
 	t := &taskManager{
 		Map: &sync.Map{},

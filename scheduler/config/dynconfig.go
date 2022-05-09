@@ -32,10 +32,10 @@ import (
 )
 
 var (
-	// Cache filename
+	// Cache filename.
 	cacheFileName = "scheduler_dynconfig"
 
-	// Notify observer interval
+	// Notify observer interval.
 	watchInterval = 10 * time.Second
 )
 
@@ -119,7 +119,7 @@ type dynconfig struct {
 	cachePath string
 }
 
-// TODO(Gaius) Rely on manager to delete cdnDirPath
+// TODO(Gaius) Rely on manager to delete cdnDirPath.
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
@@ -226,7 +226,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 
 	var data []*CDN
 	for _, file := range files {
-		// skip directory
+		// Skip directory.
 		if file.IsDir() {
 			continue
 		}
@@ -238,7 +238,7 @@ func (d *dynconfig) getCDNFromDirPath() ([]*CDN, error) {
 				logger.Errorf("stat %s error: %s", file.Name(), err)
 				continue
 			}
-			// skip symbol link directory
+			// Skip symbol link directory.
 			if stat.IsDir() {
 				continue
 			}
@@ -313,7 +313,7 @@ func (d *dynconfig) Stop() error {
 	return nil
 }
 
-// Manager client for dynconfig
+// Manager client for dynconfig.
 type managerClient struct {
 	managerclient.Client
 	config *Config

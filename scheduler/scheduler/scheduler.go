@@ -32,32 +32,32 @@ import (
 )
 
 const (
-	// Default tree available depth
+	// Default tree available depth.
 	defaultAvailableDepth = 2
 
-	// Default tree depth limit
+	// Default tree depth limit.
 	defaultDepthLimit = 4
 )
 
 type Scheduler interface {
-	// ScheduleParent schedule a parent and candidates to a peer
+	// ScheduleParent schedule a parent and candidates to a peer.
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
 
-	// Find the parent that best matches the evaluation and notify peer
+	// Find the parent that best matches the evaluation and notify peer.
 	NotifyAndFindParent(context.Context, *resource.Peer, set.SafeSet) ([]*resource.Peer, bool)
 
-	// Find the parent that best matches the evaluation
+	// Find the parent that best matches the evaluation.
 	FindParent(context.Context, *resource.Peer, set.SafeSet) (*resource.Peer, bool)
 }
 
 type scheduler struct {
-	// Evaluator interface
+	// Evaluator interface.
 	evaluator evaluator.Evaluator
 
-	// Scheduler configuration
+	// Scheduler configuration.
 	config *config.SchedulerConfig
 
-	// Scheduler dynamic configuration
+	// Scheduler dynamic configuration.
 	dynconfig config.DynconfigInterface
 }
 
@@ -69,7 +69,7 @@ func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, plugi
 	}
 }
 
-// ScheduleParent schedule a parent and candidates to a peer
+// ScheduleParent schedule a parent and candidates to a peer.
 func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) {
 	var n int
 	for {
@@ -81,7 +81,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		}
 
 		// If the scheduling exceeds the RetryBackSourceLimit or the latest cdn peer state is PeerStateFailed,
-		// peer will download the task back-to-source
+		// peer will download the task back-to-source.
 		isCDNFailed := peer.Task.IsCDNFailed()
 		needBackToSource := peer.NeedBackToSource.Load()
 		if (n >= s.config.RetryBackSourceLimit || isCDNFailed || needBackToSource) &&
@@ -95,7 +95,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, cdn is failed %t, peer need back-to-source %t",
 				n, isCDNFailed, needBackToSource)
 
-			// Notify peer back-to-source
+			// Notify peer back-to-source.
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
@@ -107,7 +107,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			}
 
 			// If the task state is TaskStateFailed,
-			// peer back-to-source and reset task state to TaskStateRunning
+			// peer back-to-source and reset task state to TaskStateRunning.
 			if peer.Task.FSM.Is(resource.TaskStateFailed) {
 				if err := peer.Task.FSM.Event(resource.TaskEventDownload); err != nil {
 					peer.Task.Log.Errorf("task fsm event failed: %s", err.Error())
@@ -118,7 +118,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			return
 		}
 
-		// Handle peer schedule failed
+		// Handle peer schedule failed.
 		if n >= s.config.RetryLimit {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -126,7 +126,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
-			// Notify peer schedule failed
+			// Notify peer schedule failed.
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
@@ -139,7 +139,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			n++
 			peer.Log.Infof("schedule parent %d times failed", n)
 
-			// Sleep to avoid hot looping
+			// Sleep to avoid hot looping.
 			time.Sleep(s.config.RetryInterval)
 			continue
 		}
@@ -149,24 +149,24 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 	}
 }
 
-// NotifyAndFindParent finds parent that best matches the evaluation and notify peer
+// NotifyAndFindParent finds parent that best matches the evaluation and notify peer.
 func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) ([]*resource.Peer, bool) {
 	// Only PeerStateRunning peers need to be rescheduled,
 	// and other states including the PeerStateBackToSource indicate that
-	// they have been scheduled
+	// they have been scheduled.
 	if !peer.FSM.Is(resource.PeerStateRunning) {
 		peer.Log.Infof("peer state is %s, can not schedule parent", peer.FSM.Current())
 		return []*resource.Peer{}, false
 	}
 
-	// Find the candidate parent that can be scheduled
+	// Find the candidate parent that can be scheduled.
 	candidateParents := s.filterCandidateParents(peer, blocklist)
 	if len(candidateParents) == 0 {
 		peer.Log.Info("can not find candidate parents")
 		return []*resource.Peer{}, false
 	}
 
-	// Sort candidate parents by evaluation score
+	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	sort.Slice(
 		candidateParents,
@@ -175,7 +175,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		},
 	)
 
-	// Send scheduling success message
+	// Send scheduling success message.
 	stream, ok := peer.LoadStream()
 	if !ok {
 		peer.Log.Error("load peer stream failed")
@@ -187,13 +187,13 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	// Add steal peers to current peer
+	// Add steal peers to current peer.
 	peer.StealPeers.Clear()
 	for _, candidateParent := range candidateParents[1:] {
 		peer.StealPeers.Add(candidateParent.ID)
 	}
 
-	// Replace peer's parent with scheduled parent
+	// Replace peer's parent with scheduled parent.
 	peer.ReplaceParent(candidateParents[0])
 	peer.Log.Infof("schedule parent successful, replace parent to %s and steal peers is %v",
 		candidateParents[0].ID, peer.StealPeers.Values())
@@ -201,16 +201,16 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 	return candidateParents, true
 }
 
-// FindParent finds parent that best matches the evaluation
+// FindParent finds parent that best matches the evaluation.
 func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blocklist set.SafeSet) (*resource.Peer, bool) {
-	// Filter the candidate parent that can be scheduled
+	// Filter the candidate parent that can be scheduled.
 	candidateParents := s.filterCandidateParents(peer, blocklist)
 	if len(candidateParents) == 0 {
 		peer.Log.Info("can not find candidate parents")
 		return nil, false
 	}
 
-	// Sort candidate parents by evaluation score
+	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
 	sort.Slice(
 		candidateParents,
@@ -223,7 +223,7 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 	return candidateParents[0], true
 }
 
-// Filter the candidate parent that can be scheduled
+// Filter the candidate parent that can be scheduled.
 func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet) []*resource.Peer {
 	filterParentLimit := config.DefaultSchedulerFilterParentLimit
 	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
@@ -244,29 +244,29 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 			return true
 		}
 
-		// Candidate parent is in blocklist
+		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is in blocklist", candidateParent.ID)
 			return true
 		}
 
-		// Candidate parent is itself
+		// Candidate parent is itself.
 		if candidateParent.ID == peer.ID {
 			peer.Log.Debug("candidate parent is not selected because it is same")
 			return true
 		}
 
-		// Candidate parent is bad node
+		// Candidate parent is bad node.
 		if s.evaluator.IsBadNode(candidateParent) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is bad node", candidateParent.ID)
 			return true
 		}
 
 		// Conditions for candidate parent to be a parent:
-		// 1. candidate parent has parent
-		// 2. candidate parent is CDN
-		// 3. candidate parent has been back-to-source
-		// 4. candidate parent has been succeeded
+		// 1. candidate parent has parent.
+		// 2. candidate parent is CDN.
+		// 3. candidate parent has been back-to-source.
+		// 4. candidate parent has been succeeded.
 		_, ok = candidateParent.LoadParent()
 		isBackToSource := candidateParent.IsBackToSource.Load()
 		if !ok && !candidateParent.Host.IsCDN && !isBackToSource &&
@@ -276,7 +276,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 			return true
 		}
 
-		// Candidate parent's depth exceeds available depth
+		// Candidate parent's depth exceeds available depth.
 		peerChildCount := peer.ChildCount.Load()
 		parentDepth := candidateParent.Depth()
 		if peerChildCount > 0 && parentDepth > defaultAvailableDepth {
@@ -284,26 +284,26 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 			return true
 		}
 
-		// Peer's depth exceeds limit depth
+		// Peer's depth exceeds limit depth.
 		peerDepth := peer.Depth()
 		if parentDepth+peerDepth > defaultDepthLimit {
 			peer.Log.Debugf("exceeds the %d depth limit of the tree, peer depth is %d, candidate parent %s is %d", defaultDepthLimit, peerDepth, candidateParent.ID, parentDepth)
 			return true
 		}
 
-		// Candidate parent is an descendant of peer
+		// Candidate parent is an descendant of peer.
 		if candidateParent.IsDescendant(peer) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is descendant", candidateParent.ID)
 			return true
 		}
 
-		// Candidate parent is an ancestor of peer
+		// Candidate parent is an ancestor of peer.
 		if candidateParent.IsAncestor(peer) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is ancestor", candidateParent.ID)
 			return true
 		}
 
-		// Candidate parent's free upload is empty
+		// Candidate parent's free upload is empty.
 		if candidateParent.Host.FreeUploadLoad() <= 0 {
 			peer.Log.Debugf("candidate parent %s is not selected because its free upload is empty, upload limit is %d, upload peer count is %d",
 				candidateParent.ID, candidateParent.Host.UploadLoadLimit.Load(), candidateParent.Host.UploadPeerCount.Load())
@@ -319,7 +319,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 	return candidateParents
 }
 
-// Construct peer successful packet
+// Construct peer successful packet.
 func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
 	parallelCount := config.DefaultClientParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
