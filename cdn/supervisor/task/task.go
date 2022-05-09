@@ -86,6 +86,8 @@ type SeedTask struct {
 	// Pieces pieces of task
 	Pieces *sync.Map `json:"-"` // map[uint32]*PieceInfo
 
+	ExtendAttribute *base.ExtendAttribute `json:"extendAttribute"`
+
 	logger *logger.SugaredLoggerOnWith
 }
 

@@ -24,6 +24,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
@@ -90,7 +91,7 @@ func (mm *metadataManager) updateAccessTime(taskID string, accessTime int64) err
 	return mm.storage.WriteFileMetadata(taskID, originMetadata)
 }
 
-func (mm *metadataManager) updateExpireInfo(taskID string, expireInfo map[string]string) error {
+func (mm *metadataManager) updateResponseMetadata(taskID string, expireInfo map[string]string, exa *base.ExtendAttribute) error {
 	mm.cacheLocker.Lock(taskID, false)
 	defer mm.cacheLocker.UnLock(taskID, false)
 
@@ -100,6 +101,7 @@ func (mm *metadataManager) updateExpireInfo(taskID string, expireInfo map[string
 	}
 
 	originMetadata.ExpireInfo = expireInfo
+	originMetadata.ExtendAttribute = exa
 
 	return mm.storage.WriteFileMetadata(taskID, originMetadata)
 }

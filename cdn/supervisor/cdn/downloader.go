@@ -24,43 +24,55 @@ import (
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
-func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakPoint int64) (io.ReadCloser, error) {
+func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakPoint int64) (io.ReadCloser, *base.ExtendAttribute, error) {
 	var err error
 	breakRange := seedTask.Range
 	if breakPoint > 0 {
 		// todo replace task.SourceFileLength with totalSourceFileLength to get BreakRange
 		breakRange, err = getBreakRange(breakPoint, seedTask.Range, seedTask.SourceFileLength)
 		if err != nil {
-			return nil, errors.Wrapf(err, "calculate the breakRange")
+			return nil, nil, errors.Wrapf(err, "calculate the breakRange")
 		}
 	}
 	seedTask.Log().Infof("start downloading %s at range %s with header %s", seedTask.RawURL, breakRange, seedTask.Header)
 	downloadRequest, err := source.NewRequestWithContext(ctx, seedTask.RawURL, seedTask.Header)
 	if err != nil {
-		return nil, errors.Wrap(err, "create download request")
+		return nil, nil, errors.Wrap(err, "create download request")
 	}
 	if !stringutils.IsBlank(breakRange) {
 		downloadRequest.Header.Add(source.Range, breakRange)
 	}
 	response, err := source.Download(downloadRequest)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	err = response.Validate()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	var (
+		exa *base.ExtendAttribute
+	)
+	if len(response.Header) > 0 {
+		var header = map[string]string{}
+		for k, v := range response.Header {
+			if len(v) > 0 {
+				header[k] = response.Header.Get(k)
+			}
+		}
 	}
 	// update Expire info
-	cm.updateExpireInfo(seedTask.ID, map[string]string{
+	cm.updateResponseMetadata(seedTask.ID, map[string]string{
 		source.LastModified: response.Header.Get(source.LastModified),
 		source.ETag:         response.Header.Get(source.ETag),
-	})
-	return response.Body, err
+	}, exa)
+	return response.Body, exa, err
 }
 
 func getBreakRange(breakPoint int64, taskRange string, fileTotalLength int64) (string, error) {
