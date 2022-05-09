@@ -155,14 +155,14 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	}
 	if request.Headers != nil {
 		if r, ok := request.Headers[headers.Range]; ok {
-			// Range in dragonfly is without "bytes="
+			// Range in dragonfly is without "bytes=".
 			urlMeta.Range = strings.TrimLeft(r, "bytes=")
 		}
 	}
 
 	taskID := idgen.TaskID(request.URL, urlMeta)
 
-	// Trigger CDN download seeds
+	// Trigger CDN download seeds.
 	log := logger.WithTaskIDAndURL(taskID, request.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
 		request.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
