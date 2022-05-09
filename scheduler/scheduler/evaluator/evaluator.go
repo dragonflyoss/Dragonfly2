@@ -21,21 +21,21 @@ import (
 )
 
 const (
-	// DefaultAlgorithm is a rule-based scheduling algorithm
+	// DefaultAlgorithm is a rule-based scheduling algorithm.
 	DefaultAlgorithm = "default"
 
-	// MLAlgorithm is a machine learning scheduling algorithm
+	// MLAlgorithm is a machine learning scheduling algorithm.
 	MLAlgorithm = "ml"
 
-	// PluginAlgorithm is a scheduling algorithm based on plugin extension
+	// PluginAlgorithm is a scheduling algorithm based on plugin extension.
 	PluginAlgorithm = "plugin"
 )
 
 type Evaluator interface {
-	// Evaluate todo Normalization
+	// Evaluate todo Normalization.
 	Evaluate(parent *resource.Peer, child *resource.Peer, taskPieceCount int32) float64
 
-	// IsBadNode determine if peer is a failed node
+	// IsBadNode determine if peer is a failed node.
 	IsBadNode(peer *resource.Peer) bool
 }
 
@@ -45,7 +45,7 @@ func New(algorithm string, pluginDir string) Evaluator {
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
-	// TODO Implement MLAlgorithm
+	// TODO Implement MLAlgorithm.
 	case MLAlgorithm, DefaultAlgorithm:
 		return NewEvaluatorBase()
 	}
