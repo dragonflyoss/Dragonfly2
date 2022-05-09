@@ -79,8 +79,12 @@ func WithHeader(header map[string]string) func(*Response) {
 
 func WithExpireInfo(info ExpireInfo) func(*Response) {
 	return func(resp *Response) {
-		resp.Header.Set(LastModified, info.LastModified)
-		resp.Header.Set(ETag, info.ETag)
+		if len(info.LastModified) > 0 {
+			resp.Header.Set(LastModified, info.LastModified)
+		}
+		if len(info.ETag) > 0 {
+			resp.Header.Set(ETag, info.ETag)
+		}
 	}
 }
 

@@ -398,8 +398,9 @@ func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTas
 	}
 	hdr := map[string]string{}
 	for k, v := range *t.Header {
-		// FIXME currently, only use the first header
-		hdr[k] = v[0]
+		if len(v) > 0 {
+			hdr[k] = t.Header.Get(k)
+		}
 	}
 	return &base.ExtendAttribute{Header: hdr}, nil
 }
