@@ -51,7 +51,7 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	return grpcServer
 }
 
-// RegisterPeerTask registers peer and triggers CDN download task.
+// RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	bizTag := resource.DefaultBizTag
 	if req.UrlMeta.Tag != "" {

@@ -62,21 +62,6 @@ func (mr *MockDynconfigInterfaceMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfigInterface)(nil).Get))
 }
 
-// GetCDNClusterConfig mocks base method.
-func (m *MockDynconfigInterface) GetCDNClusterConfig(arg0 uint) (types.CDNClusterConfig, bool) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCDNClusterConfig", arg0)
-	ret0, _ := ret[0].(types.CDNClusterConfig)
-	ret1, _ := ret[1].(bool)
-	return ret0, ret1
-}
-
-// GetCDNClusterConfig indicates an expected call of GetCDNClusterConfig.
-func (mr *MockDynconfigInterfaceMockRecorder) GetCDNClusterConfig(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCDNClusterConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetCDNClusterConfig), arg0)
-}
-
 // GetSchedulerClusterClientConfig mocks base method.
 func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
 	m.ctrl.T.Helper()

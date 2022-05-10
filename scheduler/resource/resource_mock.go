@@ -33,20 +33,6 @@ func (m *MockResource) EXPECT() *MockResourceMockRecorder {
 	return m.recorder
 }
 
-// CDN mocks base method.
-func (m *MockResource) CDN() CDN {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CDN")
-	ret0, _ := ret[0].(CDN)
-	return ret0
-}
-
-// CDN indicates an expected call of CDN.
-func (mr *MockResourceMockRecorder) CDN() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CDN", reflect.TypeOf((*MockResource)(nil).CDN))
-}
-
 // HostManager mocks base method.
 func (m *MockResource) HostManager() HostManager {
 	m.ctrl.T.Helper()
@@ -73,6 +59,20 @@ func (m *MockResource) PeerManager() PeerManager {
 func (mr *MockResourceMockRecorder) PeerManager() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerManager", reflect.TypeOf((*MockResource)(nil).PeerManager))
+}
+
+// SeedPeer mocks base method.
+func (m *MockResource) SeedPeer() SeedPeer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SeedPeer")
+	ret0, _ := ret[0].(SeedPeer)
+	return ret0
+}
+
+// SeedPeer indicates an expected call of SeedPeer.
+func (mr *MockResourceMockRecorder) SeedPeer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeedPeer", reflect.TypeOf((*MockResource)(nil).SeedPeer))
 }
 
 // TaskManager mocks base method.

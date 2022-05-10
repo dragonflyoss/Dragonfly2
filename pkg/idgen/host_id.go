@@ -24,6 +24,10 @@ func HostID(hostname string, port int32) string {
 	return fmt.Sprintf("%s-%d", hostname, port)
 }
 
+func SeedHostID(hostname string, port int32) string {
+	return fmt.Sprintf("%s_Seed", HostID(hostname, port))
+}
+
 func CDNHostID(hostname string, port int32) string {
 	return fmt.Sprintf("%s_CDN", HostID(hostname, port))
 }

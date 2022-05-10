@@ -27,6 +27,22 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
+type HostType int
+
+const (
+	// HostTypeNormal is the normal type of host.
+	HostTypeNormal HostType = iota
+
+	// HostTypeSuperSeed is the super seed type of host.
+	HostTypeSuperSeed
+
+	// HostTypeStrongSeed is the strong seed type of host.
+	HostTypeStrongSeed
+
+	// HostTypeWeakSeed is the weak seed type of host.
+	HostTypeWeakSeed
+)
+
 // HostOption is a functional option for configuring the host.
 type HostOption func(h *Host) *Host
 
@@ -46,9 +62,20 @@ func WithIsCDN(isCDN bool) HostOption {
 	}
 }
 
+// WithHostType sets host's type.
+func WithHostType(hostType HostType) HostOption {
+	return func(h *Host) *Host {
+		h.Type = hostType
+		return h
+	}
+}
+
 type Host struct {
 	// ID is host id.
 	ID string
+
+	// Type is host type.
+	Type HostType
 
 	// IP is host ip.
 	IP string
@@ -105,6 +132,7 @@ type Host struct {
 func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	h := &Host{
 		ID:              rawHost.Uuid,
+		Type:            HostTypeNormal,
 		IP:              rawHost.Ip,
 		Hostname:        rawHost.HostName,
 		Port:            rawHost.RpcPort,
