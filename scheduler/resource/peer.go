@@ -152,7 +152,7 @@ type Peer struct {
 	// NeedBackToSource needs downloaded from source.
 	//
 	// When peer is registering, at the same time,
-	// scheduler needs to create the new corresponding task and the cdn is disabled,
+	// scheduler needs to create the new corresponding task and the seed peer is disabled,
 	// NeedBackToSource is set to true.
 	NeedBackToSource *atomic.Bool
 
@@ -378,7 +378,7 @@ func (p *Peer) Depth() int {
 	for node != nil {
 		depth++
 
-		if node.Host.IsCDN {
+		if node.Host.Type != HostTypeNormal {
 			break
 		}
 

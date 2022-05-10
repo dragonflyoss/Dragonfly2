@@ -123,6 +123,9 @@ type Record struct {
 	// State is the download state of the peer.
 	State int `csv:"state"`
 
+	// HostType is peer host type.
+	HostType int `csv:"hostType"`
+
 	// CreateAt is peer create nanosecond time.
 	CreateAt int64 `csv:"createAt"`
 
@@ -160,6 +163,9 @@ type Record struct {
 
 	// ParentFreeUploadLoad is parent free upload load of host.
 	ParentFreeUploadLoad int32 `csv:"parentFreeUploadLoad"`
+
+	// ParentHostType is parent host type.
+	ParentHostType int `csv:"parentHostType"`
 
 	// ParentIsCDN is used as tag cdn.
 	ParentIsCDN bool `csv:"parentIsCDN"`
