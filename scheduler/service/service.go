@@ -74,9 +74,9 @@ func New(
 	}
 }
 
-// RegisterPeerTask registers peer and triggers CDN download task.
+// RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*rpcscheduler.RegisterResult, error) {
-	// Register task and trigger cdn download task.
+	// Register task and trigger seed peer download task.
 	task, needBackToSource, err := s.registerTask(ctx, req)
 	if err != nil {
 		msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
@@ -88,7 +88,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	peer.Log.Infof("register peer task request: %#v %#v %#v", req, req.UrlMeta, req.HostLoad)
 
 	// When the peer registers for the first time and
-	// does not have a CDN, it will back-to-source.
+	// does not have a seed peer, it will back-to-source.
 	peer.NeedBackToSource.Store(needBackToSource)
 
 	// The task state is TaskStateSucceeded and SizeScope is not invalid.
@@ -521,9 +521,9 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		return nil, false, err
 	}
 
-	// Start trigger cdn task.
-	if s.config.CDN.Enable {
-		go s.triggerCDNTask(ctx, task)
+	// Start trigger seed peer task.
+	if s.config.SeedPeer.Enable {
+		go s.triggerSeedPeerTask(ctx, task)
 		return task, false, nil
 	}
 
@@ -567,19 +567,19 @@ func (s *Service) registerPeer(ctx context.Context, peerID string, task *resourc
 	return peer
 }
 
-// triggerCDNTask starts trigger cdn task.
-func (s *Service) triggerCDNTask(ctx context.Context, task *resource.Task) {
-	task.Log.Infof("trigger cdn download task and task status is %s", task.FSM.Current())
-	peer, endOfPiece, err := s.resource.CDN().TriggerTask(
+// triggerSeedPeerTask starts to trigger seed peer task.
+func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
+	task.Log.Infof("trigger seed peer download task and task status is %s", task.FSM.Current())
+	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
 		trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx)), task)
 	if err != nil {
-		task.Log.Errorf("trigger cdn download task failed: %s", err.Error())
+		task.Log.Errorf("trigger seed peer download task failed: %s", err.Error())
 		s.handleTaskFail(ctx, task)
 		return
 	}
 
 	// Update the task status first to help peer scheduling evaluation and scoring.
-	peer.Log.Info("trigger cdn download task successfully")
+	peer.Log.Info("trigger seed peer download task successfully")
 	s.handleTaskSuccess(ctx, task, endOfPiece)
 	s.handlePeerSuccess(ctx, peer)
 }
@@ -662,21 +662,21 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		}
 	case base.Code_ClientPieceNotFound:
 		// Dfdaemon downloading piece data from parent returns http error code 404.
-		// If the parent is not a CDN, reschedule parent for peer.
-		// If the parent is a CDN, scheduler need to trigger CDN to download again.
-		if !parent.Host.IsCDN {
-			peer.Log.Infof("parent %s is not cdn", piece.DstPid)
+		// If the parent is not a seed peer, reschedule parent for peer.
+		// If the parent is a seed peer, scheduler need to trigger seed peer to download again.
+		if parent.Host.Type == resource.HostTypeNormal {
+			peer.Log.Infof("parent %s host type is normal", piece.DstPid)
 			break
 		}
 
-		peer.Log.Infof("parent %s is cdn", piece.DstPid)
+		peer.Log.Infof("parent %s is seed peer", piece.DstPid)
 		fallthrough
 	case base.Code_CDNTaskNotFound:
-		s.handleLegacyCDNPeer(ctx, parent)
+		s.handleLegacySeedPeer(ctx, parent)
 
-		// Start trigger cdn task.
-		if s.config.CDN.Enable {
-			go s.triggerCDNTask(ctx, parent.Task)
+		// Start trigger seed peer task.
+		if s.config.SeedPeer.Enable {
+			go s.triggerSeedPeerTask(ctx, parent.Task)
 		}
 	default:
 	}
@@ -744,9 +744,9 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	})
 }
 
-// handleLegacyCDNPeer handles cdn server's task has left,
+// handleLegacySeedPeer handles seed server's task has left,
 // but did not notify the schduler to leave the task.
-func (s *Service) handleLegacyCDNPeer(ctx context.Context, peer *resource.Peer) {
+func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
 	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
@@ -771,7 +771,7 @@ func (s *Service) handleLegacyCDNPeer(ctx context.Context, peer *resource.Peer) 
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
-// 1. CDN downloads the resource successfully.
+// 1. Seed peer downloads the resource successfully.
 // 2. Dfdaemon back-to-source to download successfully.
 // 3. Peer announces it has the task.
 func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, result *rpcscheduler.PeerResult) {
@@ -790,7 +790,7 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
-// 1. CDN downloads the resource falied.
+// 1. Seed peer downloads the resource falied.
 // 2. Dfdaemon back-to-source to download failed.
 func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
 	// If the number of failed peers in the task is greater than FailedPeerCountLimit,
@@ -827,6 +827,7 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		Location:        peer.Host.Location,
 		FreeUploadLoad:  peer.Host.FreeUploadLoad(),
 		State:           peerState,
+		HostType:        int(peer.Host.Type),
 		CreateAt:        peer.CreateAt.Load().UnixNano(),
 		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
 	}
@@ -842,6 +843,7 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		record.ParentNetTopology = parent.Host.NetTopology
 		record.ParentLocation = parent.Host.Location
 		record.ParentFreeUploadLoad = parent.Host.FreeUploadLoad()
+		record.ParentHostType = int(parent.Host.Type)
 		record.ParentIsCDN = parent.Host.IsCDN
 		record.ParentCreateAt = parent.CreateAt.Load().UnixNano()
 		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano()

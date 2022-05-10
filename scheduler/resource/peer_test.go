@@ -36,8 +36,8 @@ import (
 )
 
 var (
-	mockPeerID    = idgen.PeerID("127.0.0.1")
-	mockCDNPeerID = idgen.CDNPeerID("127.0.0.1")
+	mockPeerID     = idgen.PeerID("127.0.0.1")
+	mockSeedPeerID = idgen.SeedPeerID("127.0.0.1")
 )
 
 func TestPeer_NewPeer(t *testing.T) {
@@ -492,18 +492,18 @@ func TestPeer_ReplaceParent(t *testing.T) {
 func TestPeer_Depth(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer)
+		expect func(t *testing.T, peer *Peer, parent *Peer, seedPeerParent *Peer)
 	}{
 		{
 			name: "there is only one node in the tree",
-			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+			expect: func(t *testing.T, peer *Peer, parent *Peer, seedPeerParent *Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.Depth(), 1)
 			},
 		},
 		{
 			name: "more than one node in the tree",
-			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+			expect: func(t *testing.T, peer *Peer, parent *Peer, seedPeerParent *Peer) {
 				peer.StoreParent(parent)
 
 				assert := assert.New(t)
@@ -511,9 +511,9 @@ func TestPeer_Depth(t *testing.T) {
 			},
 		},
 		{
-			name: "node parent is cdn",
-			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
-				peer.StoreParent(cdnParent)
+			name: "node parent is seed peer",
+			expect: func(t *testing.T, peer *Peer, parent *Peer, seedPeerParent *Peer) {
+				peer.StoreParent(seedPeerParent)
 
 				assert := assert.New(t)
 				assert.Equal(peer.Depth(), 2)
@@ -521,7 +521,7 @@ func TestPeer_Depth(t *testing.T) {
 		},
 		{
 			name: "node parent is itself",
-			expect: func(t *testing.T, peer *Peer, parent *Peer, cdnParent *Peer) {
+			expect: func(t *testing.T, peer *Peer, parent *Peer, seedPeerParent *Peer) {
 				peer.StoreParent(peer)
 
 				assert := assert.New(t)
@@ -533,13 +533,13 @@ func TestPeer_Depth(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
 			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			parent := NewPeer(idgen.PeerID("127.0.0.2"), mockTask, mockHost)
-			cdnParent := NewPeer(mockCDNPeerID, mockTask, mockCDNHost)
+			seedPeerParent := NewPeer(mockSeedPeerID, mockTask, mockSeedHost)
 
-			tc.expect(t, peer, parent, cdnParent)
+			tc.expect(t, peer, parent, seedPeerParent)
 		})
 	}
 }

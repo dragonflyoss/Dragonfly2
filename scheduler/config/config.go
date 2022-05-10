@@ -43,8 +43,8 @@ type Config struct {
 	// Manager configuration.
 	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
-	// CDN configuration.
-	CDN *CDNConfig `yaml:"cdn" mapstructure:"cdn"`
+	// SeedPeer configuration.
+	SeedPeer *SeedPeerConfig `yaml:"seedPeer" mapstructure:"seedPeer"`
 
 	// Host configuration.
 	Host *HostConfig `yaml:"host" mapstructure:"host"`
@@ -93,7 +93,7 @@ func New() *Config {
 				Interval: 5 * time.Second,
 			},
 		},
-		CDN: &CDNConfig{
+		SeedPeer: &SeedPeerConfig{
 			Enable: true,
 		},
 		Job: &JobConfig{
@@ -307,9 +307,6 @@ type GCConfig struct {
 type DynConfig struct {
 	// RefreshInterval is refresh interval for manager cache.
 	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
-
-	// CDNDir is cdn dir path.
-	CDNDir string `yaml:"cdnDir" mapstructure:"cdnDir"`
 }
 
 type HostConfig struct {
@@ -334,8 +331,8 @@ type ManagerConfig struct {
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
-type CDNConfig struct {
-	// Enable is to enable cdn as P2P peer.
+type SeedPeerConfig struct {
+	// Enable is to enable seed peer as P2P peer.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 }
 

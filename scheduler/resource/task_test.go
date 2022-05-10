@@ -361,52 +361,52 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	}
 }
 
-func TestTask_LoadCDNPeer(t *testing.T) {
+func TestTask_LoadSeedPeer(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer)
+		expect func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer)
 	}{
 		{
-			name: "load cdn peer",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "load seed peer",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				task.StorePeer(mockCDNPeer)
-				peer, ok := task.LoadCDNPeer()
+				task.StorePeer(mockSeedPeer)
+				peer, ok := task.LoadSeedPeer()
 				assert.True(ok)
-				assert.Equal(peer.ID, mockCDNPeer.ID)
+				assert.Equal(peer.ID, mockSeedPeer.ID)
 			},
 		},
 		{
-			name: "load latest cdn peer",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "load latest seed peer",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
-				mockPeer.Host.IsCDN = true
+				mockPeer.Host.Type = HostTypeSuperSeed
 				task.StorePeer(mockPeer)
-				task.StorePeer(mockCDNPeer)
+				task.StorePeer(mockSeedPeer)
 
 				mockPeer.UpdateAt.Store(time.Now())
-				mockCDNPeer.UpdateAt.Store(time.Now().Add(1 * time.Second))
+				mockSeedPeer.UpdateAt.Store(time.Now().Add(1 * time.Second))
 
-				peer, ok := task.LoadCDNPeer()
+				peer, ok := task.LoadSeedPeer()
 				assert.True(ok)
-				assert.Equal(peer.ID, mockCDNPeer.ID)
+				assert.Equal(peer.ID, mockSeedPeer.ID)
 			},
 		},
 		{
 			name: "peers is empty",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
-				_, ok := task.LoadCDNPeer()
+				_, ok := task.LoadSeedPeer()
 				assert.False(ok)
 			},
 		},
 		{
-			name: "cdn peers is empty",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "seed peers is empty",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				_, ok := task.LoadCDNPeer()
+				_, ok := task.LoadSeedPeer()
 				assert.False(ok)
 			},
 		},
@@ -415,50 +415,50 @@ func TestTask_LoadCDNPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
 			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
-			mockCDNPeer := NewPeer(mockCDNPeerID, task, mockCDNHost)
+			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
-			tc.expect(t, task, mockPeer, mockCDNPeer)
+			tc.expect(t, task, mockPeer, mockSeedPeer)
 		})
 	}
 }
 
-func TestTask_IsCDNFailed(t *testing.T) {
+func TestTask_IsSeedPeerFailed(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer)
+		expect func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer)
 	}{
 		{
-			name: "cdn state is PeerStateFailed",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "seed peer state is PeerStateFailed",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				task.StorePeer(mockCDNPeer)
-				mockCDNPeer.FSM.SetState(PeerStateFailed)
+				task.StorePeer(mockSeedPeer)
+				mockSeedPeer.FSM.SetState(PeerStateFailed)
 
-				assert.True(task.IsCDNFailed())
+				assert.True(task.IsSeedPeerFailed())
 			},
 		},
 		{
-			name: "can not find cdn peer",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "can not find seed peer",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
 
-				assert.False(task.IsCDNFailed())
+				assert.False(task.IsSeedPeerFailed())
 			},
 		},
 		{
-			name: "cdn state is PeerStateSucceeded",
-			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockCDNPeer *Peer) {
+			name: "seed peer state is PeerStateSucceeded",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
-				task.StorePeer(mockCDNPeer)
-				mockCDNPeer.FSM.SetState(PeerStateSucceeded)
+				task.StorePeer(mockSeedPeer)
+				mockSeedPeer.FSM.SetState(PeerStateSucceeded)
 
-				assert.False(task.IsCDNFailed())
+				assert.False(task.IsSeedPeerFailed())
 			},
 		},
 	}
@@ -466,12 +466,12 @@ func TestTask_IsCDNFailed(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
+			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
 			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
-			mockCDNPeer := NewPeer(mockCDNPeerID, task, mockCDNHost)
+			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
-			tc.expect(t, task, mockPeer, mockCDNPeer)
+			tc.expect(t, task, mockPeer, mockSeedPeer)
 		})
 	}
 }
