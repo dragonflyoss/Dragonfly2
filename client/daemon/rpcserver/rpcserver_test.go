@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestDownloadManager_ServeDownload(t *testing.T) {
+func Test_ServeDownload(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -112,7 +112,7 @@ func TestDownloadManager_ServeDownload(t *testing.T) {
 	assert.True(lastResult.Done)
 }
 
-func TestDownloadManager_ServePeer(t *testing.T) {
+func Test_ServePeer(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -216,7 +216,7 @@ func TestDownloadManager_ServePeer(t *testing.T) {
 	}
 }
 
-func TestDownloadManager_SyncPieceTasks(t *testing.T) {
+func Test_SyncPieceTasks(t *testing.T) {
 	assert := testifyassert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -231,12 +231,12 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 	}
 	var tests = []struct {
 		name            string
-		existTaskID     string // test for non-exists task
-		existPieces     []pieceRange
+		existTaskID     string       // test for non-exists task
+		existPieces     []pieceRange // already exist pieces in storage
+		followingPieces []pieceRange // following pieces in running task subscribe channel
 		requestPieces   []int32
 		limit           uint32
 		totalPieces     uint32
-		followingPieces []pieceRange
 		success         bool
 		verify          func(t *testing.T, assert *testifyassert.Assertions)
 	}{
@@ -254,6 +254,20 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 			},
 		},
 		{
+			name: "already exists in storage with extra get piece request",
+			existPieces: []pieceRange{
+				{
+					start: 0,
+					end:   10,
+				},
+			},
+			totalPieces:   11,
+			requestPieces: []int32{1, 3, 5, 7},
+			success:       true,
+			verify: func(t *testing.T, assert *testifyassert.Assertions) {
+			},
+		},
+		{
 			name: "already exists in storage - large",
 			existPieces: []pieceRange{
 				{
@@ -263,6 +277,20 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 			},
 			totalPieces: 1001,
 			success:     true,
+			verify: func(t *testing.T, assert *testifyassert.Assertions) {
+			},
+		},
+		{
+			name: "already exists in storage - large with extra get piece request",
+			existPieces: []pieceRange{
+				{
+					start: 0,
+					end:   1000,
+				},
+			},
+			totalPieces:   1001,
+			requestPieces: []int32{1, 3, 5, 7, 100, 500, 1000},
+			success:       true,
 			verify: func(t *testing.T, assert *testifyassert.Assertions) {
 			},
 		},
@@ -395,7 +423,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 					})
 				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().Subscribe(gomock.Any()).AnyTimes().DoAndReturn(
-					func(request *base.PieceTaskRequest) (*peer.SubscribeResult, bool) {
+					func(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
 						ch := make(chan *peer.PieceInfo)
 						success := make(chan struct{})
 						fail := make(chan struct{})
@@ -436,7 +464,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 							close(success)
 						}(tc.followingPieces)
 
-						return &peer.SubscribeResult{
+						return &peer.SubscribeResponse{
 							Storage:          mockStorageManger,
 							PieceInfoChannel: ch,
 							Success:          success,
@@ -452,7 +480,6 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 				}
 
 				port, client := setupPeerServerAndClient(t, s, assert, s.ServePeer)
-				defer s.peerServer.GracefulStop()
 
 				syncClient, err := client.SyncPieceTasks(
 					context.Background(),
@@ -514,6 +541,7 @@ func TestDownloadManager_SyncPieceTasks(t *testing.T) {
 				if tc.success {
 					assert.Equal(int(maxNum+1), len(total))
 				}
+				s.peerServer.GracefulStop()
 			}
 
 		})

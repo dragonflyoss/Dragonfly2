@@ -27,6 +27,7 @@ require (
 	github.com/go-redis/cache/v8 v8.4.1
 	github.com/go-redis/redis/v8 v8.10.0
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/gocarina/gocsv v0.0.0-20220310154401-d4df709ca055
 	github.com/gofrs/flock v0.8.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/golang/mock v1.6.0

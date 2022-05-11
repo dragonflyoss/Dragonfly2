@@ -27,10 +27,26 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
-// HostOption is a functional option for configuring the host
+type HostType int
+
+const (
+	// HostTypeNormal is the normal type of host.
+	HostTypeNormal HostType = iota
+
+	// HostTypeSuperSeed is the super seed type of host.
+	HostTypeSuperSeed
+
+	// HostTypeStrongSeed is the strong seed type of host.
+	HostTypeStrongSeed
+
+	// HostTypeWeakSeed is the weak seed type of host.
+	HostTypeWeakSeed
+)
+
+// HostOption is a functional option for configuring the host.
 type HostOption func(h *Host) *Host
 
-// WithUploadLoadLimit sets host's UploadLoadLimit
+// WithUploadLoadLimit sets host's UploadLoadLimit.
 func WithUploadLoadLimit(limit int32) HostOption {
 	return func(h *Host) *Host {
 		h.UploadLoadLimit.Store(limit)
@@ -38,7 +54,7 @@ func WithUploadLoadLimit(limit int32) HostOption {
 	}
 }
 
-// WithIsCDN sets host's IsCDN
+// WithIsCDN sets host's IsCDN.
 func WithIsCDN(isCDN bool) HostOption {
 	return func(h *Host) *Host {
 		h.IsCDN = isCDN
@@ -46,65 +62,77 @@ func WithIsCDN(isCDN bool) HostOption {
 	}
 }
 
+// WithHostType sets host's type.
+func WithHostType(hostType HostType) HostOption {
+	return func(h *Host) *Host {
+		h.Type = hostType
+		return h
+	}
+}
+
 type Host struct {
-	// ID is host id
+	// ID is host id.
 	ID string
 
-	// IP is host ip
+	// Type is host type.
+	Type HostType
+
+	// IP is host ip.
 	IP string
 
-	// Hostname is host name
+	// Hostname is host name.
 	Hostname string
 
-	// Port is grpc service port
+	// Port is grpc service port.
 	Port int32
 
-	// DownloadPort is piece downloading port
+	// DownloadPort is piece downloading port.
 	DownloadPort int32
 
-	// SecurityDomain is security domain of host
+	// SecurityDomain is security domain of host.
 	SecurityDomain string
 
-	// IDC is internet data center of host
+	// IDC is internet data center of host.
 	IDC string
 
-	// NetTopology is network topology of host
+	// NetTopology is network topology of host.
 	// Example: switch|router|...
 	NetTopology string
 
-	// Location is location of host
+	// Location is location of host.
 	// Example: country|province|...
 	Location string
 
-	// UploadLoadLimit is upload load limit count
+	// UploadLoadLimit is upload load limit count.
 	UploadLoadLimit *atomic.Int32
 
-	// UploadPeerCount is upload peer count
+	// UploadPeerCount is upload peer count.
 	UploadPeerCount *atomic.Int32
 
-	// Peer sync map
+	// Peer sync map.
 	Peers *sync.Map
 
-	// PeerCount is peer count
+	// PeerCount is peer count.
 	PeerCount *atomic.Int32
 
-	// IsCDN is used as tag cdn
+	// IsCDN is used as tag cdn.
 	IsCDN bool
 
-	// CreateAt is host create time
+	// CreateAt is host create time.
 	CreateAt *atomic.Time
 
-	// UpdateAt is host update time
+	// UpdateAt is host update time.
 	UpdateAt *atomic.Time
 
-	// Host log
+	// Host log.
 	Log *logger.SugaredLoggerOnWith
 }
 
-// New host instance
+// New host instance.
 func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	h := &Host{
 		ID:              rawHost.Uuid,
+		Type:            HostTypeNormal,
 		IP:              rawHost.Ip,
 		Hostname:        rawHost.HostName,
 		Port:            rawHost.RpcPort,
@@ -130,7 +158,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	return h
 }
 
-// LoadPeer return peer for a key
+// LoadPeer return peer for a key.
 func (h *Host) LoadPeer(key string) (*Peer, bool) {
 	rawPeer, ok := h.Peers.Load(key)
 	if !ok {
@@ -140,7 +168,7 @@ func (h *Host) LoadPeer(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), ok
 }
 
-// StorePeer set peer
+// StorePeer set peer.
 func (h *Host) StorePeer(peer *Peer) {
 	h.Peers.Store(peer.ID, peer)
 	h.PeerCount.Inc()
@@ -158,24 +186,24 @@ func (h *Host) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	return rawPeer.(*Peer), loaded
 }
 
-// DeletePeer deletes peer for a key
+// DeletePeer deletes peer for a key.
 func (h *Host) DeletePeer(key string) {
 	if _, loaded := h.Peers.LoadAndDelete(key); loaded {
 		h.PeerCount.Dec()
 	}
 }
 
-// LeavePeers set peer state to PeerStateLeave
+// LeavePeers set peer state to PeerStateLeave.
 func (h *Host) LeavePeers() {
 	h.Peers.Range(func(_, value interface{}) bool {
 		if peer, ok := value.(*Peer); ok {
 			if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
-				peer.Log.Errorf("peer fsm event failed: %v", err)
+				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 				return true
 			}
 
@@ -186,7 +214,7 @@ func (h *Host) LeavePeers() {
 	})
 }
 
-// FreeUploadLoad return free upload load of host
+// FreeUploadLoad return free upload load of host.
 func (h *Host) FreeUploadLoad() int32 {
 	return h.UploadLoadLimit.Load() - h.UploadPeerCount.Load()
 }

@@ -44,9 +44,11 @@ const (
 	AttributeGetPieceCount     = attribute.Key("d7y.peer.piece.count")
 	AttributeGetPieceRetry     = attribute.Key("d7y.peer.piece.retry")
 	AttributeWritePieceSuccess = attribute.Key("d7y.peer.piece.write.success")
+	AttributeSeedTaskSuccess   = attribute.Key("d7y.seed.task.success")
 
 	SpanFileTask          = "file-task"
 	SpanStreamTask        = "stream-task"
+	SpanSeedTask          = "seed-task"
 	SpanPeerTask          = "peer-task"
 	SpanReusePeerTask     = "reuse-peer-task"
 	SpanRegisterTask      = "register"
@@ -55,6 +57,7 @@ const (
 	SpanBackSource        = "client-back-source"
 	SpanFirstSchedule     = "schedule-#1"
 	SpanGetPieceTasks     = "get-piece-tasks"
+	SpanSyncPieceTasks    = "sync-piece-tasks"
 	SpanDownloadPiece     = "download-piece-#%d"
 	SpanProxy             = "proxy"
 	SpanWritePiece        = "write-piece"

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/client_mock.go -source client.go -package mocks
+
 package client
 
 import (
@@ -29,7 +31,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
@@ -43,22 +45,25 @@ const (
 )
 
 type Client interface {
-	// Get Scheduler and Scheduler cluster configuration
-	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
+	// Update Seed peer configuration.
+	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
 
-	// Update scheduler configuration
-	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
-
-	// Update CDN configuration
+	// Update CDN configuration.
 	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
 
-	// List acitve schedulers configuration
+	// Get Scheduler and Scheduler cluster configuration.
+	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
+
+	// Update scheduler configuration.
+	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
+
+	// List acitve schedulers configuration.
 	ListSchedulers(*manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
-	// KeepAlive with manager
+	// KeepAlive with manager.
 	KeepAlive(time.Duration, *manager.KeepAliveRequest)
 
-	// Close client connect
+	// Close client connect.
 	Close() error
 }
 
@@ -102,10 +107,24 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
 			return New(netAddr.Addr)
 		}
-		logger.Warnf("%s address can not reachable", netAddr.Addr)
+		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}
 
-	return nil, errors.New("can not find available addresses")
+	return nil, errors.New("can not find available manager addresses")
+}
+
+func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.UpdateSeedPeer(ctx, req)
+}
+
+func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.UpdateCDN(ctx, req)
 }
 
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
@@ -120,13 +139,6 @@ func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.
 	defer cancel()
 
 	return c.ManagerClient.UpdateScheduler(ctx, req)
-}
-
-func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateCDN(ctx, req)
 }
 
 func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {

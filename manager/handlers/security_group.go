@@ -198,6 +198,34 @@ func (h *Handlers) AddSchedulerClusterToSecurityGroup(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
+// @Summary Add SeedPeer to SecurityGroup
+// @Description Add SeedPeer to SecurityGroup
+// @Tags SecurityGroup
+// @Accept json
+// @Produce json
+// @Param id path string true "id"
+// @Param seed_peer_cluster_id path string true "seed peer cluster id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /security-groups/{id}/seed-peer-clusters/{seed_peer_cluster_id} [put]
+func (h *Handlers) AddSeedPeerClusterToSecurityGroup(ctx *gin.Context) {
+	var params types.AddSeedPeerClusterToSecurityGroupParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err := h.service.AddSeedPeerClusterToSecurityGroup(ctx.Request.Context(), params.ID, params.SeedPeerClusterID)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+}
+
 // @Summary Add CDN to SecurityGroup
 // @Description Add CDN to SecurityGroup
 // @Tags SecurityGroup

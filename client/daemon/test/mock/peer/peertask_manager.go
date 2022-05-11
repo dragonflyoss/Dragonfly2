@@ -13,6 +13,7 @@ import (
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,6 +38,34 @@ func NewMockTaskManager(ctrl *gomock.Controller) *MockTaskManager {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 	return m.recorder
+}
+
+// AnnouncePeerTask mocks base method.
+func (m *MockTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnnouncePeerTask", ctx, meta, cid, urlMeta)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AnnouncePeerTask indicates an expected call of AnnouncePeerTask.
+func (mr *MockTaskManagerMockRecorder) AnnouncePeerTask(ctx, meta, cid, urlMeta interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnouncePeerTask", reflect.TypeOf((*MockTaskManager)(nil).AnnouncePeerTask), ctx, meta, cid, urlMeta)
+}
+
+// GetPieceManager mocks base method.
+func (m *MockTaskManager) GetPieceManager() peer.PieceManager {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPieceManager")
+	ret0, _ := ret[0].(peer.PieceManager)
+	return ret0
+}
+
+// GetPieceManager indicates an expected call of GetPieceManager.
+func (mr *MockTaskManagerMockRecorder) GetPieceManager() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceManager", reflect.TypeOf((*MockTaskManager)(nil).GetPieceManager))
 }
 
 // IsPeerTaskRunning mocks base method.
@@ -69,6 +98,21 @@ func (mr *MockTaskManagerMockRecorder) StartFileTask(ctx, req interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartFileTask", reflect.TypeOf((*MockTaskManager)(nil).StartFileTask), ctx, req)
 }
 
+// StartSeedTask mocks base method.
+func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *peer.SeedTaskRequest) (*peer.SeedTaskResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StartSeedTask", ctx, req)
+	ret0, _ := ret[0].(*peer.SeedTaskResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StartSeedTask indicates an expected call of StartSeedTask.
+func (mr *MockTaskManagerMockRecorder) StartSeedTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartSeedTask", reflect.TypeOf((*MockTaskManager)(nil).StartSeedTask), ctx, req)
+}
+
 // StartStreamTask mocks base method.
 func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *peer.StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 	m.ctrl.T.Helper()
@@ -83,6 +127,21 @@ func (m *MockTaskManager) StartStreamTask(ctx context.Context, req *peer.StreamT
 func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartStreamTask", reflect.TypeOf((*MockTaskManager)(nil).StartStreamTask), ctx, req)
+}
+
+// StatTask mocks base method.
+func (m *MockTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatTask", ctx, taskID)
+	ret0, _ := ret[0].(*scheduler.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockTaskManagerMockRecorder) StatTask(ctx, taskID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockTaskManager)(nil).StatTask), ctx, taskID)
 }
 
 // Stop mocks base method.
@@ -100,10 +159,10 @@ func (mr *MockTaskManagerMockRecorder) Stop(ctx interface{}) *gomock.Call {
 }
 
 // Subscribe mocks base method.
-func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*peer.SubscribeResult, bool) {
+func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", request)
-	ret0, _ := ret[0].(*peer.SubscribeResult)
+	ret0, _ := ret[0].(*peer.SubscribeResponse)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }

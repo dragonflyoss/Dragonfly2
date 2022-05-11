@@ -43,28 +43,41 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
-var defaultStreamMiddleWares = []grpc.StreamServerInterceptor{
-	grpc_validator.StreamServerInterceptor(),
-	grpc_recovery.StreamServerInterceptor(),
-	grpc_prometheus.StreamServerInterceptor,
-	grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+// Default middlewares for stream.
+func defaultStreamMiddleWares() []grpc.StreamServerInterceptor {
+	return []grpc.StreamServerInterceptor{
+		grpc_validator.StreamServerInterceptor(),
+		grpc_recovery.StreamServerInterceptor(),
+		grpc_prometheus.StreamServerInterceptor,
+		grpc_zap.StreamServerInterceptor(logger.GrpcLogger.Desugar()),
+	}
 }
 
-var defaultUnaryMiddleWares = []grpc.UnaryServerInterceptor{
-	grpc_validator.UnaryServerInterceptor(),
-	grpc_recovery.UnaryServerInterceptor(),
-	grpc_prometheus.UnaryServerInterceptor,
-	grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+// Default middlewares for unary.
+func defaultUnaryMiddleWares() []grpc.UnaryServerInterceptor {
+	return []grpc.UnaryServerInterceptor{
+		grpc_validator.UnaryServerInterceptor(),
+		grpc_recovery.UnaryServerInterceptor(),
+		grpc_prometheus.UnaryServerInterceptor,
+		grpc_zap.UnaryServerInterceptor(logger.GrpcLogger.Desugar()),
+	}
 }
 
+// Server is grpc server.
 type Server struct {
-	db       *gorm.DB
-	rdb      *redis.Client
-	cache    *cache.Cache
+	// GORM instance.
+	db *gorm.DB
+	// Redis client instance.
+	rdb *redis.Client
+	// Cache instance.
+	cache *cache.Cache
+	// Searcher interface.
 	searcher searcher.Searcher
+	// Manager grpc interface.
 	manager.UnimplementedManagerServer
 }
 
+// New returns a new manager server from the given options.
 func New(database *database.Database, cache *cache.Cache, searcher searcher.Searcher, opts ...grpc.ServerOption) *grpc.Server {
 	server := &Server{
 		db:       database.DB,
@@ -74,27 +87,190 @@ func New(database *database.Database, cache *cache.Cache, searcher searcher.Sear
 	}
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares...)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares...)),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(defaultStreamMiddleWares()...)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(defaultUnaryMiddleWares()...)),
 	}, opts...)...)
 
-	// Register servers on grpc server
+	// Register servers on grpc server.
 	manager.RegisterManagerServer(grpcServer, server)
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 
+// Get SeedPeer and SeedPeer cluster configuration.
+func (s *Server) GetSeedPeer(ctx context.Context, req *manager.GetSeedPeerRequest) (*manager.SeedPeer, error) {
+	var pbSeedPeer manager.SeedPeer
+	cacheKey := cache.MakeSeedPeerCacheKey(req.HostName, uint(req.SeedPeerClusterId))
+
+	// Cache hit.
+	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err == nil {
+		logger.Infof("%s cache hit", cacheKey)
+		return &pbSeedPeer, nil
+	}
+
+	// Cache miss.
+	logger.Infof("%s cache miss", cacheKey)
+	seedPeer := model.SeedPeer{}
+	if err := s.db.WithContext(ctx).Preload("SeedPeerCluster").Preload("SeedPeerCluster.SchedulerClusters.Schedulers", &model.Scheduler{
+		State: model.SchedulerStateActive,
+	}).First(&seedPeer, &model.SeedPeer{
+		HostName:          req.HostName,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	// Marshal config of seed peer cluster.
+	config, err := seedPeer.SeedPeerCluster.Config.MarshalJSON()
+	if err != nil {
+		return nil, status.Error(codes.DataLoss, err.Error())
+	}
+
+	// Construct schedulers.
+	var pbSchedulers []*manager.Scheduler
+	for _, schedulerCluster := range seedPeer.SeedPeerCluster.SchedulerClusters {
+		for _, scheduler := range schedulerCluster.Schedulers {
+			pbSchedulers = append(pbSchedulers, &manager.Scheduler{
+				Id:          uint64(scheduler.ID),
+				HostName:    scheduler.HostName,
+				Idc:         scheduler.IDC,
+				NetTopology: scheduler.NetTopology,
+				Location:    scheduler.Location,
+				Ip:          scheduler.IP,
+				Port:        scheduler.Port,
+				State:       scheduler.State,
+			})
+		}
+	}
+
+	// Construct seed peer.
+	pbSeedPeer = manager.SeedPeer{
+		Id:                uint64(seedPeer.ID),
+		Type:              seedPeer.Type,
+		HostName:          seedPeer.HostName,
+		Idc:               seedPeer.IDC,
+		NetTopology:       seedPeer.NetTopology,
+		Location:          seedPeer.Location,
+		Ip:                seedPeer.IP,
+		Port:              seedPeer.Port,
+		DownloadPort:      seedPeer.DownloadPort,
+		State:             seedPeer.State,
+		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+		SeedPeerCluster: &manager.SeedPeerCluster{
+			Id:     uint64(seedPeer.SeedPeerCluster.ID),
+			Name:   seedPeer.SeedPeerCluster.Name,
+			Bio:    seedPeer.SeedPeerCluster.BIO,
+			Config: config,
+		},
+		Schedulers: pbSchedulers,
+	}
+
+	// Cache data.
+	if err := s.cache.Once(&cachev8.Item{
+		Ctx:   ctx,
+		Key:   cacheKey,
+		Value: &pbSeedPeer,
+		TTL:   s.cache.TTL,
+	}); err != nil {
+		logger.Warnf("storage cache failed: %v", err)
+	}
+
+	return &pbSeedPeer, nil
+}
+
+// Update SeedPeer configuration.
+func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	seedPeer := model.SeedPeer{}
+	if err := s.db.WithContext(ctx).First(&seedPeer, model.SeedPeer{
+		HostName:          req.HostName,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return s.createSeedPeer(ctx, req)
+		}
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if err := s.db.WithContext(ctx).Model(&seedPeer).Updates(model.SeedPeer{
+		Type:              req.Type,
+		IDC:               req.Idc,
+		NetTopology:       req.NetTopology,
+		Location:          req.Location,
+		IP:                req.Ip,
+		Port:              req.Port,
+		DownloadPort:      req.DownloadPort,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if err := s.cache.Delete(
+		ctx,
+		cache.MakeSeedPeerCacheKey(seedPeer.HostName, seedPeer.SeedPeerClusterID),
+	); err != nil {
+		logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", seedPeer.HostName, seedPeer.SeedPeerClusterID)
+	}
+
+	return &manager.SeedPeer{
+		Id:                uint64(seedPeer.ID),
+		HostName:          seedPeer.HostName,
+		Type:              seedPeer.Type,
+		Idc:               seedPeer.IDC,
+		NetTopology:       seedPeer.NetTopology,
+		Location:          seedPeer.Location,
+		Ip:                seedPeer.IP,
+		Port:              seedPeer.Port,
+		DownloadPort:      seedPeer.DownloadPort,
+		State:             seedPeer.State,
+		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+	}, nil
+}
+
+// Create SeedPeer and associate cluster.
+func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	seedPeer := model.SeedPeer{
+		HostName:          req.HostName,
+		Type:              req.Type,
+		IDC:               req.Idc,
+		NetTopology:       req.NetTopology,
+		Location:          req.Location,
+		IP:                req.Ip,
+		Port:              req.Port,
+		DownloadPort:      req.DownloadPort,
+		SeedPeerClusterID: uint(req.SeedPeerClusterId),
+	}
+
+	if err := s.db.WithContext(ctx).Create(&seedPeer).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &manager.SeedPeer{
+		Id:                uint64(seedPeer.ID),
+		HostName:          seedPeer.HostName,
+		Type:              seedPeer.Type,
+		Idc:               seedPeer.IDC,
+		NetTopology:       seedPeer.NetTopology,
+		Location:          seedPeer.Location,
+		Ip:                seedPeer.IP,
+		Port:              seedPeer.Port,
+		DownloadPort:      seedPeer.DownloadPort,
+		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+		State:             seedPeer.State,
+	}, nil
+}
+
+// Deprecated: Use GetSeedPeer instead.
 func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
 	var pbCDN manager.CDN
 	cacheKey := cache.MakeCDNCacheKey(req.HostName, uint(req.CdnClusterId))
 
-	// Cache Hit
+	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbCDN); err == nil {
 		logger.Infof("%s cache hit", cacheKey)
 		return &pbCDN, nil
 	}
 
-	// Cache Miss
+	// Cache miss.
 	logger.Infof("%s cache miss", cacheKey)
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).Preload("CDNCluster").Preload("CDNCluster.SchedulerClusters.Schedulers", &model.Scheduler{
@@ -106,11 +282,13 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
+	// Marshal config of cdn cluster.
 	config, err := cdn.CDNCluster.Config.MarshalJSON()
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
+	// Construct schedulers.
 	var pbSchedulers []*manager.Scheduler
 	for _, schedulerCluster := range cdn.CDNCluster.SchedulerClusters {
 		for _, scheduler := range schedulerCluster.Schedulers {
@@ -126,6 +304,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 		}
 	}
 
+	// Construct cdn.
 	pbCDN = manager.CDN{
 		Id:           uint64(cdn.ID),
 		HostName:     cdn.HostName,
@@ -145,6 +324,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 		Schedulers: pbSchedulers,
 	}
 
+	// Cache data.
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
@@ -157,6 +337,7 @@ func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manag
 	return &pbCDN, nil
 }
 
+// Deprecated: Use UpdateSeedPeer instead.
 func (s *Server) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	cdn := model.CDN{}
 	if err := s.db.WithContext(ctx).First(&cdn, model.CDN{
@@ -190,6 +371,7 @@ func (s *Server) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (
 	return &manager.CDN{
 		Id:           uint64(cdn.ID),
 		HostName:     cdn.HostName,
+		Idc:          cdn.IDC,
 		Location:     cdn.Location,
 		Ip:           cdn.IP,
 		Port:         cdn.Port,
@@ -199,6 +381,7 @@ func (s *Server) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (
 	}, nil
 }
 
+// Deprecated: Use createSeedPeer instead.
 func (s *Server) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
 	cdn := model.CDN{
 		HostName:     req.HostName,
@@ -217,6 +400,7 @@ func (s *Server) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (
 	return &manager.CDN{
 		Id:           uint64(cdn.ID),
 		HostName:     cdn.HostName,
+		Idc:          cdn.IDC,
 		Location:     cdn.Location,
 		Ip:           cdn.IP,
 		Port:         cdn.Port,
@@ -226,21 +410,24 @@ func (s *Server) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (
 	}, nil
 }
 
+// Get Scheduler and Scheduler cluster configuration.
 func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	var pbScheduler manager.Scheduler
 	cacheKey := cache.MakeSchedulerCacheKey(req.HostName, uint(req.SchedulerClusterId))
 
-	// Cache Hit
+	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err == nil {
 		logger.Infof("%s cache hit", cacheKey)
 		return &pbScheduler, nil
 	}
 
-	// Cache Miss
+	// Cache miss.
 	logger.Infof("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
 		State: model.CDNStateActive,
+	}).Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &model.CDN{
+		State: model.SeedPeerStateActive,
 	}).First(&scheduler, &model.Scheduler{
 		HostName:           req.HostName,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
@@ -248,21 +435,50 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	schedulerNetConfig, err := scheduler.NetConfig.MarshalJSON()
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
+	// Marshal config of scheduler.
 	schedulerClusterConfig, err := scheduler.SchedulerCluster.Config.MarshalJSON()
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
+	// Marshal config of client.
 	schedulerClusterClientConfig, err := scheduler.SchedulerCluster.ClientConfig.MarshalJSON()
 	if err != nil {
 		return nil, status.Error(codes.DataLoss, err.Error())
 	}
 
+	// Construct seed peers.
+	var pbSeedPeers []*manager.SeedPeer
+	for _, seedPeerCluster := range scheduler.SchedulerCluster.SeedPeerClusters {
+		seedPeerClusterConfig, err := seedPeerCluster.Config.MarshalJSON()
+		if err != nil {
+			return nil, status.Error(codes.DataLoss, err.Error())
+		}
+
+		for _, seedPeer := range seedPeerCluster.SeedPeers {
+			pbSeedPeers = append(pbSeedPeers, &manager.SeedPeer{
+				Id:                uint64(seedPeer.ID),
+				HostName:          seedPeer.HostName,
+				Type:              seedPeer.Type,
+				Idc:               seedPeer.IDC,
+				NetTopology:       seedPeer.NetTopology,
+				Location:          seedPeer.Location,
+				Ip:                seedPeer.IP,
+				Port:              seedPeer.Port,
+				DownloadPort:      seedPeer.DownloadPort,
+				State:             seedPeer.State,
+				SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+				SeedPeerCluster: &manager.SeedPeerCluster{
+					Id:     uint64(seedPeerCluster.ID),
+					Name:   seedPeerCluster.Name,
+					Bio:    seedPeerCluster.BIO,
+					Config: seedPeerClusterConfig,
+				},
+			})
+		}
+	}
+
+	// Deprecated: Use pbSeedPeers instead.
 	var pbCDNs []*manager.CDN
 	for _, cdnCluster := range scheduler.SchedulerCluster.CDNClusters {
 		cdnClusterConfig, err := cdnCluster.Config.MarshalJSON()
@@ -279,6 +495,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 				Ip:           cdn.IP,
 				Port:         cdn.Port,
 				DownloadPort: cdn.DownloadPort,
+				State:        cdn.State,
 				CdnClusterId: uint64(cdn.CDNClusterID),
 				CdnCluster: &manager.CDNCluster{
 					Id:     uint64(cdnCluster.ID),
@@ -286,18 +503,17 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 					Bio:    cdnCluster.BIO,
 					Config: cdnClusterConfig,
 				},
-				State: cdn.State,
 			})
 		}
 	}
 
+	// Construct scheduler.
 	pbScheduler = manager.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		HostName:           scheduler.HostName,
-		Vips:               scheduler.VIPs,
 		Idc:                scheduler.IDC,
+		NetTopology:        scheduler.NetTopology,
 		Location:           scheduler.Location,
-		NetConfig:          schedulerNetConfig,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
@@ -309,9 +525,11 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 			Config:       schedulerClusterConfig,
 			ClientConfig: schedulerClusterClientConfig,
 		},
-		Cdns: pbCDNs,
+		SeedPeers: pbSeedPeers,
+		Cdns:      pbCDNs,
 	}
 
+	// Cache data.
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
@@ -324,6 +542,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 	return &pbScheduler, nil
 }
 
+// Update scheduler configuration.
 func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, model.Scheduler{
@@ -336,18 +555,10 @@ func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedul
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	var netConfig model.JSONMap
-	if len(req.NetConfig) > 0 {
-		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	}
-
 	if err := s.db.WithContext(ctx).Model(&scheduler).Updates(model.Scheduler{
-		VIPs:               req.Vips,
 		IDC:                req.Idc,
+		NetTopology:        req.NetTopology,
 		Location:           req.Location,
-		NetConfig:          netConfig,
 		IP:                 req.Ip,
 		Port:               req.Port,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
@@ -365,10 +576,9 @@ func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedul
 	return &manager.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		HostName:           scheduler.HostName,
-		Vips:               scheduler.VIPs,
 		Idc:                scheduler.IDC,
+		NetTopology:        scheduler.NetTopology,
 		Location:           scheduler.Location,
-		NetConfig:          req.NetConfig,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
@@ -376,20 +586,13 @@ func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedul
 	}, nil
 }
 
+// Create scheduler and associate cluster.
 func (s *Server) createScheduler(ctx context.Context, req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
-	var netConfig model.JSONMap
-	if len(req.NetConfig) > 0 {
-		if err := netConfig.UnmarshalJSON(req.NetConfig); err != nil {
-			return nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	}
-
 	scheduler := model.Scheduler{
 		HostName:           req.HostName,
-		VIPs:               req.Vips,
 		IDC:                req.Idc,
+		NetTopology:        req.NetTopology,
 		Location:           req.Location,
-		NetConfig:          netConfig,
 		IP:                 req.Ip,
 		Port:               req.Port,
 		SchedulerClusterID: uint(req.SchedulerClusterId),
@@ -402,10 +605,9 @@ func (s *Server) createScheduler(ctx context.Context, req *manager.UpdateSchedul
 	return &manager.Scheduler{
 		Id:                 uint64(scheduler.ID),
 		HostName:           scheduler.HostName,
-		Vips:               scheduler.VIPs,
 		Idc:                scheduler.IDC,
+		NetTopology:        scheduler.NetTopology,
 		Location:           scheduler.Location,
-		NetConfig:          req.NetConfig,
 		Ip:                 scheduler.IP,
 		Port:               scheduler.Port,
 		State:              scheduler.State,
@@ -413,26 +615,27 @@ func (s *Server) createScheduler(ctx context.Context, req *manager.UpdateSchedul
 	}, nil
 }
 
+// List acitve schedulers configuration.
 func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 
 	var pbListSchedulersResponse manager.ListSchedulersResponse
 	cacheKey := cache.MakeSchedulersCacheKey(req.HostName, req.Ip)
 
-	// Cache Hit
+	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
 		log.Infof("%s cache hit", cacheKey)
 		return &pbListSchedulersResponse, nil
 	}
 
-	// Cache Miss
+	// Cache miss.
 	log.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
-	// Search optimal scheduler clusters
+	// Search optimal scheduler clusters.
 	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
@@ -448,26 +651,22 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 		}
 	}
 
+	// Construct schedulers.
 	for _, scheduler := range schedulers {
-		schedulerNetConfig, err := scheduler.NetConfig.MarshalJSON()
-		if err != nil {
-			return nil, status.Error(codes.DataLoss, err.Error())
-		}
-
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &manager.Scheduler{
 			Id:                 uint64(scheduler.ID),
 			HostName:           scheduler.HostName,
-			Vips:               scheduler.VIPs,
 			Idc:                scheduler.IDC,
+			NetTopology:        scheduler.NetTopology,
 			Location:           scheduler.Location,
-			NetConfig:          schedulerNetConfig,
 			Ip:                 scheduler.IP,
 			Port:               scheduler.Port,
-			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 			State:              scheduler.State,
+			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
 		})
 	}
 
+	// Cache data.
 	if err := s.cache.Once(&cachev8.Item{
 		Ctx:   ctx,
 		Key:   cacheKey,
@@ -480,6 +679,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	return &pbListSchedulersResponse, nil
 }
 
+// KeepAlive with manager.
 func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 	req, err := stream.Recv()
 	if err != nil {
@@ -491,7 +691,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 	clusterID := uint(req.ClusterId)
 	logger.Infof("%s keepalive successfully for the first time in cluster %d", hostName, clusterID)
 
-	// Active scheduler
+	// Active scheduler.
 	if sourceType == manager.SourceType_SCHEDULER_SOURCE {
 		scheduler := model.Scheduler{}
 		if err := s.db.First(&scheduler, model.Scheduler{
@@ -511,7 +711,27 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 		}
 	}
 
-	// Active CDN
+	// Active seed peer.
+	if sourceType == manager.SourceType_SEED_PEER_SOURCE {
+		seedPeer := model.SeedPeer{}
+		if err := s.db.First(&seedPeer, model.SeedPeer{
+			HostName:          hostName,
+			SeedPeerClusterID: clusterID,
+		}).Updates(model.SeedPeer{
+			State: model.SeedPeerStateActive,
+		}).Error; err != nil {
+			return status.Error(codes.Unknown, err.Error())
+		}
+
+		if err := s.cache.Delete(
+			context.TODO(),
+			cache.MakeSeedPeerCacheKey(hostName, clusterID),
+		); err != nil {
+			logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
+		}
+	}
+
+	// Deprecated: Use SourceType_SEED_PEER_SOURCE instead.
 	if sourceType == manager.SourceType_CDN_SOURCE {
 		cdn := model.CDN{}
 		if err := s.db.First(&cdn, model.CDN{
@@ -534,7 +754,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 	for {
 		_, err := stream.Recv()
 		if err != nil {
-			// Inactive scheduler
+			// Inactive scheduler.
 			if sourceType == manager.SourceType_SCHEDULER_SOURCE {
 				scheduler := model.Scheduler{}
 				if err := s.db.First(&scheduler, model.Scheduler{
@@ -554,7 +774,27 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 				}
 			}
 
-			// Inactive CDN
+			// Inactive seed peer.
+			if sourceType == manager.SourceType_SEED_PEER_SOURCE {
+				seedPeer := model.SeedPeer{}
+				if err := s.db.First(&seedPeer, model.SeedPeer{
+					HostName:          hostName,
+					SeedPeerClusterID: clusterID,
+				}).Updates(model.SeedPeer{
+					State: model.SeedPeerStateInactive,
+				}).Error; err != nil {
+					return status.Error(codes.Unknown, err.Error())
+				}
+
+				if err := s.cache.Delete(
+					context.TODO(),
+					cache.MakeSeedPeerCacheKey(hostName, clusterID),
+				); err != nil {
+					logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
+				}
+			}
+
+			// Deprecated: Use SourceType_SEED_PEER_SOURCE instead.
 			if sourceType == manager.SourceType_CDN_SOURCE {
 				cdn := model.CDN{}
 				if err := s.db.First(&cdn, model.CDN{
@@ -587,6 +827,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 	}
 }
 
+// Get scheduler cluster names.
 func getSchedulerClusterNames(clusters []model.SchedulerCluster) []string {
 	names := []string{}
 	for _, cluster := range clusters {

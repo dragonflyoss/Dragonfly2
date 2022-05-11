@@ -25,6 +25,11 @@ type AddSchedulerClusterToSecurityGroupParams struct {
 	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
+type AddSeedPeerClusterToSecurityGroupParams struct {
+	ID                uint `uri:"id" binding:"required"`
+	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
+}
+
 type AddCDNClusterToSecurityGroupParams struct {
 	ID           uint `uri:"id" binding:"required"`
 	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`

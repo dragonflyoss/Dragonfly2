@@ -219,3 +219,20 @@ func createFileLogger(verbose bool, meta []logInitMeta, logDir string) error {
 	startLoggerSignalHandler()
 	return nil
 }
+
+func InitDfcache(console bool, dir string) error {
+	logDir := filepath.Join(dir, "dfcache")
+
+	var meta = []logInitMeta{
+		{
+			fileName:             CoreLogFileName,
+			setSugaredLoggerFunc: SetCoreLogger,
+		},
+		{
+			fileName:             GrpcLogFileName,
+			setSugaredLoggerFunc: SetGrpcLogger,
+		},
+	}
+
+	return createFileLogger(console, meta, logDir)
+}

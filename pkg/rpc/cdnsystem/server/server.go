@@ -37,7 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
-// SeederServer  refer to cdnsystem.SeederServer
+// SeederServer refer to cdnsystem.SeederServer
 type SeederServer interface {
 	// ObtainSeeds generate seeds and return to scheduler
 	ObtainSeeds(context.Context, *cdnsystem.SeedRequest, chan<- *cdnsystem.PieceSeed) error
@@ -53,7 +53,7 @@ type proxy struct {
 }
 
 func New(seederServer SeederServer, opts ...grpc.ServerOption) *grpc.Server {
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions, opts...)...)
+	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 
 	// Register servers on grpc server
 	cdnsystem.RegisterSeederServer(grpcServer, &proxy{server: seederServer})

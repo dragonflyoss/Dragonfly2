@@ -21,6 +21,7 @@ type SecurityGroup struct {
 	Name              string             `gorm:"column:name;type:varchar(256);index:uk_security_group_name,unique;not null;comment:name" json:"name"`
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	SecurityRules     []SecurityRule     `gorm:"many2many:security_group_security_rule;" json:"security_rules"`
-	SchedulerClusters []SchedulerCluster `json:"-"`
+	SeedPeerClusters  []SeedPeerCluster  `json:"-"`
 	CDNClusters       []CDNCluster       `json:"-"`
+	SchedulerClusters []SchedulerCluster `json:"-"`
 }

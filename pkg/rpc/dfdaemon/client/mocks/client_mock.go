@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	dfnet "d7y.io/dragonfly/v2/internal/dfnet"
+	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	client "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"

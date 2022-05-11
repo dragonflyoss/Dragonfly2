@@ -31,6 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
+//go:generate mockgen -package mocks -source peer_packet_stream.go -destination ./mocks/peer_packet_stream_mock.go
 type PeerPacketStream interface {
 	Recv() (pp *scheduler.PeerPacket, err error)
 	Send(pr *scheduler.PieceResult) (err error)
