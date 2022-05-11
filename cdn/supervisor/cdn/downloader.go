@@ -66,6 +66,7 @@ func (cm *manager) download(ctx context.Context, seedTask *task.SeedTask, breakP
 				header[k] = response.Header.Get(k)
 			}
 		}
+		exa = &base.ExtendAttribute{Header: header}
 	}
 	// update Expire info
 	cm.updateResponseMetadata(seedTask.ID, map[string]string{
