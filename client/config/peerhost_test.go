@@ -244,6 +244,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 					Enable:    false,
 					Type:      model.SeedPeerTypeStrongSeed,
 					ClusterID: 2,
+					KeepAlive: KeepAliveOption{
+						Interval: 10 * time.Second,
+					},
 				},
 			},
 			NetAddrs: []dfnet.NetAddr{

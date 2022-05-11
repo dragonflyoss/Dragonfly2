@@ -163,6 +163,7 @@ func (s *Server) Serve() error {
 				SourceType:        manager.SourceType_SEED_PEER_SOURCE,
 				HostName:          hostutils.FQDNHostname,
 				Type:              model.SeedPeerTypeSuperSeed,
+				IsCdn:             true,
 				Idc:               s.config.Host.IDC,
 				NetTopology:       s.config.Host.NetTopology,
 				Location:          s.config.Host.Location,
@@ -178,7 +179,7 @@ func (s *Server) Serve() error {
 			logger.Infof("====starting keepalive cdn instance %s to manager %s====", CDNInstance, s.config.Manager.Addr)
 			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
-				SourceType: manager.SourceType_CDN_SOURCE,
+				SourceType: manager.SourceType_SEED_PEER_SOURCE,
 				ClusterId:  uint64(s.config.Manager.SeedPeerClusterID),
 			})
 		}

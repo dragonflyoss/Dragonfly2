@@ -158,6 +158,13 @@ type SeedPeerOption struct {
 	Type string `mapstructure:"type" yaml:"type"`
 	// ClusterID is seed peer cluster id.
 	ClusterID uint `mapstructure:"clusterID" yaml:"clusterID"`
+	// KeepAlive configuration.
+	KeepAlive KeepAliveOption `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveOption struct {
+	// Keep alive interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 type HostOption struct {

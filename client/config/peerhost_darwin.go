@@ -44,6 +44,9 @@ var peerHostConfig = DaemonOption{
 				Enable:    false,
 				Type:      model.SeedPeerTypeSuperSeed,
 				ClusterID: 1,
+				KeepAlive: KeepAliveOption{
+					Interval: 5 * time.Second,
+				},
 			},
 		},
 		NetAddrs: []dfnet.NetAddr{

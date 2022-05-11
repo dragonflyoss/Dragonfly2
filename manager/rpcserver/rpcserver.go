@@ -147,6 +147,7 @@ func (s *Server) GetSeedPeer(ctx context.Context, req *manager.GetSeedPeerReques
 	pbSeedPeer = manager.SeedPeer{
 		Id:                uint64(seedPeer.ID),
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		HostName:          seedPeer.HostName,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
@@ -193,6 +194,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 
 	if err := s.db.WithContext(ctx).Model(&seedPeer).Updates(model.SeedPeer{
 		Type:              req.Type,
+		IsCDN:             req.IsCdn,
 		IDC:               req.Idc,
 		NetTopology:       req.NetTopology,
 		Location:          req.Location,
@@ -215,6 +217,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Id:                uint64(seedPeer.ID),
 		HostName:          seedPeer.HostName,
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
 		Location:          seedPeer.Location,
@@ -231,6 +234,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 	seedPeer := model.SeedPeer{
 		HostName:          req.HostName,
 		Type:              req.Type,
+		IsCDN:             req.IsCdn,
 		IDC:               req.Idc,
 		NetTopology:       req.NetTopology,
 		Location:          req.Location,
@@ -248,6 +252,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Id:                uint64(seedPeer.ID),
 		HostName:          seedPeer.HostName,
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
 		Location:          seedPeer.Location,
@@ -307,6 +312,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 				Id:                uint64(seedPeer.ID),
 				HostName:          seedPeer.HostName,
 				Type:              seedPeer.Type,
+				IsCdn:             seedPeer.IsCDN,
 				Idc:               seedPeer.IDC,
 				NetTopology:       seedPeer.NetTopology,
 				Location:          seedPeer.Location,
@@ -456,7 +462,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
-		log.Errorf("can not matching scheduler cluster %v", err)
+		log.Error(err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
 	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))

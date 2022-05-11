@@ -142,9 +142,9 @@ func (m *PieceSeed) Validate() error {
 		}
 	}
 
-	if utf8.RuneCountInString(m.GetHostUuid()) < 1 {
+	if utf8.RuneCountInString(m.GetHostId()) < 1 {
 		return PieceSeedValidationError{
-			field:  "HostUuid",
+			field:  "HostId",
 			reason: "value length must be at least 1 runes",
 		}
 	}

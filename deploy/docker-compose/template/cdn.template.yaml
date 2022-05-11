@@ -53,7 +53,7 @@ base:
   # manager configuration
   manager:
     addr: "__IP__:65003"
-    cdnClusterID: "1"
+    seedPeerClusterID: "1"
     keepAlive:
       interval: 5s
 

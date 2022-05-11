@@ -98,7 +98,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	source.UpdatePluginDir(d.PluginDir())
 
 	host := &scheduler.PeerHost{
-		Uuid:           idgen.UUIDString(),
+		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
@@ -456,9 +456,20 @@ func (cd *clientDaemon) Serve() error {
 
 	// enable seed peer mode
 	if cd.managerClient != nil && cd.Option.Scheduler.Manager.SeedPeer.Enable {
+		logger.Info("announce to manager")
 		if err := cd.announceSeedPeer(); err != nil {
 			return err
 		}
+
+		g.Go(func() error {
+			logger.Info("keepalive to manager")
+			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &manager.KeepAliveRequest{
+				SourceType: manager.SourceType_SEED_PEER_SOURCE,
+				HostName:   cd.Option.Host.Hostname,
+				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
+			})
+			return err
+		})
 	}
 
 	if cd.Option.AliveTime.Duration > 0 {
@@ -573,6 +584,13 @@ func (cd *clientDaemon) Stop() {
 				logger.Errorf("dynconfig client closed failed %s", err)
 			}
 			logger.Info("dynconfig client closed")
+		}
+
+		if cd.managerClient != nil {
+			if err := cd.managerClient.Close(); err != nil {
+				logger.Errorf("manager client failed to stop: %s", err.Error())
+			}
+			logger.Info("manager client closed")
 		}
 	})
 }

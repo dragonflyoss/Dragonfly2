@@ -27,8 +27,8 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 enum SourceType {
   // Scheduler service.
   SCHEDULER_SOURCE = 0;
-  // Dfdaemon service.
-  CLIENT_SOURCE = 1;
+  // Peer service.
+  PEER_SOURCE = 1;
   // SeedPeer service.
   SEED_PEER_SOURCE = 2;
 }
@@ -71,26 +71,28 @@ message SeedPeer {
   string host_name = 2;
   // Seed peer type.
   string type = 3;
+  // CDN seed peer.
+  bool is_cdn = 4;
   // Seed peer idc.
-  string idc = 4;
+  string idc = 5;
   // Seed peer network topology.
-  string net_topology = 5;
+  string net_topology = 6;
   // Seed peer location.
-  string location = 6;
+  string location = 7;
   // Seed peer ip.
-  string ip = 7;
+  string ip = 8;
   // Seed peer grpc port.
-  int32 port = 8;
+  int32 port = 9;
   // Seed peer download port.
-  int32 download_port = 9;
+  int32 download_port = 10;
   // Seed peer state.
-  string state = 10;
+  string state = 11;
   // ID of the cluster to which the seed peer belongs.
-  uint64 seed_peer_cluster_id = 11;
+  uint64 seed_peer_cluster_id = 12;
   // Cluster to which the seed peer belongs.
-  SeedPeerCluster seed_peer_cluster = 12;
+  SeedPeerCluster seed_peer_cluster = 13;
   // Schedulers included in seed peer.
-  repeated Scheduler schedulers = 13;
+  repeated Scheduler schedulers = 14;
 }
 
 // GetSeedPeerRequest represents request of GetSeedPeer.
@@ -111,20 +113,22 @@ message UpdateSeedPeerRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
   // Seed peer type.
   string type = 3 [(validate.rules).string = {in: ["super", "strong", "weak"]}];
+  // CDN seed peer.
+  bool is_cdn = 4;
   // Seed peer idc.
-  string idc = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer network topology.
-  string net_topology = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string net_topology = 6 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer location.
-  string location = 6 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  string location = 7 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
   // Seed peer ip.
-  string ip = 7 [(validate.rules).string = {ip: true}];
+  string ip = 8 [(validate.rules).string = {ip: true}];
   // Seed peer port.
-  int32 port = 8 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // Seed peer download port.
-  int32 download_port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  int32 download_port = 10 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // ID of the cluster to which the seed peer belongs.
-  uint64 seed_peer_cluster_id = 10 [(validate.rules).uint64 = {gte: 1}];
+  uint64 seed_peer_cluster_id = 11 [(validate.rules).uint64 = {gte: 1}];
 }
 
 // SeedPeerCluster represents cluster of scheduler.
