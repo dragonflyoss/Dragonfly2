@@ -26,6 +26,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
@@ -239,6 +240,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 					},
 				},
 				RefreshInterval: 5 * time.Minute,
+				SeedPeer: SeedPeerOption{
+					Enable:    false,
+					Type:      model.SeedPeerTypeStrongSeed,
+					ClusterID: 2,
+				},
 			},
 			NetAddrs: []dfnet.NetAddr{
 				{

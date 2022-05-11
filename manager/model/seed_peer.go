@@ -22,9 +22,9 @@ const (
 )
 
 const (
-	SeedPeerTypeSuperSeed  = "SuperSeed"
-	SeedPeerTypeStrongSeed = "StrongSeed"
-	SeedPeerTypeWeakSeed   = "WeakSeed"
+	SeedPeerTypeSuperSeed  = "super"
+	SeedPeerTypeStrongSeed = "strong"
+	SeedPeerTypeWeakSeed   = "weak"
 )
 
 type SeedPeer struct {

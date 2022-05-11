@@ -130,34 +130,45 @@ func (p *DaemonOption) Validate() error {
 }
 
 type SchedulerOption struct {
-	// Manager is to get the scheduler configuration remotely
+	// Manager is to get the scheduler configuration remotely.
 	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// ScheduleTimeout is request timeout.
 	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
-	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
+	// DisableAutoBackSource indicates not back source normally, only scheduler says back source.
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
 }
 
 type ManagerOption struct {
-	// Enable get configuration from manager
+	// Enable get configuration from manager.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
 	// NetAddrs is manager addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
-	// RefreshInterval is the refresh interval
+	// RefreshInterval is the refresh interval.
 	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
+	// SeedPeer configuration.
+	SeedPeer SeedPeerOption `mapstructure:"seedPeer" yaml:"seedPeer"`
+}
+
+type SeedPeerOption struct {
+	// Enable seed peer mode.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// Type is seed peer type.
+	Type string `mapstructure:"type" yaml:"type"`
+	// ClusterID is seed peer cluster id.
+	ClusterID uint `mapstructure:"clusterID" yaml:"clusterID"`
 }
 
 type HostOption struct {
 	// SecurityDomain is the security domain
 	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+	// Location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 	// The listen ip for all tcp services of daemon

@@ -89,6 +89,7 @@ type clientDaemon struct {
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
 	schedulers      []*manager.Scheduler
+	managerClient   managerclient.Client
 	schedulerClient schedulerclient.SchedulerClient
 }
 
@@ -111,20 +112,24 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	var addrs []dfnet.NetAddr
 	var schedulers []*manager.Scheduler
 	var dynconfig config.Dynconfig
+	var managerClient managerclient.Client
 	if opt.Scheduler.Manager.Enable == true {
 		// New manager client
-		managerClient, err := managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
+		var err error
+		managerClient, err = managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
 
 		// New dynconfig client
-		if dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
+		dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval)
+		if err != nil {
 			return nil, err
 		}
 
 		// Get schedulers from manager
-		if schedulers, err = dynconfig.GetSchedulers(); err != nil {
+		schedulers, err = dynconfig.GetSchedulers()
+		if err != nil {
 			return nil, err
 		}
 
@@ -225,6 +230,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig:       dynconfig,
 		dfpath:          d,
 		schedulers:      schedulers,
+		managerClient:   managerClient,
 		schedulerClient: sched,
 	}, nil
 }
@@ -448,6 +454,13 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
+	// enable seed peer mode
+	if cd.managerClient != nil && cd.Option.Scheduler.Manager.SeedPeer.Enable {
+		if err := cd.announceSeedPeer(); err != nil {
+			return err
+		}
+	}
+
 	if cd.Option.AliveTime.Duration > 0 {
 		g.Go(func() error {
 			for {
@@ -582,7 +595,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	logger.Infof("scheduler addresses have been updated: %#v", addrs)
 }
 
-// getSchedulerIPs get ips by schedulers.
+// getSchedulerIPs gets ips by schedulers.
 func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 	ips := []string{}
 	for _, scheduler := range schedulers {
@@ -629,6 +642,26 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 	}
 
 	return netAddrs
+}
+
+// announceSeedPeer announces seed peer to manager.
+func (cd *clientDaemon) announceSeedPeer() error {
+	if _, err := cd.managerClient.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
+		SourceType:        manager.SourceType_SEED_PEER_SOURCE,
+		HostName:          cd.Option.Host.Hostname,
+		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
+		Idc:               cd.Option.Host.IDC,
+		NetTopology:       cd.Option.Host.NetTopology,
+		Location:          cd.Option.Host.Location,
+		Ip:                cd.Option.Host.AdvertiseIP,
+		Port:              cd.schedPeerHost.RpcPort,
+		DownloadPort:      cd.schedPeerHost.DownPort,
+		SeedPeerClusterId: uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {

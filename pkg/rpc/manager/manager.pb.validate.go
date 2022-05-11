@@ -912,10 +912,10 @@ func (m *UpdateSeedPeerRequest) Validate() error {
 		}
 	}
 
-	if l := utf8.RuneCountInString(m.GetType()); l < 1 || l > 1024 {
+	if _, ok := _UpdateSeedPeerRequest_Type_InLookup[m.GetType()]; !ok {
 		return UpdateSeedPeerRequestValidationError{
 			field:  "Type",
-			reason: "value length must be between 1 and 1024 runes, inclusive",
+			reason: "value must be in list [super strong weak]",
 		}
 	}
 
@@ -1068,6 +1068,12 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = UpdateSeedPeerRequestValidationError{}
+
+var _UpdateSeedPeerRequest_Type_InLookup = map[string]struct{}{
+	"super":  {},
+	"strong": {},
+	"weak":   {},
+}
 
 // Validate checks the field values on SchedulerCluster with the rules defined
 // in the proto definition for this message. If any rules are violated, an

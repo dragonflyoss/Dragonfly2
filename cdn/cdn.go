@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerClient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
@@ -158,15 +159,17 @@ func (s *Server) Serve() error {
 	go func() {
 		if s.configServer != nil {
 			var rpcServerConfig = s.grpcServer.GetConfig()
-			CDNInstance, err := s.configServer.UpdateCDN(&manager.UpdateCDNRequest{
-				SourceType:   manager.SourceType_CDN_SOURCE,
-				HostName:     hostutils.FQDNHostname,
-				Ip:           rpcServerConfig.AdvertiseIP,
-				Port:         int32(rpcServerConfig.ListenPort),
-				DownloadPort: int32(rpcServerConfig.DownloadPort),
-				Idc:          s.config.Host.IDC,
-				Location:     s.config.Host.Location,
-				CdnClusterId: uint64(s.config.Manager.CDNClusterID),
+			CDNInstance, err := s.configServer.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
+				SourceType:        manager.SourceType_SEED_PEER_SOURCE,
+				HostName:          hostutils.FQDNHostname,
+				Type:              model.SeedPeerTypeSuperSeed,
+				Idc:               s.config.Host.IDC,
+				NetTopology:       s.config.Host.NetTopology,
+				Location:          s.config.Host.Location,
+				Ip:                rpcServerConfig.AdvertiseIP,
+				Port:              int32(rpcServerConfig.ListenPort),
+				DownloadPort:      int32(rpcServerConfig.DownloadPort),
+				SeedPeerClusterId: uint64(s.config.Manager.SeedPeerClusterID),
 			})
 			if err != nil {
 				logger.Fatalf("update cdn instance failed: %v", err)
@@ -176,7 +179,7 @@ func (s *Server) Serve() error {
 			s.configServer.KeepAlive(s.config.Manager.KeepAlive.Interval, &manager.KeepAliveRequest{
 				HostName:   hostutils.FQDNHostname,
 				SourceType: manager.SourceType_CDN_SOURCE,
-				ClusterId:  uint64(s.config.Manager.CDNClusterID),
+				ClusterId:  uint64(s.config.Manager.SeedPeerClusterID),
 			})
 		}
 	}()

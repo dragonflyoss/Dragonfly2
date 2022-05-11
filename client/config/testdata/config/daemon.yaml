@@ -12,6 +12,10 @@ scheduler:
       - type: tcp
         addr: 127.0.0.1:65003
     refreshInterval: 5m
+    seedPeer:
+      enable: false
+      type: strong
+      clusterID: 2
   netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002

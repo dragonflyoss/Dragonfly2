@@ -182,7 +182,7 @@ message UpdateSeedPeerRequest {
   // Seed peer hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
   // Seed peer type.
-  string type = 3 [(validate.rules).string = {min_len: 1, max_len: 1024}];
+  string type = 3 [(validate.rules).string = {in: ["super", "strong", "weak"]}];
   // Seed peer idc.
   string idc = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer network topology.
