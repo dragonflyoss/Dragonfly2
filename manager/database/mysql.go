@@ -77,6 +77,7 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		InterpolateParams:    true,
+		Params:               map[string]string{"tls": "preferred"},
 	}
 
 	// Support TLS connection
