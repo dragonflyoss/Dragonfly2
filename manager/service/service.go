@@ -74,20 +74,6 @@ type Service interface {
 	GetSeedPeer(context.Context, uint) (*model.SeedPeer, error)
 	GetSeedPeers(context.Context, types.GetSeedPeersQuery) (*[]model.SeedPeer, int64, error)
 
-	CreateCDNCluster(context.Context, types.CreateCDNClusterRequest) (*model.CDNCluster, error)
-	DestroyCDNCluster(context.Context, uint) error
-	UpdateCDNCluster(context.Context, uint, types.UpdateCDNClusterRequest) (*model.CDNCluster, error)
-	GetCDNCluster(context.Context, uint) (*model.CDNCluster, error)
-	GetCDNClusters(context.Context, types.GetCDNClustersQuery) (*[]model.CDNCluster, int64, error)
-	AddCDNToCDNCluster(context.Context, uint, uint) error
-	AddSchedulerClusterToCDNCluster(context.Context, uint, uint) error
-
-	CreateCDN(context.Context, types.CreateCDNRequest) (*model.CDN, error)
-	DestroyCDN(context.Context, uint) error
-	UpdateCDN(context.Context, uint, types.UpdateCDNRequest) (*model.CDN, error)
-	GetCDN(context.Context, uint) (*model.CDN, error)
-	GetCDNs(context.Context, types.GetCDNsQuery) (*[]model.CDN, int64, error)
-
 	CreateSchedulerCluster(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	DestroySchedulerCluster(context.Context, uint) error
 	UpdateSchedulerCluster(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
@@ -114,7 +100,6 @@ type Service interface {
 	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error)
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSeedPeerClusterToSecurityGroup(context.Context, uint, uint) error
-	AddCDNClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
 	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
 
@@ -142,8 +127,6 @@ type Service interface {
 	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
 	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
 	DeleteSeedPeerClusterToApplication(context.Context, uint, uint) error
-	AddCDNClusterToApplication(context.Context, uint, uint) error
-	DeleteCDNClusterToApplication(context.Context, uint, uint) error
 }
 
 type service struct {

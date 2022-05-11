@@ -155,7 +155,7 @@ func (s *service) DestroyJob(ctx context.Context, id uint) error {
 
 func (s *service) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
+	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
 		BIO:    json.BIO,
 		UserID: json.UserID,
 	}).Error; err != nil {
@@ -226,28 +226,6 @@ func (s *service) AddJobToSeedPeerClusters(ctx context.Context, id, seedPeerClus
 	}
 
 	if err := s.db.WithContext(ctx).Model(&job).Association("SeedPeerClusters").Append(seedPeerClusters); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *service) AddJobToCDNClusters(ctx context.Context, id, cdnClusterIDs []uint) error {
-	job := model.Job{}
-	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
-		return err
-	}
-
-	var cdnClusters []*model.CDNCluster
-	for _, cdnClusterID := range cdnClusterIDs {
-		cdnCluster := model.CDNCluster{}
-		if err := s.db.WithContext(ctx).First(&cdnCluster, cdnClusterID).Error; err != nil {
-			return err
-		}
-		cdnClusters = append(cdnClusters, &cdnCluster)
-	}
-
-	if err := s.db.WithContext(ctx).Model(&job).Association("CDNClusters").Append(cdnClusters); err != nil {
 		return err
 	}
 

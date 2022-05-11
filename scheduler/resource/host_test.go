@@ -50,18 +50,6 @@ var (
 		Idc:            "idc",
 		NetTopology:    "net_topology",
 	}
-
-	mockRawCDNHost = &scheduler.PeerHost{
-		Uuid:           idgen.CDNHostID("hostname", 8003),
-		Ip:             "127.0.0.1",
-		RpcPort:        8003,
-		DownPort:       8001,
-		HostName:       "hostname",
-		SecurityDomain: "security_domain",
-		Location:       "location",
-		Idc:            "idc",
-		NetTopology:    "net_topology",
-	}
 )
 
 func TestHost_NewHost(t *testing.T) {
@@ -88,7 +76,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)
@@ -97,7 +84,7 @@ func TestHost_NewHost(t *testing.T) {
 		{
 			name:    "new seed host",
 			rawHost: mockRawSeedHost,
-			options: []HostOption{WithHostType(HostTypeSuperSeed), WithIsCDN(true)},
+			options: []HostOption{WithHostType(HostTypeSuperSeed)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
 				assert.Equal(host.ID, mockRawSeedHost.Uuid)
@@ -112,7 +99,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.NetTopology, mockRawSeedHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, true)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)
@@ -136,7 +122,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)

@@ -40,16 +40,6 @@ type DeleteSeedPeerClusterToApplicationParams struct {
 	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
 }
 
-type AddCDNClusterToApplicationParams struct {
-	ID           uint `uri:"id" binding:"required"`
-	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
-}
-
-type DeleteCDNClusterToApplicationParams struct {
-	ID           uint `uri:"id" binding:"required"`
-	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
-}
-
 type CreateApplicationRequest struct {
 	Name              string `json:"name" binding:"required"`
 	BIO               string `json:"bio" binding:"omitempty"`

@@ -266,7 +266,6 @@ func TestStorage_List(t *testing.T) {
 				ParentNetTopology:    "parent_net_topology",
 				ParentLocation:       "parent_location",
 				ParentFreeUploadLoad: 1,
-				ParentIsCDN:          true,
 				ParentCreateAt:       time.Now().UnixNano(),
 				ParentUpdateAt:       time.Now().UnixNano(),
 			},

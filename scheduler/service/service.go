@@ -844,7 +844,6 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		record.ParentLocation = parent.Host.Location
 		record.ParentFreeUploadLoad = parent.Host.FreeUploadLoad()
 		record.ParentHostType = int(parent.Host.Type)
-		record.ParentIsCDN = parent.Host.IsCDN
 		record.ParentCreateAt = parent.CreateAt.Load().UnixNano()
 		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano()
 	}

@@ -54,14 +54,6 @@ func WithUploadLoadLimit(limit int32) HostOption {
 	}
 }
 
-// WithIsCDN sets host's IsCDN.
-func WithIsCDN(isCDN bool) HostOption {
-	return func(h *Host) *Host {
-		h.IsCDN = isCDN
-		return h
-	}
-}
-
 // WithHostType sets host's type.
 func WithHostType(hostType HostType) HostOption {
 	return func(h *Host) *Host {
@@ -115,9 +107,6 @@ type Host struct {
 	// PeerCount is peer count.
 	PeerCount *atomic.Int32
 
-	// IsCDN is used as tag cdn.
-	IsCDN bool
-
 	// CreateAt is host create time.
 	CreateAt *atomic.Time
 
@@ -145,7 +134,6 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		UploadPeerCount: atomic.NewInt32(0),
 		Peers:           &sync.Map{},
 		PeerCount:       atomic.NewInt32(0),
-		IsCDN:           false,
 		CreateAt:        atomic.NewTime(time.Now()),
 		UpdateAt:        atomic.NewTime(time.Now()),
 		Log:             logger.WithHostID(rawHost.Uuid),

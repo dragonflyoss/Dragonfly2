@@ -48,9 +48,6 @@ type Client interface {
 	// Update Seed peer configuration.
 	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
 
-	// Update CDN configuration.
-	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
-
 	// Get Scheduler and Scheduler cluster configuration.
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
 
@@ -118,13 +115,6 @@ func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.Se
 	defer cancel()
 
 	return c.ManagerClient.UpdateSeedPeer(ctx, req)
-}
-
-func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateCDN(ctx, req)
 }
 
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
