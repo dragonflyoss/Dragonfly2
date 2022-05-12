@@ -71,11 +71,12 @@ func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "address list of cdn is empty")
+				assert.NoError(err)
 			},
 		},
 	}
@@ -120,7 +121,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							Port:     8080,
 						}},
 					}, nil).Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(2),
+					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -144,10 +145,10 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP:       "127.0.0.1",
 						}},
 					}, nil).Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(2),
+					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
-					hostManager.Delete(gomock.Eq("foo-0_Seed")).Return().Times(1),
+					hostManager.Delete(gomock.Eq("foo-0")).Return().Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -170,10 +171,8 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP:       "127.0.0.1",
 						}},
 					}, nil).Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(2),
-					dynconfig.Register(gomock.Any()).Return().Times(1),
-					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(nil, false).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
@@ -195,7 +194,7 @@ func TestSeedPeerClient_OnNotify(t *testing.T) {
 							IP: "127.0.0.1",
 						}},
 					}, nil).Times(1),
-					hostManager.Store(gomock.Any()).Return().Times(2),
+					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
