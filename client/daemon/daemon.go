@@ -109,10 +109,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		NetTopology:    opt.Host.NetTopology,
 	}
 
-	var addrs []dfnet.NetAddr
-	var schedulers []*manager.Scheduler
-	var dynconfig config.Dynconfig
-	var managerClient managerclient.Client
+	var (
+		addrs          []dfnet.NetAddr
+		schedulers     []*manager.Scheduler
+		dynconfig      config.Dynconfig
+		managerClient  managerclient.Client
+		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, scheduler.Pattern_P2P)
+	)
+
 	if opt.Scheduler.Manager.Enable == true {
 		// New manager client
 		var err error
@@ -197,13 +201,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, downloadServerOption, peerServerOption)
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}
 
 	var proxyManager proxy.Manager
-	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, defaultPattern, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}

@@ -35,7 +35,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -126,7 +128,27 @@ func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers and config server is not specified")
 	}
+	switch p.Download.DefaultPattern {
+	case PatternP2P, PatternCDN, PatternSource:
+	default:
+		return errors.New("available pattern: p2p, cdn, source")
+	}
 	return nil
+}
+
+func ConvertPattern(p string, defaultPattern scheduler.Pattern) scheduler.Pattern {
+	switch p {
+	case PatternP2P:
+		return scheduler.Pattern_P2P
+	case PatternCDN:
+		return scheduler.Pattern_CDN
+	case PatternSource:
+		return scheduler.Pattern_SOURCE
+	case "":
+		return defaultPattern
+	}
+	logger.Warnf("unknown pattern, use default pattern: %s", scheduler.Pattern_name[int32(defaultPattern)])
+	return defaultPattern
 }
 
 type SchedulerOption struct {
@@ -185,6 +207,7 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
+	DefaultPattern       string               `mapstructure:"defaultPattern" yaml:"defaultPattern"`
 	TotalRateLimit       clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
 	PieceDownloadTimeout time.Duration        `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`

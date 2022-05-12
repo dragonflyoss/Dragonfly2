@@ -67,6 +67,7 @@ var peerHostConfig = DaemonOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		DefaultPattern:       PatternP2P,
 		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
 		GetPiecesMaxRetry:    100,

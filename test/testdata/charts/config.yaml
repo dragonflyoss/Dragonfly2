@@ -16,8 +16,8 @@ scheduler:
   config:
     verbose: true
 
-cdn:
-  image: d7yio/cdn
+seedPeer:
+  image: d7yio/dfdaemon
   tag: latest
   replicas: 3
   extraVolumeMounts:

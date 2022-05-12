@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -40,9 +39,9 @@ import (
 var _ = Describe("Preheat with manager", func() {
 	Context("preheat", func() {
 		It("preheat files should be ok", func() {
-			var cdnPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*e2eutil.PodExec
 			for i := 0; i < 3; i++ {
-				cdnPods[i] = getCDNExec(i)
+				seedPeerPods[i] = getSeedPeerExec(i)
 			}
 			fsPod := getFileServerExec()
 
@@ -79,10 +78,10 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				cdnTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
-				fmt.Println(cdnTaskID)
+				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
+				fmt.Println(seedPeerTaskID)
 
-				sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
+				sha256sum2 := checkPreheatResult(seedPeerPods, seedPeerTaskID)
 				if sha256sum2 == "" {
 					fmt.Println("preheat file not found")
 				}
@@ -95,7 +94,7 @@ var _ = Describe("Preheat with manager", func() {
 			fmt.Println("download image: " + url)
 
 			var (
-				cdnTaskIDs = []string{
+				seedPeerTaskIDs = []string{
 					"20ef8c24e608bbf6604e7b485037081f0a225dd585161c669ae727041bce3130",
 					"cfe7646d2c749e6e02ab7fec617c56e5fd11d2a1da0e1e39851cad27878064b6",
 				}
@@ -105,9 +104,9 @@ var _ = Describe("Preheat with manager", func() {
 				}
 			)
 
-			var cdnPods [3]*e2eutil.PodExec
+			var seedPeerPods [3]*e2eutil.PodExec
 			for i := 0; i < 3; i++ {
-				cdnPods[i] = getCDNExec(i)
+				seedPeerPods[i] = getSeedPeerExec(i)
 			}
 			fsPod := getFileServerExec()
 
@@ -133,76 +132,13 @@ var _ = Describe("Preheat with manager", func() {
 			done := waitForDone(job, fsPod)
 			Expect(done).Should(BeTrue())
 
-			for i, cdnTaskID := range cdnTaskIDs {
-				sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
+			for i, seedPeerTaskID := range seedPeerTaskIDs {
+				sha256sum2 := checkPreheatResult(seedPeerPods, seedPeerTaskID)
 				if sha256sum2 == "" {
 					fmt.Println("preheat file not found")
 				}
 				Expect(sha256sum1[i]).To(Equal(sha256sum2))
 			}
-		})
-
-		It("concurrency 100 preheat should be ok", func() {
-			// generate the data file
-			url := e2eutil.GetFileURL(hostnameFilePath)
-			fmt.Println("download url: " + url)
-			dataFilePath := "post_data"
-			fd, err := os.Create(dataFilePath)
-			Expect(err).NotTo(HaveOccurred())
-			_, err = fd.WriteString(fmt.Sprintf(`{"type":"file","url":"%s"}`, url))
-			fd.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			// use ab to post the data file to manager concurrently
-			out, err := e2eutil.ABCommand("-c", "100", "-n", "200", "-T", "application/json", "-p", dataFilePath, "-X", proxy, fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
-			fmt.Println(string(out))
-			Expect(err).NotTo(HaveOccurred())
-			os.Remove(dataFilePath)
-			Expect(err).NotTo(HaveOccurred())
-
-			// get original file digest
-			out, err = e2eutil.DockerCommand("sha256sum", hostnameFilePath).CombinedOutput()
-			fmt.Println("original sha256sum: " + string(out))
-			Expect(err).NotTo(HaveOccurred())
-			sha256sum1 := strings.Split(string(out), " ")[0]
-
-			var cdnPods [3]*e2eutil.PodExec
-			for i := 0; i < 3; i++ {
-				cdnPods[i] = getCDNExec(i)
-			}
-			fsPod := getFileServerExec()
-
-			// use a curl to preheat the same file, git a id to wait for success
-			req, err := structutils.StructToMap(types.CreatePreheatJobRequest{
-				Type: internaljob.PreheatJob,
-				Args: types.PreheatArgs{
-					Type: "file",
-					URL:  url,
-				},
-			})
-
-			Expect(err).NotTo(HaveOccurred())
-			out, err = fsPod.CurlCommand("POST", map[string]string{"Content-Type": "application/json"}, req,
-				fmt.Sprintf("http://%s:%s/%s", managerService, managerPort, preheatPath)).CombinedOutput()
-			fmt.Println(string(out))
-			Expect(err).NotTo(HaveOccurred())
-
-			// wait for success
-			job := &model.Job{}
-			err = json.Unmarshal(out, job)
-			Expect(err).NotTo(HaveOccurred())
-			done := waitForDone(job, fsPod)
-			Expect(done).Should(BeTrue())
-
-			// generate task id to find the file
-			cdnTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
-			fmt.Println(cdnTaskID)
-
-			sha256sum2 := checkPreheatResult(cdnPods, cdnTaskID)
-			if sha256sum2 == "" {
-				fmt.Println("preheat file not found")
-			}
-			Expect(sha256sum1).To(Equal(sha256sum2))
 		})
 	})
 })
@@ -234,48 +170,37 @@ func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 	}
 }
 
-func checkPreheatResult(cdnPods [3]*e2eutil.PodExec, cdnTaskID string) string {
+func checkPreheatResult(seedPeerPods [3]*e2eutil.PodExec, seedPeerTaskID string) string {
 	var sha256sum2 string
-	for _, cdn := range cdnPods {
-		out, err := cdn.Command("ls", cdnCachePath).CombinedOutput()
-		if err != nil {
-			// if the directory does not exist, skip this cdn
-			continue
-		}
-		// directory name is the first three characters of the task id
-		dir := cdnTaskID[0:3]
-		if !strings.Contains(string(out), dir) {
+	for _, seedPeer := range seedPeerPods {
+		if _, err := seedPeer.Command("ls", seedPeerDataPath).CombinedOutput(); err != nil {
+			// if the directory does not exist, skip this seed peer
 			continue
 		}
 
-		out, err = cdn.Command("ls", fmt.Sprintf("%s/%s", cdnCachePath, dir)).CombinedOutput()
+		_, err := seedPeer.Command("ls", fmt.Sprintf("%s/%s", seedPeerDataPath, seedPeerTaskID)).CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
 
-		// file name is the same as task id
-		file := cdnTaskID
-		if !strings.Contains(string(out), file) {
-			continue
-		}
-
 		// calculate digest of downloaded file
-		out, err = cdn.Command("sha256sum", fmt.Sprintf("%s/%s/%s", cdnCachePath, dir, file)).CombinedOutput()
+		out, err := seedPeer.Command("sha256sum", fmt.Sprintf("%s/*/%s", seedPeerDataPath, "data")).CombinedOutput()
 		fmt.Println("preheat sha256sum: " + string(out))
 		Expect(err).NotTo(HaveOccurred())
 		sha256sum2 = strings.Split(string(out), " ")[0]
 		break
 	}
+
 	return sha256sum2
 }
 
-// getCDNExec get cdn pods
-func getCDNExec(n int) *e2eutil.PodExec {
-	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=cdn",
+// getSeedPeerExec get seed peer pods
+func getSeedPeerExec(n int) *e2eutil.PodExec {
+	out, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", "component=seed-peer",
 		"-o", fmt.Sprintf("jsonpath='{range .items[%d]}{.metadata.name}{end}'", n)).CombinedOutput()
 	podName := strings.Trim(string(out), "'")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Println(podName)
-	Expect(strings.HasPrefix(podName, "dragonfly-cdn-")).Should(BeTrue())
-	return e2eutil.NewPodExec(dragonflyNamespace, podName, "cdn")
+	Expect(strings.HasPrefix(podName, "dragonfly-seed-peer-")).Should(BeTrue())
+	return e2eutil.NewPodExec(dragonflyNamespace, podName, "seed-peer")
 }
 
 // getFileServerExec get the file-server pod for curl

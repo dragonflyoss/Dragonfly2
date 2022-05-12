@@ -24,6 +24,15 @@ import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
+enum Pattern{
+  // default pattern, scheduler will use all p2p node include dfdaemon and cdn peers
+  P2P = 0;
+  // cdn pattern, scheduler will use only cdn peers
+  CDN = 1;
+  // source pattern, scheduler will say back source when there is no available peer in p2p
+  SOURCE = 2;
+}
+
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
   string url = 1 [(validate.rules).string.uri = true];
@@ -37,6 +46,8 @@ message PeerTaskRequest{
   base.HostLoad host_load = 5;
   // whether this request is caused by migration
   bool is_migrating = 6;
+  // pattern includes p2p, cdn and Source
+  Pattern pattern = 7;
 }
 
 message RegisterResult{

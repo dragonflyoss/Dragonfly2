@@ -17,7 +17,7 @@
 package manager
 
 const (
-	cdnCachePath = "/tmp/cdn/download"
+	seedPeerDataPath = "/var/lib/dragonfly/data"
 
 	managerService = "dragonfly-manager.dragonfly-system.svc"
 	managerPort    = "8080"
