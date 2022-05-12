@@ -642,6 +642,10 @@ github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182aff
 github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369/go.mod h1:BSXmuO+STAnVfrANrmjBb36TMTDstsz7MSK+HVaYKv4=
 github.com/mcuadros/go-gin-prometheus v0.1.0 h1:JNoWKvw/u9tyRJ8BL9ZJvfiXU8IHUw8gCvcf/5L8tnI=
 github.com/mcuadros/go-gin-prometheus v0.1.0/go.mod h1:ezECAsiHtCRIa+6Ii8THg7G7RJvpO4S19d499UkEE3s=
+github.com/mdlayher/socket v0.2.0 h1:EY4YQd6hTAg2tcXF84p5DTHazShE50u5HeBzBaNgjkA=
+github.com/mdlayher/socket v0.2.0/go.mod h1:QLlNPkFR88mRUNQIzRBMfXxwKal8H7u1h3bL1CV+f0E=
+github.com/mdlayher/vsock v1.1.1 h1:8lFuiXQnmICBrCIIA9PMgVSke6Fg6V4+r0v7r55k88I=
+github.com/mdlayher/vsock v1.1.1/go.mod h1:Y43jzcy7KM3QB+/FK15pfqGxDMCMzUXWegEfIbSM18U=
 github.com/miekg/dns v1.0.14/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nrg=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db h1:62I3jR2EmQ4l5rM/4FEfDWcRD+abF5XlKShorW5LRoQ=
