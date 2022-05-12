@@ -31,27 +31,27 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/service"
 )
 
-// Server is grpc server
+// Server is grpc server.
 type Server struct {
-	// Service interface
+	// Service interface.
 	service *service.Service
 
-	// GRPC UnimplementedSchedulerServer interface
+	// GRPC UnimplementedSchedulerServer interface.
 	scheduler.UnimplementedSchedulerServer
 }
 
-// New returns a new transparent scheduler server from the given options
+// New returns a new transparent scheduler server from the given options.
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	svr := &Server{service: service}
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 
-	// Register servers on grpc server
+	// Register servers on grpc server.
 	scheduler.RegisterSchedulerServer(grpcServer, svr)
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 
-// RegisterPeerTask registers peer and triggers CDN download task
+// RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	bizTag := resource.DefaultBizTag
 	if req.UrlMeta.Tag != "" {
@@ -69,7 +69,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 	return resp, err
 }
 
-// ReportPieceResult handles the piece information reported by dfdaemon
+// ReportPieceResult handles the piece information reported by dfdaemon.
 func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
 	metrics.ConcurrentScheduleGauge.Inc()
 	defer metrics.ConcurrentScheduleGauge.Dec()
@@ -77,12 +77,12 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 	return s.service.ReportPieceResult(stream)
 }
 
-// ReportPeerResult handles peer result reported by dfdaemon
+// ReportPeerResult handles peer result reported by dfdaemon.
 func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.ReportPeerResult(ctx, req)
 }
 
-// StatTask checks if the given task exists
+// StatTask checks if the given task exists.
 func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (*scheduler.Task, error) {
 	metrics.StatTaskCount.Inc()
 	task, err := s.service.StatTask(ctx, req)
@@ -94,7 +94,7 @@ func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (
 	return task, nil
 }
 
-// AnnounceTask informs scheduler a peer has completed task
+// AnnounceTask informs scheduler a peer has completed task.
 func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
 	metrics.AnnounceCount.Inc()
 	if err := s.service.AnnounceTask(ctx, req); err != nil {
@@ -105,7 +105,7 @@ func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRe
 	return new(empty.Empty), nil
 }
 
-// LeaveTask makes the peer unschedulable
+// LeaveTask makes the peer unschedulable.
 func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }

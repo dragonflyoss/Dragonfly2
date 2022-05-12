@@ -28,38 +28,38 @@ import (
 )
 
 type Config struct {
-	// Base options
+	// Base options.
 	base.Options `yaml:",inline" mapstructure:",squash"`
 
-	// Scheduler configuration
+	// Scheduler configuration.
 	Scheduler *SchedulerConfig `yaml:"scheduler" mapstructure:"scheduler"`
 
-	// Server configuration
+	// Server configuration.
 	Server *ServerConfig `yaml:"server" mapstructure:"server"`
 
-	// Dynconfig configuration
+	// Dynconfig configuration.
 	DynConfig *DynConfig `yaml:"dynConfig" mapstructure:"dynConfig"`
 
-	// Manager configuration
+	// Manager configuration.
 	Manager *ManagerConfig `yaml:"manager" mapstructure:"manager"`
 
-	// CDN configuration
-	CDN *CDNConfig `yaml:"cdn" mapstructure:"cdn"`
+	// SeedPeer configuration.
+	SeedPeer *SeedPeerConfig `yaml:"seedPeer" mapstructure:"seedPeer"`
 
-	// Host configuration
+	// Host configuration.
 	Host *HostConfig `yaml:"host" mapstructure:"host"`
 
-	// Job configuration
+	// Job configuration.
 	Job *JobConfig `yaml:"job" mapstructure:"job"`
 
-	// Storage configuration
+	// Storage configuration.
 	Storage *StorageConfig `yaml:"storage" mapstructure:"storage"`
 
-	// Metrics configuration
+	// Metrics configuration.
 	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
-// New default configuration
+// New default configuration.
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
@@ -93,7 +93,7 @@ func New() *Config {
 				Interval: 5 * time.Second,
 			},
 		},
-		CDN: &CDNConfig{
+		SeedPeer: &SeedPeerConfig{
 			Enable: true,
 		},
 		Job: &JobConfig{
@@ -119,7 +119,7 @@ func New() *Config {
 	}
 }
 
-// Validate config parameters
+// Validate config parameters.
 func (c *Config) Validate() error {
 	if c.Server == nil {
 		return errors.New("server requires parameter server")
@@ -245,81 +245,78 @@ func (c *Config) Validate() error {
 }
 
 type ServerConfig struct {
-	// Server ip
+	// Server ip.
 	IP string `yaml:"ip" mapstructure:"ip"`
 
-	// Server hostname
+	// Server hostname.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1.
 	Listen string `yaml:"listen" mapstructure:"listen"`
 
-	// Server port
+	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
 
-	// Server dynamic config cache directory
+	// Server dynamic config cache directory.
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
 
-	// Server log directory
+	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 }
 
 type SchedulerConfig struct {
-	// Scheduling algorithm used by the scheduler
+	// Scheduling algorithm used by the scheduler.
 	Algorithm string `yaml:"algorithm" mapstructure:"algorithm"`
 
-	// Single task allows the client to back-to-source count
+	// Single task allows the client to back-to-source count.
 	BackSourceCount int `yaml:"backSourceCount" mapstructure:"backSourceCount"`
 
-	// Retry scheduling back-to-source limit times
+	// Retry scheduling back-to-source limit times.
 	RetryBackSourceLimit int `yaml:"retryBackSourceLimit" mapstructure:"retryBackSourceLimit"`
 
-	// Retry scheduling limit times
+	// Retry scheduling limit times.
 	RetryLimit int `yaml:"retryLimit" mapstructure:"retryLimit"`
 
-	// Retry scheduling interval
+	// Retry scheduling interval.
 	RetryInterval time.Duration `yaml:"retryInterval" mapstructure:"retryInterval"`
 
-	// Task and peer gc configuration
+	// Task and peer gc configuration.
 	GC *GCConfig `yaml:"gc" mapstructure:"gc"`
 }
 
 type GCConfig struct {
-	// Peer gc interval
+	// Peer gc interval.
 	PeerGCInterval time.Duration `yaml:"peerGCInterval" mapstructure:"peerGCInterval"`
 
-	// Peer time to live
+	// Peer time to live.
 	PeerTTL time.Duration `yaml:"peerTTL" mapstructure:"peerTTL"`
 
-	// Task gc interval
+	// Task gc interval.
 	TaskGCInterval time.Duration `yaml:"taskGCInterval" mapstructure:"taskGCInterval"`
 
-	// Task time to live
+	// Task time to live.
 	TaskTTL time.Duration `yaml:"taskTTL" mapstructure:"taskTTL"`
 
-	// Host gc interval
+	// Host gc interval.
 	HostGCInterval time.Duration `yaml:"hostGCInterval" mapstructure:"hostGCInterval"`
 
-	// Host time to live
+	// Host time to live.
 	HostTTL time.Duration `yaml:"hostTTL" mapstructure:"hostTTL"`
 }
 
 type DynConfig struct {
 	// RefreshInterval is refresh interval for manager cache.
 	RefreshInterval time.Duration `yaml:"refreshInterval" mapstructure:"refreshInterval"`
-
-	// CDNDir is cdn dir path.
-	CDNDir string `yaml:"cdnDir" mapstructure:"cdnDir"`
 }
 
 type HostConfig struct {
-	// IDC for scheduler
+	// IDC for scheduler.
 	IDC string `mapstructure:"idc" yaml:"idc"`
 
-	// NetTopology for scheduler
+	// NetTopology for scheduler.
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
 
-	// Location for scheduler
+	// Location for scheduler.
 	Location string `mapstructure:"location" yaml:"location"`
 }
 
@@ -330,73 +327,73 @@ type ManagerConfig struct {
 	// SchedulerClusterID is scheduler cluster id.
 	SchedulerClusterID uint `yaml:"schedulerClusterID" mapstructure:"schedulerClusterID"`
 
-	// KeepAlive configuration
+	// KeepAlive configuration.
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
-type CDNConfig struct {
-	// Enable is to enable cdn as P2P peer
+type SeedPeerConfig struct {
+	// Enable is to enable seed peer as P2P peer.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 }
 
 type KeepAliveConfig struct {
-	// Keep alive interval
+	// Keep alive interval.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 type JobConfig struct {
-	// Enable job service
+	// Enable job service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Number of workers in global queue
+	// Number of workers in global queue.
 	GlobalWorkerNum uint `yaml:"globalWorkerNum" mapstructure:"globalWorkerNum"`
 
-	// Number of workers in scheduler queue
+	// Number of workers in scheduler queue.
 	SchedulerWorkerNum uint `yaml:"schedulerWorkerNum" mapstructure:"schedulerWorkerNum"`
 
-	// Number of workers in local queue
+	// Number of workers in local queue.
 	LocalWorkerNum uint `yaml:"localWorkerNum" mapstructure:"localWorkerNum"`
 
-	// Redis configuration
+	// Redis configuration.
 	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type StorageConfig struct {
-	// MaxSize sets the maximum size in megabytes of storage file
+	// MaxSize sets the maximum size in megabytes of storage file.
 	MaxSize int `yaml:"maxSize" mapstructure:"maxSize"`
 
-	// MaxBackups sets the maximum number of storage files to retain
+	// MaxBackups sets the maximum number of storage files to retain.
 	MaxBackups int `yaml:"maxBackups" mapstructure:"maxBackups"`
 
 	// BufferSize sets the size of buffer container,
-	// if the buffer is full, write all the records in the buffer to the file
+	// if the buffer is full, write all the records in the buffer to the file.
 	BufferSize int `yaml:"bufferSize" mapstructure:"bufferSize"`
 }
 
 type RedisConfig struct {
-	// Server hostname
+	// Server hostname.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server port
+	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
 
-	// Server password
+	// Server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
-	// Broker database name
+	// Broker database name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
 
-	// Backend database name
+	// Backend database name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type MetricsConfig struct {
-	// Enable metrics service
+	// Enable metrics service.
 	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Metrics service address
+	// Metrics service address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
-	// Enable peer host metrics
+	// Enable peer host metrics.
 	EnablePeerHost bool `yaml:"enablePeerHost" mapstructure:"enablePeerHost"`
 }

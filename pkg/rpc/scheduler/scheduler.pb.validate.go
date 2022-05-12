@@ -113,6 +113,8 @@ func (m *PeerTaskRequest) Validate() error {
 
 	// no validation rules for IsMigrating
 
+	// no validation rules for Pattern
+
 	return nil
 }
 

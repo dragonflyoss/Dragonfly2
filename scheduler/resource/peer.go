@@ -36,72 +36,72 @@ import (
 )
 
 const (
-	// Default value of biz tag
+	// Default value of biz tag.
 	DefaultBizTag = "unknow"
 
-	// Download tiny file timeout
+	// Download tiny file timeout.
 	downloadTinyFileContextTimeout = 2 * time.Minute
 )
 
 const (
-	// Peer has been created but did not start running
+	// Peer has been created but did not start running.
 	PeerStatePending = "Pending"
 
-	// Peer successfully registered as tiny scope size
+	// Peer successfully registered as tiny scope size.
 	PeerStateReceivedTiny = "ReceivedTiny"
 
-	// Peer successfully registered as small scope size
+	// Peer successfully registered as small scope size.
 	PeerStateReceivedSmall = "ReceivedSmall"
 
-	// Peer successfully registered as normal scope size
+	// Peer successfully registered as normal scope size.
 	PeerStateReceivedNormal = "ReceivedNormal"
 
-	// Peer is downloading resources from peer
+	// Peer is downloading resources from peer.
 	PeerStateRunning = "Running"
 
-	// Peer is downloading resources from back-to-source
+	// Peer is downloading resources from back-to-source.
 	PeerStateBackToSource = "BackToSource"
 
-	// Peer has been downloaded successfully
+	// Peer has been downloaded successfully.
 	PeerStateSucceeded = "Succeeded"
 
-	// Peer has been downloaded failed
+	// Peer has been downloaded failed.
 	PeerStateFailed = "Failed"
 
-	// Peer has been left
+	// Peer has been left.
 	PeerStateLeave = "Leave"
 )
 
 const (
-	// Peer is registered as tiny scope size
+	// Peer is registered as tiny scope size.
 	PeerEventRegisterTiny = "RegisterTiny"
 
-	// Peer is registered as small scope size
+	// Peer is registered as small scope size.
 	PeerEventRegisterSmall = "RegisterSmall"
 
-	// Peer is registered as normal scope size
+	// Peer is registered as normal scope size.
 	PeerEventRegisterNormal = "RegisterNormal"
 
-	// Peer is downloading
+	// Peer is downloading.
 	PeerEventDownload = "Download"
 
-	// Peer is downloading from back-to-source
+	// Peer is downloading from back-to-source.
 	PeerEventDownloadFromBackToSource = "DownloadFromBackToSource"
 
-	// Peer downloaded successfully
+	// Peer downloaded successfully.
 	PeerEventDownloadSucceeded = "DownloadSucceeded"
 
-	// Peer downloaded failed
+	// Peer downloaded failed.
 	PeerEventDownloadFailed = "DownloadFailed"
 
-	// Peer leaves
+	// Peer leaves.
 	PeerEventLeave = "Leave"
 )
 
-// PeerOption is a functional option for configuring the peer
+// PeerOption is a functional option for configuring the peer.
 type PeerOption func(p *Peer) *Peer
 
-// WithBizTag sets peer's BizTag
+// WithBizTag sets peer's BizTag.
 func WithBizTag(bizTag string) PeerOption {
 	return func(p *Peer) *Peer {
 		p.BizTag = bizTag
@@ -110,73 +110,73 @@ func WithBizTag(bizTag string) PeerOption {
 }
 
 type Peer struct {
-	// ID is peer id
+	// ID is peer id.
 	ID string
 
-	// BizTag is peer biz tag
+	// BizTag is peer biz tag.
 	BizTag string
 
-	// Pieces is piece bitset
+	// Pieces is piece bitset.
 	Pieces *bitset.BitSet
 
-	// pieceCosts is piece downloaded time
+	// pieceCosts is piece downloaded time.
 	pieceCosts []int64
 
-	// Stream is grpc stream instance
+	// Stream is grpc stream instance.
 	Stream *atomic.Value
 
-	// Task state machine
+	// Task state machine.
 	FSM *fsm.FSM
 
-	// Task is peer task
+	// Task is peer task.
 	Task *Task
 
-	// Host is peer host
+	// Host is peer host.
 	Host *Host
 
-	// Parent is peer parent
+	// Parent is peer parent.
 	Parent *atomic.Value
 
-	// Children is peer children
+	// Children is peer children.
 	Children *sync.Map
 
-	// ChildCount is child count
+	// ChildCount is child count.
 	ChildCount *atomic.Int32
 
-	// StealPeers is steal peer ids
+	// StealPeers is steal peer ids.
 	StealPeers set.SafeSet
 
-	// BlockPeers is bad peer ids
+	// BlockPeers is bad peer ids.
 	BlockPeers set.SafeSet
 
-	// NeedBackToSource needs downloaded from source
+	// NeedBackToSource needs downloaded from source.
 	//
 	// When peer is registering, at the same time,
-	// scheduler needs to create the new corresponding task and the cdn is disabled,
-	// NeedBackToSource is set to true
+	// scheduler needs to create the new corresponding task and the seed peer is disabled,
+	// NeedBackToSource is set to true.
 	NeedBackToSource *atomic.Bool
 
-	// IsBackToSource is downloaded from source
+	// IsBackToSource is downloaded from source.
 	//
 	// When peer is scheduling and NeedBackToSource is true,
 	// scheduler needs to return Code_SchedNeedBackSource and
-	// IsBackToSource is set to true
+	// IsBackToSource is set to true.
 	IsBackToSource *atomic.Bool
 
-	// CreateAt is peer create time
+	// CreateAt is peer create time.
 	CreateAt *atomic.Time
 
-	// UpdateAt is peer update time
+	// UpdateAt is peer update time.
 	UpdateAt *atomic.Time
 
-	// Peer mutex
+	// Peer mutex.
 	mu *sync.RWMutex
 
-	// Peer log
+	// Peer log.
 	Log *logger.SugaredLoggerOnWith
 }
 
-// New Peer instance
+// New Peer instance.
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:               id,
@@ -199,7 +199,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Log:              logger.WithTaskAndPeerID(task.ID, id),
 	}
 
-	// Initialize state machine
+	// Initialize state machine.
 	p.FSM = fsm.NewFSM(
 		PeerStatePending,
 		fsm.Events{
@@ -282,7 +282,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	return p
 }
 
-// LoadChild return peer child for a key
+// LoadChild return peer child for a key.
 func (p *Peer) LoadChild(key string) (*Peer, bool) {
 	rawChild, ok := p.Children.Load(key)
 	if !ok {
@@ -292,7 +292,7 @@ func (p *Peer) LoadChild(key string) (*Peer, bool) {
 	return rawChild.(*Peer), ok
 }
 
-// StoreChild set peer child
+// StoreChild set peer child.
 func (p *Peer) StoreChild(child *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -305,7 +305,7 @@ func (p *Peer) StoreChild(child *Peer) {
 	child.Parent.Store(p)
 }
 
-// DeleteChild deletes peer child for a key
+// DeleteChild deletes peer child for a key.
 func (p *Peer) DeleteChild(key string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -323,7 +323,7 @@ func (p *Peer) DeleteChild(key string) {
 	child.Parent = &atomic.Value{}
 }
 
-// LoadParent return peer parent
+// LoadParent return peer parent.
 func (p *Peer) LoadParent() (*Peer, bool) {
 	rawParent := p.Parent.Load()
 	if rawParent == nil {
@@ -333,7 +333,7 @@ func (p *Peer) LoadParent() (*Peer, bool) {
 	return rawParent.(*Peer), true
 }
 
-// StoreParent set peer parent
+// StoreParent set peer parent.
 func (p *Peer) StoreParent(parent *Peer) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -345,7 +345,7 @@ func (p *Peer) StoreParent(parent *Peer) {
 	}
 }
 
-// DeleteParent deletes peer parent
+// DeleteParent deletes peer parent.
 func (p *Peer) DeleteParent() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -362,13 +362,13 @@ func (p *Peer) DeleteParent() {
 	}
 }
 
-// ReplaceParent replaces peer parent
+// ReplaceParent replaces peer parent.
 func (p *Peer) ReplaceParent(parent *Peer) {
 	p.DeleteParent()
 	p.StoreParent(parent)
 }
 
-// Depth represents depth of tree
+// Depth represents depth of tree.
 func (p *Peer) Depth() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -378,7 +378,7 @@ func (p *Peer) Depth() int {
 	for node != nil {
 		depth++
 
-		if node.Host.IsCDN {
+		if node.Host.Type != HostTypeNormal {
 			break
 		}
 
@@ -387,7 +387,7 @@ func (p *Peer) Depth() int {
 			break
 		}
 
-		// Prevent traversal tree from infinite loop
+		// Prevent traversal tree from infinite loop.
 		if p.ID == parent.ID {
 			p.Log.Error("tree structure produces an infinite loop")
 			break
@@ -399,7 +399,7 @@ func (p *Peer) Depth() int {
 	return depth
 }
 
-// Ancestors returns peer's ancestors
+// Ancestors returns peer's ancestors.
 func (p *Peer) Ancestors() []string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -412,7 +412,7 @@ func (p *Peer) Ancestors() []string {
 			return ancestors
 		}
 
-		// Prevent traversal tree from infinite loop
+		// Prevent traversal tree from infinite loop.
 		if parent.ID == node.ID {
 			p.Log.Error("tree structure produces an infinite loop")
 			return ancestors
@@ -425,17 +425,17 @@ func (p *Peer) Ancestors() []string {
 	return ancestors
 }
 
-// IsDescendant determines whether it is ancestor of peer
+// IsDescendant determines whether it is ancestor of peer.
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
 	return p.isDescendant(ancestor, p)
 }
 
-// IsAncestor determines whether it is descendant of peer
+// IsAncestor determines whether it is descendant of peer.
 func (p *Peer) IsAncestor(descendant *Peer) bool {
 	return p.isDescendant(p, descendant)
 }
 
-// isDescendant determines whether it is ancestor of peer
+// isDescendant determines whether it is ancestor of peer.
 func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -451,7 +451,7 @@ func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
 			return true
 		}
 
-		// Prevent traversal tree from infinite loop
+		// Prevent traversal tree from infinite loop.
 		if parent.ID == descendant.ID {
 			p.Log.Error("tree structure produces an infinite loop")
 			return true
@@ -463,17 +463,17 @@ func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
 	return false
 }
 
-// AppendPieceCost append piece cost to costs slice
+// AppendPieceCost append piece cost to costs slice.
 func (p *Peer) AppendPieceCost(cost int64) {
 	p.pieceCosts = append(p.pieceCosts, cost)
 }
 
-// PieceCosts return piece costs slice
+// PieceCosts return piece costs slice.
 func (p *Peer) PieceCosts() []int64 {
 	return p.pieceCosts
 }
 
-// LoadStream return grpc stream
+// LoadStream return grpc stream.
 func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
 	rawStream := p.Stream.Load()
 	if rawStream == nil {
@@ -483,17 +483,17 @@ func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) 
 	return rawStream.(scheduler.Scheduler_ReportPieceResultServer), true
 }
 
-// StoreStream set grpc stream
+// StoreStream set grpc stream.
 func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
 	p.Stream.Store(stream)
 }
 
-// DeleteStream deletes grpc stream
+// DeleteStream deletes grpc stream.
 func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
 }
 
-// DownloadTinyFile downloads tiny file from peer
+// DownloadTinyFile downloads tiny file from peer.
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
 	defer cancel()
@@ -521,7 +521,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 
 	// The HTTP 206 Partial Content success status response code indicates that
 	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
-	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206
+	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206.
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		return []byte{}, fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}

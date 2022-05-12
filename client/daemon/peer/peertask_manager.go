@@ -238,6 +238,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 		PeerHost:    ptm.host,
 		HostLoad:    request.HostLoad,
 		IsMigrating: request.IsMigrating,
+		Pattern:     request.Pattern,
 		UrlMeta: &base.UrlMeta{
 			Digest: request.UrlMeta.Digest,
 			Tag:    request.UrlMeta.Tag,
@@ -309,6 +310,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		PeerHost:    ptm.host,
 		HostLoad:    nil,
 		IsMigrating: false,
+		Pattern:     req.Pattern,
 	}
 
 	if ptm.enableMultiplex {

@@ -79,6 +79,7 @@ enum SizeScope{
   // size <= 128 byte and be plain type
   TINY = 2;
 }
+
 message GrpcDfError {
   Code code = 1;
   string message = 2;
