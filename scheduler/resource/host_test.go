@@ -28,7 +28,7 @@ import (
 
 var (
 	mockRawHost = &scheduler.PeerHost{
-		Uuid:           idgen.HostID("hostname", 8003),
+		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -40,7 +40,7 @@ var (
 	}
 
 	mockRawSeedHost = &scheduler.PeerHost{
-		Uuid:           idgen.SeedHostID("hostname", 8003),
+		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -64,7 +64,7 @@ func TestHost_NewHost(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
 				assert.Equal(host.Type, HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
 				assert.Equal(host.Port, mockRawHost.RpcPort)
@@ -87,7 +87,7 @@ func TestHost_NewHost(t *testing.T) {
 			options: []HostOption{WithHostType(HostTypeSuperSeed)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawSeedHost.Uuid)
+				assert.Equal(host.ID, mockRawSeedHost.Id)
 				assert.Equal(host.Type, HostTypeSuperSeed)
 				assert.Equal(host.IP, mockRawSeedHost.Ip)
 				assert.Equal(host.Port, mockRawSeedHost.RpcPort)
@@ -110,7 +110,7 @@ func TestHost_NewHost(t *testing.T) {
 			options: []HostOption{WithUploadLoadLimit(200)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
 				assert.Equal(host.Type, HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
 				assert.Equal(host.Port, mockRawHost.RpcPort)

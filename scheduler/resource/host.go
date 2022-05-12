@@ -120,7 +120,7 @@ type Host struct {
 // New host instance.
 func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 	h := &Host{
-		ID:              rawHost.Uuid,
+		ID:              rawHost.Id,
 		Type:            HostTypeNormal,
 		IP:              rawHost.Ip,
 		Hostname:        rawHost.HostName,
@@ -136,7 +136,7 @@ func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
 		PeerCount:       atomic.NewInt32(0),
 		CreateAt:        atomic.NewTime(time.Now()),
 		UpdateAt:        atomic.NewTime(time.Now()),
-		Log:             logger.WithHostID(rawHost.Uuid),
+		Log:             logger.WithHostID(rawHost.Id),
 	}
 
 	for _, opt := range options {

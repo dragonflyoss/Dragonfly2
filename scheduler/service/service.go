@@ -532,7 +532,7 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 
 // registerHost creates a new host or reuses a previous host.
 func (s *Service) registerHost(ctx context.Context, rawHost *rpcscheduler.PeerHost) *resource.Host {
-	host, ok := s.resource.HostManager().Load(rawHost.Uuid)
+	host, ok := s.resource.HostManager().Load(rawHost.Id)
 	if !ok {
 		// Get scheduler cluster client config by manager.
 		var options []resource.HostOption

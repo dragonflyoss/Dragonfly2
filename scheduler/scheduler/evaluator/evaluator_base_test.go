@@ -30,7 +30,7 @@ import (
 
 var (
 	mockRawHost = &scheduler.PeerHost{
-		Uuid:           idgen.HostID("hostname", 8003),
+		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,

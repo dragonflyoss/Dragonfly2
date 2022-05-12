@@ -103,7 +103,7 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 			continue
 		}
 
-		id := idgen.SeedHostID(seedPeer.Hostname, seedPeer.Port)
+		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
 		if host, ok := sc.hostManager.Load(id); ok {
 			host.LeavePeers()
 			sc.hostManager.Delete(id)
@@ -135,7 +135,7 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 		if seedPeer.IsCDN {
 			id := idgen.CDNHostID(seedPeer.Hostname, seedPeer.Port)
 			hosts[id] = NewHost(&rpcscheduler.PeerHost{
-				Uuid:        id,
+				Id:          id,
 				Ip:          seedPeer.IP,
 				RpcPort:     seedPeer.Port,
 				DownPort:    seedPeer.DownloadPort,
@@ -148,9 +148,9 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 			continue
 		}
 
-		id := idgen.SeedHostID(seedPeer.Hostname, seedPeer.Port)
+		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
 		hosts[id] = NewHost(&rpcscheduler.PeerHost{
-			Uuid:        id,
+			Id:          id,
 			Ip:          seedPeer.IP,
 			RpcPort:     seedPeer.Port,
 			DownPort:    seedPeer.DownloadPort,
@@ -226,7 +226,7 @@ func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedP
 				continue
 			}
 
-			if idgen.SeedHostID(x.Hostname, x.Port) == idgen.SeedHostID(y.Hostname, y.Port) {
+			if idgen.HostID(x.Hostname, x.Port) == idgen.HostID(y.Hostname, y.Port) {
 				found = true
 				break
 			}
