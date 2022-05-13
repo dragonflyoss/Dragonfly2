@@ -18,9 +18,14 @@ package digestutils
 
 import (
 	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"hash"
 	"io"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -46,18 +51,38 @@ type DigestReader interface {
 
 // TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
 
-func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) io.Reader {
-	var d string
+func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) (io.Reader, error) {
+	var (
+		d          string
+		hashMethod hash.Hash
+	)
 	if len(digest) > 0 {
 		d = digest[0]
+	}
+	ds := strings.Split(d, ":")
+	if len(ds) == 2 {
+		d = ds[1]
+		switch ds[0] {
+		case "sha1":
+			hashMethod = sha1.New()
+		case "sha256":
+			hashMethod = sha256.New()
+		case "sha512":
+			hashMethod = sha512.New()
+		case "md5":
+			hashMethod = md5.New()
+		default:
+			return nil, fmt.Errorf("unsupport digest method: %s", ds[0])
+		}
+	} else {
+		hashMethod = md5.New()
 	}
 	return &digestReader{
 		SugaredLoggerOnWith: log,
 		digest:              d,
-		// TODO support more digest method like sha1, sha256
-		hash: md5.New(),
-		r:    reader,
-	}
+		hash:                hashMethod,
+		r:                   reader,
+	}, nil
 }
 
 func (dr *digestReader) Read(p []byte) (int, error) {

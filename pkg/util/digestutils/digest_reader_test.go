@@ -42,7 +42,8 @@ func TestNewDigestReader(t *testing.T) {
 	digest := hex.EncodeToString(hash.Sum(nil)[:16])
 
 	buf := bytes.NewBuffer(testBytes)
-	reader := NewDigestReader(logger.With("test", "test"), buf, digest)
+	reader, err := NewDigestReader(logger.With("test", "test"), buf, digest)
+	assert.Nil(err)
 	data, err := io.ReadAll(reader)
 
 	assert.Nil(err)
