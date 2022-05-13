@@ -280,9 +280,11 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	}
 
 	if reuse == nil {
-		if request.Range == nil {
-			return nil, false
-		}
+		return nil, false
+
+		// if request.Range == nil {
+		// return nil, false
+		// }
 		// TODO, mock SeedTaskResponse for sub task
 		// for ranged request, check the parent task
 		//reuseRange = request.Range

@@ -17,7 +17,7 @@
 package manager
 
 const (
-	seedPeerDataPath = "/var/lib/dragonfly/data"
+	seedPeerDataPath = "/var/lib/dragonfly"
 
 	managerService = "dragonfly-manager.dragonfly-system.svc"
 	managerPort    = "8080"

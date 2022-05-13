@@ -1,7 +1,7 @@
 scheduler:
   image: d7yio/scheduler
   tag: latest
-  replicas: 2
+  replicas: 3
   resources:
     requests:
       cpu: "0"
