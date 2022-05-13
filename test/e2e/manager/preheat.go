@@ -182,6 +182,10 @@ func checkPreheatResult(seedPeerPods [3]*e2eutil.PodExec, seedPeerTaskID string)
 		Expect(err).NotTo(HaveOccurred())
 
 		// calculate digest of downloaded file
+		out1, err1 := seedPeer.Command("sha256sum", fmt.Sprintf("%s/*", seedPeerDataPath)).CombinedOutput()
+		fmt.Println("preheat sha256sum: " + string(out1))
+		fmt.Println("preheat sha256sum err: " + err1.Error())
+
 		out, err := seedPeer.Command("sha256sum", fmt.Sprintf("%s/*/%s", seedPeerDataPath, "data")).CombinedOutput()
 		fmt.Println("preheat sha256sum: " + string(out))
 		Expect(err).NotTo(HaveOccurred())

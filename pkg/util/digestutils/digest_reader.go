@@ -106,5 +106,5 @@ func (dr *digestReader) Read(p []byte) (int, error) {
 
 // Digest returns the digest of contents.
 func (dr *digestReader) Digest() string {
-	return hex.EncodeToString(dr.hash.Sum(nil)[:16])
+	return hex.EncodeToString(dr.hash.Sum(nil))
 }
