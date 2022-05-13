@@ -171,29 +171,26 @@ func waitForDone(preheat *model.Job, pod *e2eutil.PodExec) bool {
 }
 
 func checkPreheatResult(seedPeerPods [3]*e2eutil.PodExec, seedPeerTaskID string) string {
-	var sha256sum2 string
+	var sha256sum string
 	for _, seedPeer := range seedPeerPods {
-		if _, err := seedPeer.Command("ls", seedPeerDataPath).CombinedOutput(); err != nil {
+		taskDir := fmt.Sprintf("%s/%s", seedPeerDataPath, seedPeerTaskID)
+		files, err := seedPeer.Command("ls", taskDir).CombinedOutput()
+		if err != nil {
 			// if the directory does not exist, skip this seed peer
+			fmt.Printf("directory %s does not exist: %s\n", taskDir, err.Error())
 			continue
 		}
-
-		_, err := seedPeer.Command("ls", fmt.Sprintf("%s/%s", seedPeerDataPath, seedPeerTaskID)).CombinedOutput()
-		Expect(err).NotTo(HaveOccurred())
+		fmt.Printf("ls %s: %s\n", taskDir, files)
 
 		// calculate digest of downloaded file
-		out1, err1 := seedPeer.Command("sha256sum", fmt.Sprintf("%s/*", seedPeerDataPath)).CombinedOutput()
-		fmt.Println("preheat sha256sum: " + string(out1))
-		fmt.Println("preheat sha256sum err: " + err1.Error())
-
-		out, err := seedPeer.Command("sha256sum", fmt.Sprintf("%s/*/%s", seedPeerDataPath, "data")).CombinedOutput()
+		out, err := seedPeer.Command("sh", "-c", fmt.Sprintf("sha256sum %s/*/%s", taskDir, "data")).CombinedOutput()
 		fmt.Println("preheat sha256sum: " + string(out))
 		Expect(err).NotTo(HaveOccurred())
-		sha256sum2 = strings.Split(string(out), " ")[0]
+		sha256sum = strings.Split(string(out), " ")[0]
 		break
 	}
 
-	return sha256sum2
+	return sha256sum
 }
 
 // getSeedPeerExec get seed peer pods

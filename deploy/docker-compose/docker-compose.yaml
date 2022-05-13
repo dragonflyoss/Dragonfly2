@@ -49,6 +49,7 @@ services:
     depends_on:
       - manager
       - scheduler
+      - seed-peer
     container_name: dfdaemon
     network_mode: host
     restart: always
@@ -77,10 +78,11 @@ services:
       - /tmp/log/dragonfly:/var/log/dragonfly
       - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml:ro
 
-  seedPeer:
+  seed-peer:
     image: dragonflyoss/dfdaemon:v2.0.3-beta.1
     depends_on:
       - manager
+      - scheduler
     container_name: seed-peer
     network_mode: host
     restart: always
