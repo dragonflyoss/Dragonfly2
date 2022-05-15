@@ -9,7 +9,7 @@ proto_modules="base cdnsystem dfdaemon manager scheduler"
 echo "generate protos..."
 
 for module in ${proto_modules}; do
-  if docker run -v $PWD:/defs ${PROTOC_ALL_IMAGE} \
+  if docker run --rm -v $PWD:/defs ${PROTOC_ALL_IMAGE} \
     -d ${PROTO_PATH}/$module -i . \
     -l ${LANGUAGE} -o . \
     --go-source-relative \
