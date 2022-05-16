@@ -26,8 +26,13 @@ import (
 type NetworkType string
 
 const (
-	TCP  NetworkType = "tcp"
-	UNIX NetworkType = "unix"
+	TCP   NetworkType = "tcp"
+	UNIX  NetworkType = "unix"
+	VSOCK NetworkType = "vsock"
+
+	TCPEndpointPrefix   string = "dns:///"
+	UnixEndpointPrefix  string = "unix://"
+	VsockEndpointPrefix string = "vsock://"
 )
 
 type NetAddr struct {
@@ -39,9 +44,11 @@ type NetAddr struct {
 func (n NetAddr) GetEndpoint() string {
 	switch n.Type {
 	case UNIX:
-		return "unix://" + n.Addr
+		return UnixEndpointPrefix + n.Addr
+	case VSOCK:
+		return VsockEndpointPrefix + n.Addr
 	default:
-		return "dns:///" + n.Addr
+		return TCPEndpointPrefix + n.Addr
 	}
 }
 
