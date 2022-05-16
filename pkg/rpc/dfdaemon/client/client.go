@@ -41,10 +41,15 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (DaemonClie
 	if len(addrs) == 0 {
 		return nil, errors.New("address list of daemon is empty")
 	}
+
+	dialOpts, err := rpc.VsockDialerOption(addrs, opts)
+	if err != nil {
+		return nil, err
+	}
 	dc := &daemonClient{
 		rpc.NewConnection(context.Background(), "daemon-static", addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
-			rpc.WithDialOption(opts),
+			rpc.WithDialOption(dialOpts),
 		}),
 	}
 	return dc, nil
