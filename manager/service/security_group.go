@@ -118,24 +118,6 @@ func (s *service) AddSeedPeerClusterToSecurityGroup(ctx context.Context, id, see
 	return nil
 }
 
-func (s *service) AddCDNClusterToSecurityGroup(ctx context.Context, id, cdnClusterID uint) error {
-	securityGroup := model.SecurityGroup{}
-	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {
-		return err
-	}
-
-	cdnCluster := model.CDNCluster{}
-	if err := s.db.WithContext(ctx).First(&cdnCluster, cdnClusterID).Error; err != nil {
-		return err
-	}
-
-	if err := s.db.WithContext(ctx).Model(&securityGroup).Association("CDNClusters").Append(&cdnCluster); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *service) AddSecurityRuleToSecurityGroup(ctx context.Context, id, securityRuleID uint) error {
 	securityGroup := model.SecurityGroup{}
 	if err := s.db.WithContext(ctx).First(&securityGroup, id).Error; err != nil {

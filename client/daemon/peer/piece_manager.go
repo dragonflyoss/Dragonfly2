@@ -204,7 +204,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	}
 	if pm.calculateDigest {
 		pt.Log().Debugf("calculate digest")
-		reader = digestutils.NewDigestReader(pt.Log(), reader)
+		reader, _ = digestutils.NewDigestReader(pt.Log(), reader)
 	}
 	var n int64
 	result.Size, err = pt.GetStorage().WritePiece(
@@ -295,7 +295,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 
 	// calc total
 	if pm.calculateDigest {
-		reader = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
+		reader, err = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
+		if err != nil {
+			log.Errorf("init digest reader error: %s", err.Error())
+			return err
+		}
 	}
 	// we must calculate piece size
 	pieceSize := pm.computePieceSize(contentLength)
@@ -476,7 +480,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 
 	if pm.calculateDigest {
 		log.Debugf("calculate digest in processPieceFromFile")
-		reader = digestutils.NewDigestReader(log, r)
+		reader, _ = digestutils.NewDigestReader(log, r)
 	}
 	n, err := tsd.WritePiece(ctx,
 		&storage.WritePieceRequest{

@@ -26,6 +26,5 @@ type Application struct {
 	UserID            uint               `gorm:"comment:user id" json:"user_id"`
 	User              User               `json:"user"`
 	SeedPeerClusters  []SeedPeerCluster  `json:"seed_peer_clusters"`
-	CDNClusters       []CDNCluster       `json:"cdn_clusters"`
 	SchedulerClusters []SchedulerCluster `json:"scheduler_clusters"`
 }

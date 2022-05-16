@@ -49,7 +49,7 @@ var (
 		Algorithm:            evaluator.DefaultAlgorithm,
 	}
 	mockRawHost = &rpcscheduler.PeerHost{
-		Uuid:           idgen.HostID("hostname", 8003),
+		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -61,7 +61,7 @@ var (
 	}
 
 	mockRawSeedHost = &rpcscheduler.PeerHost{
-		Uuid:           idgen.SeedHostID("hostname", 8003),
+		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,

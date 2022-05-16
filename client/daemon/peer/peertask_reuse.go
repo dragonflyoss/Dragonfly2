@@ -88,7 +88,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	}
 
 	_, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))
@@ -220,7 +220,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanStreamTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerID))
@@ -294,9 +294,11 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	}
 
 	if reuse == nil {
-		if request.Range == nil {
-			return nil, false
-		}
+		return nil, false
+
+		// if request.Range == nil {
+		// return nil, false
+		// }
 		// TODO, mock SeedTaskResponse for sub task
 		// for ranged request, check the parent task
 		//reuseRange = request.Range
@@ -318,7 +320,7 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	}
 
 	ctx, span := tracer.Start(ctx, config.SpanReusePeerTask, trace.WithSpanKind(trace.SpanKindClient))
-	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Uuid))
+	span.SetAttributes(config.AttributePeerHost.String(ptm.host.Id))
 	span.SetAttributes(semconv.NetHostIPKey.String(ptm.host.Ip))
 	span.SetAttributes(config.AttributeTaskID.String(taskID))
 	span.SetAttributes(config.AttributePeerID.String(request.PeerId))

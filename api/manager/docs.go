@@ -242,94 +242,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/cdn-clusters/{cdn_cluster_id}": {
-            "put": {
-                "description": "Add CDN to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Add CDN to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete CDN to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Delete CDN to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/applications/{id}/scheduler-clusters/{scheduler_cluster_id}": {
             "put": {
                 "description": "Add Scheduler to Application",
@@ -493,538 +405,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters": {
-            "get": {
-                "description": "Get CDNClusters",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Get CDNClusters",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "current page",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 50,
-                        "minimum": 2,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "return max item count, default 10, max 50",
-                        "name": "per_page",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.CDNCluster"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "post": {
-                "description": "create by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Create CDNCluster",
-                "parameters": [
-                    {
-                        "description": "DNCluster",
-                        "name": "CDNCluster",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.CreateCDNClusterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}": {
-            "get": {
-                "description": "Get CDNCluster by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Get CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Destroy by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Destroy CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Update CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "CDNCluster",
-                        "name": "CDNCluster",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateCDNClusterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}/cdns/{cdn_id}": {
-            "put": {
-                "description": "Add CDN to CDNCluster",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Add Instance to CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn id",
-                        "name": "cdn_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}": {
-            "put": {
-                "description": "Add SchedulerCluster to CDNCluster",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Add SchedulerCluster to CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "scheduler cluster id",
-                        "name": "scheduler_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdns": {
-            "get": {
-                "description": "Get CDNs",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Get CDNs",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "current page",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 50,
-                        "minimum": 2,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "return max item count, default 10, max 50",
-                        "name": "per_page",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.CDN"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "post": {
-                "description": "create by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Create CDN",
-                "parameters": [
-                    {
-                        "description": "CDN",
-                        "name": "CDN",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.CreateCDNRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdns/{id}": {
-            "get": {
-                "description": "Get CDN by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Get CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Destroy by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Destroy CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Update CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "CDN",
-                        "name": "CDN",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateCDNRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
                     },
                     "400": {
                         "description": ""
@@ -2730,51 +2110,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/security-groups/{id}/cdn-clusters/{cdn_cluster_id}": {
-            "put": {
-                "description": "Add CDN to SecurityGroup",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "SecurityGroup"
-                ],
-                "summary": "Add CDN to SecurityGroup",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}": {
             "put": {
                 "description": "Add Scheduler to SecurityGroup",
@@ -4172,13 +3507,13 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
+                "created_at": {
+                    "type": "string"
                 },
                 "download_rate_limit": {
+                    "type": "integer"
+                },
+                "id": {
                     "type": "integer"
                 },
                 "name": {
@@ -4199,6 +3534,9 @@ const docTemplate = `{
                 "state": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 },
@@ -4210,116 +3548,22 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Assertion": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "policy": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "policyMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "rm": {},
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AssertionMap": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/model.Assertion"
-            }
-        },
-        "model.CDN": {
-            "type": "object",
-            "properties": {
-                "cdnclusterID": {
-                    "type": "integer"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "integer"
-                },
-                "state": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.CDNCluster": {
-            "type": "object",
-            "properties": {
-                "application_id": {
-                    "type": "integer"
-                },
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/model.JSONMap"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "jobs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Job"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "scheduler_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.SchedulerCluster"
-                    }
-                },
-                "security_group_id": {
-                    "type": "integer"
-                }
-            }
-        },
         "model.Config": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -4343,11 +3587,11 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "result": {
                     "$ref": "#/definitions/model.JSONMap"
@@ -4373,6 +3617,9 @@ const docTemplate = `{
                 "type": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -4390,10 +3637,19 @@ const docTemplate = `{
                 "client_secret": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4401,8 +3657,14 @@ const docTemplate = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -4424,6 +3686,9 @@ const docTemplate = `{
                 },
                 "state": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4436,17 +3701,17 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
-                },
                 "client_config": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4471,6 +3736,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SeedPeerCluster"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4480,6 +3748,12 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -4488,6 +3762,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityRule"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4497,8 +3774,14 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -4511,23 +3794,35 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
         "model.SeedPeer": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
                 },
+                "id": {
+                    "type": "integer"
+                },
                 "idc": {
                     "type": "string"
                 },
                 "ip": {
                     "type": "string"
+                },
+                "is_cdn": {
+                    "type": "boolean"
                 },
                 "location": {
                     "type": "string"
@@ -4546,6 +3841,9 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4560,6 +3858,12 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4584,6 +3888,9 @@ const docTemplate = `{
                 },
                 "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4596,8 +3903,14 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -4609,6 +3922,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "state": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4651,19 +3967,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.CDNClusterConfig": {
-            "type": "object",
-            "properties": {
-                "load_limit": {
-                    "type": "integer",
-                    "maximum": 5000,
-                    "minimum": 1
-                },
-                "net_topology": {
-                    "type": "string"
-                }
-            }
-        },
         "types.CreateApplicationRequest": {
             "type": "object",
             "required": [
@@ -4691,60 +3994,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.CreateCDNClusterRequest": {
-            "type": "object",
-            "required": [
-                "config",
-                "name"
-            ],
-            "properties": {
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/types.CDNClusterConfig"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.CreateCDNRequest": {
-            "type": "object",
-            "required": [
-                "cdn_cluster_id",
-                "download_port",
-                "host_name",
-                "ip",
-                "port"
-            ],
-            "properties": {
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
                     "type": "integer"
                 }
             }
@@ -4783,12 +4032,6 @@ const docTemplate = `{
                 },
                 "bio": {
                     "type": "string"
-                },
-                "cdn_cluster_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
                 },
                 "result": {
                     "type": "object",
@@ -4871,9 +4114,6 @@ const docTemplate = `{
             "properties": {
                 "bio": {
                     "type": "string"
-                },
-                "cdn_cluster_id": {
-                    "type": "integer"
                 },
                 "client_config": {
                     "$ref": "#/definitions/types.SchedulerClusterClientConfig"
@@ -5022,7 +4262,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "super",
+                        "strong",
+                        "weak"
+                    ]
                 }
             }
         },
@@ -5245,46 +4490,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UpdateCDNClusterRequest": {
-            "type": "object",
-            "properties": {
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/types.CDNClusterConfig"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.UpdateCDNRequest": {
-            "type": "object",
-            "properties": {
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.UpdateConfigRequest": {
             "type": "object",
             "properties": {
@@ -5342,9 +4547,6 @@ const docTemplate = `{
             "properties": {
                 "bio": {
                     "type": "string"
-                },
-                "cdn_cluster_id": {
-                    "type": "integer"
                 },
                 "client_config": {
                     "$ref": "#/definitions/types.SchedulerClusterClientConfig"
@@ -5465,7 +4667,12 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "super",
+                        "strong",
+                        "weak"
+                    ]
                 }
             }
         },

@@ -84,8 +84,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
 	// begin piece
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:   peerID,
-		HostUuid: hostID,
+		PeerId: peerID,
+		HostId: hostID,
 		PieceInfo: &base.PieceInfo{
 			PieceNum: common.BeginOfPiece,
 		},
@@ -108,8 +108,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	)
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
-			PeerId:   peerID,
-			HostUuid: hostID,
+			PeerId: peerID,
+			HostId: hostID,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:     int32(piece.PieceNum),
 				RangeStart:   piece.PieceRange.StartIndex,
@@ -156,7 +156,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	pieceSeed := &cdnsystem.PieceSeed{
 		PeerId:          peerID,
-		HostUuid:        hostID,
+		HostId:          hostID,
 		Done:            true,
 		ContentLength:   seedTask.SourceFileLength,
 		TotalPieceCount: seedTask.TotalPieceCount,

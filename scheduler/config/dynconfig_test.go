@@ -62,14 +62,6 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			sleep: func() {},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
-					Cdns: []*manager.CDN{
-						{
-							HostName:     "foo",
-							Ip:           "127.0.0.1",
-							Port:         8001,
-							DownloadPort: 8003,
-						},
-					},
 					SeedPeers: []*manager.SeedPeer{
 						{
 							HostName:     "bar",
@@ -82,10 +74,6 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(data.CDNs[0].Hostname, "foo")
-				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
-				assert.Equal(data.CDNs[0].Port, int32(8001))
-				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
 				assert.Equal(data.SeedPeers[0].Hostname, "bar")
 				assert.Equal(data.SeedPeers[0].IP, "127.0.0.1")
 				assert.Equal(data.SeedPeers[0].Port, int32(8001))
@@ -106,14 +94,6 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
 					m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
-						Cdns: []*manager.CDN{
-							{
-								HostName:     "foo",
-								Ip:           "127.0.0.1",
-								Port:         8001,
-								DownloadPort: 8003,
-							},
-						},
 						SeedPeers: []*manager.SeedPeer{
 							{
 								HostName:     "bar",
@@ -128,10 +108,6 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {
 				assert := assert.New(t)
-				assert.Equal(data.CDNs[0].Hostname, "foo")
-				assert.Equal(data.CDNs[0].IP, "127.0.0.1")
-				assert.Equal(data.CDNs[0].Port, int32(8001))
-				assert.Equal(data.CDNs[0].DownloadPort, int32(8003))
 				assert.Equal(data.SeedPeers[0].Hostname, "bar")
 				assert.Equal(data.SeedPeers[0].IP, "127.0.0.1")
 				assert.Equal(data.SeedPeers[0].Port, int32(8001))

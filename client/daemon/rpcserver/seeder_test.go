@@ -379,12 +379,11 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 		}
 	}()
 
-	client, err := cdnclient.GetClientByAddr([]dfnet.NetAddr{
+	client := cdnclient.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),
 		},
 	})
-	assert.Nil(err, "grpc dial should be ok")
 	return port, client
 }

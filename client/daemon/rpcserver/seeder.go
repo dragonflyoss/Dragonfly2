@@ -59,7 +59,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:         seedRequest.Url,
 			UrlMeta:     seedRequest.UrlMeta,
-			PeerId:      idgen.PeerID(s.server.peerHost.Ip),
+			PeerId:      idgen.SeedPeerID(s.server.peerHost.Ip),
 			PeerHost:    s.server.peerHost,
 			HostLoad:    nil,
 			IsMigrating: false,
@@ -94,8 +94,8 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 
 	err = seedsServer.Send(
 		&cdnsystem.PieceSeed{
-			PeerId:   req.PeerId,
-			HostUuid: req.PeerHost.Uuid,
+			PeerId: req.PeerId,
+			HostId: req.PeerHost.Id,
 			PieceInfo: &base.PieceInfo{
 				PieceNum: common.BeginOfPiece,
 			},
@@ -267,8 +267,8 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 
 func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
 	return cdnsystem.PieceSeed{
-		PeerId:   s.seedTaskRequest.PeerId,
-		HostUuid: s.seedTaskRequest.PeerHost.Uuid,
+		PeerId: s.seedTaskRequest.PeerId,
+		HostId: s.seedTaskRequest.PeerHost.Id,
 		PieceInfo: &base.PieceInfo{
 			PieceNum:     piece.PieceNum,
 			RangeStart:   piece.RangeStart,

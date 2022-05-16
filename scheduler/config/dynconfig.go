@@ -41,7 +41,6 @@ var (
 
 type DynconfigData struct {
 	SeedPeers        []*SeedPeer       `yaml:"seedPeers" mapstructure:"seedPeers" json:"seed_peers"`
-	CDNs             []*CDN            `yaml:"cdns" mapstructure:"cdns" json:"cdns"`
 	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
 }
 
@@ -49,6 +48,7 @@ type SeedPeer struct {
 	ID              uint             `yaml:"id" mapstructure:"id" json:"id"`
 	Hostname        string           `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
 	Type            string           `yaml:"type" mapstructure:"type" json:"type"`
+	IsCDN           bool             `yaml:"isCDN" mapstructure:"isCDN" json:"is_cdn"`
 	IDC             string           `yaml:"idc" mapstructure:"idc" json:"idc"`
 	NetTopology     string           `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
 	Location        string           `yaml:"location" mapstructure:"location" json:"location"`
@@ -72,34 +72,6 @@ func (c *SeedPeer) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, bool
 }
 
 type SeedPeerCluster struct {
-	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
-}
-
-type CDN struct {
-	ID           uint        `yaml:"id" mapstructure:"id" json:"id"`
-	Hostname     string      `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
-	IDC          string      `yaml:"idc" mapstructure:"idc" json:"idc"`
-	Location     string      `yaml:"location" mapstructure:"location" json:"location"`
-	IP           string      `yaml:"ip" mapstructure:"ip" json:"ip"`
-	Port         int32       `yaml:"port" mapstructure:"port" json:"port"`
-	DownloadPort int32       `yaml:"downloadPort" mapstructure:"downloadPort" json:"download_port"`
-	CDNCluster   *CDNCluster `yaml:"cdnCluster" mapstructure:"cdnCluster" json:"cdn_cluster"`
-}
-
-func (c *CDN) GetCDNClusterConfig() (types.CDNClusterConfig, bool) {
-	if c.CDNCluster == nil {
-		return types.CDNClusterConfig{}, false
-	}
-
-	var config types.CDNClusterConfig
-	if err := json.Unmarshal(c.CDNCluster.Config, &config); err != nil {
-		return types.CDNClusterConfig{}, false
-	}
-
-	return config, true
-}
-
-type CDNCluster struct {
 	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
 }
 
