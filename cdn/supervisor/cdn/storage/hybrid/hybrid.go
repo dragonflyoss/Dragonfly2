@@ -42,6 +42,7 @@ import (
 const _hybrid = "hybrid"
 
 const secureLevel = 500 * unit.MB
+const freeSpaceThreshold = 5 * unit.GB
 
 var (
 	_ storage.Manager = (*hybridStorageManager)(nil)
@@ -230,7 +231,7 @@ func (h *hybridStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if diskFreeSpace > 5*unit.GB && diskFreeSpace.ToNumber() > fileLength {
+	if diskFreeSpace > freeSpaceThreshold && diskFreeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 

@@ -40,6 +40,7 @@ import (
 )
 
 const _disk = local.DiskDriverName
+const freeSpaceThreshold = 5 * unit.GB
 
 var (
 	_ gc.Executor     = (*diskStorageManager)(nil)
@@ -229,7 +230,7 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if freeSpace > 5*unit.GB && freeSpace.ToNumber() > fileLength {
+	if freeSpace > freeSpaceThreshold && freeSpace.ToNumber() > fileLength {
 		return true, nil
 	}
 	// TODO Optimize this code by iterating through the task list
