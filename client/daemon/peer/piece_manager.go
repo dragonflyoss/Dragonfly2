@@ -20,11 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -33,6 +35,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -41,6 +44,7 @@ import (
 type PieceManager interface {
 	DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error
 	DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (*DownloadPieceResult, error)
+	ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error
 }
 
 type pieceManager struct {
@@ -200,7 +204,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	}
 	if pm.calculateDigest {
 		pt.Log().Debugf("calculate digest")
-		reader = digestutils.NewDigestReader(pt.Log(), reader)
+		reader, _ = digestutils.NewDigestReader(pt.Log(), reader)
 	}
 	var n int64
 	result.Size, err = pt.GetStorage().WritePiece(
@@ -264,6 +268,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 	if err != nil {
 		return err
 	}
+	err = response.Validate()
+	if err != nil {
+		return err
+	}
 	contentLength := response.ContentLength
 	if contentLength < 0 {
 		log.Warnf("can not get content length for %s", request.Url)
@@ -276,6 +284,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 					TaskID: pt.GetTaskID(),
 				},
 				ContentLength: contentLength,
+				Header:        &response.Header,
 			})
 		if err != nil {
 			return err
@@ -286,7 +295,11 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 
 	// calc total
 	if pm.calculateDigest {
-		reader = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
+		reader, err = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
+		if err != nil {
+			log.Errorf("init digest reader error: %s", err.Error())
+			return err
+		}
 	}
 	// we must calculate piece size
 	pieceSize := pm.computePieceSize(contentLength)
@@ -304,7 +317,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 	log := pt.Log()
 	pt.SetContentLength(contentLength)
 
-	maxPieceNum := int32(math.Ceil(float64(contentLength) / float64(pieceSize)))
+	maxPieceNum := util.ComputePieceNum(contentLength, pieceSize)
 	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
 		size := pieceSize
 		offset := uint64(pieceNum) * uint64(pieceSize)
@@ -333,13 +346,13 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		}
 		if err != nil {
 			log.Errorf("download piece %d error: %s", pieceNum, err)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 
 		if result.Size != int64(size) {
 			log.Errorf("download piece %d size not match, desired: %d, actual: %d", pieceNum, size, result.Size)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return storage.ErrShortRead
 		}
 
@@ -354,9 +367,10 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 					ContentLength: contentLength,
 					TotalPieces:   maxPieceNum,
 				})
+			pt.SetTotalPieces(maxPieceNum)
 			if err != nil {
 				log.Errorf("update task failed %s", err)
-				pt.ReportPieceResult(request, result, err)
+				pt.ReportPieceResult(request, result, detectBackSourceError(err))
 				return err
 			}
 		}
@@ -401,7 +415,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			},
 		}
 		if err != nil {
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			log.Errorf("download piece %d error: %s", pieceNum, err)
 			return err
 		}
@@ -412,13 +426,13 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		} else if result.Size > int64(size) {
 			err = fmt.Errorf("piece %d size %d should not great than %d", pieceNum, result.Size, size)
 			log.Errorf(err.Error())
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 
 		// last piece, piece size maybe 0
 		contentLength = int64(pieceSize)*int64(pieceNum) + result.Size
-		pt.SetTotalPieces(int32(math.Ceil(float64(contentLength) / float64(pieceSize))))
+		pt.SetTotalPieces(util.ComputePieceNum(contentLength, pieceSize))
 		err = pt.GetStorage().UpdateTask(ctx,
 			&storage.UpdateTaskRequest{
 				PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -430,7 +444,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 			})
 		if err != nil {
 			log.Errorf("update task failed %s", err)
-			pt.ReportPieceResult(request, result, err)
+			pt.ReportPieceResult(request, result, detectBackSourceError(err))
 			return err
 		}
 		// content length is aligning at piece size
@@ -444,5 +458,123 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 
 	pt.SetContentLength(contentLength)
 	log.Infof("download from source ok")
+	return nil
+}
+
+func detectBackSourceError(err error) error {
+	// TODO ensure all source plugin use *url.Error for back source
+	if e, ok := err.(*url.Error); ok {
+		return &backSourceError{err: e}
+	}
+	return err
+}
+
+func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.PeerTaskMetadata,
+	tsd storage.TaskStorageDriver, r io.Reader, pieceNum int32, pieceOffset uint64,
+	pieceSize uint32, isLastPiece func(n int64) (int32, bool)) (int64, error) {
+	var (
+		n      int64
+		reader = r
+		log    = logger.With("function", "processPieceFromFile", "taskID", ptm.TaskID)
+	)
+
+	if pm.calculateDigest {
+		log.Debugf("calculate digest in processPieceFromFile")
+		reader, _ = digestutils.NewDigestReader(log, r)
+	}
+	n, err := tsd.WritePiece(ctx,
+		&storage.WritePieceRequest{
+			UnknownLength:    false,
+			PeerTaskMetadata: ptm,
+			PieceMetadata: storage.PieceMetadata{
+				Num: pieceNum,
+				// storage manager will get digest from DigestReader, keep empty here is ok
+				Md5:    "",
+				Offset: pieceOffset,
+				Range: clientutil.Range{
+					Start:  int64(pieceOffset),
+					Length: int64(pieceSize),
+				},
+			},
+			Reader:         reader,
+			GenPieceDigest: isLastPiece,
+		})
+	if err != nil {
+		msg := fmt.Sprintf("put piece of task %s to storage failed, piece num: %d, wrote: %d, error: %s", ptm.TaskID, pieceNum, n, err)
+		return n, errors.New(msg)
+	}
+	return n, nil
+}
+
+func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error {
+	log := logger.With("function", "ImportFile", "Cid", req.Cid, "taskID", ptm.TaskID)
+	// get file size and compute piece size and piece count
+	stat, err := os.Stat(req.Path)
+	if err != nil {
+		msg := fmt.Sprintf("stat file %s failed: %s", req.Path, err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	contentLength := stat.Size()
+	pieceSize := pm.computePieceSize(contentLength)
+	maxPieceNum := util.ComputePieceNum(contentLength, pieceSize)
+
+	file, err := os.Open(req.Path)
+	if err != nil {
+		msg := fmt.Sprintf("open file %s failed: %s", req.Path, err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	defer file.Close()
+
+	reader := file
+	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
+		size := pieceSize
+		offset := uint64(pieceNum) * uint64(pieceSize)
+		isLastPiece := func(int64) (int32, bool) { return maxPieceNum, pieceNum == maxPieceNum-1 }
+		// calculate piece size for last piece
+		if contentLength > 0 && int64(offset)+int64(size) > contentLength {
+			size = uint32(contentLength - int64(offset))
+		}
+
+		log.Debugf("import piece %d", pieceNum)
+		n, er := pm.processPieceFromFile(ctx, ptm, tsd, reader, pieceNum, offset, size, isLastPiece)
+		if er != nil {
+			log.Errorf("import piece %d of task %s error: %s", pieceNum, ptm.TaskID, er)
+			return er
+		}
+		if n != int64(size) {
+			log.Errorf("import piece %d of task %s size not match, desired: %d, actual: %d", pieceNum, ptm.TaskID, size, n)
+			return storage.ErrShortRead
+		}
+	}
+
+	// Update task with length and piece count
+	err = tsd.UpdateTask(ctx, &storage.UpdateTaskRequest{
+		PeerTaskMetadata: ptm,
+		ContentLength:    contentLength,
+		TotalPieces:      maxPieceNum,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("update task(%s) failed: %s", ptm.TaskID, err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+
+	// Save metadata
+	err = tsd.Store(ctx, &storage.StoreRequest{
+		CommonTaskRequest: storage.CommonTaskRequest{
+			PeerID: ptm.PeerID,
+			TaskID: ptm.TaskID,
+		},
+		MetadataOnly:  true,
+		StoreDataOnly: false,
+	})
+	if err != nil {
+		msg := fmt.Sprintf("store task(%s) failed: %s", ptm.TaskID, err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+
 	return nil
 }

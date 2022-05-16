@@ -98,8 +98,8 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 func migrate(db *gorm.DB) error {
 	return db.Set("gorm:table_options", "DEFAULT CHARSET=utf8mb4 ROW_FORMAT=Dynamic").AutoMigrate(
 		&model.Job{},
-		&model.CDNCluster{},
-		&model.CDN{},
+		&model.SeedPeerCluster{},
+		&model.SeedPeer{},
 		&model.SchedulerCluster{},
 		&model.Scheduler{},
 		&model.SecurityRule{},
@@ -112,25 +112,6 @@ func migrate(db *gorm.DB) error {
 }
 
 func seed(db *gorm.DB) error {
-	var cdnClusterCount int64
-	if err := db.Model(model.CDNCluster{}).Count(&cdnClusterCount).Error; err != nil {
-		return err
-	}
-	if cdnClusterCount <= 0 {
-		if err := db.Create(&model.CDNCluster{
-			Model: model.Model{
-				ID: uint(1),
-			},
-			Name: "cdn-cluster-1",
-			Config: map[string]interface{}{
-				"load_limit": schedulerconfig.DefaultCDNLoadLimit,
-			},
-			IsDefault: true,
-		}).Error; err != nil {
-			return err
-		}
-	}
-
 	var schedulerClusterCount int64
 	if err := db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
 		return err
@@ -155,9 +136,26 @@ func seed(db *gorm.DB) error {
 		}
 	}
 
-	if schedulerClusterCount == 0 && cdnClusterCount == 0 {
-		cdnCluster := model.CDNCluster{}
-		if err := db.First(&cdnCluster).Error; err != nil {
+	var seedPeerClusterCount int64
+	if err := db.Model(model.SeedPeerCluster{}).Count(&seedPeerClusterCount).Error; err != nil {
+		return err
+	}
+	if seedPeerClusterCount <= 0 {
+		if err := db.Create(&model.SeedPeerCluster{
+			Model: model.Model{
+				ID: uint(1),
+			},
+			Name: "seed-peer-cluster-1",
+			Config: map[string]interface{}{
+				"load_limit": schedulerconfig.DefaultSeedPeerLoadLimit,
+			},
+			IsDefault: true,
+		}).Error; err != nil {
+			return err
+		}
+
+		seedPeerCluster := model.SeedPeerCluster{}
+		if err := db.First(&seedPeerCluster).Error; err != nil {
 			return err
 		}
 
@@ -166,7 +164,7 @@ func seed(db *gorm.DB) error {
 			return err
 		}
 
-		if err := db.Model(&cdnCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+		if err := db.Model(&seedPeerCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
 			return err
 		}
 	}

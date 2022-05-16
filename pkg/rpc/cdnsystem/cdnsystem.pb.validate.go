@@ -142,9 +142,9 @@ func (m *PieceSeed) Validate() error {
 		}
 	}
 
-	if utf8.RuneCountInString(m.GetHostUuid()) < 1 {
+	if utf8.RuneCountInString(m.GetHostId()) < 1 {
 		return PieceSeedValidationError{
-			field:  "HostUuid",
+			field:  "HostId",
 			reason: "value length must be at least 1 runes",
 		}
 	}
@@ -168,6 +168,16 @@ func (m *PieceSeed) Validate() error {
 	// no validation rules for BeginTime
 
 	// no validation rules for EndTime
+
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return PieceSeedValidationError{
+				field:  "ExtendAttribute",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }

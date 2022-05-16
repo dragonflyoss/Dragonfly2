@@ -30,17 +30,23 @@ import (
 )
 
 var (
-	// TrafficP2PType is p2p type for traffic metrics
+	// TrafficP2PType is p2p type for traffic metrics.
 	TrafficP2PType = "p2p"
 
-	// TrafficBackToSourceType is back-to-source type for traffic metrics
+	// TrafficBackToSourceType is back-to-source type for traffic metrics.
 	TrafficBackToSourceType = "back_to_source"
 
-	// PeerHostTrafficUploadType is upload traffic type for peer host traffic metrics
+	// PeerHostTrafficUploadType is upload traffic type for peer host traffic metrics.
 	PeerHostTrafficUploadType = "upload"
 
-	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics
+	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics.
 	PeerHostTrafficDownloadType = "download"
+
+	// DownloadFailureBackToSourceType is back-to-source type for download failure count metrics.
+	DownloadFailureBackToSourceType = "back_to_source"
+
+	// DownloadFailureP2PType is p2p type for download failure count metrics.
+	DownloadFailureP2PType = "p2p"
 )
 
 // Variables declared for metrics.
@@ -71,7 +77,35 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
-	}, []string{"biz_tag"})
+	}, []string{"biz_tag", "type"})
+
+	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "stat_task_total",
+		Help:      "Counter of the number of the stat task.",
+	})
+
+	StatTaskFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "stat_task_failure_total",
+		Help:      "Counter of the number of failed of the stat task.",
+	})
+
+	AnnounceCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "announce_task_total",
+		Help:      "Counter of the number of the announce task.",
+	})
+
+	AnnounceFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "announce_task_failure_total",
+		Help:      "Counter of the number of failed of the announce task.",
+	})
 
 	LeaveTaskCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
@@ -99,7 +133,7 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_host_traffic",
 		Help:      "Counter of the number of per peer host traffic.",
-	}, []string{"biz_tag", "traffic_type", "peer_host_uuid", "peer_host_ip"})
+	}, []string{"biz_tag", "traffic_type", "peer_host_id", "peer_host_ip"})
 
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,

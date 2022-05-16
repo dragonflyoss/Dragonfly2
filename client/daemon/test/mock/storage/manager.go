@@ -39,6 +39,21 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 	return m.recorder
 }
 
+// GetExtendAttribute mocks base method.
+func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
+	ret0, _ := ret[0].(*base.ExtendAttribute)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExtendAttribute indicates an expected call of GetExtendAttribute.
+func (mr *MockTaskStorageDriverMockRecorder) GetExtendAttribute(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetExtendAttribute), ctx, req)
+}
+
 // GetPieces mocks base method.
 func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -52,6 +67,21 @@ func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTa
 func (mr *MockTaskStorageDriverMockRecorder) GetPieces(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetPieces), ctx, req)
+}
+
+// GetTotalPieces mocks base method.
+func (m *MockTaskStorageDriver) GetTotalPieces(ctx context.Context, req *storage.PeerTaskMetadata) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalPieces", ctx, req)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalPieces indicates an expected call of GetTotalPieces.
+func (mr *MockTaskStorageDriverMockRecorder) GetTotalPieces(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetTotalPieces), ctx, req)
 }
 
 // IsInvalid mocks base method.
@@ -311,6 +341,21 @@ func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPartialCompletedTask", reflect.TypeOf((*MockManager)(nil).FindPartialCompletedTask), taskID, rg)
 }
 
+// GetExtendAttribute mocks base method.
+func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
+	ret0, _ := ret[0].(*base.ExtendAttribute)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExtendAttribute indicates an expected call of GetExtendAttribute.
+func (mr *MockManagerMockRecorder) GetExtendAttribute(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockManager)(nil).GetExtendAttribute), ctx, req)
+}
+
 // GetPieces mocks base method.
 func (m *MockManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -324,6 +369,21 @@ func (m *MockManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest)
 func (mr *MockManagerMockRecorder) GetPieces(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieces", reflect.TypeOf((*MockManager)(nil).GetPieces), ctx, req)
+}
+
+// GetTotalPieces mocks base method.
+func (m *MockManager) GetTotalPieces(ctx context.Context, req *storage.PeerTaskMetadata) (int32, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTotalPieces", ctx, req)
+	ret0, _ := ret[0].(int32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTotalPieces indicates an expected call of GetTotalPieces.
+func (mr *MockManagerMockRecorder) GetTotalPieces(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalPieces", reflect.TypeOf((*MockManager)(nil).GetTotalPieces), ctx, req)
 }
 
 // IsInvalid mocks base method.
@@ -426,6 +486,20 @@ func (m *MockManager) Store(ctx context.Context, req *storage.StoreRequest) erro
 func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockManager)(nil).Store), ctx, req)
+}
+
+// UnregisterTask mocks base method.
+func (m *MockManager) UnregisterTask(ctx context.Context, req storage.CommonTaskRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnregisterTask", ctx, req)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnregisterTask indicates an expected call of UnregisterTask.
+func (mr *MockManagerMockRecorder) UnregisterTask(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnregisterTask", reflect.TypeOf((*MockManager)(nil).UnregisterTask), ctx, req)
 }
 
 // UpdateTask mocks base method.

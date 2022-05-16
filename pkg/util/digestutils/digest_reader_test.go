@@ -19,6 +19,9 @@ package digestutils
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"io"
 	"os"
@@ -36,15 +39,67 @@ func TestMain(m *testing.M) {
 func TestNewDigestReader(t *testing.T) {
 	assert := testifyassert.New(t)
 
-	testBytes := []byte("hello world")
-	hash := md5.New()
-	hash.Write(testBytes)
-	digest := hex.EncodeToString(hash.Sum(nil)[:16])
+	testCases := []struct {
+		name   string
+		data   []byte
+		digest func(data []byte) string
+	}{
+		{
+			name: "default md5",
+			data: []byte("hello world"),
+			digest: func(data []byte) string {
+				hash := md5.New()
+				hash.Write(data)
+				return hex.EncodeToString(hash.Sum(nil))
+			},
+		},
+		{
+			name: "md5",
+			data: []byte("hello world"),
+			digest: func(data []byte) string {
+				hash := md5.New()
+				hash.Write(data)
+				return "md5:" + hex.EncodeToString(hash.Sum(nil))
+			},
+		},
+		{
+			name: "sha1",
+			data: []byte("hello world"),
+			digest: func(data []byte) string {
+				hash := sha1.New()
+				hash.Write(data)
+				return "sha1:" + hex.EncodeToString(hash.Sum(nil))
+			},
+		},
+		{
+			name: "sha256",
+			data: []byte("hello world"),
+			digest: func(data []byte) string {
+				hash := sha256.New()
+				hash.Write(data)
+				return "sha256:" + hex.EncodeToString(hash.Sum(nil))
+			},
+		},
+		{
+			name: "sha512",
+			data: []byte("hello world"),
+			digest: func(data []byte) string {
+				hash := sha512.New()
+				hash.Write(data)
+				return "sha512:" + hex.EncodeToString(hash.Sum(nil))
+			},
+		},
+	}
 
-	buf := bytes.NewBuffer(testBytes)
-	reader := NewDigestReader(logger.With("test", "test"), buf, digest)
-	data, err := io.ReadAll(reader)
-
-	assert.Nil(err)
-	assert.Equal(testBytes, data)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			digest := tc.digest(tc.data)
+			buf := bytes.NewBuffer(tc.data)
+			reader, err := NewDigestReader(logger.With("test", "test"), buf, digest)
+			assert.Nil(err)
+			data, err := io.ReadAll(reader)
+			assert.Nil(err)
+			assert.Equal(tc.data, data)
+		})
+	}
 }

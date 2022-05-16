@@ -144,6 +144,13 @@ func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	}
 }
 
+func (log *SugaredLoggerOnWith) With(args ...interface{}) *SugaredLoggerOnWith {
+	args = append(args, log.withArgs...)
+	return &SugaredLoggerOnWith{
+		withArgs: args,
+	}
+}
+
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
 	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
 		return

@@ -16,6 +16,8 @@
 
 package util
 
+import "math"
+
 const (
 	// DefaultPieceSize 4M
 	DefaultPieceSize = 4 * 1024 * 1024
@@ -39,4 +41,9 @@ func ComputePieceSize(length int64) uint32 {
 		return DefaultPieceSizeLimit
 	}
 	return uint32(mpSize)
+}
+
+// ComputePieceNum returns piece count with given length and pieceSize
+func ComputePieceNum(length int64, pieceSize uint32) int32 {
+	return int32(math.Ceil(float64(length) / float64(pieceSize)))
 }

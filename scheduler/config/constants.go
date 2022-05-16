@@ -17,15 +17,15 @@
 package config
 
 const (
-	// Default number of cdn load limit
-	DefaultCDNLoadLimit = 300
+	// Default number of seed peer load limit.
+	DefaultSeedPeerLoadLimit = 300
 
-	// Default number of client load limit
+	// Default number of client load limit.
 	DefaultClientLoadLimit = 50
 
-	// Default number of pieces to download in parallel
+	// Default number of pieces to download in parallel.
 	DefaultClientParallelCount = 4
 
-	// Default limit the number of filter traversals
+	// Default limit the number of filter traversals.
 	DefaultSchedulerFilterParentLimit = 3
 )

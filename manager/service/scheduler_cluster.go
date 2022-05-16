@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -53,8 +54,8 @@ func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateS
 		return nil, err
 	}
 
-	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
+	if json.SeedPeerClusterID > 0 {
+		if err := s.AddSchedulerClusterToSeedPeerCluster(ctx, json.SeedPeerClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -64,8 +65,12 @@ func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateS
 
 func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("Schedulers").First(&schedulerCluster, id).Error; err != nil {
 		return err
+	}
+
+	if len(schedulerCluster.Schedulers) != 0 {
+		return errors.New("scheduler cluster exists scheduler")
 	}
 
 	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
@@ -103,8 +108,8 @@ func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json type
 		return nil, err
 	}
 
-	if json.CDNClusterID > 0 {
-		if err := s.AddSchedulerClusterToCDNCluster(ctx, json.CDNClusterID, schedulerCluster.ID); err != nil {
+	if json.SeedPeerClusterID > 0 {
+		if err := s.AddSchedulerClusterToSeedPeerCluster(ctx, json.SeedPeerClusterID, schedulerCluster.ID); err != nil {
 			return nil, err
 		}
 	}
@@ -114,7 +119,7 @@ func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json type
 
 func (s *service) GetSchedulerCluster(ctx context.Context, id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).Preload("CDNClusters").First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -126,7 +131,7 @@ func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetScheduler
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
-	}).Preload("CDNClusters").Find(&schedulerClusters).Count(&count).Error; err != nil {
+	}).Preload("SeedPeerClusters").Find(&schedulerClusters).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

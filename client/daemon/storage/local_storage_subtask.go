@@ -234,6 +234,16 @@ func (t *localSubTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRe
 	return piecePacket, nil
 }
 
+func (t *localSubTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return -1, ErrInvalidDigest
+	}
+
+	t.parent.touch()
+	return t.TotalPieces, nil
+}
+
 func (t *localSubTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {
 	t.parent.touch()
 	t.Lock()
@@ -376,4 +386,21 @@ func (t *localSubTaskStore) MarkReclaim() {
 
 func (t *localSubTaskStore) Reclaim() error {
 	return nil
+}
+
+func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return nil, ErrInvalidDigest
+	}
+	if t.Header == nil {
+		return nil, nil
+	}
+	hdr := map[string]string{}
+	for k, v := range *t.Header {
+		if len(v) > 0 {
+			hdr[k] = t.Header.Get(k)
+		}
+	}
+	return &base.ExtendAttribute{Header: hdr}, nil
 }

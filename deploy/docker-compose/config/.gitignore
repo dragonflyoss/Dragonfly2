@@ -1,6 +1,4 @@
-cdn.json
-cdn.yaml
 dfget.yaml
 manager.yaml
 scheduler.yaml
-
+seed-peer.yaml

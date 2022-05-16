@@ -35,7 +35,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/unit"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -126,38 +128,76 @@ func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers and config server is not specified")
 	}
+	switch p.Download.DefaultPattern {
+	case PatternP2P, PatternCDN, PatternSource:
+	default:
+		return errors.New("available pattern: p2p, cdn, source")
+	}
 	return nil
 }
 
+func ConvertPattern(p string, defaultPattern scheduler.Pattern) scheduler.Pattern {
+	switch p {
+	case PatternP2P:
+		return scheduler.Pattern_P2P
+	case PatternCDN:
+		return scheduler.Pattern_CDN
+	case PatternSource:
+		return scheduler.Pattern_SOURCE
+	case "":
+		return defaultPattern
+	}
+	logger.Warnf("unknown pattern, use default pattern: %s", scheduler.Pattern_name[int32(defaultPattern)])
+	return defaultPattern
+}
+
 type SchedulerOption struct {
-	// Manager is to get the scheduler configuration remotely
+	// Manager is to get the scheduler configuration remotely.
 	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// ScheduleTimeout is request timeout.
 	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
-	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
+	// DisableAutoBackSource indicates not back source normally, only scheduler says back source.
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
 }
 
 type ManagerOption struct {
-	// Enable get configuration from manager
+	// Enable get configuration from manager.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
 	// NetAddrs is manager addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
-	// RefreshInterval is the refresh interval
+	// RefreshInterval is the refresh interval.
 	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
+	// SeedPeer configuration.
+	SeedPeer SeedPeerOption `mapstructure:"seedPeer" yaml:"seedPeer"`
+}
+
+type SeedPeerOption struct {
+	// Enable seed peer mode.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// Type is seed peer type.
+	Type string `mapstructure:"type" yaml:"type"`
+	// ClusterID is seed peer cluster id.
+	ClusterID uint `mapstructure:"clusterID" yaml:"clusterID"`
+	// KeepAlive configuration.
+	KeepAlive KeepAliveOption `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveOption struct {
+	// Keep alive interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 type HostOption struct {
 	// SecurityDomain is the security domain
 	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+	// Location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 	// The listen ip for all tcp services of daemon
@@ -167,6 +207,7 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
+	DefaultPattern       string               `mapstructure:"defaultPattern" yaml:"defaultPattern"`
 	TotalRateLimit       clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
 	PieceDownloadTimeout time.Duration        `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`

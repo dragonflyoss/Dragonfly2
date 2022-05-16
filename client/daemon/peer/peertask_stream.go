@@ -44,6 +44,8 @@ type StreamTaskRequest struct {
 	Range *clientutil.Range
 	// peer's id and must be global uniqueness
 	PeerID string
+	// Pattern to register to scheduler
+	Pattern scheduler.Pattern
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io
@@ -79,7 +81,7 @@ func (ptm *peerTaskManager) newStreamTask(
 	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "")
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, request, limit, parent, rg, "", false)
 	if err != nil {
 		return nil, err
 	}
@@ -109,13 +111,25 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		s.span.End()
 		return nil, attr, ctx.Err()
 	case <-s.peerTaskConductor.failCh:
-		return nil, attr, fmt.Errorf("peer task failed: %d/%s",
+		err := fmt.Errorf("peer task failed: %d/%s",
 			s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
+		s.Errorf("wait first piece failed due to %s ", err.Error())
+		return nil, attr, err
 	case <-s.peerTaskConductor.successCh:
 		if s.peerTaskConductor.GetContentLength() != -1 {
 			attr[headers.ContentLength] = fmt.Sprintf("%d", s.peerTaskConductor.GetContentLength())
 		} else {
 			attr[headers.TransferEncoding] = "chunked"
+		}
+		exa, err := s.peerTaskConductor.storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("read extend attribute error due to %s ", err.Error())
+			return nil, attr, err
+		}
+		if exa != nil {
+			for k, v := range exa.Header {
+				attr[k] = v
+			}
 		}
 		rc, err := s.peerTaskConductor.peerTaskManager.storageManager.ReadAllPieces(
 			ctx,
@@ -127,6 +141,16 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		return rc, attr, err
 	case first := <-s.pieceCh:
 		firstPiece = first
+		exa, err := s.peerTaskConductor.storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("read extend attribute error due to %s ", err.Error())
+			return nil, attr, err
+		}
+		if exa != nil {
+			for k, v := range exa.Header {
+				attr[k] = v
+			}
+		}
 	}
 
 	if s.peerTaskConductor.GetContentLength() != -1 {
@@ -189,11 +213,13 @@ func (s *streamTask) writeToPipe(firstPiece *PieceInfo, pw *io.PipeWriter) {
 			return
 		case <-s.ctx.Done():
 			err = fmt.Errorf("context done due to: %s", s.ctx.Err())
+			s.Errorf(err.Error())
 			s.closeWithError(pw, err)
 			return
 		case <-s.peerTaskConductor.failCh:
-			err = fmt.Errorf("context done due to peer task fail: %d/%s",
+			err = fmt.Errorf("stream close with peer task fail: %d/%s",
 				s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
+			s.Errorf(err.Error())
 			s.closeWithError(pw, err)
 			return
 		}

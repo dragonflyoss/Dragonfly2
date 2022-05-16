@@ -34,8 +34,8 @@ message SeedRequest{
 message PieceSeed{
   // peer id for cdn node, need suffix with _CDN
   string peer_id = 2 [(validate.rules).string.min_len = 1];
-  // cdn node host uuid
-  string host_uuid = 3 [(validate.rules).string.min_len = 1];
+  // cdn host id
+  string host_id = 3 [(validate.rules).string.min_len = 1];
   base.PieceInfo piece_info = 4;
 
   // whether or not all seeds are downloaded
@@ -48,6 +48,8 @@ message PieceSeed{
   uint64 begin_time = 8;
   // end time for the piece downloading
   uint64 end_time = 9;
+  // task extend attribute
+  base.ExtendAttribute extend_attribute = 10;
 }
 
 // CDN System RPC Service

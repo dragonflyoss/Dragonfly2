@@ -23,6 +23,7 @@ import (
 	"sync"
 
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
@@ -46,13 +47,23 @@ type TaskManager interface {
 	StartFileTask(ctx context.Context, req *FileTaskRequest) (
 		progress chan *FileTaskProgress, tiny *TinyData, err error)
 	// StartStreamTask starts a peer task with stream io
-	// tiny stands task file is tiny and task is done
 	StartStreamTask(ctx context.Context, req *StreamTaskRequest) (
 		readCloser io.ReadCloser, attribute map[string]string, err error)
+	// StartSeedTask starts a seed peer task
+	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
+		seedTaskResult *SeedTaskResponse, err error)
 
-	Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool)
+	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
 
-	IsPeerTaskRunning(id string) bool
+	IsPeerTaskRunning(taskID string) (Task, bool)
+
+	// StatTask checks whether the given task exists in P2P network
+	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
+
+	// AnnouncePeerTask announces peer task info to P2P network
+	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error
+
+	GetPieceManager() PieceManager
 
 	// Stop stops the PeerTaskManager
 	Stop(ctx context.Context) error
@@ -170,8 +181,9 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *clientutil.Range,
-	desiredLocation string) (*peerTaskConductor, error) {
-	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation)
+	desiredLocation string,
+	seed bool) (*peerTaskConductor, error) {
+	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
 	if err != nil {
 		return nil, err
 	}
@@ -192,12 +204,13 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *clientutil.Range,
-	desiredLocation string) (*peerTaskConductor, bool, error) {
+	desiredLocation string,
+	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
 		logger.Debugf("peer task found: %s/%s", ptc.taskID, ptc.peerID)
 		return ptc, false, nil
 	}
-	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg)
+	ptc := ptm.newPeerTaskConductor(ctx, request, limit, parent, rg, seed)
 
 	ptm.conductorLock.Lock()
 	// double check
@@ -225,6 +238,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 		PeerHost:    ptm.host,
 		HostLoad:    request.HostLoad,
 		IsMigrating: request.IsMigrating,
+		Pattern:     request.Pattern,
 		UrlMeta: &base.UrlMeta{
 			Digest: request.UrlMeta.Digest,
 			Tag:    request.UrlMeta.Tag,
@@ -247,7 +261,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 	}
 
 	logger.Infof("prefetch peer task %s/%s", taskID, req.PeerId)
-	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation)
+	prefetch, err := ptm.getPeerTaskConductor(context.Background(), taskID, req, limit, nil, nil, desiredLocation, false)
 	if err != nil {
 		logger.Errorf("prefetch peer task %s/%s error: %s", prefetch.taskID, prefetch.peerID, err)
 		return nil
@@ -296,6 +310,7 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 		PeerHost:    ptm.host,
 		HostLoad:    nil,
 		IsMigrating: false,
+		Pattern:     req.Pattern,
 	}
 
 	if ptm.enableMultiplex {
@@ -316,20 +331,38 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	return readCloser, attribute, err
 }
 
-type SubscribeResult struct {
+func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (response *SeedTaskResponse, err error) {
+	response, ok := ptm.tryReuseSeedPeerTask(ctx, req)
+	if ok {
+		metrics.PeerTaskCacheHitCount.Add(1)
+		return response, nil
+	}
+
+	var limit = rate.Inf
+	if ptm.perPeerRateLimit > 0 {
+		limit = ptm.perPeerRateLimit
+	}
+	if req.Limit > 0 {
+		limit = rate.Limit(req.Limit)
+	}
+
+	return ptm.newSeedTask(ctx, req, limit)
+}
+
+type SubscribeResponse struct {
 	Storage          storage.TaskStorageDriver
 	PieceInfoChannel chan *PieceInfo
 	Success          chan struct{}
 	Fail             chan struct{}
 }
 
-func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResult, bool) {
+func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
 	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
 	if !ok {
 		return nil, false
 	}
 
-	result := &SubscribeResult{
+	result := &SubscribeResponse{
 		Storage:          ptc.storage,
 		PieceInfoChannel: ptc.broker.Subscribe(),
 		Success:          ptc.successCh,
@@ -348,7 +381,71 @@ func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
 	ptm.runningPeerTasks.Delete(taskID)
 }
 
-func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) bool {
-	_, ok := ptm.runningPeerTasks.Load(taskID)
-	return ok
+func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
+	ptc, ok := ptm.runningPeerTasks.Load(taskID)
+	if ok {
+		return ptc.(*peerTaskConductor), ok
+	}
+	return nil, ok
+}
+
+func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
+	req := &scheduler.StatTaskRequest{
+		TaskId: taskID,
+	}
+
+	return ptm.schedulerClient.StatTask(ctx, req)
+}
+
+func (ptm *peerTaskManager) GetPieceManager() PieceManager {
+	return ptm.pieceManager
+}
+
+func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context,
+	meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
+	log := logger.With("function", "AnnouncePeerTask", "taskID", meta.TaskID, "peerID", meta.PeerID, "CID", cid)
+
+	// Check if the given task is completed in local storageManager
+	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
+		msg := fmt.Sprintf("task %s not found in local storage", meta.TaskID)
+		log.Errorf(msg)
+		return errors.New(msg)
+	}
+
+	// prepare AnnounceTaskRequest
+	totalPieces, err := ptm.storageManager.GetTotalPieces(ctx, &meta)
+	if err != nil {
+		msg := fmt.Sprintf("get total pieces failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	pieceTaskRequest := &base.PieceTaskRequest{
+		TaskId:   meta.TaskID,
+		DstPid:   meta.PeerID,
+		StartNum: 0,
+		Limit:    uint32(totalPieces),
+	}
+	piecePacket, err := ptm.storageManager.GetPieces(ctx, pieceTaskRequest)
+	if err != nil {
+		msg := fmt.Sprintf("get pieces info failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
+	req := &scheduler.AnnounceTaskRequest{
+		TaskId:      meta.TaskID,
+		Cid:         cid,
+		UrlMeta:     urlMeta,
+		PeerHost:    ptm.host,
+		PiecePacket: piecePacket,
+	}
+
+	// Announce peer task to scheduler
+	err = ptm.schedulerClient.AnnounceTask(ctx, req)
+	if err != nil {
+		msg := fmt.Sprintf("announce peer task failed: %s", err)
+		log.Error(msg)
+		return errors.Wrapf(err, "failed to announce peer task %s", meta.TaskID)
+	}
+	return nil
 }

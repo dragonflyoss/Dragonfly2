@@ -26,7 +26,8 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/util/hostutils"
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
@@ -39,6 +40,14 @@ var peerHostConfig = DaemonOption{
 		Manager: ManagerOption{
 			Enable:          false,
 			RefreshInterval: 5 * time.Minute,
+			SeedPeer: SeedPeerOption{
+				Enable:    false,
+				Type:      model.SeedPeerTypeSuperSeed,
+				ClusterID: 1,
+				KeepAlive: KeepAliveOption{
+					Interval: 5 * time.Second,
+				},
+			},
 		},
 		NetAddrs: []dfnet.NetAddr{
 			{
@@ -58,6 +67,7 @@ var peerHostConfig = DaemonOption{
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		DefaultPattern:       PatternP2P,
 		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
 		GetPiecesMaxRetry:    100,

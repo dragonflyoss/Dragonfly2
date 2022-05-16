@@ -28,7 +28,7 @@ import (
 
 var (
 	mockRawHost = &scheduler.PeerHost{
-		Uuid:           idgen.HostID("hostname", 8003),
+		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -39,12 +39,12 @@ var (
 		NetTopology:    "net_topology",
 	}
 
-	mockRawCDNHost = &scheduler.PeerHost{
-		Uuid:           idgen.CDNHostID("hostname", 8003),
+	mockRawSeedHost = &scheduler.PeerHost{
+		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
-		HostName:       "hostname",
+		HostName:       "hostname_seed",
 		SecurityDomain: "security_domain",
 		Location:       "location",
 		Idc:            "idc",
@@ -64,7 +64,8 @@ func TestHost_NewHost(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
+				assert.Equal(host.Type, HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
 				assert.Equal(host.Port, mockRawHost.RpcPort)
 				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
@@ -75,30 +76,29 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)
 			},
 		},
 		{
-			name:    "new cdn host",
-			rawHost: mockRawCDNHost,
-			options: []HostOption{WithIsCDN(true)},
+			name:    "new seed host",
+			rawHost: mockRawSeedHost,
+			options: []HostOption{WithHostType(HostTypeSuperSeed)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawCDNHost.Uuid)
-				assert.Equal(host.IP, mockRawCDNHost.Ip)
-				assert.Equal(host.Port, mockRawCDNHost.RpcPort)
-				assert.Equal(host.DownloadPort, mockRawCDNHost.DownPort)
-				assert.Equal(host.Hostname, mockRawCDNHost.HostName)
-				assert.Equal(host.SecurityDomain, mockRawCDNHost.SecurityDomain)
-				assert.Equal(host.Location, mockRawCDNHost.Location)
-				assert.Equal(host.IDC, mockRawCDNHost.Idc)
-				assert.Equal(host.NetTopology, mockRawCDNHost.NetTopology)
+				assert.Equal(host.ID, mockRawSeedHost.Id)
+				assert.Equal(host.Type, HostTypeSuperSeed)
+				assert.Equal(host.IP, mockRawSeedHost.Ip)
+				assert.Equal(host.Port, mockRawSeedHost.RpcPort)
+				assert.Equal(host.DownloadPort, mockRawSeedHost.DownPort)
+				assert.Equal(host.Hostname, mockRawSeedHost.HostName)
+				assert.Equal(host.SecurityDomain, mockRawSeedHost.SecurityDomain)
+				assert.Equal(host.Location, mockRawSeedHost.Location)
+				assert.Equal(host.IDC, mockRawSeedHost.Idc)
+				assert.Equal(host.NetTopology, mockRawSeedHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, true)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)
@@ -110,7 +110,8 @@ func TestHost_NewHost(t *testing.T) {
 			options: []HostOption{WithUploadLoadLimit(200)},
 			expect: func(t *testing.T, host *Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
+				assert.Equal(host.Type, HostTypeNormal)
 				assert.Equal(host.IP, mockRawHost.Ip)
 				assert.Equal(host.Port, mockRawHost.RpcPort)
 				assert.Equal(host.DownloadPort, mockRawHost.DownPort)
@@ -121,7 +122,6 @@ func TestHost_NewHost(t *testing.T) {
 				assert.Equal(host.NetTopology, mockRawHost.NetTopology)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(200))
 				assert.Equal(host.PeerCount.Load(), int32(0))
-				assert.Equal(host.IsCDN, false)
 				assert.NotEqual(host.CreateAt.Load(), 0)
 				assert.NotEqual(host.UpdateAt.Load(), 0)
 				assert.NotNil(host.Log)
@@ -177,7 +177,7 @@ func TestHost_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -220,7 +220,7 @@ func TestHost_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -268,7 +268,7 @@ func TestHost_LoadOrStorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -311,7 +311,7 @@ func TestHost_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -361,7 +361,7 @@ func TestHost_LeavePeers(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)
@@ -381,10 +381,12 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			rawHost: mockRawHost,
 			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				host.StorePeer(mockPeer)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				host.StorePeer(mockPeer)
-				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-2))
+				mockPeer.StoreParent(mockPeer)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				mockPeer.StoreParent(mockPeer)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
+				mockPeer.DeleteParent()
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
 		},
 		{
@@ -400,7 +402,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)

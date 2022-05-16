@@ -26,10 +26,9 @@ import (
 func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{
 		HostName:           json.HostName,
-		VIPs:               json.VIPs,
 		IDC:                json.IDC,
+		NetTopology:        json.NetTopology,
 		Location:           json.Location,
-		NetConfig:          json.NetConfig,
 		IP:                 json.IP,
 		Port:               json.Port,
 		SchedulerClusterID: json.SchedulerClusterID,
@@ -58,10 +57,9 @@ func (s *service) DestroyScheduler(ctx context.Context, id uint) error {
 func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(model.Scheduler{
-		VIPs:               json.VIPs,
 		IDC:                json.IDC,
+		NetTopology:        json.NetTopology,
 		Location:           json.Location,
-		NetConfig:          json.NetConfig,
 		IP:                 json.IP,
 		Port:               json.Port,
 		SchedulerClusterID: json.SchedulerClusterID,

@@ -26,7 +26,7 @@ scheduler:
   # the dragonfly working directory plugins
   algorithm: default
   # backSourceCount is the number of backsource clients
-  # when the CDN is unavailable
+  # when the seed peer is unavailable
   backSourceCount: 3
   # retry scheduling back-to-source limit times
   retryBackSourceLimit: 5
@@ -74,13 +74,6 @@ manager:
     # interval
     interval: 5s
 
-# cdn configuration
-cdn:
-  # scheduler enable cdn as P2P peer,
-  # if the value is false, P2P network will not be back-to-source through
-  # cdn but by dfdaemon and preheat feature does not work
-  enable: true
-
 # machinery async job configuration,
 # see https://github.com/RichardKnop/machinery
 job:
@@ -115,7 +108,7 @@ metrics:
   enablePeerHost: false
 
 # console shows log on console
-console: true
+console: false
 
 # whether to enable debug level logger and enable pprof
 verbose: true

@@ -84,8 +84,8 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	hostID := idgen.CDNHostID(hostutils.FQDNHostname, int32(css.config.ListenPort))
 	// begin piece
 	psc <- &cdnsystem.PieceSeed{
-		PeerId:   peerID,
-		HostUuid: hostID,
+		PeerId: peerID,
+		HostId: hostID,
 		PieceInfo: &base.PieceInfo{
 			PieceNum: common.BeginOfPiece,
 		},
@@ -103,10 +103,13 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 		span.RecordError(err)
 		return err
 	}
+	var (
+		extendAttributeSend bool
+	)
 	for piece := range pieceChan {
 		pieceSeed := &cdnsystem.PieceSeed{
-			PeerId:   peerID,
-			HostUuid: hostID,
+			PeerId: peerID,
+			HostId: hostID,
 			PieceInfo: &base.PieceInfo{
 				PieceNum:     int32(piece.PieceNum),
 				RangeStart:   piece.PieceRange.StartIndex,
@@ -121,6 +124,11 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 			TotalPieceCount: registeredTask.TotalPieceCount,
 			BeginTime:       piece.BeginDownloadTime,
 			EndTime:         piece.EndDownloadTime,
+		}
+		// only send extend attribute once
+		if !extendAttributeSend {
+			extendAttributeSend = true
+			pieceSeed.ExtendAttribute = registeredTask.ExtendAttribute
 		}
 		psc <- pieceSeed
 		jsonPiece, err := json.Marshal(pieceSeed)
@@ -148,7 +156,7 @@ func (css *Server) ObtainSeeds(ctx context.Context, req *cdnsystem.SeedRequest, 
 	}
 	pieceSeed := &cdnsystem.PieceSeed{
 		PeerId:          peerID,
-		HostUuid:        hostID,
+		HostId:          hostID,
 		Done:            true,
 		ContentLength:   seedTask.SourceFileLength,
 		TotalPieceCount: seedTask.TotalPieceCount,
@@ -232,13 +240,14 @@ func (css *Server) GetPieceTasks(ctx context.Context, req *base.PieceTaskRequest
 		pieceMd5Sign = digestutils.Sha256(pieceMd5s...)
 	}
 	pp := &base.PiecePacket{
-		TaskId:        req.TaskId,
-		DstPid:        req.DstPid,
-		DstAddr:       fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
-		PieceInfos:    pieceInfos,
-		TotalPiece:    seedTask.TotalPieceCount,
-		ContentLength: seedTask.SourceFileLength,
-		PieceMd5Sign:  pieceMd5Sign,
+		TaskId:          req.TaskId,
+		DstPid:          req.DstPid,
+		DstAddr:         fmt.Sprintf("%s:%d", css.config.AdvertiseIP, css.config.DownloadPort),
+		PieceInfos:      pieceInfos,
+		TotalPiece:      seedTask.TotalPieceCount,
+		ContentLength:   seedTask.SourceFileLength,
+		PieceMd5Sign:    pieceMd5Sign,
+		ExtendAttribute: seedTask.ExtendAttribute,
 	}
 	span.SetAttributes(constants.AttributePiecePacketResult.String(pp.String()))
 	return pp, nil

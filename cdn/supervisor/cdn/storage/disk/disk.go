@@ -281,6 +281,10 @@ func (s *diskStorageManager) TryFreeSpace(fileLength int64) (bool, error) {
 	return true, nil
 }
 
+func (s *diskStorageManager) GetUploadPath() string {
+	return s.diskDriver.GetPath(storage.GetUploadHomeRaw())
+}
+
 func (s *diskStorageManager) GC() error {
 	logger.StorageGCLogger.With("type", "disk").Debug("start the disk storage gc job")
 	gcTaskIDs, err := s.diskCleaner.GC("disk", false)

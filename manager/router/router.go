@@ -154,26 +154,26 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	cs.GET("", h.GetApplications)
 	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToApplication)
 	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
-	cs.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToApplication)
-	cs.DELETE(":id/cdn-clusters/:cdn_cluster_id", h.DeleteCDNClusterToApplication)
+	cs.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToApplication)
+	cs.DELETE(":id/seed-peer-clusters/:seed_peer_cluster_id", h.DeleteSeedPeerClusterToApplication)
 
-	// CDN Cluster
-	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
-	cc.POST("", h.CreateCDNCluster)
-	cc.DELETE(":id", h.DestroyCDNCluster)
-	cc.PATCH(":id", h.UpdateCDNCluster)
-	cc.GET(":id", h.GetCDNCluster)
-	cc.GET("", h.GetCDNClusters)
-	cc.PUT(":id/cdns/:cdn_id", h.AddCDNToCDNCluster)
-	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
+	// Seed Peer Cluster
+	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)
+	spc.POST("", h.CreateSeedPeerCluster)
+	spc.DELETE(":id", h.DestroySeedPeerCluster)
+	spc.PATCH(":id", h.UpdateSeedPeerCluster)
+	spc.GET(":id", h.GetSeedPeerCluster)
+	spc.GET("", h.GetSeedPeerClusters)
+	spc.PUT(":id/seed-peers/:seed_peer_id", h.AddSeedPeerToSeedPeerCluster)
+	spc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSeedPeerCluster)
 
-	// CDN
-	c := apiv1.Group("/cdns", jwt.MiddlewareFunc(), rbac)
-	c.POST("", h.CreateCDN)
-	c.DELETE(":id", h.DestroyCDN)
-	c.PATCH(":id", h.UpdateCDN)
-	c.GET(":id", h.GetCDN)
-	c.GET("", h.GetCDNs)
+	// Seed Peer
+	sp := apiv1.Group("/seed-peers", jwt.MiddlewareFunc(), rbac)
+	sp.POST("", h.CreateSeedPeer)
+	sp.DELETE(":id", h.DestroySeedPeer)
+	sp.PATCH(":id", h.UpdateSeedPeer)
+	sp.GET(":id", h.GetSeedPeer)
+	sp.GET("", h.GetSeedPeers)
 
 	// Security Rule
 	sr := apiv1.Group("/security-rules", jwt.MiddlewareFunc(), rbac)
@@ -191,7 +191,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sg.GET(":id", h.GetSecurityGroup)
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
-	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
+	sg.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToSecurityGroup)
 	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
 	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 

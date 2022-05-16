@@ -60,15 +60,16 @@ func TestConfig_Convert(t *testing.T) {
 			LogDir:                  "aaa",
 			WorkHome:                "/workHome",
 			Manager: ManagerConfig{
-				Addr:         "127.0.0.1:8004",
-				CDNClusterID: 5,
+				Addr:              "127.0.0.1:8004",
+				SeedPeerClusterID: 5,
 				KeepAlive: KeepAliveConfig{
 					Interval: 50 * time.Second,
 				},
 			},
 			Host: HostConfig{
-				Location: "beijing",
-				IDC:      "na61",
+				IDC:         "na61",
+				NetTopology: "t1",
+				Location:    "beijing",
 			},
 			Metrics: &RestConfig{
 				Addr: ":8081",
@@ -155,15 +156,16 @@ func TestConfig_Convert(t *testing.T) {
 			WriterRoutineLimit:      4,
 		},
 		Manager: ManagerConfig{
-			Addr:         "127.0.0.1:8004",
-			CDNClusterID: 5,
+			Addr:              "127.0.0.1:8004",
+			SeedPeerClusterID: 5,
 			KeepAlive: KeepAliveConfig{
 				Interval: 50 * time.Second,
 			},
 		},
 		Host: HostConfig{
-			Location: "beijing",
-			IDC:      "na61",
+			IDC:         "na61",
+			NetTopology: "t1",
+			Location:    "beijing",
 		},
 		LogDir:   "aaa",
 		WorkHome: "/workHome",

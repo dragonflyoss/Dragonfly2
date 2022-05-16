@@ -18,6 +18,7 @@ package peer
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
@@ -37,7 +38,6 @@ type FileTaskRequest struct {
 	Output             string
 	Limit              float64
 	DisableBackSource  bool
-	Pattern            string
 	Callsystem         string
 	Range              *clientutil.Range
 	KeepOriginalOffset bool
@@ -95,7 +95,7 @@ func (ptm *peerTaskManager) newFileTask(
 	}
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
-	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range, request.Output)
+	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, parent, request.Range, request.Output, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -112,7 +112,6 @@ func (ptm *peerTaskManager) newFileTask(
 		progressCh:        make(chan *FileTaskProgress),
 		progressStopCh:    make(chan bool),
 		disableBackSource: request.DisableBackSource,
-		pattern:           request.Pattern,
 		callsystem:        request.Callsystem,
 	}
 	return ctx, pt, nil
@@ -125,12 +124,14 @@ func (f *fileTask) Start(ctx context.Context) (chan *FileTaskProgress, error) {
 }
 
 func (f *fileTask) syncProgress() {
+	defer f.span.End()
 	for {
 		select {
 		case <-f.peerTaskConductor.successCh:
 			f.storeToOutput()
 			return
 		case <-f.peerTaskConductor.failCh:
+			f.span.RecordError(fmt.Errorf(f.peerTaskConductor.failedReason))
 			f.sendFailProgress(f.peerTaskConductor.failedCode, f.peerTaskConductor.failedReason)
 			return
 		case <-f.ctx.Done():

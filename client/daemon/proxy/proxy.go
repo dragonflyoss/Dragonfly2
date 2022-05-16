@@ -97,6 +97,9 @@ type Proxy struct {
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
 
+	// defaultFilter is used for registering steam task
+	defaultPattern scheduler.Pattern
+
 	// tracer is used for telemetry
 	tracer trace.Tracer
 
@@ -212,6 +215,14 @@ func WithDefaultFilter(f string) Option {
 	}
 }
 
+// WithDefaultPattern sets default pattern for downloading
+func WithDefaultPattern(pattern scheduler.Pattern) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultPattern = pattern
+		return p
+	}
+}
+
 // WithBasicAuth sets basic auth info for proxy
 func WithBasicAuth(auth *config.BasicAuth) Option {
 	return func(p *Proxy) *Proxy {
@@ -256,7 +267,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
 
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
-	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
+	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Id))
 	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
 	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))
@@ -363,10 +374,10 @@ func (proxy *Proxy) handleHTTP(span trace.Span, w http.ResponseWriter, req *http
 	span.SetAttributes(semconv.HTTPStatusCodeKey.Int(resp.StatusCode))
 	if n, err := io.Copy(w, resp.Body); err != nil && err != io.EOF {
 		if peerID := resp.Header.Get(config.HeaderDragonflyPeer); peerID != "" {
-			logger.Errorf("failed to write http body: %v, peer: %s, task: %s",
-				err, peerID, resp.Header.Get(config.HeaderDragonflyTask))
+			logger.Errorf("failed to write http body: %v, peer: %s, task: %s, written bytes: %d",
+				err, peerID, resp.Header.Get(config.HeaderDragonflyTask), n)
 		} else {
-			logger.Errorf("failed to write http body: %v", err)
+			logger.Errorf("failed to write http body: %v, written bytes: %d", err, n)
 		}
 		span.RecordError(err)
 	} else {
@@ -480,6 +491,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithTLS(tlsConfig),
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
+		transport.WithDefaultPattern(proxy.defaultPattern),
 		transport.WithDefaultBiz(bizTag),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)

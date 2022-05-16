@@ -29,6 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
@@ -70,6 +71,10 @@ type pieceDownloadError struct {
 	err             error
 }
 
+type backSourceError struct {
+	err error
+}
+
 func isConnectionError(err error) bool {
 	if e, ok := err.(*pieceDownloadError); ok {
 		return e.connectionError
@@ -84,11 +89,25 @@ func isPieceNotFound(err error) bool {
 	return false
 }
 
+func isBackSourceError(err error) bool {
+	if _, ok := err.(*backSourceError); ok {
+		return true
+	}
+	if _, ok := err.(*source.UnexpectedStatusCodeError); ok {
+		return true
+	}
+	return false
+}
+
 func (e *pieceDownloadError) Error() string {
 	if e.connectionError {
 		return fmt.Sprintf("connect with %s with error: %s", e.target, e.err)
 	}
 	return fmt.Sprintf("download %s with error status: %s", e.target, e.status)
+}
+
+func (e *backSourceError) Error() string {
+	return e.err.Error()
 }
 
 var _ PieceDownloader = (*pieceDownloader)(nil)
@@ -160,7 +179,12 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 	reader, closer := resp.Body.(io.Reader), resp.Body.(io.Closer)
 	if req.CalcDigest {
 		req.log.Debugf("calculate digest for piece %d, digest: %s", req.piece.PieceNum, req.piece.PieceMd5)
-		reader = digestutils.NewDigestReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
+		reader, err = digestutils.NewDigestReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
+		if err != nil {
+			_ = closer.Close()
+			req.log.Errorf("init digest reader error: %s", err.Error())
+			return nil, nil, err
+		}
 	}
 	return reader, closer, nil
 }

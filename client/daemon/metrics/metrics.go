@@ -26,6 +26,11 @@ import (
 	"d7y.io/dragonfly/v2/internal/constants"
 )
 
+const (
+	FailTypeP2P        = "p2p"
+	FailTypeBackSource = "source"
+)
+
 var (
 	ProxyRequestCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
@@ -69,12 +74,12 @@ var (
 		Help:      "Counter of the total peer tasks.",
 	})
 
-	PeerTaskFailedCount = promauto.NewCounter(prometheus.CounterOpts{
+	PeerTaskFailedCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "peer_task_failed_total",
 		Help:      "Counter of the total failed peer tasks.",
-	})
+	}, []string{"type"})
 
 	PieceTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
@@ -102,6 +107,13 @@ var (
 		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "stream_task_total",
 		Help:      "Counter of the total stream tasks.",
+	})
+
+	SeedTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.DfdaemonMetricsName,
+		Name:      "seed_task_total",
+		Help:      "Counter of the total seed tasks.",
 	})
 
 	PeerTaskCacheHitCount = promauto.NewCounter(prometheus.CounterOpts{

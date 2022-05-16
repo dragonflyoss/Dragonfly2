@@ -337,20 +337,39 @@ func TestHostManager_RunGC(t *testing.T) {
 			},
 		},
 		{
-			name: "host is cdn",
+			name: "host has upload peers",
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
 			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
 				assert := assert.New(t)
-				mockCDNHost := NewHost(mockRawCDNHost, WithIsCDN(true))
-				hostManager.Store(mockCDNHost)
+				hostManager.Store(mockHost)
+				mockHost.StorePeer(mockPeer)
+				mockHost.PeerCount.Add(0)
+				mockPeer.StoreParent(mockPeer)
 				err := hostManager.RunGC()
 				assert.NoError(err)
 
-				host, ok := hostManager.Load(mockCDNHost.ID)
+				host, ok := hostManager.Load(mockHost.ID)
 				assert.Equal(ok, true)
-				assert.Equal(host.ID, mockCDNHost.ID)
+				assert.Equal(host.ID, mockHost.ID)
+			},
+		},
+		{
+			name: "host is seed peer",
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, hostManager HostManager, mockHost *Host, mockPeer *Peer) {
+				assert := assert.New(t)
+				mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
+				hostManager.Store(mockSeedHost)
+				err := hostManager.RunGC()
+				assert.NoError(err)
+
+				host, ok := hostManager.Load(mockSeedHost.ID)
+				assert.Equal(ok, true)
+				assert.Equal(host.ID, mockSeedHost.ID)
 			},
 		},
 	}
@@ -363,7 +382,7 @@ func TestHostManager_RunGC(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, mockTaskBackToSourceLimit, mockTaskURLMeta)
+			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			hostManager, err := newHostManager(mockHostGCConfig, gc)
 			if err != nil {

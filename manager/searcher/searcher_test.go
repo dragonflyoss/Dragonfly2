@@ -78,7 +78,7 @@ func TestSchedulerCluster(t *testing.T) {
 			conditions: map[string]string{"security_domain": "domain-1"},
 			expect: func(t *testing.T, data []model.SchedulerCluster, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "security domain domain-1 does not match any scheduler cluster")
+				assert.Error(err)
 			},
 		},
 		{

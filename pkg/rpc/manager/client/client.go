@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/client_mock.go -source client.go -package mocks
+
 package client
 
 import (
@@ -26,10 +28,12 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
@@ -43,22 +47,22 @@ const (
 )
 
 type Client interface {
-	// Get Scheduler and Scheduler cluster configuration
+	// Update Seed peer configuration.
+	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
+
+	// Get Scheduler and Scheduler cluster configuration.
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
 
-	// Update scheduler configuration
+	// Update scheduler configuration.
 	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
 
-	// Update CDN configuration
-	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
-
-	// List acitve schedulers configuration
+	// List acitve schedulers configuration.
 	ListSchedulers(*manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
-	// KeepAlive with manager
+	// KeepAlive with manager.
 	KeepAlive(time.Duration, *manager.KeepAliveRequest)
 
-	// Close client connect
+	// Close client connect.
 	Close() error
 }
 
@@ -102,10 +106,17 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
 			return New(netAddr.Addr)
 		}
-		logger.Warnf("%s address can not reachable", netAddr.Addr)
+		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}
 
-	return nil, errors.New("can not find available addresses")
+	return nil, errors.New("can not find available manager addresses")
+}
+
+func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.UpdateSeedPeer(ctx, req)
 }
 
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
@@ -122,13 +133,6 @@ func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.
 	return c.ManagerClient.UpdateScheduler(ctx, req)
 }
 
-func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateCDN(ctx, req)
-}
-
 func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -141,6 +145,12 @@ retry:
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := c.ManagerClient.KeepAlive(ctx)
 	if err != nil {
+		if status.Code(err) == codes.Canceled {
+			logger.Infof("hostname %s cluster id %d stop keepalive", keepalive.HostName, keepalive.ClusterId)
+			cancel()
+			return
+		}
+
 		time.Sleep(interval)
 		cancel()
 		goto retry
@@ -156,7 +166,7 @@ retry:
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
 				if _, err := stream.CloseAndRecv(); err != nil {
-					logger.Errorf("hostname %s cluster id %v close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
+					logger.Errorf("hostname %s cluster id %d close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
 				}
 
 				cancel()

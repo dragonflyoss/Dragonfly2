@@ -28,6 +28,7 @@ import (
 
 	"d7y.io/dragonfly/v2/cdn/storedriver"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
@@ -74,27 +75,31 @@ type Manager interface {
 
 	// TryFreeSpace checks if there is enough space for the file, return true while we are sure that there is enough space.
 	TryFreeSpace(fileLength int64) (bool, error)
+
+	// GetUploadPath get path of upload file
+	GetUploadPath() string
 }
 
 // FileMetadata meta data of task
 type FileMetadata struct {
-	TaskID           string            `json:"taskID"`
-	TaskURL          string            `json:"taskURL"`
-	PieceSize        int32             `json:"pieceSize"`
-	SourceFileLen    int64             `json:"sourceFileLen"`
-	AccessTime       int64             `json:"accessTime"`
-	Interval         int64             `json:"interval"`
-	CdnFileLength    int64             `json:"cdnFileLength"`
-	Digest           string            `json:"digest"`
-	SourceRealDigest string            `json:"sourceRealDigest"`
-	Tag              string            `json:"tag"`
-	ExpireInfo       map[string]string `json:"expireInfo"`
-	Finish           bool              `json:"finish"`
-	Success          bool              `json:"success"`
-	TotalPieceCount  int32             `json:"totalPieceCount"`
-	PieceMd5Sign     string            `json:"pieceMd5Sign"`
-	Range            string            `json:"range"`
-	Filter           string            `json:"filter"`
+	TaskID           string                `json:"taskID"`
+	TaskURL          string                `json:"taskURL"`
+	PieceSize        int32                 `json:"pieceSize"`
+	SourceFileLen    int64                 `json:"sourceFileLen"`
+	AccessTime       int64                 `json:"accessTime"`
+	Interval         int64                 `json:"interval"`
+	CdnFileLength    int64                 `json:"cdnFileLength"`
+	Digest           string                `json:"digest"`
+	SourceRealDigest string                `json:"sourceRealDigest"`
+	Tag              string                `json:"tag"`
+	ExpireInfo       map[string]string     `json:"expireInfo"`
+	Finish           bool                  `json:"finish"`
+	Success          bool                  `json:"success"`
+	TotalPieceCount  int32                 `json:"totalPieceCount"`
+	PieceMd5Sign     string                `json:"pieceMd5Sign"`
+	Range            string                `json:"range"`
+	Filter           string                `json:"filter"`
+	ExtendAttribute  *base.ExtendAttribute `json:"extendAttribute"`
 }
 
 // PieceMetaRecord meta data of piece
