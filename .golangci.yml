@@ -4,9 +4,12 @@ run:
 
 linters-settings:
   gocyclo:
-    min-complexity: 42
+    min-complexity: 44
   gci:
-    local-prefixes: d7y.io/dragonfly/v2
+    sections:
+      - standard
+      - default
+      - prefix(d7y.io/dragonfly/v2)
 
 issues:
   new: true

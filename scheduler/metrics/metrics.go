@@ -133,7 +133,7 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_host_traffic",
 		Help:      "Counter of the number of per peer host traffic.",
-	}, []string{"biz_tag", "traffic_type", "peer_host_uuid", "peer_host_ip"})
+	}, []string{"biz_tag", "traffic_type", "peer_host_id", "peer_host_ip"})
 
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,

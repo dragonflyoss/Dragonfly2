@@ -25,7 +25,6 @@ type SchedulerCluster struct {
 	Scopes           JSONMap           `gorm:"column:scopes;comment:match scopes" json:"scopes"`
 	IsDefault        bool              `gorm:"column:is_default;not null;default:false;comment:default scheduler cluster" json:"is_default"`
 	SeedPeerClusters []SeedPeerCluster `gorm:"many2many:seed_peer_cluster_scheduler_cluster;" json:"seed_peer_clusters"`
-	CDNClusters      []CDNCluster      `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"cdn_clusters"`
 	Schedulers       []Scheduler       `json:"-"`
 	ApplicationID    uint              `gorm:"comment:application id" json:"application_id"`
 	Application      Application       `json:"-"`

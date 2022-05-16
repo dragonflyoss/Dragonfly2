@@ -91,21 +91,6 @@ func (mr *MockClientMockRecorder) ListSchedulers(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0)
 }
 
-// UpdateCDN mocks base method.
-func (m *MockClient) UpdateCDN(arg0 *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCDN", arg0)
-	ret0, _ := ret[0].(*manager.CDN)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateCDN indicates an expected call of UpdateCDN.
-func (mr *MockClientMockRecorder) UpdateCDN(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCDN", reflect.TypeOf((*MockClient)(nil).UpdateCDN), arg0)
-}
-
 // UpdateScheduler mocks base method.
 func (m *MockClient) UpdateScheduler(arg0 *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()

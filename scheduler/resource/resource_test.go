@@ -118,11 +118,12 @@ func TestResource_New(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "address list of cdn is empty")
+				assert.NoError(err)
 			},
 		},
 		{

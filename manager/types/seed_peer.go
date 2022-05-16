@@ -22,7 +22,7 @@ type SeedPeerParams struct {
 
 type CreateSeedPeerRequest struct {
 	HostName          string `json:"host_name" binding:"required"`
-	Type              string `json:"type" binding:"required"`
+	Type              string `json:"type" binding:"required,oneof=super strong weak"`
 	IDC               string `json:"idc" binding:"omitempty"`
 	NetTopology       string `json:"net_topology" binding:"omitempty"`
 	Location          string `json:"location" binding:"omitempty"`
@@ -33,7 +33,7 @@ type CreateSeedPeerRequest struct {
 }
 
 type UpdateSeedPeerRequest struct {
-	Type              string `json:"type" binding:"omitempty"`
+	Type              string `json:"type" binding:"omitempty,oneof=super strong weak"`
 	IDC               string `json:"idc" binding:"omitempty"`
 	NetTopology       string `json:"net_topology" binding:"omitempty"`
 	Location          string `json:"location" binding:"omitempty"`
@@ -45,7 +45,7 @@ type UpdateSeedPeerRequest struct {
 
 type GetSeedPeersQuery struct {
 	HostName          string `form:"host_name" binding:"omitempty"`
-	Type              string `form:"type" binding:"omitempty"`
+	Type              string `form:"type" binding:"omitempty,oneof=super strong weak"`
 	IDC               string `form:"idc" binding:"omitempty"`
 	Location          string `form:"location" binding:"omitempty"`
 	IP                string `form:"ip" binding:"omitempty"`

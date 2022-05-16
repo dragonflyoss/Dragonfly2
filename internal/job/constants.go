@@ -20,7 +20,6 @@ package job
 const (
 	GlobalQueue     = Queue("global")
 	SchedulersQueue = Queue("schedulers")
-	CDNsQueue       = Queue("cdns")
 )
 
 // Job Name

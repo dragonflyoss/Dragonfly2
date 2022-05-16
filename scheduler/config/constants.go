@@ -17,8 +17,8 @@
 package config
 
 const (
-	// Default number of cdn load limit.
-	DefaultCDNLoadLimit = 300
+	// Default number of seed peer load limit.
+	DefaultSeedPeerLoadLimit = 300
 
 	// Default number of client load limit.
 	DefaultClientLoadLimit = 50

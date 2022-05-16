@@ -156,8 +156,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
 	cs.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToApplication)
 	cs.DELETE(":id/seed-peer-clusters/:seed_peer_cluster_id", h.DeleteSeedPeerClusterToApplication)
-	cs.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToApplication)
-	cs.DELETE(":id/cdn-clusters/:cdn_cluster_id", h.DeleteCDNClusterToApplication)
 
 	// Seed Peer Cluster
 	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)
@@ -177,24 +175,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sp.GET(":id", h.GetSeedPeer)
 	sp.GET("", h.GetSeedPeers)
 
-	// CDN Cluster
-	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
-	cc.POST("", h.CreateCDNCluster)
-	cc.DELETE(":id", h.DestroyCDNCluster)
-	cc.PATCH(":id", h.UpdateCDNCluster)
-	cc.GET(":id", h.GetCDNCluster)
-	cc.GET("", h.GetCDNClusters)
-	cc.PUT(":id/cdns/:cdn_id", h.AddCDNToCDNCluster)
-	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
-
-	// CDN
-	c := apiv1.Group("/cdns", jwt.MiddlewareFunc(), rbac)
-	c.POST("", h.CreateCDN)
-	c.DELETE(":id", h.DestroyCDN)
-	c.PATCH(":id", h.UpdateCDN)
-	c.GET(":id", h.GetCDN)
-	c.GET("", h.GetCDNs)
-
 	// Security Rule
 	sr := apiv1.Group("/security-rules", jwt.MiddlewareFunc(), rbac)
 	sr.POST("", h.CreateSecurityRule)
@@ -212,7 +192,6 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
 	sg.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToSecurityGroup)
-	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
 	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
 	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 

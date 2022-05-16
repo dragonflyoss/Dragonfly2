@@ -28,7 +28,9 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -47,9 +49,6 @@ const (
 type Client interface {
 	// Update Seed peer configuration.
 	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
-
-	// Update CDN configuration.
-	UpdateCDN(*manager.UpdateCDNRequest) (*manager.CDN, error)
 
 	// Get Scheduler and Scheduler cluster configuration.
 	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
@@ -120,13 +119,6 @@ func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.Se
 	return c.ManagerClient.UpdateSeedPeer(ctx, req)
 }
 
-func (c *client) UpdateCDN(req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateCDN(ctx, req)
-}
-
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -153,6 +145,12 @@ retry:
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := c.ManagerClient.KeepAlive(ctx)
 	if err != nil {
+		if status.Code(err) == codes.Canceled {
+			logger.Infof("hostname %s cluster id %d stop keepalive", keepalive.HostName, keepalive.ClusterId)
+			cancel()
+			return
+		}
+
 		time.Sleep(interval)
 		cancel()
 		goto retry
@@ -168,7 +166,7 @@ retry:
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
 				if _, err := stream.CloseAndRecv(); err != nil {
-					logger.Errorf("hostname %s cluster id %v close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
+					logger.Errorf("hostname %s cluster id %d close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
 				}
 
 				cancel()
