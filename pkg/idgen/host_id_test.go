@@ -65,49 +65,6 @@ func TestHostID(t *testing.T) {
 	}
 }
 
-func TestSeedHostID(t *testing.T) {
-	tests := []struct {
-		name     string
-		hostname string
-		port     int32
-		expect   func(t *testing.T, d string)
-	}{
-		{
-			name:     "generate SeedHostID with ipv4",
-			hostname: "foo",
-			port:     8000,
-			expect: func(t *testing.T, d string) {
-				assert := assert.New(t)
-				assert.Equal(d, "foo-8000_Seed")
-			},
-		},
-		{
-			name:     "generate SeedHostID with empty host",
-			hostname: "",
-			port:     8000,
-			expect: func(t *testing.T, d string) {
-				assert := assert.New(t)
-				assert.Equal(d, "-8000_Seed")
-			},
-		},
-		{
-			name:     "generate SeedHostID with zero port",
-			hostname: "foo",
-			port:     0,
-			expect: func(t *testing.T, d string) {
-				assert := assert.New(t)
-				assert.Equal(d, "foo-0_Seed")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, SeedHostID(tc.hostname, tc.port))
-		})
-	}
-}
-
 func TestCDNHostID(t *testing.T) {
 	tests := []struct {
 		name     string

@@ -27,12 +27,10 @@ option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 enum SourceType {
   // Scheduler service.
   SCHEDULER_SOURCE = 0;
-  // Dfdaemon service.
-  CLIENT_SOURCE = 1;
-  // Deprecated: Use SuperSeed type of SeedPeer instead.
-  CDN_SOURCE = 2;
+  // Peer service.
+  PEER_SOURCE = 1;
   // SeedPeer service.
-  SEED_PEER_SOURCE = 3;
+  SEED_PEER_SOURCE = 2;
 }
 
 // SecurityGroup represents security group of cluster.
@@ -47,76 +45,6 @@ message SecurityGroup {
   string domain = 4;
   // Group proxy domain.
   string proxy_domain = 5;
-}
-
-// Deprecated: Use SeedPeerCluster instead.
-message CDNCluster {
-  // Cluster id.
-  uint64 id = 1;
-  // Cluster name.
-  string name = 2;
-  // Cluster biography.
-  string bio = 3;
-  // Cluster configuration.
-  bytes config = 4;
-  // Security group to which the cdn cluster belongs.
-  SecurityGroup security_group = 6;
-}
-
-// Deprecated: Use SuperSeed type of SeedPeer instead.
-message CDN {
-  // CDN id.
-  uint64 id = 1;
-  // CDN hostname.
-  string host_name = 2;
-  // CDN idc.
-  string idc = 3;
-  // CDN location.
-  string location = 4;
-  // CDN ip.
-  string ip = 5;
-  // CDN grpc port.
-  int32 port = 6;
-  // CDN download port.
-  int32 download_port = 7;
-  // CDN state.
-  string state = 8;
-  // ID of the cluster to which the cdn belongs.
-  uint64 cdn_cluster_id = 9;
-  // Cluster to which the cdn belongs.
-  CDNCluster cdn_cluster = 10;
-  // Schedulers included in cdn.
-  repeated Scheduler schedulers = 11;
-}
-
-// Deprecated: Use GetSeedPeerRequest instead.
-message GetCDNRequest {
-  // Request source type.
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  // CDN hostname.
-  string host_name = 2 [(validate.rules).string.hostname = true];
-  // ID of the cluster to which the cdn belongs.
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
-}
-
-// Deprecated: Use UpdateSeedPeerRequest instead.
-message UpdateCDNRequest {
-  // Request source type.
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  // CDN hostname.
-  string host_name = 2 [(validate.rules).string.hostname = true];
-  // CDN idc.
-  string idc = 3 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
-  // CDN location.
-  string location = 4 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
-  // CDN ip.
-  string ip = 5 [(validate.rules).string = {ip: true}];
-  // CDN grpc port.
-  int32 port = 6 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-  // CDN download port.
-  int32 download_port = 7 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-  // ID of the cluster to which the cdn belongs.
-  uint64 cdn_cluster_id = 8 [(validate.rules).uint64 = {gte: 1}];
 }
 
 // SeedPeerCluster represents cluster of seed peer.
@@ -143,26 +71,28 @@ message SeedPeer {
   string host_name = 2;
   // Seed peer type.
   string type = 3;
+  // CDN seed peer.
+  bool is_cdn = 4;
   // Seed peer idc.
-  string idc = 4;
+  string idc = 5;
   // Seed peer network topology.
-  string net_topology = 5;
+  string net_topology = 6;
   // Seed peer location.
-  string location = 6;
+  string location = 7;
   // Seed peer ip.
-  string ip = 7;
+  string ip = 8;
   // Seed peer grpc port.
-  int32 port = 8;
+  int32 port = 9;
   // Seed peer download port.
-  int32 download_port = 9;
+  int32 download_port = 10;
   // Seed peer state.
-  string state = 10;
+  string state = 11;
   // ID of the cluster to which the seed peer belongs.
-  uint64 seed_peer_cluster_id = 11;
+  uint64 seed_peer_cluster_id = 12;
   // Cluster to which the seed peer belongs.
-  SeedPeerCluster seed_peer_cluster = 12;
+  SeedPeerCluster seed_peer_cluster = 13;
   // Schedulers included in seed peer.
-  repeated Scheduler schedulers = 13;
+  repeated Scheduler schedulers = 14;
 }
 
 // GetSeedPeerRequest represents request of GetSeedPeer.
@@ -182,21 +112,23 @@ message UpdateSeedPeerRequest {
   // Seed peer hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
   // Seed peer type.
-  string type = 3 [(validate.rules).string = {min_len: 1, max_len: 1024}];
+  string type = 3 [(validate.rules).string = {in: ["super", "strong", "weak"]}];
+  // CDN seed peer.
+  bool is_cdn = 4;
   // Seed peer idc.
-  string idc = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer network topology.
-  string net_topology = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  string net_topology = 6 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer location.
-  string location = 6 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  string location = 7 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
   // Seed peer ip.
-  string ip = 7 [(validate.rules).string = {ip: true}];
+  string ip = 8 [(validate.rules).string = {ip: true}];
   // Seed peer port.
-  int32 port = 8 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // Seed peer download port.
-  int32 download_port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  int32 download_port = 10 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // ID of the cluster to which the seed peer belongs.
-  uint64 seed_peer_cluster_id = 10 [(validate.rules).uint64 = {gte: 1}];
+  uint64 seed_peer_cluster_id = 11 [(validate.rules).uint64 = {gte: 1}];
 }
 
 // SeedPeerCluster represents cluster of scheduler.
@@ -241,8 +173,6 @@ message Scheduler {
   uint64 scheduler_cluster_id = 10;
   // Cluster to which the scheduler belongs.
   SchedulerCluster scheduler_cluster = 11;
-  // Deprecated: Use seed_peers instead.
-  repeated CDN cdns = 12;
   // Seed peers to which the scheduler belongs.
   repeated SeedPeer seed_peers = 13;
   // Scheduler network topology.
@@ -317,10 +247,6 @@ service Manager {
   rpc GetSeedPeer(GetSeedPeerRequest) returns(SeedPeer);
   // Update SeedPeer configuration.
   rpc UpdateSeedPeer(UpdateSeedPeerRequest) returns(SeedPeer);
-  // Deprecated: Use GetSeedPeer instead.
-  rpc GetCDN(GetCDNRequest) returns(CDN);
-  // Deprecated: Use UpdateSeedPeer instead.
-  rpc UpdateCDN(UpdateCDNRequest) returns(CDN);
   // Get Scheduler and Scheduler cluster configuration.
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
   // Update scheduler configuration.

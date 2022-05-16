@@ -267,7 +267,7 @@ func (proxy *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer metrics.ProxyRequestRunningCount.WithLabelValues(r.Method).Sub(1)
 
 	ctx, span := proxy.tracer.Start(r.Context(), config.SpanProxy)
-	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Uuid))
+	span.SetAttributes(config.AttributePeerHost.String(proxy.peerHost.Id))
 	span.SetAttributes(semconv.NetHostIPKey.String(proxy.peerHost.Ip))
 	span.SetAttributes(semconv.HTTPSchemeKey.String(r.URL.Scheme))
 	span.SetAttributes(semconv.HTTPHostKey.String(r.Host))

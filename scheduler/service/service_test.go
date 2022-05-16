@@ -58,7 +58,7 @@ var (
 	}
 
 	mockRawHost = &rpcscheduler.PeerHost{
-		Uuid:           idgen.HostID("hostname", 8003),
+		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -70,7 +70,7 @@ var (
 	}
 
 	mockRawSeedHost = &rpcscheduler.PeerHost{
-		Uuid:           idgen.SeedHostID("hostname", 8003),
+		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
 		DownPort:       8001,
@@ -166,7 +166,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -198,7 +198,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -231,7 +231,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -265,7 +265,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -303,7 +303,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -339,7 +339,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -375,7 +375,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -411,7 +411,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -453,7 +453,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -494,7 +494,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -535,7 +535,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -576,7 +576,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -611,7 +611,7 @@ func TestService_RegisterPeerTask(t *testing.T) {
 			req: &rpcscheduler.PeerTaskRequest{
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 			},
 			mock: func(
@@ -1232,7 +1232,7 @@ func TestService_AnnounceTask(t *testing.T) {
 				Cid:     mockCID,
 				UrlMeta: &base.UrlMeta{},
 				PeerHost: &rpcscheduler.PeerHost{
-					Uuid: mockRawHost.Uuid,
+					Id: mockRawHost.Id,
 				},
 				PiecePacket: &base.PiecePacket{
 					PieceInfos: []*base.PieceInfo{{PieceNum: 1}},
@@ -2028,12 +2028,12 @@ func TestService_registerHost(t *testing.T) {
 			mock: func(mockHost *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.Uuid)).Return(mockHost, true).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.Id)).Return(mockHost, true).Times(1),
 				)
 			},
 			expect: func(t *testing.T, host *resource.Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
 			},
 		},
 		{
@@ -2046,7 +2046,7 @@ func TestService_registerHost(t *testing.T) {
 			mock: func(mockHost *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.Uuid)).Return(nil, false).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.Id)).Return(nil, false).Times(1),
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{LoadLimit: 10}, true).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Store(gomock.Any()).Return().Times(1),
@@ -2054,7 +2054,7 @@ func TestService_registerHost(t *testing.T) {
 			},
 			expect: func(t *testing.T, host *resource.Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
 				assert.Equal(host.UploadLoadLimit.Load(), int32(10))
 			},
 		},
@@ -2068,7 +2068,7 @@ func TestService_registerHost(t *testing.T) {
 			mock: func(mockHost *resource.Host, hostManager resource.HostManager, mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					mr.HostManager().Return(hostManager).Times(1),
-					mh.Load(gomock.Eq(mockRawHost.Uuid)).Return(nil, false).Times(1),
+					mh.Load(gomock.Eq(mockRawHost.Id)).Return(nil, false).Times(1),
 					md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, false).Times(1),
 					mr.HostManager().Return(hostManager).Times(1),
 					mh.Store(gomock.Any()).Return().Times(1),
@@ -2076,7 +2076,7 @@ func TestService_registerHost(t *testing.T) {
 			},
 			expect: func(t *testing.T, host *resource.Host) {
 				assert := assert.New(t)
-				assert.Equal(host.ID, mockRawHost.Uuid)
+				assert.Equal(host.ID, mockRawHost.Id)
 			},
 		},
 	}

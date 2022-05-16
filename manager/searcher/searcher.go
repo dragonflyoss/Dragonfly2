@@ -110,7 +110,7 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 
 	clusters := FilterSchedulerClusters(conditions, schedulerClusters)
 	if len(clusters) == 0 {
-		return nil, fmt.Errorf("security domain %s does not match any scheduler cluster", conditions[ConditionSecurityDomain])
+		return nil, fmt.Errorf("conditions %#v does not match any scheduler cluster", conditions)
 	}
 
 	sort.Slice(

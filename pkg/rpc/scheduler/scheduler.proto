@@ -74,8 +74,8 @@ message SinglePiece{
 }
 
 message PeerHost{
-  // each time the daemon starts, it will generate a different uuid
-  string uuid = 1 [(validate.rules).string.uuid = true];
+  // each time the daemon starts, it will generate a different id 
+  string id = 1 [(validate.rules).string.min_len = 1];
   // peer host ip
   string ip = 2 [(validate.rules).string.ip = true];
   // rpc service port for peer

@@ -60,19 +60,10 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	}
 
 	// Initialize seed peer grpc client.
-	netAddrs := append(seedPeersToNetAddrs(config.SeedPeers), cdnsToNetAddrs(config.CDNs)...)
-	client, err := client.GetClientByAddr(netAddrs, opts...)
-	if err != nil {
-		return nil, err
-	}
+	client := client.GetClientByAddr(seedPeersToNetAddrs(config.SeedPeers), opts...)
 
 	// Initialize seed hosts.
 	for _, host := range seedPeersToHosts(config.SeedPeers) {
-		hostManager.Store(host)
-	}
-
-	// Initialize cdn hosts.
-	for _, host := range cdnsToHosts(config.CDNs) {
 		hostManager.Store(host)
 	}
 
@@ -93,13 +84,8 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 		seedPeers = append(seedPeers, *seedPeer)
 	}
 
-	var cdns []config.CDN
-	for _, cdn := range data.CDNs {
-		cdns = append(cdns, *cdn)
-	}
-
 	if reflect.DeepEqual(sc.data, data) {
-		logger.Infof("addresses deep equal: %#v %#v", seedPeers, cdns)
+		logger.Infof("addresses deep equal: %#v", seedPeers)
 		return
 	}
 
@@ -107,7 +93,17 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	// the seed peer needs to be cleared.
 	diffSeedPeers := diffSeedPeers(sc.data.SeedPeers, data.SeedPeers)
 	for _, seedPeer := range diffSeedPeers {
-		id := idgen.SeedHostID(seedPeer.Hostname, seedPeer.Port)
+		if seedPeer.IsCDN {
+			id := idgen.CDNHostID(seedPeer.Hostname, seedPeer.Port)
+			if host, ok := sc.hostManager.Load(id); ok {
+				host.LeavePeers()
+				sc.hostManager.Delete(id)
+			}
+
+			continue
+		}
+
+		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
 		if host, ok := sc.hostManager.Load(id); ok {
 			host.LeavePeers()
 			sc.hostManager.Delete(id)
@@ -119,29 +115,12 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 		sc.hostManager.Store(host)
 	}
 
-	// If only the ip of the cdn host is changed,
-	// the cdn peer needs to be cleared.
-	diffCDNs := diffCDNs(sc.data.CDNs, data.CDNs)
-	for _, cdn := range diffCDNs {
-		id := idgen.CDNHostID(cdn.Hostname, cdn.Port)
-		if host, ok := sc.hostManager.Load(id); ok {
-			host.LeavePeers()
-			sc.hostManager.Delete(id)
-		}
-	}
-
-	// Update cdn in host manager.
-	for _, host := range cdnsToHosts(data.CDNs) {
-		sc.hostManager.Store(host)
-	}
-
 	// Update dynamic data.
 	sc.data = data
 
 	// Update grpc seed peer addresses.
-	netAddrs := append(seedPeersToNetAddrs(data.SeedPeers), cdnsToNetAddrs(data.CDNs)...)
-	sc.UpdateState(netAddrs)
-	logger.Infof("addresses have been updated: %#v %#v", seedPeers, cdns)
+	sc.UpdateState(seedPeersToNetAddrs(data.SeedPeers))
+	logger.Infof("addresses have been updated: %#v", seedPeers)
 }
 
 // seedPeersToHosts coverts []*config.SeedPeer to map[string]*Host.
@@ -153,9 +132,25 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
 		}
 
-		id := idgen.SeedHostID(seedPeer.Hostname, seedPeer.Port)
+		if seedPeer.IsCDN {
+			id := idgen.CDNHostID(seedPeer.Hostname, seedPeer.Port)
+			hosts[id] = NewHost(&rpcscheduler.PeerHost{
+				Id:          id,
+				Ip:          seedPeer.IP,
+				RpcPort:     seedPeer.Port,
+				DownPort:    seedPeer.DownloadPort,
+				HostName:    seedPeer.Hostname,
+				Idc:         seedPeer.IDC,
+				Location:    seedPeer.Location,
+				NetTopology: seedPeer.NetTopology,
+			}, options...)
+
+			continue
+		}
+
+		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
 		hosts[id] = NewHost(&rpcscheduler.PeerHost{
-			Uuid:        id,
+			Id:          id,
 			Ip:          seedPeer.IP,
 			RpcPort:     seedPeer.Port,
 			DownPort:    seedPeer.DownloadPort,
@@ -222,86 +217,16 @@ func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedP
 	for _, x := range sx {
 		found := false
 		for _, y := range sy {
-			if idgen.SeedHostID(x.Hostname, x.Port) == idgen.SeedHostID(y.Hostname, y.Port) {
-				found = true
-				break
-			}
-		}
+			if x.IsCDN {
+				if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
+					found = true
+					break
+				}
 
-		if !found {
-			diff = append(diff, x)
-		}
-	}
-
-	return diff
-}
-
-// cdnsToHosts coverts []*config.CDN to map[string]*Host.
-func cdnsToHosts(cdns []*config.CDN) map[string]*Host {
-	hosts := map[string]*Host{}
-	for _, cdn := range cdns {
-		var netTopology string
-		options := []HostOption{WithHostType(HostTypeSuperSeed), WithIsCDN(true)}
-		if config, ok := cdn.GetCDNClusterConfig(); ok && config.LoadLimit > 0 {
-			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
-			netTopology = config.NetTopology
-		}
-
-		id := idgen.CDNHostID(cdn.Hostname, cdn.Port)
-		hosts[id] = NewHost(&rpcscheduler.PeerHost{
-			Uuid:        id,
-			Ip:          cdn.IP,
-			RpcPort:     cdn.Port,
-			DownPort:    cdn.DownloadPort,
-			HostName:    cdn.Hostname,
-			Idc:         cdn.IDC,
-			Location:    cdn.Location,
-			NetTopology: netTopology,
-		}, options...)
-	}
-	return hosts
-}
-
-// cdnsToNetAddrs coverts []*config.CDN to []dfnet.NetAddr.
-func cdnsToNetAddrs(cdns []*config.CDN) []dfnet.NetAddr {
-	netAddrs := make([]dfnet.NetAddr, 0, len(cdns))
-	for _, cdn := range cdns {
-		netAddrs = append(netAddrs, dfnet.NetAddr{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf("%s:%d", cdn.IP, cdn.Port),
-		})
-	}
-
-	return netAddrs
-}
-
-// diffCDNs find out different cdns.
-func diffCDNs(cx []*config.CDN, cy []*config.CDN) []*config.CDN {
-	// Get cdns with the same HostID but different IP.
-	var diff []*config.CDN
-	for _, x := range cx {
-		for _, y := range cy {
-			if x.Hostname != y.Hostname {
 				continue
 			}
 
-			if x.Port != y.Port {
-				continue
-			}
-
-			if x.IP == y.IP {
-				continue
-			}
-
-			diff = append(diff, x)
-		}
-	}
-
-	// Get the removed cdns.
-	for _, x := range cx {
-		found := false
-		for _, y := range cy {
-			if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
+			if idgen.HostID(x.Hostname, x.Port) == idgen.HostID(y.Hostname, y.Port) {
 				found = true
 				break
 			}
