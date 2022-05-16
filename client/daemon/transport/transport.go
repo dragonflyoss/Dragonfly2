@@ -366,7 +366,7 @@ func delHopHeaders(header http.Header) {
 	}
 }
 
-func httpResponse(req *http.Request, status int, body string) (*http.Response, error) {
+func compositeErrorHTTPResponse(req *http.Request, status int, body string) (*http.Response, error) {
 	resp := &http.Response{
 		StatusCode:    status,
 		Body:          io.NopCloser(bytes.NewBufferString(body)),
@@ -380,13 +380,13 @@ func httpResponse(req *http.Request, status int, body string) (*http.Response, e
 }
 
 func badRequest(req *http.Request, body string) (*http.Response, error) {
-	return httpResponse(req, http.StatusBadRequest, body)
+	return compositeErrorHTTPResponse(req, http.StatusBadRequest, body)
 }
 
 func notImplemented(req *http.Request, body string) (*http.Response, error) {
-	return httpResponse(req, http.StatusNotImplemented, body)
+	return compositeErrorHTTPResponse(req, http.StatusNotImplemented, body)
 }
 
 func requestedRangeNotSatisfiable(req *http.Request, body string) (*http.Response, error) {
-	return httpResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
+	return compositeErrorHTTPResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
 }

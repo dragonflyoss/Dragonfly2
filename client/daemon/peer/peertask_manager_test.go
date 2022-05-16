@@ -400,7 +400,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			mockHTTPSourceClient: nil,
 		},
 		{
-			name:                 "tidy size scope - p2p",
+			name:                 "tiny size scope - p2p",
 			taskData:             testBytes[:64],
 			pieceParallelCount:   4,
 			pieceSize:            1024,

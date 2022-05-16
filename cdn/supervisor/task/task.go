@@ -86,6 +86,8 @@ type SeedTask struct {
 	// Pieces pieces of task
 	Pieces *sync.Map `json:"-"` // map[uint32]*PieceInfo
 
+	ExtendAttribute *base.ExtendAttribute `json:"extendAttribute"`
+
 	logger *logger.SugaredLoggerOnWith
 }
 
@@ -216,5 +218,5 @@ const (
 )
 
 func IsEqual(task1, task2 SeedTask) bool {
-	return cmp.Equal(task1, task2, cmpopts.IgnoreFields(SeedTask{}, "Pieces"), cmpopts.IgnoreUnexported(SeedTask{}))
+	return cmp.Equal(task1, task2, cmpopts.IgnoreFields(SeedTask{}, "Pieces"), cmpopts.IgnoreUnexported(SeedTask{}, base.ExtendAttribute{}))
 }
