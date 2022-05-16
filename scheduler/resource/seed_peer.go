@@ -137,10 +137,10 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, err
 	task.Log.Infof("can not find seed peer: %s", ps.PeerId)
 
 	// Load host from manager.
-	host, ok := s.hostManager.Load(ps.HostUuid)
+	host, ok := s.hostManager.Load(ps.HostId)
 	if !ok {
-		task.Log.Errorf("can not find seed host uuid: %s", ps.HostUuid)
-		return nil, errors.Errorf("can not find host uuid: %s", ps.HostUuid)
+		task.Log.Errorf("can not find seed host id: %s", ps.HostId)
+		return nil, errors.Errorf("can not find host id: %s", ps.HostId)
 	}
 
 	// New seed peer.

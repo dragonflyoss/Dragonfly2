@@ -30,7 +30,7 @@ const (
 const (
 	managerServerName   = "manager"
 	schedulerServerName = "scheduler"
-	cdnServerName       = "cdn"
+	seedPeerServerName  = "seed-peer"
 	dfdaemonServerName  = "dfdaemon"
 	proxyServerName     = "proxy"
 )
@@ -56,10 +56,10 @@ var servers = map[string]server{
 		logDirName: schedulerServerName,
 		replicas:   3,
 	},
-	cdnServerName: {
-		name:       cdnServerName,
+	seedPeerServerName: {
+		name:       seedPeerServerName,
 		namespace:  dragonflyNamespace,
-		logDirName: cdnServerName,
+		logDirName: "daemon",
 		replicas:   3,
 	},
 	dfdaemonServerName: {

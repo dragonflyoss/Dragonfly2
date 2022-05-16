@@ -167,9 +167,6 @@ type Record struct {
 	// ParentHostType is parent host type.
 	ParentHostType int `csv:"parentHostType"`
 
-	// ParentIsCDN is used as tag cdn.
-	ParentIsCDN bool `csv:"parentIsCDN"`
-
 	// ParentCreateAt is parent peer create nanosecond time.
 	ParentCreateAt int64 `csv:"parentCreateAt"`
 

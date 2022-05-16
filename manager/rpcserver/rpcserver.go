@@ -147,6 +147,7 @@ func (s *Server) GetSeedPeer(ctx context.Context, req *manager.GetSeedPeerReques
 	pbSeedPeer = manager.SeedPeer{
 		Id:                uint64(seedPeer.ID),
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		HostName:          seedPeer.HostName,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
@@ -193,6 +194,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 
 	if err := s.db.WithContext(ctx).Model(&seedPeer).Updates(model.SeedPeer{
 		Type:              req.Type,
+		IsCDN:             req.IsCdn,
 		IDC:               req.Idc,
 		NetTopology:       req.NetTopology,
 		Location:          req.Location,
@@ -215,6 +217,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Id:                uint64(seedPeer.ID),
 		HostName:          seedPeer.HostName,
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
 		Location:          seedPeer.Location,
@@ -231,6 +234,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 	seedPeer := model.SeedPeer{
 		HostName:          req.HostName,
 		Type:              req.Type,
+		IsCDN:             req.IsCdn,
 		IDC:               req.Idc,
 		NetTopology:       req.NetTopology,
 		Location:          req.Location,
@@ -248,6 +252,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Id:                uint64(seedPeer.ID),
 		HostName:          seedPeer.HostName,
 		Type:              seedPeer.Type,
+		IsCdn:             seedPeer.IsCDN,
 		Idc:               seedPeer.IDC,
 		NetTopology:       seedPeer.NetTopology,
 		Location:          seedPeer.Location,
@@ -256,157 +261,6 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		DownloadPort:      seedPeer.DownloadPort,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		State:             seedPeer.State,
-	}, nil
-}
-
-// Deprecated: Use GetSeedPeer instead.
-func (s *Server) GetCDN(ctx context.Context, req *manager.GetCDNRequest) (*manager.CDN, error) {
-	var pbCDN manager.CDN
-	cacheKey := cache.MakeCDNCacheKey(req.HostName, uint(req.CdnClusterId))
-
-	// Cache hit.
-	if err := s.cache.Get(ctx, cacheKey, &pbCDN); err == nil {
-		logger.Infof("%s cache hit", cacheKey)
-		return &pbCDN, nil
-	}
-
-	// Cache miss.
-	logger.Infof("%s cache miss", cacheKey)
-	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).Preload("CDNCluster").Preload("CDNCluster.SchedulerClusters.Schedulers", &model.Scheduler{
-		State: model.SchedulerStateActive,
-	}).First(&cdn, &model.CDN{
-		HostName:     req.HostName,
-		CDNClusterID: uint(req.CdnClusterId),
-	}).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	// Marshal config of cdn cluster.
-	config, err := cdn.CDNCluster.Config.MarshalJSON()
-	if err != nil {
-		return nil, status.Error(codes.DataLoss, err.Error())
-	}
-
-	// Construct schedulers.
-	var pbSchedulers []*manager.Scheduler
-	for _, schedulerCluster := range cdn.CDNCluster.SchedulerClusters {
-		for _, scheduler := range schedulerCluster.Schedulers {
-			pbSchedulers = append(pbSchedulers, &manager.Scheduler{
-				Id:       uint64(scheduler.ID),
-				HostName: scheduler.HostName,
-				Idc:      scheduler.IDC,
-				Location: scheduler.Location,
-				Ip:       scheduler.IP,
-				Port:     scheduler.Port,
-				State:    scheduler.State,
-			})
-		}
-	}
-
-	// Construct cdn.
-	pbCDN = manager.CDN{
-		Id:           uint64(cdn.ID),
-		HostName:     cdn.HostName,
-		Idc:          cdn.IDC,
-		Location:     cdn.Location,
-		Ip:           cdn.IP,
-		Port:         cdn.Port,
-		DownloadPort: cdn.DownloadPort,
-		State:        cdn.State,
-		CdnClusterId: uint64(cdn.CDNClusterID),
-		CdnCluster: &manager.CDNCluster{
-			Id:     uint64(cdn.CDNCluster.ID),
-			Name:   cdn.CDNCluster.Name,
-			Bio:    cdn.CDNCluster.BIO,
-			Config: config,
-		},
-		Schedulers: pbSchedulers,
-	}
-
-	// Cache data.
-	if err := s.cache.Once(&cachev8.Item{
-		Ctx:   ctx,
-		Key:   cacheKey,
-		Value: &pbCDN,
-		TTL:   s.cache.TTL,
-	}); err != nil {
-		logger.Warnf("storage cache failed: %v", err)
-	}
-
-	return &pbCDN, nil
-}
-
-// Deprecated: Use UpdateSeedPeer instead.
-func (s *Server) UpdateCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	cdn := model.CDN{}
-	if err := s.db.WithContext(ctx).First(&cdn, model.CDN{
-		HostName:     req.HostName,
-		CDNClusterID: uint(req.CdnClusterId),
-	}).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return s.createCDN(ctx, req)
-		}
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	if err := s.db.WithContext(ctx).Model(&cdn).Updates(model.CDN{
-		IDC:          req.Idc,
-		Location:     req.Location,
-		IP:           req.Ip,
-		Port:         req.Port,
-		DownloadPort: req.DownloadPort,
-		CDNClusterID: uint(req.CdnClusterId),
-	}).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	if err := s.cache.Delete(
-		ctx,
-		cache.MakeCDNCacheKey(cdn.HostName, cdn.CDNClusterID),
-	); err != nil {
-		logger.Warnf("%s refresh keepalive status failed in cdn cluster %d", cdn.HostName, cdn.CDNClusterID)
-	}
-
-	return &manager.CDN{
-		Id:           uint64(cdn.ID),
-		HostName:     cdn.HostName,
-		Idc:          cdn.IDC,
-		Location:     cdn.Location,
-		Ip:           cdn.IP,
-		Port:         cdn.Port,
-		DownloadPort: cdn.DownloadPort,
-		CdnClusterId: uint64(cdn.CDNClusterID),
-		State:        cdn.State,
-	}, nil
-}
-
-// Deprecated: Use createSeedPeer instead.
-func (s *Server) createCDN(ctx context.Context, req *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	cdn := model.CDN{
-		HostName:     req.HostName,
-		IDC:          req.Idc,
-		Location:     req.Location,
-		IP:           req.Ip,
-		Port:         req.Port,
-		DownloadPort: req.DownloadPort,
-		CDNClusterID: uint(req.CdnClusterId),
-	}
-
-	if err := s.db.WithContext(ctx).Create(&cdn).Error; err != nil {
-		return nil, status.Error(codes.Unknown, err.Error())
-	}
-
-	return &manager.CDN{
-		Id:           uint64(cdn.ID),
-		HostName:     cdn.HostName,
-		Idc:          cdn.IDC,
-		Location:     cdn.Location,
-		Ip:           cdn.IP,
-		Port:         cdn.Port,
-		DownloadPort: cdn.DownloadPort,
-		CdnClusterId: uint64(cdn.CDNClusterID),
-		State:        cdn.State,
 	}, nil
 }
 
@@ -424,9 +278,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 	// Cache miss.
 	logger.Infof("%s cache miss", cacheKey)
 	scheduler := model.Scheduler{}
-	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.CDNClusters.CDNs", &model.CDN{
-		State: model.CDNStateActive,
-	}).Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &model.CDN{
+	if err := s.db.WithContext(ctx).Preload("SchedulerCluster").Preload("SchedulerCluster.SeedPeerClusters.SeedPeers", &model.SeedPeer{
 		State: model.SeedPeerStateActive,
 	}).First(&scheduler, &model.Scheduler{
 		HostName:           req.HostName,
@@ -460,6 +312,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 				Id:                uint64(seedPeer.ID),
 				HostName:          seedPeer.HostName,
 				Type:              seedPeer.Type,
+				IsCdn:             seedPeer.IsCDN,
 				Idc:               seedPeer.IDC,
 				NetTopology:       seedPeer.NetTopology,
 				Location:          seedPeer.Location,
@@ -473,35 +326,6 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 					Name:   seedPeerCluster.Name,
 					Bio:    seedPeerCluster.BIO,
 					Config: seedPeerClusterConfig,
-				},
-			})
-		}
-	}
-
-	// Deprecated: Use pbSeedPeers instead.
-	var pbCDNs []*manager.CDN
-	for _, cdnCluster := range scheduler.SchedulerCluster.CDNClusters {
-		cdnClusterConfig, err := cdnCluster.Config.MarshalJSON()
-		if err != nil {
-			return nil, status.Error(codes.DataLoss, err.Error())
-		}
-
-		for _, cdn := range cdnCluster.CDNs {
-			pbCDNs = append(pbCDNs, &manager.CDN{
-				Id:           uint64(cdn.ID),
-				HostName:     cdn.HostName,
-				Idc:          cdn.IDC,
-				Location:     cdn.Location,
-				Ip:           cdn.IP,
-				Port:         cdn.Port,
-				DownloadPort: cdn.DownloadPort,
-				State:        cdn.State,
-				CdnClusterId: uint64(cdn.CDNClusterID),
-				CdnCluster: &manager.CDNCluster{
-					Id:     uint64(cdnCluster.ID),
-					Name:   cdnCluster.Name,
-					Bio:    cdnCluster.BIO,
-					Config: cdnClusterConfig,
 				},
 			})
 		}
@@ -526,7 +350,6 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 			ClientConfig: schedulerClusterClientConfig,
 		},
 		SeedPeers: pbSeedPeers,
-		Cdns:      pbCDNs,
 	}
 
 	// Cache data.
@@ -639,7 +462,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	log.Infof("list scheduler clusters %v with hostInfo %#v", getSchedulerClusterNames(schedulerClusters), req.HostInfo)
 	schedulerClusters, err := s.searcher.FindSchedulerClusters(ctx, schedulerClusters, req)
 	if err != nil {
-		log.Errorf("can not matching scheduler cluster %v", err)
+		log.Error(err)
 		return nil, status.Error(codes.NotFound, "scheduler cluster not found")
 	}
 	log.Infof("find matching scheduler cluster %v", getSchedulerClusterNames(schedulerClusters))
@@ -731,26 +554,6 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 		}
 	}
 
-	// Deprecated: Use SourceType_SEED_PEER_SOURCE instead.
-	if sourceType == manager.SourceType_CDN_SOURCE {
-		cdn := model.CDN{}
-		if err := s.db.First(&cdn, model.CDN{
-			HostName:     hostName,
-			CDNClusterID: clusterID,
-		}).Updates(model.CDN{
-			State: model.CDNStateActive,
-		}).Error; err != nil {
-			return status.Error(codes.Unknown, err.Error())
-		}
-
-		if err := s.cache.Delete(
-			context.TODO(),
-			cache.MakeCDNCacheKey(hostName, clusterID),
-		); err != nil {
-			logger.Warnf("%s refresh keepalive status failed in cdn cluster %d", hostName, clusterID)
-		}
-	}
-
 	for {
 		_, err := stream.Recv()
 		if err != nil {
@@ -791,26 +594,6 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 					cache.MakeSeedPeerCacheKey(hostName, clusterID),
 				); err != nil {
 					logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
-				}
-			}
-
-			// Deprecated: Use SourceType_SEED_PEER_SOURCE instead.
-			if sourceType == manager.SourceType_CDN_SOURCE {
-				cdn := model.CDN{}
-				if err := s.db.First(&cdn, model.CDN{
-					HostName:     hostName,
-					CDNClusterID: clusterID,
-				}).Updates(model.CDN{
-					State: model.CDNStateInactive,
-				}).Error; err != nil {
-					return status.Error(codes.Unknown, err.Error())
-				}
-
-				if err := s.cache.Delete(
-					context.TODO(),
-					cache.MakeCDNCacheKey(hostName, clusterID),
-				); err != nil {
-					logger.Warnf("%s refresh keepalive status failed in cdn cluster %d", hostName, clusterID)
 				}
 			}
 
