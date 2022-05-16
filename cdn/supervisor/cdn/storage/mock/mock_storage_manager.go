@@ -65,6 +65,20 @@ func (mr *MockManagerMockRecorder) DeleteTask(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockManager)(nil).DeleteTask), arg0)
 }
 
+// GetUploadPath mocks base method.
+func (m *MockManager) GetUploadPath() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUploadPath")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetUploadPath indicates an expected call of GetUploadPath.
+func (mr *MockManagerMockRecorder) GetUploadPath() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUploadPath", reflect.TypeOf((*MockManager)(nil).GetUploadPath))
+}
+
 // ReadDownloadFile mocks base method.
 func (m *MockManager) ReadDownloadFile(arg0 string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()

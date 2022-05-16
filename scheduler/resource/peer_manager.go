@@ -27,15 +27,15 @@ import (
 )
 
 const (
-	// GC peer id
+	// GC peer id.
 	GCPeerID = "peer"
 )
 
 type PeerManager interface {
-	// Load return peer for a key
+	// Load returns peer for a key.
 	Load(string) (*Peer, bool)
 
-	// Store set peer
+	// Store sets peer.
 	Store(*Peer)
 
 	// LoadOrStore returns peer the key if present.
@@ -43,25 +43,25 @@ type PeerManager interface {
 	// The loaded result is true if the peer was loaded, false if stored.
 	LoadOrStore(*Peer) (*Peer, bool)
 
-	// Delete deletes peer for a key
+	// Delete deletes peer for a key.
 	Delete(string)
 
-	// Try to reclaim peer
+	// Try to reclaim peer.
 	RunGC() error
 }
 
 type peerManager struct {
-	// Peer sync map
+	// Peer sync map.
 	*sync.Map
 
-	// Peer time to live
+	// Peer time to live.
 	ttl time.Duration
 
-	// Peer mutex
+	// Peer mutex.
 	mu *sync.Mutex
 }
 
-// New peer manager interface
+// New peer manager interface.
 func newPeerManager(cfg *config.GCConfig, gc pkggc.GC) (PeerManager, error) {
 	p := &peerManager{
 		Map: &sync.Map{},
@@ -130,7 +130,7 @@ func (p *peerManager) RunGC() error {
 
 		if elapsed > p.ttl && peer.ChildCount.Load() == 0 {
 			// If the status is PeerStateLeave,
-			// clear peer information
+			// clear peer information.
 			if peer.FSM.Is(PeerStateLeave) {
 				peer.DeleteParent()
 				p.Delete(peer.ID)
@@ -139,7 +139,7 @@ func (p *peerManager) RunGC() error {
 			}
 
 			// If the peer is not leave,
-			// first change the state to PeerEventLeave
+			// first change the state to PeerEventLeave.
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			}

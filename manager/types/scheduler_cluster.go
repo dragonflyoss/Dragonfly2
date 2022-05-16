@@ -26,23 +26,23 @@ type AddSchedulerToSchedulerClusterParams struct {
 }
 
 type CreateSchedulerClusterRequest struct {
-	Name         string                        `json:"name" binding:"required"`
-	BIO          string                        `json:"bio" binding:"omitempty"`
-	Config       *SchedulerClusterConfig       `json:"config" binding:"required"`
-	ClientConfig *SchedulerClusterClientConfig `json:"client_config" binding:"required"`
-	Scopes       *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
-	IsDefault    bool                          `json:"is_default" binding:"omitempty"`
-	CDNClusterID uint                          `json:"cdn_cluster_id" binding:"omitempty"`
+	Name              string                        `json:"name" binding:"required"`
+	BIO               string                        `json:"bio" binding:"omitempty"`
+	Config            *SchedulerClusterConfig       `json:"config" binding:"required"`
+	ClientConfig      *SchedulerClusterClientConfig `json:"client_config" binding:"required"`
+	Scopes            *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
+	IsDefault         bool                          `json:"is_default" binding:"omitempty"`
+	SeedPeerClusterID uint                          `json:"seed_peer_cluster_id" binding:"omitempty"`
 }
 
 type UpdateSchedulerClusterRequest struct {
-	Name         string                        `json:"name" binding:"omitempty"`
-	BIO          string                        `json:"bio" binding:"omitempty"`
-	Config       *SchedulerClusterConfig       `json:"config" binding:"omitempty"`
-	ClientConfig *SchedulerClusterClientConfig `json:"client_config" binding:"omitempty"`
-	Scopes       *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
-	IsDefault    bool                          `json:"is_default" binding:"omitempty"`
-	CDNClusterID uint                          `json:"cdn_cluster_id" binding:"omitempty"`
+	Name              string                        `json:"name" binding:"omitempty"`
+	BIO               string                        `json:"bio" binding:"omitempty"`
+	Config            *SchedulerClusterConfig       `json:"config" binding:"omitempty"`
+	ClientConfig      *SchedulerClusterClientConfig `json:"client_config" binding:"omitempty"`
+	Scopes            *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
+	IsDefault         bool                          `json:"is_default" binding:"omitempty"`
+	SeedPeerClusterID uint                          `json:"seed_peer_cluster_id" binding:"omitempty"`
 }
 
 type GetSchedulerClustersQuery struct {

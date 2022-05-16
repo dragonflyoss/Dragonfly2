@@ -26,71 +26,72 @@ import (
 )
 
 type Resource interface {
-	// CDN interface
-	CDN() CDN
+	// SeedPeer interface.
+	SeedPeer() SeedPeer
 
-	// Host manager interface
+	// Host manager interface.
 	HostManager() HostManager
 
-	// Peer manager interface
+	// Peer manager interface.
 	PeerManager() PeerManager
 
-	// Task manager interface
+	// Task manager interface.
 	TaskManager() TaskManager
 }
 
 type resource struct {
-	// CDN interface
-	cdn CDN
+	// seedPeer interface.
+	seedPeer SeedPeer
 
-	// Host manager interface
+	// Host manager interface.
 	hostManager HostManager
 
-	// Peer manager interface
+	// Peer manager interface.
 	peerManager PeerManager
 
-	// Task manager interface
+	// Task manager interface.
 	taskManager TaskManager
 }
 
 func New(cfg *config.Config, gc gc.GC, dynconfig config.DynconfigInterface, opts ...grpc.DialOption) (Resource, error) {
 	resource := &resource{}
 
-	// Initialize host manager interface
+	// Initialize host manager interface.
 	hostManager, err := newHostManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
 	resource.hostManager = hostManager
 
-	// Initialize task manager interface
+	// Initialize task manager interface.
 	taskManager, err := newTaskManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
 	resource.taskManager = taskManager
 
-	// Initialize peer manager interface
+	// Initialize peer manager interface.
 	peerManager, err := newPeerManager(cfg.Scheduler.GC, gc)
 	if err != nil {
 		return nil, err
 	}
 	resource.peerManager = peerManager
 
-	// Initialize cdn interface
-	if cfg.CDN.Enable {
-		client, err := newCDNClient(dynconfig, hostManager, opts...)
+	// Initialize seed peer interface.
+	if cfg.SeedPeer.Enable {
+		client, err := newSeedPeerClient(dynconfig, hostManager, opts...)
 		if err != nil {
 			return nil, err
 		}
-		resource.cdn = newCDN(peerManager, hostManager, client)
+
+		resource.seedPeer = newSeedPeer(client, peerManager, hostManager)
 	}
 
 	return resource, nil
 }
 
-func (r *resource) CDN() CDN {
-	return r.cdn
+func (r *resource) SeedPeer() SeedPeer {
+	return r.seedPeer
 }
 
 func (r *resource) HostManager() HostManager {

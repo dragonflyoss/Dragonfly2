@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,97 +17,33 @@
 package resource
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 )
 
-func TestCDN_newCDN(t *testing.T) {
-	tests := []struct {
-		name   string
-		expect func(t *testing.T, cdn CDN)
-	}{
-		{
-			name: "new cdn",
-			expect: func(t *testing.T, cdn CDN) {
-				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(cdn).Elem().Name(), "cdn")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			hostManager := NewMockHostManager(ctl)
-			peerManager := NewMockPeerManager(ctl)
-			client := NewMockCDNClient(ctl)
-
-			tc.expect(t, newCDN(peerManager, hostManager, client))
-		})
-	}
-}
-
-func TestCDN_TriggerTask(t *testing.T) {
-	tests := []struct {
-		name   string
-		mock   func(mc *MockCDNClientMockRecorder)
-		expect func(t *testing.T, peer *Peer, result *rpcscheduler.PeerResult, err error)
-	}{
-		{
-			name: "start obtain seed stream failed",
-			mock: func(mc *MockCDNClientMockRecorder) {
-				mc.ObtainSeeds(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
-			},
-			expect: func(t *testing.T, peer *Peer, result *rpcscheduler.PeerResult, err error) {
-				assert := assert.New(t)
-				assert.EqualError(err, "foo")
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-			hostManager := NewMockHostManager(ctl)
-			peerManager := NewMockPeerManager(ctl)
-			client := NewMockCDNClient(ctl)
-			tc.mock(client.EXPECT())
-
-			cdn := newCDN(peerManager, hostManager, client)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
-			peer, result, err := cdn.TriggerTask(context.Background(), mockTask)
-			tc.expect(t, peer, result, err)
-		})
-	}
-}
-
-func TestCDNClient_newCDNClient(t *testing.T) {
+func TestSeedPeerClient_newSeedPeerClient(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
 		expect func(t *testing.T, err error)
 	}{
 		{
-			name: "new cdn client",
+			name: "new seed peer client",
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{ID: 1}},
+						SeedPeers: []*config.SeedPeer{{ID: 1}},
 					}, nil).Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
@@ -119,7 +55,7 @@ func TestCDNClient_newCDNClient(t *testing.T) {
 			},
 		},
 		{
-			name: "new cdn client failed because of dynconfig get error data",
+			name: "new seed peer client failed because of dynconfig get error data",
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				dynconfig.Get().Return(nil, errors.New("foo")).Times(1)
 			},
@@ -129,17 +65,18 @@ func TestCDNClient_newCDNClient(t *testing.T) {
 			},
 		},
 		{
-			name: "new cdn client failed because of cdn list is empty",
+			name: "new seed peer client failed because of seed peer list is empty",
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{},
+						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "address list of cdn is empty")
+				assert.NoError(err)
 			},
 		},
 	}
@@ -152,22 +89,22 @@ func TestCDNClient_newCDNClient(t *testing.T) {
 			hostManager := NewMockHostManager(ctl)
 			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
 
-			_, err := newCDNClient(dynconfig, hostManager)
+			_, err := newSeedPeerClient(dynconfig, hostManager)
 			tc.expect(t, err)
 		})
 	}
 }
 
-func TestCDNClient_OnNotify(t *testing.T) {
+func TestSeedPeerClient_OnNotify(t *testing.T) {
 	tests := []struct {
 		name string
 		data *config.DynconfigData
 		mock func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder)
 	}{
 		{
-			name: "notify client without different cdns",
+			name: "notify client without different seedPeers",
 			data: &config.DynconfigData{
-				CDNs: []*config.CDN{{
+				SeedPeers: []*config.SeedPeer{{
 					ID:       1,
 					Hostname: "foo",
 					IP:       "0.0.0.0",
@@ -177,7 +114,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{
+						SeedPeers: []*config.SeedPeer{{
 							ID:       1,
 							Hostname: "foo",
 							IP:       "0.0.0.0",
@@ -190,9 +127,9 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			},
 		},
 		{
-			name: "notify client with different cdns",
+			name: "notify client with different seedPeers",
 			data: &config.DynconfigData{
-				CDNs: []*config.CDN{{
+				SeedPeers: []*config.SeedPeer{{
 					ID:       1,
 					Hostname: "foo",
 					IP:       "0.0.0.0",
@@ -202,7 +139,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 				mockHost := NewHost(mockRawHost)
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{
+						SeedPeers: []*config.SeedPeer{{
 							ID:       1,
 							Hostname: "foo",
 							IP:       "127.0.0.1",
@@ -211,15 +148,15 @@ func TestCDNClient_OnNotify(t *testing.T) {
 					hostManager.Store(gomock.Any()).Return().Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 					hostManager.Load(gomock.Any()).Return(mockHost, true).Times(1),
-					hostManager.Delete(gomock.Eq("foo-0_CDN")).Return().Times(1),
+					hostManager.Delete(gomock.Eq("foo-0")).Return().Times(1),
 					hostManager.Store(gomock.Any()).Return().Times(1),
 				)
 			},
 		},
 		{
-			name: "notify client with different cdns and load host failed",
+			name: "notify client with different seed peers and load host failed",
 			data: &config.DynconfigData{
-				CDNs: []*config.CDN{{
+				SeedPeers: []*config.SeedPeer{{
 					ID:       1,
 					Hostname: "foo",
 					IP:       "0.0.0.0",
@@ -228,7 +165,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{
+						SeedPeers: []*config.SeedPeer{{
 							ID:       1,
 							Hostname: "foo",
 							IP:       "127.0.0.1",
@@ -242,9 +179,9 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			},
 		},
 		{
-			name: "cdn list is deep equal",
+			name: "seed peer list is deep equal",
 			data: &config.DynconfigData{
-				CDNs: []*config.CDN{{
+				SeedPeers: []*config.SeedPeer{{
 					ID: 1,
 					IP: "127.0.0.1",
 				}},
@@ -252,7 +189,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			mock: func(dynconfig *configmocks.MockDynconfigInterfaceMockRecorder, hostManager *MockHostManagerMockRecorder) {
 				gomock.InOrder(
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{
+						SeedPeers: []*config.SeedPeer{{
 							ID: 1,
 							IP: "127.0.0.1",
 						}},
@@ -272,7 +209,7 @@ func TestCDNClient_OnNotify(t *testing.T) {
 			hostManager := NewMockHostManager(ctl)
 			tc.mock(dynconfig.EXPECT(), hostManager.EXPECT())
 
-			client, err := newCDNClient(dynconfig, hostManager)
+			client, err := newSeedPeerClient(dynconfig, hostManager)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -281,88 +218,91 @@ func TestCDNClient_OnNotify(t *testing.T) {
 	}
 }
 
-func TestCDNClient_cdnsToHosts(t *testing.T) {
-	mockCDNClusterConfig, err := json.Marshal(&types.CDNClusterConfig{
-		LoadLimit:   10,
-		NetTopology: "foo",
+func TestSeedPeerClient_seedPeersToHosts(t *testing.T) {
+	mockSeedPeerClusterConfig, err := json.Marshal(&types.SeedPeerClusterConfig{
+		LoadLimit: 10,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tests := []struct {
-		name   string
-		cdns   []*config.CDN
-		expect func(t *testing.T, hosts map[string]*Host)
+		name      string
+		seedPeers []*config.SeedPeer
+		expect    func(t *testing.T, hosts map[string]*Host)
 	}{
 		{
-			name: "cdns covert to hosts",
-			cdns: []*config.CDN{
+			name: "seed peers covert to hosts",
+			seedPeers: []*config.SeedPeer{
 				{
 					ID:           1,
-					Hostname:     mockRawCDNHost.HostName,
-					IP:           mockRawCDNHost.Ip,
-					Port:         mockRawCDNHost.RpcPort,
-					DownloadPort: mockRawCDNHost.DownPort,
-					Location:     mockRawCDNHost.Location,
-					IDC:          mockRawCDNHost.Idc,
-					CDNCluster: &config.CDNCluster{
-						Config: mockCDNClusterConfig,
+					Type:         model.SeedPeerTypeSuperSeed,
+					Hostname:     mockRawSeedHost.HostName,
+					IP:           mockRawSeedHost.Ip,
+					Port:         mockRawSeedHost.RpcPort,
+					DownloadPort: mockRawSeedHost.DownPort,
+					IDC:          mockRawSeedHost.Idc,
+					NetTopology:  mockRawSeedHost.NetTopology,
+					Location:     mockRawSeedHost.Location,
+					SeedPeerCluster: &config.SeedPeerCluster{
+						Config: mockSeedPeerClusterConfig,
 					},
 				},
 			},
 			expect: func(t *testing.T, hosts map[string]*Host) {
 				assert := assert.New(t)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].ID, mockRawCDNHost.Uuid)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IP, mockRawCDNHost.Ip)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Hostname, mockRawCDNHost.HostName)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Port, mockRawCDNHost.RpcPort)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].DownloadPort, mockRawCDNHost.DownPort)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IDC, mockRawCDNHost.Idc)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].NetTopology, "foo")
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Location, mockRawCDNHost.Location)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(10))
-				assert.Empty(hosts[mockRawCDNHost.Uuid].Peers)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IsCDN, true)
-				assert.NotEqual(hosts[mockRawCDNHost.Uuid].CreateAt.Load(), 0)
-				assert.NotEqual(hosts[mockRawCDNHost.Uuid].UpdateAt.Load(), 0)
-				assert.NotNil(hosts[mockRawCDNHost.Uuid].Log)
+				assert.Equal(hosts[mockRawSeedHost.Id].ID, mockRawSeedHost.Id)
+				assert.Equal(hosts[mockRawSeedHost.Id].Type, HostTypeSuperSeed)
+				assert.Equal(hosts[mockRawSeedHost.Id].IP, mockRawSeedHost.Ip)
+				assert.Equal(hosts[mockRawSeedHost.Id].Hostname, mockRawSeedHost.HostName)
+				assert.Equal(hosts[mockRawSeedHost.Id].Port, mockRawSeedHost.RpcPort)
+				assert.Equal(hosts[mockRawSeedHost.Id].DownloadPort, mockRawSeedHost.DownPort)
+				assert.Equal(hosts[mockRawSeedHost.Id].IDC, mockRawSeedHost.Idc)
+				assert.Equal(hosts[mockRawSeedHost.Id].NetTopology, mockRawSeedHost.NetTopology)
+				assert.Equal(hosts[mockRawSeedHost.Id].Location, mockRawSeedHost.Location)
+				assert.Equal(hosts[mockRawSeedHost.Id].UploadLoadLimit.Load(), int32(10))
+				assert.Empty(hosts[mockRawSeedHost.Id].Peers)
+				assert.NotEqual(hosts[mockRawSeedHost.Id].CreateAt.Load(), 0)
+				assert.NotEqual(hosts[mockRawSeedHost.Id].UpdateAt.Load(), 0)
+				assert.NotNil(hosts[mockRawSeedHost.Id].Log)
 			},
 		},
 		{
-			name: "cdns covert to hosts without cluster config",
-			cdns: []*config.CDN{
+			name: "seed peers covert to hosts without cluster config",
+			seedPeers: []*config.SeedPeer{
 				{
 					ID:           1,
-					Hostname:     mockRawCDNHost.HostName,
-					IP:           mockRawCDNHost.Ip,
-					Port:         mockRawCDNHost.RpcPort,
-					DownloadPort: mockRawCDNHost.DownPort,
-					Location:     mockRawCDNHost.Location,
-					IDC:          mockRawCDNHost.Idc,
+					Type:         model.SeedPeerTypeSuperSeed,
+					Hostname:     mockRawSeedHost.HostName,
+					IP:           mockRawSeedHost.Ip,
+					Port:         mockRawSeedHost.RpcPort,
+					DownloadPort: mockRawSeedHost.DownPort,
+					IDC:          mockRawSeedHost.Idc,
+					NetTopology:  mockRawSeedHost.NetTopology,
+					Location:     mockRawSeedHost.Location,
 				},
 			},
 			expect: func(t *testing.T, hosts map[string]*Host) {
 				assert := assert.New(t)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].ID, mockRawCDNHost.Uuid)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IP, mockRawCDNHost.Ip)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Hostname, mockRawCDNHost.HostName)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Port, mockRawCDNHost.RpcPort)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].DownloadPort, mockRawCDNHost.DownPort)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IDC, mockRawCDNHost.Idc)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].NetTopology, "")
-				assert.Equal(hosts[mockRawCDNHost.Uuid].Location, mockRawCDNHost.Location)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
-				assert.Empty(hosts[mockRawCDNHost.Uuid].Peers)
-				assert.Equal(hosts[mockRawCDNHost.Uuid].IsCDN, true)
-				assert.NotEqual(hosts[mockRawCDNHost.Uuid].CreateAt.Load(), 0)
-				assert.NotEqual(hosts[mockRawCDNHost.Uuid].UpdateAt.Load(), 0)
-				assert.NotNil(hosts[mockRawCDNHost.Uuid].Log)
+				assert.Equal(hosts[mockRawSeedHost.Id].ID, mockRawSeedHost.Id)
+				assert.Equal(hosts[mockRawSeedHost.Id].Type, HostTypeSuperSeed)
+				assert.Equal(hosts[mockRawSeedHost.Id].IP, mockRawSeedHost.Ip)
+				assert.Equal(hosts[mockRawSeedHost.Id].Hostname, mockRawSeedHost.HostName)
+				assert.Equal(hosts[mockRawSeedHost.Id].Port, mockRawSeedHost.RpcPort)
+				assert.Equal(hosts[mockRawSeedHost.Id].DownloadPort, mockRawSeedHost.DownPort)
+				assert.Equal(hosts[mockRawSeedHost.Id].IDC, mockRawSeedHost.Idc)
+				assert.Equal(hosts[mockRawSeedHost.Id].NetTopology, mockRawSeedHost.NetTopology)
+				assert.Equal(hosts[mockRawSeedHost.Id].Location, mockRawSeedHost.Location)
+				assert.Equal(hosts[mockRawSeedHost.Id].UploadLoadLimit.Load(), int32(config.DefaultClientLoadLimit))
+				assert.Empty(hosts[mockRawSeedHost.Id].Peers)
+				assert.NotEqual(hosts[mockRawSeedHost.Id].CreateAt.Load(), 0)
+				assert.NotEqual(hosts[mockRawSeedHost.Id].UpdateAt.Load(), 0)
+				assert.NotNil(hosts[mockRawSeedHost.Id].Log)
 			},
 		},
 		{
-			name: "cdns is empty",
-			cdns: []*config.CDN{},
+			name:      "seed peers is empty",
+			seedPeers: []*config.SeedPeer{},
 			expect: func(t *testing.T, hosts map[string]*Host) {
 				assert := assert.New(t)
 				assert.Equal(len(hosts), 0)
@@ -372,39 +312,41 @@ func TestCDNClient_cdnsToHosts(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, cdnsToHosts(tc.cdns))
+			tc.expect(t, seedPeersToHosts(tc.seedPeers))
 		})
 	}
 }
 
-func TestCDNClient_cdnsToNetAddrs(t *testing.T) {
+func TestSeedPeerClient_seedPeersToNetAddrs(t *testing.T) {
 	tests := []struct {
-		name   string
-		cdns   []*config.CDN
-		expect func(t *testing.T, netAddrs []dfnet.NetAddr)
+		name      string
+		seedPeers []*config.SeedPeer
+		expect    func(t *testing.T, netAddrs []dfnet.NetAddr)
 	}{
 		{
-			name: "cdns covert to netAddr",
-			cdns: []*config.CDN{
+			name: "seed peers covert to netAddr",
+			seedPeers: []*config.SeedPeer{
 				{
 					ID:           1,
-					Hostname:     mockRawCDNHost.HostName,
-					IP:           mockRawCDNHost.Ip,
-					Port:         mockRawCDNHost.RpcPort,
-					DownloadPort: mockRawCDNHost.DownPort,
-					Location:     mockRawCDNHost.Location,
-					IDC:          mockRawCDNHost.Idc,
+					Type:         model.SeedPeerTypeSuperSeed,
+					Hostname:     mockRawSeedHost.HostName,
+					IP:           mockRawSeedHost.Ip,
+					Port:         mockRawSeedHost.RpcPort,
+					DownloadPort: mockRawSeedHost.DownPort,
+					IDC:          mockRawSeedHost.Idc,
+					NetTopology:  mockRawSeedHost.NetTopology,
+					Location:     mockRawSeedHost.Location,
 				},
 			},
 			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.Equal(netAddrs[0].Type, dfnet.TCP)
-				assert.Equal(netAddrs[0].Addr, fmt.Sprintf("%s:%d", mockRawCDNHost.Ip, mockRawCDNHost.RpcPort))
+				assert.Equal(netAddrs[0].Addr, fmt.Sprintf("%s:%d", mockRawSeedHost.Ip, mockRawSeedHost.RpcPort))
 			},
 		},
 		{
-			name: "cdns is empty",
-			cdns: []*config.CDN{},
+			name:      "seed peers is empty",
+			seedPeers: []*config.SeedPeer{},
 			expect: func(t *testing.T, netAddrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.Equal(len(netAddrs), 0)
@@ -414,21 +356,21 @@ func TestCDNClient_cdnsToNetAddrs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, cdnsToNetAddrs(tc.cdns))
+			tc.expect(t, seedPeersToNetAddrs(tc.seedPeers))
 		})
 	}
 }
 
-func TestCDNClient_diffCDNs(t *testing.T) {
+func TestSeedPeerClient_diffSeedPeers(t *testing.T) {
 	tests := []struct {
 		name   string
-		cx     []*config.CDN
-		cy     []*config.CDN
-		expect func(t *testing.T, diff []*config.CDN)
+		sx     []*config.SeedPeer
+		sy     []*config.SeedPeer
+		expect func(t *testing.T, diff []*config.SeedPeer)
 	}{
 		{
-			name: "same cdn list",
-			cx: []*config.CDN{
+			name: "same seed peer list",
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -436,7 +378,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -444,14 +386,14 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN(nil))
+				assert.EqualValues(diff, []*config.SeedPeer(nil))
 			},
 		},
 		{
 			name: "different hostname",
-			cx: []*config.CDN{
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "bar",
@@ -459,7 +401,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -467,9 +409,9 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN{
+				assert.EqualValues(diff, []*config.SeedPeer{
 					{
 						ID:       1,
 						Hostname: "bar",
@@ -481,7 +423,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 		},
 		{
 			name: "different port",
-			cx: []*config.CDN{
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -489,7 +431,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8081,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -497,9 +439,9 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN{
+				assert.EqualValues(diff, []*config.SeedPeer{
 					{
 						ID:       1,
 						Hostname: "foo",
@@ -511,7 +453,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 		},
 		{
 			name: "different ip",
-			cx: []*config.CDN{
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -519,7 +461,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -527,9 +469,9 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN{
+				assert.EqualValues(diff, []*config.SeedPeer{
 					{
 						ID:       1,
 						Hostname: "foo",
@@ -540,8 +482,8 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 			},
 		},
 		{
-			name: "remove y cdn",
-			cx: []*config.CDN{
+			name: "remove y seed peer",
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -555,7 +497,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -563,9 +505,9 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN{
+				assert.EqualValues(diff, []*config.SeedPeer{
 					{
 						ID:       2,
 						Hostname: "bar",
@@ -576,8 +518,8 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 			},
 		},
 		{
-			name: "remove x cdn",
-			cx: []*config.CDN{
+			name: "remove x seed peer",
+			sx: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "foo",
@@ -585,7 +527,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			cy: []*config.CDN{
+			sy: []*config.SeedPeer{
 				{
 					ID:       1,
 					Hostname: "baz",
@@ -599,9 +541,9 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 					Port:     8080,
 				},
 			},
-			expect: func(t *testing.T, diff []*config.CDN) {
+			expect: func(t *testing.T, diff []*config.SeedPeer) {
 				assert := assert.New(t)
-				assert.EqualValues(diff, []*config.CDN{
+				assert.EqualValues(diff, []*config.SeedPeer{
 					{
 						ID:       1,
 						Hostname: "foo",
@@ -615,7 +557,7 @@ func TestCDNClient_diffCDNs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, diffCDNs(tc.cx, tc.cy))
+			tc.expect(t, diffSeedPeers(tc.sx, tc.sy))
 		})
 	}
 }

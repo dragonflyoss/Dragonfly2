@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
 )
 

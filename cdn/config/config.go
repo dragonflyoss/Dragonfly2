@@ -39,8 +39,8 @@ func New() *Config {
 		Task:      task.DefaultConfig(),
 		CDN:       cdn.DefaultConfig(),
 		Manager: ManagerConfig{
-			Addr:         "",
-			CDNClusterID: 0,
+			Addr:              "",
+			SeedPeerClusterID: 0,
 			KeepAlive: KeepAliveConfig{
 				Interval: 5 * time.Second,
 			},
@@ -93,26 +93,27 @@ type ManagerConfig struct {
 	// NetAddr is manager address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 
-	// CDNClusterID is cdn cluster id.
-	CDNClusterID uint `yaml:"cdnClusterID" mapstructure:"cdnClusterID"`
+	// SeedPeerClusterID is seed peer cluster id.
+	SeedPeerClusterID uint `yaml:"seedPeerClusterID" mapstructure:"seedPeerClusterID"`
 
-	// KeepAlive configuration
+	// KeepAlive configuration.
 	KeepAlive KeepAliveConfig `yaml:"keepAlive" mapstructure:"keepAlive"`
 }
 
 func (c ManagerConfig) Validate() []error {
 	var errors []error
 	if c.Addr != "" {
-		if c.CDNClusterID <= 0 {
-			errors = append(errors, fmt.Errorf("cdn cluster id %d can't be a negative number", c.CDNClusterID))
+		if c.SeedPeerClusterID <= 0 {
+			errors = append(errors, fmt.Errorf("seed peer cluster id %d can't be a negative number", c.SeedPeerClusterID))
 		}
+
 		errors = append(errors, c.KeepAlive.Validate()...)
 	}
 	return errors
 }
 
 type KeepAliveConfig struct {
-	// Keep alive interval
+	// Keep alive interval.
 	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
@@ -125,9 +126,12 @@ func (c KeepAliveConfig) Validate() []error {
 }
 
 type HostConfig struct {
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
-
-	// IDC for scheduler
+	// CDN idc.
 	IDC string `mapstructure:"idc" yaml:"idc"`
+
+	// CDN network topology.
+	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+
+	// CDN location.
+	Location string `mapstructure:"location" yaml:"location"`
 }

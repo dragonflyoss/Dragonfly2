@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,36 +26,36 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-// @Summary Create CDNCluster
+// @Summary Create SeedPeerCluster
 // @Description create by json config
-// @Tags CDNCluster
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
-// @Param CDNCluster body types.CreateCDNClusterRequest true "DNCluster"
-// @Success 200 {object} model.CDNCluster
+// @Param SeedPeerCluster body types.CreateSeedPeerClusterRequest true "DNCluster"
+// @Success 200 {object} model.SeedPeerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters [post]
-func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
-	var json types.CreateCDNClusterRequest
+// @Router /seed-peer-clusters [post]
+func (h *Handlers) CreateSeedPeerCluster(ctx *gin.Context) {
+	var json types.CreateSeedPeerClusterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	cdnCluster, err := h.service.CreateCDNCluster(ctx.Request.Context(), json)
+	seedPeerCluster, err := h.service.CreateSeedPeerCluster(ctx.Request.Context(), json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdnCluster)
+	ctx.JSON(http.StatusOK, seedPeerCluster)
 }
 
-// @Summary Destroy CDNCluster
+// @Summary Destroy SeedPeerCluster
 // @Description Destroy by id
-// @Tags CDNCluster
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -63,15 +63,15 @@ func (h *Handlers) CreateCDNCluster(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters/{id} [delete]
-func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
-	var params types.CDNClusterParams
+// @Router /seed-peer-clusters/{id} [delete]
+func (h *Handlers) DestroySeedPeerCluster(ctx *gin.Context) {
+	var params types.SeedPeerClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DestroyCDNCluster(ctx.Request.Context(), params.ID); err != nil {
+	if err := h.service.DestroySeedPeerCluster(ctx.Request.Context(), params.ID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
@@ -79,117 +79,117 @@ func (h *Handlers) DestroyCDNCluster(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Update CDNCluster
+// @Summary Update SeedPeerCluster
 // @Description Update by json config
-// @Tags CDNCluster
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param CDNCluster body types.UpdateCDNClusterRequest true "CDNCluster"
-// @Success 200 {object} model.CDNCluster
+// @Param SeedPeerCluster body types.UpdateSeedPeerClusterRequest true "SeedPeerCluster"
+// @Success 200 {object} model.SeedPeerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters/{id} [patch]
-func (h *Handlers) UpdateCDNCluster(ctx *gin.Context) {
-	var params types.CDNClusterParams
+// @Router /seed-peer-clusters/{id} [patch]
+func (h *Handlers) UpdateSeedPeerCluster(ctx *gin.Context) {
+	var params types.SeedPeerClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var json types.UpdateCDNClusterRequest
+	var json types.UpdateSeedPeerClusterRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	cdnCluster, err := h.service.UpdateCDNCluster(ctx.Request.Context(), params.ID, json)
+	seedPeerCluster, err := h.service.UpdateSeedPeerCluster(ctx.Request.Context(), params.ID, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdnCluster)
+	ctx.JSON(http.StatusOK, seedPeerCluster)
 }
 
-// @Summary Get CDNCluster
-// @Description Get CDNCluster by id
-// @Tags CDNCluster
+// @Summary Get SeedPeerCluster
+// @Description Get SeedPeerCluster by id
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} model.CDNCluster
+// @Success 200 {object} model.SeedPeerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters/{id} [get]
-func (h *Handlers) GetCDNCluster(ctx *gin.Context) {
-	var params types.CDNClusterParams
+// @Router /seed-peer-clusters/{id} [get]
+func (h *Handlers) GetSeedPeerCluster(ctx *gin.Context) {
+	var params types.SeedPeerClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	cdnCluster, err := h.service.GetCDNCluster(ctx.Request.Context(), params.ID)
+	seedPeerCluster, err := h.service.GetSeedPeerCluster(ctx.Request.Context(), params.ID)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
-	ctx.JSON(http.StatusOK, cdnCluster)
+	ctx.JSON(http.StatusOK, seedPeerCluster)
 }
 
-// @Summary Get CDNClusters
-// @Description Get CDNClusters
-// @Tags CDNCluster
+// @Summary Get SeedPeerClusters
+// @Description Get SeedPeerClusters
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param page query int true "current page" default(0)
 // @Param per_page query int true "return max item count, default 10, max 50" default(10) minimum(2) maximum(50)
-// @Success 200 {object} []model.CDNCluster
+// @Success 200 {object} []model.SeedPeerCluster
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters [get]
-func (h *Handlers) GetCDNClusters(ctx *gin.Context) {
-	var query types.GetCDNClustersQuery
+// @Router /seed-peer-clusters [get]
+func (h *Handlers) GetSeedPeerClusters(ctx *gin.Context) {
+	var query types.GetSeedPeerClustersQuery
 	if err := ctx.ShouldBindQuery(&query); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
 	h.setPaginationDefault(&query.Page, &query.PerPage)
-	cdns, count, err := h.service.GetCDNClusters(ctx.Request.Context(), query)
+	seedPeers, count, err := h.service.GetSeedPeerClusters(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	h.setPaginationLinkHeader(ctx, query.Page, query.PerPage, int(count))
-	ctx.JSON(http.StatusOK, cdns)
+	ctx.JSON(http.StatusOK, seedPeers)
 }
 
-// @Summary Add Instance to CDNCluster
-// @Description Add CDN to CDNCluster
-// @Tags CDNCluster
+// @Summary Add Instance to SeedPeerCluster
+// @Description Add SeedPeer to SeedPeerCluster
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param cdn_id path string true "cdn id"
+// @Param seed_peer_id path string true "seed peer id"
 // @Success 200
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters/{id}/cdns/{cdn_id} [put]
-func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
-	var params types.AddCDNToCDNClusterParams
+// @Router /seed-peer-clusters/{id}/seed-peers/{seed_peer_id} [put]
+func (h *Handlers) AddSeedPeerToSeedPeerCluster(ctx *gin.Context) {
+	var params types.AddSeedPeerToSeedPeerClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.AddCDNToCDNCluster(ctx.Request.Context(), params.ID, params.CDNID); err != nil {
+	if err := h.service.AddSeedPeerToSeedPeerCluster(ctx.Request.Context(), params.ID, params.SeedPeerID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
@@ -197,9 +197,9 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Add SchedulerCluster to CDNCluster
-// @Description Add SchedulerCluster to CDNCluster
-// @Tags CDNCluster
+// @Summary Add SchedulerCluster to SeedPeerCluster
+// @Description Add SchedulerCluster to SeedPeerCluster
+// @Tags SeedPeerCluster
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
@@ -208,15 +208,15 @@ func (h *Handlers) AddCDNToCDNCluster(ctx *gin.Context) {
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
-func (h *Handlers) AddSchedulerClusterToCDNCluster(ctx *gin.Context) {
-	var params types.AddSchedulerClusterToCDNClusterParams
+// @Router /seed-peer-clusters/{id}/scheduler-clusters/{scheduler_cluster_id} [put]
+func (h *Handlers) AddSchedulerClusterToSeedPeerCluster(ctx *gin.Context) {
+	var params types.AddSchedulerClusterToSeedPeerClusterParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.AddSchedulerClusterToCDNCluster(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
+	if err := h.service.AddSchedulerClusterToSeedPeerCluster(ctx.Request.Context(), params.ID, params.SchedulerClusterID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}

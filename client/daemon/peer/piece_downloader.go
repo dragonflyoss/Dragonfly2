@@ -179,7 +179,12 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 	reader, closer := resp.Body.(io.Reader), resp.Body.(io.Closer)
 	if req.CalcDigest {
 		req.log.Debugf("calculate digest for piece %d, digest: %s", req.piece.PieceNum, req.piece.PieceMd5)
-		reader = digestutils.NewDigestReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
+		reader, err = digestutils.NewDigestReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
+		if err != nil {
+			_ = closer.Close()
+			req.log.Errorf("init digest reader error: %s", err.Error())
+			return nil, nil, err
+		}
 	}
 	return reader, closer, nil
 }

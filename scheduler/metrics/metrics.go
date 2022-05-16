@@ -30,22 +30,22 @@ import (
 )
 
 var (
-	// TrafficP2PType is p2p type for traffic metrics
+	// TrafficP2PType is p2p type for traffic metrics.
 	TrafficP2PType = "p2p"
 
-	// TrafficBackToSourceType is back-to-source type for traffic metrics
+	// TrafficBackToSourceType is back-to-source type for traffic metrics.
 	TrafficBackToSourceType = "back_to_source"
 
-	// PeerHostTrafficUploadType is upload traffic type for peer host traffic metrics
+	// PeerHostTrafficUploadType is upload traffic type for peer host traffic metrics.
 	PeerHostTrafficUploadType = "upload"
 
-	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics
+	// PeerHostTrafficDownloadType is download traffic type for peer host traffic metrics.
 	PeerHostTrafficDownloadType = "download"
 
-	// DownloadFailureBackToSourceType is back-to-source type for download failure count metrics
+	// DownloadFailureBackToSourceType is back-to-source type for download failure count metrics.
 	DownloadFailureBackToSourceType = "back_to_source"
 
-	// DownloadFailureP2PType is p2p type for download failure count metrics
+	// DownloadFailureP2PType is p2p type for download failure count metrics.
 	DownloadFailureP2PType = "p2p"
 )
 
@@ -133,7 +133,7 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_host_traffic",
 		Help:      "Counter of the number of per peer host traffic.",
-	}, []string{"biz_tag", "traffic_type", "peer_host_uuid", "peer_host_ip"})
+	}, []string{"biz_tag", "traffic_type", "peer_host_id", "peer_host_ip"})
 
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,

@@ -20,7 +20,6 @@ import (
 	"context"
 	"os"
 	"path"
-	"syscall"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -85,19 +84,20 @@ it supports container engine, wget and other downloading tools through proxy fun
 // daemon will be launched by dfget command
 // redirect stdout and stderr to file for debugging
 func redirectStdoutAndStderr(console bool, logDir string) {
-	// when console log is enabled, skip redirect stdout
-	if !console {
-		stdoutPath := path.Join(logDir, "daemon", "stdout.log")
-		if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
-			logger.Warnf("open %s error: %s", stdoutPath, err)
-		} else if err := syscall.Dup2(int(stdout.Fd()), 1); err != nil {
-			logger.Warnf("redirect stdout error: %s", err)
-		}
+	// when console log is enabled, skip redirect
+	if console {
+		return
+	}
+	stdoutPath := path.Join(logDir, "daemon", "stdout.log")
+	if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+		logger.Warnf("open %s error: %s", stdoutPath, err)
+	} else if err := dup2(int(stdout.Fd()), 1); err != nil {
+		logger.Warnf("redirect stdout error: %s", err)
 	}
 	stderrPath := path.Join(logDir, "daemon", "stderr.log")
 	if stderr, err := os.OpenFile(stderrPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
 		logger.Warnf("open %s error: %s", stderrPath, err)
-	} else if err := syscall.Dup2(int(stderr.Fd()), 2); err != nil {
+	} else if err := dup2(int(stderr.Fd()), 2); err != nil {
 		logger.Warnf("redirect stderr error: %s", err)
 	}
 }

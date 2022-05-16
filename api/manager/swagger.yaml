@@ -4,10 +4,6 @@ definitions:
     properties:
       bio:
         type: string
-      cdn_clusters:
-        items:
-          $ref: '#/definitions/model.CDNCluster'
-        type: array
       created_at:
         type: string
       download_rate_limit:
@@ -20,6 +16,10 @@ definitions:
         items:
           $ref: '#/definitions/model.SchedulerCluster'
         type: array
+      seed_peer_clusters:
+        items:
+          $ref: '#/definitions/model.SeedPeerCluster'
+        type: array
       state:
         type: string
       updated_at:
@@ -30,60 +30,6 @@ definitions:
         $ref: '#/definitions/model.User'
       user_id:
         type: integer
-    type: object
-  model.CDN:
-    properties:
-      cdnclusterID:
-        type: integer
-      created_at:
-        type: string
-      download_port:
-        type: integer
-      host_name:
-        type: string
-      id:
-        type: integer
-      idc:
-        type: string
-      ip:
-        type: string
-      location:
-        type: string
-      port:
-        type: integer
-      state:
-        type: string
-      updated_at:
-        type: string
-    type: object
-  model.CDNCluster:
-    properties:
-      application_id:
-        type: integer
-      bio:
-        type: string
-      config:
-        $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
-      is_default:
-        type: boolean
-      jobs:
-        items:
-          $ref: '#/definitions/model.Job'
-        type: array
-      name:
-        type: string
-      scheduler_clusters:
-        items:
-          $ref: '#/definitions/model.SchedulerCluster'
-        type: array
-      security_group_id:
-        type: integer
-      updated_at:
-        type: string
     type: object
   model.Config:
     properties:
@@ -111,10 +57,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       bio:
         type: string
-      cdn_clusters:
-        items:
-          $ref: '#/definitions/model.CDNCluster'
-        type: array
       created_at:
         type: string
       id:
@@ -124,6 +66,10 @@ definitions:
       scheduler_clusters:
         items:
           $ref: '#/definitions/model.SchedulerCluster'
+        type: array
+      seed_peer_clusters:
+        items:
+          $ref: '#/definitions/model.SeedPeerCluster'
         type: array
       state:
         type: string
@@ -169,8 +115,8 @@ definitions:
         type: string
       location:
         type: string
-      net_config:
-        $ref: '#/definitions/model.JSONMap'
+      net_topology:
+        type: string
       port:
         type: integer
       schedulerClusterID:
@@ -179,8 +125,6 @@ definitions:
         type: string
       updated_at:
         type: string
-      vips:
-        type: string
     type: object
   model.SchedulerCluster:
     properties:
@@ -188,10 +132,6 @@ definitions:
         type: integer
       bio:
         type: string
-      cdn_clusters:
-        items:
-          $ref: '#/definitions/model.CDNCluster'
-        type: array
       client_config:
         $ref: '#/definitions/model.JSONMap'
       config:
@@ -212,6 +152,10 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       security_group_id:
         type: integer
+      seed_peer_clusters:
+        items:
+          $ref: '#/definitions/model.SeedPeerCluster'
+        type: array
       updated_at:
         type: string
     type: object
@@ -250,6 +194,68 @@ definitions:
         items:
           $ref: '#/definitions/model.SecurityGroup'
         type: array
+      updated_at:
+        type: string
+    type: object
+  model.SeedPeer:
+    properties:
+      created_at:
+        type: string
+      download_port:
+        type: integer
+      host_name:
+        type: string
+      id:
+        type: integer
+      idc:
+        type: string
+      ip:
+        type: string
+      is_cdn:
+        type: boolean
+      location:
+        type: string
+      net_topology:
+        type: string
+      port:
+        type: integer
+      seedPeerClusterID:
+        type: integer
+      state:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.SeedPeerCluster:
+    properties:
+      application_id:
+        type: integer
+      bio:
+        type: string
+      config:
+        $ref: '#/definitions/model.JSONMap'
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_default:
+        type: boolean
+      jobs:
+        items:
+          $ref: '#/definitions/model.Job'
+        type: array
+      name:
+        type: string
+      scheduler_clusters:
+        items:
+          $ref: '#/definitions/model.SchedulerCluster'
+        type: array
+      scopes:
+        $ref: '#/definitions/model.JSONMap'
+      security_group_id:
+        type: integer
       updated_at:
         type: string
     type: object
@@ -302,15 +308,6 @@ definitions:
     - action
     - object
     type: object
-  types.CDNClusterConfig:
-    properties:
-      load_limit:
-        maximum: 10000
-        minimum: 1
-        type: integer
-      net_topology:
-        type: string
-    type: object
   types.CreateApplicationRequest:
     properties:
       bio:
@@ -331,44 +328,6 @@ definitions:
     required:
     - name
     - user_id
-    type: object
-  types.CreateCDNClusterRequest:
-    properties:
-      bio:
-        type: string
-      config:
-        $ref: '#/definitions/types.CDNClusterConfig'
-      is_default:
-        type: boolean
-      name:
-        type: string
-    required:
-    - config
-    - name
-    type: object
-  types.CreateCDNRequest:
-    properties:
-      cdn_cluster_id:
-        type: integer
-      download_port:
-        type: integer
-      host_name:
-        type: string
-      idc:
-        type: string
-      ip:
-        type: string
-      location:
-        type: string
-      port:
-        type: integer
-    required:
-    - cdn_cluster_id
-    - download_port
-    - host_name
-    - idc
-    - ip
-    - port
     type: object
   types.CreateConfigRequest:
     properties:
@@ -392,14 +351,14 @@ definitions:
         type: object
       bio:
         type: string
-      cdn_cluster_ids:
-        items:
-          type: integer
-        type: array
       result:
         additionalProperties: true
         type: object
       scheduler_cluster_ids:
+        items:
+          type: integer
+        type: array
+      seed_peer_cluster_ids:
         items:
           type: integer
         type: array
@@ -446,8 +405,6 @@ definitions:
     properties:
       bio:
         type: string
-      cdn_cluster_id:
-        type: integer
       client_config:
         $ref: '#/definitions/types.SchedulerClusterClientConfig'
       config:
@@ -458,6 +415,8 @@ definitions:
         type: string
       scopes:
         $ref: '#/definitions/types.SchedulerClusterScopes'
+      seed_peer_cluster_id:
+        type: integer
     required:
     - client_config
     - config
@@ -473,18 +432,14 @@ definitions:
         type: string
       location:
         type: string
-      net_config:
-        additionalProperties: true
-        type: object
+      net_topology:
+        type: string
       port:
         type: integer
       scheduler_cluster_id:
         type: integer
-      vips:
-        type: string
     required:
     - host_name
-    - idc
     - ip
     - port
     - scheduler_cluster_id
@@ -511,6 +466,54 @@ definitions:
     required:
     - domain
     - name
+    type: object
+  types.CreateSeedPeerClusterRequest:
+    properties:
+      bio:
+        type: string
+      config:
+        $ref: '#/definitions/types.SeedPeerClusterConfig'
+      is_default:
+        type: boolean
+      name:
+        type: string
+      scopes:
+        $ref: '#/definitions/types.SeedPeerClusterScopes'
+    required:
+    - config
+    - name
+    type: object
+  types.CreateSeedPeerRequest:
+    properties:
+      download_port:
+        type: integer
+      host_name:
+        type: string
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_topology:
+        type: string
+      port:
+        type: integer
+      seed_peer_cluster_id:
+        type: integer
+      type:
+        enum:
+        - super
+        - strong
+        - weak
+        type: string
+    required:
+    - download_port
+    - host_name
+    - ip
+    - port
+    - seed_peer_cluster_id
+    - type
     type: object
   types.CreateV1PreheatRequest:
     properties:
@@ -577,7 +580,7 @@ definitions:
   types.SchedulerClusterClientConfig:
     properties:
       load_limit:
-        maximum: 10000
+        maximum: 2000
         minimum: 1
         type: integer
       parallel_count:
@@ -593,6 +596,22 @@ definitions:
         type: integer
     type: object
   types.SchedulerClusterScopes:
+    properties:
+      idc:
+        type: string
+      location:
+        type: string
+      net_topology:
+        type: string
+    type: object
+  types.SeedPeerClusterConfig:
+    properties:
+      load_limit:
+        maximum: 5000
+        minimum: 1
+        type: integer
+    type: object
+  types.SeedPeerClusterScopes:
     properties:
       idc:
         type: string
@@ -646,32 +665,6 @@ definitions:
     required:
     - user_id
     type: object
-  types.UpdateCDNClusterRequest:
-    properties:
-      bio:
-        type: string
-      config:
-        $ref: '#/definitions/types.CDNClusterConfig'
-      is_default:
-        type: boolean
-      name:
-        type: string
-    type: object
-  types.UpdateCDNRequest:
-    properties:
-      cdn_cluster_id:
-        type: integer
-      download_port:
-        type: integer
-      idc:
-        type: string
-      ip:
-        type: string
-      location:
-        type: string
-      port:
-        type: integer
-    type: object
   types.UpdateConfigRequest:
     properties:
       bio:
@@ -710,8 +703,6 @@ definitions:
     properties:
       bio:
         type: string
-      cdn_cluster_id:
-        type: integer
       client_config:
         $ref: '#/definitions/types.SchedulerClusterClientConfig'
       config:
@@ -722,6 +713,8 @@ definitions:
         type: string
       scopes:
         $ref: '#/definitions/types.SchedulerClusterScopes'
+      seed_peer_cluster_id:
+        type: integer
     type: object
   types.UpdateSchedulerRequest:
     properties:
@@ -731,17 +724,14 @@ definitions:
         type: string
       location:
         type: string
-      net_config:
-        additionalProperties: true
-        type: object
+      net_topology:
+        type: string
       port:
         type: integer
       scheduler_cluster_id:
         type: integer
       scheduler_id:
         type: integer
-      vips:
-        type: string
     type: object
   types.UpdateSecurityGroupRequest:
     properties:
@@ -759,6 +749,42 @@ definitions:
       name:
         type: string
       proxy_domain:
+        type: string
+    type: object
+  types.UpdateSeedPeerClusterRequest:
+    properties:
+      bio:
+        type: string
+      config:
+        $ref: '#/definitions/types.SeedPeerClusterConfig'
+      is_default:
+        type: boolean
+      name:
+        type: string
+      scopes:
+        $ref: '#/definitions/types.SeedPeerClusterScopes'
+    type: object
+  types.UpdateSeedPeerRequest:
+    properties:
+      download_port:
+        type: integer
+      idc:
+        type: string
+      ip:
+        type: string
+      location:
+        type: string
+      net_topology:
+        type: string
+      port:
+        type: integer
+      seed_peer_cluster_id:
+        type: integer
+      type:
+        enum:
+        - super
+        - strong
+        - weak
         type: string
     type: object
   types.UpdateUserRequest:
@@ -932,65 +958,6 @@ paths:
       summary: Update Application
       tags:
       - Application
-  /applications/{id}/cdn-clusters/{cdn_cluster_id}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete CDN to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: cdn cluster id
-        in: path
-        name: cdn_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Delete CDN to Application
-      tags:
-      - Application
-    put:
-      consumes:
-      - application/json
-      description: Add CDN to Application
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: cdn cluster id
-        in: path
-        name: cdn_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Add CDN to Application
-      tags:
-      - Application
   /applications/{id}/scheduler-clusters/{scheduler_cluster_id}:
     delete:
       consumes:
@@ -1050,80 +1017,20 @@ paths:
       summary: Add Scheduler to Application
       tags:
       - Application
-  /cdn-clusters:
-    get:
-      consumes:
-      - application/json
-      description: Get CDNClusters
-      parameters:
-      - default: 0
-        description: current page
-        in: query
-        name: page
-        required: true
-        type: integer
-      - default: 10
-        description: return max item count, default 10, max 50
-        in: query
-        maximum: 50
-        minimum: 2
-        name: per_page
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.CDNCluster'
-            type: array
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Get CDNClusters
-      tags:
-      - CDNCluster
-    post:
-      consumes:
-      - application/json
-      description: create by json config
-      parameters:
-      - description: DNCluster
-        in: body
-        name: CDNCluster
-        required: true
-        schema:
-          $ref: '#/definitions/types.CreateCDNClusterRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDNCluster'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Create CDNCluster
-      tags:
-      - CDNCluster
-  /cdn-clusters/{id}:
+  /applications/{id}/seed-peer-clusters/{seed_peer_cluster_id}:
     delete:
       consumes:
       - application/json
-      description: Destroy by id
+      description: Delete SeedPeer to Application
       parameters:
       - description: id
         in: path
         name: id
+        required: true
+        type: string
+      - description: seed peer cluster id
+        in: path
+        name: seed_peer_cluster_id
         required: true
         type: string
       produces:
@@ -1137,81 +1044,22 @@ paths:
           description: ""
         "500":
           description: ""
-      summary: Destroy CDNCluster
+      summary: Delete SeedPeer to Application
       tags:
-      - CDNCluster
-    get:
-      consumes:
-      - application/json
-      description: Get CDNCluster by id
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDNCluster'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Get CDNCluster
-      tags:
-      - CDNCluster
-    patch:
-      consumes:
-      - application/json
-      description: Update by json config
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: CDNCluster
-        in: body
-        name: CDNCluster
-        required: true
-        schema:
-          $ref: '#/definitions/types.UpdateCDNClusterRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDNCluster'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Update CDNCluster
-      tags:
-      - CDNCluster
-  /cdn-clusters/{id}/cdns/{cdn_id}:
+      - Application
     put:
       consumes:
       - application/json
-      description: Add CDN to CDNCluster
+      description: Add SeedPeer to Application
       parameters:
       - description: id
         in: path
         name: id
         required: true
         type: string
-      - description: cdn id
+      - description: seed peer cluster id
         in: path
-        name: cdn_id
+        name: seed_peer_cluster_id
         required: true
         type: string
       produces:
@@ -1225,187 +1073,9 @@ paths:
           description: ""
         "500":
           description: ""
-      summary: Add Instance to CDNCluster
+      summary: Add SeedPeer to Application
       tags:
-      - CDNCluster
-  /cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}:
-    put:
-      consumes:
-      - application/json
-      description: Add SchedulerCluster to CDNCluster
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: scheduler cluster id
-        in: path
-        name: scheduler_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Add SchedulerCluster to CDNCluster
-      tags:
-      - CDNCluster
-  /cdns:
-    get:
-      consumes:
-      - application/json
-      description: Get CDNs
-      parameters:
-      - default: 0
-        description: current page
-        in: query
-        name: page
-        required: true
-        type: integer
-      - default: 10
-        description: return max item count, default 10, max 50
-        in: query
-        maximum: 50
-        minimum: 2
-        name: per_page
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/model.CDN'
-            type: array
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Get CDNs
-      tags:
-      - CDN
-    post:
-      consumes:
-      - application/json
-      description: create by json config
-      parameters:
-      - description: CDN
-        in: body
-        name: CDN
-        required: true
-        schema:
-          $ref: '#/definitions/types.CreateCDNRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDN'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Create CDN
-      tags:
-      - CDN
-  /cdns/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Destroy by id
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Destroy CDN
-      tags:
-      - CDN
-    get:
-      consumes:
-      - application/json
-      description: Get CDN by id
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDN'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Get CDN
-      tags:
-      - CDN
-    patch:
-      consumes:
-      - application/json
-      description: Update by json config
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: CDN
-        in: body
-        name: CDN
-        required: true
-        schema:
-          $ref: '#/definitions/types.UpdateCDNRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.CDN'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Update CDN
-      tags:
-      - CDN
+      - Application
   /configs:
     get:
       consumes:
@@ -1896,7 +1566,7 @@ paths:
       parameters:
       - description: Preheat
         in: body
-        name: CDN
+        name: Preheat
         required: true
         schema:
           $ref: '#/definitions/types.CreateV1PreheatRequest'
@@ -2535,36 +2205,6 @@ paths:
       summary: Update SecurityGroup
       tags:
       - SecurityGroup
-  /security-groups/{id}/cdn-clusters/{cdn_cluster_id}:
-    put:
-      consumes:
-      - application/json
-      description: Add CDN to SecurityGroup
-      parameters:
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: cdn cluster id
-        in: path
-        name: cdn_cluster_id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: ""
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Add CDN to SecurityGroup
-      tags:
-      - SecurityGroup
   /security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}:
     put:
       consumes:
@@ -2652,6 +2292,36 @@ paths:
         "500":
           description: ""
       summary: Add SecurityRule to SecurityGroup
+      tags:
+      - SecurityGroup
+  /security-groups/{id}/seed-peer-clusters/{seed_peer_cluster_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add SeedPeer to SecurityGroup
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: seed peer cluster id
+        in: path
+        name: seed_peer_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add SeedPeer to SecurityGroup
       tags:
       - SecurityGroup
   /security-rules:
@@ -2828,6 +2498,362 @@ paths:
       summary: Destroy SecurityRule
       tags:
       - SecurityRule
+  /seed-peer-clusters:
+    get:
+      consumes:
+      - application/json
+      description: Get SeedPeerClusters
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SeedPeerCluster'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SeedPeerClusters
+      tags:
+      - SeedPeerCluster
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: DNCluster
+        in: body
+        name: SeedPeerCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSeedPeerClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+  /seed-peer-clusters/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+    get:
+      consumes:
+      - application/json
+      description: Get SeedPeerCluster by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SeedPeerCluster
+        in: body
+        name: SeedPeerCluster
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSeedPeerClusterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeerCluster'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+  /seed-peer-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add SchedulerCluster to SeedPeerCluster
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: scheduler cluster id
+        in: path
+        name: scheduler_cluster_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add SchedulerCluster to SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+  /seed-peer-clusters/{id}/seed-peers/{seed_peer_id}:
+    put:
+      consumes:
+      - application/json
+      description: Add SeedPeer to SeedPeerCluster
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: seed peer id
+        in: path
+        name: seed_peer_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Add Instance to SeedPeerCluster
+      tags:
+      - SeedPeerCluster
+  /seed-peers:
+    get:
+      consumes:
+      - application/json
+      description: Get SeedPeers
+      parameters:
+      - default: 0
+        description: current page
+        in: query
+        name: page
+        required: true
+        type: integer
+      - default: 10
+        description: return max item count, default 10, max 50
+        in: query
+        maximum: 50
+        minimum: 2
+        name: per_page
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SeedPeer'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SeedPeers
+      tags:
+      - SeedPeer
+    post:
+      consumes:
+      - application/json
+      description: create by json config
+      parameters:
+      - description: SeedPeer
+        in: body
+        name: SeedPeer
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateSeedPeerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeer'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create SeedPeer
+      tags:
+      - SeedPeer
+  /seed-peers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy SeedPeer
+      tags:
+      - SeedPeer
+    get:
+      consumes:
+      - application/json
+      description: Get SeedPeer by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeer'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get SeedPeer
+      tags:
+      - SeedPeer
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: SeedPeer
+        in: body
+        name: SeedPeer
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateSeedPeerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.SeedPeer'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update SeedPeer
+      tags:
+      - SeedPeer
   /user/signin/{name}:
     get:
       consumes:
@@ -2932,7 +2958,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.CDN'
+              $ref: '#/definitions/model.User'
             type: array
         "400":
           description: ""
@@ -2942,7 +2968,7 @@ paths:
           description: ""
       summary: Get Users
       tags:
-      - CDN
+      - User
   /users/{id}:
     get:
       consumes:

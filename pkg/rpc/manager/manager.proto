@@ -23,130 +23,236 @@ import "validate/validate.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/manager";
 
+// Request source type.
 enum SourceType {
+  // Scheduler service.
   SCHEDULER_SOURCE = 0;
-  CLIENT_SOURCE = 1;
-  CDN_SOURCE = 2;
+  // Peer service.
+  PEER_SOURCE = 1;
+  // SeedPeer service.
+  SEED_PEER_SOURCE = 2;
 }
 
-message CDNCluster {
-  uint64 id = 1;
-  string name = 2;
-  string bio = 3;
-  bytes config = 4;
-  SecurityGroup security_group = 6;
-}
-
+// SecurityGroup represents security group of cluster.
 message SecurityGroup {
+  // Group id.
   uint64 id = 1;
+  // Group name.
   string name = 2;
+  // Group biography.
   string bio = 3;
+  // Group domain.
   string domain = 4;
+  // Group proxy domain.
   string proxy_domain = 5;
 }
 
-message CDN {
+// SeedPeerCluster represents cluster of seed peer.
+message SeedPeerCluster {
+  // Cluster id.
   uint64 id = 1;
-  string host_name = 2;
-  string idc = 3;
-  string location = 4;
-  string ip = 5;
-  int32 port = 6;
-  int32 download_port = 7;
-  string state = 8;
-  uint64 cdn_cluster_id = 9;
-  CDNCluster cdn_cluster = 10;
-  repeated Scheduler schedulers = 11;
-}
-
-message GetCDNRequest {
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.hostname = true];
-  uint64 cdn_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
-}
-
-message UpdateCDNRequest {
-  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  string host_name = 2 [(validate.rules).string.hostname = true];
-  string idc = 3 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
-  string location = 4 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
-  string ip = 5 [(validate.rules).string = {ip: true}];
-  int32 port = 6 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-  int32 download_port = 7 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
-  uint64 cdn_cluster_id = 8 [(validate.rules).uint64 = {gte: 1}];
-}
-
-message SchedulerCluster {
-  uint64 id = 1;
+  // Cluster name.
   string name = 2;
+  // Cluster biography.
   string bio = 3;
+  // Cluster configuration.
   bytes config = 4;
+  // Cluster scopes.
+  bytes scopes = 5;
+  // Security group to which the seed peer cluster belongs.
+  SecurityGroup security_group = 6;
+}
+
+// SeedPeer represents seed peer for network.
+message SeedPeer {
+  // Seed peer id.
+  uint64 id = 1;
+  // Seed peer hostname.
+  string host_name = 2;
+  // Seed peer type.
+  string type = 3;
+  // CDN seed peer.
+  bool is_cdn = 4;
+  // Seed peer idc.
+  string idc = 5;
+  // Seed peer network topology.
+  string net_topology = 6;
+  // Seed peer location.
+  string location = 7;
+  // Seed peer ip.
+  string ip = 8;
+  // Seed peer grpc port.
+  int32 port = 9;
+  // Seed peer download port.
+  int32 download_port = 10;
+  // Seed peer state.
+  string state = 11;
+  // ID of the cluster to which the seed peer belongs.
+  uint64 seed_peer_cluster_id = 12;
+  // Cluster to which the seed peer belongs.
+  SeedPeerCluster seed_peer_cluster = 13;
+  // Schedulers included in seed peer.
+  repeated Scheduler schedulers = 14;
+}
+
+// GetSeedPeerRequest represents request of GetSeedPeer.
+message GetSeedPeerRequest {
+  // Request source type.
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Seed peer host_name.
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  // ID of the cluster to which the seed peer belongs.
+  uint64 seed_peer_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+}
+
+// UpdateSeedPeerRequest represents request of UpdateSeedPeer.
+message UpdateSeedPeerRequest {
+  // Request source type.
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Seed peer hostname.
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  // Seed peer type.
+  string type = 3 [(validate.rules).string = {in: ["super", "strong", "weak"]}];
+  // CDN seed peer.
+  bool is_cdn = 4;
+  // Seed peer idc.
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Seed peer network topology.
+  string net_topology = 6 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Seed peer location.
+  string location = 7 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
+  // Seed peer ip.
+  string ip = 8 [(validate.rules).string = {ip: true}];
+  // Seed peer port.
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  // Seed peer download port.
+  int32 download_port = 10 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  // ID of the cluster to which the seed peer belongs.
+  uint64 seed_peer_cluster_id = 11 [(validate.rules).uint64 = {gte: 1}];
+}
+
+// SeedPeerCluster represents cluster of scheduler.
+message SchedulerCluster {
+  // Cluster id.
+  uint64 id = 1;
+  // Cluster name.
+  string name = 2;
+  // Cluster biography.
+  string bio = 3;
+  // Cluster config.
+  bytes config = 4;
+  // Cluster client config.
   bytes client_config = 5;
+  // Cluster scopes.
+  bytes scopes = 6;
+  // Security group to which the scheduler cluster belongs.
   SecurityGroup security_group = 7;
 }
 
+// SeedPeerCluster represents scheduler for network.
 message Scheduler {
+  // Scheduler id.
   uint64 id = 1;
+  // Scheduler hostname.
   string host_name = 2;
+  // Deprecated: Do not use.
   string vips = 3;
+  // Scheduler idc.
   string idc = 4;
+  // Scheduler location.
   string location = 5;
+  // Deprecated: Use net_topology instead.
   bytes net_config = 6;
+  // Scheduler ip.
   string ip = 7;
+  // Scheduler grpc port.
   int32 port = 8;
+  // Scheduler state.
   string state = 9;
+  // ID of the cluster to which the scheduler belongs.
   uint64 scheduler_cluster_id = 10;
+  // Cluster to which the scheduler belongs.
   SchedulerCluster scheduler_cluster = 11;
-  repeated CDN cdns = 12;
+  // Seed peers to which the scheduler belongs.
+  repeated SeedPeer seed_peers = 13;
+  // Scheduler network topology.
+  string net_topology = 14;
 }
 
+// GetSchedulerRequest represents request of GetScheduler.
 message GetSchedulerRequest {
+  // Request source type.
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Scheduler hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
+  // ID of the cluster to which the scheduler belongs.
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
+// UpdateSchedulerRequest represents request of UpdateScheduler.
 message UpdateSchedulerRequest {
+  // Request source type.
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Scheduler hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
-  string vips = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
-  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
-  string location = 6 [(validate.rules).string = {max_len: 1024, ignore_empty: true}];
-  bytes net_config = 7 [(validate.rules).bytes = {min_len: 1, ignore_empty: true}];
-  string ip = 8 [(validate.rules).string = {ip: true}];
-  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  // ID of the cluster to which the scheduler belongs.
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+  // Deprecated: Do not use.
+  string vips = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Scheduler idc.
+  string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Scheduler location.
+  string location = 6 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Deprecated: Use net_topology instead.
+  bytes net_config = 7 [(validate.rules).bytes = {min_len: 1, ignore_empty: true}];
+  // Scheduler ip.
+  string ip = 8 [(validate.rules).string = {ip: true}];
+  // Scheduler port.
+  int32 port = 9 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
+  // Scheduler network topology.
+  string net_topology = 10 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
 }
 
+// ListSchedulersRequest represents request of ListSchedulers.
 message ListSchedulersRequest {
+  // Request source type.
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Source service hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
+  // Source service ip.
   string ip = 3 [(validate.rules).string.ip = true];
+  // Source service host infomation.
   map<string, string> host_info = 5 [(validate.rules).map.ignore_empty = true];
 }
 
+// ListSchedulersResponse represents response of ListSchedulers.
 message ListSchedulersResponse {
+  // Schedulers to which the source service belongs.
   repeated Scheduler schedulers = 1;
 }
 
+// KeepAliveRequest represents request of KeepAlive.
 message KeepAliveRequest {
+  // Request source type.
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Source service hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
+  // ID of the cluster to which the source service belongs.
   uint64 cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
 }
 
-// Manager RPC Service 
+// Manager RPC Service.
 service Manager {
-  // Get CDN and CDN cluster configuration
-  rpc GetCDN(GetCDNRequest) returns(CDN);
-  // Update CDN configuration
-  rpc UpdateCDN(UpdateCDNRequest) returns(CDN);
-  // Get Scheduler and Scheduler cluster configuration
+  // Get SeedPeer and SeedPeer cluster configuration.
+  rpc GetSeedPeer(GetSeedPeerRequest) returns(SeedPeer);
+  // Update SeedPeer configuration.
+  rpc UpdateSeedPeer(UpdateSeedPeerRequest) returns(SeedPeer);
+  // Get Scheduler and Scheduler cluster configuration.
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
-  // Update scheduler configuration
+  // Update scheduler configuration.
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
-  // List acitve schedulers configuration
+  // List acitve schedulers configuration.
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
-  // KeepAlive with manager
+  // KeepAlive with manager.
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
 }

@@ -24,6 +24,15 @@ import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
+enum Pattern{
+  // default pattern, scheduler will use all p2p node include dfdaemon and cdn peers
+  P2P = 0;
+  // cdn pattern, scheduler will use only cdn peers
+  CDN = 1;
+  // source pattern, scheduler will say back source when there is no available peer in p2p
+  SOURCE = 2;
+}
+
 message PeerTaskRequest{
   // universal resource locator for different kind of storage
   string url = 1 [(validate.rules).string.uri = true];
@@ -37,6 +46,8 @@ message PeerTaskRequest{
   base.HostLoad host_load = 5;
   // whether this request is caused by migration
   bool is_migrating = 6;
+  // pattern includes p2p, cdn and Source
+  Pattern pattern = 7;
 }
 
 message RegisterResult{
@@ -63,8 +74,8 @@ message SinglePiece{
 }
 
 message PeerHost{
-  // each time the daemon starts, it will generate a different uuid
-  string uuid = 1 [(validate.rules).string.uuid = true];
+  // each time the daemon starts, it will generate a different id 
+  string id = 1 [(validate.rules).string.min_len = 1];
   // peer host ip
   string ip = 2 [(validate.rules).string.ip = true];
   // rpc service port for peer
@@ -145,7 +156,7 @@ message PeerResult{
   // task download url
   string url = 6 [(validate.rules).string.uri = true];
   // total content length(byte)
-  int64 content_length = 7;
+  int64 content_length = 7 [(validate.rules).int64.gte = -1];
   // total network traffic(byte)
   uint64 traffic = 8;
   // total time(millisecond) consumed
@@ -154,8 +165,8 @@ message PeerResult{
   bool success = 10;
   // result code
   base.Code code = 11;
-  // -1 represent task is running or download failed
-  int32 total_piece_count = 12;
+  // task total piece count
+  int32 total_piece_count = 12 [(validate.rules).int32.gte = -1];
 }
 
 message PeerTarget{

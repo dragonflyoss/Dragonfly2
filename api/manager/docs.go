@@ -242,94 +242,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/applications/{id}/cdn-clusters/{cdn_cluster_id}": {
-            "put": {
-                "description": "Add CDN to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Add CDN to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Delete CDN to Application",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Application"
-                ],
-                "summary": "Delete CDN to Application",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/applications/{id}/scheduler-clusters/{scheduler_cluster_id}": {
             "put": {
                 "description": "Add Scheduler to Application",
@@ -418,9 +330,9 @@ const docTemplate = `{
                 }
             }
         },
-        "/cdn-clusters": {
-            "get": {
-                "description": "Get CDNClusters",
+        "/applications/{id}/seed-peer-clusters/{seed_peer_cluster_id}": {
+            "put": {
+                "description": "Add SeedPeer to Application",
                 "consumes": [
                     "application/json"
                 ],
@@ -428,105 +340,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "CDNCluster"
+                    "Application"
                 ],
-                "summary": "Get CDNClusters",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "current page",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 50,
-                        "minimum": 2,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "return max item count, default 10, max 50",
-                        "name": "per_page",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.CDNCluster"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "post": {
-                "description": "create by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Create CDNCluster",
-                "parameters": [
-                    {
-                        "description": "DNCluster",
-                        "name": "CDNCluster",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.CreateCDNClusterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}": {
-            "get": {
-                "description": "Get CDNCluster by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Get CDNCluster",
+                "summary": "Add SeedPeer to Application",
                 "parameters": [
                     {
                         "type": "string",
@@ -534,14 +350,18 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "seed peer cluster id",
+                        "name": "seed_peer_cluster_id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
+                        "description": ""
                     },
                     "400": {
                         "description": ""
@@ -555,7 +375,7 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Destroy by id",
+                "description": "Delete SeedPeer to Application",
                 "consumes": [
                     "application/json"
                 ],
@@ -563,95 +383,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "CDNCluster"
+                    "Application"
                 ],
-                "summary": "Destroy CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Update CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "CDNCluster",
-                        "name": "CDNCluster",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateCDNClusterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDNCluster"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}/cdns/{cdn_id}": {
-            "put": {
-                "description": "Add CDN to CDNCluster",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Add Instance to CDNCluster",
+                "summary": "Delete SeedPeer to Application",
                 "parameters": [
                     {
                         "type": "string",
@@ -662,8 +396,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "cdn id",
-                        "name": "cdn_id",
+                        "description": "seed peer cluster id",
+                        "name": "seed_peer_cluster_id",
                         "in": "path",
                         "required": true
                     }
@@ -671,272 +405,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdn-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}": {
-            "put": {
-                "description": "Add SchedulerCluster to CDNCluster",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDNCluster"
-                ],
-                "summary": "Add SchedulerCluster to CDNCluster",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "scheduler cluster id",
-                        "name": "scheduler_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdns": {
-            "get": {
-                "description": "Get CDNs",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Get CDNs",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "default": 0,
-                        "description": "current page",
-                        "name": "page",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "maximum": 50,
-                        "minimum": 2,
-                        "type": "integer",
-                        "default": 10,
-                        "description": "return max item count, default 10, max 50",
-                        "name": "per_page",
-                        "in": "query",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.CDN"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "post": {
-                "description": "create by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Create CDN",
-                "parameters": [
-                    {
-                        "description": "CDN",
-                        "name": "CDN",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.CreateCDNRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
-        "/cdns/{id}": {
-            "get": {
-                "description": "Get CDN by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Get CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "delete": {
-                "description": "Destroy by id",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Destroy CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            },
-            "patch": {
-                "description": "Update by json config",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "CDN"
-                ],
-                "summary": "Update CDN",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "CDN",
-                        "name": "CDN",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.UpdateCDNRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.CDN"
-                        }
                     },
                     "400": {
                         "description": ""
@@ -1687,7 +1155,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Preheat",
-                        "name": "CDN",
+                        "name": "Preheat",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -2642,51 +2110,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/security-groups/{id}/cdn-clusters/{cdn_cluster_id}": {
-            "put": {
-                "description": "Add CDN to SecurityGroup",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "SecurityGroup"
-                ],
-                "summary": "Add CDN to SecurityGroup",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "id",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "cdn cluster id",
-                        "name": "cdn_cluster_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    },
-                    "400": {
-                        "description": ""
-                    },
-                    "404": {
-                        "description": ""
-                    },
-                    "500": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/security-groups/{id}/scheduler-clusters/{scheduler_cluster_id}": {
             "put": {
                 "description": "Add Scheduler to SecurityGroup",
@@ -2800,6 +2223,51 @@ const docTemplate = `{
                         "type": "string",
                         "description": "security rule id",
                         "name": "security_rule_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/security-groups/{id}/seed-peer-clusters/{seed_peer_cluster_id}": {
+            "put": {
+                "description": "Add SeedPeer to SecurityGroup",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SecurityGroup"
+                ],
+                "summary": "Add SeedPeer to SecurityGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "seed peer cluster id",
+                        "name": "seed_peer_cluster_id",
                         "in": "path",
                         "required": true
                     }
@@ -3081,6 +2549,538 @@ const docTemplate = `{
                 }
             }
         },
+        "/seed-peer-clusters": {
+            "get": {
+                "description": "Get SeedPeerClusters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Get SeedPeerClusters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SeedPeerCluster"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Create SeedPeerCluster",
+                "parameters": [
+                    {
+                        "description": "DNCluster",
+                        "name": "SeedPeerCluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateSeedPeerClusterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeerCluster"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/seed-peer-clusters/{id}": {
+            "get": {
+                "description": "Get SeedPeerCluster by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Get SeedPeerCluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeerCluster"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Destroy SeedPeerCluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Update SeedPeerCluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "SeedPeerCluster",
+                        "name": "SeedPeerCluster",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSeedPeerClusterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeerCluster"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/seed-peer-clusters/{id}/scheduler-clusters/{scheduler_cluster_id}": {
+            "put": {
+                "description": "Add SchedulerCluster to SeedPeerCluster",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Add SchedulerCluster to SeedPeerCluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "scheduler cluster id",
+                        "name": "scheduler_cluster_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/seed-peer-clusters/{id}/seed-peers/{seed_peer_id}": {
+            "put": {
+                "description": "Add SeedPeer to SeedPeerCluster",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeerCluster"
+                ],
+                "summary": "Add Instance to SeedPeerCluster",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "seed peer id",
+                        "name": "seed_peer_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/seed-peers": {
+            "get": {
+                "description": "Get SeedPeers",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeer"
+                ],
+                "summary": "Get SeedPeers",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "current page",
+                        "name": "page",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "maximum": 50,
+                        "minimum": 2,
+                        "type": "integer",
+                        "default": 10,
+                        "description": "return max item count, default 10, max 50",
+                        "name": "per_page",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SeedPeer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeer"
+                ],
+                "summary": "Create SeedPeer",
+                "parameters": [
+                    {
+                        "description": "SeedPeer",
+                        "name": "SeedPeer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateSeedPeerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeer"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/seed-peers/{id}": {
+            "get": {
+                "description": "Get SeedPeer by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeer"
+                ],
+                "summary": "Get SeedPeer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeer"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeer"
+                ],
+                "summary": "Destroy SeedPeer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "SeedPeer"
+                ],
+                "summary": "Update SeedPeer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "SeedPeer",
+                        "name": "SeedPeer",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateSeedPeerRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.SeedPeer"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/user/signin/{name}": {
             "get": {
                 "description": "oauth signin by json config",
@@ -3208,7 +3208,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "CDN"
+                    "User"
                 ],
                 "summary": "Get Users",
                 "parameters": [
@@ -3237,7 +3237,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/model.CDN"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     },
@@ -3507,12 +3507,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3531,6 +3525,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/model.SchedulerCluster"
                     }
                 },
+                "seed_peer_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SeedPeerCluster"
+                    }
+                },
                 "state": {
                     "type": "string"
                 },
@@ -3545,88 +3545,6 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
-                }
-            }
-        },
-        "model.CDN": {
-            "type": "object",
-            "properties": {
-                "cdnclusterID": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "integer"
-                },
-                "state": {
-                    "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.CDNCluster": {
-            "type": "object",
-            "properties": {
-                "application_id": {
-                    "type": "integer"
-                },
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "jobs": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Job"
-                    }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "scheduler_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.SchedulerCluster"
-                    }
-                },
-                "security_group_id": {
-                    "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3669,12 +3587,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -3688,6 +3600,12 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
+                "seed_peer_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SeedPeerCluster"
                     }
                 },
                 "state": {
@@ -3757,8 +3675,8 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_config": {
-                    "$ref": "#/definitions/model.JSONMap"
+                "net_topology": {
+                    "type": "string"
                 },
                 "port": {
                     "type": "integer"
@@ -3771,9 +3689,6 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
-                },
-                "vips": {
-                    "type": "string"
                 }
             }
         },
@@ -3785,12 +3700,6 @@ const docTemplate = `{
                 },
                 "bio": {
                     "type": "string"
-                },
-                "cdn_clusters": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.CDNCluster"
-                    }
                 },
                 "client_config": {
                     "$ref": "#/definitions/model.JSONMap"
@@ -3821,6 +3730,12 @@ const docTemplate = `{
                 },
                 "security_group_id": {
                     "type": "integer"
+                },
+                "seed_peer_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SeedPeerCluster"
+                    }
                 },
                 "updated_at": {
                     "type": "string"
@@ -3879,6 +3794,100 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SeedPeer": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "download_port": {
+                    "type": "integer"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "is_cdn": {
+                    "type": "boolean"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_topology": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "seedPeerClusterID": {
+                    "type": "integer"
+                },
+                "state": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SeedPeerCluster": {
+            "type": "object",
+            "properties": {
+                "application_id": {
+                    "type": "integer"
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "config": {
+                    "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "jobs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Job"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scheduler_clusters": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.SchedulerCluster"
+                    }
+                },
+                "scopes": {
+                    "$ref": "#/definitions/model.JSONMap"
+                },
+                "security_group_id": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"
@@ -3958,19 +3967,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.CDNClusterConfig": {
-            "type": "object",
-            "properties": {
-                "load_limit": {
-                    "type": "integer",
-                    "maximum": 10000,
-                    "minimum": 1
-                },
-                "net_topology": {
-                    "type": "string"
-                }
-            }
-        },
         "types.CreateApplicationRequest": {
             "type": "object",
             "required": [
@@ -3998,61 +3994,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "types.CreateCDNClusterRequest": {
-            "type": "object",
-            "required": [
-                "config",
-                "name"
-            ],
-            "properties": {
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/types.CDNClusterConfig"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.CreateCDNRequest": {
-            "type": "object",
-            "required": [
-                "cdn_cluster_id",
-                "download_port",
-                "host_name",
-                "idc",
-                "ip",
-                "port"
-            ],
-            "properties": {
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "host_name": {
-                    "type": "string"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
                     "type": "integer"
                 }
             }
@@ -4092,17 +4033,17 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_cluster_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "result": {
                     "type": "object",
                     "additionalProperties": true
                 },
                 "scheduler_cluster_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "seed_peer_cluster_ids": {
                     "type": "array",
                     "items": {
                         "type": "integer"
@@ -4174,9 +4115,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
                 "client_config": {
                     "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
@@ -4191,6 +4129,9 @@ const docTemplate = `{
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
+                },
+                "seed_peer_cluster_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -4198,7 +4139,6 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "host_name",
-                "idc",
                 "ip",
                 "port",
                 "scheduler_cluster_id"
@@ -4216,18 +4156,14 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                "net_topology": {
+                    "type": "string"
                 },
                 "port": {
                     "type": "integer"
                 },
                 "scheduler_cluster_id": {
                     "type": "integer"
-                },
-                "vips": {
-                    "type": "string"
                 }
             }
         },
@@ -4263,6 +4199,75 @@ const docTemplate = `{
                 },
                 "proxy_domain": {
                     "type": "string"
+                }
+            }
+        },
+        "types.CreateSeedPeerClusterRequest": {
+            "type": "object",
+            "required": [
+                "config",
+                "name"
+            ],
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "config": {
+                    "$ref": "#/definitions/types.SeedPeerClusterConfig"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/types.SeedPeerClusterScopes"
+                }
+            }
+        },
+        "types.CreateSeedPeerRequest": {
+            "type": "object",
+            "required": [
+                "download_port",
+                "host_name",
+                "ip",
+                "port",
+                "seed_peer_cluster_id",
+                "type"
+            ],
+            "properties": {
+                "download_port": {
+                    "type": "integer"
+                },
+                "host_name": {
+                    "type": "string"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_topology": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "seed_peer_cluster_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "super",
+                        "strong",
+                        "weak"
+                    ]
                 }
             }
         },
@@ -4362,7 +4367,7 @@ const docTemplate = `{
             "properties": {
                 "load_limit": {
                     "type": "integer",
-                    "maximum": 10000,
+                    "maximum": 2000,
                     "minimum": 1
                 },
                 "parallel_count": {
@@ -4383,6 +4388,30 @@ const docTemplate = `{
             }
         },
         "types.SchedulerClusterScopes": {
+            "type": "object",
+            "properties": {
+                "idc": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_topology": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.SeedPeerClusterConfig": {
+            "type": "object",
+            "properties": {
+                "load_limit": {
+                    "type": "integer",
+                    "maximum": 5000,
+                    "minimum": 1
+                }
+            }
+        },
+        "types.SeedPeerClusterScopes": {
             "type": "object",
             "properties": {
                 "idc": {
@@ -4461,46 +4490,6 @@ const docTemplate = `{
                 }
             }
         },
-        "types.UpdateCDNClusterRequest": {
-            "type": "object",
-            "properties": {
-                "bio": {
-                    "type": "string"
-                },
-                "config": {
-                    "$ref": "#/definitions/types.CDNClusterConfig"
-                },
-                "is_default": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "types.UpdateCDNRequest": {
-            "type": "object",
-            "properties": {
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
-                "download_port": {
-                    "type": "integer"
-                },
-                "idc": {
-                    "type": "string"
-                },
-                "ip": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "integer"
-                }
-            }
-        },
         "types.UpdateConfigRequest": {
             "type": "object",
             "properties": {
@@ -4559,9 +4548,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "cdn_cluster_id": {
-                    "type": "integer"
-                },
                 "client_config": {
                     "$ref": "#/definitions/types.SchedulerClusterClientConfig"
                 },
@@ -4576,6 +4562,9 @@ const docTemplate = `{
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
+                },
+                "seed_peer_cluster_id": {
+                    "type": "integer"
                 }
             }
         },
@@ -4591,9 +4580,8 @@ const docTemplate = `{
                 "location": {
                     "type": "string"
                 },
-                "net_config": {
-                    "type": "object",
-                    "additionalProperties": true
+                "net_topology": {
+                    "type": "string"
                 },
                 "port": {
                     "type": "integer"
@@ -4603,9 +4591,6 @@ const docTemplate = `{
                 },
                 "scheduler_id": {
                     "type": "integer"
-                },
-                "vips": {
-                    "type": "string"
                 }
             }
         },
@@ -4634,6 +4619,60 @@ const docTemplate = `{
                 },
                 "proxy_domain": {
                     "type": "string"
+                }
+            }
+        },
+        "types.UpdateSeedPeerClusterRequest": {
+            "type": "object",
+            "properties": {
+                "bio": {
+                    "type": "string"
+                },
+                "config": {
+                    "$ref": "#/definitions/types.SeedPeerClusterConfig"
+                },
+                "is_default": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scopes": {
+                    "$ref": "#/definitions/types.SeedPeerClusterScopes"
+                }
+            }
+        },
+        "types.UpdateSeedPeerRequest": {
+            "type": "object",
+            "properties": {
+                "download_port": {
+                    "type": "integer"
+                },
+                "idc": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "net_topology": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "integer"
+                },
+                "seed_peer_cluster_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "super",
+                        "strong",
+                        "weak"
+                    ]
                 }
             }
         },

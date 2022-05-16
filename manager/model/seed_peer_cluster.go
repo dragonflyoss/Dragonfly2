@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,18 @@
 
 package model
 
-type CDNCluster struct {
+type SeedPeerCluster struct {
 	Model
-	Name              string             `gorm:"column:name;type:varchar(256);index:uk_cdn_cluster_name,unique;not null;comment:name" json:"name"`
+	Name              string             `gorm:"column:name;type:varchar(256);index:uk_seed_peer_cluster_name,unique;not null;comment:name" json:"name"`
 	BIO               string             `gorm:"column:bio;type:varchar(1024);comment:biography" json:"bio"`
 	Config            JSONMap            `gorm:"column:config;not null;comment:configuration" json:"config"`
-	SchedulerClusters []SchedulerCluster `gorm:"many2many:cdn_cluster_scheduler_cluster;" json:"scheduler_clusters"`
-	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default cdn cluster" json:"is_default"`
-	CDNs              []CDN              `json:"-"`
+	Scopes            JSONMap            `gorm:"column:scopes;comment:match scopes" json:"scopes"`
+	IsDefault         bool               `gorm:"column:is_default;not null;default:false;comment:default seed peer cluster" json:"is_default"`
+	SchedulerClusters []SchedulerCluster `gorm:"many2many:seed_peer_cluster_scheduler_cluster;" json:"scheduler_clusters"`
+	SeedPeers         []SeedPeer         `json:"-"`
 	ApplicationID     uint               `gorm:"comment:application id" json:"application_id"`
 	Application       Application        `json:"-"`
 	SecurityGroupID   uint               `gorm:"comment:security group id" json:"security_group_id"`
 	SecurityGroup     SecurityGroup      `json:"-"`
-	Jobs              []Job              `gorm:"many2many:job_cdn_cluster;" json:"jobs"`
+	Jobs              []Job              `gorm:"many2many:job_seed_peer_cluster;" json:"jobs"`
 }

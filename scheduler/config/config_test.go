@@ -59,7 +59,6 @@ func TestConfig_Load(t *testing.T) {
 		},
 		DynConfig: &DynConfig{
 			RefreshInterval: 5 * time.Minute,
-			CDNDir:          "foo",
 		},
 		Host: &HostConfig{
 			IDC:         "foo",
@@ -73,7 +72,7 @@ func TestConfig_Load(t *testing.T) {
 				Interval: 5 * time.Second,
 			},
 		},
-		CDN: &CDNConfig{
+		SeedPeer: &SeedPeerConfig{
 			Enable: true,
 		},
 		Job: &JobConfig{
@@ -142,7 +141,7 @@ func TestConfig_New(t *testing.T) {
 			},
 		},
 		DynConfig: &DynConfig{
-			RefreshInterval: 1 * time.Minute,
+			RefreshInterval: 10 * time.Second,
 		},
 		Host: &HostConfig{},
 		Manager: &ManagerConfig{
@@ -151,7 +150,7 @@ func TestConfig_New(t *testing.T) {
 				Interval: 5 * time.Second,
 			},
 		},
-		CDN: &CDNConfig{
+		SeedPeer: &SeedPeerConfig{
 			Enable: true,
 		},
 		Job: &JobConfig{

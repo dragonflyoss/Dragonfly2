@@ -31,17 +31,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 )
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of cdn is empty")
-	}
-	cc := &cdnClient{
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) CdnClient {
+	return &cdnClient{
 		rpc.NewConnection(context.Background(), "cdn", addrs, []rpc.ConnOption{
 			rpc.WithConnExpireTime(60 * time.Second),
 			rpc.WithDialOption(opts),
 		}),
 	}
-	return cc, nil
 }
 
 var once sync.Once

@@ -43,9 +43,6 @@ var (
 	_ = base.Code(0)
 )
 
-// define the regex for a UUID once up-front
-var _scheduler_uuidPattern = regexp.MustCompile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
 // Validate checks the field values on PeerTaskRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.
@@ -112,6 +109,8 @@ func (m *PeerTaskRequest) Validate() error {
 	}
 
 	// no validation rules for IsMigrating
+
+	// no validation rules for Pattern
 
 	return nil
 }
@@ -364,11 +363,10 @@ func (m *PeerHost) Validate() error {
 		return nil
 	}
 
-	if err := m._validateUuid(m.GetUuid()); err != nil {
+	if utf8.RuneCountInString(m.GetId()) < 1 {
 		return PeerHostValidationError{
-			field:  "Uuid",
-			reason: "value must be a valid UUID",
-			cause:  err,
+			field:  "Id",
+			reason: "value length must be at least 1 runes",
 		}
 	}
 
@@ -437,14 +435,6 @@ func (m *PeerHost) _validateHostname(host string) error {
 				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
 			}
 		}
-	}
-
-	return nil
-}
-
-func (m *PeerHost) _validateUuid(uuid string) error {
-	if matched := _scheduler_uuidPattern.MatchString(uuid); !matched {
-		return errors.New("invalid uuid format")
 	}
 
 	return nil
@@ -772,7 +762,12 @@ func (m *PeerResult) Validate() error {
 		}
 	}
 
-	// no validation rules for ContentLength
+	if m.GetContentLength() < -1 {
+		return PeerResultValidationError{
+			field:  "ContentLength",
+			reason: "value must be greater than or equal to -1",
+		}
+	}
 
 	// no validation rules for Traffic
 
@@ -782,7 +777,12 @@ func (m *PeerResult) Validate() error {
 
 	// no validation rules for Code
 
-	// no validation rules for TotalPieceCount
+	if m.GetTotalPieceCount() < -1 {
+		return PeerResultValidationError{
+			field:  "TotalPieceCount",
+			reason: "value must be greater than or equal to -1",
+		}
+	}
 
 	return nil
 }

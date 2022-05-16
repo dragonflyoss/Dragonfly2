@@ -43,7 +43,7 @@ func TestResource_New(t *testing.T) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{{ID: 1}},
+						SeedPeers: []*config.SeedPeer{{ID: 1}},
 					}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
@@ -110,23 +110,24 @@ func TestResource_New(t *testing.T) {
 			},
 		},
 		{
-			name:   "new resource faild because of cdn list is empty",
+			name:   "new resource faild because of seed peer list is empty",
 			config: config.New(),
 			mock: func(gc *gc.MockGCMockRecorder, dynconfig *configmocks.MockDynconfigInterfaceMockRecorder) {
 				gomock.InOrder(
 					gc.Add(gomock.Any()).Return(nil).Times(3),
 					dynconfig.Get().Return(&config.DynconfigData{
-						CDNs: []*config.CDN{},
+						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
 			expect: func(t *testing.T, resource Resource, err error) {
 				assert := assert.New(t)
-				assert.EqualError(err, "address list of cdn is empty")
+				assert.NoError(err)
 			},
 		},
 		{
-			name: "new resource with cdn",
+			name: "new resource without seed peer",
 			config: &config.Config{
 				Scheduler: &config.SchedulerConfig{
 					GC: &config.GCConfig{
@@ -138,7 +139,7 @@ func TestResource_New(t *testing.T) {
 						HostTTL:        1000,
 					},
 				},
-				CDN: &config.CDNConfig{
+				SeedPeer: &config.SeedPeerConfig{
 					Enable: false,
 				},
 			},

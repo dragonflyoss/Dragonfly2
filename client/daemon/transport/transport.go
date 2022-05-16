@@ -40,6 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
@@ -66,6 +67,9 @@ type transport struct {
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// defaultFilter is used for registering steam task
+	defaultPattern scheduler.Pattern
 
 	// defaultBiz is used when http request without X-Dragonfly-Biz Header
 	defaultBiz string
@@ -115,6 +119,14 @@ func WithCondition(c func(r *http.Request) bool) Option {
 func WithDefaultFilter(f string) Option {
 	return func(rt *transport) *transport {
 		rt.defaultFilter = f
+		return rt
+	}
+}
+
+// WithDefaultPattern sets default pattern
+func WithDefaultPattern(pattern scheduler.Pattern) Option {
+	return func(rt *transport) *transport {
+		rt.defaultPattern = pattern
 		return rt
 	}
 }
@@ -338,7 +350,7 @@ var hopHeaders = []string{
 	"Upgrade",
 
 	// remove by dragonfly
-	"Accept",
+	// "Accept", Accept header should not be removed, issue: https://github.com/dragonflyoss/Dragonfly2/issues/1290
 	"User-Agent",
 	"X-Forwarded-For",
 }

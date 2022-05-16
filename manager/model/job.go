@@ -26,6 +26,6 @@ type Job struct {
 	Result            JSONMap            `gorm:"column:result;comment:task result" json:"result"`
 	UserID            uint               `gorm:"column:user_id;comment:user id" json:"user_id"`
 	User              User               `json:"-"`
-	CDNClusters       []CDNCluster       `gorm:"many2many:job_cdn_cluster;" json:"cdn_clusters"`
+	SeedPeerClusters  []SeedPeerCluster  `gorm:"many2many:job_seed_peer_cluster;" json:"seed_peer_clusters"`
 	SchedulerClusters []SchedulerCluster `gorm:"many2many:job_scheduler_cluster;" json:"scheduler_clusters"`
 }

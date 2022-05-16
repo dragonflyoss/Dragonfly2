@@ -17,6 +17,7 @@
 package resource
 
 import (
+	"errors"
 	"sort"
 	"sync"
 	"time"
@@ -31,10 +32,10 @@ import (
 )
 
 const (
-	// Tiny file size is 128 bytes
+	// Tiny file size is 128 bytes.
 	TinyFileSize = 128
 
-	// Peer failure limit in task
+	// Peer failure limit in task.
 	FailedPeerCountLimit = 200
 )
 
@@ -50,34 +51,34 @@ const (
 )
 
 const (
-	// Task has been created but did not start running
+	// Task has been created but did not start running.
 	TaskStatePending = "Pending"
 
-	// Task is downloading resources from CDN or back-to-source
+	// Task is downloading resources from seed peer or back-to-source.
 	TaskStateRunning = "Running"
 
-	// Task has been downloaded successfully
+	// Task has been downloaded successfully.
 	TaskStateSucceeded = "Succeeded"
 
-	// Task has been downloaded failed
+	// Task has been downloaded failed.
 	TaskStateFailed = "Failed"
 )
 
 const (
-	// Task is downloading
+	// Task is downloading.
 	TaskEventDownload = "Download"
 
-	// Task downloaded successfully
+	// Task downloaded successfully.
 	TaskEventDownloadSucceeded = "DownloadSucceeded"
 
-	// Task downloaded failed
+	// Task downloaded failed.
 	TaskEventDownloadFailed = "DownloadFailed"
 )
 
-// Option is a functional option for task
+// Option is a functional option for task.
 type Option func(task *Task)
 
-// WithBackToSourceLimit set BackToSourceLimit for task
+// WithBackToSourceLimit set BackToSourceLimit for task.
 func WithBackToSourceLimit(limit int32) Option {
 	return func(task *Task) {
 		task.BackToSourceLimit.Add(limit)
@@ -85,60 +86,60 @@ func WithBackToSourceLimit(limit int32) Option {
 }
 
 type Task struct {
-	// ID is task id
+	// ID is task id.
 	ID string
 
-	// URL is task download url
+	// URL is task download url.
 	URL string
 
-	// Type is task type
+	// Type is task type.
 	Type int
 
-	// URLMeta is task download url meta
+	// URLMeta is task download url meta.
 	URLMeta *base.UrlMeta
 
-	// DirectPiece is tiny piece data
+	// DirectPiece is tiny piece data.
 	DirectPiece []byte
 
-	// ContentLength is task total content length
+	// ContentLength is task total content length.
 	ContentLength *atomic.Int64
 
-	// TotalPieceCount is total piece count
+	// TotalPieceCount is total piece count.
 	TotalPieceCount *atomic.Int32
 
-	// BackToSourceLimit is back-to-source limit
+	// BackToSourceLimit is back-to-source limit.
 	BackToSourceLimit *atomic.Int32
 
-	// BackToSourcePeers is back-to-source sync map
+	// BackToSourcePeers is back-to-source sync map.
 	BackToSourcePeers set.SafeSet
 
-	// Task state machine
+	// Task state machine.
 	FSM *fsm.FSM
 
-	// Piece sync map
+	// Piece sync map.
 	Pieces *sync.Map
 
-	// Peer sync map
+	// Peer sync map.
 	Peers *sync.Map
 
-	// PeerCount is peer count
+	// PeerCount is peer count.
 	PeerCount *atomic.Int32
 
 	// PeerFailedCount is peer failed count,
-	// if one peer succeeds, the value is reset to zero
+	// if one peer succeeds, the value is reset to zero.
 	PeerFailedCount *atomic.Int32
 
-	// CreateAt is task create time
+	// CreateAt is task create time.
 	CreateAt *atomic.Time
 
-	// UpdateAt is task update time
+	// UpdateAt is task update time.
 	UpdateAt *atomic.Time
 
-	// Task log
+	// Task log.
 	Log *logger.SugaredLoggerOnWith
 }
 
-// New task instance
+// New task instance.
 func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option) *Task {
 	t := &Task{
 		ID:                id,
@@ -158,7 +159,7 @@ func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option
 		Log:               logger.WithTaskIDAndURL(id, url),
 	}
 
-	// Initialize state machine
+	// Initialize state machine.
 	t.FSM = fsm.NewFSM(
 		TaskStatePending,
 		fsm.Events{
@@ -189,7 +190,7 @@ func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option
 	return t
 }
 
-// LoadPeer return peer for a key
+// LoadPeer return peer for a key.
 func (t *Task) LoadPeer(key string) (*Peer, bool) {
 	rawPeer, ok := t.Peers.Load(key)
 	if !ok {
@@ -199,7 +200,7 @@ func (t *Task) LoadPeer(key string) (*Peer, bool) {
 	return rawPeer.(*Peer), ok
 }
 
-// StorePeer set peer
+// StorePeer set peer.
 func (t *Task) StorePeer(peer *Peer) {
 	t.Peers.Store(peer.ID, peer)
 	t.PeerCount.Inc()
@@ -217,14 +218,14 @@ func (t *Task) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
 	return rawPeer.(*Peer), loaded
 }
 
-// DeletePeer deletes peer for a key
+// DeletePeer deletes peer for a key.
 func (t *Task) DeletePeer(key string) {
 	if _, loaded := t.Peers.LoadAndDelete(key); loaded {
 		t.PeerCount.Dec()
 	}
 }
 
-// HasAvailablePeer returns whether there is an available peer
+// HasAvailablePeer returns whether there is an available peer.
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
 	t.Peers.Range(func(_, v interface{}) bool {
@@ -244,8 +245,8 @@ func (t *Task) HasAvailablePeer() bool {
 	return hasAvailablePeer
 }
 
-// LoadCDNPeer return latest cdn peer in peers sync map
-func (t *Task) LoadCDNPeer() (*Peer, bool) {
+// LoadSeedPeer return latest seed peer in peers sync map.
+func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
 	t.Peers.Range(func(_, v interface{}) bool {
 		peer, ok := v.(*Peer)
@@ -253,7 +254,7 @@ func (t *Task) LoadCDNPeer() (*Peer, bool) {
 			return true
 		}
 
-		if peer.Host.IsCDN {
+		if peer.Host.Type != HostTypeNormal {
 			peers = append(peers, peer)
 		}
 
@@ -274,13 +275,13 @@ func (t *Task) LoadCDNPeer() (*Peer, bool) {
 	return nil, false
 }
 
-// IsCDNFailed returns whether the cdn in the task failed
-func (t *Task) IsCDNFailed() bool {
-	cdnPeer, ok := t.LoadCDNPeer()
-	return ok && cdnPeer.FSM.Is(PeerStateFailed)
+// IsSeedPeerFailed returns whether the seed peer in the task failed.
+func (t *Task) IsSeedPeerFailed() bool {
+	seedPeer, ok := t.LoadSeedPeer()
+	return ok && seedPeer.FSM.Is(PeerStateFailed)
 }
 
-// LoadPiece return piece for a key
+// LoadPiece return piece for a key.
 func (t *Task) LoadPiece(key int32) (*base.PieceInfo, bool) {
 	rawPiece, ok := t.Pieces.Load(key)
 	if !ok {
@@ -290,7 +291,7 @@ func (t *Task) LoadPiece(key int32) (*base.PieceInfo, bool) {
 	return rawPiece.(*base.PieceInfo), ok
 }
 
-// StorePiece set piece
+// StorePiece set piece.
 func (t *Task) StorePiece(piece *base.PieceInfo) {
 	t.Pieces.Store(piece.PieceNum, piece)
 }
@@ -303,30 +304,38 @@ func (t *Task) LoadOrStorePiece(piece *base.PieceInfo) (*base.PieceInfo, bool) {
 	return rawPiece.(*base.PieceInfo), loaded
 }
 
-// DeletePiece deletes piece for a key
+// DeletePiece deletes piece for a key.
 func (t *Task) DeletePiece(key int32) {
 	t.Pieces.Delete(key)
 }
 
-// SizeScope return task size scope type
-func (t *Task) SizeScope() base.SizeScope {
+// SizeScope return task size scope type.
+func (t *Task) SizeScope() (base.SizeScope, error) {
+	if t.ContentLength.Load() < 0 {
+		return -1, errors.New("invalid content length")
+	}
+
+	if t.TotalPieceCount.Load() <= 0 {
+		return -1, errors.New("invalid total piece count")
+	}
+
 	if t.ContentLength.Load() <= TinyFileSize {
-		return base.SizeScope_TINY
+		return base.SizeScope_TINY, nil
 	}
 
 	if t.TotalPieceCount.Load() == 1 {
-		return base.SizeScope_SMALL
+		return base.SizeScope_SMALL, nil
 	}
 
-	return base.SizeScope_NORMAL
+	return base.SizeScope_NORMAL, nil
 }
 
-// CanBackToSource represents whether peer can back-to-source
+// CanBackToSource represents whether peer can back-to-source.
 func (t *Task) CanBackToSource() bool {
 	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && t.Type == TaskTypeNormal
 }
 
-// NotifyPeers notify all peers in the task with the state code
+// NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(code base.Code, event string) {
 	t.Peers.Range(func(_, value interface{}) bool {
 		peer := value.(*Peer)

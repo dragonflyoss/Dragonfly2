@@ -423,7 +423,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 					})
 				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().Subscribe(gomock.Any()).AnyTimes().DoAndReturn(
-					func(request *base.PieceTaskRequest) (*peer.SubscribeResult, bool) {
+					func(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
 						ch := make(chan *peer.PieceInfo)
 						success := make(chan struct{})
 						fail := make(chan struct{})
@@ -464,7 +464,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 							close(success)
 						}(tc.followingPieces)
 
-						return &peer.SubscribeResult{
+						return &peer.SubscribeResponse{
 							Storage:          mockStorageManger,
 							PieceInfoChannel: ch,
 							Success:          success,

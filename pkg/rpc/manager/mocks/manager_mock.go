@@ -38,26 +38,6 @@ func (m *MockManagerClient) EXPECT() *MockManagerClientMockRecorder {
 	return m.recorder
 }
 
-// GetCDN mocks base method.
-func (m *MockManagerClient) GetCDN(ctx context.Context, in *manager.GetCDNRequest, opts ...grpc.CallOption) (*manager.CDN, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetCDN", varargs...)
-	ret0, _ := ret[0].(*manager.CDN)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCDN indicates an expected call of GetCDN.
-func (mr *MockManagerClientMockRecorder) GetCDN(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCDN", reflect.TypeOf((*MockManagerClient)(nil).GetCDN), varargs...)
-}
-
 // GetScheduler mocks base method.
 func (m *MockManagerClient) GetScheduler(ctx context.Context, in *manager.GetSchedulerRequest, opts ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -76,6 +56,26 @@ func (mr *MockManagerClientMockRecorder) GetScheduler(ctx, in interface{}, opts 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerClient)(nil).GetScheduler), varargs...)
+}
+
+// GetSeedPeer mocks base method.
+func (m *MockManagerClient) GetSeedPeer(ctx context.Context, in *manager.GetSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetSeedPeer", varargs...)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeer indicates an expected call of GetSeedPeer.
+func (mr *MockManagerClientMockRecorder) GetSeedPeer(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerClient)(nil).GetSeedPeer), varargs...)
 }
 
 // KeepAlive mocks base method.
@@ -118,26 +118,6 @@ func (mr *MockManagerClientMockRecorder) ListSchedulers(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockManagerClient)(nil).ListSchedulers), varargs...)
 }
 
-// UpdateCDN mocks base method.
-func (m *MockManagerClient) UpdateCDN(ctx context.Context, in *manager.UpdateCDNRequest, opts ...grpc.CallOption) (*manager.CDN, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "UpdateCDN", varargs...)
-	ret0, _ := ret[0].(*manager.CDN)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateCDN indicates an expected call of UpdateCDN.
-func (mr *MockManagerClientMockRecorder) UpdateCDN(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCDN", reflect.TypeOf((*MockManagerClient)(nil).UpdateCDN), varargs...)
-}
-
 // UpdateScheduler mocks base method.
 func (m *MockManagerClient) UpdateScheduler(ctx context.Context, in *manager.UpdateSchedulerRequest, opts ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -156,6 +136,26 @@ func (mr *MockManagerClientMockRecorder) UpdateScheduler(ctx, in interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerClient)(nil).UpdateScheduler), varargs...)
+}
+
+// UpdateSeedPeer mocks base method.
+func (m *MockManagerClient) UpdateSeedPeer(ctx context.Context, in *manager.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", varargs...)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
+func (mr *MockManagerClientMockRecorder) UpdateSeedPeer(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockManagerClient)(nil).UpdateSeedPeer), varargs...)
 }
 
 // MockManager_KeepAliveClient is a mock of Manager_KeepAliveClient interface.
@@ -318,21 +318,6 @@ func (m *MockManagerServer) EXPECT() *MockManagerServerMockRecorder {
 	return m.recorder
 }
 
-// GetCDN mocks base method.
-func (m *MockManagerServer) GetCDN(arg0 context.Context, arg1 *manager.GetCDNRequest) (*manager.CDN, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCDN", arg0, arg1)
-	ret0, _ := ret[0].(*manager.CDN)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCDN indicates an expected call of GetCDN.
-func (mr *MockManagerServerMockRecorder) GetCDN(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCDN", reflect.TypeOf((*MockManagerServer)(nil).GetCDN), arg0, arg1)
-}
-
 // GetScheduler mocks base method.
 func (m *MockManagerServer) GetScheduler(arg0 context.Context, arg1 *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -346,6 +331,21 @@ func (m *MockManagerServer) GetScheduler(arg0 context.Context, arg1 *manager.Get
 func (mr *MockManagerServerMockRecorder) GetScheduler(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerServer)(nil).GetScheduler), arg0, arg1)
+}
+
+// GetSeedPeer mocks base method.
+func (m *MockManagerServer) GetSeedPeer(arg0 context.Context, arg1 *manager.GetSeedPeerRequest) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeedPeer", arg0, arg1)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeer indicates an expected call of GetSeedPeer.
+func (mr *MockManagerServerMockRecorder) GetSeedPeer(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerServer)(nil).GetSeedPeer), arg0, arg1)
 }
 
 // KeepAlive mocks base method.
@@ -377,21 +377,6 @@ func (mr *MockManagerServerMockRecorder) ListSchedulers(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockManagerServer)(nil).ListSchedulers), arg0, arg1)
 }
 
-// UpdateCDN mocks base method.
-func (m *MockManagerServer) UpdateCDN(arg0 context.Context, arg1 *manager.UpdateCDNRequest) (*manager.CDN, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCDN", arg0, arg1)
-	ret0, _ := ret[0].(*manager.CDN)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateCDN indicates an expected call of UpdateCDN.
-func (mr *MockManagerServerMockRecorder) UpdateCDN(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCDN", reflect.TypeOf((*MockManagerServer)(nil).UpdateCDN), arg0, arg1)
-}
-
 // UpdateScheduler mocks base method.
 func (m *MockManagerServer) UpdateScheduler(arg0 context.Context, arg1 *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -405,6 +390,21 @@ func (m *MockManagerServer) UpdateScheduler(arg0 context.Context, arg1 *manager.
 func (mr *MockManagerServerMockRecorder) UpdateScheduler(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerServer)(nil).UpdateScheduler), arg0, arg1)
+}
+
+// UpdateSeedPeer mocks base method.
+func (m *MockManagerServer) UpdateSeedPeer(arg0 context.Context, arg1 *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1)
+	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
+func (mr *MockManagerServerMockRecorder) UpdateSeedPeer(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockManagerServer)(nil).UpdateSeedPeer), arg0, arg1)
 }
 
 // MockManager_KeepAliveServer is a mock of Manager_KeepAliveServer interface.
