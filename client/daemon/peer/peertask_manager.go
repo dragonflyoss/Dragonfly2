@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
@@ -130,8 +131,8 @@ type peerTaskManager struct {
 	enableMultiplex bool
 	// enablePrefetch indicates to prefetch the whole files of ranged requests
 	enablePrefetch bool
-	// enableWatchdog indicates to start watch dog for every single peer task
-	enableWatchdog bool
+	// watchdogTimeout > 0 indicates to start watch dog for every single peer task
+	watchdogTimeout time.Duration
 
 	calculateDigest bool
 
@@ -149,7 +150,7 @@ func NewPeerTaskManager(
 	prefetch bool,
 	calculateDigest bool,
 	getPiecesMaxRetry int,
-	watchdog bool) (TaskManager, error) {
+	watchdog time.Duration) (TaskManager, error) {
 
 	ptm := &peerTaskManager{
 		host:              host,
@@ -162,7 +163,7 @@ func NewPeerTaskManager(
 		perPeerRateLimit:  perPeerRateLimit,
 		enableMultiplex:   multiplex,
 		enablePrefetch:    prefetch,
-		enableWatchdog:    watchdog,
+		watchdogTimeout:   watchdog,
 		calculateDigest:   calculateDigest,
 		getPiecesMaxRetry: getPiecesMaxRetry,
 	}

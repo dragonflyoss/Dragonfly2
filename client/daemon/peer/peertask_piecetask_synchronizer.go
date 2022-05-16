@@ -37,8 +37,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-const defaultWatchdogTimeout = time.Minute
-
 type pieceTaskSyncManager struct {
 	sync.RWMutex
 	ctx               context.Context
@@ -203,7 +201,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	desiredPiece int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
 	s.Lock()
 	defer func() {
-		if s.peerTaskConductor.ptm.enableWatchdog {
+		if s.peerTaskConductor.ptm.watchdogTimeout > 0 {
 			s.resetWatchdog(destPeers[0])
 		}
 		s.Unlock()
@@ -252,7 +250,7 @@ func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_Dest
 	}
 	s.watchdog.mainPeer.Store(mainPeer)
 	s.peerTaskConductor.Infof("start new watchdog")
-	go s.watchdog.watch(defaultWatchdogTimeout)
+	go s.watchdog.watch(s.peerTaskConductor.ptm.watchdogTimeout)
 }
 
 func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer, code base.Code) *scheduler.PieceResult {
