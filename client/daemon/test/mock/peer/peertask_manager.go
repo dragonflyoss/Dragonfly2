@@ -69,17 +69,18 @@ func (mr *MockTaskManagerMockRecorder) GetPieceManager() *gomock.Call {
 }
 
 // IsPeerTaskRunning mocks base method.
-func (m *MockTaskManager) IsPeerTaskRunning(id string) bool {
+func (m *MockTaskManager) IsPeerTaskRunning(taskID string) (peer.Task, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsPeerTaskRunning", id)
-	ret0, _ := ret[0].(bool)
-	return ret0
+	ret := m.ctrl.Call(m, "IsPeerTaskRunning", taskID)
+	ret0, _ := ret[0].(peer.Task)
+	ret1, _ := ret[1].(bool)
+	return ret0, ret1
 }
 
 // IsPeerTaskRunning indicates an expected call of IsPeerTaskRunning.
-func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(id interface{}) *gomock.Call {
+func (mr *MockTaskManagerMockRecorder) IsPeerTaskRunning(taskID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsPeerTaskRunning", reflect.TypeOf((*MockTaskManager)(nil).IsPeerTaskRunning), taskID)
 }
 
 // StartFileTask mocks base method.

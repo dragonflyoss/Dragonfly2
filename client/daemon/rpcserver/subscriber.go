@@ -21,6 +21,7 @@ import (
 	"io"
 	"sync"
 
+	"go.uber.org/atomic"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -42,11 +43,24 @@ type subscriber struct {
 	sentMap        map[int32]struct{}
 	done           chan struct{}
 	uploadAddr     string
+	attributeSent  *atomic.Bool
 }
 
 func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	p, err := s.Storage.GetPieces(ctx, request)
+	if err != nil {
+		return nil, err
+	}
 	p.DstAddr = s.uploadAddr
+	if !s.attributeSent.Load() && len(p.PieceInfos) > 0 {
+		exa, err := s.Storage.GetExtendAttribute(ctx, nil)
+		if err != nil {
+			s.Errorf("get extend attribute error: %s", err.Error())
+			return nil, err
+		}
+		p.ExtendAttribute = exa
+		s.attributeSent.Store(true)
+	}
 	return p, err
 }
 

@@ -59,6 +59,8 @@ type TaskStorageDriver interface {
 
 	GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error)
 
+	GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error)
+
 	UpdateTask(ctx context.Context, req *UpdateTaskRequest) error
 
 	// Store stores task data to the target path
@@ -335,6 +337,18 @@ func (s *storageManager) GetTotalPieces(ctx context.Context, req *PeerTaskMetada
 		return -1, ErrTaskNotFound
 	}
 	return t.(TaskStorageDriver).GetTotalPieces(ctx, req)
+}
+
+func (s *storageManager) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	t, ok := s.LoadTask(
+		PeerTaskMetadata{
+			TaskID: req.TaskID,
+			PeerID: req.PeerID,
+		})
+	if !ok {
+		return nil, ErrTaskNotFound
+	}
+	return t.(TaskStorageDriver).GetExtendAttribute(ctx, req)
 }
 
 func (s *storageManager) LoadTask(meta PeerTaskMetadata) (TaskStorageDriver, bool) {

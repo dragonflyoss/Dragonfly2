@@ -39,6 +39,21 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 	return m.recorder
 }
 
+// GetExtendAttribute mocks base method.
+func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
+	ret0, _ := ret[0].(*base.ExtendAttribute)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExtendAttribute indicates an expected call of GetExtendAttribute.
+func (mr *MockTaskStorageDriverMockRecorder) GetExtendAttribute(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetExtendAttribute), ctx, req)
+}
+
 // GetPieces mocks base method.
 func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
@@ -324,6 +339,21 @@ func (m *MockManager) FindPartialCompletedTask(taskID string, rg *clientutil.Ran
 func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPartialCompletedTask", reflect.TypeOf((*MockManager)(nil).FindPartialCompletedTask), taskID, rg)
+}
+
+// GetExtendAttribute mocks base method.
+func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
+	ret0, _ := ret[0].(*base.ExtendAttribute)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetExtendAttribute indicates an expected call of GetExtendAttribute.
+func (mr *MockManagerMockRecorder) GetExtendAttribute(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockManager)(nil).GetExtendAttribute), ctx, req)
 }
 
 // GetPieces mocks base method.

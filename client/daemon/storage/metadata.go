@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type persistentMetadata struct {
@@ -34,6 +35,7 @@ type persistentMetadata struct {
 	PieceMd5Sign  string                  `json:"pieceMd5Sign"`
 	DataFilePath  string                  `json:"dataFilePath"`
 	Done          bool                    `json:"done"`
+	Header        *source.Header          `json:"header"`
 }
 
 type PeerTaskMetadata struct {
@@ -105,6 +107,7 @@ type UpdateTaskRequest struct {
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string
+	Header        *source.Header
 }
 
 type ReusePeerTask = UpdateTaskRequest

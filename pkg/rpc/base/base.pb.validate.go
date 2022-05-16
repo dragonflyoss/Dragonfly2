@@ -492,6 +492,73 @@ var _ interface {
 
 var _PieceInfo_PieceMd5_Pattern = regexp.MustCompile("([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})")
 
+// Validate checks the field values on ExtendAttribute with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *ExtendAttribute) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Header
+
+	return nil
+}
+
+// ExtendAttributeValidationError is the validation error returned by
+// ExtendAttribute.Validate if the designated constraints aren't met.
+type ExtendAttributeValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ExtendAttributeValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ExtendAttributeValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ExtendAttributeValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ExtendAttributeValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ExtendAttributeValidationError) ErrorName() string { return "ExtendAttributeValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ExtendAttributeValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sExtendAttribute.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ExtendAttributeValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ExtendAttributeValidationError{}
+
 // Validate checks the field values on PiecePacket with the rules defined in
 // the proto definition for this message. If any rules are violated, an error
 // is returned.
@@ -541,6 +608,16 @@ func (m *PiecePacket) Validate() error {
 	// no validation rules for ContentLength
 
 	// no validation rules for PieceMd5Sign
+
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return PiecePacketValidationError{
+				field:  "ExtendAttribute",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }

@@ -321,6 +321,15 @@ func TestReuseStreamPeerTask(t *testing.T) {
 						assert.Equal(taskID, req.TaskID)
 						return io.NopCloser(bytes.NewBuffer([]byte("1111111111"))), nil
 					})
+				sm.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
+						}, nil
+					})
 			},
 			verify: func(rc io.ReadCloser, attr map[string]string, ok bool) {
 				assert.True(ok)
@@ -399,6 +408,15 @@ func TestReuseStreamPeerTask(t *testing.T) {
 						assert.Equal(taskID, req.TaskID)
 						return io.NopCloser(bytes.NewBuffer([]byte("1111111111"))), nil
 					})
+				sm.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
+						}, nil
+					})
 			},
 			verify: func(rc io.ReadCloser, attr map[string]string, ok bool) {
 				assert.True(ok)
@@ -475,6 +493,15 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					func(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
 						assert.Equal(taskID, req.TaskID)
 						return io.NopCloser(bytes.NewBuffer([]byte("1111111111"))), nil
+					})
+				sm.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
+						}, nil
 					})
 			},
 			verify: func(rc io.ReadCloser, attr map[string]string, ok bool) {
