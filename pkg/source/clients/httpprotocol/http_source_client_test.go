@@ -206,6 +206,10 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 				suite.True(tt.wantErr.Error() == err.Error())
 				return
 			}
+			if err = response.Validate(); err != nil {
+				suite.True(tt.wantErr.Error() == err.Error())
+				return
+			}
 			bytes, err := io.ReadAll(response.Body)
 			suite.Nil(err)
 			suite.Equal(tt.content, string(bytes))

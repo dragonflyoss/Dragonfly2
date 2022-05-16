@@ -240,10 +240,24 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		return nil, nil, false
 	}
 
+	exa, err := ptm.storageManager.GetExtendAttribute(ctx, &reuse.PeerTaskMetadata)
+	if err != nil {
+		log.Errorf("get extend attribute error when reuse peer task: %s", err)
+		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		span.RecordError(err)
+		return nil, nil, false
+	}
+
 	attr := map[string]string{}
 	attr[config.HeaderDragonflyTask] = taskID
 	attr[config.HeaderDragonflyPeer] = request.PeerID
 	attr[headers.ContentLength] = fmt.Sprintf("%d", length)
+
+	if exa != nil {
+		for k, v := range exa.Header {
+			attr[k] = v
+		}
+	}
 
 	if reuseRange != nil {
 		attr[config.HeaderDragonflyRange] = request.URLMeta.Range
