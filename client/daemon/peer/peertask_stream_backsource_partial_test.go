@@ -160,6 +160,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				StealPeers: nil,
 			}, nil
 		})
+	pps.EXPECT().CloseSend().AnyTimes()
 	sched := mock_scheduler_client.NewMockClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
@@ -170,7 +171,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			}, nil
 		})
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(

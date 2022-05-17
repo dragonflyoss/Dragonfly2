@@ -213,6 +213,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				StealPeers: nil,
 			}, nil
 		})
+	pps.EXPECT().CloseSend().AnyTimes()
 
 	sched := mock_scheduler_client.NewMockClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
@@ -252,8 +253,8 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				DirectPiece: nil,
 			}, nil
 		})
-	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (
+	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (
 			scheduler.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
