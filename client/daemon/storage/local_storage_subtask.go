@@ -387,3 +387,20 @@ func (t *localSubTaskStore) MarkReclaim() {
 func (t *localSubTaskStore) Reclaim() error {
 	return nil
 }
+
+func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+	if t.invalid.Load() {
+		t.Errorf("invalid digest, refuse to get total pieces")
+		return nil, ErrInvalidDigest
+	}
+	if t.Header == nil {
+		return nil, nil
+	}
+	hdr := map[string]string{}
+	for k, v := range *t.Header {
+		if len(v) > 0 {
+			hdr[k] = t.Header.Get(k)
+		}
+	}
+	return &base.ExtendAttribute{Header: hdr}, nil
+}

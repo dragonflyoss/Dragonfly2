@@ -66,7 +66,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		},
 		Limit:      0,
 		Callsystem: "",
-		Range:      nil,
+		Range:      nil, // following code will update Range
 	}
 
 	log := logger.With("peer", req.PeerId, "task", seedRequest.TaskId, "component", "seedService")
@@ -125,6 +125,7 @@ type seedSynchronizer struct {
 	seedsServer     cdnsystem.Seeder_ObtainSeedsServer
 	seedTaskRequest *peer.SeedTaskRequest
 	startNanoSecond int64
+	attributeSent   bool
 }
 
 func (s *seedSynchronizer) sendPieceSeeds() (err error) {
@@ -184,6 +185,15 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
 			s.Errorf("get pieces error %s, desired: %d", err.Error(), desired)
 			return err
 		}
+		if !s.attributeSent {
+			exa, err := s.Storage.GetExtendAttribute(s.Context, nil)
+			if err != nil {
+				s.Errorf("get extend attribute error: %s", err.Error())
+				return err
+			}
+			pp.ExtendAttribute = exa
+			s.attributeSent = true
+		}
 
 		for _, p := range pp.PieceInfos {
 			if p.PieceNum != desired {
@@ -228,6 +238,15 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 		if len(pp.PieceInfos) < 1 {
 			s.Errorf("desired pieces %d not found", cur)
 			return -1, fmt.Errorf("get seed piece %d info failed", cur)
+		}
+		if !s.attributeSent {
+			exa, err := s.Storage.GetExtendAttribute(s.Context, nil)
+			if err != nil {
+				s.Errorf("get extend attribute error: %s", err.Error())
+				return -1, err
+			}
+			pp.ExtendAttribute = exa
+			s.attributeSent = true
 		}
 
 		ps := s.compositePieceSeed(pp, pp.PieceInfos[0])

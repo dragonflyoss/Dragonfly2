@@ -182,20 +182,20 @@ func (client *httpSourceClient) Download(request *source.Request) (*source.Respo
 	if err != nil {
 		return nil, err
 	}
-	err = source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
-	if err != nil {
-		resp.Body.Close()
-		return nil, err
-	}
-	// FIXME check response "Content-Range" header, if not found, need to wrap resp.Body
 	response := source.NewResponse(
 		resp.Body,
+		source.WithStatus(resp.StatusCode, resp.Status),
+		source.WithValidate(func() error {
+			return source.CheckResponseCode(resp.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
+		}),
+		source.WithHeader(exportPassThroughHeader(resp.Header)),
 		source.WithExpireInfo(
 			source.ExpireInfo{
 				LastModified: resp.Header.Get(headers.LastModified),
 				ETag:         resp.Header.Get(headers.ETag),
 			},
-		))
+		),
+	)
 	if resp.ContentLength > 0 {
 		response.ContentLength = resp.ContentLength
 	}
@@ -230,4 +230,15 @@ func (client *httpSourceClient) doRequest(method string, request *source.Request
 		return nil, err
 	}
 	return resp, nil
+}
+
+func exportPassThroughHeader(header http.Header) map[string]string {
+	var ph = map[string]string{}
+	for h := range PassThroughHeaders {
+		val := header.Get(h)
+		if len(val) > 0 {
+			ph[h] = val
+		}
+	}
+	return ph
 }

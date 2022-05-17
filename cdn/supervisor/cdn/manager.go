@@ -36,6 +36,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/limitreader"
 	"d7y.io/dragonfly/v2/pkg/ratelimiter/ratelimiter"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/server"
 	"d7y.io/dragonfly/v2/pkg/synclock"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -151,7 +152,7 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	if detectResult.BreakPoint == -1 {
 		seedTask.Log().Infof("cache full hit on local")
 		return getUpdateTaskInfo(seedTask, task.StatusSuccess, detectResult.FileMetadata.SourceRealDigest, detectResult.FileMetadata.PieceMd5Sign,
-			detectResult.FileMetadata.SourceFileLen, detectResult.FileMetadata.CdnFileLength, detectResult.FileMetadata.TotalPieceCount), nil
+			detectResult.FileMetadata.SourceFileLen, detectResult.FileMetadata.CdnFileLength, detectResult.FileMetadata.TotalPieceCount, detectResult.FileMetadata.ExtendAttribute), nil
 	}
 
 	start := time.Now()
@@ -160,13 +161,15 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 	ctx, downloadSpan = tracer.Start(ctx, constants.SpanDownloadSource)
 	downloadSpan.End()
 	server.StatSeedStart(seedTask.ID, seedTask.RawURL)
-	respBody, err := cm.download(ctx, seedTask, detectResult.BreakPoint)
+	respBody, extendAttribute, err := cm.download(ctx, seedTask, detectResult.BreakPoint)
 	// download fail
 	if err != nil {
 		downloadSpan.RecordError(err)
 		server.StatSeedFinish(seedTask.ID, seedTask.RawURL, false, err, start, time.Now(), 0, 0)
 		return nil, errors.Wrap(err, "download task file data")
 	}
+	seedTask.ExtendAttribute = extendAttribute
+
 	defer respBody.Close()
 	reader := limitreader.NewLimitReaderWithLimiterAndDigest(respBody, cm.limiter, fileDigest, digestutils.Algorithms[digestType])
 
@@ -185,7 +188,7 @@ func (cm *manager) doTrigger(ctx context.Context, seedTask *task.SeedTask) (*tas
 		return nil, err
 	}
 	return getUpdateTaskInfo(seedTask, task.StatusSuccess, downloadMetadata.sourceRealDigest, downloadMetadata.pieceMd5Sign,
-		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength, downloadMetadata.totalPieceCount), nil
+		downloadMetadata.realSourceFileLength, downloadMetadata.realCdnFileLength, downloadMetadata.totalPieceCount, extendAttribute), nil
 }
 
 func (cm *manager) Delete(taskID string) error {
@@ -242,8 +245,8 @@ func (cm *manager) handleCDNResult(seedTask *task.SeedTask, downloadMetadata *do
 	return nil
 }
 
-func (cm *manager) updateExpireInfo(taskID string, expireInfo map[string]string) {
-	if err := cm.metadataManager.updateExpireInfo(taskID, expireInfo); err != nil {
+func (cm *manager) updateResponseMetadata(taskID string, expireInfo map[string]string, exa *base.ExtendAttribute) {
+	if err := cm.metadataManager.updateResponseMetadata(taskID, expireInfo, exa); err != nil {
 		logger.WithTaskID(taskID).Errorf("failed to update expireInfo(%s): %v", expireInfo, err)
 	}
 	logger.WithTaskID(taskID).Debugf("success to update metadata expireInfo(%s)", expireInfo)
@@ -261,7 +264,7 @@ func getUpdateTaskInfoWithStatusOnly(seedTask *task.SeedTask, cdnStatus string) 
 }
 
 func getUpdateTaskInfo(seedTask *task.SeedTask, cdnStatus, realMD5, pieceMd5Sign string, sourceFileLength, cdnFileLength int64,
-	totalPieceCount int32) *task.SeedTask {
+	totalPieceCount int32, exa *base.ExtendAttribute) *task.SeedTask {
 	cloneTask := seedTask.Clone()
 	cloneTask.SourceFileLength = sourceFileLength
 	cloneTask.CdnFileLength = cdnFileLength
@@ -269,5 +272,6 @@ func getUpdateTaskInfo(seedTask *task.SeedTask, cdnStatus, realMD5, pieceMd5Sign
 	cloneTask.TotalPieceCount = totalPieceCount
 	cloneTask.SourceRealDigest = realMD5
 	cloneTask.PieceMd5Sign = pieceMd5Sign
+	cloneTask.ExtendAttribute = exa
 	return cloneTask
 }

@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
@@ -99,6 +100,7 @@ type peerTaskConductor struct {
 	contentLength   *atomic.Int64
 	completedLength *atomic.Int64
 	usedTraffic     *atomic.Uint64
+	header          atomic.Value
 
 	broker *pieceBroker
 
@@ -289,6 +291,7 @@ func (pt *peerTaskConductor) register() error {
 		pt.Infof("register task success, SizeScope: %s", base.SizeScope_name[int32(result.SizeScope)])
 	}
 
+	var header map[string]string
 	if !needBackSource {
 		sizeScope = result.SizeScope
 		switch result.SizeScope {
@@ -298,6 +301,9 @@ func (pt *peerTaskConductor) register() error {
 			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("small"))
 			if piece, ok := result.DirectPiece.(*scheduler.RegisterResult_SinglePiece); ok {
 				singlePiece = piece.SinglePiece
+			}
+			if result.ExtendAttribute != nil {
+				header = result.ExtendAttribute.Header
 			}
 		case base.SizeScope_TINY:
 			pt.span.SetAttributes(config.AttributePeerTaskSizeScope.String("tiny"))
@@ -313,6 +319,9 @@ func (pt *peerTaskConductor) register() error {
 				pt.Errorf("%s", err)
 				pt.cancel(base.Code_SchedError, err.Error())
 				return err
+			}
+			if result.ExtendAttribute != nil {
+				header = result.ExtendAttribute.Header
 			}
 		}
 	}
@@ -330,6 +339,10 @@ func (pt *peerTaskConductor) register() error {
 	pt.singlePiece = singlePiece
 	pt.tinyData = tinyData
 	pt.needBackSource = atomic.NewBool(needBackSource)
+
+	if len(header) > 0 {
+		pt.SetHeader(header)
+	}
 	return nil
 }
 
@@ -394,6 +407,22 @@ func (pt *peerTaskConductor) SetPieceMd5Sign(md5 string) {
 
 func (pt *peerTaskConductor) GetPieceMd5Sign() string {
 	return pt.digest.Load()
+}
+
+func (pt *peerTaskConductor) SetHeader(header map[string]string) {
+	var hdr = &source.Header{}
+	for k, v := range header {
+		hdr.Set(k, v)
+	}
+	pt.header.Store(hdr)
+}
+
+func (pt *peerTaskConductor) GetHeader() *source.Header {
+	hdr := pt.header.Load()
+	if hdr != nil {
+		return hdr.(*source.Header)
+	}
+	return nil
 }
 
 func (pt *peerTaskConductor) Context() context.Context {
@@ -918,6 +947,12 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *base.PiecePacket) {
 		pt.Debugf("update content length: %d", piecePacket.ContentLength)
 	}
 
+	if piecePacket.ExtendAttribute != nil && len(piecePacket.ExtendAttribute.Header) > 0 && pt.GetHeader() == nil {
+		metadataChanged = true
+		pt.SetHeader(piecePacket.ExtendAttribute.Header)
+		pt.Debugf("update response header: %#v", piecePacket.ExtendAttribute.Header)
+	}
+
 	if metadataChanged {
 		err := pt.UpdateStorage()
 		if err != nil {
@@ -1364,6 +1399,7 @@ func (pt *peerTaskConductor) UpdateStorage() error {
 			ContentLength: pt.GetContentLength(),
 			TotalPieces:   pt.GetTotalPieces(),
 			PieceMd5Sign:  pt.GetPieceMd5Sign(),
+			Header:        pt.GetHeader(),
 		})
 	if err != nil {
 		pt.Log().Errorf("update task to storage manager failed: %s", err)

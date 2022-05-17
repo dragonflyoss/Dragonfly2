@@ -56,7 +56,7 @@ type TaskManager interface {
 
 	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
 
-	IsPeerTaskRunning(id string) bool
+	IsPeerTaskRunning(taskID string) (Task, bool)
 
 	// StatTask checks whether the given task exists in P2P network
 	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
@@ -386,9 +386,12 @@ func (ptm *peerTaskManager) PeerTaskDone(taskID string) {
 	ptm.runningPeerTasks.Delete(taskID)
 }
 
-func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) bool {
-	_, ok := ptm.runningPeerTasks.Load(taskID)
-	return ok
+func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
+	ptc, ok := ptm.runningPeerTasks.Load(taskID)
+	if ok {
+		return ptc.(*peerTaskConductor), ok
+	}
+	return nil, ok
 }
 
 func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
