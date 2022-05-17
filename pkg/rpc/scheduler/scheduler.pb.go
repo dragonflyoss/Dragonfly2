@@ -42,14 +42,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Pattern represents pattern of task.
 type Pattern int32
 
 const (
-	// default pattern, scheduler will use all p2p node include dfdaemon and cdn peers
+	// Default pattern, scheduler will use all p2p node
+	// include dfdaemon and cdn peers.
 	Pattern_P2P Pattern = 0
-	// cdn pattern, scheduler will use only cdn peers
+	// CDN pattern, scheduler will use only cdn peers.
 	Pattern_CDN Pattern = 1
-	// source pattern, scheduler will say back source when there is no available peer in p2p
+	// Source pattern, scheduler will say back source
+	// when there is no available peer in p2p.
 	Pattern_SOURCE Pattern = 2
 )
 
@@ -94,26 +97,27 @@ func (Pattern) EnumDescriptor() ([]byte, []int) {
 	return file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP(), []int{0}
 }
 
+// PeerTaskRequest represents request of RegisterPeerTask.
 type PeerTaskRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// universal resource locator for different kind of storage
+	// Download url.
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	// url meta info
+	// URL meta info.
 	UrlMeta *base.UrlMeta `protobuf:"bytes,2,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
-	// peer's id and it must be global uniqueness
+	// Peer id and it must be global uniqueness.
 	PeerId string `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	// peer host info
+	// Peer host info.
 	PeerHost *PeerHost `protobuf:"bytes,4,opt,name=peer_host,json=peerHost,proto3" json:"peer_host,omitempty"`
-	// current host load
+	// Peer host load.
 	HostLoad *base.HostLoad `protobuf:"bytes,5,opt,name=host_load,json=hostLoad,proto3" json:"host_load,omitempty"`
-	// whether this request is caused by migration
+	// Whether this request is caused by migration.
 	IsMigrating bool `protobuf:"varint,6,opt,name=is_migrating,json=isMigrating,proto3" json:"is_migrating,omitempty"`
-	// pattern includes p2p, cdn and Source
+	// Pattern includes p2p, cdn and source.
 	Pattern Pattern `protobuf:"varint,7,opt,name=pattern,proto3,enum=scheduler.Pattern" json:"pattern,omitempty"`
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,8,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 }
 
@@ -205,22 +209,24 @@ func (x *PeerTaskRequest) GetTaskId() string {
 	return ""
 }
 
+// RegisterResult represents response of RegisterPeerTask.
 type RegisterResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id
 	TaskId string `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// file content length scope for the url
+	// File size scope.
 	SizeScope base.SizeScope `protobuf:"varint,3,opt,name=size_scope,json=sizeScope,proto3,enum=base.SizeScope" json:"size_scope,omitempty"`
-	// download the only piece directly for small or tiny file
+	// Download the only piece directly for small or tiny file.
 	//
 	// Types that are assignable to DirectPiece:
 	//	*RegisterResult_SinglePiece
 	//	*RegisterResult_PieceContent
 	DirectPiece isRegisterResult_DirectPiece `protobuf_oneof:"direct_piece"`
-	// task extend attribute, only direct_piece will carry extend attribute
+	// Task extend attribute,
+	// only direct_piece will carry extend attribute.
 	ExtendAttribute *base.ExtendAttribute `protobuf:"bytes,6,opt,name=extend_attribute,json=extendAttribute,proto3" json:"extend_attribute,omitempty"`
 }
 
@@ -303,12 +309,12 @@ type isRegisterResult_DirectPiece interface {
 }
 
 type RegisterResult_SinglePiece struct {
-	// for small file
+	// Return single piece info when size scope is small.
 	SinglePiece *SinglePiece `protobuf:"bytes,4,opt,name=single_piece,json=singlePiece,proto3,oneof"`
 }
 
 type RegisterResult_PieceContent struct {
-	// for tiny file
+	// Return task content when size scope is tiny.
 	PieceContent []byte `protobuf:"bytes,5,opt,name=piece_content,json=pieceContent,proto3,oneof"`
 }
 
@@ -316,16 +322,17 @@ func (*RegisterResult_SinglePiece) isRegisterResult_DirectPiece() {}
 
 func (*RegisterResult_PieceContent) isRegisterResult_DirectPiece() {}
 
+// SinglePiece represents infomation of single piece.
 type SinglePiece struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// destination peer id
+	// Destination peer id.
 	DstPid string `protobuf:"bytes,1,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
-	// download address(ip:port)
+	// Destination download address.
 	DstAddr string `protobuf:"bytes,2,opt,name=dst_addr,json=dstAddr,proto3" json:"dst_addr,omitempty"`
-	// one piece info
+	// Piece info.
 	PieceInfo *base.PieceInfo `protobuf:"bytes,3,opt,name=piece_info,json=pieceInfo,proto3" json:"piece_info,omitempty"`
 }
 
@@ -382,28 +389,29 @@ func (x *SinglePiece) GetPieceInfo() *base.PieceInfo {
 	return nil
 }
 
+// PeerHost represents infomation of peer host.
 type PeerHost struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// each time the daemon starts, it will generate a different id
+	// Peer host id.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// peer host ip
 	Ip string `protobuf:"bytes,2,opt,name=ip,proto3" json:"ip,omitempty"`
-	// rpc service port for peer
+	// Port of grpc service.
 	RpcPort int32 `protobuf:"varint,3,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
-	// piece downloading port for peer
+	// Port of download server.
 	DownPort int32 `protobuf:"varint,4,opt,name=down_port,json=downPort,proto3" json:"down_port,omitempty"`
-	// peer host name
+	// Peer hostname.
 	HostName string `protobuf:"bytes,5,opt,name=host_name,json=hostName,proto3" json:"host_name,omitempty"`
-	// security isolation domain for network
+	// Security domain for network.
 	SecurityDomain string `protobuf:"bytes,6,opt,name=security_domain,json=securityDomain,proto3" json:"security_domain,omitempty"`
-	// location path: area|country|province|city|...
+	// Location path(area|country|province|city|...).
 	Location string `protobuf:"bytes,7,opt,name=location,proto3" json:"location,omitempty"`
-	// idc where the peer host is located
+	// IDC where the peer host is located
 	Idc string `protobuf:"bytes,8,opt,name=idc,proto3" json:"idc,omitempty"`
-	// network device path: switch|router|...
+	// Network topology(switch|router|...).
 	NetTopology string `protobuf:"bytes,9,opt,name=net_topology,json=netTopology,proto3" json:"net_topology,omitempty"`
 }
 
@@ -502,32 +510,34 @@ func (x *PeerHost) GetNetTopology() string {
 	return ""
 }
 
+// PieceResult represents request of ReportPieceResult.
 type PieceResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// source peer id
+	// Source peer id.
 	SrcPid string `protobuf:"bytes,2,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
-	// dest peer id
+	// Destination peer id.
 	DstPid string `protobuf:"bytes,3,opt,name=dst_pid,json=dstPid,proto3" json:"dst_pid,omitempty"`
-	// piece info
+	// Piece info.
 	PieceInfo *base.PieceInfo `protobuf:"bytes,4,opt,name=piece_info,json=pieceInfo,proto3" json:"piece_info,omitempty"`
-	// begin time for the piece downloading
+	// Begin time of the piece downloading.
 	BeginTime uint64 `protobuf:"varint,5,opt,name=begin_time,json=beginTime,proto3" json:"begin_time,omitempty"`
-	// end time for the piece downloading
+	// End time of the piece downloading.
 	EndTime uint64 `protobuf:"varint,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	// whether the piece downloading is successfully
+	// Whether the piece downloading is successfully.
 	Success bool `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
-	// result code
+	// Result code.
 	Code base.Code `protobuf:"varint,8,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
-	// current host resource usage
+	// Peer host load.
 	HostLoad *base.HostLoad `protobuf:"bytes,9,opt,name=host_load,json=hostLoad,proto3" json:"host_load,omitempty"`
-	// currently completed piece count, -1 represent download failed
+	// Finished count.
 	FinishedCount int32 `protobuf:"varint,10,opt,name=finished_count,json=finishedCount,proto3" json:"finished_count,omitempty"`
-	// task extend attribute, only first success back source piece will carry extend attribute
+	// Task extend attribute,
+	// only first success back source piece will carry extend attribute.
 	ExtendAttribute *base.ExtendAttribute `protobuf:"bytes,11,opt,name=extend_attribute,json=extendAttribute,proto3" json:"extend_attribute,omitempty"`
 }
 
@@ -640,22 +650,23 @@ func (x *PieceResult) GetExtendAttribute() *base.ExtendAttribute {
 	return nil
 }
 
+// PeerPacket represents response of ReportPieceResult.
 type PeerPacket struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// source peer id
+	// Source peer id.
 	SrcPid string `protobuf:"bytes,3,opt,name=src_pid,json=srcPid,proto3" json:"src_pid,omitempty"`
-	// concurrent downloading count from main peer
+	// Concurrent downloading count from main peer.
 	ParallelCount int32 `protobuf:"varint,4,opt,name=parallel_count,json=parallelCount,proto3" json:"parallel_count,omitempty"`
-	// main peer
+	// Main peer.
 	MainPeer *PeerPacket_DestPeer `protobuf:"bytes,5,opt,name=main_peer,json=mainPeer,proto3" json:"main_peer,omitempty"`
-	// steal peers
+	// Steal peers.
 	StealPeers []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
-	// result code
+	// Result code.
 	Code base.Code `protobuf:"varint,7,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
 }
 
@@ -733,34 +744,35 @@ func (x *PeerPacket) GetCode() base.Code {
 	return base.Code(0)
 }
 
+// PeerResult represents response of ReportPeerResult.
 type PeerResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// peer id
+	// Peer id.
 	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
-	// source host ip
+	// Source host ip.
 	SrcIp string `protobuf:"bytes,3,opt,name=src_ip,json=srcIp,proto3" json:"src_ip,omitempty"`
-	// security domain
+	// Security domain.
 	SecurityDomain string `protobuf:"bytes,4,opt,name=security_domain,json=securityDomain,proto3" json:"security_domain,omitempty"`
-	// host idc
+	// IDC where the peer host is located
 	Idc string `protobuf:"bytes,5,opt,name=idc,proto3" json:"idc,omitempty"`
-	// task download url
+	// Download url.
 	Url string `protobuf:"bytes,6,opt,name=url,proto3" json:"url,omitempty"`
-	// total content length(byte)
+	// Total content length.
 	ContentLength int64 `protobuf:"varint,7,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
-	// total network traffic(byte)
+	// Total network traffic.
 	Traffic uint64 `protobuf:"varint,8,opt,name=traffic,proto3" json:"traffic,omitempty"`
-	// total time(millisecond) consumed
+	// Total cost time.
 	Cost uint32 `protobuf:"varint,9,opt,name=cost,proto3" json:"cost,omitempty"`
-	// whether peer downloading file is successfully
+	// Whether peer downloading file is successfully.
 	Success bool `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
-	// result code
+	// Result code.
 	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
-	// task total piece count
+	// Task total piece count.
 	TotalPieceCount int32 `protobuf:"varint,12,opt,name=total_piece_count,json=totalPieceCount,proto3" json:"total_piece_count,omitempty"`
 }
 
@@ -880,14 +892,15 @@ func (x *PeerResult) GetTotalPieceCount() int32 {
 	return 0
 }
 
+// PeerTarget represents request of LeaveTask.
 type PeerTarget struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// peer id
+	// Peer id.
 	PeerId string `protobuf:"bytes,2,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
@@ -937,12 +950,13 @@ func (x *PeerTarget) GetPeerId() string {
 	return ""
 }
 
+// StatTaskRequest represents request of StatTask.
 type StatTaskRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 }
 
@@ -985,24 +999,25 @@ func (x *StatTaskRequest) GetTaskId() string {
 	return ""
 }
 
+// Task represents download task.
 type Task struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	// task type
+	// Task type.
 	Type int32 `protobuf:"varint,2,opt,name=type,proto3" json:"type,omitempty"`
-	// task content length
+	// Task content length.
 	ContentLength int64 `protobuf:"varint,3,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
-	// task total piece count
+	// Task total piece count.
 	TotalPieceCount int32 `protobuf:"varint,4,opt,name=total_piece_count,json=totalPieceCount,proto3" json:"total_piece_count,omitempty"`
-	// task state
+	// Task state.
 	State string `protobuf:"bytes,5,opt,name=state,proto3" json:"state,omitempty"`
-	// task peer count
+	// Task peer count.
 	PeerCount int32 `protobuf:"varint,6,opt,name=peer_count,json=peerCount,proto3" json:"peer_count,omitempty"`
-	// task contains available peer
+	// Task contains available peer.
 	HasAvailablePeer bool `protobuf:"varint,7,opt,name=hasAvailablePeer,proto3" json:"hasAvailablePeer,omitempty"`
 }
 
@@ -1087,20 +1102,21 @@ func (x *Task) GetHasAvailablePeer() bool {
 	return false
 }
 
+// AnnounceTaskRequest represents request of AnnounceTask.
 type AnnounceTaskRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// task id
+	// Task id.
 	TaskId string `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
-	// cache id
+	// Cache id.
 	Cid string `protobuf:"bytes,2,opt,name=cid,proto3" json:"cid,omitempty"`
-	// task url meta
+	// URL meta info.
 	UrlMeta *base.UrlMeta `protobuf:"bytes,3,opt,name=url_meta,json=urlMeta,proto3" json:"url_meta,omitempty"`
-	// peer host info
+	// Peer host info.
 	PeerHost *PeerHost `protobuf:"bytes,4,opt,name=peer_host,json=peerHost,proto3" json:"peer_host,omitempty"`
-	// task's piece info
+	// Task piece info.
 	PiecePacket *base.PiecePacket `protobuf:"bytes,5,opt,name=piece_packet,json=piecePacket,proto3" json:"piece_packet,omitempty"`
 }
 
@@ -1176,11 +1192,11 @@ type PeerPacket_DestPeer struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// dest ip
+	// Destination ip.
 	Ip string `protobuf:"bytes,1,opt,name=ip,proto3" json:"ip,omitempty"`
-	// rpc service port for dest peer
+	// Port of grpc service.
 	RpcPort int32 `protobuf:"varint,2,opt,name=rpc_port,json=rpcPort,proto3" json:"rpc_port,omitempty"`
-	// dest peer id
+	// Destination peer id.
 	PeerId string `protobuf:"bytes,3,opt,name=peer_id,json=peerId,proto3" json:"peer_id,omitempty"`
 }
 
@@ -1733,19 +1749,17 @@ const _ = grpc.SupportPackageIsVersion6
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SchedulerClient interface {
-	// RegisterPeerTask registers a peer into one task.
+	// RegisterPeerTask registers a peer into task.
 	RegisterPeerTask(ctx context.Context, in *PeerTaskRequest, opts ...grpc.CallOption) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
-	// when migrating to another scheduler,
-	// it will send the last piece result to the new scheduler.
 	ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (Scheduler_ReportPieceResultClient, error)
-	// ReportPeerResult reports downloading result for the peer task.
+	// ReportPeerResult reports downloading result for the peer.
 	ReportPeerResult(ctx context.Context, in *PeerResult, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// LeaveTask makes the peer leaving from scheduling overlay for the task.
+	// LeaveTask makes the peer leaving from task.
 	LeaveTask(ctx context.Context, in *PeerTarget, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Checks if any peer has the given task
+	// Checks if any peer has the given task.
 	StatTask(ctx context.Context, in *StatTaskRequest, opts ...grpc.CallOption) (*Task, error)
-	// A peer announces that it has the announced task to other peers
+	// A peer announces that it has the announced task to other peers.
 	AnnounceTask(ctx context.Context, in *AnnounceTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -1835,19 +1849,17 @@ func (c *schedulerClient) AnnounceTask(ctx context.Context, in *AnnounceTaskRequ
 
 // SchedulerServer is the server API for Scheduler service.
 type SchedulerServer interface {
-	// RegisterPeerTask registers a peer into one task.
+	// RegisterPeerTask registers a peer into task.
 	RegisterPeerTask(context.Context, *PeerTaskRequest) (*RegisterResult, error)
 	// ReportPieceResult reports piece results and receives peer packets.
-	// when migrating to another scheduler,
-	// it will send the last piece result to the new scheduler.
 	ReportPieceResult(Scheduler_ReportPieceResultServer) error
-	// ReportPeerResult reports downloading result for the peer task.
+	// ReportPeerResult reports downloading result for the peer.
 	ReportPeerResult(context.Context, *PeerResult) (*emptypb.Empty, error)
-	// LeaveTask makes the peer leaving from scheduling overlay for the task.
+	// LeaveTask makes the peer leaving from task.
 	LeaveTask(context.Context, *PeerTarget) (*emptypb.Empty, error)
-	// Checks if any peer has the given task
+	// Checks if any peer has the given task.
 	StatTask(context.Context, *StatTaskRequest) (*Task, error)
-	// A peer announces that it has the announced task to other peers
+	// A peer announces that it has the announced task to other peers.
 	AnnounceTask(context.Context, *AnnounceTaskRequest) (*emptypb.Empty, error)
 }
 
