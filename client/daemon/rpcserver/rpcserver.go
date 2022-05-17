@@ -122,10 +122,33 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 			return nil, dferrors.New(code, err.Error())
 		}
 		// dst peer is not running
-		if task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId); !ok || task.GetPeerID() != request.GetDstPid() {
+		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId)
+		if !ok {
 			code = base.Code_PeerTaskNotFound
-			logger.Errorf("get piece tasks error: peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+			logger.Errorf("get piece tasks error: target peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
+			return nil, dferrors.New(code, err.Error())
+		}
+
+		if task.GetPeerID() != request.GetDstPid() {
+			// there is only one running task in same time, redirect request to running peer task
+			r := base.PieceTaskRequest{
+				TaskId:   request.TaskId,
+				SrcPid:   request.SrcPid,
+				DstPid:   task.GetPeerID(), // replace to running task peer id
+				StartNum: request.StartNum,
+				Limit:    request.Limit,
+			}
+			p, err = s.storageManager.GetPieces(ctx, &r)
+			if err == nil {
+				logger.Debugf("receive get piece tasks request, task id: %s, src peer: %s, dst peer: %s, replaced dst peer: %s, piece num: %d, limit: %d, length: %d",
+					request.TaskId, request.SrcPid, request.DstPid, r.DstPid, request.StartNum, request.Limit, len(p.PieceInfos))
+				p.DstAddr = s.uploadAddr
+				return p, nil
+			}
+			code = base.Code_PeerTaskNotFound
+			logger.Errorf("get piece tasks error: target peer task and replaced peer task storage not found wit error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
 		}
 
