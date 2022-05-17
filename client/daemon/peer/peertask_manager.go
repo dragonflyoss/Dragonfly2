@@ -217,6 +217,10 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	if p, ok := ptm.findPeerTaskConductor(taskID); ok {
 		ptm.conductorLock.Unlock()
 		logger.Debugf("peer task found: %s/%s", p.taskID, p.peerID)
+		if seed && !p.seed && !p.needBackSource.Load() {
+			p.Warnf("new seed request received, switch to back source, may be produced by multiple schedulers")
+			p.markBackSource()
+		}
 		metrics.PeerTaskCacheHitCount.Add(1)
 		return p, false, nil
 	}
