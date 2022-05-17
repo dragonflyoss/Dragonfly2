@@ -90,7 +90,7 @@ type clientDaemon struct {
 	dfpath          dfpath.Dfpath
 	schedulers      []*manager.Scheduler
 	managerClient   managerclient.Client
-	schedulerClient schedulerclient.SchedulerClient
+	schedulerClient schedulerclient.Client
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -144,7 +144,10 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	var opts []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		opts = append(opts,
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		)
 	}
 	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
 	if err != nil {

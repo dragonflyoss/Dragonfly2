@@ -112,6 +112,13 @@ func (m *PeerTaskRequest) Validate() error {
 
 	// no validation rules for Pattern
 
+	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
+		return PeerTaskRequestValidationError{
+			field:  "TaskId",
+			reason: "value length must be at least 1 runes",
+		}
+	}
+
 	return nil
 }
 

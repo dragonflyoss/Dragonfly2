@@ -196,8 +196,8 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		if !attributeSent && len(p.PieceInfos) > 0 {
 			exa, e := s.storageManager.GetExtendAttribute(ctx,
 				&storage.PeerTaskMetadata{
-					PeerID: request.TaskId,
-					TaskID: request.DstPid,
+					PeerID: request.DstPid,
+					TaskID: request.TaskId,
 				})
 			if e != nil {
 				log.Errorf("get extend attribute error: %s", e.Error())

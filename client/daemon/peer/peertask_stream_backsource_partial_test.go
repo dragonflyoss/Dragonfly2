@@ -51,7 +51,8 @@ import (
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
+	mock_scheduler_client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
+	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
@@ -59,7 +60,7 @@ import (
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
-	schedulerclient.SchedulerClient, storage.Manager) {
+	schedulerclient.Client, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
 	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
@@ -111,7 +112,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	pps := mock_scheduler.NewMockPeerPacketStream(ctrl)
+	pps := mock_scheduler.NewMockScheduler_ReportPieceResultClient(ctrl)
 	var (
 		wg             = sync.WaitGroup{}
 		backSourceSent = atomic.Bool{}
@@ -159,7 +160,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				StealPeers: nil,
 			}, nil
 		})
-	sched := mock_scheduler.NewMockSchedulerClient(ctrl)
+	sched := mock_scheduler_client.NewMockClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			return &scheduler.RegisterResult{
@@ -169,7 +170,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			}, nil
 		})
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (schedulerclient.PeerPacketStream, error) {
+		func(ctx context.Context, taskId string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
