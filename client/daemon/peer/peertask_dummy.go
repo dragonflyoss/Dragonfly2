@@ -25,7 +25,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
 // when scheduler is not available, use dummySchedulerClient to back source
@@ -36,7 +35,7 @@ func (d *dummySchedulerClient) RegisterPeerTask(ctx context.Context, request *sc
 	panic("should not call this function")
 }
 
-func (d *dummySchedulerClient) ReportPieceResult(ctx context.Context, s string, request *scheduler.PeerTaskRequest, option ...grpc.CallOption) (schedulerclient.PeerPacketStream, error) {
+func (d *dummySchedulerClient) ReportPieceResult(ctx context.Context, request *scheduler.PeerTaskRequest, option ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	return &dummyPeerPacketStream{}, nil
 }
 
@@ -68,13 +67,18 @@ func (d *dummySchedulerClient) GetState() []dfnet.NetAddr {
 }
 
 type dummyPeerPacketStream struct {
+	grpc.ClientStream
 }
 
-func (d *dummyPeerPacketStream) Recv() (pp *scheduler.PeerPacket, err error) {
+func (d *dummyPeerPacketStream) Recv() (*scheduler.PeerPacket, error) {
 	// TODO set base.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
 	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
 }
 
-func (d *dummyPeerPacketStream) Send(pr *scheduler.PieceResult) (err error) {
+func (d *dummyPeerPacketStream) Send(pr *scheduler.PieceResult) error {
+	return nil
+}
+
+func (d *dummyPeerPacketStream) CloseSend() error {
 	return nil
 }

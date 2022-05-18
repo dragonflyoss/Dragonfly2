@@ -89,7 +89,7 @@ type peerTaskConductor struct {
 
 	// schedule options
 	schedulerOption config.SchedulerOption
-	schedulerClient schedulerclient.SchedulerClient
+	schedulerClient schedulerclient.Client
 
 	// peer task meta info
 	peerID          string
@@ -108,7 +108,7 @@ type peerTaskConductor struct {
 	tinyData    *TinyData
 
 	// peerPacketStream stands schedulerclient.PeerPacketStream from scheduler
-	peerPacketStream schedulerclient.PeerPacketStream
+	peerPacketStream scheduler.Scheduler_ReportPieceResultClient
 	// peerPacket is the latest available peers from peerPacketCh
 	// Deprecated: remove in future release
 	peerPacket      atomic.Value // *scheduler.PeerPacket
@@ -179,6 +179,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	span.SetAttributes(semconv.HTTPURLKey.String(request.Url))
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
+	request.TaskId = taskID
 
 	var (
 		log     *logger.SugaredLoggerOnWith
@@ -324,7 +325,7 @@ func (pt *peerTaskConductor) register() error {
 		}
 	}
 
-	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
+	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, pt.request)
 	pt.Infof("step 2: start report piece result")
 	if err != nil {
 		pt.span.RecordError(err)
@@ -1469,6 +1470,9 @@ func (pt *peerTaskConductor) done() {
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
 
+	err = pt.peerPacketStream.CloseSend()
+	pt.Debugf("close stream result: %v", err)
+
 	err = pt.schedulerClient.ReportPeerResult(
 		peerResultCtx,
 		&scheduler.PeerResult{
@@ -1520,6 +1524,9 @@ func (pt *peerTaskConductor) fail() {
 	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
 	pt.Debugf("end piece result sent: %v, peer task finished", err)
+
+	err = pt.peerPacketStream.CloseSend()
+	pt.Debugf("close stream result: %v", err)
 
 	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(pt.ctx))
 	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
