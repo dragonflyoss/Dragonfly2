@@ -58,6 +58,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	if err != nil {
 		return nil, err
 	}
+	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.SeedPeers))
 
 	// Initialize seed peer grpc client.
 	client := client.GetClientByAddr(seedPeersToNetAddrs(config.SeedPeers), opts...)
@@ -79,13 +80,8 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 
 // Dynamic config notify function.
 func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
-	var seedPeers []config.SeedPeer
-	for _, seedPeer := range data.SeedPeers {
-		seedPeers = append(seedPeers, *seedPeer)
-	}
-
 	if reflect.DeepEqual(sc.data, data) {
-		logger.Infof("addresses deep equal: %#v", seedPeers)
+		logger.Debugf("addresses deep equal: %#v", seedPeersToNetAddrs(data.SeedPeers))
 		return
 	}
 
@@ -120,7 +116,7 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 
 	// Update grpc seed peer addresses.
 	sc.UpdateState(seedPeersToNetAddrs(data.SeedPeers))
-	logger.Infof("addresses have been updated: %#v", seedPeers)
+	logger.Infof("addresses have been updated: %#v", seedPeersToNetAddrs(data.SeedPeers))
 }
 
 // seedPeersToHosts coverts []*config.SeedPeer to map[string]*Host.
