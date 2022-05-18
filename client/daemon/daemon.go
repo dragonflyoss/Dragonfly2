@@ -141,6 +141,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	} else {
 		addrs = opt.Scheduler.NetAddrs
 	}
+	logger.Infof("initialize scheduler addresses: %#v", addrs)
 
 	var opts []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
@@ -605,7 +606,7 @@ func (cd *clientDaemon) Stop() {
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Infof("scheduler addresses deep equal: %v, used: %#v",
+		logger.Debugf("scheduler addresses deep equal: %v, used: %#v",
 			ips, cd.schedulerClient.GetState())
 		return
 	}
