@@ -116,7 +116,7 @@ func init() {
 
 type peerTaskManager struct {
 	host            *scheduler.PeerHost
-	schedulerClient schedulerclient.SchedulerClient
+	schedulerClient schedulerclient.Client
 	schedulerOption config.SchedulerOption
 	pieceManager    PieceManager
 	storageManager  storage.Manager
@@ -140,7 +140,7 @@ func NewPeerTaskManager(
 	host *scheduler.PeerHost,
 	pieceManager PieceManager,
 	storageManager storage.Manager,
-	schedulerClient schedulerclient.SchedulerClient,
+	schedulerClient schedulerclient.Client,
 	schedulerOption config.SchedulerOption,
 	perPeerRateLimit rate.Limit,
 	multiplex bool,

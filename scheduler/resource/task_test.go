@@ -333,6 +333,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 				assert := assert.New(t)
 				task.StorePeer(mockPeer)
 				mockPeer.ID = idgen.PeerID("0.0.0.0")
+				mockPeer.FSM.SetState(PeerStateSucceeded)
 				task.StorePeer(mockPeer)
 				assert.Equal(task.HasAvailablePeer(), true)
 			},

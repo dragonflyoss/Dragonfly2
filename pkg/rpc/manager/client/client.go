@@ -46,6 +46,7 @@ const (
 	backoffMaxDelay   = 10 * time.Second
 )
 
+// Client is the interface for grpc client.
 type Client interface {
 	// Update Seed peer configuration.
 	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
@@ -66,11 +67,13 @@ type Client interface {
 	Close() error
 }
 
+// client provides manager grpc function.
 type client struct {
 	manager.ManagerClient
 	conn *grpc.ClientConn
 }
 
+// New creates manager client>
 func New(target string) (Client, error) {
 	conn, err := grpc.Dial(
 		target,
@@ -99,6 +102,7 @@ func New(target string) (Client, error) {
 	}, nil
 }
 
+// NewWithAddrs creates manager client with addresses.
 func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
@@ -112,6 +116,7 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 	return nil, errors.New("can not find available manager addresses")
 }
 
+// Update SeedPeer configuration.
 func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -119,6 +124,7 @@ func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.Se
 	return c.ManagerClient.UpdateSeedPeer(ctx, req)
 }
 
+// Get Scheduler and Scheduler cluster configuration.
 func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -126,6 +132,7 @@ func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Schedu
 	return c.ManagerClient.GetScheduler(ctx, req)
 }
 
+// Update scheduler configuration.
 func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -133,6 +140,7 @@ func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.
 	return c.ManagerClient.UpdateScheduler(ctx, req)
 }
 
+// List acitve schedulers configuration.
 func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
@@ -140,6 +148,7 @@ func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.Li
 	return c.ManagerClient.ListSchedulers(ctx, req)
 }
 
+// List acitve schedulers configuration.
 func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveRequest) {
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
@@ -176,6 +185,7 @@ retry:
 	}
 }
 
+// Close grpc service.
 func (c *client) Close() error {
 	return c.conn.Close()
 }

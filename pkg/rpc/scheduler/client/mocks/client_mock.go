@@ -10,36 +10,35 @@ import (
 
 	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
 
-// MockSchedulerClient is a mock of SchedulerClient interface.
-type MockSchedulerClient struct {
+// MockClient is a mock of Client interface.
+type MockClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockSchedulerClientMockRecorder
+	recorder *MockClientMockRecorder
 }
 
-// MockSchedulerClientMockRecorder is the mock recorder for MockSchedulerClient.
-type MockSchedulerClientMockRecorder struct {
-	mock *MockSchedulerClient
+// MockClientMockRecorder is the mock recorder for MockClient.
+type MockClientMockRecorder struct {
+	mock *MockClient
 }
 
-// NewMockSchedulerClient creates a new mock instance.
-func NewMockSchedulerClient(ctrl *gomock.Controller) *MockSchedulerClient {
-	mock := &MockSchedulerClient{ctrl: ctrl}
-	mock.recorder = &MockSchedulerClientMockRecorder{mock}
+// NewMockClient creates a new mock instance.
+func NewMockClient(ctrl *gomock.Controller) *MockClient {
+	mock := &MockClient{ctrl: ctrl}
+	mock.recorder = &MockClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockSchedulerClient) EXPECT() *MockSchedulerClientMockRecorder {
+func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
 // AnnounceTask mocks base method.
-func (m *MockSchedulerClient) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
+func (m *MockClient) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -51,14 +50,14 @@ func (m *MockSchedulerClient) AnnounceTask(arg0 context.Context, arg1 *scheduler
 }
 
 // AnnounceTask indicates an expected call of AnnounceTask.
-func (mr *MockSchedulerClientMockRecorder) AnnounceTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) AnnounceTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerClient)(nil).AnnounceTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockClient)(nil).AnnounceTask), varargs...)
 }
 
 // Close mocks base method.
-func (m *MockSchedulerClient) Close() error {
+func (m *MockClient) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
 	ret0, _ := ret[0].(error)
@@ -66,13 +65,13 @@ func (m *MockSchedulerClient) Close() error {
 }
 
 // Close indicates an expected call of Close.
-func (mr *MockSchedulerClientMockRecorder) Close() *gomock.Call {
+func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSchedulerClient)(nil).Close))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
 // GetState mocks base method.
-func (m *MockSchedulerClient) GetState() []dfnet.NetAddr {
+func (m *MockClient) GetState() []dfnet.NetAddr {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetState")
 	ret0, _ := ret[0].([]dfnet.NetAddr)
@@ -80,13 +79,13 @@ func (m *MockSchedulerClient) GetState() []dfnet.NetAddr {
 }
 
 // GetState indicates an expected call of GetState.
-func (mr *MockSchedulerClientMockRecorder) GetState() *gomock.Call {
+func (mr *MockClientMockRecorder) GetState() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockSchedulerClient)(nil).GetState))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockClient)(nil).GetState))
 }
 
 // LeaveTask mocks base method.
-func (m *MockSchedulerClient) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget, arg2 ...grpc.CallOption) error {
+func (m *MockClient) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -98,14 +97,14 @@ func (m *MockSchedulerClient) LeaveTask(arg0 context.Context, arg1 *scheduler.Pe
 }
 
 // LeaveTask indicates an expected call of LeaveTask.
-func (mr *MockSchedulerClientMockRecorder) LeaveTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) LeaveTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockSchedulerClient)(nil).LeaveTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockClient)(nil).LeaveTask), varargs...)
 }
 
 // RegisterPeerTask mocks base method.
-func (m *MockSchedulerClient) RegisterPeerTask(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+func (m *MockClient) RegisterPeerTask(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -118,14 +117,14 @@ func (m *MockSchedulerClient) RegisterPeerTask(arg0 context.Context, arg1 *sched
 }
 
 // RegisterPeerTask indicates an expected call of RegisterPeerTask.
-func (mr *MockSchedulerClientMockRecorder) RegisterPeerTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) RegisterPeerTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterPeerTask", reflect.TypeOf((*MockSchedulerClient)(nil).RegisterPeerTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterPeerTask", reflect.TypeOf((*MockClient)(nil).RegisterPeerTask), varargs...)
 }
 
 // ReportPeerResult mocks base method.
-func (m *MockSchedulerClient) ReportPeerResult(arg0 context.Context, arg1 *scheduler.PeerResult, arg2 ...grpc.CallOption) error {
+func (m *MockClient) ReportPeerResult(arg0 context.Context, arg1 *scheduler.PeerResult, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -137,34 +136,34 @@ func (m *MockSchedulerClient) ReportPeerResult(arg0 context.Context, arg1 *sched
 }
 
 // ReportPeerResult indicates an expected call of ReportPeerResult.
-func (mr *MockSchedulerClientMockRecorder) ReportPeerResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ReportPeerResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPeerResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPeerResult), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPeerResult", reflect.TypeOf((*MockClient)(nil).ReportPeerResult), varargs...)
 }
 
 // ReportPieceResult mocks base method.
-func (m *MockSchedulerClient) ReportPieceResult(arg0 context.Context, arg1 string, arg2 *scheduler.PeerTaskRequest, arg3 ...grpc.CallOption) (client.PeerPacketStream, error) {
+func (m *MockClient) ReportPieceResult(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{arg0, arg1, arg2}
-	for _, a := range arg3 {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ReportPieceResult", varargs...)
-	ret0, _ := ret[0].(client.PeerPacketStream)
+	ret0, _ := ret[0].(scheduler.Scheduler_ReportPieceResultClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ReportPieceResult indicates an expected call of ReportPieceResult.
-func (mr *MockSchedulerClientMockRecorder) ReportPieceResult(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ReportPieceResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPieceResult), varargs...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockClient)(nil).ReportPieceResult), varargs...)
 }
 
 // StatTask mocks base method.
-func (m *MockSchedulerClient) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*scheduler.Task, error) {
+func (m *MockClient) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*scheduler.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
@@ -177,20 +176,20 @@ func (m *MockSchedulerClient) StatTask(arg0 context.Context, arg1 *scheduler.Sta
 }
 
 // StatTask indicates an expected call of StatTask.
-func (mr *MockSchedulerClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockSchedulerClient)(nil).StatTask), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockClient)(nil).StatTask), varargs...)
 }
 
 // UpdateState mocks base method.
-func (m *MockSchedulerClient) UpdateState(arg0 []dfnet.NetAddr) {
+func (m *MockClient) UpdateState(arg0 []dfnet.NetAddr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateState", arg0)
 }
 
 // UpdateState indicates an expected call of UpdateState.
-func (mr *MockSchedulerClientMockRecorder) UpdateState(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateState(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockSchedulerClient)(nil).UpdateState), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockClient)(nil).UpdateState), arg0)
 }
