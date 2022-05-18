@@ -62,6 +62,9 @@ func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager Hos
 
 // TriggerTask start to trigger seed peer task.
 func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	stream, err := s.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,

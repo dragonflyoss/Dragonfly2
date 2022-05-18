@@ -27,7 +27,6 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -509,7 +508,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 
 // registerTask creates a new task or reuses a previous task.
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, bool, error) {
-	task := resource.NewTask(idgen.TaskID(req.Url, req.UrlMeta), req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
+	task := resource.NewTask(req.TaskId, req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
 	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
 		task.Log.Infof("task state is %s", task.FSM.Current())
@@ -521,12 +520,19 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 		return nil, false, err
 	}
 
+	// Seed peer registers the task, then it needs to back-to-source.
+	host, loaded := s.resource.HostManager().Load(req.PeerHost.Id)
+	if loaded && host.Type != resource.HostTypeNormal {
+		return task, true, nil
+	}
+
 	// Start trigger seed peer task.
 	if s.config.SeedPeer.Enable {
 		go s.triggerSeedPeerTask(ctx, task)
 		return task, false, nil
 	}
 
+	// Task need to back-to-source.
 	return task, true, nil
 }
 

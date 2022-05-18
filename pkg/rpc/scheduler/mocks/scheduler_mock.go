@@ -73,6 +73,26 @@ func (m *MockSchedulerClient) EXPECT() *MockSchedulerClientMockRecorder {
 	return m.recorder
 }
 
+// AnnounceTask mocks base method.
+func (m *MockSchedulerClient) AnnounceTask(ctx context.Context, in *scheduler.AnnounceTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AnnounceTask", varargs...)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AnnounceTask indicates an expected call of AnnounceTask.
+func (mr *MockSchedulerClientMockRecorder) AnnounceTask(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerClient)(nil).AnnounceTask), varargs...)
+}
+
 // LeaveTask mocks base method.
 func (m *MockSchedulerClient) LeaveTask(ctx context.Context, in *scheduler.PeerTarget, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
@@ -151,6 +171,26 @@ func (mr *MockSchedulerClientMockRecorder) ReportPieceResult(ctx interface{}, op
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPieceResult), varargs...)
+}
+
+// StatTask mocks base method.
+func (m *MockSchedulerClient) StatTask(ctx context.Context, in *scheduler.StatTaskRequest, opts ...grpc.CallOption) (*scheduler.Task, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "StatTask", varargs...)
+	ret0, _ := ret[0].(*scheduler.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockSchedulerClientMockRecorder) StatTask(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockSchedulerClient)(nil).StatTask), varargs...)
 }
 
 // MockScheduler_ReportPieceResultClient is a mock of Scheduler_ReportPieceResultClient interface.
@@ -313,6 +353,21 @@ func (m *MockSchedulerServer) EXPECT() *MockSchedulerServerMockRecorder {
 	return m.recorder
 }
 
+// AnnounceTask mocks base method.
+func (m *MockSchedulerServer) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest) (*emptypb.Empty, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AnnounceTask", arg0, arg1)
+	ret0, _ := ret[0].(*emptypb.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AnnounceTask indicates an expected call of AnnounceTask.
+func (mr *MockSchedulerServerMockRecorder) AnnounceTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerServer)(nil).AnnounceTask), arg0, arg1)
+}
+
 // LeaveTask mocks base method.
 func (m *MockSchedulerServer) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
@@ -370,6 +425,21 @@ func (m *MockSchedulerServer) ReportPieceResult(arg0 scheduler.Scheduler_ReportP
 func (mr *MockSchedulerServerMockRecorder) ReportPieceResult(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerServer)(nil).ReportPieceResult), arg0)
+}
+
+// StatTask mocks base method.
+func (m *MockSchedulerServer) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest) (*scheduler.Task, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StatTask", arg0, arg1)
+	ret0, _ := ret[0].(*scheduler.Task)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// StatTask indicates an expected call of StatTask.
+func (mr *MockSchedulerServerMockRecorder) StatTask(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockSchedulerServer)(nil).StatTask), arg0, arg1)
 }
 
 // MockScheduler_ReportPieceResultServer is a mock of Scheduler_ReportPieceResultServer interface.
