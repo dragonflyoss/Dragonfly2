@@ -477,7 +477,7 @@ func (pt *peerTaskConductor) backSource() {
 	}
 
 	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
-	pt.contentLength.Store(-1)
+	pt.SetContentLength(-1)
 	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
@@ -800,7 +800,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 	ctx, span := tracer.Start(pt.ctx, fmt.Sprintf(config.SpanDownloadPiece, pt.singlePiece.PieceInfo.PieceNum))
 	span.SetAttributes(config.AttributePiece.Int(int(pt.singlePiece.PieceInfo.PieceNum)))
 
-	pt.contentLength.Store(int64(pt.singlePiece.PieceInfo.RangeSize))
+	pt.SetContentLength(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
 	pt.SetPieceMd5Sign(digestutils.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
 
@@ -1231,7 +1231,16 @@ func (pt *peerTaskConductor) waitLimit(ctx context.Context, request *DownloadPie
 }
 
 func (pt *peerTaskConductor) isCompleted() bool {
-	return pt.completedLength.Load() == pt.contentLength.Load()
+	if pt.completedLength.Load() == pt.GetContentLength() {
+		pt.Infof("completed content length: %d", pt.completedLength.Load())
+		return true
+	}
+
+	//if pt.totalPiece.Load() > -1 && pt.readyPieces.Settled() == pt.totalPiece.Load() {
+	//	pt.Infof("completed piece count: %d", pt.totalPiece.Load())
+	//	return true
+	//}
+	return false
 }
 
 // for legacy peers only
@@ -1468,7 +1477,7 @@ func (pt *peerTaskConductor) done() {
 	// send EOF piece result to scheduler
 	err := pt.sendPieceResult(
 		schedulerclient.NewEndOfPiece(pt.taskID, pt.peerID, pt.readyPieces.Settled()))
-	pt.Debugf("end piece result sent: %v, peer task finished", err)
+	pt.Debugf("peer task finished, end piece result sent result: %v", err)
 
 	err = pt.peerPacketStream.CloseSend()
 	pt.Debugf("close stream result: %v", err)

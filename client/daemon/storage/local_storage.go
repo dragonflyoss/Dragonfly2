@@ -202,7 +202,10 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 	t.touch()
 	t.Lock()
 	defer t.Unlock()
-	t.persistentMetadata.ContentLength = req.ContentLength
+	if req.ContentLength > t.persistentMetadata.ContentLength {
+		t.ContentLength = req.ContentLength
+		t.Debugf("update content length: %d", t.ContentLength)
+	}
 	if req.TotalPieces > 0 {
 		t.TotalPieces = req.TotalPieces
 		t.Debugf("update total pieces: %d", t.TotalPieces)

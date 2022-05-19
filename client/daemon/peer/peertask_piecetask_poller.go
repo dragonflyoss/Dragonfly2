@@ -196,7 +196,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			return piecePacket, false, nil
 		}
 		// need update metadata
-		if piecePacket.ContentLength > ptc.contentLength.Load() || piecePacket.TotalPiece > ptc.GetTotalPieces() {
+		if piecePacket.ContentLength > ptc.GetContentLength() || piecePacket.TotalPiece > ptc.GetTotalPieces() {
 			return piecePacket, false, nil
 		}
 		// invalid request num

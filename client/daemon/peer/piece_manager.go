@@ -422,6 +422,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		if result.Size == int64(size) {
 			pt.ReportPieceResult(request, result, nil)
 			pt.PublishPieceInfo(pieceNum, uint32(result.Size))
+			log.Debugf("piece %d downloaded, size: %d", pieceNum, result.Size)
 			continue
 		} else if result.Size > int64(size) {
 			err = fmt.Errorf("piece %d size %d should not great than %d", pieceNum, result.Size, size)
@@ -449,10 +450,12 @@ func (pm *pieceManager) downloadUnknownLengthSource(ctx context.Context, pt Task
 		}
 		// content length is aligning at piece size
 		if result.Size == 0 {
+			log.Debugf("final piece is %d", pieceNum-1)
 			break
 		}
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
+		log.Debugf("final piece %d downloaded, size: %d", pieceNum, result.Size)
 		break
 	}
 
