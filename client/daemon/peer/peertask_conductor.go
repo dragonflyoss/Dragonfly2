@@ -535,8 +535,8 @@ func (pt *peerTaskConductor) pullPiecesWithP2P() {
 }
 
 func (pt *peerTaskConductor) storeTinyPeerTask() {
-	l := int64(len(pt.tinyData.Content))
-	pt.SetContentLength(l)
+	contentLength := int64(len(pt.tinyData.Content))
+	pt.SetContentLength(contentLength)
 	pt.SetTotalPieces(1)
 	ctx := pt.ctx
 	var err error
@@ -547,7 +547,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				TaskID: pt.tinyData.TaskID,
 			},
 			DesiredLocation: "",
-			ContentLength:   l,
+			ContentLength:   contentLength,
 			TotalPieces:     1,
 			// TODO check digest
 		})
@@ -569,14 +569,14 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				Offset: 0,
 				Range: clientutil.Range{
 					Start:  0,
-					Length: l,
+					Length: contentLength,
 				},
 				Style: 0,
 			},
 			UnknownLength: false,
 			Reader:        bytes.NewBuffer(pt.tinyData.Content),
-			GenPieceDigest: func(n int64) (int32, bool) {
-				return 1, true
+			GenMetadata: func(n int64) (int32, int64, bool) {
+				return 1, contentLength, true
 			},
 		})
 	if err != nil {
@@ -584,8 +584,8 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
-	if n != l {
-		pt.Errorf("write tiny data storage failed, want: %d, wrote: %d", l, n)
+	if n != contentLength {
+		pt.Errorf("write tiny data storage failed, want: %d, wrote: %d", contentLength, n)
 		pt.cancel(base.Code_ClientError, err.Error())
 		return
 	}
@@ -597,8 +597,8 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 		return
 	}
 
-	pt.Debugf("store tiny data, len: %d", l)
-	pt.PublishPieceInfo(0, uint32(l))
+	pt.Debugf("store tiny data, len: %d", contentLength)
+	pt.PublishPieceInfo(0, uint32(contentLength))
 }
 
 func (pt *peerTaskConductor) receivePeerPacket(pieceRequestCh chan *DownloadPieceRequest) {

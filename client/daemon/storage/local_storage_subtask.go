@@ -342,11 +342,11 @@ func (t *localSubTaskStore) IsInvalid(req *PeerTaskMetadata) (bool, error) {
 }
 
 func (t *localSubTaskStore) genDigest(n int64, req *WritePieceRequest) {
-	if req.GenPieceDigest == nil || t.PieceMd5Sign != "" {
+	if req.GenMetadata == nil || t.PieceMd5Sign != "" {
 		return
 	}
 
-	total, gen := req.GenPieceDigest(n)
+	total, gen := req.GenMetadata(n)
 	if !gen {
 		return
 	}

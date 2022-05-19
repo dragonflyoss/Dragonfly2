@@ -131,7 +131,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	// when UnknownLength and size is align to piece num
 	if req.UnknownLength && n == 0 {
 		t.Lock()
-		t.genDigest(n, req)
+		t.genMetadata(n, req)
 		t.Unlock()
 		return 0, nil
 	}
@@ -143,7 +143,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 			// when n == 0, skip
 			if n == 0 {
 				t.Lock()
-				t.genDigest(n, req)
+				t.genMetadata(n, req)
 				t.Unlock()
 				return 0, nil
 			}
@@ -173,20 +173,27 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	}
 	req.PieceMetadata.Cost = uint64(time.Now().UnixNano() - start)
 	t.Pieces[req.Num] = req.PieceMetadata
-	t.genDigest(n, req)
+	t.genMetadata(n, req)
 	return n, nil
 }
 
-func (t *localTaskStore) genDigest(n int64, req *WritePieceRequest) {
-	if req.GenPieceDigest == nil || t.PieceMd5Sign != "" {
+func (t *localTaskStore) genMetadata(n int64, req *WritePieceRequest) {
+	if req.GenMetadata == nil {
 		return
 	}
 
-	total, gen := req.GenPieceDigest(n)
+	total, contentLength, gen := req.GenMetadata(n)
 	if !gen {
 		return
 	}
-	t.TotalPieces = total
+
+	if t.TotalPieces == -1 {
+		t.TotalPieces = total
+	}
+
+	if t.ContentLength == -1 {
+		t.ContentLength = contentLength
+	}
 
 	var pieceDigests []string
 	for i := int32(0); i < t.TotalPieces; i++ {
@@ -195,7 +202,7 @@ func (t *localTaskStore) genDigest(n int64, req *WritePieceRequest) {
 
 	digest := digestutils.Sha256(pieceDigests...)
 	t.PieceMd5Sign = digest
-	t.Infof("generated digest: %s", digest)
+	t.Infof("generated digest: %s, total pieces: %d, content length: %d", digest, t.TotalPieces, t.ContentLength)
 }
 
 func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest) error {

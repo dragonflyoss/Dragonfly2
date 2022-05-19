@@ -247,8 +247,8 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 			assert.Equal(testBytes, data, "all pieces data should match")
 
 			if lts, ok := ts.(*localTaskStore); ok {
-				lts.genDigest(0, &WritePieceRequest{
-					GenPieceDigest: func(n int64) (total int32, gen bool) {
+				lts.genMetadata(0, &WritePieceRequest{
+					GenMetadata: func(n int64) (total int32, gen bool) {
 						return int32(len(pieces)), true
 					},
 				})
@@ -262,7 +262,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 				assert.Nil(err, "task gc")
 			} else if lsts, ok := ts.(*localSubTaskStore); ok {
 				lsts.genDigest(0, &WritePieceRequest{
-					GenPieceDigest: func(n int64) (total int32, gen bool) {
+					GenMetadata: func(n int64) (total int32, gen bool) {
 						return int32(len(pieces)), true
 					},
 				})
