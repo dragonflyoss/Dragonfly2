@@ -30,11 +30,19 @@ const (
 	// Seed Peer prefix of cache key.
 	SeedPeerNamespace = "seed-peer"
 
+	// Peer prefix of cache key.
+	PeerNamespace = "peer"
+
 	// Scheduler prefix of cache key.
 	SchedulerNamespace = "scheduler"
 
 	// Schedulers prefix of cache key.
 	SchedulersNamespace = "schedulers"
+)
+
+const (
+	// PeerCacheTTL is the ttl for peer cache
+	PeerCacheTTL = 30 * time.Minute
 )
 
 // Cache is cache client.
@@ -74,6 +82,11 @@ func MakeCacheKey(namespace string, id string) string {
 // Make cache key for seed peer
 func MakeSeedPeerCacheKey(hostname string, clusterID uint) string {
 	return MakeCacheKey(SeedPeerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
+}
+
+// Make cache key for peer
+func MakePeerCacheKey(hostname, ip string) string {
+	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s", hostname, ip))
 }
 
 // Make cache key for scheduler
