@@ -248,8 +248,8 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 
 			if lts, ok := ts.(*localTaskStore); ok {
 				lts.genMetadata(0, &WritePieceRequest{
-					GenMetadata: func(n int64) (total int32, gen bool) {
-						return int32(len(pieces)), true
+					GenMetadata: func(n int64) (total int32, length int64, gen bool) {
+						return int32(len(pieces)), int64(len(testBytes)), true
 					},
 				})
 				assert.Equal(digestutils.Sha256(piecesMd5...), lts.PieceMd5Sign)
@@ -262,8 +262,8 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 				assert.Nil(err, "task gc")
 			} else if lsts, ok := ts.(*localSubTaskStore); ok {
 				lsts.genMetadata(0, &WritePieceRequest{
-					GenMetadata: func(n int64) (total int32, gen bool) {
-						return int32(len(pieces)), true
+					GenMetadata: func(n int64) (total int32, length int64, gen bool) {
+						return int32(len(pieces)), int64(len(testBytes)), true
 					},
 				})
 				assert.Equal(digestutils.Sha256(piecesMd5...), lsts.PieceMd5Sign)
