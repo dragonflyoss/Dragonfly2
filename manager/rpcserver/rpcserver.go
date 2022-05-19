@@ -38,6 +38,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/database"
+	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -442,6 +443,16 @@ func (s *Server) createScheduler(ctx context.Context, req *manager.UpdateSchedul
 func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 
+	// Count the number of the active peer.
+	if req.SourceType == manager.SourceType_PEER_SOURCE {
+		count, err := s.getPeerCount(ctx, req)
+		if err != nil {
+			log.Warnf("get peer count failed: %s", err.Error())
+		} else {
+			metrics.PeerCount.WithLabelValues(cache.MakePeerCacheKey(req.HostName, req.Ip)).Add(float64(count))
+		}
+	}
+
 	var pbListSchedulersResponse manager.ListSchedulersResponse
 	cacheKey := cache.MakeSchedulersCacheKey(req.HostName, req.Ip)
 
@@ -500,6 +511,21 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	}
 
 	return &pbListSchedulersResponse, nil
+}
+
+// Get the number of active peers
+func (s *Server) getPeerCount(ctx context.Context, req *manager.ListSchedulersRequest) (int, error) {
+	cacheKey := cache.MakePeerCacheKey(req.HostName, req.Ip)
+	if err := s.rdb.Set(ctx, cacheKey, nil, cache.PeerCacheTTL).Err(); err != nil {
+		return 0, err
+	}
+
+	val, err := s.rdb.Keys(ctx, cache.MakeCacheKey(cache.PeerNamespace, "*")).Result()
+	if err != nil {
+		return 0, err
+	}
+
+	return len(val), nil
 }
 
 // KeepAlive with manager.
