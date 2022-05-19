@@ -261,7 +261,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 				err = lts.Reclaim()
 				assert.Nil(err, "task gc")
 			} else if lsts, ok := ts.(*localSubTaskStore); ok {
-				lsts.genDigest(0, &WritePieceRequest{
+				lsts.genMetadata(0, &WritePieceRequest{
 					GenMetadata: func(n int64) (total int32, gen bool) {
 						return int32(len(pieces)), true
 					},
