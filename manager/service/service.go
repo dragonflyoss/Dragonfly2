@@ -74,6 +74,8 @@ type Service interface {
 	GetSeedPeer(context.Context, uint) (*model.SeedPeer, error)
 	GetSeedPeers(context.Context, types.GetSeedPeersQuery) (*[]model.SeedPeer, int64, error)
 
+	GetPeers(context.Context) ([]string, error)
+
 	CreateSchedulerCluster(context.Context, types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	DestroySchedulerCluster(context.Context, uint) error
 	UpdateSchedulerCluster(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
