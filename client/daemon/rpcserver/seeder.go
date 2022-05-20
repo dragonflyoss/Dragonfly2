@@ -90,6 +90,18 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		return err
 	}
 
+	if resp.SubscribeResponse.Storage == nil {
+		err = fmt.Errorf("invalid SubscribeResponse.Storage")
+		log.Errorf("%s", err.Error())
+		return err
+	}
+
+	if resp.SubscribeResponse.Success == nil && resp.SubscribeResponse.Fail == nil {
+		err = fmt.Errorf("both of SubscribeResponse.Success and SubscribeResponse.Fail is nil")
+		log.Errorf("%s", err.Error())
+		return err
+	}
+
 	log.Infof("start seed task")
 
 	err = seedsServer.Send(
