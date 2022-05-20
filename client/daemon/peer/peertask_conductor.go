@@ -1236,10 +1236,6 @@ func (pt *peerTaskConductor) isCompleted() bool {
 		return true
 	}
 
-	//if pt.totalPiece.Load() > -1 && pt.readyPieces.Settled() == pt.totalPiece.Load() {
-	//	pt.Infof("completed piece count: %d", pt.totalPiece.Load())
-	//	return true
-	//}
 	return false
 }
 
