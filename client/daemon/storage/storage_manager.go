@@ -500,12 +500,14 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 
 		if t.Done {
 			return &ReusePeerTask{
+				Storage: t,
 				PeerTaskMetadata: PeerTaskMetadata{
 					PeerID: t.PeerID,
 					TaskID: taskID,
 				},
 				ContentLength: t.ContentLength,
 				TotalPieces:   t.TotalPieces,
+				Header:        t.Header,
 			}
 		}
 	}
@@ -532,12 +534,14 @@ func (s *storageManager) FindPartialCompletedTask(taskID string, rg *clientutil.
 
 		if t.Done || t.partialCompleted(rg) {
 			return &ReusePeerTask{
+				Storage: t,
 				PeerTaskMetadata: PeerTaskMetadata{
 					PeerID: t.PeerID,
 					TaskID: taskID,
 				},
 				ContentLength: t.ContentLength,
 				TotalPieces:   t.TotalPieces,
+				Header:        t.Header,
 			}
 		}
 	}
