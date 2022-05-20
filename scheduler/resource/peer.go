@@ -40,7 +40,7 @@ const (
 	DefaultBizTag = "unknow"
 
 	// Download tiny file timeout.
-	downloadTinyFileContextTimeout = 2 * time.Minute
+	downloadTinyFileContextTimeout = 30 * time.Second
 )
 
 const (
@@ -510,6 +510,7 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
+
 	req.Header.Set(headers.Range, fmt.Sprintf("bytes=%d-%d", 0, p.Task.ContentLength.Load()-1))
 	p.Log.Infof("download tiny file %s, header is : %#v", targetURL.String(), req.Header)
 

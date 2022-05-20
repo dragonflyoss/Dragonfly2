@@ -184,6 +184,8 @@ func (m *RegisterResult) Validate() error {
 		return nil
 	}
 
+	// no validation rules for TaskType
+
 	if utf8.RuneCountInString(m.GetTaskId()) < 1 {
 		return RegisterResultValidationError{
 			field:  "TaskId",

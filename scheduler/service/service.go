@@ -106,6 +106,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
+					TaskType:  int32(task.Type),
 					SizeScope: base.SizeScope_TINY,
 					DirectPiece: &rpcscheduler.RegisterResult_PieceContent{
 						PieceContent: task.DirectPiece,
@@ -131,6 +132,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
+					TaskType:  int32(task.Type),
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -147,6 +149,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
+					TaskType:  int32(task.Type),
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -162,6 +165,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
+					TaskType:  int32(task.Type),
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -192,6 +196,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			peer.Log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
+				TaskType:  int32(task.Type),
 				SizeScope: base.SizeScope_SMALL,
 				DirectPiece: &rpcscheduler.RegisterResult_SinglePiece{
 					SinglePiece: singlePiece,
@@ -207,6 +212,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
+				TaskType:  int32(task.Type),
 				SizeScope: base.SizeScope_NORMAL,
 			}, nil
 		}
@@ -222,6 +228,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 	return &rpcscheduler.RegisterResult{
 		TaskId:    task.ID,
+		TaskType:  int32(task.Type),
 		SizeScope: base.SizeScope_NORMAL,
 	}, nil
 }
