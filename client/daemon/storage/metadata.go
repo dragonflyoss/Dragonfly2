@@ -72,8 +72,8 @@ type WritePieceRequest struct {
 	PieceMetadata
 	UnknownLength bool
 	Reader        io.Reader
-	// GenPieceDigest is used after the last piece in back source case
-	GenPieceDigest func(n int64) (total int32, gen bool)
+	// GenMetadata is used after the last piece in back source case
+	GenMetadata func(n int64) (total int32, contentLength int64, gen bool)
 }
 
 type StoreRequest struct {

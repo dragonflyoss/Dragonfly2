@@ -195,6 +195,18 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
 			s.attributeSent = true
 		}
 
+		// we must send done to scheduler
+		if len(pp.PieceInfos) == 0 {
+			ps := s.compositePieceSeed(pp, nil)
+			ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
+			s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
+			err = s.seedsServer.Send(&ps)
+			if err != nil {
+				s.Errorf("send reminding piece seeds error: %s", err.Error())
+				return err
+			}
+		}
+
 		for _, p := range pp.PieceInfos {
 			if p.PieceNum != desired {
 				s.Errorf("desired piece %d, not found", desired)
@@ -267,17 +279,9 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 
 func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
 	return cdnsystem.PieceSeed{
-		PeerId: s.seedTaskRequest.PeerId,
-		HostId: s.seedTaskRequest.PeerHost.Id,
-		PieceInfo: &base.PieceInfo{
-			PieceNum:     piece.PieceNum,
-			RangeStart:   piece.RangeStart,
-			RangeSize:    piece.RangeSize,
-			PieceMd5:     piece.PieceMd5,
-			PieceOffset:  piece.PieceOffset,
-			PieceStyle:   piece.PieceStyle,
-			DownloadCost: piece.DownloadCost,
-		},
+		PeerId:          s.seedTaskRequest.PeerId,
+		HostId:          s.seedTaskRequest.PeerHost.Id,
+		PieceInfo:       piece,
 		ContentLength:   pp.ContentLength,
 		TotalPieceCount: pp.TotalPiece,
 		BeginTime:       uint64(s.startNanoSecond),
