@@ -137,12 +137,12 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 
 	if rg == nil {
 		sha256sum = append(sha256sum, "/usr/bin/sha256sum", path)
-		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "-O", "/tmp/d7y.out", url)
+		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "--disable-back-source", "-O", "/tmp/d7y.out", url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out", url)
 	} else {
 		sha256sum = append(sha256sum, "sh", "-c",
 			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d", path, rg.Start, rg.Length))
-		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "-O", "/tmp/d7y.out", "-H",
+		dfget = append(dfget, "/opt/dragonfly/bin/dfget", "--disable-back-source", "-O", "/tmp/d7y.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 		curl = append(curl, "/usr/bin/curl", "-x", "http://127.0.0.1:65001", "-s", "--dump-header", "-", "-o", "/tmp/curl.out",
 			"--header", fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
@@ -150,7 +150,7 @@ func downloadSingleFile(ns string, pod *e2eutil.PodExec, path, url string, size 
 		sha256sumOffset = append(sha256sumOffset, "sh", "-c",
 			fmt.Sprintf("/bin/sha256sum-offset -file %s -offset %d -length %d",
 				"/var/lib/dragonfly/d7y.offset.out", rg.Start, rg.Length))
-		dfgetOffset = append(dfgetOffset, "/opt/dragonfly/bin/dfget", "--original-offset", "-O", "/var/lib/dragonfly/d7y.offset.out", "-H",
+		dfgetOffset = append(dfgetOffset, "/opt/dragonfly/bin/dfget", "--disable-back-source", "--original-offset", "-O", "/var/lib/dragonfly/d7y.offset.out", "-H",
 			fmt.Sprintf("Range: bytes=%d-%d", rg.Start, rg.Start+rg.Length-1), url)
 	}
 
