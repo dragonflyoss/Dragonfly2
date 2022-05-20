@@ -58,6 +58,8 @@ message PeerTaskRequest{
 
 // RegisterResult represents response of RegisterPeerTask.
 message RegisterResult{
+  // Task type
+  int32 task_type = 1;
   // Task id
   string task_id = 2 [(validate.rules).string.min_len = 1];
   // File size scope.
