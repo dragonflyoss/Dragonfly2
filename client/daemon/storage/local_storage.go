@@ -187,13 +187,8 @@ func (t *localTaskStore) genMetadata(n int64, req *WritePieceRequest) {
 		return
 	}
 
-	if t.TotalPieces == -1 {
-		t.TotalPieces = total
-	}
-
-	if t.ContentLength == -1 {
-		t.ContentLength = contentLength
-	}
+	t.TotalPieces = total
+	t.ContentLength = contentLength
 
 	var pieceDigests []string
 	for i := int32(0); i < t.TotalPieces; i++ {
