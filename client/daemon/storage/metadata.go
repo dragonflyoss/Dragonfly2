@@ -110,4 +110,11 @@ type UpdateTaskRequest struct {
 	Header        *source.Header
 }
 
-type ReusePeerTask = UpdateTaskRequest
+type ReusePeerTask struct {
+	PeerTaskMetadata
+	ContentLength int64
+	TotalPieces   int32
+	PieceMd5Sign  string
+	Header        *source.Header
+	Storage       TaskStorageDriver
+}
