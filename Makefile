@@ -21,8 +21,8 @@ PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
-DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
-DFCACHE_ARCHIVE_PREFIX := "$(DFCACHE_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
+DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)-$(SEMVER)-$(VERSION_RELEASE).$(GIT_COMMIT)"
+DFCACHE_ARCHIVE_PREFIX := "$(DFCACHE_NAME)-$(SEMVER)-$(VERSION_RELEASE).$(GIT_COMMIT)"
 
 all: help
 
@@ -184,8 +184,8 @@ build-rpm-dfget: build-linux-dfget
 	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
-		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm
-	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
+		--target /root/bin/$(DFGET_ARCHIVE_PREFIX).linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX).linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
 # Build rpm dfcache
@@ -201,8 +201,8 @@ build-rpm-dfcache: build-linux-dfcache build-dfcache-man-page
 	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfcache.yaml \
-		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm
-	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm"
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX).linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX).linux_amd64.rpm"
 .PHONY: build-rpm-dfcache
 
 # Build deb dfget
@@ -218,8 +218,8 @@ build-deb-dfget: build-linux-dfget
 	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfget.yaml \
-		--target /root/bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb
-	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
+		--target /root/bin/$(DFGET_ARCHIVE_PREFIX).linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX).linux_amd64.deb"
 .PHONY: build-deb-dfget
 
 # Build deb dfcache
@@ -235,8 +235,8 @@ build-deb-dfcache: build-linux-dfcache build-dfcache-man-page
 	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
 	goreleaser/nfpm pkg \
 		--config /root/build/package/nfpm/dfcache.yaml \
-		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb
-	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb"
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX).linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX).linux_amd64.deb"
 .PHONY: build-deb-dfcache
 
 # Generate dfget man page
