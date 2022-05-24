@@ -27,7 +27,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
 
 func Test_watchdog(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_watchdog(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			peer := &scheduler.PeerPacket_DestPeer{}
-			pps := mocks.NewMockPeerPacketStream(ctrl)
+			pps := mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 			watchdog := &synchronizerWatchdog{
 				done:        make(chan struct{}),
 				mainPeer:    atomic.Value{},
