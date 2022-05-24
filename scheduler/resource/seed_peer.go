@@ -20,6 +20,7 @@ package resource
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,6 +33,11 @@ import (
 const (
 	// Default value of biz tag for seed peer.
 	SeedBizTag = "d7y/seed"
+)
+
+const (
+	// Default value of seed peer failed timeout.
+	SeedPeerFailedTimeout = 30 * time.Minute
 )
 
 type SeedPeer interface {

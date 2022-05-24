@@ -535,6 +535,10 @@ func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRe
 
 	// Start trigger seed peer task.
 	if s.config.SeedPeer.Enable {
+		if task.IsSeedPeerFailed() {
+			return task, true, nil
+		}
+
 		go s.triggerSeedPeerTask(ctx, task)
 		return task, false, nil
 	}
