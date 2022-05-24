@@ -462,6 +462,18 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 				assert.False(task.IsSeedPeerFailed())
 			},
 		},
+		{
+			name: "seed peer failed timeout",
+			expect: func(t *testing.T, task *Task, mockPeer *Peer, mockSeedPeer *Peer) {
+				assert := assert.New(t)
+				task.StorePeer(mockPeer)
+				task.StorePeer(mockSeedPeer)
+				mockSeedPeer.CreateAt.Store(time.Now().Add(-SeedPeerFailedTimeout))
+				mockSeedPeer.FSM.SetState(PeerStateFailed)
+
+				assert.False(task.IsSeedPeerFailed())
+			},
+		},
 	}
 
 	for _, tc := range tests {

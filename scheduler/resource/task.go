@@ -278,7 +278,7 @@ func (t *Task) LoadSeedPeer() (*Peer, bool) {
 // IsSeedPeerFailed returns whether the seed peer in the task failed.
 func (t *Task) IsSeedPeerFailed() bool {
 	seedPeer, ok := t.LoadSeedPeer()
-	return ok && seedPeer.FSM.Is(PeerStateFailed)
+	return ok && seedPeer.FSM.Is(PeerStateFailed) && time.Since(seedPeer.CreateAt.Load()) < SeedPeerFailedTimeout
 }
 
 // LoadPiece return piece for a key.

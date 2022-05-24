@@ -142,13 +142,12 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "seed peer state is PeerStateFailed and peer stream load failed",
+			name: "peer needs back-to-source and peer stream load failed",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
-				task.StorePeer(seedPeer)
+				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				seedPeer.FSM.SetState(resource.PeerStateFailed)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -156,14 +155,12 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "seed peer state is PeerStateFailed and send Code_SchedNeedBackSource code failed",
+			name: "peer needs back-to-source and send Code_SchedNeedBackSource code failed",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
-				task.StorePeer(seedPeer)
+				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
-				seedPeer.FSM.SetState(resource.PeerStateFailed)
-				peer.StoreParent(seedPeer)
 				peer.StoreStream(stream)
 
 				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(errors.New("foo")).Times(1)
@@ -171,33 +168,12 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				_, ok := peer.LoadParent()
-				assert.True(ok)
+				assert.False(ok)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 			},
 		},
 		{
-			name: "seed peer state is PeerStateFailed and send Code_SchedNeedBackSource code success",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				task.StorePeer(seedPeer)
-				seedPeer.FSM.SetState(resource.PeerStateFailed)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.False(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "peer need back-to-source and send Code_SchedNeedBackSource code success",
+			name: "peer needs back-to-source and send Code_SchedNeedBackSource code success",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
@@ -216,37 +192,13 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			},
 		},
 		{
-			name: "seed peer state is PeerStateFailed and task state is PeerStateFailed",
+			name: "peer needs back-to-source and task state is TaskStateFailed",
 			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
-				task.StorePeer(seedPeer)
-				seedPeer.FSM.SetState(resource.PeerStateFailed)
+				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				task.FSM.SetState(resource.TaskStateFailed)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.False(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
-				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
-			},
-		},
-		{
-			name: "seed peer state is PeerStateFailed and task state is PeerStateFailed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				task.StorePeer(seedPeer)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				seedPeer.FSM.SetState(resource.PeerStateFailed)
-				task.FSM.SetState(resource.TaskStateFailed)
-				peer.StoreParent(seedPeer)
 				peer.StoreStream(stream)
 
 				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1)
@@ -270,95 +222,6 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-			},
-		},
-		{
-			name: "seed peer state is PeerStateFailed and send Code_SchedNeedBackSource code failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				gomock.InOrder(
-					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(errors.New("foo")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.True(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-			},
-		},
-		{
-			name: "seed peer state is PeerStateFailed and send Code_SchedNeedBackSource code success",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				gomock.InOrder(
-					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.False(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
-				assert.True(peer.Task.FSM.Is(resource.TaskStatePending))
-			},
-		},
-		{
-			name: "seed peer state is PeerStateFailed and task state is PeerStateFailed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				task.FSM.SetState(resource.TaskStateFailed)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				gomock.InOrder(
-					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.False(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
-				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
-			},
-		},
-		{
-			name: "seed peer state is PeerStateFailed and task state is PeerStateFailed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
-				task := peer.Task
-				task.StorePeer(peer)
-				peer.FSM.SetState(resource.PeerStateRunning)
-				task.FSM.SetState(resource.TaskStateFailed)
-				peer.StoreParent(seedPeer)
-				peer.StoreStream(stream)
-
-				gomock.InOrder(
-					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource})).Return(nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, peer *resource.Peer) {
-				assert := assert.New(t)
-				_, ok := peer.LoadParent()
-				assert.False(ok)
-				assert.True(peer.FSM.Is(resource.PeerStateBackToSource))
-				assert.True(peer.Task.FSM.Is(resource.TaskStateRunning))
 			},
 		},
 		{
