@@ -80,11 +80,10 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 		default:
 		}
 
-		// If the scheduling exceeds the RetryBackSourceLimit or the latest seed peer state is PeerStateFailed,
+		// If the scheduling exceeds the RetryBackSourceLimit or peer needs back-to-source,
 		// peer will download the task back-to-source.
-		isSeedPeerFailed := peer.Task.IsSeedPeerFailed()
 		needBackToSource := peer.NeedBackToSource.Load()
-		if (n >= s.config.RetryBackSourceLimit || isSeedPeerFailed || needBackToSource) &&
+		if (n >= s.config.RetryBackSourceLimit || needBackToSource) &&
 			peer.Task.CanBackToSource() {
 			stream, ok := peer.LoadStream()
 			if !ok {
@@ -92,8 +91,8 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				return
 			}
 
-			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, seed peer is failed %t, peer need back-to-source %t",
-				n, isSeedPeerFailed, needBackToSource)
+			peer.Log.Infof("peer downloads back-to-source, scheduling %d times, peer need back-to-source %t",
+				n, needBackToSource)
 
 			// Notify peer back-to-source.
 			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
