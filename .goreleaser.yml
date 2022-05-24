@@ -114,6 +114,7 @@ nfpms:
   - id: dfget
     file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfget
+    maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
     description: dfget is the client of Dragonfly used to download and upload files
     license: "Apache 2.0"
     homepage: https://d7y.io
@@ -158,6 +159,7 @@ nfpms:
   - id: dfcache
     file_name_template: "dfcache-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfcache
+    maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
     description: dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates on files in P2P network
     license: "Apache 2.0"
     homepage: https://d7y.io
