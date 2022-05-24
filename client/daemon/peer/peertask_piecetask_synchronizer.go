@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -44,7 +43,6 @@ type pieceTaskSyncManager struct {
 	peerTaskConductor *peerTaskConductor
 	pieceRequestCh    chan *DownloadPieceRequest
 	workers           map[string]*pieceTaskSynchronizer
-	watchdog          *synchronizerWatchdog
 }
 
 type pieceTaskSynchronizer struct {
@@ -55,13 +53,6 @@ type pieceTaskSynchronizer struct {
 	error             atomic.Value
 	peerTaskConductor *peerTaskConductor
 	pieceRequestCh    chan *DownloadPieceRequest
-}
-
-type synchronizerWatchdog struct {
-	done              chan struct{}
-	mainPeer          atomic.Value // save *scheduler.PeerPacket_DestPeer
-	syncSuccess       *atomic.Bool
-	peerTaskConductor *peerTaskConductor
 }
 
 type pieceTaskSynchronizerError struct {
@@ -142,12 +133,12 @@ func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacke
 func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	ctx context.Context,
 	dstPeer *scheduler.PeerPacket_DestPeer,
-	desiredPiece int32) error {
+	lastNum int32) error {
 	request := &base.PieceTaskRequest{
 		TaskId:   s.peerTaskConductor.taskID,
 		SrcPid:   s.peerTaskConductor.peerID,
 		DstPid:   dstPeer.PeerId,
-		StartNum: uint32(desiredPiece),
+		StartNum: uint32(lastNum),
 		Limit:    16,
 	}
 	if worker, ok := s.workers[dstPeer.PeerId]; ok {
@@ -200,13 +191,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	destPeers []*scheduler.PeerPacket_DestPeer,
 	desiredPiece int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
 	s.Lock()
-	defer func() {
-		if s.peerTaskConductor.ptm.watchdogTimeout > 0 {
-			s.resetWatchdog(destPeers[0])
-		}
-		s.Unlock()
-	}()
-
+	defer s.Unlock()
 	for _, peer := range destPeers {
 		err := s.newPieceTaskSynchronizer(s.ctx, peer, desiredPiece)
 		if err == nil {
@@ -235,22 +220,6 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	}
 	s.cleanStaleWorker(destPeers)
 	return legacyPeers
-}
-
-func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_DestPeer) {
-	if s.watchdog != nil {
-		close(s.watchdog.done)
-		s.peerTaskConductor.Debugf("close old watchdog")
-	}
-	s.watchdog = &synchronizerWatchdog{
-		done:              make(chan struct{}),
-		mainPeer:          atomic.Value{},
-		syncSuccess:       atomic.NewBool(false),
-		peerTaskConductor: s.peerTaskConductor,
-	}
-	s.watchdog.mainPeer.Store(mainPeer)
-	s.peerTaskConductor.Infof("start new watchdog")
-	go s.watchdog.watch(s.peerTaskConductor.ptm.watchdogTimeout)
 }
 
 func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer, code base.Code) *scheduler.PieceResult {
@@ -414,35 +383,4 @@ func (s *pieceTaskSynchronizer) canceled(err error) bool {
 		}
 	}
 	return false
-}
-
-func (s *synchronizerWatchdog) watch(timeout time.Duration) {
-	select {
-	case <-time.After(timeout):
-		if s.peerTaskConductor.readyPieces.Settled() == 0 {
-			s.peerTaskConductor.Warnf("watch sync pieces timeout, may be a bug, " +
-				"please file a issue in https://github.com/dragonflyoss/Dragonfly2/issues")
-			s.syncSuccess.Store(false)
-			s.reportWatchFailed()
-		} else {
-			s.peerTaskConductor.Infof("watch sync pieces ok")
-		}
-	case <-s.peerTaskConductor.successCh:
-		s.peerTaskConductor.Debugf("peer task success, watchdog exit")
-	case <-s.peerTaskConductor.failCh:
-		s.peerTaskConductor.Debugf("peer task fail, watchdog exit")
-	case <-s.done:
-		s.peerTaskConductor.Debugf("watchdog done, exit")
-	}
-}
-
-func (s *synchronizerWatchdog) reportWatchFailed() {
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(
-		s.peerTaskConductor, s.mainPeer.Load().(*scheduler.PeerPacket_DestPeer), base.Code_ClientPieceRequestFail))
-	if sendError != nil {
-		s.peerTaskConductor.Errorf("watchdog sync piece info failed and send piece result with error: %s", sendError)
-		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
-	} else {
-		s.peerTaskConductor.Debugf("report watchdog sync piece error to scheduler")
-	}
 }
