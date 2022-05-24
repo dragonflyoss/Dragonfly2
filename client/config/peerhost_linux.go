@@ -79,7 +79,8 @@ var peerHostConfig = DaemonOption{
 		},
 		DownloadGRPC: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: true,
 			},
 			UnixListen: &UnixListenOption{
 				Socket: "/var/run/dfdaemon.sock",
@@ -87,7 +88,8 @@ var peerHostConfig = DaemonOption{
 		},
 		PeerGRPC: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: true,
 			},
 			TCPListen: &TCPListenOption{
 				PortRange: TCPListenPortRange{
@@ -103,7 +105,8 @@ var peerHostConfig = DaemonOption{
 		},
 		ListenOption: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: false,
 			},
 			TCPListen: &TCPListenOption{
 				Listen: net.IPv4zero.String(),
@@ -117,7 +120,8 @@ var peerHostConfig = DaemonOption{
 	Proxy: &ProxyOption{
 		ListenOption: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: false,
 			},
 			TCPListen: &TCPListenOption{
 				Listen:    net.IPv4zero.String(),

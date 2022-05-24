@@ -42,6 +42,7 @@ download:
       caCert: caCert
       cert: cert
       key: key
+      tlsVerify: true
       tlsConfig: null
     unixListen:
       socket: /tmp/dfdaemon.sock
@@ -51,6 +52,7 @@ download:
       caCert: caCert
       cert: cert
       key: key
+      tlsVerify: true
       tlsConfig: null
     tcpListen:
       listen: 0.0.0.0
@@ -63,6 +65,7 @@ upload:
     caCert: caCert
     cert: cert
     key: key
+    tlsVerify: true
   tcpListen:
     listen: 0.0.0.0
     port: 65002
@@ -78,6 +81,7 @@ proxy:
     caCert: caCert
     cert: cert
     key: key
+    tlsVerify: true
     tlsConfig: null
   tcpListen:
     listen: 0.0.0.0

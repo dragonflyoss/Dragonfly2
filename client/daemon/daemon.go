@@ -302,10 +302,12 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	if opt.TCPListen == nil {
 		return nil, -1, errors.New("empty tcp listen option")
 	}
+
 	ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
 	if err != nil {
 		return nil, -1, err
 	}
+
 	// when use grpc, tls config is in server option
 	if !withTLS || opt.Security.Insecure {
 		return ln, port, err
@@ -319,6 +321,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	if opt.Security.TLSConfig == nil {
 		opt.Security.TLSConfig = &tls.Config{}
 	}
+
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
 		caCert, err := os.ReadFile(opt.Security.CACert)
@@ -328,8 +331,11 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
 		tlsConfig.ClientCAs = caCertPool
-		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		if opt.Security.TLSVerify {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
 	}
+
 	tlsConfig.Certificates = make([]tls.Certificate, 1)
 	tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(opt.Security.Cert, opt.Security.Key)
 	if err != nil {
