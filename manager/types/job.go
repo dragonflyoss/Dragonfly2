@@ -55,6 +55,7 @@ type CreatePreheatJobRequest struct {
 type PreheatArgs struct {
 	Type    string            `json:"type" binding:"required,oneof=image file"`
 	URL     string            `json:"url" binding:"required"`
+	Tag     string            `json:"tag" binding:"omitempty"`
 	Filter  string            `json:"filter" binding:"omitempty"`
 	Headers map[string]string `json:"headers" binding:"omitempty"`
 }
