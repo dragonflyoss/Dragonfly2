@@ -217,6 +217,7 @@ type DownloadOption struct {
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
 	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
+	WatchdogTimeout      time.Duration        `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 }
 
 type TransportOption struct {
