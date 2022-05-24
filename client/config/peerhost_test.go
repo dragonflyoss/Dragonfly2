@@ -278,10 +278,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 			DownloadGRPC: ListenOption{
 				Security: SecurityOption{
-					Insecure: true,
-					CACert:   "caCert",
-					Cert:     "cert",
-					Key:      "key",
+					Insecure:  true,
+					CACert:    "caCert",
+					Cert:      "cert",
+					Key:       "key",
+					TLSVerify: true,
 				},
 				UnixListen: &UnixListenOption{
 					Socket: "/tmp/dfdaemon.sock",
@@ -289,10 +290,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 			PeerGRPC: ListenOption{
 				Security: SecurityOption{
-					Insecure: true,
-					CACert:   "caCert",
-					Cert:     "cert",
-					Key:      "key",
+					Insecure:  true,
+					CACert:    "caCert",
+					Cert:      "cert",
+					Key:       "key",
+					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
 					Listen: "0.0.0.0",
@@ -309,10 +311,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 			ListenOption: ListenOption{
 				Security: SecurityOption{
-					Insecure: true,
-					CACert:   "caCert",
-					Cert:     "cert",
-					Key:      "key",
+					Insecure:  true,
+					CACert:    "caCert",
+					Cert:      "cert",
+					Key:       "key",
+					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
 					Listen: "0.0.0.0",
@@ -333,10 +336,11 @@ func TestPeerHostOption_Load(t *testing.T) {
 		Proxy: &ProxyOption{
 			ListenOption: ListenOption{
 				Security: SecurityOption{
-					Insecure: true,
-					CACert:   "caCert",
-					Cert:     "cert",
-					Key:      "key",
+					Insecure:  true,
+					CACert:    "caCert",
+					Cert:      "cert",
+					Key:       "key",
+					TLSVerify: true,
 				},
 				TCPListen: &TCPListenOption{
 					Listen: "0.0.0.0",
