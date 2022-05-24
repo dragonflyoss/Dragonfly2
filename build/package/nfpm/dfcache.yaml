@@ -10,7 +10,7 @@ priority: extra
 description: dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates on files in P2P network
 license: "Apache 2.0"
 homepage: https://d7y.io
-maintainer: Dragonfly Maintainers
+maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
 
 provides:
   - dfcache
