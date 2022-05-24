@@ -62,8 +62,7 @@ type Preheat interface {
 }
 
 type preheat struct {
-	job    *internaljob.Job
-	bizTag string
+	job *internaljob.Job
 }
 
 type preheatImage struct {
@@ -73,10 +72,9 @@ type preheatImage struct {
 	tag      string
 }
 
-func newPreheat(job *internaljob.Job, bizTag string) (Preheat, error) {
+func newPreheat(job *internaljob.Job) (Preheat, error) {
 	return &preheat{
-		job:    job,
-		bizTag: bizTag,
+		job: job,
 	}, nil
 }
 
@@ -88,6 +86,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 	defer span.End()
 
 	url := json.URL
+	tag := json.Tag
 	filter := json.Filter
 	rawheader := json.Headers
 
@@ -104,7 +103,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 			return nil, err
 		}
 
-		files, err = p.getLayers(ctx, url, filter, httputils.MapToHeader(rawheader), image)
+		files, err = p.getLayers(ctx, url, tag, filter, httputils.MapToHeader(rawheader), image)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +111,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 		files = []*internaljob.PreheatRequest{
 			{
 				URL:     url,
-				Tag:     p.bizTag,
+				Tag:     tag,
 				Filter:  filter,
 				Headers: rawheader,
 			},
@@ -168,7 +167,7 @@ func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.Prehe
 	}, nil
 }
 
-func (p *preheat) getLayers(ctx context.Context, url string, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) getLayers(ctx context.Context, url, tag, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	ctx, span := tracer.Start(ctx, config.SpanGetLayers, trace.WithSpanKind(trace.SpanKindProducer))
 	defer span.End()
 
@@ -197,7 +196,7 @@ func (p *preheat) getLayers(ctx context.Context, url string, filter string, head
 		}
 	}
 
-	layers, err := p.parseLayers(resp, url, filter, header, image)
+	layers, err := p.parseLayers(resp, url, tag, filter, header, image)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +228,7 @@ func (p *preheat) getManifests(ctx context.Context, url string, header http.Head
 	return resp, nil
 }
 
-func (p *preheat) parseLayers(resp *http.Response, url, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
+func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, header http.Header, image *preheatImage) ([]*internaljob.PreheatRequest, error) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -245,7 +244,7 @@ func (p *preheat) parseLayers(resp *http.Response, url, filter string, header ht
 		digest := v.Digest.String()
 		layer := &internaljob.PreheatRequest{
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
-			Tag:     p.bizTag,
+			Tag:     tag,
 			Filter:  filter,
 			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),

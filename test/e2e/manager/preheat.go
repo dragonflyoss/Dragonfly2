@@ -62,6 +62,7 @@ var _ = Describe("Preheat with manager", func() {
 					Args: types.PreheatArgs{
 						Type: "file",
 						URL:  url,
+						Tag:  managerTag,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -115,6 +116,7 @@ var _ = Describe("Preheat with manager", func() {
 				Args: types.PreheatArgs{
 					Type: "image",
 					URL:  url,
+					Tag:  managerTag,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())

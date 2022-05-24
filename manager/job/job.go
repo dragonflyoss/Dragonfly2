@@ -38,7 +38,7 @@ func New(cfg *config.Config) (*Job, error) {
 		return nil, err
 	}
 
-	p, err := newPreheat(j, cfg.Server.Name)
+	p, err := newPreheat(j)
 	if err != nil {
 		return nil, err
 	}
