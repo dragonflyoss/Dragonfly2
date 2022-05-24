@@ -464,6 +464,7 @@ type SecurityOption struct {
 	CACert    string      `mapstructure:"caCert" yaml:"caCert"`
 	Cert      string      `mapstructure:"cert" yaml:"cert"`
 	Key       string      `mapstructure:"key" yaml:"key"`
+	TLSVerify bool        `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	TLSConfig *tls.Config `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
 
