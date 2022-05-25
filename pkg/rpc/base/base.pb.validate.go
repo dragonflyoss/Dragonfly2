@@ -127,7 +127,7 @@ func (m *UrlMeta) Validate() error {
 		if !_UrlMeta_Range_Pattern.MatchString(m.GetRange()) {
 			return UrlMetaValidationError{
 				field:  "Range",
-				reason: "value does not match regex pattern \"^[0-9]+-[0-9]+$\"",
+				reason: "value does not match regex pattern \"^[0-9]+-[0-9]*$\"",
 			}
 		}
 
@@ -196,7 +196,7 @@ var _ interface {
 
 var _UrlMeta_Digest_Pattern = regexp.MustCompile("^(md5)|(sha256):[A-Fa-f0-9]+$")
 
-var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+-[0-9]+$")
+var _UrlMeta_Range_Pattern = regexp.MustCompile("^[0-9]+-[0-9]*$")
 
 // Validate checks the field values on HostLoad with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
