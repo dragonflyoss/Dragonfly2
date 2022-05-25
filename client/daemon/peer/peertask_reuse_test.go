@@ -19,6 +19,7 @@ package peer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -241,7 +242,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 							PeerTaskMetadata: storage.PeerTaskMetadata{
 								TaskID: taskID,
 							},
-							ContentLength: 100,
+							ContentLength: int64(len(testBytes)),
 							TotalPieces:   0,
 							PieceMd5Sign:  "",
 						}
@@ -249,7 +250,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				sm.EXPECT().ReadAllPieces(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
 						assert.Equal(taskID, req.TaskID)
-						return io.NopCloser(bytes.NewBuffer(testBytes[300:400])), nil
+						return io.NopCloser(bytes.NewBuffer(testBytes[req.Range.Start : req.Range.Start+req.Range.Length])), nil
 					})
 			},
 			verify: func(pg chan *FileTaskProgress, ok bool) {
@@ -257,6 +258,55 @@ func TestReuseFilePeerTask(t *testing.T) {
 				data, err := os.ReadFile(testOutput)
 				assert.Nil(err)
 				assert.Equal(testBytes[300:400], data)
+			},
+		},
+		{
+			name: "partial task found - out of range",
+			request: &FileTaskRequest{
+				PeerTaskRequest: scheduler.PeerTaskRequest{
+					PeerId: "",
+					Url:    "http://example.com/1",
+					UrlMeta: &base.UrlMeta{
+						Digest: "",
+						Tag:    "",
+						Range:  "",
+						Filter: "",
+						Header: nil,
+					},
+				},
+				Output: testOutput,
+				Range:  &clientutil.Range{Start: 300, Length: 100000},
+			},
+			enablePrefetch: true,
+			storageManager: func(sm *ms.MockManager) {
+				var taskID string
+				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
+					func(id string) *storage.ReusePeerTask {
+						return nil
+					})
+				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+						taskID = id
+						return &storage.ReusePeerTask{
+							PeerTaskMetadata: storage.PeerTaskMetadata{
+								TaskID: taskID,
+							},
+							ContentLength: int64(len(testBytes)),
+							TotalPieces:   0,
+							PieceMd5Sign:  "",
+						}
+					})
+				sm.EXPECT().ReadAllPieces(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
+						assert.Equal(taskID, req.TaskID)
+						return io.NopCloser(bytes.NewBuffer(testBytes[req.Range.Start : req.Range.Start+req.Range.Length])), nil
+					})
+			},
+			verify: func(pg chan *FileTaskProgress, ok bool) {
+				assert.True(ok)
+				data, err := os.ReadFile(testOutput)
+				assert.Nil(err)
+				assert.Equal(testBytes[300:], data)
 			},
 		},
 	}
@@ -279,6 +329,9 @@ func TestReuseFilePeerTask(t *testing.T) {
 func TestReuseStreamPeerTask(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	assert := testifyassert.New(t)
+
+	testBytes, err := os.ReadFile(test.File)
+	assert.Nil(err)
 
 	var testCases = []struct {
 		name           string
@@ -337,6 +390,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				assert.Equal("10", attr[headers.ContentLength])
 				_, exist := attr[headers.ContentRange]
 				assert.False(exist)
+				rc.Close()
 			},
 		},
 		{
@@ -423,6 +477,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				assert.NotNil(rc)
 				assert.Equal("10", attr[headers.ContentLength])
 				assert.Equal("bytes 0-9/*", attr[headers.ContentRange])
+				rc.Close()
 			},
 		},
 		{
@@ -509,6 +564,127 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				assert.NotNil(rc)
 				assert.Equal("10", attr[headers.ContentLength])
 				assert.Equal("bytes 0-9/100", attr[headers.ContentRange])
+				rc.Close()
+			},
+		},
+		{
+			name: "partial task found - 2",
+			request: &StreamTaskRequest{
+				URL: "http://example.com/1",
+				URLMeta: &base.UrlMeta{
+					Digest: "",
+					Tag:    "",
+					Range:  "",
+					Filter: "",
+					Header: nil,
+				},
+				Range:  &clientutil.Range{Start: 0, Length: 100},
+				PeerID: "",
+			},
+			enablePrefetch: true,
+			storageManager: func(sm *ms.MockManager) {
+				var taskID string
+				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
+					func(id string) *storage.ReusePeerTask {
+						return nil
+					})
+				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+						taskID = id
+						return &storage.ReusePeerTask{
+							PeerTaskMetadata: storage.PeerTaskMetadata{
+								TaskID: taskID,
+							},
+							ContentLength: int64(len(testBytes)),
+							TotalPieces:   0,
+							PieceMd5Sign:  "",
+						}
+					})
+				sm.EXPECT().ReadAllPieces(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
+						assert.Equal(taskID, req.TaskID)
+						return io.NopCloser(bytes.NewBuffer(testBytes[req.Range.Start : req.Range.Start+req.Range.Length])), nil
+					})
+				sm.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
+						}, nil
+					})
+			},
+			verify: func(rc io.ReadCloser, attr map[string]string, ok bool) {
+				assert.True(ok)
+				assert.NotNil(rc)
+				data, err := io.ReadAll(rc)
+				assert.Nil(err)
+				assert.Equal(testBytes[0:100], data)
+				assert.Equal("test", attr["Test"])
+				assert.Equal("100", attr[headers.ContentLength])
+				assert.Equal(fmt.Sprintf("bytes 0-99/%d", len(testBytes)), attr[headers.ContentRange])
+				rc.Close()
+			},
+		},
+		{
+			name: "partial task found - out of range",
+			request: &StreamTaskRequest{
+				URL: "http://example.com/1",
+				URLMeta: &base.UrlMeta{
+					Digest: "",
+					Tag:    "",
+					Range:  "",
+					Filter: "",
+					Header: nil,
+				},
+				Range:  &clientutil.Range{Start: 100, Length: 100000},
+				PeerID: "",
+			},
+			enablePrefetch: true,
+			storageManager: func(sm *ms.MockManager) {
+				var taskID string
+				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
+					func(id string) *storage.ReusePeerTask {
+						return nil
+					})
+				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+						taskID = id
+						return &storage.ReusePeerTask{
+							PeerTaskMetadata: storage.PeerTaskMetadata{
+								TaskID: taskID,
+							},
+							ContentLength: int64(len(testBytes)),
+							TotalPieces:   0,
+							PieceMd5Sign:  "",
+						}
+					})
+				sm.EXPECT().ReadAllPieces(gomock.Any(), gomock.Any()).DoAndReturn(
+					func(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
+						assert.Equal(taskID, req.TaskID)
+						return io.NopCloser(bytes.NewBuffer(testBytes[req.Range.Start : req.Range.Start+req.Range.Length])), nil
+					})
+				sm.EXPECT().GetExtendAttribute(gomock.Any(),
+					gomock.Any()).AnyTimes().DoAndReturn(
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
+						return &base.ExtendAttribute{
+							Header: map[string]string{
+								"Test": "test",
+							},
+						}, nil
+					})
+			},
+			verify: func(rc io.ReadCloser, attr map[string]string, ok bool) {
+				assert.True(ok)
+				assert.NotNil(rc)
+				data, err := io.ReadAll(rc)
+				assert.Nil(err)
+				assert.Equal(testBytes[100:], data)
+				assert.Equal("test", attr["Test"])
+				assert.Equal(fmt.Sprintf("%d", len(testBytes)-100), attr[headers.ContentLength])
+				assert.Equal(fmt.Sprintf("bytes 100-%d/%d", len(testBytes)-1, len(testBytes)), attr[headers.ContentRange])
+				rc.Close()
 			},
 		},
 	}
