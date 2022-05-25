@@ -354,6 +354,7 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 		Context: ctx,
 		Span:    span,
 		TaskID:  taskID,
+		PeerID:  reuse.PeerID,
 		SubscribeResponse: SubscribeResponse{
 			Storage:          reuse.Storage,
 			PieceInfoChannel: nil,
