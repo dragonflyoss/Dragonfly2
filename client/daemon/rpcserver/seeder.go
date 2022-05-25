@@ -59,7 +59,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		PeerTaskRequest: scheduler.PeerTaskRequest{
 			Url:         seedRequest.Url,
 			UrlMeta:     seedRequest.UrlMeta,
-			PeerId:      idgen.SeedPeerID(s.server.peerHost.Ip),
+			PeerId:      idgen.SeedPeerID(s.server.peerHost.Ip), // when reuse peer task, peer id will be replaced.
 			PeerHost:    s.server.peerHost,
 			HostLoad:    nil,
 			IsMigrating: false,
@@ -106,7 +106,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 
 	err = seedsServer.Send(
 		&cdnsystem.PieceSeed{
-			PeerId: req.PeerId,
+			PeerId: resp.PeerID,
 			HostId: req.PeerHost.Id,
 			PieceInfo: &base.PieceInfo{
 				PieceNum: common.BeginOfPiece,
