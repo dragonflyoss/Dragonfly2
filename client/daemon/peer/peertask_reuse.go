@@ -84,6 +84,14 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 			"component", "reuseRangeFilePeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.UrlMeta.Range)
+
+		// correct range like: bytes=1024-
+		if reuseRange.Start+reuseRange.Length > reuse.ContentLength {
+			reuseRange.Length = reuse.ContentLength - reuseRange.Start
+			if reuseRange.Length < 0 {
+				return nil, false
+			}
+		}
 		length = reuseRange.Length
 	}
 
@@ -216,6 +224,14 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 		log = logger.With("peer", request.PeerID, "task", taskID, "component", "reuseRangeStreamPeerTask")
 		log.Infof("reuse partial data from peer task: %s, total size: %d, range: %s",
 			reuse.PeerID, reuse.ContentLength, request.URLMeta.Range)
+
+		// correct range like: bytes=1024-
+		if reuseRange.Start+reuseRange.Length > reuse.ContentLength {
+			reuseRange.Length = reuse.ContentLength - reuseRange.Start
+			if reuseRange.Length < 0 {
+				return nil, nil, false
+			}
+		}
 		length = reuseRange.Length
 	}
 
