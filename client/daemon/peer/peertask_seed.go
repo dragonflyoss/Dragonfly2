@@ -41,6 +41,7 @@ type SeedTaskResponse struct {
 	Context context.Context
 	Span    trace.Span
 	TaskID  string
+	PeerID  string
 }
 
 // SeedTask represents a seed peer task
@@ -74,6 +75,7 @@ func (ptm *peerTaskManager) newSeedTask(
 		Context: ctx,
 		Span:    span,
 		TaskID:  taskID,
+		PeerID:  ptc.GetPeerID(),
 		SubscribeResponse: SubscribeResponse{
 			Storage:          ptc.storage,
 			PieceInfoChannel: ptc.broker.Subscribe(),
