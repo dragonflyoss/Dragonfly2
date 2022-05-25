@@ -92,7 +92,7 @@ message UrlMeta{
   // url tag identifies different task for same url, conflict with digest
   string tag = 2;
   // content range for url
-  string range = 3 [(validate.rules).string = {pattern: "^[0-9]+-[0-9]+$", ignore_empty:true}];
+  string range = 3 [(validate.rules).string = {pattern: "^[0-9]+-[0-9]*$", ignore_empty:true}];
   // filter url used to generate task id
   string filter = 4;
   // other url header infos
