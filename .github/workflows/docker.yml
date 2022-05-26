@@ -6,6 +6,8 @@ on:
       - main
     tags:
       - v*
+  pull_request:
+    branches: [main, release-*]
 
 jobs:
   push_image_to_registry:
