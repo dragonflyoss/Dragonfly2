@@ -77,13 +77,12 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 		AllowNativePasswords: true,
 		ParseTime:            true,
 		InterpolateParams:    true,
-		Params:               map[string]string{"tls": "preferred"},
 	}
 
 	// Support TLS connection
-	if cfg.TLS != nil {
+	if cfg.TLSConfig != nil {
 		mysqlCfg.TLSConfig = "custom"
-		tls, err := cfg.TLS.Client()
+		tls, err := cfg.TLSConfig.Client()
 		if err != nil {
 			return "", err
 		}
@@ -91,7 +90,9 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 		if err := mysql.RegisterTLSConfig("custom", tls); err != nil {
 			return "", err
 		}
-	}
+	} else if cfg.TLS != "" { // If no custom config is specified, use tls parameter if it is set
+        mysqlCfg.Params = map[string]string{"tls": cfg.TLS}
+    }
 
 	return mysqlCfg.FormatDSN(), nil
 }

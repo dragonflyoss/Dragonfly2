@@ -51,7 +51,8 @@ func TestManagerConfig_Load(t *testing.T) {
 				Host:     "foo",
 				Port:     3306,
 				DBName:   "foo",
-				TLS: &TLSConfig{
+                TLS: "preferred",
+				TLSConfig: &TLSConfig{
 					Cert:               "foo",
 					Key:                "foo",
 					CA:                 "foo",
