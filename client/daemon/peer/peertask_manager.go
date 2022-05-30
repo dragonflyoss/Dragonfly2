@@ -344,7 +344,7 @@ func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequ
 	response, ok := ptm.tryReuseSeedPeerTask(ctx, req)
 	if ok {
 		metrics.PeerTaskCacheHitCount.Add(1)
-		return response, false, nil
+		return response, true, nil
 	}
 
 	var limit = rate.Inf
@@ -360,7 +360,7 @@ func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequ
 		return nil, false, err
 	}
 
-	return response, true, nil
+	return response, false, nil
 }
 
 type SubscribeResponse struct {
