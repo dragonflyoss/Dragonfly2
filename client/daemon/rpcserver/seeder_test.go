@@ -256,7 +256,7 @@ func Test_ObtainSeeds(t *testing.T) {
 					})
 				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().StartSeedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(ctx context.Context, req *peer.SeedTaskRequest) (*peer.SeedTaskResponse, error) {
+					func(ctx context.Context, req *peer.SeedTaskRequest) (*peer.SeedTaskResponse, bool, error) {
 						ch := make(chan *peer.PieceInfo)
 						success := make(chan struct{})
 						fail := make(chan struct{})
@@ -309,7 +309,7 @@ func Test_ObtainSeeds(t *testing.T) {
 							Context: ctx,
 							Span:    span,
 							TaskID:  "fake-task-id",
-						}, nil
+						}, false, nil
 					})
 
 				s := &server{

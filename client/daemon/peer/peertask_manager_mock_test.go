@@ -99,12 +99,13 @@ func (mr *MockTaskManagerMockRecorder) StartFileTask(ctx, req interface{}) *gomo
 }
 
 // StartSeedTask mocks base method.
-func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (*SeedTaskResponse, error) {
+func (m *MockTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (*SeedTaskResponse, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StartSeedTask", ctx, req)
 	ret0, _ := ret[0].(*SeedTaskResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // StartSeedTask indicates an expected call of StartSeedTask.
