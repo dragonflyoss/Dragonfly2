@@ -545,7 +545,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 	clusterID := uint(req.ClusterId)
 	logger.Infof("%s keepalive successfully for the first time in cluster %d", hostName, clusterID)
 
-	// Active scheduler.
+	// Initialize active scheduler.
 	if sourceType == manager.SourceType_SCHEDULER_SOURCE {
 		scheduler := model.Scheduler{}
 		if err := s.db.First(&scheduler, model.Scheduler{
@@ -565,7 +565,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 		}
 	}
 
-	// Active seed peer.
+	// Initialize active seed peer.
 	if sourceType == manager.SourceType_SEED_PEER_SOURCE {
 		seedPeer := model.SeedPeer{}
 		if err := s.db.First(&seedPeer, model.SeedPeer{
