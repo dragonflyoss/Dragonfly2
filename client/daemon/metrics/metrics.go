@@ -120,28 +120,28 @@ var (
 
 	SeedPeerDownloadCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.CDNMetricsName,
+		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "seed_peer_download_total",
 		Help:      "Counter of the number of the seed peer downloading.",
 	})
 
 	SeedPeerDownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.CDNMetricsName,
+		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "seed_peer_download_failure_total",
 		Help:      "Counter of the number of failed of the seed peer downloading.",
 	})
 
 	SeedPeerDownloadTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.CDNMetricsName,
+		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "seed_peer_download_traffic",
 		Help:      "Counter of the number of seed peer download traffic.",
 	}, []string{"type"})
 
 	SeedPeerConcurrentDownloadGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.CDNMetricsName,
+		Subsystem: constants.DfdaemonMetricsName,
 		Name:      "seed_peer_concurrent_download_total",
 		Help:      "Gauger of the number of concurrent of the seed peer downloading.",
 	})
