@@ -702,7 +702,7 @@ func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *test
 }
 
 func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
-	r, err := mm.peerTaskManager.StartSeedTask(
+	r, _, err := mm.peerTaskManager.StartSeedTask(
 		context.Background(),
 		&SeedTaskRequest{
 			PeerTaskRequest: scheduler.PeerTaskRequest{

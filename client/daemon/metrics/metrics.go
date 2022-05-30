@@ -27,8 +27,17 @@ import (
 )
 
 const (
-	FailTypeP2P        = "p2p"
+	// Failed download task type is P2P
+	FailTypeP2P = "p2p"
+
+	// Failed download task type is source
 	FailTypeBackSource = "source"
+
+	// SeedPeerDownload type is p2p
+	SeedPeerDownloadTypeP2P = "p2p"
+
+	// SeedPeerDownload type is back-to-source
+	SeedPeerDownloadTypeBackToSource = "back_to_source"
 )
 
 var (
@@ -109,11 +118,32 @@ var (
 		Help:      "Counter of the total stream tasks.",
 	})
 
-	SeedTaskCount = promauto.NewCounter(prometheus.CounterOpts{
+	SeedPeerDownloadCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
-		Subsystem: constants.DfdaemonMetricsName,
-		Name:      "seed_task_total",
-		Help:      "Counter of the total seed tasks.",
+		Subsystem: constants.CDNMetricsName,
+		Name:      "seed_peer_download_total",
+		Help:      "Counter of the number of the seed peer downloading.",
+	})
+
+	SeedPeerDownloadFailureCount = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
+		Name:      "seed_peer_download_failure_total",
+		Help:      "Counter of the number of failed of the seed peer downloading.",
+	})
+
+	SeedPeerDownloadTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
+		Name:      "seed_peer_download_traffic",
+		Help:      "Counter of the number of seed peer download traffic.",
+	}, []string{"type"})
+
+	SeedPeerConcurrentDownloadGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.CDNMetricsName,
+		Name:      "seed_peer_concurrent_download_total",
+		Help:      "Gauger of the number of concurrent of the seed peer downloading.",
 	})
 
 	PeerTaskCacheHitCount = promauto.NewCounter(prometheus.CounterOpts{

@@ -27,6 +27,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -50,6 +51,10 @@ func (s *seeder) SyncPieceTasks(tasksServer cdnsystem.Seeder_SyncPieceTasksServe
 }
 
 func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdnsystem.Seeder_ObtainSeedsServer) error {
+	metrics.SeedPeerConcurrentDownloadGauge.Inc()
+	defer metrics.SeedPeerConcurrentDownloadGauge.Dec()
+	metrics.SeedPeerDownloadCount.Add(1)
+
 	s.server.Keep()
 	if seedRequest.UrlMeta == nil {
 		seedRequest.UrlMeta = &base.UrlMeta{}
@@ -74,6 +79,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 	if len(req.UrlMeta.Range) > 0 {
 		r, err := rangeutils.ParseRange(req.UrlMeta.Range, math.MaxInt)
 		if err != nil {
+			metrics.SeedPeerDownloadFailureCount.Add(1)
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			log.Errorf(err.Error())
 			return err
@@ -84,19 +90,22 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		}
 	}
 
-	resp, err := s.server.peerTaskManager.StartSeedTask(seedsServer.Context(), &req)
+	resp, reuse, err := s.server.peerTaskManager.StartSeedTask(seedsServer.Context(), &req)
 	if err != nil {
+		metrics.SeedPeerDownloadFailureCount.Add(1)
 		log.Errorf("start seed task error: %s", err.Error())
 		return err
 	}
 
 	if resp.SubscribeResponse.Storage == nil {
+		metrics.SeedPeerDownloadFailureCount.Add(1)
 		err = fmt.Errorf("invalid SubscribeResponse.Storage")
 		log.Errorf("%s", err.Error())
 		return err
 	}
 
 	if resp.SubscribeResponse.Success == nil && resp.SubscribeResponse.Fail == nil {
+		metrics.SeedPeerDownloadFailureCount.Add(1)
 		err = fmt.Errorf("both of SubscribeResponse.Success and SubscribeResponse.Fail is nil")
 		log.Errorf("%s", err.Error())
 		return err
@@ -114,6 +123,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 			Done: false,
 		})
 	if err != nil {
+		metrics.SeedPeerDownloadFailureCount.Add(1)
 		resp.Span.RecordError(err)
 		log.Errorf("send piece seed error: %s", err.Error())
 		return err
@@ -128,7 +138,12 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 	}
 	defer resp.Span.End()
 
-	return sync.sendPieceSeeds()
+	if err := sync.sendPieceSeeds(reuse); err != nil {
+		metrics.SeedPeerDownloadFailureCount.Add(1)
+		return err
+	}
+
+	return nil
 }
 
 type seedSynchronizer struct {
@@ -140,7 +155,7 @@ type seedSynchronizer struct {
 	attributeSent   bool
 }
 
-func (s *seedSynchronizer) sendPieceSeeds() (err error) {
+func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 	var (
 		ctx     = s.Context
 		desired int32
@@ -155,7 +170,7 @@ func (s *seedSynchronizer) sendPieceSeeds() (err error) {
 			return err
 		case <-s.Success:
 			s.Infof("seed task success, send reminding piece seeds")
-			err = s.sendRemindingPieceSeeds(desired)
+			err = s.sendRemindingPieceSeeds(desired, reuse)
 			if err != nil {
 				s.Span.RecordError(err)
 				s.Span.SetAttributes(config.AttributeSeedTaskSuccess.Bool(false))
@@ -170,7 +185,7 @@ func (s *seedSynchronizer) sendPieceSeeds() (err error) {
 			return status.Errorf(codes.Internal, "seed task failed")
 		case p := <-s.PieceInfoChannel:
 			s.Infof("receive piece info, num: %d, ordered num: %d, finish: %v", p.Num, p.OrderedNum, p.Finished)
-			desired, err = s.sendOrderedPieceSeeds(desired, p.OrderedNum, p.Finished)
+			desired, err = s.sendOrderedPieceSeeds(desired, p.OrderedNum, p.Finished, reuse)
 			if err != nil {
 				s.Span.RecordError(err)
 				s.Span.SetAttributes(config.AttributeSeedTaskSuccess.Bool(false))
@@ -185,7 +200,7 @@ func (s *seedSynchronizer) sendPieceSeeds() (err error) {
 	}
 }
 
-func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
+func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) error {
 	for {
 		pp, err := s.Storage.GetPieces(s.Context,
 			&base.PieceTaskRequest{
@@ -209,7 +224,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
 
 		// we must send done to scheduler
 		if len(pp.PieceInfos) == 0 {
-			ps := s.compositePieceSeed(pp, nil)
+			ps := s.compositePieceSeed(pp, nil, reuse)
 			ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 			s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
 			err = s.seedsServer.Send(&ps)
@@ -224,7 +239,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
 				s.Errorf("desired piece %d, not found", desired)
 				return status.Errorf(codes.Internal, "seed task piece %d not found", desired)
 			}
-			ps := s.compositePieceSeed(pp, p)
+			ps := s.compositePieceSeed(pp, p, reuse)
 			if p.PieceNum == pp.TotalPiece-1 {
 				ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 				s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
@@ -246,7 +261,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32) error {
 	}
 }
 
-func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, finished bool) (int32, error) {
+func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, finished bool, reuse bool) (int32, error) {
 	cur := desired
 	for ; cur <= orderedNum; cur++ {
 		pp, err := s.Storage.GetPieces(s.Context,
@@ -273,7 +288,7 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 			s.attributeSent = true
 		}
 
-		ps := s.compositePieceSeed(pp, pp.PieceInfos[0])
+		ps := s.compositePieceSeed(pp, pp.PieceInfos[0], reuse)
 		if cur == orderedNum && finished {
 			ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 			s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
@@ -289,7 +304,13 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 	return cur, nil
 }
 
-func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
+func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo, reuse bool) cdnsystem.PieceSeed {
+	seedPeerDownloadType := metrics.SeedPeerDownloadTypeBackToSource
+	if reuse {
+		seedPeerDownloadType = metrics.SeedPeerDownloadTypeP2P
+	}
+	metrics.SeedPeerDownloadTraffic.WithLabelValues(seedPeerDownloadType).Add(float64(pp.ContentLength))
+
 	return cdnsystem.PieceSeed{
 		PeerId:          s.seedTaskRequest.PeerId,
 		HostId:          s.seedTaskRequest.PeerHost.Id,
