@@ -52,7 +52,7 @@ type TaskManager interface {
 		readCloser io.ReadCloser, attribute map[string]string, err error)
 	// StartSeedTask starts a seed peer task
 	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
-		seedTaskResult *SeedTaskResponse, err error)
+		seedTaskResult *SeedTaskResponse, reuse bool, err error)
 
 	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
 
@@ -340,11 +340,11 @@ func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTask
 	return readCloser, attribute, err
 }
 
-func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (response *SeedTaskResponse, err error) {
+func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequest) (response *SeedTaskResponse, reuse bool, err error) {
 	response, ok := ptm.tryReuseSeedPeerTask(ctx, req)
 	if ok {
 		metrics.PeerTaskCacheHitCount.Add(1)
-		return response, nil
+		return response, false, nil
 	}
 
 	var limit = rate.Inf
@@ -355,7 +355,12 @@ func (ptm *peerTaskManager) StartSeedTask(ctx context.Context, req *SeedTaskRequ
 		limit = rate.Limit(req.Limit)
 	}
 
-	return ptm.newSeedTask(ctx, req, limit)
+	response, err = ptm.newSeedTask(ctx, req, limit)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return response, true, nil
 }
 
 type SubscribeResponse struct {

@@ -24,7 +24,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -62,7 +61,6 @@ func (ptm *peerTaskManager) newSeedTask(
 	ctx context.Context,
 	request *SeedTaskRequest,
 	limit rate.Limit) (*SeedTaskResponse, error) {
-	metrics.SeedTaskCount.Add(1)
 
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	ptc, err := ptm.getPeerTaskConductor(ctx, taskID, &request.PeerTaskRequest, limit, nil, request.Range, "", true)
