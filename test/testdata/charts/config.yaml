@@ -1,7 +1,7 @@
 scheduler:
   image: d7yio/scheduler
   tag: latest
-  replicas: 2
+  replicas: 3
   resources:
     requests:
       cpu: "0"
@@ -26,7 +26,7 @@ scheduler:
 seedPeer:
   image: d7yio/dfdaemon
   tag: latest
-  replicas: 1
+  replicas: 3
   resources:
     requests:
       cpu: "0"
