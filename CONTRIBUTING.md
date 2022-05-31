@@ -308,7 +308,7 @@ willing to participate in Dragonfly community continuously and be active.
 
 - Have read the [Contributing to Dragonfly](CONTRIBUTING.md) carefully.
 - Have read the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
-- Ability to maintain one or more modules of `scheduler`, `cdn`, `client` and `manager`.
+- Ability to maintain one or more modules of `scheduler`, `dfdaemon` and `manager`.
 - Have submitted multi PRs to the community.
 - Be active in the community, may including but not limited:
   - Submitting or commenting on issues.
