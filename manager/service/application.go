@@ -46,7 +46,7 @@ func (s *service) DestroyApplication(ctx context.Context, id uint) error {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Application{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&model.Application{}, id).Error; err != nil {
 		return err
 	}
 
