@@ -25,4 +25,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          filesizelimit: "1MB"
+          filesizelimit: "524288"
+          exclusionPatterns: |
+            **/*.png
