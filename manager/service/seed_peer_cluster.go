@@ -61,7 +61,7 @@ func (s *service) DestroySeedPeerCluster(ctx context.Context, id uint) error {
 		return errors.New("seedPeer cluster exists seedPeer")
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SeedPeerCluster{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&model.SeedPeerCluster{}, id).Error; err != nil {
 		return err
 	}
 

@@ -4165,6 +4165,9 @@ const docTemplate = `{
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
+                "security_group_id": {
+                    "type": "integer"
+                },
                 "seed_peer_cluster_id": {
                     "type": "integer"
                 }
@@ -4597,6 +4600,9 @@ const docTemplate = `{
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
+                },
+                "security_group_id": {
+                    "type": "integer"
                 },
                 "seed_peer_cluster_id": {
                     "type": "integer"

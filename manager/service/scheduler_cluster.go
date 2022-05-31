@@ -60,6 +60,12 @@ func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateS
 		}
 	}
 
+	if json.SecurityGroupID > 0 {
+		if err := s.AddSchedulerClusterToSecurityGroup(ctx, json.SecurityGroupID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return &schedulerCluster, nil
 }
 
@@ -73,7 +79,7 @@ func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 		return errors.New("scheduler cluster exists scheduler")
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.SchedulerCluster{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&model.SchedulerCluster{}, id).Error; err != nil {
 		return err
 	}
 
@@ -114,12 +120,18 @@ func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json type
 		}
 	}
 
+	if json.SecurityGroupID > 0 {
+		if err := s.AddSchedulerClusterToSecurityGroup(ctx, json.SecurityGroupID, schedulerCluster.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return &schedulerCluster, nil
 }
 
 func (s *service) GetSchedulerCluster(ctx context.Context, id uint) (*model.SchedulerCluster, error) {
 	schedulerCluster := model.SchedulerCluster{}
-	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").First(&schedulerCluster, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SecurityGroup").First(&schedulerCluster, id).Error; err != nil {
 		return nil, err
 	}
 
@@ -131,7 +143,7 @@ func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetScheduler
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
-	}).Preload("SeedPeerClusters").Find(&schedulerClusters).Count(&count).Error; err != nil {
+	}).Preload("SeedPeerClusters").Preload("SecurityGroup").Find(&schedulerClusters).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
