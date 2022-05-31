@@ -18,9 +18,9 @@ package constants
 
 const (
 	// download pattern
-	SourcePattern = "source"
-	CDNPattern    = "cdn"
-	P2PPattern    = "p2p"
+	SourcePattern   = "source"
+	SeedPeerPattern = "seed-peer"
+	P2PPattern      = "p2p"
 )
 
 const (

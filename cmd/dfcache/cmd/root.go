@@ -44,7 +44,7 @@ dfcache is the cache client to of dragonfly that communicates with dfdaemon and 
 on files in P2P network, where the P2P network acts as a cache system.
 
 The difference between dfcache and dfget is that, dfget downloads file from a given URL,
-the file might be on other peers in P2P network or a CDN peer, it's the P2P network's
+the file might be on other peers in P2P network or a seed peer, it's the P2P network's
 responsibility to download file from source; but dfcache could only export or download a
 file that has been imported or added into P2P network by other peer, it's the user's
 responsibility to go back to source and add file into P2P network.

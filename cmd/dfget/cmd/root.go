@@ -157,7 +157,7 @@ func init() {
 	flagSet.Bool("disable-back-source", dfgetConfig.DisableBackSource,
 		"Disable downloading directly from source when the daemon fails to download file")
 
-	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/cdn/source")
+	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/seed-peer/source")
 
 	flagSet.BoolP("show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
 

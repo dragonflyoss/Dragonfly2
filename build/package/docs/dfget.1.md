@@ -102,7 +102,7 @@ Options
 
 -p, --pattern
 
-:   download pattern, must be p2p/cdn/source, cdn and source do not support flag --totallimit (default "p2p")
+:   download pattern, must be p2p/seed-peer/source, seed-peer and source do not support flag --totallimit (default "p2p")
 
 --port
 

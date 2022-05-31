@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 	Use:   "manager",
 	Short: "The central manager of dragonfly.",
 	Long: `manager is a long-running process and is mainly responsible 
-for managing schedulers and cdns, offering http apis and portal, etc.`,
+for managing schedulers and seed peers, offering http apis and portal, etc.`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
