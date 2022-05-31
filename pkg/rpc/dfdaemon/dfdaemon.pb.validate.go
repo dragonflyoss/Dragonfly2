@@ -103,7 +103,7 @@ func (m *DownRequest) Validate() error {
 		if _, ok := _DownRequest_Pattern_InLookup[m.GetPattern()]; !ok {
 			return DownRequestValidationError{
 				field:  "Pattern",
-				reason: "value must be in list [p2p cdn source]",
+				reason: "value must be in list [p2p seed-peer source]",
 			}
 		}
 
@@ -183,9 +183,9 @@ var _ interface {
 } = DownRequestValidationError{}
 
 var _DownRequest_Pattern_InLookup = map[string]struct{}{
-	"p2p":    {},
-	"cdn":    {},
-	"source": {},
+	"p2p":       {},
+	"seed-peer": {},
+	"source":    {},
 }
 
 // Validate checks the field values on DownResult with the rules defined in the

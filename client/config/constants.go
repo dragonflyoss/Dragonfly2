@@ -40,9 +40,9 @@ const (
 
 /* download pattern */
 const (
-	PatternP2P    = "p2p"
-	PatternCDN    = "cdn"
-	PatternSource = "source"
+	PatternP2P      = "p2p"
+	PatternSeedPeer = "seed-peer"
+	PatternSource   = "source"
 )
 
 const (
