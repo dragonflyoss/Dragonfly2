@@ -33,6 +33,7 @@ type CreateSchedulerClusterRequest struct {
 	Scopes            *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
 	IsDefault         bool                          `json:"is_default" binding:"omitempty"`
 	SeedPeerClusterID uint                          `json:"seed_peer_cluster_id" binding:"omitempty"`
+	SecurityGroupID   uint                          `json:"security_group_id" binding:"omitempty"`
 }
 
 type UpdateSchedulerClusterRequest struct {
@@ -43,6 +44,7 @@ type UpdateSchedulerClusterRequest struct {
 	Scopes            *SchedulerClusterScopes       `json:"scopes" binding:"omitempty"`
 	IsDefault         bool                          `json:"is_default" binding:"omitempty"`
 	SeedPeerClusterID uint                          `json:"seed_peer_cluster_id" binding:"omitempty"`
+	SecurityGroupID   uint                          `json:"security_group_id" binding:"omitempty"`
 }
 
 type GetSchedulerClustersQuery struct {
