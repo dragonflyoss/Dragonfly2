@@ -14,23 +14,6 @@ env:
   GO_VERSION: 1.17
 
 jobs:
-  check:
-    name: Check
-    timeout-minutes: 10
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-
-      - name: Check large files
-        uses: actionsdesk/lfs-warning@v3.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          filesizelimit: "1mb"
-
   test:
     name: Test
     timeout-minutes: 30
