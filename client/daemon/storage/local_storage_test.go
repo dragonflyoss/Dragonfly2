@@ -22,6 +22,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"path"
@@ -34,6 +35,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/util/digestutils"
@@ -477,6 +479,64 @@ func Test_computePiecePosition(t *testing.T) {
 			})
 			assert.Equal(tc.start, start)
 			assert.Equal(tc.end, end)
+		})
+	}
+}
+
+func TestLocalTaskStore_partialCompleted(t *testing.T) {
+	var testCases = []struct {
+		name            string
+		ContentLength   int64
+		ReadyPieceCount int32
+		Range           clientutil.Range
+		Found           bool
+	}{
+		{
+			name:            "range bytes=x-y partial completed",
+			ContentLength:   1024,
+			ReadyPieceCount: 1,
+			Range: clientutil.Range{
+				Start:  1,
+				Length: 1023,
+			},
+			Found: true,
+		},
+		{
+			name:            "range bytes=x-y no partial completed",
+			ContentLength:   util.DefaultPieceSize * 10,
+			ReadyPieceCount: 1,
+			Range: clientutil.Range{
+				Start:  1,
+				Length: util.DefaultPieceSize * 2,
+			},
+			Found: false,
+		},
+		{
+			name:            "range bytes=x- no partial completed",
+			ContentLength:   util.DefaultPieceSizeLimit * 1,
+			ReadyPieceCount: 1,
+			Range: clientutil.Range{
+				Start:  1,
+				Length: math.MaxInt - 1,
+			},
+			Found: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert := testifyassert.New(t)
+			lts := &localTaskStore{
+				persistentMetadata: persistentMetadata{
+					ContentLength: tc.ContentLength,
+					Pieces:        map[int32]PieceMetadata{},
+				},
+			}
+			for i := int32(0); i < tc.ReadyPieceCount; i++ {
+				lts.Pieces[i] = PieceMetadata{}
+			}
+			ok := lts.partialCompleted(&tc.Range)
+			assert.Equal(tc.Found, ok)
 		})
 	}
 }
