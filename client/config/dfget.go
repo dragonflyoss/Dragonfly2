@@ -72,7 +72,7 @@ type ClientOption struct {
 	// CallSystem system name that executes dfget.
 	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
 
-	// Pattern download pattern, must be 'p2p' or 'cdn' or 'source',
+	// Pattern download pattern, must be 'p2p' or 'seed-peer' or 'source',
 	// default:`p2p`.
 	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
 
