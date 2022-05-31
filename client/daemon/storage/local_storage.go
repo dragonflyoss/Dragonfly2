@@ -575,7 +575,23 @@ func (t *localTaskStore) partialCompleted(rg *clientutil.Range) bool {
 	if t.ContentLength == -1 {
 		return false
 	}
-	start, end := computePiecePosition(t.ContentLength, rg, util.ComputePieceSize)
+
+	realRange := &clientutil.Range{
+		Start:  rg.Start,
+		Length: rg.Length,
+	}
+
+	// handle range like: bytes=1024-
+	if realRange.Start+realRange.Length > t.ContentLength {
+		realRange.Length = t.ContentLength - realRange.Start
+	}
+
+	start, end := computePiecePosition(t.ContentLength, realRange, util.ComputePieceSize)
+	// fix int overflow
+	if start < 0 || end < 0 {
+		t.Warnf("wrong start and end piece num, %d, %d", start, end)
+		return false
+	}
 	for i := start; i <= end; i++ {
 		if _, ok := t.Pieces[i]; !ok {
 			return false
