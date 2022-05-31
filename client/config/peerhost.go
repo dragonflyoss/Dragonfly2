@@ -129,9 +129,9 @@ func (p *DaemonOption) Validate() error {
 		return errors.New("empty schedulers and config server is not specified")
 	}
 	switch p.Download.DefaultPattern {
-	case PatternP2P, PatternCDN, PatternSource:
+	case PatternP2P, PatternSeedPeer, PatternSource:
 	default:
-		return errors.New("available pattern: p2p, cdn, source")
+		return errors.New("available pattern: p2p, seed-peer, source")
 	}
 	return nil
 }
@@ -140,8 +140,8 @@ func ConvertPattern(p string, defaultPattern scheduler.Pattern) scheduler.Patter
 	switch p {
 	case PatternP2P:
 		return scheduler.Pattern_P2P
-	case PatternCDN:
-		return scheduler.Pattern_CDN
+	case PatternSeedPeer:
+		return scheduler.Pattern_SEED_PEER
 	case PatternSource:
 		return scheduler.Pattern_SOURCE
 	case "":
