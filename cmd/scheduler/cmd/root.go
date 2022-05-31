@@ -40,8 +40,8 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "the scheduler of dragonfly",
-	Long: `Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
-generate and maintain a P2P network during the download process, and push suitable download nodes to the client`,
+	Long: `Scheduler is a long-running process which receives and manages download tasks from the dfdaemon, notify the seed peer to return to the source, 
+generate and maintain a P2P network during the download process, and push suitable download nodes to the dfdaemon`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
