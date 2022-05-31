@@ -4158,6 +4158,9 @@
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
                 },
+                "security_group_id": {
+                    "type": "integer"
+                },
                 "seed_peer_cluster_id": {
                     "type": "integer"
                 }
@@ -4590,6 +4593,9 @@
                 },
                 "scopes": {
                     "$ref": "#/definitions/types.SchedulerClusterScopes"
+                },
+                "security_group_id": {
+                    "type": "integer"
                 },
                 "seed_peer_cluster_id": {
                     "type": "integer"
