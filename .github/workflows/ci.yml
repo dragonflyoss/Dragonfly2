@@ -46,7 +46,7 @@ jobs:
     name: Build
     timeout-minutes: 10
     runs-on: ubuntu-latest
-    needs: [test, check]
+    needs: [test]
     steps:
       - name: Set up Go
         uses: actions/setup-go@v2
