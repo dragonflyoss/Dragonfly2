@@ -49,11 +49,11 @@ git reset --hard ${COMMIT_ID}
 
 1. Attach Process
 
-    ```shell
-    pid=$(pidof scheduler) # or dfget, cdn, manager
-    dlv attach $pid
-    ```
+   ```shell
+   pid=$(pidof scheduler) # or dfget, manager
+   dlv attach $pid
+   ```
 
 2. Debug
 
-    Follow <https://github.com/go-delve/delve/tree/v1.7.0/Documentation/cli>
+   Follow <https://github.com/go-delve/delve/tree/v1.7.0/Documentation/cli>
