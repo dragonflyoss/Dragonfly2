@@ -270,6 +270,8 @@ func (pt *peerTaskConductor) register() error {
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
 		if pt.peerTaskManager.schedulerOption.DisableAutoBackSource {
+			// when peer register failed, some actions need to do with peerPacketStream
+			pt.peerPacketStream = &dummyPeerPacketStream{}
 			pt.Errorf("register peer task failed: %s, peer id: %s, auto back source disabled", err, pt.request.PeerId)
 			pt.span.RecordError(err)
 			pt.cancel(base.Code_SchedError, err.Error())
@@ -304,6 +306,8 @@ func (pt *peerTaskConductor) register() error {
 				}
 			} else {
 				err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
+				// when peer register failed, some actions need to do with peerPacketStream
+				pt.peerPacketStream = &dummyPeerPacketStream{}
 				pt.span.RecordError(err)
 				pt.Errorf("%s", err)
 				pt.cancel(base.Code_SchedError, err.Error())
@@ -315,6 +319,8 @@ func (pt *peerTaskConductor) register() error {
 	peerPacketStream, err := pt.schedulerClient.ReportPieceResult(pt.ctx, result.TaskId, pt.request)
 	pt.Infof("step 2: start report piece result")
 	if err != nil {
+		// when peer register failed, some actions need to do with peerPacketStream
+		pt.peerPacketStream = &dummyPeerPacketStream{}
 		pt.span.RecordError(err)
 		pt.cancel(base.Code_SchedError, err.Error())
 		return err
