@@ -103,8 +103,8 @@ manager:
       cpu: "0"
       memory: "0"
     limits:
-      cpu: "2"
-      memory: "4Gi"
+      cpu: "1"
+      memory: "2Gi"
   extraVolumeMounts:
   - name: logs
     mountPath: "/var/log/"
