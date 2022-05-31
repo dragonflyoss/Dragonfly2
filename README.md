@@ -48,7 +48,7 @@ It can be deployed using scheduler module.
 from source. It can be deployed using dfdaemon or cdn module and
 is recommended to provide quality networking and storage.
 
-**Peer:**: A peer server can download resources from other peers,
+**Peer:** A peer server can download resources from other peers,
 and can also share resources with other peers. It can be deployed using dfdaemon module.
 Dfdaemon provides a proxy to allow client traffic such as containerd/CRI-O to use the P2P network,
 and also provides dfget download command tool, which is similar to wget.
