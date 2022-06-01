@@ -279,6 +279,10 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		status = http.StatusOK
 	} else {
 		status = http.StatusPartialContent
+		if hdr.Get(headers.ContentRange) == "" && contentLength > 0 {
+			value := fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+contentLength-1, rg.Start+contentLength)
+			hdr.Set(headers.ContentRange, value)
+		}
 	}
 	resp := &http.Response{
 		StatusCode:    status,
