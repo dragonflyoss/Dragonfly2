@@ -22,17 +22,23 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var IPv4 string
 
+const internalIPv4 string = "127.0.0.1"
+
 func init() {
 	ip, err := externalIPv4()
 	if err != nil {
-		panic(err)
+		logger.Warnf("Failed to get IPv4 address: %s", err.Error())
+		logger.Infof("Use %s as IPv4 addr", internalIPv4)
+		IPv4 = internalIPv4
+	} else {
+		IPv4 = ip
 	}
-
-	IPv4 = ip
 }
 
 // IsIPv4 returns whether the ip is a valid IPv4 Address.
