@@ -126,7 +126,8 @@ var _ = BeforeSuite(func() {
 	fmt.Printf("feature gates: %q, flags: %q\n", featureGates.String(), featureGatesFlag)
 
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
-	if mode != "" {
+	imageName := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE")
+	if mode != "" && imageName != "" {
 		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
 			"-o", "jsonpath='{range .items[0]}{.spec.containers[0].image}{end}'").CombinedOutput()
 		image := strings.Trim(string(rawImages), "'")
@@ -134,7 +135,7 @@ var _ = BeforeSuite(func() {
 		fmt.Printf("special image name: %s\n", image)
 
 		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
-		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(image))
+		Expect(fmt.Sprintf("dragonflyoss/%s:%s", imageName, stableImageTag)).To(Equal(image))
 	}
 
 	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
