@@ -15,7 +15,7 @@
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
 DFCACHE_NAME := "dfcache"
-SEMVER := "2.0.1"
+SEMVER := "2.0.3"
 VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
