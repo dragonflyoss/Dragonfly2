@@ -12,7 +12,7 @@
 - update readme system features ([#1359](https://github.com/dragonflyoss/Dragonfly2/issues/1359))
 
 ### Feat
-- e2e seed peer ([#1358](https://github.com/dragonflyoss/Dragonfly2/issues/1358))
+- add seed peer e2e test ([#1358](https://github.com/dragonflyoss/Dragonfly2/issues/1358))
 - update console and helm-charts submodule ([#1355](https://github.com/dragonflyoss/Dragonfly2/issues/1355))
 - use uid/gid as UserID and UserGroup if current user not found in passwd ([#1352](https://github.com/dragonflyoss/Dragonfly2/issues/1352))
 - use 127.0.0.1 as IPv4 if there's no external IPv4 addr ([#1353](https://github.com/dragonflyoss/Dragonfly2/issues/1353))
