@@ -1,4 +1,4 @@
-% DFCACHE(1) Version v2.0.2 | Frivolous "Dfcache" Documentation
+% DFCACHE(1) Version v2.0.3 | Frivolous "Dfcache" Documentation
 
 ## dfcache stat
 
@@ -38,5 +38,4 @@ dfcache stat <-i cid> [flags]
 
 ### SEE ALSO
 
-* [dfcache](dfcache.md)	 - the P2P cache client of dragonfly
-
+- [dfcache](dfcache.md) - the P2P cache client of dragonfly

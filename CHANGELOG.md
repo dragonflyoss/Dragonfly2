@@ -2,6 +2,306 @@
 ## [Unreleased]
 
 ### Chore
+- update version to v2.0.3
+- update content range for partial content ([#1357](https://github.com/dragonflyoss/Dragonfly2/issues/1357))
+
+### Docs
+- update readme system features ([#1359](https://github.com/dragonflyoss/Dragonfly2/issues/1359))
+
+### Feat
+- e2e seed peer ([#1358](https://github.com/dragonflyoss/Dragonfly2/issues/1358))
+- update console and helm-charts submodule ([#1355](https://github.com/dragonflyoss/Dragonfly2/issues/1355))
+- use uid/gid as UserID and UserGroup if current user not found in passwd ([#1352](https://github.com/dragonflyoss/Dragonfly2/issues/1352))
+- use 127.0.0.1 as IPv4 if there's no external IPv4 addr ([#1353](https://github.com/dragonflyoss/Dragonfly2/issues/1353))
+
+
+<a name="v2.0.3-beta.9"></a>
+## [v2.0.3-beta.9] - 2022-06-01
+### Feat
+- update submodule
+
+
+<a name="v2.0.3-beta.8"></a>
+## [v2.0.3-beta.8] - 2022-05-31
+### Chore
+- add check size action ([#1350](https://github.com/dragonflyoss/Dragonfly2/issues/1350))
+
+### Docs
+- readme typo
+- readme add seed peer ([#1349](https://github.com/dragonflyoss/Dragonfly2/issues/1349))
+
+### Feat
+- add security group id with scheduler cluster ([#1354](https://github.com/dragonflyoss/Dragonfly2/issues/1354))
+- change pattern from cdn to seed peer and remove kustomize shell ([#1345](https://github.com/dragonflyoss/Dragonfly2/issues/1345))
+
+### Fix
+- register fail panic ([#1351](https://github.com/dragonflyoss/Dragonfly2/issues/1351))
+- find partial completed overflow ([#1346](https://github.com/dragonflyoss/Dragonfly2/issues/1346))
+
+
+<a name="v2.0.3-beta.7"></a>
+## [v2.0.3-beta.7] - 2022-05-31
+### Chore
+- check large files in pull request ([#1332](https://github.com/dragonflyoss/Dragonfly2/issues/1332))
+- add target peer id in sync piece trace ([#1278](https://github.com/dragonflyoss/Dragonfly2/issues/1278))
+- optimize create synchronizer logic ([#1269](https://github.com/dragonflyoss/Dragonfly2/issues/1269))
+- add sync pieces trace and update sync pieces logic for done task ([#1263](https://github.com/dragonflyoss/Dragonfly2/issues/1263))
+- add schedule cron with e2e testing ([#1262](https://github.com/dragonflyoss/Dragonfly2/issues/1262))
+- optimize sync pieces ([#1253](https://github.com/dragonflyoss/Dragonfly2/issues/1253))
+- update pull request template ([#1251](https://github.com/dragonflyoss/Dragonfly2/issues/1251))
+
+### Feat
+- update casbin/gorm-adapter version and change e2e charts config
+- update helm charts
+- update dependencies
+- add seed peer metrics ([#1342](https://github.com/dragonflyoss/Dragonfly2/issues/1342))
+- grpc health probe support arm64 ([#1338](https://github.com/dragonflyoss/Dragonfly2/issues/1338))
+- docker build with multi platforms ([#1337](https://github.com/dragonflyoss/Dragonfly2/issues/1337))
+- add sync piece watchdog ([#1272](https://github.com/dragonflyoss/Dragonfly2/issues/1272))
+- scheduler handles seed peer failed ([#1325](https://github.com/dragonflyoss/Dragonfly2/issues/1325))
+- custom preheat tag parameters ([#1324](https://github.com/dragonflyoss/Dragonfly2/issues/1324))
+- client add tls verify config ([#1323](https://github.com/dragonflyoss/Dragonfly2/issues/1323))
+- scheduler register interface return task type ([#1318](https://github.com/dragonflyoss/Dragonfly2/issues/1318))
+- get active peer count ([#1315](https://github.com/dragonflyoss/Dragonfly2/issues/1315))
+- reduce dynconfig log ([#1312](https://github.com/dragonflyoss/Dragonfly2/issues/1312))
+- back source when receive seed request ([#1309](https://github.com/dragonflyoss/Dragonfly2/issues/1309))
+- update helm charts submodule ([#1308](https://github.com/dragonflyoss/Dragonfly2/issues/1308))
+- add vsock network type support ([#1303](https://github.com/dragonflyoss/Dragonfly2/issues/1303))
+- support response header ([#1292](https://github.com/dragonflyoss/Dragonfly2/issues/1292))
+- add seed peer logic ([#1302](https://github.com/dragonflyoss/Dragonfly2/issues/1302))
+- support more digest like sha256 ([#1304](https://github.com/dragonflyoss/Dragonfly2/issues/1304))
+- implement pattern in client daemon ([#1231](https://github.com/dragonflyoss/Dragonfly2/issues/1231))
+- scheduler add seed peer ([#1298](https://github.com/dragonflyoss/Dragonfly2/issues/1298))
+- don't gc client rpc connection if ExpireTime is 0 ([#1296](https://github.com/dragonflyoss/Dragonfly2/issues/1296))
+- update scheduler PeerResult validation ([#1294](https://github.com/dragonflyoss/Dragonfly2/issues/1294))
+- manager add seed peer ([#1293](https://github.com/dragonflyoss/Dragonfly2/issues/1293))
+- implement client seed mode ([#1247](https://github.com/dragonflyoss/Dragonfly2/issues/1247))
+- scheduler peer result validation ([#1288](https://github.com/dragonflyoss/Dragonfly2/issues/1288))
+- use a golang native file server to replace nginx ([#1258](https://github.com/dragonflyoss/Dragonfly2/issues/1258))
+- support build arm&&arm64 dfget ([#1286](https://github.com/dragonflyoss/Dragonfly2/issues/1286))
+- update filter parent ([#1279](https://github.com/dragonflyoss/Dragonfly2/issues/1279))
+- in tree plugin ([#1276](https://github.com/dragonflyoss/Dragonfly2/issues/1276))
+- move dfnet to pkg dir ([#1265](https://github.com/dragonflyoss/Dragonfly2/issues/1265))
+- add dfcache rpm/deb packages and man pages and publish in goreleaser ([#1259](https://github.com/dragonflyoss/Dragonfly2/issues/1259))
+- add AnnounceTask and StatTask metrics ([#1256](https://github.com/dragonflyoss/Dragonfly2/issues/1256))
+- define and implement new dfdaemon APIs to make dragonfly2 work as a distributed cache ([#1227](https://github.com/dragonflyoss/Dragonfly2/issues/1227))
+- redirect daemon stdout stderr to file ([#1244](https://github.com/dragonflyoss/Dragonfly2/issues/1244))
+- registerTask returns to the task in time ([#1250](https://github.com/dragonflyoss/Dragonfly2/issues/1250))
+
+### Fix
+- e2e charts config
+- seed peer reuse value
+- dfdaemon seed peer metrics namespace ([#1343](https://github.com/dragonflyoss/Dragonfly2/issues/1343))
+- create_at timestamp ([#1341](https://github.com/dragonflyoss/Dragonfly2/issues/1341))
+- reuse seed peer id is not exist ([#1335](https://github.com/dragonflyoss/Dragonfly2/issues/1335))
+- reuse non-end range request ([#1333](https://github.com/dragonflyoss/Dragonfly2/issues/1333))
+- http range header validation ([#1334](https://github.com/dragonflyoss/Dragonfly2/issues/1334))
+- nfpms maintainer ([#1326](https://github.com/dragonflyoss/Dragonfly2/issues/1326))
+- reuse seed panic ([#1319](https://github.com/dragonflyoss/Dragonfly2/issues/1319))
+- seed peer did not send done seed result and no content length send ([#1316](https://github.com/dragonflyoss/Dragonfly2/issues/1316))
+- remove container after generating protoc ([#1306](https://github.com/dragonflyoss/Dragonfly2/issues/1306))
+- digest reader and unit tests ([#1305](https://github.com/dragonflyoss/Dragonfly2/issues/1305))
+- scheduler typo ([#1297](https://github.com/dragonflyoss/Dragonfly2/issues/1297))
+- keep accept header ([#1291](https://github.com/dragonflyoss/Dragonfly2/issues/1291))
+- grpc total_piece_count comment ([#1289](https://github.com/dragonflyoss/Dragonfly2/issues/1289))
+- run.sh threw error on mac ([#1285](https://github.com/dragonflyoss/Dragonfly2/issues/1285))
+- docker compose run.sh ([#1282](https://github.com/dragonflyoss/Dragonfly2/issues/1282))
+- legacy cdn peer ([#1283](https://github.com/dragonflyoss/Dragonfly2/issues/1283))
+- filter parent condition ([#1277](https://github.com/dragonflyoss/Dragonfly2/issues/1277))
+- dfget daemon console log invalid ([#1275](https://github.com/dragonflyoss/Dragonfly2/issues/1275))
+- scheduler config validation ([#1274](https://github.com/dragonflyoss/Dragonfly2/issues/1274))
+- run.sh threw error on mac ([#1273](https://github.com/dragonflyoss/Dragonfly2/issues/1273))
+- tree infinite loop ([#1271](https://github.com/dragonflyoss/Dragonfly2/issues/1271))
+- acquire empty dst pid ([#1268](https://github.com/dragonflyoss/Dragonfly2/issues/1268))
+- skip unsupported kernel in systemd service ([#1261](https://github.com/dragonflyoss/Dragonfly2/issues/1261))
+- client synchronizer report error lock and dial grpc timeout ([#1260](https://github.com/dragonflyoss/Dragonfly2/issues/1260))
+- prevent traversal tree from infinite loop ([#1266](https://github.com/dragonflyoss/Dragonfly2/issues/1266))
+- error message ([#1255](https://github.com/dragonflyoss/Dragonfly2/issues/1255))
+- client sync piece panic ([#1246](https://github.com/dragonflyoss/Dragonfly2/issues/1246))
+- client superfluous usage gc ([#1243](https://github.com/dragonflyoss/Dragonfly2/issues/1243))
+
+### Refactor
+- scheduler grpc ([#1310](https://github.com/dragonflyoss/Dragonfly2/issues/1310))
+- scheduler task SizeScope ([#1287](https://github.com/dragonflyoss/Dragonfly2/issues/1287))
+
+### Test
+- update e2e charts config
+- watchdog
+- close dfget back-to-souce ([#1317](https://github.com/dragonflyoss/Dragonfly2/issues/1317))
+- fix storage backups ([#1270](https://github.com/dragonflyoss/Dragonfly2/issues/1270))
+- scheduler storage ([#1257](https://github.com/dragonflyoss/Dragonfly2/issues/1257))
+- AnnounceTask and StatTask ([#1254](https://github.com/dragonflyoss/Dragonfly2/issues/1254))
+
+
+<a name="v2.0.2"></a>
+## [v2.0.2] - 2022-05-27
+### Feat
+- grpc health probe support arm64 ([#1338](https://github.com/dragonflyoss/Dragonfly2/issues/1338))
+- support build arm&&arm64 dfget ([#1286](https://github.com/dragonflyoss/Dragonfly2/issues/1286))
+- docker build with multi platforms ([#1337](https://github.com/dragonflyoss/Dragonfly2/issues/1337))
+- redirect daemon stdout stderr to file ([#1244](https://github.com/dragonflyoss/Dragonfly2/issues/1244))
+- registerTask returns to the task in time ([#1250](https://github.com/dragonflyoss/Dragonfly2/issues/1250))
+
+### Fix
+- nfpms maintainer
+- client sync piece panic ([#1246](https://github.com/dragonflyoss/Dragonfly2/issues/1246))
+- client superfluous usage gc ([#1243](https://github.com/dragonflyoss/Dragonfly2/issues/1243))
+
+
+<a name="v2.0.3-beta.6"></a>
+## [v2.0.3-beta.6] - 2022-05-26
+### Feat
+- remove test
+- test
+- docker build with multi platforms
+
+
+<a name="v2.0.3-beta.5"></a>
+## [v2.0.3-beta.5] - 2022-05-25
+### Chore
+- check large files in pull request ([#1332](https://github.com/dragonflyoss/Dragonfly2/issues/1332))
+
+### Fix
+- reuse seed peer id is not exist ([#1335](https://github.com/dragonflyoss/Dragonfly2/issues/1335))
+- reuse non-end range request ([#1333](https://github.com/dragonflyoss/Dragonfly2/issues/1333))
+- http range header validation ([#1334](https://github.com/dragonflyoss/Dragonfly2/issues/1334))
+
+
+<a name="v2.0.3-beta.4"></a>
+## [v2.0.3-beta.4] - 2022-05-24
+### Feat
+- add sync piece watchdog ([#1272](https://github.com/dragonflyoss/Dragonfly2/issues/1272))
+- scheduler handles seed peer failed ([#1325](https://github.com/dragonflyoss/Dragonfly2/issues/1325))
+- custom preheat tag parameters ([#1324](https://github.com/dragonflyoss/Dragonfly2/issues/1324))
+- client add tls verify config ([#1323](https://github.com/dragonflyoss/Dragonfly2/issues/1323))
+- scheduler register interface return task type ([#1318](https://github.com/dragonflyoss/Dragonfly2/issues/1318))
+- get active peer count ([#1315](https://github.com/dragonflyoss/Dragonfly2/issues/1315))
+- reduce dynconfig log ([#1312](https://github.com/dragonflyoss/Dragonfly2/issues/1312))
+- back source when receive seed request ([#1309](https://github.com/dragonflyoss/Dragonfly2/issues/1309))
+- update helm charts submodule ([#1308](https://github.com/dragonflyoss/Dragonfly2/issues/1308))
+- add vsock network type support ([#1303](https://github.com/dragonflyoss/Dragonfly2/issues/1303))
+- support response header ([#1292](https://github.com/dragonflyoss/Dragonfly2/issues/1292))
+- add seed peer logic ([#1302](https://github.com/dragonflyoss/Dragonfly2/issues/1302))
+- support more digest like sha256 ([#1304](https://github.com/dragonflyoss/Dragonfly2/issues/1304))
+- implement pattern in client daemon ([#1231](https://github.com/dragonflyoss/Dragonfly2/issues/1231))
+- scheduler add seed peer ([#1298](https://github.com/dragonflyoss/Dragonfly2/issues/1298))
+- don't gc client rpc connection if ExpireTime is 0 ([#1296](https://github.com/dragonflyoss/Dragonfly2/issues/1296))
+- update scheduler PeerResult validation ([#1294](https://github.com/dragonflyoss/Dragonfly2/issues/1294))
+- manager add seed peer ([#1293](https://github.com/dragonflyoss/Dragonfly2/issues/1293))
+- implement client seed mode ([#1247](https://github.com/dragonflyoss/Dragonfly2/issues/1247))
+- scheduler peer result validation ([#1288](https://github.com/dragonflyoss/Dragonfly2/issues/1288))
+- use a golang native file server to replace nginx ([#1258](https://github.com/dragonflyoss/Dragonfly2/issues/1258))
+- support build arm&&arm64 dfget ([#1286](https://github.com/dragonflyoss/Dragonfly2/issues/1286))
+
+### Fix
+- nfpms maintainer ([#1326](https://github.com/dragonflyoss/Dragonfly2/issues/1326))
+- reuse seed panic ([#1319](https://github.com/dragonflyoss/Dragonfly2/issues/1319))
+- seed peer did not send done seed result and no content length send ([#1316](https://github.com/dragonflyoss/Dragonfly2/issues/1316))
+- remove container after generating protoc ([#1306](https://github.com/dragonflyoss/Dragonfly2/issues/1306))
+- digest reader and unit tests ([#1305](https://github.com/dragonflyoss/Dragonfly2/issues/1305))
+- scheduler typo ([#1297](https://github.com/dragonflyoss/Dragonfly2/issues/1297))
+- keep accept header ([#1291](https://github.com/dragonflyoss/Dragonfly2/issues/1291))
+- grpc total_piece_count comment ([#1289](https://github.com/dragonflyoss/Dragonfly2/issues/1289))
+- run.sh threw error on mac ([#1285](https://github.com/dragonflyoss/Dragonfly2/issues/1285))
+
+### Refactor
+- scheduler grpc ([#1310](https://github.com/dragonflyoss/Dragonfly2/issues/1310))
+- scheduler task SizeScope ([#1287](https://github.com/dragonflyoss/Dragonfly2/issues/1287))
+
+### Test
+- watchdog
+- close dfget back-to-souce ([#1317](https://github.com/dragonflyoss/Dragonfly2/issues/1317))
+
+
+<a name="v2.0.3-alpha.1"></a>
+## [v2.0.3-alpha.1] - 2022-05-24
+### Fix
+- nfpms maintainer ([#1326](https://github.com/dragonflyoss/Dragonfly2/issues/1326))
+- register fail panic ([#1351](https://github.com/dragonflyoss/Dragonfly2/issues/1351))
+- reuse non-end range request ([#1333](https://github.com/dragonflyoss/Dragonfly2/issues/1333))
+- find partial completed overflow ([#1346](https://github.com/dragonflyoss/Dragonfly2/issues/1346))
+- http range header validation ([#1334](https://github.com/dragonflyoss/Dragonfly2/issues/1334))
+
+
+<a name="v2.0.3-beta.3"></a>
+## [v2.0.3-beta.3] - 2022-05-17
+### Feat
+- generate protoc
+- update helm charts submodule ([#1308](https://github.com/dragonflyoss/Dragonfly2/issues/1308))
+- add vsock network type support ([#1303](https://github.com/dragonflyoss/Dragonfly2/issues/1303))
+- support response header ([#1292](https://github.com/dragonflyoss/Dragonfly2/issues/1292))
+
+### Fix
+- remove container after generating protoc ([#1306](https://github.com/dragonflyoss/Dragonfly2/issues/1306))
+
+### Refactor
+- scheduler grpc
+
+
+<a name="v2.0.3-beta.2"></a>
+## [v2.0.3-beta.2] - 2022-05-16
+### Feat
+- add seed peer logic ([#1302](https://github.com/dragonflyoss/Dragonfly2/issues/1302))
+
+
+<a name="v2.0.3-beta.1"></a>
+## [v2.0.3-beta.1] - 2022-05-13
+### Feat
+- change docker compose
+- remove cdn compatibility
+- support more digest like sha256 ([#1304](https://github.com/dragonflyoss/Dragonfly2/issues/1304))
+- go generate mocks
+- dfdaemon change host uuid to host id
+- implement pattern in client daemon ([#1231](https://github.com/dragonflyoss/Dragonfly2/issues/1231))
+- remove cdn job
+- remove cdn logic
+- announce seed peer
+- scheduler add seed peer ([#1298](https://github.com/dragonflyoss/Dragonfly2/issues/1298))
+- don't gc client rpc connection if ExpireTime is 0 ([#1296](https://github.com/dragonflyoss/Dragonfly2/issues/1296))
+- update scheduler PeerResult validation ([#1294](https://github.com/dragonflyoss/Dragonfly2/issues/1294))
+- manager add seed peer ([#1293](https://github.com/dragonflyoss/Dragonfly2/issues/1293))
+
+### Fix
+- reuse panic
+- digest reader and unit tests ([#1305](https://github.com/dragonflyoss/Dragonfly2/issues/1305))
+- scheduler typo ([#1297](https://github.com/dragonflyoss/Dragonfly2/issues/1297))
+
+
+<a name="v2.0.3-beta.0"></a>
+## [v2.0.3-beta.0] - 2022-05-06
+### Chore
+- add target peer id in sync piece trace ([#1278](https://github.com/dragonflyoss/Dragonfly2/issues/1278))
+
+### Feat
+- implement client seed mode ([#1247](https://github.com/dragonflyoss/Dragonfly2/issues/1247))
+- scheduler peer result validation ([#1288](https://github.com/dragonflyoss/Dragonfly2/issues/1288))
+- use a golang native file server to replace nginx ([#1258](https://github.com/dragonflyoss/Dragonfly2/issues/1258))
+- support build arm&&arm64 dfget ([#1286](https://github.com/dragonflyoss/Dragonfly2/issues/1286))
+- update filter parent ([#1279](https://github.com/dragonflyoss/Dragonfly2/issues/1279))
+
+### Fix
+- keep accept header ([#1291](https://github.com/dragonflyoss/Dragonfly2/issues/1291))
+- grpc total_piece_count comment ([#1289](https://github.com/dragonflyoss/Dragonfly2/issues/1289))
+- run.sh threw error on mac ([#1285](https://github.com/dragonflyoss/Dragonfly2/issues/1285))
+- docker compose run.sh ([#1282](https://github.com/dragonflyoss/Dragonfly2/issues/1282))
+- legacy cdn peer ([#1283](https://github.com/dragonflyoss/Dragonfly2/issues/1283))
+- filter parent condition ([#1277](https://github.com/dragonflyoss/Dragonfly2/issues/1277))
+
+### Refactor
+- scheduler task SizeScope ([#1287](https://github.com/dragonflyoss/Dragonfly2/issues/1287))
+
+
+<a name="v2.0.3-alpha.0"></a>
+## [v2.0.3-alpha.0] - 2022-04-24
+### Chore
+- optimize create synchronizer logic ([#1269](https://github.com/dragonflyoss/Dragonfly2/issues/1269))
+- add sync pieces trace and update sync pieces logic for done task ([#1263](https://github.com/dragonflyoss/Dragonfly2/issues/1263))
+- add schedule cron with e2e testing ([#1262](https://github.com/dragonflyoss/Dragonfly2/issues/1262))
+- optimize sync pieces ([#1253](https://github.com/dragonflyoss/Dragonfly2/issues/1253))
+- update pull request template ([#1251](https://github.com/dragonflyoss/Dragonfly2/issues/1251))
+- update compatibility version to v2.0.2
+- update helm-charts commit
+- generate change log
 - update manager console commit ([#1219](https://github.com/dragonflyoss/Dragonfly2/issues/1219))
 - print client stream task error log ([#1210](https://github.com/dragonflyoss/Dragonfly2/issues/1210))
 - report client back source error ([#1209](https://github.com/dragonflyoss/Dragonfly2/issues/1209))
@@ -10,6 +310,15 @@
 - move document from /docs to d7y.io ([#1229](https://github.com/dragonflyoss/Dragonfly2/issues/1229))
 
 ### Feat
+- in tree plugin ([#1276](https://github.com/dragonflyoss/Dragonfly2/issues/1276))
+- move dfnet to pkg dir ([#1265](https://github.com/dragonflyoss/Dragonfly2/issues/1265))
+- add dfcache rpm/deb packages and man pages and publish in goreleaser ([#1259](https://github.com/dragonflyoss/Dragonfly2/issues/1259))
+- add AnnounceTask and StatTask metrics ([#1256](https://github.com/dragonflyoss/Dragonfly2/issues/1256))
+- define and implement new dfdaemon APIs to make dragonfly2 work as a distributed cache ([#1227](https://github.com/dragonflyoss/Dragonfly2/issues/1227))
+- redirect daemon stdout stderr to file ([#1244](https://github.com/dragonflyoss/Dragonfly2/issues/1244))
+- registerTask returns to the task in time ([#1250](https://github.com/dragonflyoss/Dragonfly2/issues/1250))
+- docker-compose write log to file ([#1236](https://github.com/dragonflyoss/Dragonfly2/issues/1236))
+- update docker compose version ([#1235](https://github.com/dragonflyoss/Dragonfly2/issues/1235))
 - update to v2.0.2 ([#1232](https://github.com/dragonflyoss/Dragonfly2/issues/1232))
 - scheduler blocks steal peers ([#1224](https://github.com/dragonflyoss/Dragonfly2/issues/1224))
 - update manager console ([#1222](https://github.com/dragonflyoss/Dragonfly2/issues/1222))
@@ -22,10 +331,28 @@
 - optimize get available task ([#1208](https://github.com/dragonflyoss/Dragonfly2/issues/1208))
 
 ### Fix
+- dfget daemon console log invalid ([#1275](https://github.com/dragonflyoss/Dragonfly2/issues/1275))
+- scheduler config validation ([#1274](https://github.com/dragonflyoss/Dragonfly2/issues/1274))
+- run.sh threw error on mac ([#1273](https://github.com/dragonflyoss/Dragonfly2/issues/1273))
+- tree infinite loop ([#1271](https://github.com/dragonflyoss/Dragonfly2/issues/1271))
+- acquire empty dst pid ([#1268](https://github.com/dragonflyoss/Dragonfly2/issues/1268))
+- skip unsupported kernel in systemd service ([#1261](https://github.com/dragonflyoss/Dragonfly2/issues/1261))
+- client synchronizer report error lock and dial grpc timeout ([#1260](https://github.com/dragonflyoss/Dragonfly2/issues/1260))
+- prevent traversal tree from infinite loop ([#1266](https://github.com/dragonflyoss/Dragonfly2/issues/1266))
+- error message ([#1255](https://github.com/dragonflyoss/Dragonfly2/issues/1255))
+- client sync piece panic ([#1246](https://github.com/dragonflyoss/Dragonfly2/issues/1246))
+- client superfluous usage gc ([#1243](https://github.com/dragonflyoss/Dragonfly2/issues/1243))
+- client sync send unsafe call ([#1240](https://github.com/dragonflyoss/Dragonfly2/issues/1240))
+- client unexpected timeout ([#1239](https://github.com/dragonflyoss/Dragonfly2/issues/1239))
 - goreleaser config
 - make generate ([#1228](https://github.com/dragonflyoss/Dragonfly2/issues/1228))
 - calculate FreeUploadLoad ([#1226](https://github.com/dragonflyoss/Dragonfly2/issues/1226))
 - sync pieces hang ([#1221](https://github.com/dragonflyoss/Dragonfly2/issues/1221))
+
+### Test
+- fix storage backups ([#1270](https://github.com/dragonflyoss/Dragonfly2/issues/1270))
+- scheduler storage ([#1257](https://github.com/dragonflyoss/Dragonfly2/issues/1257))
+- AnnounceTask and StatTask ([#1254](https://github.com/dragonflyoss/Dragonfly2/issues/1254))
 
 
 <a name="v2.0.2-rc.27"></a>
@@ -390,14 +717,14 @@
 - when peer state is PeerStateSucceeded, return size scope is small ([#1103](https://github.com/dragonflyoss/Dragonfly2/issues/1103))
 
 
-<a name="v2.0.2-rc.16"></a>
-## [v2.0.2-rc.16] - 2022-02-28
+<a name="v2.0.2-rc.15"></a>
+## [v2.0.2-rc.15] - 2022-02-28
 ### Feat
 - limit tree depth
 
 
-<a name="v2.0.2-rc.15"></a>
-## [v2.0.2-rc.15] - 2022-02-28
+<a name="v2.0.2-rc.16"></a>
+## [v2.0.2-rc.16] - 2022-02-28
 ### Feat
 - limit tree depth
 - update load limit ([#1097](https://github.com/dragonflyoss/Dragonfly2/issues/1097))
@@ -1409,7 +1736,20 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.27...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.9...HEAD
+[v2.0.3-beta.9]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.8...v2.0.3-beta.9
+[v2.0.3-beta.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.7...v2.0.3-beta.8
+[v2.0.3-beta.7]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2...v2.0.3-beta.7
+[v2.0.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.6...v2.0.2
+[v2.0.3-beta.6]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.5...v2.0.3-beta.6
+[v2.0.3-beta.5]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.4...v2.0.3-beta.5
+[v2.0.3-beta.4]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-alpha.1...v2.0.3-beta.4
+[v2.0.3-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.3...v2.0.3-alpha.1
+[v2.0.3-beta.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.2...v2.0.3-beta.3
+[v2.0.3-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.1...v2.0.3-beta.2
+[v2.0.3-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.0...v2.0.3-beta.1
+[v2.0.3-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-alpha.0...v2.0.3-beta.0
+[v2.0.3-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.27...v2.0.3-alpha.0
 [v2.0.2-rc.27]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.26...v2.0.2-rc.27
 [v2.0.2-rc.26]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.1...v2.0.2-rc.26
 [v2.0.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.25...v2.0.1
@@ -1421,9 +1761,9 @@
 [v2.0.2-rc.20]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.19...v2.0.2-rc.20
 [v2.0.2-rc.19]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.18...v2.0.2-rc.19
 [v2.0.2-rc.18]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.17...v2.0.2-rc.18
-[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.17
-[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.16
-[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.15
+[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.17
+[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.15
+[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.16
 [v2.0.2-rc.14]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.13...v2.0.2-rc.14
 [v2.0.2-rc.13]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.12...v2.0.2-rc.13
 [v2.0.2-rc.12]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.11...v2.0.2-rc.12
