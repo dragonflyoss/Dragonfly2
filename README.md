@@ -36,22 +36,17 @@ Currently Dragonfly focuses on being:
 
 ![alt][arch]
 
-**Manager:** Used to manage the dynamic configuration that
-each module depends on, and provide keepalive and metrics features.
-It can be deployed using manager module.
+**Manager:** Maintain the relationship between each P2P cluster, dynamic configuration management and RBAC.
+It also includes a front-end console, which is convenient for users to visually operate the cluster.
 
-**Scheduler:** The tracker and scheduler in the P2P
-network that chooses appropriate downloading net-path for each peer.
-It can be deployed using scheduler module.
+**Scheduler:** Select the optimal download parent peer for the download peer. Exceptions control Dfdaemon's back-to-source.
 
-**Seed Peer:** A seed peer server that caches downloaded data
-from source. It can be deployed using dfdaemon or cdn module and
-is recommended to provide quality networking and storage.
+**Seed Peer**: Dfdaemon turns on the Seed Peer mode can be used as
+  a back-to-source download peer in a P2P cluster,
+  which is the root peer for download in the entire cluster.
 
-**Peer:** A peer server can download resources from other peers,
-and can also share resources with other peers. It can be deployed using dfdaemon module.
-Dfdaemon provides a proxy to allow client traffic such as containerd/CRI-O to use the P2P network,
-and also provides dfget download command tool, which is similar to wget.
+**Peer**: Deploy with dfdaemon, based on the C/S architecture, it provides the `dfget` command download tool,
+  and the `dfget daemon` running daemon to provide task download capabilities.
 
 ## Documentation
 
