@@ -47,11 +47,15 @@ var tracer = otel.Tracer("manager")
 type PreheatType string
 
 const (
+	// PreheatImageType is image type of preheat job.
 	PreheatImageType PreheatType = "image"
-	PreheatFileType  PreheatType = "file"
+
+	// PreheatFileType is file type of preheat job.
+	PreheatFileType PreheatType = "file"
 )
 
 const (
+	// Timeout is the default timeout of http client.
 	timeout = 1 * time.Minute
 )
 
