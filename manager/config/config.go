@@ -87,11 +87,11 @@ type MysqlConfig struct {
 	// Enable migration
 	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 
-    // TLS setting (can be one of "true", "false", "skip-verify",  or "preferred")
-    TLS string `yaml:"tls" mapstructure:"tls"`
+	// TLS mode (can be one of "true", "false", "skip-verify",  or "preferred")
+	TLSConfig string `yaml:"tlsConfig" mapstructure:"tlsConfig"`
 
-	// TLS configuration (overrides "tls" setting above)
-	TLSConfig *TLSConfig `yaml:"tlsConfig" mapstructure:"tlsConfig"`
+	// Custom TLS configuration (overrides "TLSConfig" setting above)
+	TLS *TLSConfig `yaml:"tls" mapstructure:"tls"`
 }
 
 type TLSConfig struct {
@@ -286,16 +286,16 @@ func (cfg *Config) Validate() error {
 		return errors.New("empty database mysql dbName is not specified")
 	}
 
-	if cfg.Database.Mysql.TLSConfig != nil {
-		if cfg.Database.Mysql.TLSConfig.Cert == "" {
+	if cfg.Database.Mysql.TLS != nil {
+		if cfg.Database.Mysql.TLS.Cert == "" {
 			return errors.New("empty database mysql tls cert is not specified")
 		}
 
-		if cfg.Database.Mysql.TLSConfig.Key == "" {
+		if cfg.Database.Mysql.TLS.Key == "" {
 			return errors.New("empty database mysql tls key is not specified")
 		}
 
-		if cfg.Database.Mysql.TLSConfig.CA == "" {
+		if cfg.Database.Mysql.TLS.CA == "" {
 			return errors.New("empty database mysql tls ca is not specified")
 		}
 	}

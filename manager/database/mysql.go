@@ -80,9 +80,9 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 	}
 
 	// Support TLS connection
-	if cfg.TLSConfig != nil {
+	if cfg.TLS != nil {
 		mysqlCfg.TLSConfig = "custom"
-		tls, err := cfg.TLSConfig.Client()
+		tls, err := cfg.TLS.Client()
 		if err != nil {
 			return "", err
 		}
@@ -90,9 +90,9 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 		if err := mysql.RegisterTLSConfig("custom", tls); err != nil {
 			return "", err
 		}
-	} else if cfg.TLS != "" { // If no custom config is specified, use tls parameter if it is set
-        mysqlCfg.Params = map[string]string{"tls": cfg.TLS}
-    }
+	} else if cfg.TLSConfig != "" { // If no custom config is specified, use tlsConfig parameter if it is set
+		mysqlCfg.Params = map[string]string{"tls": cfg.TLSConfig}
+	}
 
 	return mysqlCfg.FormatDSN(), nil
 }
