@@ -18,7 +18,7 @@ package job
 
 type PreheatRequest struct {
 	URL     string            `json:"url" validate:"required,url"`
-	Tag     string            `json:"tag" validate:"required"`
+	Tag     string            `json:"tag" validate:"omitempty"`
 	Digest  string            `json:"digest" validate:"omitempty"`
 	Filter  string            `json:"filter" validate:"omitempty"`
 	Headers map[string]string `json:"headers" validate:"omitempty"`
