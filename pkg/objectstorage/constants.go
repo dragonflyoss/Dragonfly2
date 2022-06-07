@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,3 +15,11 @@
  */
 
 package objectstorage
+
+const (
+	// ServiceNameS3 is name of s3 storage
+	ServiceNameS3 = "s3"
+
+	// ServiceNameOSS is name of oss storage
+	ServiceNameOSS = "oss"
+)

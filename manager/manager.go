@@ -118,7 +118,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	if cfg.Metrics != nil {
+	if cfg.Metrics.Enable {
 		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 

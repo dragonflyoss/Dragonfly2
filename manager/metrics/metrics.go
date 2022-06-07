@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 )
 
-func New(cfg *config.RestConfig, grpcServer *grpc.Server) *http.Server {
+func New(cfg *config.MetricsConfig, grpcServer *grpc.Server) *http.Server {
 	grpc_prometheus.Register(grpcServer)
 
 	mux := http.NewServeMux()
