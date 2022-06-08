@@ -120,123 +120,123 @@ func New() *Config {
 }
 
 // Validate config parameters.
-func (c *Config) Validate() error {
-	if c.Server == nil {
+func (cfg *Config) Validate() error {
+	if cfg.Server == nil {
 		return errors.New("server requires parameter server")
 	}
 
-	if c.Server.IP == "" {
+	if cfg.Server.IP == "" {
 		return errors.New("server requires parameter ip")
 	}
 
-	if c.Server.Host == "" {
+	if cfg.Server.Host == "" {
 		return errors.New("server requires parameter host")
 	}
 
-	if c.Server.Port <= 0 {
+	if cfg.Server.Port <= 0 {
 		return errors.New("server requires parameter port")
 	}
 
-	if c.Server.Listen == "" {
+	if cfg.Server.Listen == "" {
 		return errors.New("server requires parameter listen")
 	}
 
-	if c.Scheduler.Algorithm == "" {
+	if cfg.Scheduler.Algorithm == "" {
 		return errors.New("scheduler requires parameter algorithm")
 	}
 
-	if c.Scheduler.RetryLimit <= 0 {
+	if cfg.Scheduler.RetryLimit <= 0 {
 		return errors.New("scheduler requires parameter retryLimit")
 	}
 
-	if c.Scheduler.RetryInterval <= 0 {
+	if cfg.Scheduler.RetryInterval <= 0 {
 		return errors.New("scheduler requires parameter retryInterval")
 	}
 
-	if c.Scheduler.GC == nil {
+	if cfg.Scheduler.GC == nil {
 		return errors.New("scheduler requires parameter gc")
 	}
 
-	if c.Scheduler.GC.PeerGCInterval <= 0 {
+	if cfg.Scheduler.GC.PeerGCInterval <= 0 {
 		return errors.New("scheduler requires parameter peerGCInterval")
 	}
 
-	if c.Scheduler.GC.PeerTTL <= 0 {
+	if cfg.Scheduler.GC.PeerTTL <= 0 {
 		return errors.New("scheduler requires parameter peerTTL")
 	}
 
-	if c.Scheduler.GC.TaskGCInterval <= 0 {
+	if cfg.Scheduler.GC.TaskGCInterval <= 0 {
 		return errors.New("scheduler requires parameter taskGCInterval")
 	}
 
-	if c.Scheduler.GC.TaskTTL <= 0 {
+	if cfg.Scheduler.GC.TaskTTL <= 0 {
 		return errors.New("scheduler requires parameter taskTTL")
 	}
 
-	if c.DynConfig.RefreshInterval <= 0 {
+	if cfg.DynConfig.RefreshInterval <= 0 {
 		return errors.New("dynconfig requires parameter refreshInterval")
 	}
 
-	if c.Manager.Addr == "" {
+	if cfg.Manager.Addr == "" {
 		return errors.New("manager requires parameter addr")
 	}
 
-	if c.Manager.SchedulerClusterID == 0 {
+	if cfg.Manager.SchedulerClusterID == 0 {
 		return errors.New("manager requires parameter schedulerClusterID")
 	}
 
-	if c.Manager.KeepAlive.Interval <= 0 {
+	if cfg.Manager.KeepAlive.Interval <= 0 {
 		return errors.New("manager requires parameter keepAlive interval")
 	}
 
-	if c.Job != nil && c.Job.Enable {
-		if c.Job.GlobalWorkerNum == 0 {
+	if cfg.Job != nil && cfg.Job.Enable {
+		if cfg.Job.GlobalWorkerNum == 0 {
 			return errors.New("job requires parameter globalWorkerNum")
 		}
 
-		if c.Job.SchedulerWorkerNum == 0 {
+		if cfg.Job.SchedulerWorkerNum == 0 {
 			return errors.New("job requires parameter schedulerWorkerNum")
 		}
 
-		if c.Job.LocalWorkerNum == 0 {
+		if cfg.Job.LocalWorkerNum == 0 {
 			return errors.New("job requires parameter localWorkerNum")
 		}
 
-		if c.Job.Redis.Host == "" {
+		if cfg.Job.Redis.Host == "" {
 			return errors.New("job requires parameter redis host")
 		}
 
-		if c.Job.Redis.Port <= 0 {
+		if cfg.Job.Redis.Port <= 0 {
 			return errors.New("job requires parameter redis port")
 		}
 
-		if c.Job.Redis.BrokerDB <= 0 {
+		if cfg.Job.Redis.BrokerDB <= 0 {
 			return errors.New("job requires parameter redis brokerDB")
 		}
 
-		if c.Job.Redis.BackendDB <= 0 {
+		if cfg.Job.Redis.BackendDB <= 0 {
 			return errors.New("job requires parameter redis backendDB")
 		}
 	}
 
-	if c.Storage == nil {
+	if cfg.Storage == nil {
 		return errors.New("server requires parameter storage")
 	}
 
-	if c.Storage.MaxSize <= 0 {
+	if cfg.Storage.MaxSize <= 0 {
 		return errors.New("storage requires parameter maxSize")
 	}
 
-	if c.Storage.MaxBackups <= 0 {
+	if cfg.Storage.MaxBackups <= 0 {
 		return errors.New("storage requires parameter maxBackups")
 	}
 
-	if c.Storage.BufferSize <= 0 {
+	if cfg.Storage.BufferSize <= 0 {
 		return errors.New("storage requires parameter bufferSize")
 	}
 
-	if c.Metrics != nil && c.Metrics.Enable {
-		if c.Metrics.Addr == "" {
+	if cfg.Metrics != nil && cfg.Metrics.Enable {
+		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}
 	}
