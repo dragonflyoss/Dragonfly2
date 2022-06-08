@@ -24,6 +24,7 @@ import (
 	"github.com/docker/go-connections/tlsconfig"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 type Config struct {
@@ -39,8 +40,11 @@ type Config struct {
 	// Cache configuration
 	Cache *CacheConfig `yaml:"cache" mapstructure:"cache"`
 
+	// ObjectStorage configuration
+	ObjectStorage *ObjectStorageConfig `yaml:"objectStorage" mapstructure:"objectStorage"`
+
 	// Metrics configuration
-	Metrics *RestConfig `yaml:"metrics" mapstructure:"metrics"`
+	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ServerConfig struct {
@@ -162,6 +166,14 @@ type RestConfig struct {
 	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
+type MetricsConfig struct {
+	// Enable metrics service.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// Metrics service address.
+	Addr string `yaml:"addr" mapstructure:"addr"`
+}
+
 type TCPListenConfig struct {
 	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
 	Listen string `mapstructure:"listen" yaml:"listen"`
@@ -173,6 +185,26 @@ type TCPListenConfig struct {
 type TCPListenPortRange struct {
 	Start int
 	End   int
+}
+
+type ObjectStorageConfig struct {
+	// Enable object storage.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
+
+	// Object storage name of type, it can be s3 or oss.
+	Name string `mapstructure:"name" yaml:"name"`
+
+	// Storage region.
+	Region string `mapstructure:"region" yaml:"region"`
+
+	// Datacenter endpoint.
+	Endpoint string `mapstructure:"endpoint" yaml:"endpoint"`
+
+	// Access key ID.
+	AccessKey string `mapstructure:"accessKey" yaml:"accessKey"`
+
+	// Access key secret
+	SecretKey string `mapstructure:"secretKey" yaml:"secretKey"`
 }
 
 // New config instance
@@ -210,119 +242,145 @@ func New() *Config {
 				TTL:  30 * time.Second,
 			},
 		},
+		ObjectStorage: &ObjectStorageConfig{
+			Enable: false,
+		},
+		Metrics: &MetricsConfig{
+			Enable: false,
+		},
 	}
 }
 
 // Validate config values
 func (cfg *Config) Validate() error {
 	if cfg.Server == nil {
-		return errors.New("empty server config is not specified")
+		return errors.New("config requires parameter server")
 	}
 
 	if cfg.Server.Name == "" {
-		return errors.New("empty server name config is not specified")
+		return errors.New("server requires parameter name")
 	}
 
 	if cfg.Server.GRPC == nil {
-		return errors.New("empty grpc server config is not specified")
+		return errors.New("server requires parameter grpc")
 	}
 
 	if cfg.Server.REST == nil {
-		return errors.New("empty rest server config is not specified")
+		return errors.New("server requires parameter rest")
 	}
 
 	if cfg.Database == nil {
-		return errors.New("empty database config is not specified")
+		return errors.New("config requires parameter database")
 	}
 
 	if cfg.Database.Redis == nil {
-		return errors.New("empty database redis config is not specified")
+		return errors.New("database requires parameter redis")
 	}
 
 	if cfg.Database.Redis.Host == "" {
-		return errors.New("empty database redis host is not specified")
+		return errors.New("redis requires parameter host")
 	}
 
 	if cfg.Database.Redis.Port <= 0 {
-		return errors.New("empty database redis port is not specified")
+		return errors.New("redis requires parameter port")
 	}
 
 	if cfg.Database.Redis.CacheDB < 0 {
-		return errors.New("empty database redis cacheDB is not specified")
+		return errors.New("redis requires parameter cacheDB")
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {
-		return errors.New("empty database redis brokerDB is not specified")
+		return errors.New("redis requires parameter brokerDB")
 	}
 
 	if cfg.Database.Redis.BackendDB < 0 {
-		return errors.New("empty database redis backendDB is not specified")
+		return errors.New("redis requires parameter backendDB")
 	}
 
 	if cfg.Database.Mysql == nil {
-		return errors.New("empty database mysql config is not specified")
+		return errors.New("database requires parameter mysql")
 	}
 
 	if cfg.Database.Mysql.User == "" {
-		return errors.New("empty database mysql user is not specified")
+		return errors.New("mysql requires parameter user")
 	}
 
 	if cfg.Database.Mysql.Password == "" {
-		return errors.New("empty database mysql password is not specified")
+		return errors.New("mysql requires parameter password")
 	}
 
 	if cfg.Database.Mysql.Host == "" {
-		return errors.New("empty database mysql host is not specified")
+		return errors.New("mysql requires parameter host")
 	}
 
 	if cfg.Database.Mysql.Port <= 0 {
-		return errors.New("empty database mysql port is not specified")
+		return errors.New("mysql requires parameter port")
 	}
 
 	if cfg.Database.Mysql.DBName == "" {
-		return errors.New("empty database mysql dbName is not specified")
+		return errors.New("mysql requires parameter dbname")
 	}
 
 	if cfg.Database.Mysql.TLS != nil {
 		if cfg.Database.Mysql.TLS.Cert == "" {
-			return errors.New("empty database mysql tls cert is not specified")
+			return errors.New("tls requires parameter cert")
 		}
 
 		if cfg.Database.Mysql.TLS.Key == "" {
-			return errors.New("empty database mysql tls key is not specified")
+			return errors.New("tls requires parameter key")
 		}
 
 		if cfg.Database.Mysql.TLS.CA == "" {
-			return errors.New("empty database mysql tls ca is not specified")
+			return errors.New("tls requires parameter ca")
 		}
 	}
 
 	if cfg.Cache == nil {
-		return errors.New("empty cache config is not specified")
+		return errors.New("config requires parameter cache")
 	}
 
 	if cfg.Cache.Redis == nil {
-		return errors.New("empty cache redis config is not specified")
+		return errors.New("cache requires parameter redis")
 	}
 
 	if cfg.Cache.Redis.TTL == 0 {
-		return errors.New("empty cache redis TTL is not specified")
+		return errors.New("redis requires parameter ttl")
 	}
 
 	if cfg.Cache.Local == nil {
-		return errors.New("empty cache local config is not specified")
+		return errors.New("cache requires parameter local")
 	}
 
 	if cfg.Cache.Local.Size == 0 {
-		return errors.New("empty cache local size is not specified")
+		return errors.New("local requires parameter size")
 	}
 
 	if cfg.Cache.Local.TTL == 0 {
-		return errors.New("empty cache local TTL is not specified")
+		return errors.New("local requires parameter ttl")
 	}
 
-	if cfg.Metrics != nil && cfg.Metrics.Addr == "" {
-		return errors.New("empty metrics addr is not specified")
+	if cfg.ObjectStorage != nil && cfg.ObjectStorage.Enable {
+		if cfg.ObjectStorage.Name == "" {
+			return errors.New("objectStorage requires parameter name")
+		}
+
+		if cfg.ObjectStorage.Name != objectstorage.ServiceNameS3 && cfg.ObjectStorage.Name != objectstorage.ServiceNameOSS {
+			return errors.New("objectStorage requires parameter name")
+		}
+
+		if cfg.ObjectStorage.AccessKey == "" {
+			return errors.New("objectStorage requires parameter accessKey")
+		}
+
+		if cfg.ObjectStorage.SecretKey == "" {
+			return errors.New("objectStorage requires parameter secretKey")
+		}
+	}
+
+	if cfg.Metrics != nil && cfg.Metrics.Enable {
+		if cfg.Metrics.Addr == "" {
+			return errors.New("metrics requires parameter addr")
+		}
 	}
 
 	return nil

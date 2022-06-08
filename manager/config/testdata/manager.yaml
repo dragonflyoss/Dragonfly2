@@ -37,5 +37,13 @@ cache:
     size: 10000
     ttl: 1000
 
+objectStorage:
+  enable: true
+  name: s3
+  endpoint: 127.0.0.1
+  accessKey: foo
+  secretKey: bar
+
 metrics:
+  enable: true
   addr: :8000
