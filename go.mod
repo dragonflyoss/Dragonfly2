@@ -9,6 +9,7 @@ require (
 	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.4+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.8.0
+	github.com/aws/aws-sdk-go v1.44.24
 	github.com/bits-and-blooms/bitset v1.2.2
 	github.com/casbin/casbin/v2 v2.47.1
 	github.com/casbin/gorm-adapter/v3 v3.3.2
@@ -94,7 +95,6 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
-	github.com/aws/aws-sdk-go v1.44.24 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
