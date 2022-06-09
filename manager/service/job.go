@@ -174,7 +174,7 @@ func (s *service) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	return &job, nil
 }
 
-func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, int64, error) {
+func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) ([]model.Job, int64, error) {
 	var count int64
 	var jobs []model.Job
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
@@ -185,7 +185,7 @@ func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.J
 		return nil, 0, err
 	}
 
-	return &jobs, count, nil
+	return jobs, count, nil
 }
 
 func (s *service) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {

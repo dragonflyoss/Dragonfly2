@@ -78,14 +78,14 @@ func (s *service) GetApplication(ctx context.Context, id uint) (*model.Applicati
 	return &application, nil
 }
 
-func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) (*[]model.Application, int64, error) {
+func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) ([]model.Application, int64, error) {
 	var count int64
 	applications := []model.Application{}
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return &applications, count, nil
+	return applications, count, nil
 }
 
 func (s *service) AddSchedulerClusterToApplication(ctx context.Context, id, schedulerClusterID uint) error {

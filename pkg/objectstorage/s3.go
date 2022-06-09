@@ -17,6 +17,7 @@
 package objectstorage
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -45,8 +46,8 @@ func newS3(region, endpoint, accessKey, secretKey string) (ObjectStorage, error)
 }
 
 // GetBucketMetadata returns metadata of bucket.
-func (s *s3) GetBucketMetadata(bucketName string) (*BucketMetadata, error) {
-	_, err := s.client.HeadBucket(&awss3.HeadBucketInput{Bucket: aws.String(bucketName)})
+func (s *s3) GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error) {
+	_, err := s.client.HeadBucketWithContext(ctx, &awss3.HeadBucketInput{Bucket: aws.String(bucketName)})
 	if err != nil {
 		return nil, err
 	}
@@ -57,20 +58,20 @@ func (s *s3) GetBucketMetadata(bucketName string) (*BucketMetadata, error) {
 }
 
 // CreateBucket creates bucket of object storage.
-func (s *s3) CreateBucket(bucketName string) error {
-	_, err := s.client.CreateBucket(&awss3.CreateBucketInput{Bucket: aws.String(bucketName)})
+func (s *s3) CreateBucket(ctx context.Context, bucketName string) error {
+	_, err := s.client.CreateBucketWithContext(ctx, &awss3.CreateBucketInput{Bucket: aws.String(bucketName)})
 	return err
 }
 
 // DeleteBucket deletes bucket of object storage.
-func (s *s3) DeleteBucket(bucketName string) error {
-	_, err := s.client.DeleteBucket(&awss3.DeleteBucketInput{Bucket: aws.String(bucketName)})
+func (s *s3) DeleteBucket(ctx context.Context, bucketName string) error {
+	_, err := s.client.DeleteBucketWithContext(ctx, &awss3.DeleteBucketInput{Bucket: aws.String(bucketName)})
 	return err
 }
 
 // DeleteBucket deletes bucket of object storage.
-func (s *s3) ListBucketMetadatas() ([]*BucketMetadata, error) {
-	resp, err := s.client.ListBuckets(&awss3.ListBucketsInput{})
+func (s *s3) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error) {
+	resp, err := s.client.ListBucketsWithContext(ctx, &awss3.ListBucketsInput{})
 	if err != nil {
 		return nil, err
 	}
@@ -87,8 +88,8 @@ func (s *s3) ListBucketMetadatas() ([]*BucketMetadata, error) {
 }
 
 // GetObjectMetadata returns metadata of object.
-func (s *s3) GetObjectMetadata(bucketName, objectKey string) (*ObjectMetadata, error) {
-	resp, err := s.client.HeadObject(&awss3.HeadObjectInput{
+func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error) {
+	resp, err := s.client.HeadObjectWithContext(ctx, &awss3.HeadObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
@@ -108,8 +109,8 @@ func (s *s3) GetObjectMetadata(bucketName, objectKey string) (*ObjectMetadata, e
 }
 
 // GetOject returns data of object.
-func (s *s3) GetOject(bucketName, objectKey string) (io.ReadCloser, error) {
-	resp, err := s.client.GetObject(&awss3.GetObjectInput{
+func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
+	resp, err := s.client.GetObjectWithContext(ctx, &awss3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
@@ -121,8 +122,8 @@ func (s *s3) GetOject(bucketName, objectKey string) (io.ReadCloser, error) {
 }
 
 // CreateObject creates data of object.
-func (s *s3) CreateObject(bucketName, objectKey string, reader io.Reader) error {
-	_, err := s.client.PutObject(&awss3.PutObjectInput{
+func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+	_, err := s.client.PutObjectWithContext(ctx, &awss3.PutObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 		Body:   aws.ReadSeekCloser(reader),
@@ -132,8 +133,8 @@ func (s *s3) CreateObject(bucketName, objectKey string, reader io.Reader) error 
 }
 
 // DeleteObject deletes data of object.
-func (s *s3) DeleteObject(bucketName, objectKey string) error {
-	_, err := s.client.DeleteObject(&awss3.DeleteObjectInput{
+func (s *s3) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
+	_, err := s.client.DeleteObjectWithContext(ctx, &awss3.DeleteObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
@@ -142,8 +143,8 @@ func (s *s3) DeleteObject(bucketName, objectKey string) error {
 }
 
 // DeleteObject deletes data of object.
-func (s *s3) ListObjectMetadatas(bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
-	resp, err := s.client.ListObjects(&awss3.ListObjectsInput{
+func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
+	resp, err := s.client.ListObjectsWithContext(ctx, &awss3.ListObjectsInput{
 		Bucket:  aws.String(bucketName),
 		Prefix:  aws.String(prefix),
 		Marker:  aws.String(marker),
