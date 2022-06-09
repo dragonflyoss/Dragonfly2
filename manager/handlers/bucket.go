@@ -23,6 +23,9 @@ import (
 
 	// nolint
 	_ "d7y.io/dragonfly/v2/manager/model"
+	// nolint
+	_ "d7y.io/dragonfly/v2/pkg/objectstorage"
+
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
@@ -110,7 +113,7 @@ func (h *Handlers) GetBucket(ctx *gin.Context) {
 // @Tags Bucket
 // @Accept json
 // @Produce json
-// @Success 200 {object} []*objectstorage.BucketMetadata
+// @Success 200 {object} []objectstorage.BucketMetadata
 // @Failure 400
 // @Failure 404
 // @Failure 500
