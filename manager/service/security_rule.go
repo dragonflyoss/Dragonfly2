@@ -74,7 +74,7 @@ func (s *service) GetSecurityRule(ctx context.Context, id uint) (*model.Security
 	return &securityRule, nil
 }
 
-func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error) {
+func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRulesQuery) ([]model.SecurityRule, int64, error) {
 	var count int64
 	var securityRules []model.SecurityRule
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityRule{
@@ -83,5 +83,5 @@ func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRules
 		return nil, 0, err
 	}
 
-	return &securityRules, count, nil
+	return securityRules, count, nil
 }

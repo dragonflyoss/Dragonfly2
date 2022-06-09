@@ -76,7 +76,7 @@ func (s *service) GetOauth(ctx context.Context, id uint) (*model.Oauth, error) {
 	return &oauth, nil
 }
 
-func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]model.Oauth, int64, error) {
+func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) ([]model.Oauth, int64, error) {
 	var count int64
 	var oauths []model.Oauth
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
@@ -86,5 +86,5 @@ func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) (*[]mod
 		return nil, 0, err
 	}
 
-	return &oauths, count, nil
+	return oauths, count, nil
 }

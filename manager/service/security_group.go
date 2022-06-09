@@ -70,7 +70,7 @@ func (s *service) GetSecurityGroup(ctx context.Context, id uint) (*model.Securit
 	return &securityGroup, nil
 }
 
-func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error) {
+func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGroupsQuery) ([]model.SecurityGroup, int64, error) {
 	var count int64
 	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
@@ -79,7 +79,7 @@ func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGrou
 		return nil, 0, err
 	}
 
-	return &securityGroups, count, nil
+	return securityGroups, count, nil
 }
 
 func (s *service) AddSchedulerClusterToSecurityGroup(ctx context.Context, id, schedulerClusterID uint) error {

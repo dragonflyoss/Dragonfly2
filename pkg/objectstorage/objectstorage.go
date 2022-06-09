@@ -19,6 +19,7 @@
 package objectstorage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"time"
@@ -57,31 +58,31 @@ type BucketMetadata struct {
 
 type ObjectStorage interface {
 	// GetBucketMetadata returns metadata of bucket.
-	GetBucketMetadata(bucketName string) (*BucketMetadata, error)
+	GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error)
 
 	// CreateBucket creates bucket of object storage.
-	CreateBucket(bucketName string) error
+	CreateBucket(ctx context.Context, bucketName string) error
 
 	// DeleteBucket deletes bucket of object storage.
-	DeleteBucket(bucketName string) error
+	DeleteBucket(ctx context.Context, bucketName string) error
 
 	// ListBucketMetadatas returns metadata of buckets.
-	ListBucketMetadatas() ([]*BucketMetadata, error)
+	ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error)
 
 	// GetObjectMetadata returns metadata of object.
-	GetObjectMetadata(bucketName, objectKey string) (*ObjectMetadata, error)
+	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error)
 
 	// GetOject returns data of object.
-	GetOject(bucketName, objectKey string) (io.ReadCloser, error)
+	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 
 	// CreateObject creates data of object.
-	CreateObject(bucketName, objectKey string, reader io.Reader) error
+	CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error
 
 	// DeleteObject deletes data of object.
-	DeleteObject(bucketName, objectKey string) error
+	DeleteObject(ctx context.Context, bucketName, objectKey string) error
 
 	// ListObjectMetadatas returns metadata of objects.
-	ListObjectMetadatas(bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error)
+	ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error)
 }
 
 // New object storage interface.

@@ -79,7 +79,7 @@ func (s *service) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, 
 	return &scheduler, nil
 }
 
-func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, int64, error) {
+func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) ([]model.Scheduler, int64, error) {
 	var count int64
 	var schedulers []model.Scheduler
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
@@ -93,5 +93,5 @@ func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery)
 		return nil, 0, err
 	}
 
-	return &schedulers, count, nil
+	return schedulers, count, nil
 }

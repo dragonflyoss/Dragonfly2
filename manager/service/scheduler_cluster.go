@@ -138,7 +138,7 @@ func (s *service) GetSchedulerCluster(ctx context.Context, id uint) (*model.Sche
 	return &schedulerCluster, nil
 }
 
-func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error) {
+func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetSchedulerClustersQuery) ([]model.SchedulerCluster, int64, error) {
 	var count int64
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
@@ -147,7 +147,7 @@ func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetScheduler
 		return nil, 0, err
 	}
 
-	return &schedulerClusters, count, nil
+	return schedulerClusters, count, nil
 }
 
 func (s *service) AddSchedulerToSchedulerCluster(ctx context.Context, id, schedulerID uint) error {

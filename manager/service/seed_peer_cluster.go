@@ -102,7 +102,7 @@ func (s *service) GetSeedPeerCluster(ctx context.Context, id uint) (*model.SeedP
 	return &seedPeerCluster, nil
 }
 
-func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerClustersQuery) (*[]model.SeedPeerCluster, int64, error) {
+func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerClustersQuery) ([]model.SeedPeerCluster, int64, error) {
 	var count int64
 	var seedPeerClusters []model.SeedPeerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SeedPeerCluster{
@@ -111,7 +111,7 @@ func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerCl
 		return nil, 0, err
 	}
 
-	return &seedPeerClusters, count, nil
+	return seedPeerClusters, count, nil
 }
 
 func (s *service) AddSeedPeerToSeedPeerCluster(ctx context.Context, id, seedPeerID uint) error {
