@@ -91,7 +91,7 @@ func formatDSN(cfg *config.MysqlConfig) (string, error) {
 			return "", err
 		}
 	} else if cfg.TLSConfig != "" { // If no custom config is specified, use tlsConfig parameter if it is set
-		mysqlCfg.Params = map[string]string{"tls": cfg.TLSConfig}
+		mysqlCfg.TLSConfig = cfg.TLSConfig
 	}
 
 	return mysqlCfg.FormatDSN(), nil
