@@ -36,6 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
@@ -89,8 +90,25 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		return nil, err
 	}
 
+	// Initialize object storage
+	var serviceOptions []service.Option
+	if cfg.ObjectStorage.Enable {
+		objectStorage, err := objectstorage.New(
+			cfg.ObjectStorage.Name,
+			cfg.ObjectStorage.Region,
+			cfg.ObjectStorage.Endpoint,
+			cfg.ObjectStorage.AccessKey,
+			cfg.ObjectStorage.SecretKey,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		serviceOptions = append(serviceOptions, service.WithObjectStorage(objectStorage))
+	}
+
 	// Initialize REST server
-	restService := service.New(db, cache, job, enforcer)
+	restService := service.New(db, cache, job, enforcer, serviceOptions...)
 	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
 	if err != nil {
 		return nil, err

@@ -74,7 +74,7 @@ func (s *service) GetConfig(ctx context.Context, id uint) (*model.Config, error)
 	return &config, nil
 }
 
-func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]model.Config, int64, error) {
+func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) ([]model.Config, int64, error) {
 	var count int64
 	var configs []model.Config
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Config{
@@ -85,5 +85,5 @@ func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) (*[]m
 		return nil, 0, err
 	}
 
-	return &configs, count, nil
+	return configs, count, nil
 }
