@@ -146,30 +146,14 @@ type service struct {
 	objectStorage objectstorage.ObjectStorage
 }
 
-// HostOption is a functional option for configuring the host.
-type Option func(s *service) *service
-
-// WithObjectStorage sets service's object storage client.
-func WithObjectStorage(objectStorage objectstorage.ObjectStorage) Option {
-	return func(s *service) *service {
-		s.objectStorage = objectStorage
-		return s
-	}
-}
-
 // NewREST returns a new REST instence
-func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, options ...Option) Service {
-	s := &service{
-		db:       database.DB,
-		rdb:      database.RDB,
-		cache:    cache,
-		job:      job,
-		enforcer: enforcer,
+func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, objectStorage objectstorage.ObjectStorage) Service {
+	return &service{
+		db:            database.DB,
+		rdb:           database.RDB,
+		cache:         cache,
+		job:           job,
+		enforcer:      enforcer,
+		objectStorage: objectStorage,
 	}
-
-	for _, opt := range options {
-		opt(s)
-	}
-
-	return s
 }

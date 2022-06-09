@@ -18,23 +18,42 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
+var ErrObjectStorageDisabled = errors.New("object storage is disabled")
+
 func (s *service) CreateBucket(ctx context.Context, json types.CreateBucketRequest) error {
+	if s.objectStorage == nil {
+		return ErrObjectStorageDisabled
+	}
+
 	return s.objectStorage.CreateBucket(ctx, json.Name)
 }
 
 func (s *service) DestroyBucket(ctx context.Context, id string) error {
+	if s.objectStorage == nil {
+		return ErrObjectStorageDisabled
+	}
+
 	return s.objectStorage.DeleteBucket(ctx, id)
 }
 
 func (s *service) GetBucket(ctx context.Context, id string) (*objectstorage.BucketMetadata, error) {
+	if s.objectStorage == nil {
+		return nil, ErrObjectStorageDisabled
+	}
+
 	return s.objectStorage.GetBucketMetadata(ctx, id)
 }
 
 func (s *service) GetBuckets(ctx context.Context) ([]*objectstorage.BucketMetadata, error) {
+	if s.objectStorage == nil {
+		return nil, ErrObjectStorageDisabled
+	}
+
 	return s.objectStorage.ListBucketMetadatas(ctx)
 }
