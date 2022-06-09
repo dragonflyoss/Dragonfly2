@@ -30,12 +30,13 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 type Service interface {
 	UpdateUser(context.Context, uint, types.UpdateUserRequest) (*model.User, error)
 	GetUser(context.Context, uint) (*model.User, error)
-	GetUsers(context.Context, types.GetUsersQuery) (*[]model.User, int64, error)
+	GetUsers(context.Context, types.GetUsersQuery) ([]model.User, int64, error)
 	SignIn(context.Context, types.SignInRequest) (*model.User, error)
 	SignUp(context.Context, types.SignUpRequest) (*model.User, error)
 	OauthSignin(context.Context, string) (string, error)
@@ -58,13 +59,13 @@ type Service interface {
 	DestroyOauth(context.Context, uint) error
 	UpdateOauth(context.Context, uint, types.UpdateOauthRequest) (*model.Oauth, error)
 	GetOauth(context.Context, uint) (*model.Oauth, error)
-	GetOauths(context.Context, types.GetOauthsQuery) (*[]model.Oauth, int64, error)
+	GetOauths(context.Context, types.GetOauthsQuery) ([]model.Oauth, int64, error)
 
 	CreateSeedPeerCluster(context.Context, types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error)
 	DestroySeedPeerCluster(context.Context, uint) error
 	UpdateSeedPeerCluster(context.Context, uint, types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error)
 	GetSeedPeerCluster(context.Context, uint) (*model.SeedPeerCluster, error)
-	GetSeedPeerClusters(context.Context, types.GetSeedPeerClustersQuery) (*[]model.SeedPeerCluster, int64, error)
+	GetSeedPeerClusters(context.Context, types.GetSeedPeerClustersQuery) ([]model.SeedPeerCluster, int64, error)
 	AddSeedPeerToSeedPeerCluster(context.Context, uint, uint) error
 	AddSchedulerClusterToSeedPeerCluster(context.Context, uint, uint) error
 
@@ -72,7 +73,7 @@ type Service interface {
 	DestroySeedPeer(context.Context, uint) error
 	UpdateSeedPeer(context.Context, uint, types.UpdateSeedPeerRequest) (*model.SeedPeer, error)
 	GetSeedPeer(context.Context, uint) (*model.SeedPeer, error)
-	GetSeedPeers(context.Context, types.GetSeedPeersQuery) (*[]model.SeedPeer, int64, error)
+	GetSeedPeers(context.Context, types.GetSeedPeersQuery) ([]model.SeedPeer, int64, error)
 
 	GetPeers(context.Context) ([]string, error)
 
@@ -80,42 +81,47 @@ type Service interface {
 	DestroySchedulerCluster(context.Context, uint) error
 	UpdateSchedulerCluster(context.Context, uint, types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error)
 	GetSchedulerCluster(context.Context, uint) (*model.SchedulerCluster, error)
-	GetSchedulerClusters(context.Context, types.GetSchedulerClustersQuery) (*[]model.SchedulerCluster, int64, error)
+	GetSchedulerClusters(context.Context, types.GetSchedulerClustersQuery) ([]model.SchedulerCluster, int64, error)
 	AddSchedulerToSchedulerCluster(context.Context, uint, uint) error
 
 	CreateScheduler(context.Context, types.CreateSchedulerRequest) (*model.Scheduler, error)
 	DestroyScheduler(context.Context, uint) error
 	UpdateScheduler(context.Context, uint, types.UpdateSchedulerRequest) (*model.Scheduler, error)
 	GetScheduler(context.Context, uint) (*model.Scheduler, error)
-	GetSchedulers(context.Context, types.GetSchedulersQuery) (*[]model.Scheduler, int64, error)
+	GetSchedulers(context.Context, types.GetSchedulersQuery) ([]model.Scheduler, int64, error)
 
 	CreateSecurityRule(context.Context, types.CreateSecurityRuleRequest) (*model.SecurityRule, error)
 	DestroySecurityRule(context.Context, uint) error
 	UpdateSecurityRule(context.Context, uint, types.UpdateSecurityRuleRequest) (*model.SecurityRule, error)
 	GetSecurityRule(context.Context, uint) (*model.SecurityRule, error)
-	GetSecurityRules(context.Context, types.GetSecurityRulesQuery) (*[]model.SecurityRule, int64, error)
+	GetSecurityRules(context.Context, types.GetSecurityRulesQuery) ([]model.SecurityRule, int64, error)
 
 	CreateSecurityGroup(context.Context, types.CreateSecurityGroupRequest) (*model.SecurityGroup, error)
 	DestroySecurityGroup(context.Context, uint) error
 	UpdateSecurityGroup(context.Context, uint, types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error)
 	GetSecurityGroup(context.Context, uint) (*model.SecurityGroup, error)
-	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) (*[]model.SecurityGroup, int64, error)
+	GetSecurityGroups(context.Context, types.GetSecurityGroupsQuery) ([]model.SecurityGroup, int64, error)
 	AddSchedulerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSeedPeerClusterToSecurityGroup(context.Context, uint, uint) error
 	AddSecurityRuleToSecurityGroup(context.Context, uint, uint) error
 	DestroySecurityRuleToSecurityGroup(context.Context, uint, uint) error
 
+	CreateBucket(context.Context, types.CreateBucketRequest) error
+	DestroyBucket(context.Context, string) error
+	GetBucket(context.Context, string) (*objectstorage.BucketMetadata, error)
+	GetBuckets(context.Context) ([]*objectstorage.BucketMetadata, error)
+
 	CreateConfig(context.Context, types.CreateConfigRequest) (*model.Config, error)
 	DestroyConfig(context.Context, uint) error
 	UpdateConfig(context.Context, uint, types.UpdateConfigRequest) (*model.Config, error)
 	GetConfig(context.Context, uint) (*model.Config, error)
-	GetConfigs(context.Context, types.GetConfigsQuery) (*[]model.Config, int64, error)
+	GetConfigs(context.Context, types.GetConfigsQuery) ([]model.Config, int64, error)
 
 	CreatePreheatJob(context.Context, types.CreatePreheatJobRequest) (*model.Job, error)
 	DestroyJob(context.Context, uint) error
 	UpdateJob(context.Context, uint, types.UpdateJobRequest) (*model.Job, error)
 	GetJob(context.Context, uint) (*model.Job, error)
-	GetJobs(context.Context, types.GetJobsQuery) (*[]model.Job, int64, error)
+	GetJobs(context.Context, types.GetJobsQuery) ([]model.Job, int64, error)
 
 	CreateV1Preheat(context.Context, types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error)
 	GetV1Preheat(context.Context, string) (*types.GetV1PreheatResponse, error)
@@ -124,7 +130,7 @@ type Service interface {
 	DestroyApplication(context.Context, uint) error
 	UpdateApplication(context.Context, uint, types.UpdateApplicationRequest) (*model.Application, error)
 	GetApplication(context.Context, uint) (*model.Application, error)
-	GetApplications(context.Context, types.GetApplicationsQuery) (*[]model.Application, int64, error)
+	GetApplications(context.Context, types.GetApplicationsQuery) ([]model.Application, int64, error)
 	AddSchedulerClusterToApplication(context.Context, uint, uint) error
 	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
 	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
@@ -132,20 +138,38 @@ type Service interface {
 }
 
 type service struct {
-	db       *gorm.DB
-	rdb      *redis.Client
-	cache    *cache.Cache
-	job      *job.Job
-	enforcer *casbin.Enforcer
+	db            *gorm.DB
+	rdb           *redis.Client
+	cache         *cache.Cache
+	job           *job.Job
+	enforcer      *casbin.Enforcer
+	objectStorage objectstorage.ObjectStorage
+}
+
+// HostOption is a functional option for configuring the host.
+type Option func(s *service) *service
+
+// WithObjectStorage sets service's object storage client.
+func WithObjectStorage(objectStorage objectstorage.ObjectStorage) Option {
+	return func(s *service) *service {
+		s.objectStorage = objectStorage
+		return s
+	}
 }
 
 // NewREST returns a new REST instence
-func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer) Service {
-	return &service{
+func New(database *database.Database, cache *cache.Cache, job *job.Job, enforcer *casbin.Enforcer, options ...Option) Service {
+	s := &service{
 		db:       database.DB,
 		rdb:      database.RDB,
 		cache:    cache,
 		job:      job,
 		enforcer: enforcer,
 	}
+
+	for _, opt := range options {
+		opt(s)
+	}
+
+	return s
 }

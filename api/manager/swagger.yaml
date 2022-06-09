@@ -4,11 +4,7 @@ definitions:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
       download_rate_limit:
-        type: integer
-      id:
         type: integer
       name:
         type: string
@@ -22,8 +18,6 @@ definitions:
         type: array
       state:
         type: string
-      updated_at:
-        type: string
       url:
         type: string
       user:
@@ -31,17 +25,37 @@ definitions:
       user_id:
         type: integer
     type: object
+  model.Assertion:
+    properties:
+      key:
+        type: string
+      policy:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+      policyMap:
+        additionalProperties:
+          type: integer
+        type: object
+      rm: {}
+      tokens:
+        items:
+          type: string
+        type: array
+      value:
+        type: string
+    type: object
+  model.AssertionMap:
+    additionalProperties:
+      $ref: '#/definitions/model.Assertion'
+    type: object
   model.Config:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
-        type: string
-      updated_at:
         type: string
       user_id:
         type: integer
@@ -57,10 +71,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       result:
         $ref: '#/definitions/model.JSONMap'
       scheduler_clusters:
@@ -77,8 +87,6 @@ definitions:
         type: string
       type:
         type: string
-      updated_at:
-        type: string
       user_id:
         type: integer
     type: object
@@ -90,25 +98,15 @@ definitions:
         type: string
       client_secret:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
         type: string
       redirect_url:
         type: string
-      updated_at:
-        type: string
     type: object
   model.Scheduler:
     properties:
-      created_at:
-        type: string
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
@@ -123,8 +121,6 @@ definitions:
         type: integer
       state:
         type: string
-      updated_at:
-        type: string
     type: object
   model.SchedulerCluster:
     properties:
@@ -136,10 +132,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
       jobs:
@@ -156,36 +148,24 @@ definitions:
         items:
           $ref: '#/definitions/model.SeedPeerCluster'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SecurityGroup:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
         type: string
       security_rules:
         items:
           $ref: '#/definitions/model.SecurityRule'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SecurityRule:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
       domain:
         type: string
-      id:
-        type: integer
       name:
         type: string
       proxy_domain:
@@ -194,19 +174,13 @@ definitions:
         items:
           $ref: '#/definitions/model.SecurityGroup'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SeedPeer:
     properties:
-      created_at:
-        type: string
       download_port:
         type: integer
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
@@ -225,8 +199,6 @@ definitions:
         type: string
       type:
         type: string
-      updated_at:
-        type: string
     type: object
   model.SeedPeerCluster:
     properties:
@@ -236,10 +208,6 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
       jobs:
@@ -256,8 +224,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       security_group_id:
         type: integer
-      updated_at:
-        type: string
     type: object
   model.User:
     properties:
@@ -265,12 +231,8 @@ definitions:
         type: string
       bio:
         type: string
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
       location:
         type: string
       name:
@@ -279,7 +241,14 @@ definitions:
         type: string
       state:
         type: string
-      updated_at:
+    type: object
+  objectstorage.BucketMetadata:
+    properties:
+      createAt:
+        description: CreateAt is bucket create time.
+        type: string
+      name:
+        description: Name is bucket name
         type: string
     type: object
   rbac.Permission:
@@ -328,6 +297,13 @@ definitions:
     required:
     - name
     - user_id
+    type: object
+  types.CreateBucketRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
     type: object
   types.CreateConfigRequest:
     properties:
@@ -1080,6 +1056,105 @@ paths:
       summary: Add SeedPeer to Application
       tags:
       - Application
+  /buckets:
+    get:
+      consumes:
+      - application/json
+      description: Get Buckets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/objectstorage.BucketMetadata'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Buckets
+      tags:
+      - Bucket
+    post:
+      consumes:
+      - application/json
+      description: create by json bucket
+      parameters:
+      - description: Bucket
+        in: body
+        name: Bucket
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateBucketRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Bucket
+      tags:
+      - Bucket
+  /buckets/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Bucket
+      tags:
+      - Bucket
+    get:
+      consumes:
+      - application/json
+      description: Get Bucket by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/objectstorage.BucketMetadata'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Bucket
+      tags:
+      - Bucket
   /configs:
     get:
       consumes:

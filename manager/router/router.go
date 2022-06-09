@@ -195,6 +195,15 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
 	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 
+	// Bucket
+	if cfg.ObjectStorage.Enable {
+		bucket := apiv1.Group("/buckets")
+		bucket.POST("", h.CreateBucket, jwt.MiddlewareFunc(), rbac)
+		bucket.DELETE(":id", h.DestroyBucket, jwt.MiddlewareFunc(), rbac)
+		bucket.GET(":id", h.GetBucket, jwt.MiddlewareFunc(), rbac)
+		bucket.GET("", h.GetBuckets)
+	}
+
 	// Config
 	config := apiv1.Group("/configs")
 	config.POST("", h.CreateConfig, jwt.MiddlewareFunc(), rbac)

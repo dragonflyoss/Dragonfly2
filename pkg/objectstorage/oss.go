@@ -17,6 +17,7 @@
 package objectstorage
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strconv"
@@ -43,7 +44,7 @@ func newOSS(region, endpoint, accessKey, secretKey string) (ObjectStorage, error
 }
 
 // GetBucketMetadata returns metadata of bucket.
-func (o *oss) GetBucketMetadata(bucketName string) (*BucketMetadata, error) {
+func (o *oss) GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error) {
 	resp, err := o.client.GetBucketInfo(bucketName)
 	if err != nil {
 		return nil, err
@@ -56,17 +57,17 @@ func (o *oss) GetBucketMetadata(bucketName string) (*BucketMetadata, error) {
 }
 
 // GetBucketMetadata returns metadata of bucket.
-func (o *oss) CreateBucket(bucketName string) error {
+func (o *oss) CreateBucket(ctx context.Context, bucketName string) error {
 	return o.client.CreateBucket(bucketName)
 }
 
 // DeleteBucket deletes bucket of object storage.
-func (o *oss) DeleteBucket(bucketName string) error {
+func (o *oss) DeleteBucket(ctx context.Context, bucketName string) error {
 	return o.client.DeleteBucket(bucketName)
 }
 
 // DeleteBucket deletes bucket of object storage.
-func (o *oss) ListBucketMetadatas() ([]*BucketMetadata, error) {
+func (o *oss) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error) {
 	resp, err := o.client.ListBuckets()
 	if err != nil {
 		return nil, err
@@ -84,7 +85,7 @@ func (o *oss) ListBucketMetadatas() ([]*BucketMetadata, error) {
 }
 
 // GetObjectMetadata returns metadata of object.
-func (o *oss) GetObjectMetadata(bucketName, objectKey string) (*ObjectMetadata, error) {
+func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err
@@ -112,7 +113,7 @@ func (o *oss) GetObjectMetadata(bucketName, objectKey string) (*ObjectMetadata, 
 }
 
 // GetOject returns data of object.
-func (o *oss) GetOject(bucketName, objectKey string) (io.ReadCloser, error) {
+func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err
@@ -122,7 +123,7 @@ func (o *oss) GetOject(bucketName, objectKey string) (io.ReadCloser, error) {
 }
 
 // CreateObject creates data of object.
-func (o *oss) CreateObject(bucketName, objectKey string, reader io.Reader) error {
+func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return err
@@ -132,7 +133,7 @@ func (o *oss) CreateObject(bucketName, objectKey string, reader io.Reader) error
 }
 
 // DeleteObject deletes data of object.
-func (o *oss) DeleteObject(bucketName, objectKey string) error {
+func (o *oss) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return err
@@ -142,7 +143,7 @@ func (o *oss) DeleteObject(bucketName, objectKey string) error {
 }
 
 // ListObjectMetadatas returns metadata of objects.
-func (o *oss) ListObjectMetadatas(bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
+func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return nil, err

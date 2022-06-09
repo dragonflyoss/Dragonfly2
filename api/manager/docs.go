@@ -418,6 +418,156 @@ const docTemplate = `{
                 }
             }
         },
+        "/buckets": {
+            "get": {
+                "description": "Get Buckets",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bucket"
+                ],
+                "summary": "Get Buckets",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/objectstorage.BucketMetadata"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "create by json bucket",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bucket"
+                ],
+                "summary": "Create Bucket",
+                "parameters": [
+                    {
+                        "description": "Bucket",
+                        "name": "Bucket",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateBucketRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/buckets/{id}": {
+            "get": {
+                "description": "Get Bucket by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bucket"
+                ],
+                "summary": "Get Bucket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/objectstorage.BucketMetadata"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Bucket"
+                ],
+                "summary": "Destroy Bucket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/configs": {
             "get": {
                 "description": "Get Configs",
@@ -3542,13 +3692,7 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "download_rate_limit": {
-                    "type": "integer"
-                },
-                "id": {
                     "type": "integer"
                 },
                 "name": {
@@ -3569,9 +3713,6 @@ const docTemplate = `{
                 "state": {
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string"
-                },
                 "url": {
                     "type": "string"
                 },
@@ -3583,22 +3724,52 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Assertion": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "policy": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "policyMap": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "rm": {},
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AssertionMap": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/model.Assertion"
+            }
+        },
         "model.Config": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3621,12 +3792,6 @@ const docTemplate = `{
                 },
                 "bio": {
                     "type": "string"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "result": {
                     "$ref": "#/definitions/model.JSONMap"
@@ -3652,9 +3817,6 @@ const docTemplate = `{
                 "type": {
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string"
-                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -3672,19 +3834,10 @@ const docTemplate = `{
                 "client_secret": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3692,14 +3845,8 @@ const docTemplate = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -3721,9 +3868,6 @@ const docTemplate = `{
                 },
                 "state": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3741,12 +3885,6 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -3771,9 +3909,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SeedPeerCluster"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3783,12 +3918,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -3797,9 +3926,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityRule"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3809,14 +3935,8 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "domain": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -3829,26 +3949,17 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
         "model.SeedPeer": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -3876,9 +3987,6 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3893,12 +4001,6 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -3923,9 +4025,6 @@ const docTemplate = `{
                 },
                 "security_group_id": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3938,14 +4037,8 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -3958,8 +4051,18 @@ const docTemplate = `{
                 },
                 "state": {
                     "type": "string"
+                }
+            }
+        },
+        "objectstorage.BucketMetadata": {
+            "type": "object",
+            "properties": {
+                "createAt": {
+                    "description": "CreateAt is bucket create time.",
+                    "type": "string"
                 },
-                "updated_at": {
+                "name": {
+                    "description": "Name is bucket name",
                     "type": "string"
                 }
             }
@@ -4030,6 +4133,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.CreateBucketRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
                 }
             }
         },

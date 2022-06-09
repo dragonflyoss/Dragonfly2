@@ -55,7 +55,7 @@ func (s *service) GetUser(ctx context.Context, id uint) (*model.User, error) {
 	return &user, nil
 }
 
-func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) (*[]model.User, int64, error) {
+func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) ([]model.User, int64, error) {
 	var count int64
 	var users []model.User
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.User{
@@ -67,7 +67,7 @@ func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) (*[]model
 		return nil, 0, err
 	}
 
-	return &users, count, nil
+	return users, count, nil
 }
 
 func (s *service) SignIn(ctx context.Context, json types.SignInRequest) (*model.User, error) {

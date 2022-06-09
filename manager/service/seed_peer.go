@@ -83,7 +83,7 @@ func (s *service) GetSeedPeer(ctx context.Context, id uint) (*model.SeedPeer, er
 	return &seedPeer, nil
 }
 
-func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) (*[]model.SeedPeer, int64, error) {
+func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) ([]model.SeedPeer, int64, error) {
 	var count int64
 	var seedPeers []model.SeedPeer
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SeedPeer{
@@ -99,5 +99,5 @@ func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) (
 		return nil, 0, err
 	}
 
-	return &seedPeers, count, nil
+	return seedPeers, count, nil
 }
