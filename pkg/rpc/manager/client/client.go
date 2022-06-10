@@ -60,6 +60,12 @@ type Client interface {
 	// List acitve schedulers configuration.
 	ListSchedulers(*manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
 
+	// Get object storage configuration.
+	GetObjectStorage(*manager.GetObjectStorageRequest) (*manager.ObjectStorage, error)
+
+	// List buckets configuration.
+	ListBuckets(*manager.ListBucketsRequest) (*manager.ListBucketsResponse, error)
+
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *manager.KeepAliveRequest)
 
@@ -146,6 +152,22 @@ func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.Li
 	defer cancel()
 
 	return c.ManagerClient.ListSchedulers(ctx, req)
+}
+
+// Get object storage configuration.
+func (c *client) GetObjectStorage(req *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.GetObjectStorage(ctx, req)
+}
+
+// List buckets configuration.
+func (c *client) ListBuckets(req *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+	defer cancel()
+
+	return c.ManagerClient.ListBuckets(ctx, req)
 }
 
 // List acitve schedulers configuration.

@@ -91,9 +91,9 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize object storage
-	var serviceOptions []service.Option
+	var objectStorage objectstorage.ObjectStorage
 	if cfg.ObjectStorage.Enable {
-		objectStorage, err := objectstorage.New(
+		objectStorage, err = objectstorage.New(
 			cfg.ObjectStorage.Name,
 			cfg.ObjectStorage.Region,
 			cfg.ObjectStorage.Endpoint,
@@ -103,12 +103,10 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		serviceOptions = append(serviceOptions, service.WithObjectStorage(objectStorage))
 	}
 
 	// Initialize REST server
-	restService := service.New(db, cache, job, enforcer, serviceOptions...)
+	restService := service.New(db, cache, job, enforcer, objectStorage)
 	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
 	if err != nil {
 		return nil, err
@@ -125,14 +123,14 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	var options []grpc.ServerOption
+	var grpcOptions []grpc.ServerOption
 	if s.config.Options.Telemetry.Jaeger != "" {
-		options = []grpc.ServerOption{
+		grpcOptions = []grpc.ServerOption{
 			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
 			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
 		}
 	}
-	grpcServer := rpcserver.New(db, cache, searcher, options...)
+	grpcServer := rpcserver.New(db, cache, searcher, objectStorage, cfg.ObjectStorage, grpcOptions...)
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus

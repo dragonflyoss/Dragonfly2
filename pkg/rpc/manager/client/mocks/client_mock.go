@@ -49,6 +49,21 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
+// GetObjectStorage mocks base method.
+func (m *MockClient) GetObjectStorage(arg0 *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetObjectStorage", arg0)
+	ret0, _ := ret[0].(*manager.ObjectStorage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetObjectStorage indicates an expected call of GetObjectStorage.
+func (mr *MockClientMockRecorder) GetObjectStorage(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), arg0)
+}
+
 // GetScheduler mocks base method.
 func (m *MockClient) GetScheduler(arg0 *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -74,6 +89,21 @@ func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *manager.KeepAliveReques
 func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), arg0, arg1)
+}
+
+// ListBuckets mocks base method.
+func (m *MockClient) ListBuckets(arg0 *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListBuckets", arg0)
+	ret0, _ := ret[0].(*manager.ListBucketsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListBuckets indicates an expected call of ListBuckets.
+func (mr *MockClientMockRecorder) ListBuckets(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0)
 }
 
 // ListSchedulers mocks base method.

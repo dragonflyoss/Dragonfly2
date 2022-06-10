@@ -23,18 +23,22 @@ import (
 	"github.com/go-sql-driver/mysql"
 	drivermysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
 	"moul.io/zapgorm2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/manager/types"
 	schedulerconfig "d7y.io/dragonfly/v2/scheduler/config"
 )
 
-func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
+func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
+	mysql := cfg.Database.Mysql
+
 	// Format dsn string
-	dsn, err := formatDSN(cfg)
+	dsn, err := formatDSN(mysql)
 	if err != nil {
 		return nil, err
 	}
@@ -52,14 +56,14 @@ func newMyqsl(cfg *config.MysqlConfig) (*gorm.DB, error) {
 	}
 
 	// Run migration
-	if cfg.Migrate {
+	if mysql.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}
 	}
 
 	// Run seed
-	if err := seed(db); err != nil {
+	if err := seed(cfg, db); err != nil {
 		return nil, err
 	}
 
@@ -111,11 +115,12 @@ func migrate(db *gorm.DB) error {
 	)
 }
 
-func seed(db *gorm.DB) error {
+func seed(cfg *config.Config, db *gorm.DB) error {
 	var schedulerClusterCount int64
 	if err := db.Model(model.SchedulerCluster{}).Count(&schedulerClusterCount).Error; err != nil {
 		return err
 	}
+
 	if schedulerClusterCount <= 0 {
 		if err := db.Create(&model.SchedulerCluster{
 			Model: model.Model{
@@ -140,6 +145,7 @@ func seed(db *gorm.DB) error {
 	if err := db.Model(model.SeedPeerCluster{}).Count(&seedPeerClusterCount).Error; err != nil {
 		return err
 	}
+
 	if seedPeerClusterCount <= 0 {
 		if err := db.Create(&model.SeedPeerCluster{
 			Model: model.Model{
@@ -165,6 +171,18 @@ func seed(db *gorm.DB) error {
 		}
 
 		if err := db.Model(&seedPeerCluster).Association("SchedulerClusters").Append(&schedulerCluster); err != nil {
+			return err
+		}
+	}
+
+	if cfg.ObjectStorage.Enable {
+		if err := db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: types.ObjectStorageIsEnabledConfigName}},
+			DoUpdates: clause.AssignmentColumns([]string{"name", "value"}),
+		}).Create(&model.Config{
+			Name:  types.ObjectStorageIsEnabledConfigName,
+			Value: "true",
+		}).Error; err != nil {
 			return err
 		}
 	}
