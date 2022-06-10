@@ -50,8 +50,8 @@ import (
 var (
 	okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
 
-	// represents proxy default biz value
-	bizTag = "d7y/proxy"
+	// Default biz value is empty.
+	bizTag = ""
 
 	schemaHTTPS = "https"
 
