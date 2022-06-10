@@ -37,11 +37,13 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
+	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/database"
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
@@ -77,15 +79,24 @@ type Server struct {
 	searcher searcher.Searcher
 	// Manager grpc interface.
 	manager.UnimplementedManagerServer
+	// Object storage interface.
+	objectStorage objectstorage.ObjectStorage
+	// Object storage configuration.
+	objectStorageConfig *config.ObjectStorageConfig
 }
 
 // New returns a new manager server from the given options.
-func New(database *database.Database, cache *cache.Cache, searcher searcher.Searcher, opts ...grpc.ServerOption) *grpc.Server {
+func New(
+	database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
+	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...grpc.ServerOption,
+) *grpc.Server {
 	server := &Server{
-		db:       database.DB,
-		rdb:      database.RDB,
-		cache:    cache,
-		searcher: searcher,
+		db:                  database.DB,
+		rdb:                 database.RDB,
+		cache:               cache,
+		searcher:            searcher,
+		objectStorage:       objectStorage,
+		objectStorageConfig: objectStorageConfig,
 	}
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -531,6 +542,72 @@ func (s *Server) getPeerCount(ctx context.Context, req *manager.ListSchedulersRe
 	}
 
 	return len(val), nil
+}
+
+// Get object storage configuration.
+func (s *Server) GetObjectStorage(ctx context.Context, req *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+
+	if !s.objectStorageConfig.Enable {
+		msg := "object storage is disabled"
+		log.Debug(msg)
+		return nil, status.Error(codes.NotFound, msg)
+	}
+
+	return &manager.ObjectStorage{
+		Name:      s.objectStorageConfig.Name,
+		Region:    s.objectStorageConfig.Region,
+		Endpoint:  s.objectStorageConfig.Endpoint,
+		AccessKey: s.objectStorageConfig.AccessKey,
+		SecretKey: s.objectStorageConfig.SecretKey,
+	}, nil
+}
+
+// List buckets configuration.
+func (s *Server) ListBuckets(ctx context.Context, req *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
+	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
+
+	if !s.objectStorageConfig.Enable {
+		msg := "object storage is disabled"
+		log.Debug(msg)
+		return nil, status.Error(codes.NotFound, msg)
+	}
+
+	var pbListBucketsResponse manager.ListBucketsResponse
+	cacheKey := cache.MakeBucketsCacheKey(s.objectStorageConfig.Name)
+
+	// Cache hit.
+	if err := s.cache.Get(ctx, cacheKey, &pbListBucketsResponse); err == nil {
+		log.Infof("%s cache hit", cacheKey)
+		return &pbListBucketsResponse, nil
+	}
+
+	// Cache miss.
+	log.Infof("%s cache miss", cacheKey)
+	buckets, err := s.objectStorage.ListBucketMetadatas(ctx)
+	if err != nil {
+		log.Errorf("list bucket metadatas failed: %s", err.Error())
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	// Construct schedulers.
+	for _, bucket := range buckets {
+		pbListBucketsResponse.Buckets = append(pbListBucketsResponse.Buckets, &manager.Bucket{
+			Name: bucket.Name,
+		})
+	}
+
+	// Cache data.
+	if err := s.cache.Once(&cachev8.Item{
+		Ctx:   ctx,
+		Key:   cacheKey,
+		Value: &pbListBucketsResponse,
+		TTL:   s.cache.TTL,
+	}); err != nil {
+		log.Warnf("storage cache failed: %v", err)
+	}
+
+	return &pbListBucketsResponse, nil
 }
 
 // KeepAlive with manager.

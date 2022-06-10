@@ -21,6 +21,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
@@ -37,12 +40,20 @@ var (
 )
 
 type DynconfigData struct {
-	Schedulers []*manager.Scheduler
+	Schedulers    []*manager.Scheduler
+	ObjectStorage *manager.ObjectStorage
+	Buckets       []*manager.Bucket
 }
 
 type Dynconfig interface {
-	// Get the dynamic config from manager.
+	// Get the dynamic schedulers config from manager.
 	GetSchedulers() ([]*manager.Scheduler, error)
+
+	// Get the dynamic object storage config from manager.
+	GetObjectStorage() (*manager.ObjectStorage, error)
+
+	// Get the dynamic buckets config from manager.
+	GetBuckets() ([]*manager.Bucket, error)
 
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
@@ -102,6 +113,24 @@ func (d *dynconfig) GetSchedulers() ([]*manager.Scheduler, error) {
 	}
 
 	return data.Schedulers, nil
+}
+
+func (d *dynconfig) GetObjectStorage() (*manager.ObjectStorage, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	return data.ObjectStorage, nil
+}
+
+func (d *dynconfig) GetBuckets() ([]*manager.Bucket, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	return data.Buckets, nil
 }
 
 func (d *dynconfig) Get() (*DynconfigData, error) {
@@ -182,7 +211,7 @@ func newManagerClient(client managerclient.Client, hostOption HostOption) intern
 }
 
 func (mc *managerClient) Get() (interface{}, error) {
-	schedulers, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
+	listSchedulersResp, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
@@ -197,5 +226,34 @@ func (mc *managerClient) Get() (interface{}, error) {
 		return nil, err
 	}
 
-	return schedulers, nil
+	getObjectStorageResp, err := mc.GetObjectStorage(&manager.GetObjectStorageRequest{
+		SourceType: manager.SourceType_PEER_SOURCE,
+		HostName:   mc.hostOption.Hostname,
+		Ip:         mc.hostOption.AdvertiseIP,
+	})
+	if err != nil {
+		if s, ok := status.FromError(err); ok &&
+			(s.Code() == codes.NotFound || s.Code() == codes.Unimplemented) {
+			return DynconfigData{
+				Schedulers: listSchedulersResp.Schedulers,
+			}, nil
+		}
+
+		return nil, err
+	}
+
+	listBucketsResp, err := mc.ListBuckets(&manager.ListBucketsRequest{
+		SourceType: manager.SourceType_PEER_SOURCE,
+		HostName:   mc.hostOption.Hostname,
+		Ip:         mc.hostOption.AdvertiseIP,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return DynconfigData{
+		Schedulers:    listSchedulersResp.Schedulers,
+		ObjectStorage: getObjectStorageResp,
+		Buckets:       listBucketsResp.Buckets,
+	}, nil
 }

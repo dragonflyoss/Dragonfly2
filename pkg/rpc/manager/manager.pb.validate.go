@@ -1323,6 +1323,513 @@ var _ interface {
 	ErrorName() string
 } = ListSchedulersResponseValidationError{}
 
+// Validate checks the field values on ObjectStorage with the rules defined in
+// the proto definition for this message. If any rules are violated, an error
+// is returned.
+func (m *ObjectStorage) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 1024 {
+		return ObjectStorageValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 1024 runes, inclusive",
+		}
+	}
+
+	if m.GetRegion() != "" {
+
+		if l := utf8.RuneCountInString(m.GetRegion()); l < 1 || l > 1024 {
+			return ObjectStorageValidationError{
+				field:  "Region",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetEndpoint() != "" {
+
+		if l := utf8.RuneCountInString(m.GetEndpoint()); l < 1 || l > 1024 {
+			return ObjectStorageValidationError{
+				field:  "Endpoint",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetAccessKey() != "" {
+
+		if l := utf8.RuneCountInString(m.GetAccessKey()); l < 1 || l > 1024 {
+			return ObjectStorageValidationError{
+				field:  "AccessKey",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	if m.GetSecretKey() != "" {
+
+		if l := utf8.RuneCountInString(m.GetSecretKey()); l < 1 || l > 1024 {
+			return ObjectStorageValidationError{
+				field:  "SecretKey",
+				reason: "value length must be between 1 and 1024 runes, inclusive",
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// ObjectStorageValidationError is the validation error returned by
+// ObjectStorage.Validate if the designated constraints aren't met.
+type ObjectStorageValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ObjectStorageValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ObjectStorageValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ObjectStorageValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ObjectStorageValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ObjectStorageValidationError) ErrorName() string { return "ObjectStorageValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ObjectStorageValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sObjectStorage.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ObjectStorageValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ObjectStorageValidationError{}
+
+// Validate checks the field values on GetObjectStorageRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *GetObjectStorageRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return GetObjectStorageRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if err := m._validateHostname(m.GetHostName()); err != nil {
+		return GetObjectStorageRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid hostname",
+			cause:  err,
+		}
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return GetObjectStorageRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
+	return nil
+}
+
+func (m *GetObjectStorageRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetObjectStorageRequestValidationError is the validation error returned by
+// GetObjectStorageRequest.Validate if the designated constraints aren't met.
+type GetObjectStorageRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetObjectStorageRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetObjectStorageRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetObjectStorageRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetObjectStorageRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetObjectStorageRequestValidationError) ErrorName() string {
+	return "GetObjectStorageRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetObjectStorageRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetObjectStorageRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetObjectStorageRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetObjectStorageRequestValidationError{}
+
+// Validate checks the field values on Bucket with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *Bucket) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if l := utf8.RuneCountInString(m.GetName()); l < 1 || l > 1024 {
+		return BucketValidationError{
+			field:  "Name",
+			reason: "value length must be between 1 and 1024 runes, inclusive",
+		}
+	}
+
+	return nil
+}
+
+// BucketValidationError is the validation error returned by Bucket.Validate if
+// the designated constraints aren't met.
+type BucketValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BucketValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BucketValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BucketValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BucketValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BucketValidationError) ErrorName() string { return "BucketValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BucketValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBucket.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BucketValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BucketValidationError{}
+
+// Validate checks the field values on ListBucketsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *ListBucketsRequest) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if _, ok := SourceType_name[int32(m.GetSourceType())]; !ok {
+		return ListBucketsRequestValidationError{
+			field:  "SourceType",
+			reason: "value must be one of the defined enum values",
+		}
+	}
+
+	if err := m._validateHostname(m.GetHostName()); err != nil {
+		return ListBucketsRequestValidationError{
+			field:  "HostName",
+			reason: "value must be a valid hostname",
+			cause:  err,
+		}
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return ListBucketsRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
+	return nil
+}
+
+func (m *ListBucketsRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+// ListBucketsRequestValidationError is the validation error returned by
+// ListBucketsRequest.Validate if the designated constraints aren't met.
+type ListBucketsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListBucketsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListBucketsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListBucketsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListBucketsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListBucketsRequestValidationError) ErrorName() string {
+	return "ListBucketsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListBucketsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListBucketsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListBucketsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListBucketsRequestValidationError{}
+
+// Validate checks the field values on ListBucketsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *ListBucketsResponse) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	for idx, item := range m.GetBuckets() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListBucketsResponseValidationError{
+					field:  fmt.Sprintf("Buckets[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// ListBucketsResponseValidationError is the validation error returned by
+// ListBucketsResponse.Validate if the designated constraints aren't met.
+type ListBucketsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListBucketsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListBucketsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListBucketsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListBucketsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListBucketsResponseValidationError) ErrorName() string {
+	return "ListBucketsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListBucketsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListBucketsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListBucketsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListBucketsResponseValidationError{}
+
 // Validate checks the field values on KeepAliveRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, an
 // error is returned.

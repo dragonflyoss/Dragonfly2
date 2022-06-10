@@ -38,10 +38,13 @@ const (
 
 	// Schedulers prefix of cache key.
 	SchedulersNamespace = "schedulers"
+
+	// Buckets prefix of cache key.
+	BucketsNamespace = "buckets"
 )
 
 const (
-	// PeerCacheTTL is the ttl for peer cache
+	// PeerCacheTTL is the ttl for peer cache.
 	PeerCacheTTL = 30 * time.Minute
 )
 
@@ -74,27 +77,32 @@ func New(cfg *config.Config) (*Cache, error) {
 	}, nil
 }
 
-// Make cache key
+// Make cache key.
 func MakeCacheKey(namespace string, id string) string {
 	return fmt.Sprintf("manager:%s:%s", namespace, id)
 }
 
-// Make cache key for seed peer
+// Make cache key for seed peer.
 func MakeSeedPeerCacheKey(hostname string, clusterID uint) string {
 	return MakeCacheKey(SeedPeerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
-// Make cache key for peer
+// Make cache key for peer.
 func MakePeerCacheKey(hostname, ip string) string {
 	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s", hostname, ip))
 }
 
-// Make cache key for scheduler
+// Make cache key for scheduler.
 func MakeSchedulerCacheKey(hostname string, clusterID uint) string {
 	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
-// Make cache key for schedulers
+// Make cache key for schedulers.
 func MakeSchedulersCacheKey(hostname, ip string) string {
 	return MakeCacheKey(SchedulersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
+}
+
+// Make cache key for buckets.
+func MakeBucketsCacheKey(name string) string {
+	return MakeCacheKey(BucketsNamespace, name)
 }

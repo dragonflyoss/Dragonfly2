@@ -231,6 +231,52 @@ message ListSchedulersResponse {
   repeated Scheduler schedulers = 1;
 }
 
+// ObjectStorage represents config of object storage.
+message ObjectStorage {
+  // Object storage name of type.
+  string name = 1 [(validate.rules).string = {min_len: 1, max_len: 1024}];
+  // Storage region.
+  string region = 2 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Datacenter endpoint.
+  string endpoint = 3 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Access key id.
+  string access_key = 4 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+  // Access key secret.
+  string secret_key = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
+}
+
+// GetObjectStorageRequest represents request of GetObjectStorage.
+message GetObjectStorageRequest {
+  // Request source type.
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Source service hostname.
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  // Source service ip.
+  string ip = 3 [(validate.rules).string.ip = true];
+}
+
+// Bucket represents config of bucket.
+message Bucket {
+  // Bucket name.
+  string name = 1 [(validate.rules).string = {min_len: 1, max_len: 1024}];
+}
+
+// ListSchedulersRequest represents request of ListBuckets.
+message ListBucketsRequest {
+  // Request source type.
+  SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
+  // Source service hostname.
+  string host_name = 2 [(validate.rules).string.hostname = true];
+  // Source service ip.
+  string ip = 3 [(validate.rules).string.ip = true];
+}
+
+// ListBucketsResponse represents response of ListBuckets.
+message ListBucketsResponse {
+  // Bucket configs.
+  repeated Bucket buckets = 1;
+}
+
 // KeepAliveRequest represents request of KeepAlive.
 message KeepAliveRequest {
   // Request source type.
@@ -253,6 +299,10 @@ service Manager {
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
   // List acitve schedulers configuration.
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
+  // Get ObjectStorage configuration.
+  rpc GetObjectStorage(GetObjectStorageRequest) returns(ObjectStorage);
+  // List buckets configuration.
+  rpc ListBuckets(ListBucketsRequest)returns(ListBucketsResponse);
   // KeepAlive with manager.
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
 }
