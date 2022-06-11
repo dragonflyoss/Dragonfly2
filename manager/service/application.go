@@ -81,7 +81,7 @@ func (s *service) GetApplication(ctx context.Context, id uint) (*model.Applicati
 func (s *service) GetApplications(ctx context.Context, q types.GetApplicationsQuery) ([]model.Application, int64, error) {
 	var count int64
 	applications := []model.Application{}
-	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Preload("SeedPeerClusters").Preload("SchedulerClusters").Preload("User").Find(&applications).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

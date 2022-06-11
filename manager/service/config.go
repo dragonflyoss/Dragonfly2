@@ -81,7 +81,7 @@ func (s *service) GetConfigs(ctx context.Context, q types.GetConfigsQuery) ([]mo
 		Name:   q.Name,
 		Value:  q.Value,
 		UserID: q.UserID,
-	}).Find(&configs).Count(&count).Error; err != nil {
+	}).Find(&configs).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

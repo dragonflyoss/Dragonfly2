@@ -82,7 +82,7 @@ func (s *service) GetOauths(ctx context.Context, q types.GetOauthsQuery) ([]mode
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Oauth{
 		Name:     q.Name,
 		ClientID: q.ClientID,
-	}).Find(&oauths).Count(&count).Error; err != nil {
+	}).Find(&oauths).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

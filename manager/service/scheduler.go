@@ -89,7 +89,7 @@ func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery)
 		IP:                 q.IP,
 		State:              q.State,
 		SchedulerClusterID: q.SchedulerClusterID,
-	}).Find(&schedulers).Count(&count).Error; err != nil {
+	}).Find(&schedulers).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
