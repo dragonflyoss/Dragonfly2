@@ -79,7 +79,7 @@ dfdaemon:
     scheduler:
       disableAutoBackSource: true
     proxy:
-      defaultFilter: "Expires&Signature"
+      defaultFilter: "Expires&Signature&ns"
       security:
         insecure: true
       tcpListen:
