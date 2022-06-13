@@ -318,5 +318,6 @@ func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.
 		ContentLength:   pp.ContentLength,
 		TotalPieceCount: pp.TotalPiece,
 		BeginTime:       uint64(s.startNanoSecond),
+		EndTime:         uint64(time.Now().UnixNano()),
 	}
 }
