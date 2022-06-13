@@ -62,7 +62,6 @@ var _ = Describe("Preheat with manager", func() {
 					Args: types.PreheatArgs{
 						Type: "file",
 						URL:  url,
-						Tag:  managerTag,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -80,7 +79,7 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
+				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{})
 				fmt.Println(seedPeerTaskID)
 
 				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)
@@ -90,13 +89,13 @@ var _ = Describe("Preheat with manager", func() {
 		})
 
 		It("preheat image should be ok", func() {
-			url := "https://registry-1.docker.io/v2/dragonflyoss/busybox/manifests/1.35.0"
+			url := "https://index.docker.io/v2/dragonflyoss/busybox/manifests/1.35.0"
 			fmt.Println("download image: " + url)
 
 			var (
 				seedPeerTaskIDs = []string{
-					"20ef8c24e608bbf6604e7b485037081f0a225dd585161c669ae727041bce3130",
-					"cfe7646d2c749e6e02ab7fec617c56e5fd11d2a1da0e1e39851cad27878064b6",
+					"b6922209dc9616f8736a860e93c3cd7288a4e801517f88eec3df514606d18cdf",
+					"c0dfae864ae65c285676063eb148d0a0064d5c6c39367fee0bcc1f3700c39c31",
 				}
 				sha256sum1 = []string{
 					"a711f05d33845e2e9deffcfcc5adf082d7c6e97e3e3a881d193d9aae38f092a8",
@@ -116,7 +115,6 @@ var _ = Describe("Preheat with manager", func() {
 				Args: types.PreheatArgs{
 					Type: "image",
 					URL:  url,
-					Tag:  managerTag,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
