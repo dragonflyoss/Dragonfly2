@@ -62,7 +62,6 @@ var _ = Describe("Preheat with manager", func() {
 					Args: types.PreheatArgs{
 						Type: "file",
 						URL:  url,
-						Tag:  managerTag,
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
@@ -80,7 +79,7 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{Tag: managerTag})
+				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{})
 				fmt.Println(seedPeerTaskID)
 
 				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)
@@ -116,7 +115,6 @@ var _ = Describe("Preheat with manager", func() {
 				Args: types.PreheatArgs{
 					Type: "image",
 					URL:  url,
-					Tag:  managerTag,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
