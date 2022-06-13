@@ -94,19 +94,8 @@ func (conn *Connection) startGC() {
 // gcConn gc keys and clients associated with server node
 func (conn *Connection) gcConn(node string) {
 	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s starting", node)
-	value, ok := conn.node2ClientMap.Load(node)
-	if ok {
-		clientCon := value.(*grpc.ClientConn)
-		err := clientCon.Close()
-		if err == nil {
-			conn.node2ClientMap.Delete(node)
-			logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
-		} else {
-			logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn: %s: %v", node, err)
-		}
-	} else {
-		logger.GrpcLogger.With("conn", conn.name).Warnf("server node: %s dose not found in node2ClientMap", node)
-	}
+	conn.node2ClientMap.Delete(node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
 	// gc hash keys
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
