@@ -193,10 +193,10 @@ storage:
 # proxy service detail option
 proxy:
   # filter for hash url
-  # when defaultFilter: "Expires&Signature", for example:
-  #  http://localhost/xyz?Expires=111&Signature=222 and http://localhost/xyz?Expires=333&Signature=999
+  # when defaultFilter: "Expires&Signature&ns", for example:
+  #  http://localhost/xyz?Expires=111&Signature=222&ns=docker.io and http://localhost/xyz?Expires=333&Signature=999&ns=docker.io
   # is same task
-  defaultFilter: "Expires&Signature"
+  defaultFilter: "Expires&Signature&ns"
   security:
     insecure: true
     cacert: ""
