@@ -3,7 +3,7 @@
 # the register to pull image, like "docker.io", when pull image with "docker.io/library/alpine:latest"
 registry=${1:-${REGISTRY}}
 
-# the real server which serves image pulling, like "registry-1.docker.io"
+# the real server which serves image pulling, like "index.docker.io"
 # in normal case, registry_server is same with registry
 registry_server=${REGISTRY_SERVER:-${registry}}
 

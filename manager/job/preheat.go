@@ -250,7 +250,6 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     tag,
 			Filter:  filter,
-			Digest:  digest,
 			Headers: httputils.HeaderToMap(header),
 		}
 
