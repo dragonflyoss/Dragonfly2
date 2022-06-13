@@ -109,7 +109,7 @@ storage:
 # proxy service option
 proxy:
   maxConcurrency: 12
-  defaultFilter: Expires&Signature
+  defaultFilter: Expires&Signature&ns
   security:
     insecure: true
     cacert: ""

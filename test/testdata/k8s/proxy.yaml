@@ -55,7 +55,7 @@ data:
       strategy: io.d7y.storage.v2.simple
       taskExpireTime: 6h
     proxy:
-      defaultFilter: Expires&Signature
+      defaultFilter: Expires&Signature&ns
       tcpListen:
         listen: 0.0.0.0
         port: 65001
