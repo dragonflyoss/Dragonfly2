@@ -172,6 +172,9 @@ type MetricsConfig struct {
 
 	// Metrics service address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
+
+	// Enable peer gauge metrics.
+	EnablePeerGauge bool `yaml:"enablePeerGauge" mapstructure:"enablePeerGauge"`
 }
 
 type TCPListenConfig struct {
@@ -246,7 +249,8 @@ func New() *Config {
 			Enable: false,
 		},
 		Metrics: &MetricsConfig{
-			Enable: false,
+			Enable:          false,
+			EnablePeerGauge: true,
 		},
 	}
 }
@@ -377,7 +381,11 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Metrics != nil && cfg.Metrics.Enable {
+	if cfg.Metrics == nil {
+		return errors.New("config requires parameter metrics")
+	}
+
+	if cfg.Metrics.Enable {
 		if cfg.Metrics.Addr == "" {
 			return errors.New("metrics requires parameter addr")
 		}

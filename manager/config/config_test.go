@@ -86,8 +86,9 @@ func TestManagerConfig_Load(t *testing.T) {
 			SecretKey: "bar",
 		},
 		Metrics: &MetricsConfig{
-			Enable: true,
-			Addr:   ":8000",
+			Enable:          true,
+			Addr:            ":8000",
+			EnablePeerGauge: false,
 		},
 	}
 
