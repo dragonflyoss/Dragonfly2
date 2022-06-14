@@ -130,7 +130,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
 		}
 	}
-	grpcServer := rpcserver.New(db, cache, searcher, objectStorage, cfg.ObjectStorage, grpcOptions...)
+	grpcServer := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, grpcOptions...)
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
