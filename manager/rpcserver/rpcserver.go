@@ -69,6 +69,8 @@ func defaultUnaryMiddleWares() []grpc.UnaryServerInterceptor {
 
 // Server is grpc server.
 type Server struct {
+	// Manager configuration.
+	config *config.Config
 	// GORM instance.
 	db *gorm.DB
 	// Redis client instance.
@@ -87,10 +89,11 @@ type Server struct {
 
 // New returns a new manager server from the given options.
 func New(
-	database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
+	cfg *config.Config, database *database.Database, cache *cache.Cache, searcher searcher.Searcher,
 	objectStorage objectstorage.ObjectStorage, objectStorageConfig *config.ObjectStorageConfig, opts ...grpc.ServerOption,
 ) *grpc.Server {
 	server := &Server{
+		config:              cfg,
 		db:                  database.DB,
 		rdb:                 database.RDB,
 		cache:               cache,
@@ -456,7 +459,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	log := logger.WithHostnameAndIP(req.HostName, req.Ip)
 
 	// Count the number of the active peer.
-	if req.SourceType == manager.SourceType_PEER_SOURCE {
+	if s.config.Metrics.EnablePeerGauge && req.SourceType == manager.SourceType_PEER_SOURCE {
 		count, err := s.getPeerCount(ctx, req)
 		if err != nil {
 			log.Warnf("get peer count failed: %s", err.Error())
