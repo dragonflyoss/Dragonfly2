@@ -126,7 +126,6 @@ func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 		SendCookie:     true,
 		CookieHTTPOnly: false,
 	})
-
 	if err != nil {
 		return nil, err
 	}

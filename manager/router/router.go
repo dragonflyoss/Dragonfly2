@@ -122,9 +122,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 
 	// Oauth
 	oa := apiv1.Group("/oauth")
-	oa.POST("", h.CreateOauth, jwt.MiddlewareFunc(), rbac)
-	oa.DELETE(":id", h.DestroyOauth, jwt.MiddlewareFunc(), rbac)
-	oa.PATCH(":id", h.UpdateOauth, jwt.MiddlewareFunc(), rbac)
+	oa.POST("", jwt.MiddlewareFunc(), rbac, h.CreateOauth)
+	oa.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyOauth)
+	oa.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateOauth)
 	oa.GET(":id", h.GetOauth)
 	oa.GET("", h.GetOauths)
 
@@ -196,18 +196,18 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 
 	// Bucket
-	bucket := apiv1.Group("/buckets")
-	bucket.POST("", h.CreateBucket, jwt.MiddlewareFunc(), rbac)
-	bucket.DELETE(":id", h.DestroyBucket, jwt.MiddlewareFunc(), rbac)
-	bucket.GET(":id", h.GetBucket, jwt.MiddlewareFunc(), rbac)
+	bucket := apiv1.Group("/buckets", jwt.MiddlewareFunc(), rbac)
+	bucket.POST("", h.CreateBucket)
+	bucket.DELETE(":id", h.DestroyBucket)
+	bucket.GET(":id", h.GetBucket)
 	bucket.GET("", h.GetBuckets)
 
 	// Config
 	config := apiv1.Group("/configs")
-	config.POST("", h.CreateConfig, jwt.MiddlewareFunc(), rbac)
-	config.DELETE(":id", h.DestroyConfig, jwt.MiddlewareFunc(), rbac)
-	config.PATCH(":id", h.UpdateConfig, jwt.MiddlewareFunc(), rbac)
-	config.GET(":id", h.GetConfig, jwt.MiddlewareFunc(), rbac)
+	config.POST("", jwt.MiddlewareFunc(), rbac, h.CreateConfig)
+	config.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyConfig)
+	config.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateConfig)
+	config.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetConfig)
 	config.GET("", h.GetConfigs)
 
 	// Job
