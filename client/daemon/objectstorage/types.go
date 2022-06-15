@@ -15,3 +15,8 @@
  */
 
 package objectstorage
+
+type BucketParams struct {
+	ID        string `uri:"id" binding:"required"`
+	ObjectKey string `uri:"object_key" binding:"required"`
+}
