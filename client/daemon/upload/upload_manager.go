@@ -24,8 +24,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
-	"github.com/gorilla/mux"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -33,96 +33,117 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
-
+// Manager is the interface used for upload task.
 type Manager interface {
+	// Started upload manager server.
 	Serve(lis net.Listener) error
+
+	// Stop upload manager server.
 	Stop() error
 }
 
+// uploadManager provides upload manager function.
 type uploadManager struct {
 	*http.Server
 	*rate.Limiter
-	StorageManager storage.Manager
+	storageManager storage.Manager
 }
 
-var _ Manager = (*uploadManager)(nil)
+// Option is a functional option for configuring the upload manager.
+type Option func(um *uploadManager)
 
-const (
-	PeerDownloadHTTPPathPrefix = "/download/"
-)
-
-func NewUploadManager(s storage.Manager, opts ...func(*uploadManager)) (Manager, error) {
-	u := &uploadManager{
-		Server:         &http.Server{},
-		StorageManager: s,
-	}
-	u.initRouter()
-	for _, opt := range opts {
-		opt(u)
-	}
-	return u, nil
-}
-
-// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size
+// WithLimiter sets upload rate limiter, the burst size must be bigger than piece size.
 func WithLimiter(limiter *rate.Limiter) func(*uploadManager) {
 	return func(manager *uploadManager) {
 		manager.Limiter = limiter
 	}
 }
 
-func (um *uploadManager) initRouter() {
-	r := mux.NewRouter()
-	// Health Check
-	r.HandleFunc("/healthy", um.handleHealth).Methods("GET")
+// New returns a new Manager instence.
+func NewUploadManager(storageManager storage.Manager, opts ...Option) (Manager, error) {
+	um := &uploadManager{
+		storageManager: storageManager,
+	}
 
-	// Peer download task
-	r.HandleFunc(PeerDownloadHTTPPathPrefix+"{taskPrefix:.*}/"+"{task:.*}", um.handleUpload).Queries("peerId", "{.*}").Methods("GET")
-	um.Server.Handler = r
+	router := um.initRouter()
+	um.Server = &http.Server{
+		Handler: router,
+	}
+
+	for _, opt := range opts {
+		opt(um)
+	}
+
+	return um, nil
 }
 
+// Started upload manager server.
 func (um *uploadManager) Serve(lis net.Listener) error {
 	return um.Server.Serve(lis)
 }
 
+// Stop upload manager server.
 func (um *uploadManager) Stop() error {
 	return um.Server.Shutdown(context.Background())
 }
 
-// handleHealth uses to check server health.
-func (um *uploadManager) handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+// Initialize router of gin.
+func (um *uploadManager) initRouter() *gin.Engine {
+	r := gin.Default()
+
+	// Health Check.
+	r.GET("/healthy", um.getHealth)
+
+	// Peer download task.
+	r.GET("/download/:task_prefix/:task_id", um.getDownload)
+
+	return r
 }
 
-// handleUpload uses to upload a task file when other peers download from it.
-func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
-	var (
-		task = mux.Vars(r)["task"]
-		peer = r.FormValue("peerId")
-		//cdnSource = r.Header.Get("X-Dragonfly-CDN-Source")
-	)
+// getHealth uses to check server health.
+func (um *uploadManager) getHealth(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, http.StatusText(http.StatusOK))
+}
 
-	sLogger := logger.With("peer", peer, "task", task, "component", "uploadManager")
-	sLogger.Debugf("upload piece for task %s/%s to %s, request header: %#v", task, peer, r.RemoteAddr, r.Header)
-	rg, err := clientutil.ParseRange(r.Header.Get(headers.Range), math.MaxInt64)
+// getDownload uses to upload a task file when other peers download from it.
+func (um *uploadManager) getDownload(ctx *gin.Context) {
+	var params DownloadParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var query DownalodQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	taskID := params.TaskID
+	peerID := query.PeerID
+
+	log := logger.WithTaskAndPeerID(taskID, peerID).With("component", "uploadManager")
+	log.Debugf("upload piece for task %s/%s to %s, request header: %#v", taskID, peerID, ctx.Request.RemoteAddr, ctx.Request.Header)
+	rg, err := clientutil.ParseRange(ctx.GetHeader(headers.Range), math.MaxInt64)
 	if err != nil {
-		sLogger.Errorf("parse range with error: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if len(rg) != 1 {
-		sLogger.Error("multi range parsed, not support")
-		http.Error(w, "invalid range", http.StatusBadRequest)
+		log.Errorf("parse range with error: %s", err)
+		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
 
-	// add header "Content-Length" to avoid chunked body in http client
-	w.Header().Add(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
-	reader, closer, err := um.StorageManager.ReadPiece(r.Context(),
+	if len(rg) != 1 {
+		log.Error("multi range parsed, not support")
+		ctx.JSON(http.StatusBadRequest, gin.H{"errors": "invalid range"})
+		return
+	}
+
+	// Add header "Content-Length" to avoid chunked body in http client.
+	ctx.Header(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
+	reader, closer, err := um.storageManager.ReadPiece(ctx,
 		&storage.ReadPieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
-				TaskID: task,
-				PeerID: peer,
+				TaskID: taskID,
+				PeerID: peerID,
 			},
 			PieceMetadata: storage.PieceMetadata{
 				Num:   -1,
@@ -130,26 +151,27 @@ func (um *uploadManager) handleUpload(w http.ResponseWriter, r *http.Request) {
 			},
 		})
 	if err != nil {
-		sLogger.Errorf("get task data failed: %s", err)
-		http.Error(w, fmt.Sprintf("get piece data error: %s", err), http.StatusInternalServerError)
+		log.Errorf("get task data failed: %s", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 	defer closer.Close()
+
 	if um.Limiter != nil {
-		if err = um.Limiter.WaitN(r.Context(), int(rg[0].Length)); err != nil {
-			sLogger.Errorf("get limit failed: %s", err)
-			http.Error(w, fmt.Sprintf("get limit error: %s", err), http.StatusInternalServerError)
+		if err = um.Limiter.WaitN(ctx, int(rg[0].Length)); err != nil {
+			log.Errorf("get limit failed: %s", err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 			return
 		}
 	}
 
-	// if w is a socket, golang will use sendfile or splice syscall for zero copy feature
-	// when start to transfer data, we could not call http.Error with header
-	if n, err := io.Copy(w, reader); err != nil {
-		sLogger.Errorf("transfer data failed: %s", err)
+	// If w is a socket, golang will use sendfile or splice syscall for zero copy feature
+	// when start to transfer data, we could not call http.Error with header.
+	if n, err := io.Copy(ctx.Writer, reader); err != nil {
+		log.Errorf("transfer data failed: %s", err)
 		return
 	} else if n != rg[0].Length {
-		sLogger.Errorf("transferred data length not match request, request: %d, transferred: %d",
+		log.Errorf("transferred data length not match request, request: %d, transferred: %d",
 			rg[0].Length, n)
 		return
 	}
