@@ -96,7 +96,7 @@ func TestUploadManager_Serve(t *testing.T) {
 
 	for _, tt := range tests {
 		req, _ := http.NewRequest(http.MethodGet,
-			fmt.Sprintf("http://%s%s%s/%s?peerId=%s", addr, PeerDownloadHTTPPathPrefix, "666", tt.taskID, tt.peerID), nil)
+			fmt.Sprintf("http://%s/%s/%s/%s?peerId=%s", addr, "download", "666", tt.taskID, tt.peerID), nil)
 		req.Header.Add("Range", tt.pieceRange)
 
 		resp, err := http.DefaultClient.Do(req)

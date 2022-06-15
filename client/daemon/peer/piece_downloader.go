@@ -22,11 +22,10 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
+	"net/url"
 	"time"
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -190,20 +189,16 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 }
 
 func buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest) *http.Request {
-	b := strings.Builder{}
 	// FIXME switch to https when tls enabled
-	b.WriteString("http://")
-	b.WriteString(d.DstAddr)
-	b.WriteString(upload.PeerDownloadHTTPPathPrefix)
-	b.Write([]byte(d.TaskID)[:3])
-	b.Write([]byte("/"))
-	b.WriteString(d.TaskID)
-	b.Write([]byte("?peerId="))
-	b.WriteString(d.DstPid)
+	targetURL := url.URL{
+		Scheme:   "http",
+		Host:     d.DstAddr,
+		Path:     fmt.Sprintf("download/%s/%s", d.TaskID[:3], d.TaskID),
+		RawQuery: fmt.Sprintf("peerId=%s", d.DstPid),
+	}
 
-	u := b.String()
-	logger.Debugf("built request url: %s", u)
-	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	logger.Debugf("built request url: %s", targetURL.String())
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, targetURL.String(), nil)
 
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",

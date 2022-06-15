@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -549,17 +549,19 @@ func (cd *clientDaemon) Serve() error {
 		if cd.Option.Health.ListenOption.TCPListen == nil {
 			logger.Fatalf("health listen not found")
 		}
-		logger.Infof("serve http health at %#v", cd.Option.Health.ListenOption.TCPListen)
-		r := mux.NewRouter()
-		r.Path(cd.Option.Health.Path).HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			writer.WriteHeader(http.StatusOK)
-			_, _ = writer.Write([]byte("success"))
+
+		r := gin.Default()
+		r.GET(cd.Option.Health.Path, func(c *gin.Context) {
+			c.JSON(http.StatusOK, http.StatusText(http.StatusOK))
 		})
+
 		listener, _, err := cd.prepareTCPListener(cd.Option.Health.ListenOption, false)
 		if err != nil {
 			logger.Fatalf("init health http server error: %v", err)
 		}
+
 		go func() {
+			logger.Infof("serve http health at %#v", cd.Option.Health.ListenOption.TCPListen)
 			if err = http.Serve(listener, r); err != nil {
 				if err == http.ErrServerClosed {
 					return
