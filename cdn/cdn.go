@@ -35,7 +35,6 @@ import (
 	"d7y.io/dragonfly/v2/cdn/supervisor/cdn/storage"
 	"d7y.io/dragonfly/v2/cdn/supervisor/progress"
 	"d7y.io/dragonfly/v2/cdn/supervisor/task"
-	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
@@ -104,7 +103,7 @@ func New(config *config.Config) (*Server, error) {
 		return nil, errors.Wrap(err, "create rpcServer")
 	}
 
-	fileServer := fileserver.New(config.RPCServer.DownloadPort, upload.PeerDownloadHTTPPathPrefix, storageManager.GetUploadPath())
+	fileServer := fileserver.New(config.RPCServer.DownloadPort, "/download/", storageManager.GetUploadPath())
 
 	// Initialize gc server
 	gcServer, err := gc.New()

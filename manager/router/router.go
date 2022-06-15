@@ -94,27 +94,27 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	// User
 	u := apiv1.Group("/users")
 	u.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateUser)
-	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
+	u.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetUser)
 	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
-	u.POST("/signin", jwt.LoginHandler)
-	u.POST("/signout", jwt.LogoutHandler)
-	u.POST("/signup", h.SignUp)
-	u.GET("/signin/:name", h.OauthSignin)
-	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
-	u.POST("/refresh_token", jwt.RefreshHandler)
-	u.POST("/:id/reset_password", h.ResetPassword)
-	u.GET("/:id/roles", jwt.MiddlewareFunc(), rbac, h.GetRolesForUser)
-	u.PUT("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
-	u.DELETE("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
+	u.POST("signin", jwt.LoginHandler)
+	u.POST("signout", jwt.LogoutHandler)
+	u.POST("signup", h.SignUp)
+	u.GET("signin/:name", h.OauthSignin)
+	u.GET("signin/:name/callback", h.OauthSigninCallback(jwt))
+	u.POST("refresh_token", jwt.RefreshHandler)
+	u.POST(":id/reset_password", h.ResetPassword)
+	u.GET(":id/roles", jwt.MiddlewareFunc(), rbac, h.GetRolesForUser)
+	u.PUT(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
+	u.DELETE(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
 
 	// Role
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
-	re.DELETE("/:role", h.DestroyRole)
-	re.GET("/:role", h.GetRole)
+	re.DELETE(":role", h.DestroyRole)
+	re.GET(":role", h.GetRole)
 	re.GET("", h.GetRoles)
-	re.POST("/:role/permissions", h.AddPermissionForRole)
-	re.DELETE("/:role/permissions", h.DeletePermissionForRole)
+	re.POST(":role/permissions", h.AddPermissionForRole)
+	re.DELETE(":role/permissions", h.DeletePermissionForRole)
 
 	// Permission
 	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
@@ -219,8 +219,8 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	job.GET("", h.GetJobs)
 
 	// Compatible with the V1 preheat.
-	pv1 := r.Group("preheats")
-	r.GET("/_ping", h.GetHealth)
+	pv1 := r.Group("/preheats")
+	r.GET("_ping", h.GetHealth)
 	pv1.POST("", h.CreateV1Preheat)
 	pv1.GET(":id", h.GetV1Preheat)
 
