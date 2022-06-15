@@ -107,7 +107,7 @@ func (s *service) GetSeedPeerClusters(ctx context.Context, q types.GetSeedPeerCl
 	var seedPeerClusters []model.SeedPeerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SeedPeerCluster{
 		Name: q.Name,
-	}).Find(&seedPeerClusters).Count(&count).Error; err != nil {
+	}).Find(&seedPeerClusters).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

@@ -143,7 +143,7 @@ func (s *service) GetSchedulerClusters(ctx context.Context, q types.GetScheduler
 	var schedulerClusters []model.SchedulerCluster
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SchedulerCluster{
 		Name: q.Name,
-	}).Preload("SeedPeerClusters").Preload("SecurityGroup").Find(&schedulerClusters).Count(&count).Error; err != nil {
+	}).Preload("SeedPeerClusters").Preload("SecurityGroup").Find(&schedulerClusters).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

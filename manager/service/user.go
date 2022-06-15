@@ -63,7 +63,7 @@ func (s *service) GetUsers(ctx context.Context, q types.GetUsersQuery) ([]model.
 		Email:    q.Email,
 		Location: q.Location,
 		State:    q.State,
-	}).Find(&users).Count(&count).Error; err != nil {
+	}).Find(&users).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

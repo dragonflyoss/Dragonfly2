@@ -75,7 +75,7 @@ func (s *service) GetSecurityGroups(ctx context.Context, q types.GetSecurityGrou
 	var securityGroups []model.SecurityGroup
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityGroup{
 		Name: q.Name,
-	}).Preload("SecurityRules").Find(&securityGroups).Count(&count).Error; err != nil {
+	}).Preload("SecurityRules").Find(&securityGroups).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

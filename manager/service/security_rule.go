@@ -79,7 +79,7 @@ func (s *service) GetSecurityRules(ctx context.Context, q types.GetSecurityRules
 	var securityRules []model.SecurityRule
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.SecurityRule{
 		Name: q.Name,
-	}).Find(&securityRules).Count(&count).Error; err != nil {
+	}).Find(&securityRules).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
