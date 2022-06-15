@@ -95,7 +95,7 @@ func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) (
 		Port:              q.Port,
 		DownloadPort:      q.DownloadPort,
 		SeedPeerClusterID: q.SeedPeerClusterID,
-	}).Find(&seedPeers).Count(&count).Error; err != nil {
+	}).Find(&seedPeers).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 

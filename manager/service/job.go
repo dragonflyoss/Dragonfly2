@@ -181,7 +181,7 @@ func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) ([]model.Jo
 		Type:   q.Type,
 		State:  q.State,
 		UserID: q.UserID,
-	}).Find(&jobs).Count(&count).Error; err != nil {
+	}).Find(&jobs).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
