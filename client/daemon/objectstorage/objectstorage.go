@@ -18,14 +18,21 @@ package objectstorage
 
 import (
 	"context"
+	"math"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-http-utils/headers"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 // ObjectStorage is the interface used for object storage server.
@@ -46,7 +53,7 @@ type objectStorage struct {
 }
 
 // New returns a new ObjectStorage instence.
-func New(dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager) ObjectStorage {
+func New(dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager) (ObjectStorage, error) {
 	o := &objectStorage{
 		dynconfig:      dynconfig,
 		peeTaskManager: peerTaskManager,
@@ -58,7 +65,7 @@ func New(dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageMa
 		Handler: router,
 	}
 
-	return o
+	return o, nil
 }
 
 // Started object storage server.
@@ -98,6 +105,47 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
+
+	var urlMeta *base.UrlMeta
+	var artifactRange *clientutil.Range
+
+	// Set meta range's value.
+	if rangeHeader := ctx.GetHeader(headers.Range); len(rangeHeader) > 0 {
+		ranges, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		if err != nil {
+			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
+			return
+		}
+
+		if len(ranges) > 1 {
+			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": "multiple range is not supported"})
+			return
+		}
+
+		if len(ranges) == 0 {
+			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": "zero range is not supported"})
+			return
+		}
+
+		// Range header in dragonfly is without "bytes=".
+		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
+		artifactRange = &ranges[0]
+	}
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	meta, err := client.GetObjectMetadata(ctx, params.ID, params.ObjectKey)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+	urlMeta.Digest = meta.Digest
+
+	taskID := idgen.TaskID(ctx.Request.URL.String(), urlMeta)
 }
 
 // createObject uses to upload object data.
@@ -113,4 +161,19 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
+}
+
+// client uses to generate client of object storage.
+func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
+	config, err := o.dynconfig.GetObjectStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := objectstorage.New(config.Name, config.Region, config.Endpoint, config.AccessKey, config.SecretKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }

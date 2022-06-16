@@ -17,9 +17,14 @@
 package objectstorage
 
 const (
-	// ServiceNameS3 is name of s3 storage
+	// ServiceNameS3 is name of s3 storage.
 	ServiceNameS3 = "s3"
 
-	// ServiceNameOSS is name of oss storage
+	// ServiceNameOSS is name of oss storage.
 	ServiceNameOSS = "oss"
+)
+
+const (
+	// MetaDigest is key of digest meta.
+	MetaDigest = "digest"
 )

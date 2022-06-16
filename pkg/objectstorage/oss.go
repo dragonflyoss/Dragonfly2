@@ -109,6 +109,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentLength:      contentLength,
 		ContentType:        header.Get(headers.ContentType),
 		Etag:               header.Get(headers.ETag),
+		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
 	}, nil
 }
 
@@ -123,13 +124,14 @@ func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.Re
 }
 
 // CreateObject creates data of object.
-func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return err
 	}
 
-	return bucket.PutObject(objectKey, reader)
+	meta := aliyunoss.Meta(MetaDigest, digest)
+	return bucket.PutObject(objectKey, reader, meta)
 }
 
 // DeleteObject deletes data of object.

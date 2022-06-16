@@ -105,6 +105,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 		ContentLength:      aws.Int64Value(resp.ContentLength),
 		ContentType:        aws.StringValue(resp.ContentType),
 		Etag:               aws.StringValue(resp.ETag),
+		Digest:             aws.StringValue(resp.Metadata[MetaDigest]),
 	}, nil
 }
 
@@ -122,11 +123,15 @@ func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.Rea
 }
 
 // CreateObject creates data of object.
-func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
+	var meta map[string]string
+	meta[MetaDigest] = digest
+
 	_, err := s.client.PutObjectWithContext(ctx, &awss3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-		Body:   aws.ReadSeekCloser(reader),
+		Bucket:   aws.String(bucketName),
+		Key:      aws.String(objectKey),
+		Body:     aws.ReadSeekCloser(reader),
+		Metadata: aws.StringMap(meta),
 	})
 
 	return err
