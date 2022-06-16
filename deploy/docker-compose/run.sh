@@ -2,7 +2,7 @@
 
 set -e
 
-REPO=${REPO:-d7yio}
+REPO=${REPO:-dragonflyoss}
 TAG=${TAG:-latest}
 
 DIR=$(cd "$(dirname "$0")" && pwd)
@@ -24,28 +24,42 @@ run_container(){
     echo use container runtime: ${RUNTIME}
 
     echo try to clean old containers
-    ${RUNTIME} rm -f dragonfly-manager dragonfly-scheduler dragonfly-dfdaemon
+    ${RUNTIME} rm -f dragonfly-redis dragonfly-mysql dragonfly-manager dragonfly-scheduler \
+        dragonfly-dfdaemon dragonfly-seed-peer
+
+    printf "create dragonfly-redis "
+    ${RUNTIME} run -d --name dragonfly-redis --restart=always -p 6379:6379 \
+        redis:6-alpine \
+        --requirepass "dragonfly"
+
+    printf "create dragonfly-mysql "
+    ${RUNTIME} run -d --name dragonfly-mysql --restart=always -p 3306:3306 \
+        --env MARIADB_USER="dragonfly" \
+        --env MARIADB_PASSWORD="dragonfly" \
+        --env MARIADB_DATABASE="manager" \
+        --env MARIADB_ALLOW_EMPTY_ROOT_PASSWORD="yes" \
+        mariadb:10.6
 
     printf "create dragonfly-manager "
-    ${RUNTIME} run -d --name dragonfly-manager --net=host \
+    ${RUNTIME} run -d --name dragonfly-manager --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/manager.yaml:/etc/dragonfly/manager.yaml \
         ${REPO}/manager:${TAG}
 
     printf "create dragonfly-seed-peer "
-    ${RUNTIME} run -d --name dragonfly-seed-peer --net=host \
+    ${RUNTIME} run -d --name dragonfly-seed-peer --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/seed-peer.yaml:/etc/dragonfly/dfget.yaml \
         ${REPO}/dfdaemon:${TAG}
 
     printf "create dragonfly-scheduler "
-    ${RUNTIME} run -d --name dragonfly-scheduler --net=host \
+    ${RUNTIME} run -d --name dragonfly-scheduler --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/scheduler.yaml:/etc/dragonfly/scheduler.yaml \
         ${REPO}/scheduler:${TAG}
 
     printf "create dragonfly-dfdaemon "
-    ${RUNTIME} run -d --name dragonfly-dfdaemon --net=host \
+    ${RUNTIME} run -d --name dragonfly-dfdaemon --restart=always --net=host \
         -v /tmp/log/dragonfly:/var/log/dragonfly \
         -v ${DIR}/config/dfget.yaml:/etc/dragonfly/dfget.yaml \
         ${REPO}/dfdaemon:${TAG}
