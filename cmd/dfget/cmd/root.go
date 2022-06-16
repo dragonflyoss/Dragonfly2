@@ -139,7 +139,7 @@ func init() {
 
 	flagSet.Duration("timeout", dfgetConfig.Timeout, "Timeout for the downloading task, 0 is infinite")
 
-	flagSet.String("limit", unit.Bytes(dfgetConfig.RateLimit).String(),
+	flagSet.String("ratelimit", unit.Bytes(dfgetConfig.RateLimit.Limit).String(),
 		"The downloading network bandwidth limit per second in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite")
 
 	flagSet.String("digest", dfgetConfig.Digest,

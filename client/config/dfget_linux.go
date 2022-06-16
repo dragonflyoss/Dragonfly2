@@ -19,10 +19,15 @@
 
 package config
 
+import "d7y.io/dragonfly/v2/client/clientutil"
+
 var dfgetConfig = ClientOption{
-	URL:               "",
-	Output:            "",
-	Timeout:           0,
+	URL:     "",
+	Output:  "",
+	Timeout: 0,
+	RateLimit: clientutil.RateLimit{
+		Limit: rate.Limit(DefaultTotalDownloadLimit),
+	},
 	Md5:               "",
 	DigestMethod:      "",
 	DigestValue:       "",
