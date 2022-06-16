@@ -33,6 +33,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
+const (
+	// DefaultBurstSize is default burst size of rate limiter.
+	DefaultBurstSize = 1 * 1024 * 1024 * 1024
+)
+
 // Manager is the interface used for upload task.
 type Manager interface {
 	// Started upload manager server.

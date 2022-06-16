@@ -37,6 +37,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -229,7 +230,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 		totalPiece:          atomic.NewInt32(-1),
 		digest:              atomic.NewString(""),
 		schedulerOption:     ptm.schedulerOption,
-		limiter:             rate.NewLimiter(limit, int(limit)),
+		limiter:             rate.NewLimiter(limit, util.DefaultPieceSizeLimit),
 		completedLength:     atomic.NewInt64(0),
 		usedTraffic:         atomic.NewUint64(0),
 		SugaredLoggerOnWith: log,
