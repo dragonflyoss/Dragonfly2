@@ -42,6 +42,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
+const (
+	// minRateLimit is the minimum of rate limit.
+	minRateLimit = 20 * 1024 * 1024
+)
+
 type DaemonConfig = DaemonOption
 type DaemonOption struct {
 	base.Options `yaml:",inline" mapstructure:",squash"`
@@ -129,6 +134,15 @@ func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers and config server is not specified")
 	}
+
+	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return fmt.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
+	if int64(p.Upload.RateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return fmt.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
 	switch p.Download.DefaultPattern {
 	case PatternP2P, PatternSeedPeer, PatternSource:
 	default:

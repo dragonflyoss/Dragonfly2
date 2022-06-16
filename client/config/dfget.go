@@ -163,6 +163,10 @@ func (cfg *ClientOption) Validate() error {
 		return errors.Wrapf(dferrors.ErrInvalidHeader, "output: %v", err)
 	}
 
+	if int64(cfg.RateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return fmt.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
 	return nil
 }
 

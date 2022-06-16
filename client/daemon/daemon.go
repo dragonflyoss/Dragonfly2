@@ -48,7 +48,6 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -179,7 +178,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	pieceManager, err := peer.NewPieceManager(
 		opt.Download.PieceDownloadTimeout,
-		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, util.DefaultPieceSizeLimit)),
+		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
 		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
 	)
 	if err != nil {
@@ -221,7 +220,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	uploadManager, err := upload.NewUploadManager(storageManager,
-		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, upload.DefaultBurstSize)))
+		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
