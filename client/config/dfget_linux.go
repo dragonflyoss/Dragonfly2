@@ -19,7 +19,11 @@
 
 package config
 
-import "d7y.io/dragonfly/v2/client/clientutil"
+import (
+	"golang.org/x/time/rate"
+
+	"d7y.io/dragonfly/v2/client/clientutil"
+)
 
 var dfgetConfig = ClientOption{
 	URL:     "",
