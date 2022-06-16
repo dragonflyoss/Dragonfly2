@@ -480,7 +480,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	// Cache miss.
 	log.Infof("%s cache miss", cacheKey)
 	var schedulerClusters []model.SchedulerCluster
-	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SecurityGroup.SecurityRules").Preload("SeedPeerClusters.SeedPeers", "state = ?", "active").Preload("Schedulers", "state = ?", "active").Find(&schedulerClusters).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
 	}
 
@@ -496,12 +496,33 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	schedulers := []model.Scheduler{}
 	for _, schedulerCluster := range schedulerClusters {
 		for _, scheduler := range schedulerCluster.Schedulers {
+			scheduler.SchedulerCluster = schedulerCluster
 			schedulers = append(schedulers, scheduler)
 		}
 	}
 
 	// Construct schedulers.
 	for _, scheduler := range schedulers {
+		seedPeers := []*manager.SeedPeer{}
+		for _, seedPeerCluster := range scheduler.SchedulerCluster.SeedPeerClusters {
+			for _, seedPeer := range seedPeerCluster.SeedPeers {
+				seedPeers = append(seedPeers, &manager.SeedPeer{
+					Id:                uint64(seedPeer.ID),
+					HostName:          seedPeer.HostName,
+					Type:              seedPeer.Type,
+					IsCdn:             seedPeer.IsCDN,
+					Idc:               seedPeer.IDC,
+					NetTopology:       seedPeer.NetTopology,
+					Location:          seedPeer.Location,
+					Ip:                seedPeer.IP,
+					Port:              seedPeer.Port,
+					DownloadPort:      seedPeer.DownloadPort,
+					State:             seedPeer.State,
+					SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
+				})
+			}
+		}
+
 		pbListSchedulersResponse.Schedulers = append(pbListSchedulersResponse.Schedulers, &manager.Scheduler{
 			Id:                 uint64(scheduler.ID),
 			HostName:           scheduler.HostName,
@@ -512,6 +533,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 			Port:               scheduler.Port,
 			State:              scheduler.State,
 			SchedulerClusterId: uint64(scheduler.SchedulerClusterID),
+			SeedPeers:          seedPeers,
 		})
 	}
 
