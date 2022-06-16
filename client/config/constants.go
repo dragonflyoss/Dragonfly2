@@ -49,7 +49,7 @@ const (
 	DefaultPerPeerDownloadLimit = 20 * unit.MB
 	DefaultTotalDownloadLimit   = 100 * unit.MB
 	DefaultUploadLimit          = 100 * unit.MB
-	DefaultMinRate              = 64 * unit.KB
+	DefaultMinRate              = 20 * unit.MB
 )
 
 /* others */

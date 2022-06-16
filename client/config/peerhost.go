@@ -129,6 +129,15 @@ func (p *DaemonOption) Validate() error {
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers and config server is not specified")
 	}
+
+	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
+	if int64(p.Upload.RateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
 	switch p.Download.DefaultPattern {
 	case PatternP2P, PatternSeedPeer, PatternSource:
 	default:
