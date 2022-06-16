@@ -16,7 +16,18 @@
 
 package objectstorage
 
-type BucketParams struct {
+import "mime/multipart"
+
+type GetObjectParams struct {
 	ID        string `uri:"id" binding:"required"`
 	ObjectKey string `uri:"object_key" binding:"required"`
+}
+
+type CreateObjectParams struct {
+	ID string `uri:"id" binding:"required"`
+}
+
+type CreateObjectRequset struct {
+	Key  string                `form:"key" binding:"required"`
+	File *multipart.FileHeader `form:"file" binding:"required"`
 }
