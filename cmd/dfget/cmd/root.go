@@ -265,7 +265,7 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 		return daemonClient, nil
 	}
 
-	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()))
+	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()), "--config", viper.GetString("config"))
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil
