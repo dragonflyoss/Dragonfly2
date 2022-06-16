@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
+	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
@@ -79,6 +80,7 @@ type clientDaemon struct {
 
 	RPCManager     rpcserver.Server
 	UploadManager  upload.Manager
+	ObjectStorage  objectstorage.ObjectStorage
 	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
 	GCManager      gc.Manager
@@ -234,6 +236,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		PieceManager:    pieceManager,
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
+		ObjectStorage:   objectstorage.New(dynconfig, peerTaskManager, storageManager),
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
@@ -388,6 +391,16 @@ func (cd *clientDaemon) Serve() error {
 	}
 	cd.schedPeerHost.DownPort = int32(uploadPort)
 
+	// prepare object storage service listen
+	if cd.Option.ObjectStorage.TCPListen == nil {
+		return errors.New("object storage tcp listen option is empty")
+	}
+	objectStorageListener, _, err := cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
+	if err != nil {
+		logger.Errorf("failed to listen for object storage service: %v", err)
+		return err
+	}
+
 	g := errgroup.Group{}
 	// serve download grpc service
 	g.Go(func() error {
@@ -465,6 +478,19 @@ func (cd *clientDaemon) Serve() error {
 			return err
 		} else if err == http.ErrServerClosed {
 			logger.Infof("upload service closed")
+		}
+		return nil
+	})
+
+	// serve object storage service
+	g.Go(func() error {
+		defer objectStorageListener.Close()
+		logger.Infof("serve object storage service at %s://%s", objectStorageListener.Addr().Network(), objectStorageListener.Addr().String())
+		if err := cd.ObjectStorage.Serve(objectStorageListener); err != nil && err != http.ErrServerClosed {
+			logger.Errorf("failed to serve for object storage service: %v", err)
+			return err
+		} else if err == http.ErrServerClosed {
+			logger.Infof("object storage service closed")
 		}
 		return nil
 	})
@@ -583,6 +609,10 @@ func (cd *clientDaemon) Stop() {
 		cd.RPCManager.Stop()
 		if err := cd.UploadManager.Stop(); err != nil {
 			logger.Errorf("upload manager stop failed %s", err)
+		}
+
+		if err := cd.ObjectStorage.Stop(); err != nil {
+			logger.Errorf("object storage stop failed %s", err)
 		}
 
 		if cd.ProxyManager.IsEnabled() {

@@ -326,6 +326,24 @@ func TestPeerHostOption_Load(t *testing.T) {
 				},
 			},
 		},
+		ObjectStorage: ObjectStorageOption{
+			ListenOption: ListenOption{
+				Security: SecurityOption{
+					Insecure:  true,
+					CACert:    "caCert",
+					Cert:      "cert",
+					Key:       "key",
+					TLSVerify: true,
+				},
+				TCPListen: &TCPListenOption{
+					Listen: "0.0.0.0",
+					PortRange: TCPListenPortRange{
+						Start: 8081,
+						End:   0,
+					},
+				},
+			},
+		},
 		Storage: StorageOption{
 			DataPath: "/tmp/storage/data",
 			TaskExpireTime: clientutil.Duration{

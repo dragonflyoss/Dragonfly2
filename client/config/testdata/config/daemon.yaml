@@ -70,6 +70,17 @@ upload:
     listen: 0.0.0.0
     port: 65002
 
+objectStorage:
+  security:
+    insecure: true
+    caCert: caCert
+    cert: cert
+    key: key
+    tlsVerify: true
+  tcpListen:
+    listen: 0.0.0.0
+    port: 8081
+
 storage:
   dataPath: /tmp/storage/data
   taskExpireTime: 3m0s
