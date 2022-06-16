@@ -117,6 +117,21 @@ var peerHostConfig = DaemonOption{
 			},
 		},
 	},
+	ObjectStorage: ObjectStorageOption{
+		ListenOption: ListenOption{
+			Security: SecurityOption{
+				Insecure:  true,
+				TLSVerify: true,
+			},
+			TCPListen: &TCPListenOption{
+				Listen: net.IPv4zero.String(),
+				PortRange: TCPListenPortRange{
+					Start: 8081,
+					End:   8081,
+				},
+			},
+		},
+	},
 	Proxy: &ProxyOption{
 		ListenOption: ListenOption{
 			Security: SecurityOption{
