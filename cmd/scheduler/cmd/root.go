@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"path"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -59,6 +60,7 @@ generate and maintain a P2P network during the download process, and push suitab
 		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "scheduler"))
 
 		// Validate config
 		if err := cfg.Validate(); err != nil {
