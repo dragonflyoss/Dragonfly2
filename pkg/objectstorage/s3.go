@@ -126,7 +126,7 @@ func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.Rea
 
 // CreateObject creates data of object.
 func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
-	var meta map[string]string
+	meta := map[string]string{}
 	meta[MetaDigest] = digest
 
 	_, err := s.client.PutObjectWithContext(ctx, &awss3.PutObjectInput{

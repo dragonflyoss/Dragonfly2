@@ -18,10 +18,13 @@ package objectstorage
 
 import (
 	"context"
+	"errors"
 	"math"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
@@ -30,9 +33,13 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+)
+
+const (
+	// defaultSignExpireTime is default expire of sign url.
+	defaultSignExpireTime = 5 * time.Minute
 )
 
 // ObjectStorage is the interface used for object storage server.
@@ -47,17 +54,19 @@ type ObjectStorage interface {
 // objectStorage provides object storage function.
 type objectStorage struct {
 	*http.Server
-	dynconfig      config.Dynconfig
-	peeTaskManager peer.TaskManager
-	storageManager storage.Manager
+	dynconfig       config.Dynconfig
+	peerTaskManager peer.TaskManager
+	storageManager  storage.Manager
+	peerIDGenerator peer.IDGenerator
 }
 
 // New returns a new ObjectStorage instence.
-func New(dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager) (ObjectStorage, error) {
+func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager) (ObjectStorage, error) {
 	o := &objectStorage{
-		dynconfig:      dynconfig,
-		peeTaskManager: peerTaskManager,
-		storageManager: storageManager,
+		dynconfig:       dynconfig,
+		peerTaskManager: peerTaskManager,
+		storageManager:  storageManager,
+		peerIDGenerator: peer.NewPeerIDGenerator(cfg.Host.AdvertiseIP),
 	}
 
 	router := o.initRouter()
@@ -106,30 +115,25 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		return
 	}
 
-	var urlMeta *base.UrlMeta
-	var artifactRange *clientutil.Range
+	var (
+		urlMeta       *base.UrlMeta
+		artifactRange *clientutil.Range
+		ranges        []clientutil.Range
+		err           error
+	)
 
-	// Set meta range's value.
-	if rangeHeader := ctx.GetHeader(headers.Range); len(rangeHeader) > 0 {
-		ranges, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+	// Parse http range header.
+	rangeHeader := ctx.GetHeader(headers.Range)
+	if len(rangeHeader) > 0 {
+		ranges, err = o.parseRangeHeader(rangeHeader)
 		if err != nil {
 			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": err.Error()})
 			return
 		}
-
-		if len(ranges) > 1 {
-			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": "multiple range is not supported"})
-			return
-		}
-
-		if len(ranges) == 0 {
-			ctx.JSON(http.StatusRequestedRangeNotSatisfiable, gin.H{"errors": "zero range is not supported"})
-			return
-		}
+		artifactRange = &ranges[0]
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
-		artifactRange = &ranges[0]
 	}
 
 	client, err := o.client()
@@ -145,14 +149,32 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	}
 	urlMeta.Digest = meta.Digest
 
-	taskID := idgen.TaskID(ctx.Request.URL.String(), urlMeta)
-	o.peeTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
-		URL:     url,
-		URLMeta: meta,
-		Range:   rg,
-		PeerID:  peerID,
-	},
-	)
+	signURL, err := client.GetSignURL(ctx, params.ID, params.ObjectKey, objectstorage.MethodGet, defaultSignExpireTime)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	reader, attr, err := o.peerTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
+		URL:     signURL,
+		URLMeta: urlMeta,
+		Range:   artifactRange,
+		PeerID:  o.peerIDGenerator.PeerID(),
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+	defer reader.Close()
+
+	var contentLength int64 = -1
+	if l, ok := attr[headers.ContentLength]; ok {
+		if i, err := strconv.ParseInt(l, 10, 64); err == nil {
+			contentLength = i
+		}
+	}
+
+	ctx.DataFromReader(http.StatusOK, contentLength, attr[headers.ContentType], reader, nil)
 }
 
 // createObject uses to upload object data.
@@ -183,4 +205,22 @@ func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
 	}
 
 	return client, nil
+}
+
+// parseRangeHeader uses to parse range http header for dragonfly.
+func (o *objectStorage) parseRangeHeader(rangeHeader string) ([]clientutil.Range, error) {
+	ranges, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ranges) > 1 {
+		return nil, errors.New("multiple range is not supported")
+	}
+
+	if len(ranges) == 0 {
+		return nil, errors.New("zero range is not supported")
+	}
+
+	return ranges, nil
 }
