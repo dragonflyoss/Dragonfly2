@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"path"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -55,6 +56,7 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "manager"))
 
 		// Validate config
 		if err := cfg.Validate(); err != nil {
