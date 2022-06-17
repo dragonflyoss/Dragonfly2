@@ -165,6 +165,9 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 	defer response.Body.Close()
+	if err = response.Validate(); err != nil {
+		return err
+	}
 
 	if written, err = io.Copy(target, response.Body); err != nil {
 		return err
