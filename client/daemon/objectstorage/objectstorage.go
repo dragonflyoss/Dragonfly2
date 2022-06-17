@@ -42,6 +42,14 @@ const (
 	defaultSignExpireTime = 5 * time.Minute
 )
 
+const (
+	// WriteBackModeSync is sync mode for writing to object storage.
+	WriteBackModeSync = "sync"
+
+	// WriteBackModeSync is async mode for writing to object storage.
+	WriteBackModeASync = "async"
+)
+
 // ObjectStorage is the interface used for object storage server.
 type ObjectStorage interface {
 	// Started object storage server.
@@ -189,6 +197,30 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	if err := ctx.ShouldBind(&form); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
+	}
+
+	peerID := o.peerIDGenerator.PeerID()
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	file, err := form.File.Open()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if form.Mode == WriteBackModeASync {
+		go func() {
+			if err := client.CreateObject(context.Background(), params.ID, form.Key, "digest", file); err != nil {
+
+			}
+		}()
+	} else {
+		client.CreateObject(context.Background(), params.ID, form.Key, "digest", file)
 	}
 }
 
