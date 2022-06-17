@@ -225,18 +225,22 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	return &clientDaemon{
-		once:          &sync.Once{},
-		done:          make(chan bool),
-		schedPeerHost: host,
-		Option:        *opt,
+	objectStorage, err := objectstorage.New(opt, dynconfig, peerTaskManager, storageManager)
+	if err != nil {
+		return nil, err
+	}
 
+	return &clientDaemon{
+		once:            &sync.Once{},
+		done:            make(chan bool),
+		schedPeerHost:   host,
+		Option:          *opt,
 		RPCManager:      rpcManager,
 		PeerTaskManager: peerTaskManager,
 		PieceManager:    pieceManager,
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
-		ObjectStorage:   objectstorage.New(dynconfig, peerTaskManager, storageManager),
+		ObjectStorage:   objectStorage,
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,

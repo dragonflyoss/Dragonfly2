@@ -26,30 +26,33 @@ import (
 )
 
 type ObjectMetadata struct {
-	// Key is object key
+	// Key is object key.
 	Key string
 
-	// ContentDisposition is Content-Disposition header
+	// ContentDisposition is Content-Disposition header.
 	ContentDisposition string
 
-	// ContentEncoding is Content-Encoding header
+	// ContentEncoding is Content-Encoding header.
 	ContentEncoding string
 
-	// ContentLanguage is Content-Language header
+	// ContentLanguage is Content-Language header.
 	ContentLanguage string
 
-	// ContentLanguage is Content-Length header
+	// ContentLanguage is Content-Length header.
 	ContentLength int64
 
-	// ContentType is Content-Type header
+	// ContentType is Content-Type header.
 	ContentType string
 
-	// Etag is Etag header
+	// Etag is Etag header.
 	Etag string
+
+	// Digest is object digest.
+	Digest string
 }
 
 type BucketMetadata struct {
-	// Name is bucket name
+	// Name is bucket name.
 	Name string
 
 	// CreateAt is bucket create time.
@@ -76,13 +79,16 @@ type ObjectStorage interface {
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 
 	// CreateObject creates data of object.
-	CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error
+	CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error
 
 	// DeleteObject deletes data of object.
 	DeleteObject(ctx context.Context, bucketName, objectKey string) error
 
 	// ListObjectMetadatas returns metadata of objects.
 	ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error)
+
+	// GetSignURL returns sign url of object.
+	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
 }
 
 // New object storage interface.

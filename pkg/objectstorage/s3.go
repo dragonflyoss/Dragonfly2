@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awss3 "github.com/aws/aws-sdk-go/service/s3"
 )
@@ -105,6 +107,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 		ContentLength:      aws.Int64Value(resp.ContentLength),
 		ContentType:        aws.StringValue(resp.ContentType),
 		Etag:               aws.StringValue(resp.ETag),
+		Digest:             aws.StringValue(resp.Metadata[MetaDigest]),
 	}, nil
 }
 
@@ -122,11 +125,15 @@ func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.Rea
 }
 
 // CreateObject creates data of object.
-func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
+	meta := map[string]string{}
+	meta[MetaDigest] = digest
+
 	_, err := s.client.PutObjectWithContext(ctx, &awss3.PutObjectInput{
-		Bucket: aws.String(bucketName),
-		Key:    aws.String(objectKey),
-		Body:   aws.ReadSeekCloser(reader),
+		Bucket:   aws.String(bucketName),
+		Key:      aws.String(objectKey),
+		Body:     aws.ReadSeekCloser(reader),
+		Metadata: aws.StringMap(meta),
 	})
 
 	return err
@@ -163,4 +170,39 @@ func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 	}
 
 	return metadatas, nil
+}
+
+// GetSignURL returns sign url of object.
+func (s *s3) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
+	var req *request.Request
+	switch method {
+	case MethodGet:
+		req, _ = s.client.GetObjectRequest(&awss3.GetObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(objectKey),
+		})
+	case MethodPut:
+		req, _ = s.client.PutObjectRequest(&awss3.PutObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(objectKey),
+		})
+	case MethodHead:
+		req, _ = s.client.HeadObjectRequest(&awss3.HeadObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(objectKey),
+		})
+	case MethodDelete:
+		req, _ = s.client.DeleteObjectRequest(&awss3.DeleteObjectInput{
+			Bucket: aws.String(bucketName),
+			Key:    aws.String(objectKey),
+		})
+	case MethodList:
+		req, _ = s.client.ListObjectsRequest(&awss3.ListObjectsInput{
+			Bucket: aws.String(bucketName),
+		})
+	default:
+		return "", fmt.Errorf("not support method %s", method)
+	}
+
+	return req.Presign(expire)
 }
