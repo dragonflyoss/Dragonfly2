@@ -146,6 +146,13 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	urlMeta.Digest = meta.Digest
 
 	taskID := idgen.TaskID(ctx.Request.URL.String(), urlMeta)
+	o.peeTaskManager.StartStreamTask(ctx, &peer.StreamTaskRequest{
+		URL:     url,
+		URLMeta: meta,
+		Range:   rg,
+		PeerID:  peerID,
+	},
+	)
 }
 
 // createObject uses to upload object data.

@@ -86,6 +86,9 @@ type ObjectStorage interface {
 
 	// ListObjectMetadatas returns metadata of objects.
 	ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*ObjectMetadata, error)
+
+	// GetSignURL returns sign url of object.
+	GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error)
 }
 
 // New object storage interface.
