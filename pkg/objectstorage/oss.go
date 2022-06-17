@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"time"
 
 	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
@@ -109,6 +110,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentLength:      contentLength,
 		ContentType:        header.Get(headers.ContentType),
 		Etag:               header.Get(headers.ETag),
+		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
 	}, nil
 }
 
@@ -123,13 +125,14 @@ func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.Re
 }
 
 // CreateObject creates data of object.
-func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return err
 	}
 
-	return bucket.PutObject(objectKey, reader)
+	meta := aliyunoss.Meta(MetaDigest, digest)
+	return bucket.PutObject(objectKey, reader, meta)
 }
 
 // DeleteObject deletes data of object.
@@ -163,4 +166,32 @@ func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marke
 	}
 
 	return metadatas, nil
+}
+
+// GetSignURL returns sign url of object.
+func (o *oss) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
+	var ossHTTPMethod aliyunoss.HTTPMethod
+	switch method {
+	case MethodGet:
+		ossHTTPMethod = aliyunoss.HTTPGet
+	case MethodPut:
+		ossHTTPMethod = aliyunoss.HTTPPut
+	case MethodHead:
+		ossHTTPMethod = aliyunoss.HTTPHead
+	case MethodPost:
+		ossHTTPMethod = aliyunoss.HTTPPost
+	case MethodDelete:
+		ossHTTPMethod = aliyunoss.HTTPDelete
+	case MethodList:
+		ossHTTPMethod = aliyunoss.HTTPGet
+	default:
+		return "", fmt.Errorf("not support method %s", method)
+	}
+
+	bucket, err := o.client.Bucket(bucketName)
+	if err != nil {
+		return "", err
+	}
+
+	return bucket.SignURL(objectKey, ossHTTPMethod, int64(expire.Seconds()))
 }

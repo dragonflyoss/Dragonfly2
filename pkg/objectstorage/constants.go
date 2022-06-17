@@ -17,9 +17,37 @@
 package objectstorage
 
 const (
-	// ServiceNameS3 is name of s3 storage
+	// ServiceNameS3 is name of s3 storage.
 	ServiceNameS3 = "s3"
 
-	// ServiceNameOSS is name of oss storage
+	// ServiceNameOSS is name of oss storage.
 	ServiceNameOSS = "oss"
+)
+
+const (
+	// MetaDigest is key of digest meta.
+	MetaDigest = "digest"
+)
+
+// Method is the client operation method .
+type Method string
+
+const (
+	// MethodHead is the head operation.
+	MethodHead Method = "HEAD"
+
+	// MethodGet is the get operation.
+	MethodGet Method = "GET"
+
+	// MethodPut is the put operation.
+	MethodPut Method = "PUT"
+
+	// MethodPost is the post operation.
+	MethodPost Method = "POST"
+
+	// MethodDelete is the delete operation.
+	MethodDelete Method = "Delete"
+
+	// MethodList is the list operation.
+	MethodList Method = "List"
 )
