@@ -792,7 +792,7 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool
 		pt.failedReason = reasonPeerGoneFromScheduler
 		pt.failedCode = base.Code_SchedPeerGone
 		return true
-	case base.Code_CDNError, base.Code_CDNTaskRegistryFail, base.Code_CDNTaskDownloadFail:
+	case base.Code_CDNTaskRegistryFail:
 		// 6xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)

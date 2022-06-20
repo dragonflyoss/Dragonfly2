@@ -31,7 +31,6 @@ type SeedPeer struct {
 	Model
 	HostName          string          `gorm:"column:host_name;type:varchar(256);index:uk_seed_peer,unique;not null;comment:hostname" json:"host_name"`
 	Type              string          `gorm:"column:type;type:varchar(256);comment:type" json:"type"`
-	IsCDN             bool            `gorm:"column:is_cdn;not null;default:false;comment:cdn seed peer" json:"is_cdn"`
 	IDC               string          `gorm:"column:idc;type:varchar(1024);comment:internet data center" json:"idc"`
 	NetTopology       string          `gorm:"column:net_topology;type:varchar(1024);comment:network topology" json:"net_topology"`
 	Location          string          `gorm:"column:location;type:varchar(1024);comment:location" json:"location"`

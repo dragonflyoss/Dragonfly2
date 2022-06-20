@@ -48,7 +48,6 @@ type SeedPeer struct {
 	ID              uint             `yaml:"id" mapstructure:"id" json:"id"`
 	Hostname        string           `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
 	Type            string           `yaml:"type" mapstructure:"type" json:"type"`
-	IsCDN           bool             `yaml:"isCDN" mapstructure:"isCDN" json:"is_cdn"`
 	IDC             string           `yaml:"idc" mapstructure:"idc" json:"idc"`
 	NetTopology     string           `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
 	Location        string           `yaml:"location" mapstructure:"location" json:"location"`

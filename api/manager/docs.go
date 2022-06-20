@@ -3967,9 +3967,6 @@ const docTemplate = `{
                 "ip": {
                     "type": "string"
                 },
-                "is_cdn": {
-                    "type": "boolean"
-                },
                 "location": {
                     "type": "string"
                 },
@@ -4062,7 +4059,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "Name is bucket name",
+                    "description": "Name is bucket name.",
                     "type": "string"
                 }
             }

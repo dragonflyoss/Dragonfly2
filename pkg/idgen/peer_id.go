@@ -36,7 +36,3 @@ func PeerID(ip string) string {
 func SeedPeerID(ip string) string {
 	return fmt.Sprintf("%s_%s", PeerID(ip), "Seed")
 }
-
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
-}

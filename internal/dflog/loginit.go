@@ -87,49 +87,6 @@ func InitScheduler(verbose, console bool, dir string) error {
 	return createFileLogger(verbose, meta, logDir)
 }
 
-func InitCdnSystem(verbose, console bool, dir string) error {
-	if console {
-		return createConsoleLogger(verbose)
-	}
-	logDir := filepath.Join(dir, "cdn")
-	var meta = []logInitMeta{
-		{
-			fileName:             CoreLogFileName,
-			setSugaredLoggerFunc: SetCoreLogger,
-		},
-		{
-			fileName:             GrpcLogFileName,
-			setSugaredLoggerFunc: SetGrpcLogger,
-		},
-		{
-			fileName:             GCLogFileName,
-			setSugaredLoggerFunc: SetGCLogger,
-		},
-		{
-			fileName:             StorageGCLogFileName,
-			setSugaredLoggerFunc: SetStorageGCLogger,
-		},
-		{
-			fileName:             JobLogFileName,
-			setSugaredLoggerFunc: SetJobLogger,
-		},
-		{
-			fileName:      StatSeedLogFileName,
-			setLoggerFunc: SetStatSeedLogger,
-		},
-		{
-			fileName:      DownloaderLogFileName,
-			setLoggerFunc: SetDownloadLogger,
-		},
-		{
-			fileName:             KeepAliveLogFileName,
-			setSugaredLoggerFunc: SetKeepAliveLogger,
-		},
-	}
-
-	return createFileLogger(verbose, meta, logDir)
-}
-
 func InitDaemon(verbose, console bool, dir string) error {
 	if console {
 		return createConsoleLogger(verbose)

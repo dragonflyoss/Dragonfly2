@@ -28,9 +28,6 @@ import (
 var EndOfPiece = int32(1) << 30
 var BeginOfPiece = int32(-1)
 
-// CdnSuffix represents cdn peer id suffix
-var CdnSuffix = "_CDN"
-
 func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
 	return &base.GrpcDfError{
 		Code:    code,

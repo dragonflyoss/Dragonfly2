@@ -19,66 +19,45 @@ package client
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func GetPieceTasks(ctx context.Context,
-	destPeer *scheduler.PeerPacket_DestPeer,
+	dstPeer *scheduler.PeerPacket_DestPeer,
 	ptr *base.PieceTaskRequest,
 	opts ...grpc.CallOption) (*base.PiecePacket, error) {
-	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
-	peerID := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
-	var err error
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,
-		Addr: destAddr,
+		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
 	}
-	client, err := getClient(netAddr, toCdn)
+
+	client, err := GetElasticClientByAddrs([]dfnet.NetAddr{netAddr})
 	if err != nil {
 		return nil, err
 	}
-	if toCdn {
-		return client.(cdnclient.CdnClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
-	}
-	return client.(DaemonClient).GetPieceTasks(ctx, netAddr, ptr, opts...)
+
+	return client.GetPieceTasks(ctx, netAddr, ptr, opts...)
 }
 
 func SyncPieceTasks(ctx context.Context,
 	destPeer *scheduler.PeerPacket_DestPeer,
 	ptr *base.PieceTaskRequest,
 	opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
-	destAddr := fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort)
-	peerID := destPeer.PeerId
-	toCdn := strings.HasSuffix(peerID, common.CdnSuffix)
-	var err error
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,
-		Addr: destAddr,
+		Addr: fmt.Sprintf("%s:%d", destPeer.Ip, destPeer.RpcPort),
 	}
-	client, err := getClient(netAddr, toCdn)
+
+	client, err := GetElasticClientByAddrs([]dfnet.NetAddr{netAddr})
 	if err != nil {
 		return nil, err
 	}
-	if toCdn {
-		return client.(cdnclient.CdnClient).SyncPieceTasks(ctx, netAddr, ptr, opts...)
-	}
-	return client.(DaemonClient).SyncPieceTasks(ctx, netAddr, ptr, opts...)
-}
 
-func getClient(netAddr dfnet.NetAddr, toCdn bool) (rpc.Closer, error) {
-	if toCdn {
-		return cdnclient.GetElasticClientByAddrs([]dfnet.NetAddr{netAddr})
-	}
-	return GetElasticClientByAddrs([]dfnet.NetAddr{netAddr})
+	return client.SyncPieceTasks(ctx, netAddr, ptr, opts...)
 }

@@ -28,7 +28,6 @@ import (
 	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 const (
@@ -212,7 +211,18 @@ func (client *httpSourceClient) GetLastModified(request *source.Request) (int64,
 	if err != nil {
 		return -1, err
 	}
-	return timeutils.UnixMillis(resp.Header.Get(headers.LastModified)), nil
+
+	lastModified := resp.Header.Get(headers.LastModified)
+	if lastModified == "" {
+		return -1, err
+	}
+
+	t, err := time.ParseInLocation(source.TimeFormat, lastModified, time.UTC)
+	if err != nil {
+		return -1, err
+	}
+
+	return t.UnixNano() / time.Millisecond.Nanoseconds(), nil
 }
 
 func (client *httpSourceClient) doRequest(method string, request *source.Request) (*http.Response, error) {
