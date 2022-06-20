@@ -50,7 +50,6 @@ type DigestReader interface {
 }
 
 // TODO add AF_ALG digest https://github.com/golang/sys/commit/e24f485414aeafb646f6fca458b0bf869c0880a1
-
 func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest ...string) (io.Reader, error) {
 	var (
 		d          string
@@ -59,6 +58,7 @@ func NewDigestReader(log *logger.SugaredLoggerOnWith, reader io.Reader, digest .
 	if len(digest) > 0 {
 		d = digest[0]
 	}
+
 	ds := strings.Split(d, ":")
 	if len(ds) == 2 {
 		d = ds[1]

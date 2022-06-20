@@ -33,6 +33,10 @@ import (
 )
 
 const (
+	digestSeparator = ":"
+)
+
+const (
 	Sha256Hash digest.Algorithm = "sha256"
 	Md5Hash    digest.Algorithm = "md5"
 )
@@ -115,8 +119,7 @@ func ToHashString(h hash.Hash) string {
 }
 
 func Parse(digest string) []string {
-	digest = strings.Trim(digest, " ")
-	return strings.Split(digest, ":")
+	return strings.Split(digest, digestSeparator)
 }
 
 func CreateHash(hashType string) hash.Hash {
