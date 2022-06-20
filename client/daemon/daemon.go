@@ -225,7 +225,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	objectStorage, err := objectstorage.New(opt, dynconfig, peerTaskManager, storageManager)
+	objectStorage, err := objectstorage.New(opt, dynconfig, peerTaskManager, storageManager, d.LogDir())
 	if err != nil {
 		return nil, err
 	}
