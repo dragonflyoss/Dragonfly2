@@ -18,6 +18,8 @@ package digestutils
 
 import (
 	"crypto/md5"
+	"io/fs"
+	"os"
 	"strings"
 	"syscall"
 	"testing"
@@ -26,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 func TestSha256(t *testing.T) {
@@ -53,16 +54,16 @@ func TestMd5Reader(t *testing.T) {
 
 func TestHashFile(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
-
 	path := basic.TmpDir + "/" + uuid.New().String()
-	f, err := fileutils.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, 0644)
+	err := os.MkdirAll(path, 0644)
 	assert.Nil(t, err)
+
+	f, err := os.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, fs.FileMode(0644))
+	assert.Nil(t, err)
+	f.Close()
 
 	if _, err := f.Write([]byte("hello")); err != nil {
 		t.Error(err)
 	}
-
-	f.Close()
-
 	assert.Equal(t, expected, HashFile(path, Md5Hash))
 }

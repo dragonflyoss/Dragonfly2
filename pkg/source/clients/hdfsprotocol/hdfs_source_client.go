@@ -29,12 +29,12 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 const (
 	HDFSClient = "hdfs"
 )
+
 const (
 	// hdfsUseDataNodeHostName set hdfs client whether user hostname connect to datanode
 	hdfsUseDataNodeHostName = "dfs.client.use.datanode.hostname"
@@ -146,7 +146,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	response := source.NewResponse(
 		newHdfsFileReaderClose(hdfsFile, limitReadN),
 		source.WithExpireInfo(source.ExpireInfo{
-			LastModified: timeutils.Format(fileInfo.ModTime()),
+			LastModified: fileInfo.ModTime().Format(source.TimeFormat),
 		}))
 	return response, nil
 }

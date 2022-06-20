@@ -44,7 +44,6 @@ build(){
   case "$PLUGIN_TYPE" in
     resource)
       build_plugin
-      build_binary cdn
       build_binary dfget
       print_verbose_info dfget
       ;;

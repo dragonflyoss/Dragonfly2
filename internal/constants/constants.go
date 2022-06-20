@@ -28,5 +28,4 @@ const (
 	ManagerMetricsName   = "manager"
 	SchedulerMetricsName = "scheduler"
 	DfdaemonMetricsName  = "dfdaemon"
-	CDNMetricsName       = "cdn"
 )

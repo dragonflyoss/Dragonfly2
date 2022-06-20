@@ -206,8 +206,6 @@ func (m *SeedPeer) Validate() error {
 
 	// no validation rules for Type
 
-	// no validation rules for IsCdn
-
 	// no validation rules for Idc
 
 	// no validation rules for NetTopology
@@ -454,8 +452,6 @@ func (m *UpdateSeedPeerRequest) Validate() error {
 			reason: "value must be in list [super strong weak]",
 		}
 	}
-
-	// no validation rules for IsCdn
 
 	if m.GetIdc() != "" {
 

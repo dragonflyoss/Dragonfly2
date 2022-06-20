@@ -71,8 +71,6 @@ message SeedPeer {
   string host_name = 2;
   // Seed peer type.
   string type = 3;
-  // CDN seed peer.
-  bool is_cdn = 4;
   // Seed peer idc.
   string idc = 5;
   // Seed peer network topology.
@@ -113,8 +111,6 @@ message UpdateSeedPeerRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
   // Seed peer type.
   string type = 3 [(validate.rules).string = {in: ["super", "strong", "weak"]}];
-  // CDN seed peer.
-  bool is_cdn = 4;
   // Seed peer idc.
   string idc = 5 [(validate.rules).string = {min_len: 1, max_len: 1024, ignore_empty: true}];
   // Seed peer network topology.

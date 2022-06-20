@@ -2567,66 +2567,6 @@ func TestService_handlePieceFail(t *testing.T) {
 			},
 		},
 		{
-			name: "piece result code is Code_CDNError and parent state set PeerEventDownloadFailed",
-			config: &config.Config{
-				Scheduler: mockSchedulerConfig,
-				SeedPeer:  &config.SeedPeerConfig{Enable: true},
-				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
-			},
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_CDNError,
-				DstPid: mockSeedPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-				)
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
-			},
-		},
-		{
-			name: "piece result code is Code_CDNTaskDownloadFail and parent state set PeerEventDownloadFailed",
-			config: &config.Config{
-				Scheduler: mockSchedulerConfig,
-				SeedPeer:  &config.SeedPeerConfig{Enable: true},
-				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
-			},
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_CDNTaskDownloadFail,
-				DstPid: mockSeedPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-				)
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateFailed))
-			},
-		},
-		{
 			name: "piece result code is Code_ClientPieceRequestFail",
 			config: &config.Config{
 				Scheduler: mockSchedulerConfig,
@@ -2654,71 +2594,6 @@ func TestService_handlePieceFail(t *testing.T) {
 				assert := assert.New(t)
 				assert.True(peer.FSM.Is(resource.PeerStateRunning))
 				assert.True(parent.FSM.Is(resource.PeerStateRunning))
-			},
-		},
-		{
-			name: "piece result code is Code_CDNTaskNotFound",
-			config: &config.Config{
-				Scheduler: mockSchedulerConfig,
-				SeedPeer:  &config.SeedPeerConfig{Enable: true},
-				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
-			},
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_CDNTaskNotFound,
-				DstPid: mockSeedPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
-				var wg sync.WaitGroup
-				wg.Add(2)
-				defer wg.Wait()
-
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-				)
-				mr.SeedPeer().Do(func() { wg.Done() }).Return(seedPeer).Times(1)
-				mc.TriggerTask(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, task *resource.Task) { wg.Done() }).Return(peer, &rpcscheduler.PeerResult{}, nil).Times(1)
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().AnyTimes()
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(parent.FSM.Is(resource.PeerStateLeave))
-			},
-		},
-		{
-			name: "piece result code is Code_CDNTaskNotFound and disable seed peer",
-			config: &config.Config{
-				Scheduler: mockSchedulerConfig,
-				SeedPeer:  &config.SeedPeerConfig{Enable: false},
-				Metrics:   &config.MetricsConfig{EnablePeerHost: true},
-			},
-			piece: &rpcscheduler.PieceResult{
-				Code:   base.Code_CDNTaskNotFound,
-				DstPid: mockSeedPeerID,
-			},
-			peer:   resource.NewPeer(mockPeerID, mockTask, mockHost),
-			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
-			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
-				peer.FSM.SetState(resource.PeerStateRunning)
-				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
-				blocklist.Add(parent.ID)
-				gomock.InOrder(
-					mr.PeerManager().Return(peerManager).Times(1),
-					mp.Load(gomock.Eq(parent.ID)).Return(parent, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(blocklist)).Return().Times(1),
-				)
-
-				svc.handlePieceFail(context.Background(), peer, piece)
-				assert := assert.New(t)
-				assert.True(peer.FSM.Is(resource.PeerStateRunning))
-				assert.True(parent.FSM.Is(resource.PeerStateLeave))
 			},
 		},
 		{

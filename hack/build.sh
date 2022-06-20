@@ -4,7 +4,6 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
 DFCACHE_BINARY_NAME=dfcache
 SCHEDULER_BINARY_NAME=scheduler
@@ -49,10 +48,6 @@ build-local() {
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 
-build-cdn-local() {
-    build-local ${CDN_BINARY_NAME} cdn
-}
-
 build-dfget-local() {
     build-local ${DFGET_BINARY_NAME} dfget
 }
@@ -92,10 +87,6 @@ build-docker() {
     echo "BUILD: $1 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 
-build-cdn-docker() {
-    build-docker ${CDN_BINARY_NAME} dfdaemon
-}
-
 build-dfget-docker() {
     build-docker ${DFGET_BINARY_NAME} dfget
 }
@@ -125,9 +116,6 @@ main() {
     if [[ "1" == "${USE_DOCKER}" ]]; then
         echo "Begin to build with docker."
         case "${1-}" in
-        cdn)
-            build-cdn-docker
-            ;;
         dfget)
             build-dfget-docker
             ;;
@@ -146,7 +134,6 @@ main() {
         *)
             build-dfget-docker
             build-dfcache-docker
-            build-cdn-docker
             build-scheduler-docker
             build-manager-docker
             ;;
@@ -154,9 +141,6 @@ main() {
     else
         echo "Begin to build in the local environment."
         case "${1-}" in
-        cdn)
-            build-cdn-local
-            ;;
         dfget)
             build-dfget-local
             ;;
@@ -175,7 +159,6 @@ main() {
         *)
             build-dfget-local
             build-dfcache-local
-            build-cdn-local
             build-scheduler-local
             build-manager-local
             ;;

@@ -58,9 +58,7 @@ enum Code{
   SchedTaskStatusError = 5006; // task status is fail
 
   // cdnsystem response error 6000-6999
-  CDNError = 6000;
   CDNTaskRegistryFail = 6001;
-  CDNTaskDownloadFail = 6002;
   CDNTaskNotFound = 6404;
 
   // manager response error 7000-7999
