@@ -35,9 +35,9 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/net/url"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type DfgetConfig = ClientOption
@@ -143,7 +143,7 @@ func (cfg *ClientOption) Validate() error {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
 	}
 
-	if !urlutils.IsValidURL(cfg.URL) {
+	if !url.IsValid(cfg.URL) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
 	}
 
@@ -171,7 +171,7 @@ func (cfg *ClientOption) Validate() error {
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
-	if stringutils.IsBlank(cfg.Output) {
+	if pkgstrings.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
 		if idx < 0 {
@@ -249,7 +249,7 @@ func (cfg *ClientOption) checkOutput() error {
 	}
 
 	// check permission
-	for dir := cfg.Output; !stringutils.IsBlank(dir); dir = filepath.Dir(dir) {
+	for dir := cfg.Output; !pkgstrings.IsBlank(dir); dir = filepath.Dir(dir) {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {

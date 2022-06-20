@@ -27,9 +27,9 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type DownloadPieceRequest struct {
@@ -178,7 +178,7 @@ func (p *pieceDownloader) DownloadPiece(ctx context.Context, req *DownloadPieceR
 	reader, closer := resp.Body.(io.Reader), resp.Body.(io.Closer)
 	if req.CalcDigest {
 		req.log.Debugf("calculate digest for piece %d, digest: %s", req.piece.PieceNum, req.piece.PieceMd5)
-		reader, err = digestutils.NewDigestReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
+		reader, err = digest.NewReader(req.log, io.LimitReader(resp.Body, int64(req.piece.RangeSize)), req.piece.PieceMd5)
 		if err != nil {
 			_ = closer.Close()
 			req.log.Errorf("init digest reader error: %s", err.Error())

@@ -34,11 +34,11 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 type PieceManager interface {
@@ -205,7 +205,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	}
 	if pm.calculateDigest {
 		pt.Log().Debugf("calculate digest")
-		reader, _ = digestutils.NewDigestReader(pt.Log(), reader)
+		reader, _ = digest.NewReader(pt.Log(), reader)
 	}
 	var n int64
 	result.Size, err = pt.GetStorage().WritePiece(
@@ -218,7 +218,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 			},
 			PieceMetadata: storage.PieceMetadata{
 				Num: pieceNum,
-				// storage manager will get digest from DigestReader, keep empty here is ok
+				// storage manager will get digest from Reader, keep empty here is ok
 				Md5:    "",
 				Offset: pieceOffset,
 				Range: clientutil.Range{
@@ -239,7 +239,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 		return
 	}
 	if pm.calculateDigest {
-		md5 = reader.(digestutils.DigestReader).Digest()
+		md5 = reader.(digest.Reader).Digest()
 	}
 	return
 }
@@ -296,7 +296,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, request *sc
 
 	// calc total
 	if pm.calculateDigest {
-		reader, err = digestutils.NewDigestReader(pt.Log(), response.Body, request.UrlMeta.Digest)
+		reader, err = digest.NewReader(pt.Log(), response.Body, request.UrlMeta.Digest)
 		if err != nil {
 			log.Errorf("init digest reader error: %s", err.Error())
 			return err
@@ -462,7 +462,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 
 	if pm.calculateDigest {
 		log.Debugf("calculate digest in processPieceFromFile")
-		reader, _ = digestutils.NewDigestReader(log, r)
+		reader, _ = digest.NewReader(log, r)
 	}
 	n, err := tsd.WritePiece(ctx,
 		&storage.WritePieceRequest{
@@ -470,7 +470,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 			PeerTaskMetadata: ptm,
 			PieceMetadata: storage.PieceMetadata{
 				Num: pieceNum,
-				// storage manager will get digest from DigestReader, keep empty here is ok
+				// storage manager will get digest from Reader, keep empty here is ok
 				Md5:    "",
 				Offset: pieceOffset,
 				Range: clientutil.Range{

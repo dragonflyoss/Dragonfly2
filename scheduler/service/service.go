@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
+	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -644,7 +644,7 @@ func (s *Service) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *rpcscheduler.PieceResult) {
 	// Update peer piece info
 	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-	peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
+	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 	// When the peer downloads back-to-source,
 	// piece downloads successfully updates the task piece info.

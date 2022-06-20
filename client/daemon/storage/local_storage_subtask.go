@@ -26,8 +26,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 // TODO need refactor with localTaskStore, currently, localSubTaskStore code copies from localTaskStore
@@ -103,11 +103,11 @@ func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceReque
 	// when Md5 is empty, try to get md5 from reader, it's useful for back source
 	if req.PieceMetadata.Md5 == "" {
 		t.Debugf("piece md5 not found in metadata, read from reader")
-		if get, ok := req.Reader.(digestutils.DigestReader); ok {
+		if get, ok := req.Reader.(digest.Reader); ok {
 			req.PieceMetadata.Md5 = get.Digest()
 			t.Infof("read md5 from reader, value: %s", req.PieceMetadata.Md5)
 		} else {
-			t.Debugf("reader is not a DigestReader")
+			t.Debugf("reader is not a digest.Reader")
 		}
 	}
 
@@ -328,7 +328,7 @@ func (t *localSubTaskStore) ValidateDigest(req *PeerTaskMetadata) error {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
-	digest := digestutils.Sha256(pieceDigests...)
+	digest := digest.Sha256(pieceDigests...)
 	if digest != t.PieceMd5Sign {
 		t.Errorf("invalid digest, desired: %s, actual: %s", t.PieceMd5Sign, digest)
 		t.invalid.Store(true)
@@ -359,7 +359,7 @@ func (t *localSubTaskStore) genMetadata(n int64, req *WritePieceRequest) {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
-	digest := digestutils.Sha256(pieceDigests...)
+	digest := digest.Sha256(pieceDigests...)
 	t.PieceMd5Sign = digest
 	t.Infof("generated digest: %s, total pieces: %d, content length: %d", digest, t.TotalPieces, t.ContentLength)
 }

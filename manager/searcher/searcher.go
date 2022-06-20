@@ -27,8 +27,8 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
 const (
@@ -234,7 +234,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	var score, elementLen int
 	dstElements := strings.Split(dst, "|")
 	srcElements := strings.Split(src, "|")
-	elementLen = mathutils.MaxInt(len(dstElements), len(srcElements))
+	elementLen = math.MaxInt(len(dstElements), len(srcElements))
 
 	// Maximum element length is 5
 	if elementLen > maxElementLen {

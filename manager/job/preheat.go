@@ -39,7 +39,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 )
 
 var tracer = otel.Tracer("manager")
@@ -107,7 +107,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []model.Schedule
 			return nil, err
 		}
 
-		files, err = p.getLayers(ctx, url, tag, filter, httputils.MapToHeader(rawheader), image)
+		files, err = p.getLayers(ctx, url, tag, filter, nethttp.MapToHeader(rawheader), image)
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +250,7 @@ func (p *preheat) parseLayers(resp *http.Response, url, tag, filter string, head
 			URL:     layerURL(image.protocol, image.domain, image.name, digest),
 			Tag:     tag,
 			Filter:  filter,
-			Headers: httputils.HeaderToMap(header),
+			Headers: nethttp.HeaderToMap(header),
 		}
 
 		layers = append(layers, layer)
