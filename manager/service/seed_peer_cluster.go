@@ -22,16 +22,16 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreateSeedPeerCluster(ctx context.Context, json types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
-	config, err := structutils.StructToMap(json.Config)
+	config, err := structure.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	scopes, err := structutils.StructToMap(json.Scopes)
+	scopes, err := structure.StructToMap(json.Scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -69,12 +69,12 @@ func (s *service) DestroySeedPeerCluster(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateSeedPeerCluster(ctx context.Context, id uint, json types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
-	config, err := structutils.StructToMap(json.Config)
+	config, err := structure.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	scopes, err := structutils.StructToMap(json.Scopes)
+	scopes, err := structure.StructToMap(json.Scopes)
 	if err != nil {
 		return nil, err
 	}

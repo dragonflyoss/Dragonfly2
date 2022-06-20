@@ -23,12 +23,12 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-// safe call function
+// Safe call function.
 func Call(f func()) (err error) {
 	defer func() {
-		if desc := recover(); desc != nil {
-			err = fmt.Errorf("%v", desc)
-			logger.Errorf("panic stack: %s", string(debug.Stack()))
+		if r := recover(); r != nil {
+			err = fmt.Errorf("%v", r)
+			logger.Errorf("panic: %s", string(debug.Stack()))
 			debug.PrintStack()
 		}
 	}()

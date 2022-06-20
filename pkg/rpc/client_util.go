@@ -30,8 +30,8 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
 )
 
 const (
@@ -223,7 +223,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 			return res, cause
 		}
 		if i > 0 {
-			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+			time.Sleep(math.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cause = f()

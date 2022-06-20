@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const OSSClient = "oss"
@@ -204,15 +204,15 @@ func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, err
 
 func (osc *ossSourceClient) getClient(header source.Header) (*oss.Client, error) {
 	endpoint := header.Get(endpoint)
-	if stringutils.IsBlank(endpoint) {
+	if strings.IsBlank(endpoint) {
 		return nil, errors.New("endpoint is empty")
 	}
 	accessKeyID := header.Get(accessKeyID)
-	if stringutils.IsBlank(accessKeyID) {
+	if strings.IsBlank(accessKeyID) {
 		return nil, errors.New("accessKeyID is empty")
 	}
 	accessKeySecret := header.Get(accessKeySecret)
-	if stringutils.IsBlank(accessKeySecret) {
+	if strings.IsBlank(accessKeySecret) {
 		return nil, errors.New("accessKeySecret is empty")
 	}
 	clientKey := buildClientKey(endpoint, accessKeyID, accessKeySecret)

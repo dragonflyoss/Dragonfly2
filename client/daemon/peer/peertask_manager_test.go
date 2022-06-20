@@ -50,6 +50,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -62,7 +63,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 func TestMain(m *testing.M) {
@@ -95,9 +95,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	r := bytes.NewBuffer(opt.content)
 	var pieces = make([]string, int(math.Ceil(float64(len(opt.content))/float64(opt.pieceSize))))
 	for i := range pieces {
-		pieces[i] = digestutils.Md5Reader(io.LimitReader(r, int64(opt.pieceSize)))
+		pieces[i] = digest.Md5Reader(io.LimitReader(r, int64(opt.pieceSize)))
 	}
-	totalDigests := digestutils.Sha256(pieces...)
+	totalDigests := digest.Sha256(pieces...)
 	genPiecePacket := func(request *base.PieceTaskRequest) *base.PiecePacket {
 		var tasks []*base.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {

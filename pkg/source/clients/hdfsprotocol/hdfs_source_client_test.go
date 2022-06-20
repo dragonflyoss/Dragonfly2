@@ -31,8 +31,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 var sourceClient source.ResourceClient
@@ -219,7 +219,7 @@ func Test_Download_FileExist_ByRange(t *testing.T) {
 	})
 	defer patch.Reset()
 
-	rang := &rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength) - 1}
+	rang := &http.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength) - 1}
 	// exist file
 	request, err := source.NewRequestWithHeader(hdfsExistFileURL, map[string]string{
 		source.Range: rang.String(),
@@ -242,7 +242,7 @@ func TestDownload_FileNotExist(t *testing.T) {
 
 	defer patch.Reset()
 
-	rang := rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
+	rang := http.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
 
 	request, err := source.NewRequestWithHeader(hdfsNotExistFileURL, map[string]string{
 		source.Range: rang.String(),
@@ -279,7 +279,7 @@ func Test_DownloadWithResponseHeader_FileExist_ByRange(t *testing.T) {
 		return len(b), io.EOF
 	})
 
-	rang := rangeutils.Range{StartIndex: uint64(hdfsExistFileRangeStart), EndIndex: uint64(hdfsExistFileRangeEnd)}
+	rang := http.Range{StartIndex: uint64(hdfsExistFileRangeStart), EndIndex: uint64(hdfsExistFileRangeEnd)}
 	request, err := source.NewRequest(hdfsExistFileURL)
 	assert.Nil(t, err)
 	request.Header.Add(source.Range, rang.String())
@@ -297,7 +297,7 @@ func TestDownloadWithResponseHeader_FileNotExist(t *testing.T) {
 	})
 	defer patch.Reset()
 
-	rang := rangeutils.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
+	rang := http.Range{StartIndex: 0, EndIndex: uint64(hdfsExistFileContentLength)}
 	request, err := source.NewRequest(hdfsNotExistFileURL)
 	assert.Nil(t, err)
 	request.Header.Add(source.Range, rang.String())

@@ -37,8 +37,8 @@ import (
 	"github.com/montanaflynn/stats"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 var (
@@ -128,7 +128,7 @@ loop:
 }
 
 func debug() {
-	debugAddr := fmt.Sprintf("%s:%d", iputils.IPv4, 18066)
+	debugAddr := fmt.Sprintf("%s:%d", ip.IPv4, 18066)
 	viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 	if err := statsview.New().Start(); err != nil {
 		log.Println("stat view start failed", err)
