@@ -89,16 +89,6 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	// the seed peer needs to be cleared.
 	diffSeedPeers := diffSeedPeers(sc.data.SeedPeers, data.SeedPeers)
 	for _, seedPeer := range diffSeedPeers {
-		if seedPeer.IsCDN {
-			id := idgen.CDNHostID(seedPeer.Hostname, seedPeer.Port)
-			if host, ok := sc.hostManager.Load(id); ok {
-				host.LeavePeers()
-				sc.hostManager.Delete(id)
-			}
-
-			continue
-		}
-
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
 		if host, ok := sc.hostManager.Load(id); ok {
 			host.LeavePeers()
@@ -126,22 +116,6 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 		options := []HostOption{WithHostType(seedPeerTypeToHostType(seedPeer.Type))}
 		if config, ok := seedPeer.GetSeedPeerClusterConfig(); ok && config.LoadLimit > 0 {
 			options = append(options, WithUploadLoadLimit(int32(config.LoadLimit)))
-		}
-
-		if seedPeer.IsCDN {
-			id := idgen.CDNHostID(seedPeer.Hostname, seedPeer.Port)
-			hosts[id] = NewHost(&rpcscheduler.PeerHost{
-				Id:          id,
-				Ip:          seedPeer.IP,
-				RpcPort:     seedPeer.Port,
-				DownPort:    seedPeer.DownloadPort,
-				HostName:    seedPeer.Hostname,
-				Idc:         seedPeer.IDC,
-				Location:    seedPeer.Location,
-				NetTopology: seedPeer.NetTopology,
-			}, options...)
-
-			continue
 		}
 
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
@@ -213,15 +187,6 @@ func diffSeedPeers(sx []*config.SeedPeer, sy []*config.SeedPeer) []*config.SeedP
 	for _, x := range sx {
 		found := false
 		for _, y := range sy {
-			if x.IsCDN {
-				if idgen.CDNHostID(x.Hostname, x.Port) == idgen.CDNHostID(y.Hostname, y.Port) {
-					found = true
-					break
-				}
-
-				continue
-			}
-
 			if idgen.HostID(x.Hostname, x.Port) == idgen.HostID(y.Hostname, y.Port) {
 				found = true
 				break

@@ -13,13 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: ["manager", "scheduler", "cdn", "dfdaemon"]
+        module: ["manager", "scheduler", "dfdaemon"]
         include:
           - module: manager
             platforms: linux/amd64
           - module: scheduler
-            platforms: linux/amd64
-          - module: cdn
             platforms: linux/amd64
           - module: dfdaemon
             platforms: linux/amd64,linux/arm64
@@ -63,7 +61,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}

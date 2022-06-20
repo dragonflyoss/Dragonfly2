@@ -8,6 +8,7 @@ import (
 	context "context"
 	io "io"
 	reflect "reflect"
+	time "time"
 
 	objectstorage "d7y.io/dragonfly/v2/pkg/objectstorage"
 	gomock "github.com/golang/mock/gomock"
@@ -51,17 +52,17 @@ func (mr *MockObjectStorageMockRecorder) CreateBucket(ctx, bucketName interface{
 }
 
 // CreateObject mocks base method.
-func (m *MockObjectStorage) CreateObject(ctx context.Context, bucketName, objectKey string, reader io.Reader) error {
+func (m *MockObjectStorage) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateObject", ctx, bucketName, objectKey, reader)
+	ret := m.ctrl.Call(m, "CreateObject", ctx, bucketName, objectKey, digest, reader)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateObject indicates an expected call of CreateObject.
-func (mr *MockObjectStorageMockRecorder) CreateObject(ctx, bucketName, objectKey, reader interface{}) *gomock.Call {
+func (mr *MockObjectStorageMockRecorder) CreateObject(ctx, bucketName, objectKey, digest, reader interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateObject", reflect.TypeOf((*MockObjectStorage)(nil).CreateObject), ctx, bucketName, objectKey, reader)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateObject", reflect.TypeOf((*MockObjectStorage)(nil).CreateObject), ctx, bucketName, objectKey, digest, reader)
 }
 
 // DeleteBucket mocks base method.
@@ -135,6 +136,21 @@ func (m *MockObjectStorage) GetOject(ctx context.Context, bucketName, objectKey 
 func (mr *MockObjectStorageMockRecorder) GetOject(ctx, bucketName, objectKey interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOject", reflect.TypeOf((*MockObjectStorage)(nil).GetOject), ctx, bucketName, objectKey)
+}
+
+// GetSignURL mocks base method.
+func (m *MockObjectStorage) GetSignURL(ctx context.Context, bucketName, objectKey string, method objectstorage.Method, expire time.Duration) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignURL", ctx, bucketName, objectKey, method, expire)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignURL indicates an expected call of GetSignURL.
+func (mr *MockObjectStorageMockRecorder) GetSignURL(ctx, bucketName, objectKey, method, expire interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignURL", reflect.TypeOf((*MockObjectStorage)(nil).GetSignURL), ctx, bucketName, objectKey, method, expire)
 }
 
 // ListBucketMetadatas mocks base method.
