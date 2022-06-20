@@ -20,7 +20,7 @@ import (
 	"context"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+	"d7y.io/dragonfly/v2/pkg/math"
 )
 
 func Run(ctx context.Context,
@@ -35,7 +35,7 @@ func Run(ctx context.Context,
 	)
 	for i := 0; i < maxAttempts; i++ {
 		if i > 0 {
-			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+			time.Sleep(math.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cancel, cause = f()

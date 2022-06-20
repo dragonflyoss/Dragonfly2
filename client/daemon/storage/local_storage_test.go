@@ -36,9 +36,9 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 func TestMain(m *testing.M) {
@@ -254,7 +254,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 						return int32(len(pieces)), int64(len(testBytes)), true
 					},
 				})
-				assert.Equal(digestutils.Sha256(piecesMd5...), lts.PieceMd5Sign)
+				assert.Equal(digest.Sha256(piecesMd5...), lts.PieceMd5Sign)
 
 				// clean up test data
 				lts.lastAccess.Store(time.Now().Add(-1 * time.Hour).UnixNano())
@@ -268,7 +268,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 						return int32(len(pieces)), int64(len(testBytes)), true
 					},
 				})
-				assert.Equal(digestutils.Sha256(piecesMd5...), lsts.PieceMd5Sign)
+				assert.Equal(digest.Sha256(piecesMd5...), lsts.PieceMd5Sign)
 
 				// keep original offset
 				err = lsts.Store(context.Background(),

@@ -35,12 +35,12 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
@@ -173,9 +173,9 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 
-	if !stringutils.IsBlank(cfg.Digest) {
-		parsedHash := digestutils.Parse(cfg.Digest)
-		realHash := digestutils.HashFile(target.Name(), digestutils.Algorithms[parsedHash[0]])
+	if !pkgstrings.IsBlank(cfg.Digest) {
+		parsedHash := digest.Parse(cfg.Digest)
+		realHash := digest.HashFile(target.Name(), digest.Algorithms[parsedHash[0]])
 
 		if realHash != "" && realHash != parsedHash[1] {
 			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", parsedHash[0], realHash, parsedHash[1])

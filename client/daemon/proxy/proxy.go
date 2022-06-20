@@ -44,7 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 var (
@@ -564,7 +564,7 @@ func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 			}
 
 			// Hit ports
-			if stringutils.Contains(v.Ports, port) {
+			if pkgstrings.Contains(v.Ports, port) {
 				return true
 			}
 

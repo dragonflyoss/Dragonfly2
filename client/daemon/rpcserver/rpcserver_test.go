@@ -37,12 +37,12 @@ import (
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 func TestMain(m *testing.M) {
@@ -161,8 +161,8 @@ func Test_ServePeer(t *testing.T) {
 		{
 			request: &base.PieceTaskRequest{
 				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
+				SrcPid:   idgen.PeerID(ip.IPv4),
+				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 0,
 				Limit:    1,
 			},
@@ -172,8 +172,8 @@ func Test_ServePeer(t *testing.T) {
 		{
 			request: &base.PieceTaskRequest{
 				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
+				SrcPid:   idgen.PeerID(ip.IPv4),
+				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 0,
 				Limit:    4,
 			},
@@ -183,8 +183,8 @@ func Test_ServePeer(t *testing.T) {
 		{
 			request: &base.PieceTaskRequest{
 				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
+				SrcPid:   idgen.PeerID(ip.IPv4),
+				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 8,
 				Limit:    1,
 			},
@@ -194,8 +194,8 @@ func Test_ServePeer(t *testing.T) {
 		{
 			request: &base.PieceTaskRequest{
 				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
-				SrcPid:   idgen.PeerID(iputils.IPv4),
-				DstPid:   idgen.PeerID(iputils.IPv4),
+				SrcPid:   idgen.PeerID(ip.IPv4),
+				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 8,
 				Limit:    4,
 			},
@@ -499,8 +499,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					},
 					&base.PieceTaskRequest{
 						TaskId:   tc.name,
-						SrcPid:   idgen.PeerID(iputils.IPv4),
-						DstPid:   idgen.PeerID(iputils.IPv4),
+						SrcPid:   idgen.PeerID(ip.IPv4),
+						DstPid:   idgen.PeerID(ip.IPv4),
 						StartNum: 0,
 						Limit:    tc.limit,
 					})
@@ -518,8 +518,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 						for _, n := range tc.requestPieces {
 							request := &base.PieceTaskRequest{
 								TaskId:   tc.name,
-								SrcPid:   idgen.PeerID(iputils.IPv4),
-								DstPid:   idgen.PeerID(iputils.IPv4),
+								SrcPid:   idgen.PeerID(ip.IPv4),
+								DstPid:   idgen.PeerID(ip.IPv4),
 								StartNum: uint32(n),
 								Limit:    tc.limit,
 							}

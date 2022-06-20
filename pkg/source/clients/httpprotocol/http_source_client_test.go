@@ -29,8 +29,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 func TestHTTPSourceClientTestSuite(t *testing.T) {
@@ -79,7 +79,7 @@ func (suite *HTTPSourceClientTestSuite) SetupTest() {
 
 	httpmock.RegisterResponder(http.MethodGet, normalRawURL, func(request *http.Request) (*http.Response, error) {
 		if rang := request.Header.Get(headers.Range); rang != "" {
-			r, _ := rangeutils.GetRange(rang[6:])
+			r, _ := nethttp.GetRange(rang[6:])
 			header := http.Header{}
 			header.Set(headers.LastModified, lastModified)
 			header.Set(headers.ETag, etag)

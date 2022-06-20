@@ -30,10 +30,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
 	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 func Test_downloadFromSource(t *testing.T) {
@@ -53,7 +53,7 @@ func Test_downloadFromSource(t *testing.T) {
 	cfg := &config.DfgetConfig{
 		URL:    "http://a.b.c/xx",
 		Output: output,
-		Digest: strings.Join([]string{digestutils.Sha256Hash.String(), digestutils.Sha256(content)}, ":"),
+		Digest: strings.Join([]string{digest.Sha256Hash.String(), digest.Sha256(content)}, ":"),
 	}
 	request, err := source.NewRequest(cfg.URL)
 	assert.Nil(t, err)

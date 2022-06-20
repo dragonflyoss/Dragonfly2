@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/strings"
 )
 
 type DfcacheConfig = CacheOption
@@ -106,7 +106,7 @@ func (cfg *CacheOption) Validate(cmd string) error {
 	if cfg.Cid == "" {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "missing Cid")
 	}
-	if stringutils.IsBlank(cfg.Cid) {
+	if strings.IsBlank(cfg.Cid) {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "Cid are all blanks")
 	}
 
@@ -225,7 +225,7 @@ func (cfg *CacheOption) checkOutput() error {
 	}
 
 	// check permission
-	for dir := cfg.Output; !stringutils.IsBlank(dir); dir = filepath.Dir(dir) {
+	for dir := cfg.Output; !strings.IsBlank(dir); dir = filepath.Dir(dir) {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {

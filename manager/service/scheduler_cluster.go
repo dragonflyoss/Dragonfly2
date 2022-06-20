@@ -22,21 +22,21 @@ import (
 
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreateSchedulerCluster(ctx context.Context, json types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
-	config, err := structutils.StructToMap(json.Config)
+	config, err := structure.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	clientConfig, err := structure.StructToMap(json.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	scopes, err := structutils.StructToMap(json.Scopes)
+	scopes, err := structure.StructToMap(json.Scopes)
 	if err != nil {
 		return nil, err
 	}
@@ -87,17 +87,17 @@ func (s *service) DestroySchedulerCluster(ctx context.Context, id uint) error {
 }
 
 func (s *service) UpdateSchedulerCluster(ctx context.Context, id uint, json types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
-	config, err := structutils.StructToMap(json.Config)
+	config, err := structure.StructToMap(json.Config)
 	if err != nil {
 		return nil, err
 	}
 
-	clientConfig, err := structutils.StructToMap(json.ClientConfig)
+	clientConfig, err := structure.StructToMap(json.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	scopes, err := structutils.StructToMap(json.Scopes)
+	scopes, err := structure.StructToMap(json.Scopes)
 	if err != nil {
 		return nil, err
 	}
