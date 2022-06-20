@@ -1,6 +1,6 @@
 #!/bin/bash
 
-components="cdn scheduler manager"
+components="scheduler manager"
 
 set -x
 

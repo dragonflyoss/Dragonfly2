@@ -672,7 +672,7 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node.
 	switch piece.Code {
-	case base.Code_PeerTaskNotFound, base.Code_CDNError, base.Code_CDNTaskDownloadFail:
+	case base.Code_PeerTaskNotFound:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			break
@@ -687,8 +687,6 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 		}
 
 		peer.Log.Infof("parent %s is seed peer", piece.DstPid)
-		fallthrough
-	case base.Code_CDNTaskNotFound:
 		s.handleLegacySeedPeer(ctx, parent)
 
 		// Start trigger seed peer task.

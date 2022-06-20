@@ -185,8 +185,6 @@ definitions:
         type: string
       ip:
         type: string
-      is_cdn:
-        type: boolean
       location:
         type: string
       net_topology:
@@ -248,7 +246,7 @@ definitions:
         description: CreateAt is bucket create time.
         type: string
       name:
-        description: Name is bucket name
+        description: Name is bucket name.
         type: string
     type: object
   rbac.Permission:

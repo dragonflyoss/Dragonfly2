@@ -33,7 +33,6 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 var sourceClient source.ResourceClient
@@ -166,12 +165,11 @@ func TestIsExpired_LastModifiedExpired(t *testing.T) {
 	assert.Nil(t, err)
 	// header have Last-Modified
 	expired, err := sourceClient.IsExpired(request, &source.ExpireInfo{
-		LastModified: timeutils.Format(time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC)),
+		LastModified: time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC).Format(source.TimeFormat),
 		ETag:         "",
 	})
 	assert.Equal(t, true, expired)
 	assert.Nil(t, err)
-
 }
 
 func TestIsExpired_LastModifiedNotExpired(t *testing.T) {

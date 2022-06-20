@@ -29,7 +29,6 @@ import (
 	"github.com/opencontainers/go-digest"
 
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 const (
@@ -79,16 +78,20 @@ func Md5Bytes(bytes []byte) string {
 
 // HashFile computes hash value corresponding to hashType,
 // hashType is from digestutils.Md5Hash and digestutils.Sha256Hash.
-func HashFile(file string, hashType digest.Algorithm) string {
-	if !fileutils.IsRegular(file) {
-		return ""
-	}
-
-	f, err := os.Open(file)
+func HashFile(path string, hashType digest.Algorithm) string {
+	file, err := os.Stat(path)
 	if err != nil {
 		return ""
 	}
 
+	if !file.Mode().IsRegular() {
+		return ""
+	}
+
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
 	defer f.Close()
 
 	var h hash.Hash
