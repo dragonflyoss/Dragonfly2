@@ -20,6 +20,7 @@ import (
 	"crypto/md5"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"testing"
@@ -54,16 +55,14 @@ func TestMd5Reader(t *testing.T) {
 
 func TestHashFile(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
-	path := basic.TmpDir + "/" + uuid.New().String()
-	err := os.MkdirAll(path, 0644)
-	assert.Nil(t, err)
-
+	path := filepath.Join(basic.TmpDir, uuid.NewString())
 	f, err := os.OpenFile(path, syscall.O_CREAT|syscall.O_TRUNC|syscall.O_RDWR, fs.FileMode(0644))
 	assert.Nil(t, err)
-	f.Close()
+	defer f.Close()
 
 	if _, err := f.Write([]byte("hello")); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+
 	assert.Equal(t, expected, HashFile(path, Md5Hash))
 }
