@@ -22,8 +22,8 @@ import (
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
@@ -63,8 +63,8 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:     iputils.IPv4,
-			Host:   hostutils.FQDNHostname,
+			IP:     ip.IPv4,
+			Host:   fqdn.FQDNHostname,
 			Listen: "0.0.0.0",
 			Port:   8002,
 		},

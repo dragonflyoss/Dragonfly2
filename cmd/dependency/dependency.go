@@ -48,9 +48,9 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -229,7 +229,7 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(otelOption.ServiceName),
-			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", hostutils.FQDNHostname, iputils.IPv4)),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", fqdn.FQDNHostname, ip.IPv4)),
 			semconv.ServiceNamespaceKey.String("dragonfly"),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)

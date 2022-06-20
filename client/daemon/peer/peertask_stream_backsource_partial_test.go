@@ -45,6 +45,7 @@ import (
 	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
@@ -56,7 +57,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
@@ -69,9 +69,9 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	pieceCount := int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize)))
 	for i := int32(0); i < pieceCount; i++ {
 		if int64(i+1)*int64(opt.pieceSize) > opt.contentLength {
-			piecesMd5 = append(piecesMd5, digestutils.Md5Bytes(testBytes[int(i)*int(opt.pieceSize):]))
+			piecesMd5 = append(piecesMd5, digest.Md5Bytes(testBytes[int(i)*int(opt.pieceSize):]))
 		} else {
-			piecesMd5 = append(piecesMd5, digestutils.Md5Bytes(testBytes[int(i)*int(opt.pieceSize):int(i+1)*int(opt.pieceSize)]))
+			piecesMd5 = append(piecesMd5, digest.Md5Bytes(testBytes[int(i)*int(opt.pieceSize):int(i+1)*int(opt.pieceSize)]))
 		}
 	}
 	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
@@ -83,13 +83,13 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 					PieceNum:    int32(request.StartNum),
 					RangeStart:  uint64(0),
 					RangeSize:   opt.pieceSize,
-					PieceMd5:    digestutils.Md5Bytes(testBytes[0:opt.pieceSize]),
+					PieceMd5:    digest.Md5Bytes(testBytes[0:opt.pieceSize]),
 					PieceOffset: 0,
 					PieceStyle:  0,
 				})
 		}
 		return &base.PiecePacket{
-			PieceMd5Sign:  digestutils.Sha256(piecesMd5...),
+			PieceMd5Sign:  digest.Sha256(piecesMd5...),
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
 			PieceInfos:    tasks,

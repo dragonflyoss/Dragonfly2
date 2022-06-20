@@ -39,9 +39,9 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -235,13 +235,13 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	}
 
 	// Pick header's parameters
-	filter := httputils.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
-	tag := httputils.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
+	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
 
-	meta.Header = httputils.HeaderToMap(req.Header)
+	meta.Header = nethttp.HeaderToMap(req.Header)
 	meta.Tag = tag
 	meta.Filter = filter
 
@@ -264,7 +264,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		return nil, err
 	}
 
-	hdr := httputils.MapToHeader(attr)
+	hdr := nethttp.MapToHeader(attr)
 	log.Infof("download stream attribute: %v", hdr)
 
 	var contentLength int64 = -1

@@ -19,35 +19,15 @@ package idgen
 import (
 	"strings"
 
+	"d7y.io/dragonfly/v2/pkg/digest"
+	neturl "d7y.io/dragonfly/v2/pkg/net/url"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
-func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
-	var filters []string
-	if meta != nil && meta.Filter != "" {
-		filters = strings.Split(meta.Filter, "&")
-	}
-
-	var data []string
-	data = append(data, urlutils.FilterURLParam(url, filters))
-	if meta != nil {
-		if meta.Digest != "" {
-			data = append(data, meta.Digest)
-		}
-
-		if !ignoreRange && meta.Range != "" {
-			data = append(data, meta.Range)
-		}
-
-		if meta.Tag != "" {
-			data = append(data, meta.Tag)
-		}
-	}
-
-	return digestutils.Sha256(data...)
-}
+const (
+	filterSeparator = "&"
+)
 
 // TaskID generates a task id.
 // filter is separated by & character.
@@ -59,4 +39,47 @@ func TaskID(url string, meta *base.UrlMeta) string {
 // this func is used to check the parent tasks for ranged requests
 func ParentTaskID(url string, meta *base.UrlMeta) string {
 	return taskID(url, meta, true)
+}
+
+// taskID generates a task id.
+// filter is separated by & character.
+func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
+	if meta == nil {
+		return digest.Sha256(url)
+	}
+
+	filters := parseFilters(meta.Filter)
+
+	var (
+		u   string
+		err error
+	)
+	u, err = neturl.FilterQuery(url, filters)
+	if err != nil {
+		u = ""
+	}
+
+	data := []string{u}
+	if meta.Digest != "" {
+		data = append(data, meta.Digest)
+	}
+
+	if !ignoreRange && meta.Range != "" {
+		data = append(data, meta.Range)
+	}
+
+	if meta.Tag != "" {
+		data = append(data, meta.Tag)
+	}
+
+	return digest.Sha256(data...)
+}
+
+// parseFilters parses a filter string to filter slice.
+func parseFilters(rawFilters string) []string {
+	if pkgstrings.IsBlank(rawFilters) {
+		return nil
+	}
+
+	return strings.Split(rawFilters, filterSeparator)
 }

@@ -37,9 +37,9 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
+	netip "d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 )
 
 type DaemonConfig = DaemonOption
@@ -102,7 +102,7 @@ func (p *DaemonOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.IPv4
+		p.Host.AdvertiseIP = netip.IPv4
 	} else {
 		p.Host.AdvertiseIP = ip.String()
 	}

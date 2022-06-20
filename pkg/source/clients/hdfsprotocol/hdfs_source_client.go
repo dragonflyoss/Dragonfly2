@@ -27,8 +27,8 @@ import (
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/pkg/errors"
 
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 )
 
 const (
@@ -131,7 +131,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	}
 
 	if request.Header.Get(source.Range) != "" {
-		requestRange, err := rangeutils.ParseRange(request.Header.Get(source.Range), uint64(limitReadN))
+		requestRange, err := http.ParseRange(request.Header.Get(source.Range), uint64(limitReadN))
 		if err != nil {
 			return nil, err
 		}
