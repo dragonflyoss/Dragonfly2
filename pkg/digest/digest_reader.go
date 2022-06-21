@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/digest_reader_mock.go -source digest_reader.go -package mocks
+
 package digest
 
 import (
@@ -29,13 +31,6 @@ import (
 	"github.com/pkg/errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-)
-
-const (
-	AlgorithmSHA1   = "sha1"
-	AlgorithmSHA256 = "sha256"
-	AlgorithmSHA512 = "sha512"
-	AlgorithmMD5    = "md5"
 )
 
 // Reader is the interface used for reading resource.
@@ -83,27 +78,27 @@ func NewReader(r io.Reader, options ...Option) (io.Reader, error) {
 	}
 
 	if reader.digest != "" {
-		algorithm, encoded, err := Parse(reader.digest)
+		d, err := Parse(reader.digest)
 		if err != nil {
 			return nil, errors.New("invalid digest")
 		}
 
-		var hash hash.Hash
-		switch algorithm {
+		var h hash.Hash
+		switch d.Algorithm {
 		case AlgorithmSHA1:
-			hash = sha1.New()
+			h = sha1.New()
 		case AlgorithmSHA256:
-			hash = sha256.New()
+			h = sha256.New()
 		case AlgorithmSHA512:
-			hash = sha512.New()
+			h = sha512.New()
 		case AlgorithmMD5:
-			hash = md5.New()
+			h = md5.New()
 		default:
-			return nil, fmt.Errorf("unsupport digest method: %s", algorithm)
+			return nil, fmt.Errorf("unsupport digest method: %s", d.Algorithm)
 		}
 
-		reader.encoded = encoded
-		reader.hash = hash
+		reader.encoded = d.Encoded
+		reader.hash = h
 	}
 
 	return reader, nil

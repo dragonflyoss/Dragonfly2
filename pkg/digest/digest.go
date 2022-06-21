@@ -19,126 +19,122 @@ package digest
 import (
 	"bufio"
 	"crypto/md5"
+	"crypto/sha1"
 	"crypto/sha256"
+	"crypto/sha512"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"os"
 	"strings"
-
-	"github.com/opencontainers/go-digest"
-
-	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 const (
-	Sha256Hash digest.Algorithm = "sha256"
-	Md5Hash    digest.Algorithm = "md5"
+	// AlgorithmSHA1 is sha1 algorithm name of hash.
+	AlgorithmSHA1 = "sha1"
+
+	// AlgorithmSHA256 is sha256 algorithm name of hash.
+	AlgorithmSHA256 = "sha256"
+
+	// AlgorithmSHA512 is sha512 algorithm name of hash.
+	AlgorithmSHA512 = "sha512"
+
+	// AlgorithmMD5 is md5 algorithm name of hash.
+	AlgorithmMD5 = "md5"
 )
 
-var (
-	// Algorithms is used to check if an algorithm is supported.
-	// If algo is not supported, Algorithms[algo] will return empty string.
-	// Please don't use digest.Algorithm() to convert a string to digest.Algorithm.
-	Algorithms = map[string]digest.Algorithm{
-		Sha256Hash.String(): Sha256Hash,
-		Md5Hash.String():    Md5Hash,
-	}
-)
+// Digest provides digest operation function.
+type Digest struct {
+	// Algorithm is hash algorithm.
+	Algorithm string
 
-func Sha256(values ...string) string {
-	if len(values) == 0 {
-		return ""
-	}
-
-	h := sha256.New()
-	for _, content := range values {
-		if _, err := h.Write([]byte(content)); err != nil {
-			return ""
-		}
-	}
-
-	return ToHashString(h)
+	// Encoded is hash encode.
+	Encoded string
 }
 
-func Md5Reader(reader io.Reader) string {
-	h := md5.New()
-	if _, err := io.Copy(h, reader); err != nil {
-		return ""
-	}
-
-	return ToHashString(h)
-}
-
-func Md5Bytes(bytes []byte) string {
-	h := md5.New()
-	h.Write(bytes)
-	return ToHashString(h)
-}
-
-// HashFile computes hash value corresponding to hashType,
-// hashType is from digestutils.Md5Hash and digestutils.Sha256Hash.
-func HashFile(path string, hashType digest.Algorithm) string {
-	file, err := os.Stat(path)
-	if err != nil {
-		return ""
-	}
-
-	if !file.Mode().IsRegular() {
-		return ""
-	}
-
+// HashFile computes hash value corresponding to algorithm.
+func HashFile(path string, algorithm string) (string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	defer f.Close()
 
 	var h hash.Hash
-	if hashType == Md5Hash {
-		h = md5.New()
-	} else if hashType == Sha256Hash {
+	switch algorithm {
+	case AlgorithmSHA1:
+		h = sha1.New()
+	case AlgorithmSHA256:
 		h = sha256.New()
-	} else {
-		return ""
+	case AlgorithmSHA512:
+		h = sha512.New()
+	case AlgorithmMD5:
+		h = md5.New()
+	default:
+		return "", fmt.Errorf("unsupport digest method: %s", algorithm)
 	}
 
-	r := bufio.NewReaderSize(f, int(4*unit.MB))
-
+	r := bufio.NewReader(f)
 	_, err = io.Copy(h, r)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
-	return ToHashString(h)
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-func ToHashString(h hash.Hash) string {
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func CreateHash(hashType string) hash.Hash {
-	algo := Algorithms[hashType]
-	switch algo {
-	case Sha256Hash:
-		return sha256.New()
-	case Md5Hash:
-		return md5.New()
-	default:
-		return nil
-	}
-}
-
-func Parse(digest string) (string, string, error) {
+// Parse uses to parse digest string to algorithm and encoded.
+func Parse(digest string) (*Digest, error) {
 	values := strings.Split(digest, ":")
 	if len(values) == 2 {
-		return values[0], values[1], nil
+		return &Digest{
+			Algorithm: values[0],
+			Encoded:   values[1],
+		}, nil
 	}
 
 	if len(values) == 1 {
-		return AlgorithmMD5, values[0], nil
+		return &Digest{
+			Algorithm: AlgorithmMD5,
+			Encoded:   values[0],
+		}, nil
 	}
 
-	return "", "", errors.New("invalid digest")
+	return nil, errors.New("invalid digest")
+}
+
+// Sha256 computes the SHA256 checksum with multiple data.
+func Sha256(data ...string) string {
+	if len(data) == 0 {
+		return ""
+	}
+
+	h := sha256.New()
+	for _, s := range data {
+		if _, err := h.Write([]byte(s)); err != nil {
+			return ""
+		}
+	}
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Md5Reader computes the MD5 checksum with io.Reader.
+func Md5Reader(reader io.Reader) string {
+	h := md5.New()
+	r := bufio.NewReader(reader)
+	if _, err := io.Copy(h, r); err != nil {
+		return ""
+	}
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Md5Bytes computes the MD5 checksum with []byte.
+func Md5Bytes(bytes []byte) string {
+	h := md5.New()
+	h.Write(bytes)
+	return hex.EncodeToString(h.Sum(nil))
 }
