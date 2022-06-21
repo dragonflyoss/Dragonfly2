@@ -95,9 +95,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	r := bytes.NewBuffer(opt.content)
 	var pieces = make([]string, int(math.Ceil(float64(len(opt.content))/float64(opt.pieceSize))))
 	for i := range pieces {
-		pieces[i] = digest.Md5Reader(io.LimitReader(r, int64(opt.pieceSize)))
+		pieces[i] = digest.MD5FromReader(io.LimitReader(r, int64(opt.pieceSize)))
 	}
-	totalDigests := digest.Sha256(pieces...)
+	totalDigests := digest.SHA256FromStrings(pieces...)
 	genPiecePacket := func(request *base.PieceTaskRequest) *base.PiecePacket {
 		var tasks []*base.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {

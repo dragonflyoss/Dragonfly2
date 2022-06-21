@@ -45,7 +45,7 @@ func ParentTaskID(url string, meta *base.UrlMeta) string {
 // filter is separated by & character.
 func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
 	if meta == nil {
-		return digest.Sha256(url)
+		return digest.SHA256FromStrings(url)
 	}
 
 	filters := parseFilters(meta.Filter)
@@ -72,7 +72,7 @@ func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
 		data = append(data, meta.Tag)
 	}
 
-	return digest.Sha256(data...)
+	return digest.SHA256FromStrings(data...)
 }
 
 // parseFilters parses a filter string to filter slice.
