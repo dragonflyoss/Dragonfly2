@@ -219,7 +219,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	uploadManager, err := upload.NewUploadManager(storageManager,
+	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(),
 		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
