@@ -54,6 +54,19 @@ type Digest struct {
 	Encoded string
 }
 
+// String return digest string.
+func (d *Digest) String() string {
+	return fmt.Sprintf("%s:%s", d.Algorithm, d.Encoded)
+}
+
+// NewDigest return digest instance.
+func NewDigest(algorithm, encoded string) *Digest {
+	return &Digest{
+		Algorithm: algorithm,
+		Encoded:   encoded,
+	}
+}
+
 // HashFile computes hash value corresponding to algorithm.
 func HashFile(path string, algorithm string) (string, error) {
 	f, err := os.Open(path)
@@ -105,8 +118,26 @@ func Parse(digest string) (*Digest, error) {
 	return nil, errors.New("invalid digest")
 }
 
-// Sha256 computes the SHA256 checksum with multiple data.
-func Sha256(data ...string) string {
+// MD5FromReader computes the MD5 checksum with io.Reader.
+func MD5FromReader(reader io.Reader) string {
+	h := md5.New()
+	r := bufio.NewReader(reader)
+	if _, err := io.Copy(h, r); err != nil {
+		return ""
+	}
+
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// MD5FromBytes computes the MD5 checksum with []byte.
+func MD5FromBytes(bytes []byte) string {
+	h := md5.New()
+	h.Write(bytes)
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// SHA256FromStrings computes the SHA256 checksum with multiple strings.
+func SHA256FromStrings(data ...string) string {
 	if len(data) == 0 {
 		return ""
 	}
@@ -118,23 +149,5 @@ func Sha256(data ...string) string {
 		}
 	}
 
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// Md5Reader computes the MD5 checksum with io.Reader.
-func Md5Reader(reader io.Reader) string {
-	h := md5.New()
-	r := bufio.NewReader(reader)
-	if _, err := io.Copy(h, r); err != nil {
-		return ""
-	}
-
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-// Md5Bytes computes the MD5 checksum with []byte.
-func Md5Bytes(bytes []byte) string {
-	h := md5.New()
-	h.Write(bytes)
 	return hex.EncodeToString(h.Sum(nil))
 }

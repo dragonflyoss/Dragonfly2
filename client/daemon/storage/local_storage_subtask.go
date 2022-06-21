@@ -328,7 +328,7 @@ func (t *localSubTaskStore) ValidateDigest(req *PeerTaskMetadata) error {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
-	digest := digest.Sha256(pieceDigests...)
+	digest := digest.SHA256FromStrings(pieceDigests...)
 	if digest != t.PieceMd5Sign {
 		t.Errorf("invalid digest, desired: %s, actual: %s", t.PieceMd5Sign, digest)
 		t.invalid.Store(true)
@@ -359,7 +359,7 @@ func (t *localSubTaskStore) genMetadata(n int64, req *WritePieceRequest) {
 		pieceDigests = append(pieceDigests, t.Pieces[i].Md5)
 	}
 
-	digest := digest.Sha256(pieceDigests...)
+	digest := digest.SHA256FromStrings(pieceDigests...)
 	t.PieceMd5Sign = digest
 	t.Infof("generated digest: %s, total pieces: %d, content length: %d", digest, t.TotalPieces, t.ContentLength)
 }
