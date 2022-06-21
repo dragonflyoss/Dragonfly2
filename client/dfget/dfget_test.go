@@ -53,7 +53,7 @@ func Test_downloadFromSource(t *testing.T) {
 	cfg := &config.DfgetConfig{
 		URL:    "http://a.b.c/xx",
 		Output: output,
-		Digest: strings.Join([]string{digest.Sha256Hash.String(), digest.Sha256(content)}, ":"),
+		Digest: strings.Join([]string{digest.AlgorithmSHA256, digest.Sha256(content)}, ":"),
 	}
 	request, err := source.NewRequest(cfg.URL)
 	assert.Nil(t, err)

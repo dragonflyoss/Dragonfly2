@@ -18,6 +18,7 @@ package digest
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -45,7 +46,7 @@ func TestToHashString(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
 	h := md5.New()
 	h.Write([]byte("hello"))
-	assert.Equal(t, expected, ToHashString(h))
+	assert.Equal(t, expected, hex.EncodeToString(h.Sum(nil)))
 }
 
 func TestMd5Reader(t *testing.T) {
@@ -63,6 +64,7 @@ func TestHashFile(t *testing.T) {
 	if _, err := f.Write([]byte("hello")); err != nil {
 		t.Fatal(err)
 	}
-
-	assert.Equal(t, expected, HashFile(path, Md5Hash))
+	encoded, err := HashFile(path, AlgorithmMD5)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, encoded)
 }
