@@ -45,6 +45,7 @@ type PieceManager interface {
 	DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest) error
 	DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (*DownloadPieceResult, error)
 	ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error
+	Import(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, contentLength int64, reader io.Reader) error
 }
 
 type pieceManager struct {
@@ -54,8 +55,6 @@ type pieceManager struct {
 
 	calculateDigest bool
 }
-
-var _ PieceManager = (*pieceManager)(nil)
 
 func NewPieceManager(pieceDownloadTimeout time.Duration, opts ...func(*pieceManager)) (PieceManager, error) {
 	pm := &pieceManager{
@@ -554,6 +553,63 @@ func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMeta
 	})
 	if err != nil {
 		msg := fmt.Sprintf("store task(%s) failed: %s", ptm.TaskID, err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+
+	return nil
+}
+
+func (pm *pieceManager) Import(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, contentLength int64, reader io.Reader) error {
+	log := logger.WithTaskAndPeerID(ptm.TaskID, ptm.PeerID)
+	pieceSize := pm.computePieceSize(contentLength)
+	maxPieceNum := util.ComputePieceNum(contentLength, pieceSize)
+
+	for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
+		size := pieceSize
+		offset := uint64(pieceNum) * uint64(pieceSize)
+
+		// Calculate piece size for last piece.
+		if contentLength > 0 && int64(offset)+int64(size) > contentLength {
+			size = uint32(contentLength - int64(offset))
+		}
+
+		log.Debugf("import piece %d", pieceNum)
+		n, err := pm.processPieceFromFile(ctx, ptm, tsd, reader, pieceNum, offset, size, func(int64) (int32, int64, bool) {
+			return maxPieceNum, contentLength, pieceNum == maxPieceNum-1
+		})
+		if err != nil {
+			log.Errorf("import piece %d error: %s", pieceNum, err)
+			return err
+		}
+
+		if n != int64(size) {
+			log.Errorf("import piece %d size not match, desired: %d, actual: %d", pieceNum, size, n)
+			return storage.ErrShortRead
+		}
+	}
+
+	// Update task with length and piece count.
+	if err := tsd.UpdateTask(ctx, &storage.UpdateTaskRequest{
+		PeerTaskMetadata: ptm,
+		ContentLength:    contentLength,
+		TotalPieces:      maxPieceNum,
+	}); err != nil {
+		msg := fmt.Sprintf("update task failed: %s", err)
+		log.Error(msg)
+		return errors.New(msg)
+	}
+
+	// Store metadata.
+	if err := tsd.Store(ctx, &storage.StoreRequest{
+		CommonTaskRequest: storage.CommonTaskRequest{
+			PeerID: ptm.PeerID,
+			TaskID: ptm.TaskID,
+		},
+		MetadataOnly:  true,
+		StoreDataOnly: false,
+	}); err != nil {
+		msg := fmt.Sprintf("store task failed: %s", err)
 		log.Error(msg)
 		return errors.New(msg)
 	}

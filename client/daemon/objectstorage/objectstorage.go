@@ -19,6 +19,7 @@ package objectstorage
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net"
@@ -38,8 +39,25 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/digest"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+)
+
+const (
+	// WriteBack writes the object synchronously to the backend.
+	WriteBack = iota
+
+	// AsyncWriteBack writes the object asynchronously to the backend.
+	AsyncWriteBack
+
+	// Ephemeral only writes the object to the dfdaemon.
+	Ephemeral
+
+	// WriteThrough only writes the object to the backend.
+	WriteThrough
 )
 
 const (
@@ -237,7 +255,9 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		return
 	}
 
-	peerID := o.peerIDGenerator.PeerID()
+	bucketName := params.ID
+	objectKey := form.Key
+	contentLength := form.File.Size
 
 	client, err := o.client()
 	if err != nil {
@@ -245,25 +265,85 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		return
 	}
 
-	file, err := form.File.Open()
+	isExist, err := client.IsObjectExist(ctx, bucketName, objectKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	// pr, pw := io.Pipe()
-	// r := io.TeeReader(file, pw)
-	// md5 := digest.Md5Reader(r)
+	if isExist {
+		ctx.JSON(http.StatusConflict, gin.H{"errors": http.StatusText(http.StatusConflict)})
+		return
+	}
 
-	if form.Mode == WriteBackModeASync {
+	signURL, err := client.GetSignURL(ctx, bucketName, objectKey, objectstorage.MethodGet, defaultSignExpireTime)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	f, err := form.File.Open()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+	defer f.Close()
+
+	// Calculate md5 of task data.
+	dgst := digest.New(digest.AlgorithmMD5, digest.MD5FromReader(f))
+	taskID := idgen.TaskID(signURL, &base.UrlMeta{Digest: dgst.String()})
+	peerID := o.peerIDGenerator.PeerID()
+	log := logger.WithTaskAndPeerID(taskID, peerID)
+
+	if _, err := f.Seek(0, 0); err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	pr, pw := io.Pipe()
+	r := io.TeeReader(f, pw)
+
+	// Register task.
+	tsd, err := o.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
+		PeerTaskMetadata: storage.PeerTaskMetadata{
+			PeerID: peerID,
+			TaskID: taskID,
+		},
+	})
+	if err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	// Import task data.
+	if err := o.peerTaskManager.GetPieceManager().Import(ctx, storage.PeerTaskMetadata{
+		PeerID: peerID,
+		TaskID: taskID,
+	}, tsd, contentLength, r); err != nil {
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if form.Mode == AsyncWriteBack {
 		go func() {
-			if err := client.CreateObject(context.Background(), params.ID, form.Key, "digest", file); err != nil {
-
+			if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), pr); err != nil {
+				log.Errorf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
 			}
 		}()
 	} else {
-		client.CreateObject(context.Background(), params.ID, form.Key, "digest", file)
+		if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), pr); err != nil {
+			msg := fmt.Sprintf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
+			log.Error(msg)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": msg})
+			return
+		}
 	}
+
+	ctx.Status(http.StatusOK)
+	return
 }
 
 // client uses to generate client of object storage.
