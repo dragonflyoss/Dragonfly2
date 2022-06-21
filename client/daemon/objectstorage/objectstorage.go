@@ -19,15 +19,20 @@ package objectstorage
 import (
 	"context"
 	"errors"
+	"io"
 	"math"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
+	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
@@ -36,6 +41,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
+
+const (
+	PrometheusSubsystemName = "dragonfly_dfdaemon_object_stroage"
+	OtelServiceName         = "dragonfly-dfdaemon-object-storage"
+)
+
+var GinLogFileName = "gin-object-stroage.log"
 
 const (
 	// defaultSignExpireTime is default expire of sign url.
@@ -61,7 +73,7 @@ type objectStorage struct {
 }
 
 // New returns a new ObjectStorage instence.
-func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager) (ObjectStorage, error) {
+func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager, logDir string) (ObjectStorage, error) {
 	o := &objectStorage{
 		dynconfig:       dynconfig,
 		peerTaskManager: peerTaskManager,
@@ -69,7 +81,7 @@ func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager p
 		peerIDGenerator: peer.NewPeerIDGenerator(cfg.Host.AdvertiseIP),
 	}
 
-	router := o.initRouter()
+	router := o.initRouter(cfg, logDir)
 	o.Server = &http.Server{
 		Handler: router,
 	}
@@ -88,8 +100,34 @@ func (o *objectStorage) Stop() error {
 }
 
 // Initialize router of gin.
-func (o *objectStorage) initRouter() *gin.Engine {
-	r := gin.Default()
+func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin.Engine {
+	// Set mode
+	if !cfg.Verbose {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	// Logging to a file
+	if !cfg.Console {
+		gin.DisableConsoleColor()
+		logDir := filepath.Join(logDir, "daemon")
+		f, _ := os.Create(filepath.Join(logDir, GinLogFileName))
+		gin.DefaultWriter = io.MultiWriter(f)
+	}
+
+	r := gin.New()
+
+	// Middleware
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+
+	// Prometheus metrics
+	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
+	p.Use(r)
+
+	// Opentelemetry
+	if cfg.Options.Telemetry.Jaeger != "" {
+		r.Use(otelgin.Middleware(OtelServiceName))
+	}
 
 	// Health Check.
 	r.GET("/healthy", o.getHealth)
