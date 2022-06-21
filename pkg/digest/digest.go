@@ -21,6 +21,7 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"hash"
 	"io"
 	"os"
@@ -117,11 +118,6 @@ func ToHashString(h hash.Hash) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func Parse(digest string) []string {
-	digest = strings.Trim(digest, " ")
-	return strings.Split(digest, ":")
-}
-
 func CreateHash(hashType string) hash.Hash {
 	algo := Algorithms[hashType]
 	switch algo {
@@ -132,4 +128,17 @@ func CreateHash(hashType string) hash.Hash {
 	default:
 		return nil
 	}
+}
+
+func Parse(digest string) (string, string, error) {
+	values := strings.Split(digest, ":")
+	if len(values) == 2 {
+		return values[0], values[1], nil
+	}
+
+	if len(values) == 1 {
+		return AlgorithmMD5, values[0], nil
+	}
+
+	return "", "", errors.New("invalid digest")
 }

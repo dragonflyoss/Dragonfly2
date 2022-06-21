@@ -24,17 +24,12 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"io"
-	"os"
 	"testing"
 
 	testifyassert "github.com/stretchr/testify/assert"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
-
-func TestMain(m *testing.M) {
-	os.Exit(m.Run())
-}
 
 func TestNewReader(t *testing.T) {
 	assert := testifyassert.New(t)
@@ -95,7 +90,7 @@ func TestNewReader(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			digest := tc.digest(tc.data)
 			buf := bytes.NewBuffer(tc.data)
-			reader, err := NewReader(logger.With("test", "test"), buf, digest)
+			reader, err := NewReader(buf, WithDigest(digest), WithLogger(logger.With("test", "test")))
 			assert.Nil(err)
 			data, err := io.ReadAll(reader)
 			assert.Nil(err)
