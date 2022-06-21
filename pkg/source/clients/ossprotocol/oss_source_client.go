@@ -21,14 +21,14 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
+	"d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const OSSClient = "oss"
@@ -184,24 +184,35 @@ func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, err
 	if err != nil {
 		return -1, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
 	}
-	respHeader, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
+	header, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {
 		return -1, err
 	}
-	return timeutils.UnixMillis(respHeader.Get(oss.HTTPHeaderLastModified)), nil
+
+	lastModified := header.Get(oss.HTTPHeaderLastModified)
+	if lastModified == "" {
+		return -1, err
+	}
+
+	t, err := time.ParseInLocation(source.TimeFormat, lastModified, time.UTC)
+	if err != nil {
+		return -1, err
+	}
+
+	return t.UnixNano() / time.Millisecond.Nanoseconds(), nil
 }
 
 func (osc *ossSourceClient) getClient(header source.Header) (*oss.Client, error) {
 	endpoint := header.Get(endpoint)
-	if stringutils.IsBlank(endpoint) {
+	if strings.IsBlank(endpoint) {
 		return nil, errors.New("endpoint is empty")
 	}
 	accessKeyID := header.Get(accessKeyID)
-	if stringutils.IsBlank(accessKeyID) {
+	if strings.IsBlank(accessKeyID) {
 		return nil, errors.New("accessKeyID is empty")
 	}
 	accessKeySecret := header.Get(accessKeySecret)
-	if stringutils.IsBlank(accessKeySecret) {
+	if strings.IsBlank(accessKeySecret) {
 		return nil, errors.New("accessKeySecret is empty")
 	}
 	clientKey := buildClientKey(endpoint, accessKeyID, accessKeySecret)

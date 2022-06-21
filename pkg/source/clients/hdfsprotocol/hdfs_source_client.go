@@ -27,14 +27,14 @@ import (
 	"github.com/colinmarc/hdfs/v2"
 	"github.com/pkg/errors"
 
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
 )
 
 const (
 	HDFSClient = "hdfs"
 )
+
 const (
 	// hdfsUseDataNodeHostName set hdfs client whether user hostname connect to datanode
 	hdfsUseDataNodeHostName = "dfs.client.use.datanode.hostname"
@@ -131,7 +131,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	}
 
 	if request.Header.Get(source.Range) != "" {
-		requestRange, err := rangeutils.ParseRange(request.Header.Get(source.Range), uint64(limitReadN))
+		requestRange, err := http.ParseRange(request.Header.Get(source.Range), uint64(limitReadN))
 		if err != nil {
 			return nil, err
 		}
@@ -146,7 +146,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	response := source.NewResponse(
 		newHdfsFileReaderClose(hdfsFile, limitReadN),
 		source.WithExpireInfo(source.ExpireInfo{
-			LastModified: timeutils.Format(fileInfo.ModTime()),
+			LastModified: fileInfo.ModTime().Format(source.TimeFormat),
 		}))
 	return response, nil
 }

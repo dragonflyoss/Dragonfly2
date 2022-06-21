@@ -28,8 +28,8 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 var peerHostConfig = DaemonOption{
@@ -58,9 +58,9 @@ var peerHostConfig = DaemonOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
-		Hostname:       hostutils.Hostname,
+		Hostname:       fqdn.FQDNHostname,
 		ListenIP:       "0.0.0.0",
-		AdvertiseIP:    iputils.IPv4,
+		AdvertiseIP:    ip.IPv4,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",

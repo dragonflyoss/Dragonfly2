@@ -13,9 +13,6 @@ kind-load() {
 
 main() {
     case "${1-}" in
-    cdn)
-        kind-load cdn
-        ;;
     dfdaemon)
         kind-load dfdaemon
         ;;

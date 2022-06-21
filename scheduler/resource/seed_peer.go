@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/timeutils"
+	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 )
 
 const (
@@ -131,7 +131,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 		// Handle piece download successfully.
 		peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
 		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-		peer.AppendPieceCost(timeutils.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
+		peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 		task.StorePiece(piece.PieceInfo)
 	}
 }

@@ -42,9 +42,6 @@ git-submodule() {
 
 main() {
     case "${1-}" in
-    cdn)
-        docker-build cdn
-        ;;
     dfdaemon)
         docker-build dfdaemon
         ;;

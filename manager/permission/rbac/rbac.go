@@ -30,7 +30,7 @@ import (
 	"gorm.io/gorm"
 
 	managermodel "d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	"d7y.io/dragonfly/v2/pkg/strings"
 )
 
 // Syntax for models see https://casbin.org/docs/en/syntax-for-models
@@ -151,7 +151,7 @@ func GetAPIGroupNames(g *gin.Engine) []string {
 			continue
 		}
 
-		if !stringutils.Contains(apiGroupNames, name) {
+		if !strings.Contains(apiGroupNames, name) {
 			apiGroupNames = append(apiGroupNames, name)
 		}
 	}

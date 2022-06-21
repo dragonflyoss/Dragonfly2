@@ -37,12 +37,12 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
 )
 
 const (
@@ -792,7 +792,7 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool
 		pt.failedReason = reasonPeerGoneFromScheduler
 		pt.failedCode = base.Code_SchedPeerGone
 		return true
-	case base.Code_CDNError, base.Code_CDNTaskRegistryFail, base.Code_CDNTaskDownloadFail:
+	case base.Code_CDNTaskRegistryFail:
 		// 6xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
@@ -810,7 +810,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 
 	pt.SetContentLength(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
-	pt.SetPieceMd5Sign(digestutils.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
+	pt.SetPieceMd5Sign(digest.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
 
 	request := &DownloadPieceRequest{
 		storage: pt.GetStorage(),

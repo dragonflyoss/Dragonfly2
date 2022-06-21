@@ -40,13 +40,13 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
-	"d7y.io/dragonfly/v2/pkg/util/rangeutils"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -334,7 +334,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 		KeepOriginalOffset: req.KeepOriginalOffset,
 	}
 	if len(req.UrlMeta.Range) > 0 {
-		r, err := rangeutils.ParseRange(req.UrlMeta.Range, math.MaxInt)
+		r, err := http.ParseRange(req.UrlMeta.Range, math.MaxInt)
 		if err != nil {
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			return err

@@ -26,7 +26,7 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
 func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
@@ -73,7 +73,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 		return nil, err
 	}
 
-	args, err := structutils.StructToMap(json.Args)
+	args, err := structure.StructToMap(json.Args)
 	if err != nil {
 		return nil, err
 	}

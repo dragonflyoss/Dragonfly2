@@ -17,12 +17,12 @@
 package dfpath
 
 import (
+	"io/fs"
+	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/pkg/errors"
-
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 // Dfpath is the interface used for init project path
@@ -109,7 +109,7 @@ func New(options ...Option) (Dfpath, error) {
 		// Create directories
 		for name, dir := range map[string]string{"workHome": d.workHome, "cacheDir": d.cacheDir, "logDir": d.logDir, "dataDir": d.dataDir,
 			"pluginDir": d.pluginDir} {
-			if err := fileutils.MkdirAll(dir); err != nil {
+			if err := os.MkdirAll(dir, fs.FileMode(0755)); err != nil {
 				cache.errs = append(cache.errs, errors.Errorf("create %s dir %s failed: %v", name, dir, err))
 			}
 		}

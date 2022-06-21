@@ -25,7 +25,7 @@ import (
 	"syscall"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 var (
@@ -53,14 +53,14 @@ func init() {
 
 		HomeDir = u.HomeDir
 		HomeDir = strings.TrimSpace(HomeDir)
-		if stringutils.IsBlank(HomeDir) {
+		if pkgstrings.IsBlank(HomeDir) {
 			panic("home dir is empty")
 		}
 	}
 
 	TmpDir = os.TempDir()
 	TmpDir = strings.TrimSpace(TmpDir)
-	if stringutils.IsBlank(TmpDir) {
+	if pkgstrings.IsBlank(TmpDir) {
 		TmpDir = "/tmp"
 	}
 }
