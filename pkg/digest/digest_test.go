@@ -34,12 +34,12 @@ import (
 
 func TestSha256(t *testing.T) {
 	var expected = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
-	assert.Equal(t, expected, Sha256("hello"))
+	assert.Equal(t, expected, SHA256FromStrings("hello"))
 }
 
 func TestMd5Bytes(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
-	assert.Equal(t, expected, Md5Bytes([]byte("hello")))
+	assert.Equal(t, expected, MD5FromBytes([]byte("hello")))
 }
 
 func TestToHashString(t *testing.T) {
@@ -51,7 +51,7 @@ func TestToHashString(t *testing.T) {
 
 func TestMd5Reader(t *testing.T) {
 	var expected = "5d41402abc4b2a76b9719d911017c592"
-	assert.Equal(t, expected, Md5Reader(strings.NewReader("hello")))
+	assert.Equal(t, expected, MD5FromReader(strings.NewReader("hello")))
 }
 
 func TestHashFile(t *testing.T) {

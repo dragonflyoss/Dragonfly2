@@ -810,7 +810,7 @@ func (pt *peerTaskConductor) pullSinglePiece() {
 
 	pt.SetContentLength(int64(pt.singlePiece.PieceInfo.RangeSize))
 	pt.SetTotalPieces(1)
-	pt.SetPieceMd5Sign(digest.Sha256(pt.singlePiece.PieceInfo.PieceMd5))
+	pt.SetPieceMd5Sign(digest.SHA256FromStrings(pt.singlePiece.PieceInfo.PieceMd5))
 
 	request := &DownloadPieceRequest{
 		storage: pt.GetStorage(),
