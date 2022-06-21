@@ -174,11 +174,18 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 	}
 
 	if !pkgstrings.IsBlank(cfg.Digest) {
-		parsedHash := digest.Parse(cfg.Digest)
-		realHash := digest.HashFile(target.Name(), digest.Algorithms[parsedHash[0]])
+		d, err := digest.Parse(cfg.Digest)
+		if err != nil {
+			return err
+		}
 
-		if realHash != "" && realHash != parsedHash[1] {
-			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", parsedHash[0], realHash, parsedHash[1])
+		encoded, err := digest.HashFile(target.Name(), d.Algorithm)
+		if err != nil {
+			return err
+		}
+
+		if encoded != "" && encoded != d.Encoded {
+			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", d.Algorithm, encoded, d.Encoded)
 		}
 	}
 

@@ -156,7 +156,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	if req.PieceMetadata.Md5 == "" {
 		t.Debugf("piece md5 not found in metadata, read from reader")
 		if get, ok := req.Reader.(digest.Reader); ok {
-			req.PieceMetadata.Md5 = get.Digest()
+			req.PieceMetadata.Md5 = get.Encoded()
 			t.Infof("read md5 from reader, value: %s", req.PieceMetadata.Md5)
 		} else {
 			t.Debugf("reader is not a digest.Reader")
