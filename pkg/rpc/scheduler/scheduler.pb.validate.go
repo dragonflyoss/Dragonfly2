@@ -1194,6 +1194,26 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
+	if m.GetTaskType() < 0 {
+		return AnnounceTaskRequestValidationError{
+			field:  "TaskType",
+			reason: "value must be greater than or equal to 0",
+		}
+	}
+
+	if uri, err := url.Parse(m.GetUrl()); err != nil {
+		return AnnounceTaskRequestValidationError{
+			field:  "Url",
+			reason: "value must be a valid URI",
+			cause:  err,
+		}
+	} else if !uri.IsAbs() {
+		return AnnounceTaskRequestValidationError{
+			field:  "Url",
+			reason: "value must be absolute",
+		}
+	}
+
 	return nil
 }
 

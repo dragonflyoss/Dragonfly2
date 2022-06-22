@@ -399,6 +399,7 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTaskRequest) error {
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
+	taskType := req.TaskType
 	pieceInfos := req.PiecePacket.PieceInfos
 	totalPiece := req.PiecePacket.TotalPiece
 	if len(pieceInfos) <= 0 || totalPiece != int32(len(pieceInfos)) {
