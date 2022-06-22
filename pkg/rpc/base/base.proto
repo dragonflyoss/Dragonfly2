@@ -78,6 +78,36 @@ enum SizeScope{
   TINY = 2;
 }
 
+// Pattern represents pattern of task.
+enum Pattern{
+  // Default pattern, scheduler will use all p2p node
+  // include dfdaemon and seed peers.
+  P2P = 0;
+
+  // Seed peer pattern, scheduler will use only seed peers.
+  SEED_PEER = 1;
+
+  // Source pattern, scheduler will say back source
+  // when there is no available peer in p2p.
+  SOURCE = 2;
+}
+
+// TaskType represents type of task.
+enum TaskType{
+	// Normal is normal type of task,
+	// normal task is a normal p2p task.
+  Normal = 0;
+
+	// DfCache is dfcache type of task,
+	// dfcache task is a cache task, and the task url is fake url.
+	// It can only be used for caching and cannot be downloaded back to source.
+  DfCache = 1;
+
+	// DfStore is dfstore type of task,
+	// dfstore task is a persistent task in backend.
+  DfStore = 2;
+}
+
 message GrpcDfError {
   Code code = 1;
   string message = 2;

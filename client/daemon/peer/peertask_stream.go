@@ -45,7 +45,7 @@ type StreamTaskRequest struct {
 	// peer's id and must be global uniqueness
 	PeerID string
 	// Pattern to register to scheduler
-	Pattern scheduler.Pattern
+	Pattern base.Pattern
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io

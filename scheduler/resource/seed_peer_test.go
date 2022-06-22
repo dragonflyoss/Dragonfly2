@@ -25,6 +25,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -83,7 +84,7 @@ func TestSeedPeer_TriggerTask(t *testing.T) {
 			tc.mock(client.EXPECT())
 
 			seedPeer := newSeedPeer(client, peerManager, hostManager)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer, result, err := seedPeer.TriggerTask(context.Background(), mockTask)
 			tc.expect(t, peer, result, err)
 		})
