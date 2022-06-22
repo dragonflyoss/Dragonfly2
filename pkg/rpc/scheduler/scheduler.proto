@@ -24,18 +24,6 @@ import "google/protobuf/empty.proto";
 
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/scheduler";
 
-// Pattern represents pattern of task.
-enum Pattern{
-  // Default pattern, scheduler will use all p2p node
-  // include dfdaemon and seed peers.
-  P2P = 0;
-  // Seed peer pattern, scheduler will use only seed peers.
-  SEED_PEER = 1;
-  // Source pattern, scheduler will say back source
-  // when there is no available peer in p2p.
-  SOURCE = 2;
-}
-
 // PeerTaskRequest represents request of RegisterPeerTask.
 message PeerTaskRequest{
   // Download url.
@@ -51,15 +39,15 @@ message PeerTaskRequest{
   // Whether this request is caused by migration.
   bool is_migrating = 6;
   // Pattern includes p2p, seed-peer and source.
-  Pattern pattern = 7;
+  base.Pattern pattern = 7;
   // Task id.
   string task_id = 8 [(validate.rules).string.min_len = 1];
 }
 
 // RegisterResult represents response of RegisterPeerTask.
 message RegisterResult{
-  // Task type
-  int32 task_type = 1;
+  // Task type.
+  base.TaskType task_type = 1;
   // Task id
   string task_id = 2 [(validate.rules).string.min_len = 1];
   // File size scope.
@@ -207,7 +195,7 @@ message Task{
   // Task id.
   string id = 1 [(validate.rules).string.min_len = 1];
   // Task type.
-  int32 type = 2 [(validate.rules).int32.gte = 0];
+  base.TaskType type = 2;
   // Task content length.
   int64 content_length = 3 [(validate.rules).int64.gte = 1];
   // Task total piece count.
@@ -224,14 +212,16 @@ message Task{
 message AnnounceTaskRequest{
   // Task id.
   string task_id = 1 [(validate.rules).string.min_len = 1];
-  // Cache id.
-  string cid = 2 [(validate.rules).string.min_len = 1];
+  // Download url.
+  string url = 2 [(validate.rules).string = {uri: true, ignore_empty: true}];
   // URL meta info.
   base.UrlMeta url_meta = 3 [(validate.rules).message.required = true];
   // Peer host info.
   PeerHost peer_host = 4;
   // Task piece info.
   base.PiecePacket piece_packet = 5 [(validate.rules).message.required = true];
+  // Task type.
+  base.TaskType task_type = 6;
 }
 
 // Scheduler RPC Service.

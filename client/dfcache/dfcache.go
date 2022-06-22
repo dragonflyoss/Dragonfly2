@@ -101,7 +101,7 @@ func statTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 
 func newStatRequest(cfg *config.DfcacheConfig) *dfdaemon.StatTaskRequest {
 	return &dfdaemon.StatTaskRequest{
-		Cid: newCid(cfg.Cid),
+		Url: newCid(cfg.Cid),
 		UrlMeta: &base.UrlMeta{
 			Tag: cfg.Tag,
 		},
@@ -161,7 +161,8 @@ func importTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 
 func newImportRequest(cfg *config.DfcacheConfig) *dfdaemon.ImportTaskRequest {
 	return &dfdaemon.ImportTaskRequest{
-		Cid:  newCid(cfg.Cid),
+		Type: base.TaskType_DfCache,
+		Url:  newCid(cfg.Cid),
 		Path: cfg.Path,
 		UrlMeta: &base.UrlMeta{
 			Tag: cfg.Tag,
@@ -228,7 +229,7 @@ func exportTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 
 func newExportRequest(cfg *config.DfcacheConfig) *dfdaemon.ExportTaskRequest {
 	return &dfdaemon.ExportTaskRequest{
-		Cid:     newCid(cfg.Cid),
+		Url:     newCid(cfg.Cid),
 		Output:  cfg.Output,
 		Timeout: uint64(cfg.Timeout),
 		Limit:   float64(cfg.RateLimit),
@@ -292,7 +293,7 @@ func deleteTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 
 func newDeleteRequest(cfg *config.DfcacheConfig) *dfdaemon.DeleteTaskRequest {
 	return &dfdaemon.DeleteTaskRequest{
-		Cid: newCid(cfg.Cid),
+		Url: newCid(cfg.Cid),
 		UrlMeta: &base.UrlMeta{
 			Tag: cfg.Tag,
 		},
