@@ -33,6 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -51,7 +52,7 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern scheduler.Pattern, opts *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern base.Pattern, opts *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
 	if opts == nil {
 		logger.Infof("proxy config is empty, disabled")

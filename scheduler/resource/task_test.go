@@ -89,7 +89,7 @@ func TestTask_NewTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit)))
+			tc.expect(t, NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit)))
 		})
 	}
 }
@@ -146,7 +146,7 @@ func TestTask_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -197,7 +197,7 @@ func TestTask_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -253,7 +253,7 @@ func TestTask_LoadOrStorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -304,7 +304,7 @@ func TestTask_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -354,7 +354,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, task, mockPeer)
@@ -417,7 +417,7 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
-			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
@@ -480,7 +480,7 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
-			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
@@ -544,7 +544,7 @@ func TestTask_LoadPiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			piece, ok := task.LoadPiece(tc.pieceNum)
@@ -596,7 +596,7 @@ func TestTask_StorePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			tc.pieceInfo.PieceNum = tc.pieceNum
 			task.StorePiece(tc.pieceInfo)
@@ -654,7 +654,7 @@ func TestTask_LoadOrStorePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			tc.expect(t, task, tc.pieceInfo)
@@ -706,7 +706,7 @@ func TestTask_DeletePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			task.DeletePiece(tc.pieceNum)
@@ -803,7 +803,7 @@ func TestTask_SizeScope(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			task.ContentLength.Store(tc.contentLength)
 			task.TotalPieceCount.Store(tc.totalPieceCount)
 			tc.expect(t, task)
@@ -843,14 +843,26 @@ func TestTask_CanBackToSource(t *testing.T) {
 			},
 		},
 		{
-			name:              "task type is TaskTypeDfcache",
+			name:              "task can back-to-source and task type is DfStore",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
 			backToSourceLimit: 1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				task.Type = TaskTypeDfcache
+				task.Type = base.TaskType_DfStore
+				assert.Equal(task.CanBackToSource(), true)
+			},
+		},
+		{
+			name:              "task type is Dfcache",
+			id:                mockTaskID,
+			urlMeta:           mockTaskURLMeta,
+			url:               mockTaskURL,
+			backToSourceLimit: 1,
+			expect: func(t *testing.T, task *Task) {
+				assert := assert.New(t)
+				task.Type = base.TaskType_DfCache
 				assert.Equal(task.CanBackToSource(), false)
 			},
 		},
@@ -858,7 +870,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, TaskTypeNormal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			tc.expect(t, task)
 		})
 	}
@@ -937,7 +949,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			task.StorePeer(mockPeer)
 			tc.run(t, task, mockPeer, stream, stream.EXPECT())

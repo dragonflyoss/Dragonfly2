@@ -40,17 +40,6 @@ const (
 )
 
 const (
-	// TaskTypeNormal is normal type of task,
-	// normal task is a normal p2p task.
-	TaskTypeNormal = iota
-
-	// TaskTypeDfcache is dfcache type of task,
-	// dfcache task is a cache task, and the task url is fake url.
-	// It can only be used for caching and cannot be downloaded back to source.
-	TaskTypeDfcache
-)
-
-const (
 	// Task has been created but did not start running.
 	TaskStatePending = "Pending"
 
@@ -93,7 +82,7 @@ type Task struct {
 	URL string
 
 	// Type is task type.
-	Type int
+	Type base.TaskType
 
 	// URLMeta is task download url meta.
 	URLMeta *base.UrlMeta
@@ -140,7 +129,7 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url string, taskType int, meta *base.UrlMeta, options ...Option) *Task {
+func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options ...Option) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
@@ -332,7 +321,7 @@ func (t *Task) SizeScope() (base.SizeScope, error) {
 
 // CanBackToSource represents whether peer can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && t.Type == TaskTypeNormal
+	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && (t.Type == base.TaskType_Normal || t.Type == base.TaskType_DfStore)
 }
 
 // NotifyPeers notify all peers in the task with the state code.

@@ -38,7 +38,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	netip "d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -146,18 +146,18 @@ func (p *DaemonOption) Validate() error {
 	return nil
 }
 
-func ConvertPattern(p string, defaultPattern scheduler.Pattern) scheduler.Pattern {
+func ConvertPattern(p string, defaultPattern rpcbase.Pattern) rpcbase.Pattern {
 	switch p {
 	case PatternP2P:
-		return scheduler.Pattern_P2P
+		return rpcbase.Pattern_P2P
 	case PatternSeedPeer:
-		return scheduler.Pattern_SEED_PEER
+		return rpcbase.Pattern_SEED_PEER
 	case PatternSource:
-		return scheduler.Pattern_SOURCE
+		return rpcbase.Pattern_SOURCE
 	case "":
 		return defaultPattern
 	}
-	logger.Warnf("unknown pattern, use default pattern: %s", scheduler.Pattern_name[int32(defaultPattern)])
+	logger.Warnf("unknown pattern, use default pattern: %s", rpcbase.Pattern_name[int32(defaultPattern)])
 	return defaultPattern
 }
 

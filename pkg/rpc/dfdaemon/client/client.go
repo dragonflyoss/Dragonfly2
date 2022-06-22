@@ -163,7 +163,7 @@ func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, o
 func (dc *daemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error {
 	// StatTask is a latency sensitive operation, so we don't retry & wait for daemon to start,
 	// we assume daemon is already running.
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 
 	client, _, err := dc.getDaemonClient(taskID, false)
 	if err != nil {
@@ -174,7 +174,7 @@ func (dc *daemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequ
 }
 
 func (dc *daemonClient) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	client, _, err := dc.getDaemonClient(taskID, false)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func (dc *daemonClient) ImportTask(ctx context.Context, req *dfdaemon.ImportTask
 }
 
 func (dc *daemonClient) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	client, _, err := dc.getDaemonClient(taskID, false)
 	if err != nil {
 		return err
@@ -194,7 +194,7 @@ func (dc *daemonClient) ExportTask(ctx context.Context, req *dfdaemon.ExportTask
 }
 
 func (dc *daemonClient) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) error {
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	client, _, err := dc.getDaemonClient(taskID, false)
 	if err != nil {
 		return err
