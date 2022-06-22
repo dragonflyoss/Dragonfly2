@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
@@ -177,7 +178,7 @@ func TestHost_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -220,7 +221,7 @@ func TestHost_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -268,7 +269,7 @@ func TestHost_LoadOrStorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -311,7 +312,7 @@ func TestHost_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -361,7 +362,7 @@ func TestHost_LeavePeers(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)
@@ -402,7 +403,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)

@@ -78,9 +78,9 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 
 func TestEvaluatorBase_Evaluate(t *testing.T) {
 	parentMockHost := resource.NewHost(mockRawHost)
-	parentMockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	parentMockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 	childMockHost := resource.NewHost(mockRawHost)
-	childMockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	childMockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string
@@ -162,7 +162,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 
 func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string
@@ -306,7 +306,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
 			tc.mock(host, mockPeer)
 			tc.expect(t, calculateFreeLoadScore(host))
@@ -355,7 +355,7 @@ func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer)
 			tc.expect(t, calculateHostTypeAffinityScore(peer))
@@ -560,7 +560,7 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 func TestEvaluatorBase_IsBadNode(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, resource.TaskTypeNormal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string

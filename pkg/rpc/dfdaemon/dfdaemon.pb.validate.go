@@ -16,6 +16,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 // ensure the imports are used
@@ -31,6 +33,8 @@ var (
 	_ = (*url.URL)(nil)
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
+
+	_ = base.TaskType(0)
 )
 
 // define the regex for a UUID once up-front
@@ -283,9 +287,9 @@ func (m *StatTaskRequest) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetCid()) < 1 {
+	if utf8.RuneCountInString(m.GetUrl()) < 1 {
 		return StatTaskRequestValidationError{
-			field:  "Cid",
+			field:  "Url",
 			reason: "value length must be at least 1 runes",
 		}
 	}
@@ -367,9 +371,9 @@ func (m *ImportTaskRequest) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetCid()) < 1 {
+	if utf8.RuneCountInString(m.GetUrl()) < 1 {
 		return ImportTaskRequestValidationError{
-			field:  "Cid",
+			field:  "Url",
 			reason: "value length must be at least 1 runes",
 		}
 	}
@@ -390,6 +394,8 @@ func (m *ImportTaskRequest) Validate() error {
 			reason: "value length must be at least 1 runes",
 		}
 	}
+
+	// no validation rules for Type
 
 	return nil
 }
@@ -458,9 +464,9 @@ func (m *ExportTaskRequest) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetCid()) < 1 {
+	if utf8.RuneCountInString(m.GetUrl()) < 1 {
 		return ExportTaskRequestValidationError{
-			field:  "Cid",
+			field:  "Url",
 			reason: "value length must be at least 1 runes",
 		}
 	}
@@ -571,9 +577,9 @@ func (m *DeleteTaskRequest) Validate() error {
 		return nil
 	}
 
-	if utf8.RuneCountInString(m.GetCid()) < 1 {
+	if utf8.RuneCountInString(m.GetUrl()) < 1 {
 		return DeleteTaskRequestValidationError{
-			field:  "Cid",
+			field:  "Url",
 			reason: "value length must be at least 1 runes",
 		}
 	}

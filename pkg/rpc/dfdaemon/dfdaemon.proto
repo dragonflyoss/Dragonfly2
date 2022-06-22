@@ -25,77 +25,89 @@ import "validate/validate.proto";
 option go_package = "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon";
 
 message DownRequest{
-  // identify one downloading, the framework will fill it automatically
+  // Identify one downloading, the framework will fill it automatically.
   string uuid = 1 [(validate.rules).string.uuid = true];
-  // download file from the url, not only for http
+  // Download file from the url, not only for http.
   string url = 2 [(validate.rules).string.uri = true];
-  // pieces will be written to output path directly,
-  // at the same time, dfdaemon workspace also makes soft link to the output
+  // Pieces will be written to output path directly,
+  // at the same time, dfdaemon workspace also makes soft link to the output.
   string output = 3 [(validate.rules).string.min_len = 1];
-  // timeout duration
+  // Timeout duration.
   uint64 timeout = 4 [(validate.rules).uint64.gte = 0];
-  // rate limit in bytes per second
+  // Rate limit in bytes per second.
   double limit = 5 [(validate.rules).double.gte = 0];
+  // Disable back-to-source.
   bool disable_back_source = 6;
+  // URL meta info.
   base.UrlMeta url_meta = 7;
-  // p2p/seed-peer/source, default is p2p
+  // Pattern has p2p/seed-peer/source, default is p2p.
   string pattern = 8 [(validate.rules).string = {in:["p2p", "seed-peer", "source"], ignore_empty:true}];
-  // call system
+  // Call system.
   string callsystem = 9;
-  // user id
+  // User id.
   int64 uid = 10;
-  // group id
+  // Group id.
   int64 gid = 11;
-  // keep original offset, used for ranged request, only available for hard link, otherwise will failed
+  // Keep original offset, used for ranged request, only available for hard link, otherwise will failed.
   bool keep_original_offset = 12;
 }
 
 message DownResult{
+  // Task id.
   string task_id = 2 [(validate.rules).string.min_len = 1];
+  // Peer id.
   string peer_id = 3 [(validate.rules).string.min_len = 1];
+  // Task has completed length.
   uint64 completed_length = 4 [(validate.rules).uint64.gte = 0];
+  // Task has been completed.
   bool done = 5;
 }
 
 message StatTaskRequest{
-  // content/cache id of the task
-  string cid = 1 [(validate.rules).string.min_len = 1];
+  // Download url.
+  string url = 1 [(validate.rules).string.min_len = 1];
+  // URL meta info.
   base.UrlMeta url_meta = 2;
-  // check local cache only
+  // Check local cache only.
   bool local_only = 3;
 }
 
 message ImportTaskRequest{
-  // content/cache id of the task
-  string cid = 1 [(validate.rules).string.min_len = 1];
+  // Download url.
+  string url = 1 [(validate.rules).string.min_len = 1];
+  // URL meta info.
   base.UrlMeta url_meta = 2;
-  // the file to be imported
+  // File to be imported.
   string path = 3 [(validate.rules).string.min_len = 1];
+  // Task type.
+  base.TaskType type = 4;
 }
 
 message ExportTaskRequest{
-  // download cache file identified by this cid
-  string cid = 1 [(validate.rules).string.min_len = 1];
-  // output path of downloaded file
+  // Download url.
+  string url = 1 [(validate.rules).string.min_len = 1];
+  // Output path of downloaded file.
   string output = 2 [(validate.rules).string.min_len = 1];
-  // timeout duration
+  // Timeout duration.
   uint64 timeout = 3 [(validate.rules).uint64.gte = 0];
-  // rate limit in bytes per second
+  // Rate limit in bytes per second.
   double limit = 4 [(validate.rules).double.gte = 0];
+  // URL meta info.
   base.UrlMeta url_meta = 5;
-  // call system
+  // Call system.
   string callsystem = 6;
-  // user id
+  // User id.
   int64 uid = 7;
-  // group id
+  // Group id.
   int64 gid = 8;
-  // only export from local storage
+  // Only export from local storage.
   bool local_only = 9;
 }
 
 message DeleteTaskRequest{
-  // content/cache id of the task
-  string cid = 1 [(validate.rules).string.min_len = 1];
+  // Download url.
+  string url = 1 [(validate.rules).string.min_len = 1];
+  // URL meta info.
   base.UrlMeta url_meta = 2;
 }
 

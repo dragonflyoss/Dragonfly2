@@ -34,6 +34,10 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 
+	_ = base.Pattern(0)
+
+	_ = base.TaskType(0)
+
 	_ = base.SizeScope(0)
 
 	_ = base.Code(0)
@@ -41,6 +45,10 @@ var (
 	_ = base.Code(0)
 
 	_ = base.Code(0)
+
+	_ = base.TaskType(0)
+
+	_ = base.TaskType(0)
 )
 
 // Validate checks the field values on PeerTaskRequest with the rules defined
@@ -1034,12 +1042,7 @@ func (m *Task) Validate() error {
 		}
 	}
 
-	if m.GetType() < 0 {
-		return TaskValidationError{
-			field:  "Type",
-			reason: "value must be greater than or equal to 0",
-		}
-	}
+	// no validation rules for Type
 
 	if m.GetContentLength() < 1 {
 		return TaskValidationError{
@@ -1143,11 +1146,21 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
-	if utf8.RuneCountInString(m.GetCid()) < 1 {
-		return AnnounceTaskRequestValidationError{
-			field:  "Cid",
-			reason: "value length must be at least 1 runes",
+	if m.GetUrl() != "" {
+
+		if uri, err := url.Parse(m.GetUrl()); err != nil {
+			return AnnounceTaskRequestValidationError{
+				field:  "Url",
+				reason: "value must be a valid URI",
+				cause:  err,
+			}
+		} else if !uri.IsAbs() {
+			return AnnounceTaskRequestValidationError{
+				field:  "Url",
+				reason: "value must be absolute",
+			}
 		}
+
 	}
 
 	if m.GetUrlMeta() == nil {
@@ -1193,6 +1206,8 @@ func (m *AnnounceTaskRequest) Validate() error {
 			}
 		}
 	}
+
+	// no validation rules for TaskType
 
 	return nil
 }

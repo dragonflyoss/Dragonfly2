@@ -62,7 +62,7 @@ type TaskManager interface {
 	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
 
 	// AnnouncePeerTask announces peer task info to P2P network
-	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error
+	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error
 
 	GetPieceManager() PieceManager
 
@@ -169,8 +169,6 @@ func NewPeerTaskManager(
 	}
 	return ptm, nil
 }
-
-var _ TaskManager = (*peerTaskManager)(nil)
 
 func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskConductor, bool) {
 	pt, ok := ptm.runningPeerTasks.Load(taskID)
@@ -416,8 +414,8 @@ func (ptm *peerTaskManager) GetPieceManager() PieceManager {
 }
 
 func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context,
-	meta storage.PeerTaskMetadata, cid string, urlMeta *base.UrlMeta) error {
-	log := logger.With("function", "AnnouncePeerTask", "taskID", meta.TaskID, "peerID", meta.PeerID, "CID", cid)
+	meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
+	log := logger.With("function", "AnnouncePeerTask", "taskID", meta.TaskID, "peerID", meta.PeerID, "URL", url)
 
 	// Check if the given task is completed in local storageManager
 	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
@@ -448,7 +446,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context,
 	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
 	req := &scheduler.AnnounceTaskRequest{
 		TaskId:      meta.TaskID,
-		Cid:         cid,
+		Url:         url,
 		UrlMeta:     urlMeta,
 		PeerHost:    ptm.host,
 		PiecePacket: piecePacket,

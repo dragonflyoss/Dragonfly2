@@ -62,7 +62,7 @@ type server struct {
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
-	defaultPattern  scheduler.Pattern
+	defaultPattern  base.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
@@ -70,7 +70,7 @@ type server struct {
 }
 
 func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern scheduler.Pattern,
+	storageManager storage.Manager, defaultPattern base.Pattern,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
@@ -411,8 +411,8 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 
 func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
 	s.Keep()
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
-	log := logger.With("function", "StatTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	log := logger.With("function", "StatTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
 
 	log.Info("new stat task request")
 	if completed := s.isTaskCompleted(taskID); completed {
@@ -448,8 +448,8 @@ func (s *server) isTaskCompleted(taskID string) bool {
 func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) error {
 	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
-	log := logger.With("function", "ImportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	log := logger.With("function", "ImportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "file", req.Path)
 
 	log.Info("new import task request")
 	ptm := storage.PeerTaskMetadata{
@@ -459,7 +459,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 	announceFunc := func() {
 		// TODO: retry announce on error
 		start := time.Now()
-		err := s.peerTaskManager.AnnouncePeerTask(context.Background(), ptm, req.Cid, req.UrlMeta)
+		err := s.peerTaskManager.AnnouncePeerTask(context.Background(), ptm, req.Url, req.Type, req.UrlMeta)
 		if err != nil {
 			log.Warnf("Failed to announce task to scheduler: %s", err)
 		} else {
@@ -509,8 +509,8 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 
 func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest) error {
 	s.Keep()
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
-	log := logger.With("function", "ExportTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
 
 	log.Info("new export task request")
 	task := s.storageManager.FindCompletedTask(taskID)
@@ -536,7 +536,7 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTa
 	return s.storageManager.Store(ctx, &storage.StoreRequest{
 		CommonTaskRequest: storage.CommonTaskRequest{
 			PeerID:      peerID,
-			TaskID:      idgen.TaskID(req.Cid, req.UrlMeta),
+			TaskID:      idgen.TaskID(req.Url, req.UrlMeta),
 			Destination: req.Output,
 		},
 		StoreDataOnly: true,
@@ -545,7 +545,7 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTa
 
 func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemongrpc.ExportTaskRequest) error {
 	peerID := idgen.PeerID(s.peerHost.Ip)
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 
 	task, err := s.peerTaskManager.StatTask(ctx, taskID)
 	if err != nil {
@@ -572,7 +572,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 		downError error
 	)
 	downRequest := &dfdaemongrpc.DownRequest{
-		Url:               req.Cid,
+		Url:               req.Url,
 		Output:            req.Output,
 		Timeout:           req.Timeout,
 		Limit:             req.Limit,
@@ -621,8 +621,8 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 
 func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
 	s.Keep()
-	taskID := idgen.TaskID(req.Cid, req.UrlMeta)
-	log := logger.With("function", "DeleteTask", "Cid", req.Cid, "Tag", req.UrlMeta.Tag, "taskID", taskID)
+	taskID := idgen.TaskID(req.Url, req.UrlMeta)
+	log := logger.With("function", "DeleteTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID)
 
 	log.Info("new delete task request")
 	task := s.storageManager.FindCompletedTask(taskID)
