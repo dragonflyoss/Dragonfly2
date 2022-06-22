@@ -41,7 +41,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -69,7 +68,7 @@ type transport struct {
 	defaultFilter string
 
 	// defaultFilter is used for registering steam task
-	defaultPattern scheduler.Pattern
+	defaultPattern base.Pattern
 
 	// defaultBiz is used when http request without X-Dragonfly-Biz Header
 	defaultBiz string
@@ -124,7 +123,7 @@ func WithDefaultFilter(f string) Option {
 }
 
 // WithDefaultPattern sets default pattern
-func WithDefaultPattern(pattern scheduler.Pattern) Option {
+func WithDefaultPattern(pattern base.Pattern) Option {
 	return func(rt *transport) *transport {
 		rt.defaultPattern = pattern
 		return rt

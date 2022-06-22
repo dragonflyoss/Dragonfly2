@@ -106,7 +106,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
-					TaskType:  int32(task.Type),
+					TaskType:  task.Type,
 					SizeScope: base.SizeScope_TINY,
 					DirectPiece: &rpcscheduler.RegisterResult_PieceContent{
 						PieceContent: task.DirectPiece,
@@ -132,7 +132,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
-					TaskType:  int32(task.Type),
+					TaskType:  task.Type,
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -149,7 +149,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
-					TaskType:  int32(task.Type),
+					TaskType:  task.Type,
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -165,7 +165,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
-					TaskType:  int32(task.Type),
+					TaskType:  task.Type,
 					SizeScope: base.SizeScope_NORMAL,
 				}, nil
 			}
@@ -196,7 +196,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			peer.Log.Infof("task size scope is small and return single piece: %#v %#v", singlePiece, singlePiece.PieceInfo)
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
-				TaskType:  int32(task.Type),
+				TaskType:  task.Type,
 				SizeScope: base.SizeScope_SMALL,
 				DirectPiece: &rpcscheduler.RegisterResult_SinglePiece{
 					SinglePiece: singlePiece,
@@ -212,7 +212,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
-				TaskType:  int32(task.Type),
+				TaskType:  task.Type,
 				SizeScope: base.SizeScope_NORMAL,
 			}, nil
 		}
@@ -228,7 +228,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 
 	return &rpcscheduler.RegisterResult{
 		TaskId:    task.ID,
-		TaskType:  int32(task.Type),
+		TaskType:  task.Type,
 		SizeScope: base.SizeScope_NORMAL,
 	}, nil
 }
@@ -386,7 +386,7 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 	task.Log.Debug("task has been found")
 	return &rpcscheduler.Task{
 		Id:               task.ID,
-		Type:             int32(task.Type),
+		Type:             task.Type,
 		ContentLength:    task.ContentLength.Load(),
 		TotalPieceCount:  task.TotalPieceCount.Load(),
 		State:            task.FSM.Current(),
@@ -407,7 +407,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 		return dferrors.New(base.Code_BadRequest, msg)
 	}
 
-	task := resource.NewTask(taskID, req.Cid, resource.TaskTypeDfcache, req.UrlMeta)
+	task := resource.NewTask(taskID, req.Url, req.TaskType, req.UrlMeta)
 	task, _ = s.resource.TaskManager().LoadOrStore(task)
 	host := s.registerHost(ctx, req.PeerHost)
 	peer := s.registerPeer(ctx, peerID, task, host, req.UrlMeta.Tag)
@@ -443,7 +443,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			TaskId:          taskID,
 			PeerId:          peerID,
 			SrcIp:           req.PeerHost.Ip,
-			Url:             req.Cid,
+			Url:             req.Url,
 			Success:         true,
 			TotalPieceCount: totalPiece,
 			ContentLength:   req.PiecePacket.ContentLength,
@@ -515,7 +515,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 
 // registerTask creates a new task or reuses a previous task.
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, bool, error) {
-	task := resource.NewTask(req.TaskId, req.Url, resource.TaskTypeNormal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
+	task := resource.NewTask(req.TaskId, req.Url, base.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
 	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
 		task.Log.Infof("task state is %s", task.FSM.Current())

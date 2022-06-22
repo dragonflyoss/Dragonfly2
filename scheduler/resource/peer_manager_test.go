@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -131,7 +132,7 @@ func TestPeerManager_Load(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -186,7 +187,7 @@ func TestPeerManager_Store(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -239,7 +240,7 @@ func TestPeerManager_LoadOrStore(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -294,7 +295,7 @@ func TestPeerManager_Delete(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
@@ -398,7 +399,7 @@ func TestPeerManager_RunGC(t *testing.T) {
 			tc.mock(gc.EXPECT())
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, TaskTypeNormal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
 			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
 			if err != nil {
