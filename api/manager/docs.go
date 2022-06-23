@@ -3973,6 +3973,9 @@ const docTemplate = `{
                 "net_topology": {
                     "type": "string"
                 },
+                "object_storage_port": {
+                    "type": "integer"
+                },
                 "port": {
                     "type": "integer"
                 },
@@ -4404,6 +4407,9 @@ const docTemplate = `{
                 "net_topology": {
                     "type": "string"
                 },
+                "object_storage_port": {
+                    "type": "integer"
+                },
                 "port": {
                     "type": "integer"
                 },
@@ -4811,6 +4817,9 @@ const docTemplate = `{
                 },
                 "net_topology": {
                     "type": "string"
+                },
+                "object_storage_port": {
+                    "type": "integer"
                 },
                 "port": {
                     "type": "integer"

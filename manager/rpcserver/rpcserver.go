@@ -170,6 +170,7 @@ func (s *Server) GetSeedPeer(ctx context.Context, req *manager.GetSeedPeerReques
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
+		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		State:             seedPeer.State,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		SeedPeerCluster: &manager.SeedPeerCluster{
@@ -215,6 +216,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		IP:                req.Ip,
 		Port:              req.Port,
 		DownloadPort:      req.DownloadPort,
+		ObjectStoragePort: req.ObjectStoragePort,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		return nil, status.Error(codes.Unknown, err.Error())
@@ -237,6 +239,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
+		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		State:             seedPeer.State,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 	}, nil
@@ -253,6 +256,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		IP:                req.Ip,
 		Port:              req.Port,
 		DownloadPort:      req.DownloadPort,
+		ObjectStoragePort: req.ObjectStoragePort,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}
 
@@ -270,6 +274,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 		Ip:                seedPeer.IP,
 		Port:              seedPeer.Port,
 		DownloadPort:      seedPeer.DownloadPort,
+		ObjectStoragePort: seedPeer.ObjectStoragePort,
 		SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 		State:             seedPeer.State,
 	}, nil
@@ -329,6 +334,7 @@ func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequ
 				Ip:                seedPeer.IP,
 				Port:              seedPeer.Port,
 				DownloadPort:      seedPeer.DownloadPort,
+				ObjectStoragePort: seedPeer.ObjectStoragePort,
 				State:             seedPeer.State,
 				SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 				SeedPeerCluster: &manager.SeedPeerCluster{
@@ -510,6 +516,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 					Ip:                seedPeer.IP,
 					Port:              seedPeer.Port,
 					DownloadPort:      seedPeer.DownloadPort,
+					ObjectStoragePort: seedPeer.ObjectStoragePort,
 					State:             seedPeer.State,
 					SeedPeerClusterId: uint64(seedPeer.SeedPeerClusterID),
 				})

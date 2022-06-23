@@ -29,6 +29,7 @@ type CreateSeedPeerRequest struct {
 	IP                string `json:"ip" binding:"required"`
 	Port              int32  `json:"port" binding:"required"`
 	DownloadPort      int32  `json:"download_port" binding:"required"`
+	ObjectStoragePort int32  `json:"object_storage_port" binding:"omitempty"`
 	SeedPeerClusterID uint   `json:"seed_peer_cluster_id" binding:"required"`
 }
 
@@ -40,6 +41,7 @@ type UpdateSeedPeerRequest struct {
 	IP                string `json:"ip" binding:"omitempty"`
 	Port              int32  `json:"port" binding:"omitempty"`
 	DownloadPort      int32  `json:"download_port" binding:"omitempty"`
+	ObjectStoragePort int32  `json:"object_storage_port" binding:"omitempty"`
 	SeedPeerClusterID uint   `json:"seed_peer_cluster_id" binding:"omitempty"`
 }
 
@@ -51,6 +53,7 @@ type GetSeedPeersQuery struct {
 	IP                string `form:"ip" binding:"omitempty"`
 	Port              int32  `form:"port" binding:"omitempty"`
 	DownloadPort      int32  `form:"download_port" binding:"omitempty"`
+	ObjectStoragePort int32  `form:"object_storage_port" binding:"omitempty"`
 	SeedPeerClusterID uint   `form:"seed_peer_cluster_id" binding:"omitempty"`
 	Page              int    `form:"page" binding:"omitempty,gte=1"`
 	PerPage           int    `form:"per_page" binding:"omitempty,gte=1,lte=50"`
