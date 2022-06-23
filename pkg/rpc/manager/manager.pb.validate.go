@@ -247,6 +247,8 @@ func (m *SeedPeer) Validate() error {
 
 	}
 
+	// no validation rules for ObjectStoragePort
+
 	return nil
 }
 
@@ -512,6 +514,17 @@ func (m *UpdateSeedPeerRequest) Validate() error {
 			field:  "SeedPeerClusterId",
 			reason: "value must be greater than or equal to 1",
 		}
+	}
+
+	if m.GetObjectStoragePort() != 0 {
+
+		if val := m.GetObjectStoragePort(); val < 1024 || val >= 65535 {
+			return UpdateSeedPeerRequestValidationError{
+				field:  "ObjectStoragePort",
+				reason: "value must be inside range [1024, 65535)",
+			}
+		}
+
 	}
 
 	return nil

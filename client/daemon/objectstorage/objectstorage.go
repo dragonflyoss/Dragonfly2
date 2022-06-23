@@ -19,7 +19,6 @@ package objectstorage
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -36,6 +35,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -84,6 +84,7 @@ type ObjectStorage interface {
 // objectStorage provides object storage function.
 type objectStorage struct {
 	*http.Server
+	config          *config.DaemonOption
 	dynconfig       config.Dynconfig
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
@@ -93,6 +94,7 @@ type objectStorage struct {
 // New returns a new ObjectStorage instence.
 func New(cfg *config.DaemonOption, dynconfig config.Dynconfig, peerTaskManager peer.TaskManager, storageManager storage.Manager, logDir string) (ObjectStorage, error) {
 	o := &objectStorage{
+		config:          cfg,
 		dynconfig:       dynconfig,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
@@ -341,13 +343,18 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		var seedPeerHosts []string
 		for _, scheduler := range schedulers {
 			for _, seedPeer := range scheduler.SeedPeers {
-				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port))
+				if o.config.Host.AdvertiseIP != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
+					seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
+				}
 			}
 		}
 
 		for _, seedPeerHost := range seedPeerHosts {
 			if err := o.importSeedPeer(context.Background(), seedPeerHost, bucketName, objectKey, form.File); err != nil {
+				f.Close()
 				log.Error(err)
+				ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+				return
 			}
 		}
 	}()
@@ -410,17 +417,20 @@ func (o *objectStorage) importSeedPeer(ctx context.Context, seedPeerHost, bucket
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-	defer writer.Close()
 
 	writer.WriteField("key", objectKey)
 	writer.WriteField("mode", fmt.Sprint(Ephemeral))
 
-	part, err := writer.CreateFormField("file")
+	part, err := writer.CreateFormFile("file", file.Filename)
 	if err != nil {
 		return err
 	}
 
 	if _, err := io.Copy(part, f); err != nil {
+		return err
+	}
+
+	if err := writer.Close(); err != nil {
 		return err
 	}
 
@@ -440,9 +450,10 @@ func (o *objectStorage) importSeedPeer(ctx context.Context, seedPeerHost, bucket
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
+		return errors.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}
 
 	return nil

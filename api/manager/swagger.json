@@ -3966,6 +3966,9 @@
                 "net_topology": {
                     "type": "string"
                 },
+                "object_storage_port": {
+                    "type": "integer"
+                },
                 "port": {
                     "type": "integer"
                 },
@@ -4397,6 +4400,9 @@
                 "net_topology": {
                     "type": "string"
                 },
+                "object_storage_port": {
+                    "type": "integer"
+                },
                 "port": {
                     "type": "integer"
                 },
@@ -4804,6 +4810,9 @@
                 },
                 "net_topology": {
                     "type": "string"
+                },
+                "object_storage_port": {
+                    "type": "integer"
                 },
                 "port": {
                     "type": "integer"

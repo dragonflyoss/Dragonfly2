@@ -33,6 +33,7 @@ func (s *service) CreateSeedPeer(ctx context.Context, json types.CreateSeedPeerR
 		IP:                json.IP,
 		Port:              json.Port,
 		DownloadPort:      json.DownloadPort,
+		ObjectStoragePort: json.ObjectStoragePort,
 		SeedPeerClusterID: json.SeedPeerClusterID,
 	}
 
@@ -66,6 +67,7 @@ func (s *service) UpdateSeedPeer(ctx context.Context, id uint, json types.Update
 		IP:                json.IP,
 		Port:              json.Port,
 		DownloadPort:      json.DownloadPort,
+		ObjectStoragePort: json.ObjectStoragePort,
 		SeedPeerClusterID: json.SeedPeerClusterID,
 	}).Error; err != nil {
 		return nil, err
@@ -94,6 +96,7 @@ func (s *service) GetSeedPeers(ctx context.Context, q types.GetSeedPeersQuery) (
 		IP:                q.IP,
 		Port:              q.Port,
 		DownloadPort:      q.DownloadPort,
+		ObjectStoragePort: q.ObjectStoragePort,
 		SeedPeerClusterID: q.SeedPeerClusterID,
 	}).Find(&seedPeers).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err

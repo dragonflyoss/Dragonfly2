@@ -725,6 +725,11 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 
 // announceSeedPeer announces seed peer to manager.
 func (cd *clientDaemon) announceSeedPeer() error {
+	var objectStoragePort int32
+	if cd.Option.ObjectStorage.Enable {
+		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
+	}
+
 	if _, err := cd.managerClient.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
 		SourceType:        manager.SourceType_SEED_PEER_SOURCE,
 		HostName:          cd.Option.Host.Hostname,
@@ -735,6 +740,7 @@ func (cd *clientDaemon) announceSeedPeer() error {
 		Ip:                cd.Option.Host.AdvertiseIP,
 		Port:              cd.schedPeerHost.RpcPort,
 		DownloadPort:      cd.schedPeerHost.DownPort,
+		ObjectStoragePort: objectStoragePort,
 		SeedPeerClusterId: uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
 	}); err != nil {
 		return err
