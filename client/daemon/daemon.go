@@ -120,7 +120,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, base.Pattern_P2P)
 	)
 
-	if opt.Scheduler.Manager.Enable == true {
+	if opt.Scheduler.Manager.Enable {
 		// New manager client
 		var err error
 		managerClient, err = managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
@@ -214,8 +214,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	var proxyManager proxy.Manager
-	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, defaultPattern, opt.Proxy)
+	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, defaultPattern, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}
@@ -226,9 +225,12 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	objectStorage, err := objectstorage.New(opt, dynconfig, peerTaskManager, storageManager, d.LogDir())
-	if err != nil {
-		return nil, err
+	var objectStorage objectstorage.ObjectStorage
+	if opt.ObjectStorage.Enable {
+		objectStorage, err = objectstorage.New(opt, dynconfig, peerTaskManager, storageManager, d.LogDir())
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &clientDaemon{
@@ -397,13 +399,16 @@ func (cd *clientDaemon) Serve() error {
 	cd.schedPeerHost.DownPort = int32(uploadPort)
 
 	// prepare object storage service listen
-	if cd.Option.ObjectStorage.TCPListen == nil {
-		return errors.New("object storage tcp listen option is empty")
-	}
-	objectStorageListener, _, err := cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
-	if err != nil {
-		logger.Errorf("failed to listen for object storage service: %v", err)
-		return err
+	var objectStorageListener net.Listener
+	if cd.Option.ObjectStorage.Enable {
+		if cd.Option.ObjectStorage.TCPListen == nil {
+			return errors.New("object storage tcp listen option is empty")
+		}
+		objectStorageListener, _, err = cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
+		if err != nil {
+			logger.Errorf("failed to listen for object storage service: %v", err)
+			return err
+		}
 	}
 
 	g := errgroup.Group{}
@@ -488,17 +493,19 @@ func (cd *clientDaemon) Serve() error {
 	})
 
 	// serve object storage service
-	g.Go(func() error {
-		defer objectStorageListener.Close()
-		logger.Infof("serve object storage service at %s://%s", objectStorageListener.Addr().Network(), objectStorageListener.Addr().String())
-		if err := cd.ObjectStorage.Serve(objectStorageListener); err != nil && err != http.ErrServerClosed {
-			logger.Errorf("failed to serve for object storage service: %v", err)
-			return err
-		} else if err == http.ErrServerClosed {
-			logger.Infof("object storage service closed")
-		}
-		return nil
-	})
+	if cd.Option.ObjectStorage.Enable {
+		g.Go(func() error {
+			defer objectStorageListener.Close()
+			logger.Infof("serve object storage service at %s://%s", objectStorageListener.Addr().Network(), objectStorageListener.Addr().String())
+			if err := cd.ObjectStorage.Serve(objectStorageListener); err != nil && err != http.ErrServerClosed {
+				logger.Errorf("failed to serve for object storage service: %v", err)
+				return err
+			} else if err == http.ErrServerClosed {
+				logger.Infof("object storage service closed")
+			}
+			return nil
+		})
+	}
 
 	// enable seed peer mode
 	if cd.managerClient != nil && cd.Option.Scheduler.Manager.SeedPeer.Enable {
@@ -616,8 +623,10 @@ func (cd *clientDaemon) Stop() {
 			logger.Errorf("upload manager stop failed %s", err)
 		}
 
-		if err := cd.ObjectStorage.Stop(); err != nil {
-			logger.Errorf("object storage stop failed %s", err)
+		if cd.Option.ObjectStorage.Enable {
+			if err := cd.ObjectStorage.Stop(); err != nil {
+				logger.Errorf("object storage stop failed %s", err)
+			}
 		}
 
 		if cd.ProxyManager.IsEnabled() {

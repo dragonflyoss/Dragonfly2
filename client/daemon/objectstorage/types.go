@@ -29,6 +29,6 @@ type CreateObjectParams struct {
 
 type CreateObjectRequset struct {
 	Key  string                `form:"key" binding:"required"`
-	Mode uint                  `form:"mode,default=0" binding:"required,gte=0,lte=3"`
+	Mode uint                  `form:"mode,default=0" binding:"required,gte=0,lte=2"`
 	File *multipart.FileHeader `form:"file" binding:"required"`
 }

@@ -126,6 +126,7 @@ func (p *DaemonOption) Validate() error {
 		}
 		return nil
 	}
+
 	if len(p.Scheduler.NetAddrs) == 0 {
 		return errors.New("empty schedulers and config server is not specified")
 	}
@@ -363,6 +364,9 @@ type UploadOption struct {
 }
 
 type ObjectStorageOption struct {
+	// Enable object storage.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// ListenOption is object storage service listener.
 	ListenOption `yaml:",inline" mapstructure:",squash"`
 }
 

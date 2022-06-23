@@ -412,7 +412,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 		if task.FSM.Can(resource.TaskEventDownload) {
 			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
 				msg := fmt.Sprintf("task fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 		}
@@ -436,7 +436,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 		if peer.FSM.Is(resource.PeerStatePending) {
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 		}
@@ -446,7 +446,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			peer.FSM.Is(resource.PeerStateReceivedNormal) {
 			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 

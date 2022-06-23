@@ -206,7 +206,7 @@ type ObjectStorageConfig struct {
 	// Access key ID.
 	AccessKey string `mapstructure:"accessKey" yaml:"accessKey"`
 
-	// Access key secret
+	// Access key secret.
 	SecretKey string `mapstructure:"secretKey" yaml:"secretKey"`
 }
 

@@ -17,13 +17,16 @@
 package objectstorage
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"math"
+	"mime/multipart"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -55,9 +58,6 @@ const (
 
 	// Ephemeral only writes the object to the dfdaemon.
 	Ephemeral
-
-	// WriteThrough only writes the object to the backend.
-	WriteThrough
 )
 
 const (
@@ -70,14 +70,6 @@ var GinLogFileName = "gin-object-stroage.log"
 const (
 	// defaultSignExpireTime is default expire of sign url.
 	defaultSignExpireTime = 5 * time.Minute
-)
-
-const (
-	// WriteBackModeSync is sync mode for writing to object storage.
-	WriteBackModeSync = "sync"
-
-	// WriteBackModeSync is async mode for writing to object storage.
-	WriteBackModeASync = "async"
 )
 
 // ObjectStorage is the interface used for object storage server.
@@ -284,25 +276,24 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 
 	f, err := form.File.Open()
 	if err != nil {
+		f.Close()
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
-	defer f.Close()
 
 	// Calculate md5 of task data.
 	dgst := digest.New(digest.AlgorithmMD5, digest.MD5FromReader(f))
-	taskID := idgen.TaskID(signURL, &base.UrlMeta{Digest: dgst.String()})
+	urlMeta := &base.UrlMeta{Digest: dgst.String()}
+	taskID := idgen.TaskID(signURL, urlMeta)
 	peerID := o.peerIDGenerator.PeerID()
 	log := logger.WithTaskAndPeerID(taskID, peerID)
 
 	if _, err := f.Seek(0, 0); err != nil {
+		f.Close()
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
-
-	pr, pw := io.Pipe()
-	r := io.TeeReader(f, pw)
 
 	// Register task.
 	tsd, err := o.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
@@ -312,38 +303,149 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		},
 	})
 	if err != nil {
+		f.Close()
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	// Import task data.
-	if err := o.peerTaskManager.GetPieceManager().Import(ctx, storage.PeerTaskMetadata{
+	meta := storage.PeerTaskMetadata{
 		PeerID: peerID,
 		TaskID: taskID,
-	}, tsd, contentLength, r); err != nil {
+	}
+
+	// Import task data to dfdaemon.
+	if err := o.peerTaskManager.GetPieceManager().Import(ctx, meta, tsd, contentLength, f); err != nil {
+		f.Close()
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if form.Mode == AsyncWriteBack {
-		go func() {
-			if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), pr); err != nil {
-				log.Errorf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
+	// Announce task to scheduler.
+	if err := o.peerTaskManager.AnnouncePeerTask(ctx, meta, signURL, base.TaskType_DfStore, urlMeta); err != nil {
+		f.Close()
+		log.Error(err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	// Import task data to seed peer.
+	go func() {
+		schedulers, err := o.dynconfig.GetSchedulers()
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		var seedPeerHosts []string
+		for _, scheduler := range schedulers {
+			for _, seedPeer := range scheduler.SeedPeers {
+				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.Port))
 			}
-		}()
-	} else {
-		if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), pr); err != nil {
+		}
+
+		for _, seedPeerHost := range seedPeerHosts {
+			if err := o.importSeedPeer(context.Background(), seedPeerHost, bucketName, objectKey, form.File); err != nil {
+				log.Error(err)
+			}
+		}
+	}()
+
+	// Handle task for backend.
+	switch form.Mode {
+	case Ephemeral:
+		f.Close()
+		ctx.Status(http.StatusOK)
+		return
+	case WriteBack:
+		if _, err := f.Seek(0, 0); err != nil {
+			f.Close()
+			log.Error(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+			return
+		}
+
+		if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), f); err != nil {
+			f.Close()
 			msg := fmt.Sprintf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
 			log.Error(msg)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": msg})
 			return
 		}
+
+		ctx.Status(http.StatusOK)
+		return
+	case AsyncWriteBack:
+		go func() {
+			defer f.Close()
+
+			if _, err := f.Seek(0, 0); err != nil {
+				log.Error(err)
+				ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+				return
+			}
+
+			if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), f); err != nil {
+				log.Errorf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
+			}
+		}()
+
+		ctx.Status(http.StatusOK)
+		return
 	}
 
-	ctx.Status(http.StatusOK)
+	f.Close()
+	ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": fmt.Sprintf("unknow mode %d", form.Mode)})
 	return
+}
+
+// importSeedPeer uses to import task data to seed peer.
+func (o *objectStorage) importSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey string, file *multipart.FileHeader) error {
+	f, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	defer writer.Close()
+
+	writer.WriteField("key", objectKey)
+	writer.WriteField("mode", fmt.Sprint(Ephemeral))
+
+	part, err := writer.CreateFormField("file")
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.Copy(part, f); err != nil {
+		return err
+	}
+
+	targetURL := url.URL{
+		Scheme: "http",
+		Host:   seedPeerHost,
+		Path:   filepath.Join("buckets", bucketName, "objects"),
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL.String(), body)
+	if err != nil {
+		return err
+	}
+	req.Header.Add(headers.ContentType, writer.FormDataContentType())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+		return fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
+	}
+
+	return nil
 }
 
 // client uses to generate client of object storage.
