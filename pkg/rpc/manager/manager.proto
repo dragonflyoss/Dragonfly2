@@ -91,6 +91,8 @@ message SeedPeer {
   SeedPeerCluster seed_peer_cluster = 13;
   // Schedulers included in seed peer.
   repeated Scheduler schedulers = 14;
+  // Seed peer object storage port.
+  int32 object_storage_port = 15;
 }
 
 // GetSeedPeerRequest represents request of GetSeedPeer.
@@ -125,6 +127,8 @@ message UpdateSeedPeerRequest {
   int32 download_port = 10 [(validate.rules).int32 = {gte: 1024, lt: 65535}];
   // ID of the cluster to which the seed peer belongs.
   uint64 seed_peer_cluster_id = 11 [(validate.rules).uint64 = {gte: 1}];
+  // Seed peer object storage port.
+  int32 object_storage_port = 12 [(validate.rules).int32 = {gte: 1024, lt: 65535, ignore_empty: true}];
 }
 
 // SeedPeerCluster represents cluster of scheduler.

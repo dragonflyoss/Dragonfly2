@@ -189,6 +189,8 @@ definitions:
         type: string
       net_topology:
         type: string
+      object_storage_port:
+        type: integer
       port:
         type: integer
       seedPeerClusterID:
@@ -473,6 +475,8 @@ definitions:
         type: string
       net_topology:
         type: string
+      object_storage_port:
+        type: integer
       port:
         type: integer
       seed_peer_cluster_id:
@@ -754,6 +758,8 @@ definitions:
         type: string
       net_topology:
         type: string
+      object_storage_port:
+        type: integer
       port:
         type: integer
       seed_peer_cluster_id:
