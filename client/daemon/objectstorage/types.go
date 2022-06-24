@@ -18,7 +18,7 @@ package objectstorage
 
 import "mime/multipart"
 
-type GetObjectParams struct {
+type ObjectParams struct {
 	ID        string `uri:"id" binding:"required"`
 	ObjectKey string `uri:"object_key" binding:"required"`
 }
