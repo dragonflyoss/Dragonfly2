@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -170,6 +171,20 @@ func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 	}
 
 	return metadatas, nil
+}
+
+// IsObjectExist returns whether the object exists.
+func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
+	if _, err := s.GetObjectMetadata(ctx, bucketName, objectKey); err != nil {
+		// S3 is missing this error code.
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
+			return false, nil
+		}
+
+		return false, err
+	}
+
+	return true, nil
 }
 
 // GetSignURL returns sign url of object.

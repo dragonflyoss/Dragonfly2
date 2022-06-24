@@ -399,13 +399,6 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTaskRequest) error {
 	taskID := req.TaskId
 	peerID := req.PiecePacket.DstPid
-	pieceInfos := req.PiecePacket.PieceInfos
-	totalPiece := req.PiecePacket.TotalPiece
-	if len(pieceInfos) <= 0 || totalPiece != int32(len(pieceInfos)) {
-		msg := fmt.Sprintf("length of pieces is invalid, total piece id %d, length of piece infos is %d", totalPiece, len(pieceInfos))
-		logger.WithTaskAndPeerID(taskID, peerID).Warn(msg)
-		return dferrors.New(base.Code_BadRequest, msg)
-	}
 
 	task := resource.NewTask(taskID, req.Url, req.TaskType, req.UrlMeta)
 	task, _ = s.resource.TaskManager().LoadOrStore(task)
@@ -416,38 +409,24 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 	// If the task state is not TaskStateSucceeded,
 	// advance the task state to TaskStateSucceeded.
 	if !task.FSM.Is(resource.TaskStateSucceeded) {
-		if task.FSM.Is(resource.TaskStatePending) {
+		if task.FSM.Can(resource.TaskEventDownload) {
 			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
 				msg := fmt.Sprintf("task fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
-				return dferrors.New(base.Code_SchedError, msg)
-			}
-		}
-
-		if task.FSM.Is(resource.TaskStateFailed) {
-			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
-				msg := fmt.Sprintf("task fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 		}
 
 		// Load downloaded piece infos.
-		for _, pieceInfo := range pieceInfos {
+		for _, pieceInfo := range req.PiecePacket.PieceInfos {
 			peer.Pieces.Set(uint(pieceInfo.PieceNum))
 			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
 			task.StorePiece(pieceInfo)
 		}
 
 		s.handleTaskSuccess(ctx, task, &rpcscheduler.PeerResult{
-			TaskId:          taskID,
-			PeerId:          peerID,
-			SrcIp:           req.PeerHost.Ip,
-			Url:             req.Url,
-			Success:         true,
-			TotalPieceCount: totalPiece,
+			TotalPieceCount: req.PiecePacket.TotalPiece,
 			ContentLength:   req.PiecePacket.ContentLength,
-			Code:            base.Code_Success,
 		})
 	}
 
@@ -457,7 +436,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 		if peer.FSM.Is(resource.PeerStatePending) {
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 		}
@@ -467,7 +446,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			peer.FSM.Is(resource.PeerStateReceivedNormal) {
 			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
-				task.Log.Error(msg)
+				peer.Log.Error(msg)
 				return dferrors.New(base.Code_SchedError, msg)
 			}
 
