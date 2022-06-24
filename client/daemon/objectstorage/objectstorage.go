@@ -251,7 +251,6 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 
 	bucketName := params.ID
 	objectKey := form.Key
-	contentLength := form.File.Size
 
 	client, err := o.client()
 	if err != nil {
@@ -265,7 +264,8 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		return
 	}
 
-	if isExist {
+	// If it is temporary storage, whether the data exists in the backend is not considered.
+	if isExist && form.Mode != Ephemeral {
 		ctx.JSON(http.StatusConflict, gin.H{"errors": http.StatusText(http.StatusConflict)})
 		return
 	}
@@ -276,140 +276,161 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		return
 	}
 
-	f, err := form.File.Open()
-	if err != nil {
-		f.Close()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-
-	// Calculate md5 of task data.
-	dgst := digest.New(digest.AlgorithmMD5, digest.MD5FromReader(f))
+	dgst := o.md5FromFileHeader(form.File)
 	urlMeta := &base.UrlMeta{Digest: dgst.String()}
 	taskID := idgen.TaskID(signURL, urlMeta)
 	peerID := o.peerIDGenerator.PeerID()
 	log := logger.WithTaskAndPeerID(taskID, peerID)
 
-	if _, err := f.Seek(0, 0); err != nil {
-		f.Close()
+	// Import object to local storage.
+	if err := o.importObjectToLocalStorage(ctx, taskID, peerID, form.File); err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	// Register task.
-	tsd, err := o.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
-		PeerTaskMetadata: storage.PeerTaskMetadata{
-			PeerID: peerID,
-			TaskID: taskID,
-		},
-	})
-	if err != nil {
-		f.Close()
-		log.Error(err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-
-	meta := storage.PeerTaskMetadata{
-		PeerID: peerID,
+	// Announce task information to scheduler.
+	if err := o.peerTaskManager.AnnouncePeerTask(ctx, storage.PeerTaskMetadata{
 		TaskID: taskID,
-	}
-
-	// Import task data to dfdaemon.
-	if err := o.peerTaskManager.GetPieceManager().Import(ctx, meta, tsd, contentLength, f); err != nil {
-		f.Close()
+		PeerID: peerID,
+	}, signURL, base.TaskType_DfStore, urlMeta); err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
-
-	// Announce task to scheduler.
-	if err := o.peerTaskManager.AnnouncePeerTask(ctx, meta, signURL, base.TaskType_DfStore, urlMeta); err != nil {
-		f.Close()
-		log.Error(err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-
-	// Import task data to seed peer.
-	go func() {
-		schedulers, err := o.dynconfig.GetSchedulers()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		var seedPeerHosts []string
-		for _, scheduler := range schedulers {
-			for _, seedPeer := range scheduler.SeedPeers {
-				if o.config.Host.AdvertiseIP != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
-					seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
-				}
-			}
-		}
-
-		for _, seedPeerHost := range seedPeerHosts {
-			if err := o.importSeedPeer(context.Background(), seedPeerHost, bucketName, objectKey, form.File); err != nil {
-				f.Close()
-				log.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-				return
-			}
-		}
-	}()
 
 	// Handle task for backend.
 	switch form.Mode {
 	case Ephemeral:
-		f.Close()
 		ctx.Status(http.StatusOK)
 		return
 	case WriteBack:
-		if _, err := f.Seek(0, 0); err != nil {
-			f.Close()
+		// Import object to seed peer.
+		go func() {
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, form.File); err != nil {
+				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
+			}
+			log.Infof("import object %s to seed peer", objectKey)
+		}()
+
+		// Import object to object storage.
+		if err := o.importObjectToBackend(ctx, bucketName, objectKey, dgst, form.File, client); err != nil {
 			log.Error(err)
 			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 			return
 		}
-
-		if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), f); err != nil {
-			f.Close()
-			msg := fmt.Sprintf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
-			log.Error(msg)
-			ctx.JSON(http.StatusInternalServerError, gin.H{"errors": msg})
-			return
-		}
+		log.Infof("import object %s to bucket %s", objectKey, bucketName)
 
 		ctx.Status(http.StatusOK)
 		return
 	case AsyncWriteBack:
+		// Import object to seed peer.
 		go func() {
-			defer f.Close()
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, form.File); err != nil {
+				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
+			}
+			log.Infof("import object %s to seed peer", objectKey)
+		}()
 
-			if _, err := f.Seek(0, 0); err != nil {
-				log.Error(err)
-				ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		// Import object to object storage.
+		go func() {
+			if err := o.importObjectToBackend(context.Background(), bucketName, objectKey, dgst, form.File, client); err != nil {
+				log.Errorf("import object %s to bucket %s failed: %s", objectKey, bucketName, err.Error())
 				return
 			}
-
-			if err := client.CreateObject(context.Background(), bucketName, objectKey, dgst.String(), f); err != nil {
-				log.Errorf("failed to create object %s %s in async mode: %s", bucketName, objectKey, err.Error())
-			}
+			log.Infof("import object %s to bucket %s", objectKey, bucketName)
 		}()
 
 		ctx.Status(http.StatusOK)
 		return
 	}
 
-	f.Close()
 	ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": fmt.Sprintf("unknow mode %d", form.Mode)})
 	return
 }
 
-// importSeedPeer uses to import task data to seed peer.
-func (o *objectStorage) importSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey string, file *multipart.FileHeader) error {
-	f, err := file.Open()
+// getAvailableSeedPeer uses to calculate md5 with file header.
+func (o *objectStorage) md5FromFileHeader(fileHeader *multipart.FileHeader) *digest.Digest {
+	f, err := fileHeader.Open()
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+
+	return digest.New(digest.AlgorithmMD5, digest.MD5FromReader(f))
+}
+
+// importObjectToBackend uses to import object to backend.
+func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, objectKey string, dgst *digest.Digest, fileHeader *multipart.FileHeader, client objectstorage.ObjectStorage) error {
+	f, err := fileHeader.Open()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if err := client.CreateObject(ctx, bucketName, objectKey, dgst.String(), f); err != nil {
+		return err
+	}
+	return nil
+}
+
+// importObjectToSeedPeers uses to import object to local storage.
+func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, peerID string, fileHeader *multipart.FileHeader) error {
+	f, err := fileHeader.Open()
+	if err != nil {
+		return nil
+	}
+	defer f.Close()
+
+	meta := storage.PeerTaskMetadata{
+		TaskID: taskID,
+		PeerID: peerID,
+	}
+
+	// Register task.
+	tsd, err := o.storageManager.RegisterTask(ctx, &storage.RegisterTaskRequest{
+		PeerTaskMetadata: meta,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Import task data to dfdaemon.
+	if err := o.peerTaskManager.GetPieceManager().Import(ctx, meta, tsd, fileHeader.Size, f); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// importObjectToSeedPeers uses to import object to available seed peers.
+func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader) error {
+	schedulers, err := o.dynconfig.GetSchedulers()
+	if err != nil {
+		return err
+	}
+
+	var seedPeerHosts []string
+	for _, scheduler := range schedulers {
+		for _, seedPeer := range scheduler.SeedPeers {
+			if o.config.Host.AdvertiseIP != seedPeer.Ip && seedPeer.ObjectStoragePort > 0 {
+				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
+			}
+		}
+	}
+
+	for _, seedPeerHost := range seedPeerHosts {
+		if err := o.importObjectToSeedPeer(ctx, seedPeerHost, bucketName, objectKey, mode, fileHeader); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// importObjectToSeedPeer uses to import object to seed peer.
+func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader) error {
+	f, err := fileHeader.Open()
 	if err != nil {
 		return err
 	}
@@ -418,10 +439,15 @@ func (o *objectStorage) importSeedPeer(ctx context.Context, seedPeerHost, bucket
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	writer.WriteField("key", objectKey)
-	writer.WriteField("mode", fmt.Sprint(Ephemeral))
+	if err := writer.WriteField("key", objectKey); err != nil {
+		return err
+	}
 
-	part, err := writer.CreateFormFile("file", file.Filename)
+	if err := writer.WriteField("mode", fmt.Sprint(mode)); err != nil {
+		return err
+	}
+
+	part, err := writer.CreateFormFile("file", fileHeader.Filename)
 	if err != nil {
 		return err
 	}
