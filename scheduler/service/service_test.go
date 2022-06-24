@@ -1192,40 +1192,6 @@ func TestService_AnnounceTask(t *testing.T) {
 		expect func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error)
 	}{
 		{
-			name: "PieceInfos is empty",
-			req: &rpcscheduler.AnnounceTaskRequest{
-				PiecePacket: &base.PiecePacket{},
-			},
-			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
-				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
-			},
-			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_BadRequest)
-			},
-		},
-		{
-			name: "PieceInfos length not equal to TotalPiece",
-			req: &rpcscheduler.AnnounceTaskRequest{
-				PiecePacket: &base.PiecePacket{
-					TotalPiece: 1,
-				},
-			},
-			mock: func(mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer,
-				hostManager resource.HostManager, taskManager resource.TaskManager, peerManager resource.PeerManager,
-				mr *resource.MockResourceMockRecorder, mh *resource.MockHostManagerMockRecorder, mt *resource.MockTaskManagerMockRecorder, mp *resource.MockPeerManagerMockRecorder) {
-			},
-			expect: func(t *testing.T, mockTask *resource.Task, mockPeer *resource.Peer, err error) {
-				assert := assert.New(t)
-				dferr, ok := err.(*dferrors.DfError)
-				assert.True(ok)
-				assert.Equal(dferr.Code, base.Code_BadRequest)
-			},
-		},
-		{
 			name: "task state is TaskStateSucceeded and peer state is PeerStateSucceeded",
 			req: &rpcscheduler.AnnounceTaskRequest{
 				TaskId:  mockTaskID,

@@ -71,6 +71,7 @@ upload:
     port: 65002
 
 objectStorage:
+  enable: true
   security:
     insecure: true
     caCert: caCert
@@ -79,7 +80,7 @@ objectStorage:
     tlsVerify: true
   tcpListen:
     listen: 0.0.0.0
-    port: 8081
+    port: 65004
 
 storage:
   dataPath: /tmp/storage/data
