@@ -59,8 +59,8 @@ func (d *Digest) String() string {
 	return fmt.Sprintf("%s:%s", d.Algorithm, d.Encoded)
 }
 
-// NewDigest return digest instance.
-func NewDigest(algorithm, encoded string) *Digest {
+// New return digest instance.
+func New(algorithm, encoded string) *Digest {
 	return &Digest{
 		Algorithm: algorithm,
 		Encoded:   encoded,

@@ -413,51 +413,40 @@ func (ptm *peerTaskManager) GetPieceManager() PieceManager {
 	return ptm.pieceManager
 }
 
-func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context,
-	meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
-	log := logger.With("function", "AnnouncePeerTask", "taskID", meta.TaskID, "peerID", meta.PeerID, "URL", url)
-
-	// Check if the given task is completed in local storageManager
+func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
+	// Check if the given task is completed in local storageManager.
 	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
-		msg := fmt.Sprintf("task %s not found in local storage", meta.TaskID)
-		log.Errorf(msg)
-		return errors.New(msg)
+		return errors.New("task not found in local storage")
 	}
 
-	// prepare AnnounceTaskRequest
+	// Prepare AnnounceTaskRequest.
 	totalPieces, err := ptm.storageManager.GetTotalPieces(ctx, &meta)
 	if err != nil {
-		msg := fmt.Sprintf("get total pieces failed: %s", err)
-		log.Error(msg)
-		return errors.New(msg)
+		return err
 	}
-	pieceTaskRequest := &base.PieceTaskRequest{
+
+	piecePacket, err := ptm.storageManager.GetPieces(ctx, &base.PieceTaskRequest{
 		TaskId:   meta.TaskID,
 		DstPid:   meta.PeerID,
 		StartNum: 0,
 		Limit:    uint32(totalPieces),
-	}
-	piecePacket, err := ptm.storageManager.GetPieces(ctx, pieceTaskRequest)
+	})
 	if err != nil {
-		msg := fmt.Sprintf("get pieces info failed: %s", err)
-		log.Error(msg)
-		return errors.New(msg)
+		return err
 	}
 	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
-	req := &scheduler.AnnounceTaskRequest{
+
+	// Announce peer task to scheduler
+	if err := ptm.schedulerClient.AnnounceTask(ctx, &scheduler.AnnounceTaskRequest{
 		TaskId:      meta.TaskID,
+		TaskType:    taskType,
 		Url:         url,
 		UrlMeta:     urlMeta,
 		PeerHost:    ptm.host,
 		PiecePacket: piecePacket,
+	}); err != nil {
+		return err
 	}
 
-	// Announce peer task to scheduler
-	err = ptm.schedulerClient.AnnounceTask(ctx, req)
-	if err != nil {
-		msg := fmt.Sprintf("announce peer task failed: %s", err)
-		log.Error(msg)
-		return errors.Wrapf(err, "failed to announce peer task %s", meta.TaskID)
-	}
 	return nil
 }

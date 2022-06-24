@@ -327,6 +327,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		ObjectStorage: ObjectStorageOption{
+			Enable: true,
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
@@ -338,7 +339,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				TCPListen: &TCPListenOption{
 					Listen: "0.0.0.0",
 					PortRange: TCPListenPortRange{
-						Start: 8081,
+						Start: 65004,
 						End:   0,
 					},
 				},

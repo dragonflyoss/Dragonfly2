@@ -168,6 +168,16 @@ func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marke
 	return metadatas, nil
 }
 
+// IsObjectExist returns whether the object exists.
+func (o *oss) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
+	bucket, err := o.client.Bucket(bucketName)
+	if err != nil {
+		return false, err
+	}
+
+	return bucket.IsObjectExist(objectKey)
+}
+
 // GetSignURL returns sign url of object.
 func (o *oss) GetSignURL(ctx context.Context, bucketName, objectKey string, method Method, expire time.Duration) (string, error) {
 	var ossHTTPMethod aliyunoss.HTTPMethod
