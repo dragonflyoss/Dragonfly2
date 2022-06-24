@@ -155,6 +155,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 	// Buckets
 	b := r.Group("/buckets")
 	b.GET(":id/objects/*object_key", o.getObject)
+	b.DELETE(":id/objects/*object_key", o.destroyObject)
 	b.POST(":id/objects", o.createObject)
 
 	return r
@@ -167,7 +168,7 @@ func (o *objectStorage) getHealth(ctx *gin.Context) {
 
 // getObject uses to download object data.
 func (o *objectStorage) getObject(ctx *gin.Context) {
-	var params GetObjectParams
+	var params ObjectParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -233,6 +234,29 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	}
 
 	ctx.DataFromReader(http.StatusOK, contentLength, attr[headers.ContentType], reader, nil)
+}
+
+// destroyObject uses to delete object data.
+func (o *objectStorage) destroyObject(ctx *gin.Context) {
+	var params ObjectParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if err := client.DeleteObject(ctx, params.ID, params.ObjectKey); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	ctx.Status(http.StatusOK)
+	return
 }
 
 // createObject uses to upload object data.
