@@ -43,7 +43,7 @@ import (
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/source/httpprotocol"
+	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
 
 func TestPieceManager_DownloadSource(t *testing.T) {
@@ -130,7 +130,10 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			/********** prepare test start **********/
 			mockPeerTask := NewMockTask(ctrl)
-			var totalPieces = &atomic.Int32{}
+			var (
+				totalPieces = &atomic.Int32{}
+				taskStorage storage.TaskStorageDriver
+			)
 			mockPeerTask.EXPECT().SetContentLength(gomock.Any()).AnyTimes().DoAndReturn(
 				func(arg0 int64) error {
 					return nil
@@ -151,10 +154,18 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				func() string {
 					return taskID
 				})
+			mockPeerTask.EXPECT().GetStorage().AnyTimes().DoAndReturn(
+				func() storage.TaskStorageDriver {
+					return taskStorage
+				})
 			mockPeerTask.EXPECT().AddTraffic(gomock.Any()).AnyTimes().DoAndReturn(func(int642 uint64) {})
-			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any()).AnyTimes().DoAndReturn(
-				func(result *pieceTaskResult) error {
-					return nil
+			mockPeerTask.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+				func(*DownloadPieceRequest, *DownloadPieceResult, error) {
+
+				})
+			mockPeerTask.EXPECT().PublishPieceInfo(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
+				func(pieceNum int32, size uint32) {
+
 				})
 			mockPeerTask.EXPECT().Context().AnyTimes().DoAndReturn(func() context.Context {
 				return context.Background()
@@ -162,14 +173,14 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			mockPeerTask.EXPECT().Log().AnyTimes().DoAndReturn(func() *logger.SugaredLoggerOnWith {
 				return logger.With("test case", tc.name)
 			})
-			err = storageManager.RegisterTask(context.Background(),
-				storage.RegisterTaskRequest{
-					CommonTaskRequest: storage.CommonTaskRequest{
-						PeerID:      mockPeerTask.GetPeerID(),
-						TaskID:      mockPeerTask.GetTaskID(),
-						Destination: output,
+			taskStorage, err = storageManager.RegisterTask(context.Background(),
+				&storage.RegisterTaskRequest{
+					PeerTaskMetadata: storage.PeerTaskMetadata{
+						PeerID: mockPeerTask.GetPeerID(),
+						TaskID: mockPeerTask.GetTaskID(),
 					},
-					ContentLength: int64(len(testBytes)),
+					DesiredLocation: output,
+					ContentLength:   int64(len(testBytes)),
 				})
 			assert.Nil(err)
 			defer storageManager.CleanUp()
@@ -186,7 +197,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			}))
 			defer ts.Close()
 
-			pm, err := NewPieceManager(storageManager, pieceDownloadTimeout)
+			pm, err := NewPieceManager(pieceDownloadTimeout)
 			assert.Nil(err)
 			pm.(*pieceManager).computePieceSize = func(length int64) uint32 {
 				return tc.pieceSize
@@ -220,6 +231,62 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			outputBytes, err := os.ReadFile(output)
 			assert.Nil(err, "load output file")
 			assert.Equal(testBytes, outputBytes, "output and desired output must match")
+		})
+	}
+}
+
+func TestDetectBackSourceError(t *testing.T) {
+	assert := testifyassert.New(t)
+	testCases := []struct {
+		name              string
+		genError          func() error
+		detectError       bool
+		isBackSourceError bool
+	}{
+		{
+			name: "is back source error - connect error",
+			genError: func() error {
+				_, err := http.Get("http://127.0.0.1:12345")
+				return err
+			},
+			detectError:       true,
+			isBackSourceError: true,
+		},
+		{
+			name: "is back source error - timeout",
+			genError: func() error {
+				client := http.Client{
+					Timeout: 10 * time.Millisecond,
+				}
+				request, _ := http.NewRequest(http.MethodGet, "http://127.0.0.2:12345", nil)
+				_, err := client.Do(request)
+				return err
+			},
+			detectError:       true,
+			isBackSourceError: true,
+		},
+		{
+			name: "not back source error",
+			genError: func() error {
+				return fmt.Errorf("test")
+			},
+			detectError:       true,
+			isBackSourceError: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.genError()
+
+			err = detectBackSourceError(err)
+			if tc.detectError {
+				assert.NotNil(err)
+			} else {
+				assert.Nil(err)
+			}
+
+			assert.Equal(tc.isBackSourceError, isBackSourceError(err))
 		})
 	}
 }

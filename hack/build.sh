@@ -4,8 +4,8 @@ set -o nounset
 set -o errexit
 set -o pipefail
 
-CDN_BINARY_NAME=cdn
 DFGET_BINARY_NAME=dfget
+DFCACHE_BINARY_NAME=dfcache
 SCHEDULER_BINARY_NAME=scheduler
 MANAGER_BINARY_NAME=manager
 
@@ -48,12 +48,12 @@ build-local() {
     echo "BUILD: $2 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 
-build-cdn-local() {
-    build-local ${CDN_BINARY_NAME} cdn
-}
-
 build-dfget-local() {
     build-local ${DFGET_BINARY_NAME} dfget
+}
+
+build-dfcache-local() {
+    build-local ${DFCACHE_BINARY_NAME} dfcache
 }
 
 build-scheduler-local() {
@@ -87,12 +87,12 @@ build-docker() {
     echo "BUILD: $1 in ${BUILD_SOURCE_HOME}/${BUILD_PATH}/$1"
 }
 
-build-cdn-docker() {
-    build-docker ${CDN_BINARY_NAME} dfdaemon
-}
-
 build-dfget-docker() {
     build-docker ${DFGET_BINARY_NAME} dfget
+}
+
+build-dfcache-docker() {
+    build-docker ${DFCACHE_BINARY_NAME} dfcache
 }
 
 build-scheduler-docker() {
@@ -103,16 +103,24 @@ build-manager-docker() {
     build-docker ${MANAGER_BINARY_NAME} manager
 }
 
+build-manager-console() {
+    set -x
+    consoleDir=$(echo $curDir | sed 's#hack#manager/console#')
+    docker run --workdir=/build \
+        --rm -v ${consoleDir}:/build node:12-alpine \
+        sh -c "npm install --loglevel warn --progress false && npm run build"
+}
+
 main() {
     create-dirs
     if [[ "1" == "${USE_DOCKER}" ]]; then
         echo "Begin to build with docker."
         case "${1-}" in
-        cdn)
-            build-cdn-docker
-            ;;
         dfget)
             build-dfget-docker
+            ;;
+        dfcache)
+            build-dfcache-docker
             ;;
         scheduler)
             build-scheduler-docker
@@ -120,9 +128,12 @@ main() {
         manager)
             build-manager-docker
             ;;
+        manager-console)
+            build-manager-console
+            ;;
         *)
             build-dfget-docker
-            build-cdn-docker
+            build-dfcache-docker
             build-scheduler-docker
             build-manager-docker
             ;;
@@ -130,11 +141,11 @@ main() {
     else
         echo "Begin to build in the local environment."
         case "${1-}" in
-        cdn)
-            build-cdn-local
-            ;;
         dfget)
             build-dfget-local
+            ;;
+        dfcache)
+            build-dfcache-local
             ;;
         scheduler)
             build-scheduler-local
@@ -142,9 +153,12 @@ main() {
         manager)
             build-manager-local
             ;;
+        manager-console)
+            build-manager-console
+            ;;
         *)
             build-dfget-local
-            build-cdn-local
+            build-dfcache-local
             build-scheduler-local
             build-manager-local
             ;;

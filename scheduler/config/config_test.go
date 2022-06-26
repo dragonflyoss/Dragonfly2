@@ -18,7 +18,6 @@ package config
 
 import (
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -26,56 +25,79 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
-	dc "d7y.io/dragonfly/v2/internal/dynconfig"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
+	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
-func TestSchedulerConfig_Load(t *testing.T) {
+func TestConfig_Load(t *testing.T) {
 	assert := testifyassert.New(t)
 
 	config := &Config{
-		DynConfig: &DynConfig{
-			Type:       dc.LocalSourceType,
-			ExpireTime: 1000,
-			CDNDirPath: "tmp",
-		},
-		Scheduler: &SchedulerConfig{
-			Algorithm: "default",
-			WorkerNum: 8,
-		},
 		Server: &ServerConfig{
 			IP:       "127.0.0.1",
 			Host:     "foo",
+			Listen:   "0.0.0.0",
 			Port:     8002,
 			CacheDir: "foo",
-			LogDir:   "foo",
+			LogDir:   "bar",
+		},
+		Scheduler: &SchedulerConfig{
+			Algorithm:            "default",
+			BackSourceCount:      3,
+			RetryBackSourceLimit: 2,
+			RetryLimit:           10,
+			RetryInterval:        1 * time.Second,
+			GC: &GCConfig{
+				PeerGCInterval: 1 * time.Minute,
+				PeerTTL:        5 * time.Minute,
+				TaskGCInterval: 1 * time.Minute,
+				TaskTTL:        10 * time.Minute,
+				HostGCInterval: 1 * time.Minute,
+				HostTTL:        10 * time.Minute,
+			},
+		},
+		DynConfig: &DynConfig{
+			RefreshInterval: 5 * time.Minute,
+		},
+		Host: &HostConfig{
+			IDC:         "foo",
+			NetTopology: "bar",
+			Location:    "baz",
 		},
 		Manager: &ManagerConfig{
 			Addr:               "127.0.0.1:65003",
 			SchedulerClusterID: 1,
 			KeepAlive: KeepAliveConfig{
-				Interval: 1 * time.Second,
+				Interval: 5 * time.Second,
 			},
 		},
-		Host: &HostConfig{
-			IDC:      "foo",
-			Location: "bar",
+		SeedPeer: &SeedPeerConfig{
+			Enable: true,
 		},
 		Job: &JobConfig{
+			Enable:             true,
 			GlobalWorkerNum:    1,
 			SchedulerWorkerNum: 1,
 			LocalWorkerNum:     5,
 			Redis: &RedisConfig{
 				Host:      "127.0.0.1",
 				Port:      6379,
-				Password:  "password",
+				Password:  "foo",
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
 		},
-		Metrics: &MetricsConfig{
-			Addr: ":8000",
+		Storage: &StorageConfig{
+			MaxSize:    1,
+			MaxBackups: 1,
+			BufferSize: 1,
 		},
-		DisableCDN: true,
+		Metrics: &MetricsConfig{
+			Enable:         false,
+			Addr:           ":8000",
+			EnablePeerHost: false,
+		},
 	}
 
 	schedulerConfigYAML := &Config{}
@@ -88,106 +110,68 @@ func TestSchedulerConfig_Load(t *testing.T) {
 	if err := mapstructure.Decode(dataYAML, &schedulerConfigYAML); err != nil {
 		t.Fatal(err)
 	}
-	assert.True(reflect.DeepEqual(config, schedulerConfigYAML))
+
+	assert.EqualValues(config, schedulerConfigYAML)
 }
 
-func TestConvert(t *testing.T) {
-	tests := []struct {
-		name   string
-		value  *Config
-		expect func(t *testing.T, cfg *Config, err error)
-	}{
-		{
-			name: "convert common config",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "127.0.0.1:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("127.0.0.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when host not empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "127.0.0.1:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "111.111.11.1",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager addr is empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "111.111.11.1",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("111.111.11.1", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager host is empty",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: ":65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("", cfg.Job.Redis.Host)
-			},
-		},
-		{
-			name: "convert config when manager host is localhost",
-			value: &Config{
-				Manager: &ManagerConfig{
-					Addr: "localhost:65003",
-				},
-				Job: &JobConfig{
-					Redis: &RedisConfig{
-						Host: "",
-					},
-				},
-			},
-			expect: func(t *testing.T, cfg *Config, err error) {
-				assert := testifyassert.New(t)
-				assert.Equal("localhost", cfg.Job.Redis.Host)
-			},
-		},
-	}
+func TestConfig_New(t *testing.T) {
+	assert := testifyassert.New(t)
+	config := New()
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.value.Convert()
-			tc.expect(t, tc.value, err)
-		})
-	}
+	assert.EqualValues(config, &Config{
+		Server: &ServerConfig{
+			IP:     ip.IPv4,
+			Host:   fqdn.FQDNHostname,
+			Listen: "0.0.0.0",
+			Port:   8002,
+		},
+		Scheduler: &SchedulerConfig{
+			Algorithm:            "default",
+			BackSourceCount:      3,
+			RetryBackSourceLimit: 5,
+			RetryLimit:           10,
+			RetryInterval:        50 * time.Millisecond,
+			GC: &GCConfig{
+				PeerGCInterval: 10 * time.Minute,
+				PeerTTL:        24 * time.Hour,
+				TaskGCInterval: 10 * time.Minute,
+				TaskTTL:        24 * time.Hour,
+				HostGCInterval: 30 * time.Minute,
+				HostTTL:        48 * time.Hour,
+			},
+		},
+		DynConfig: &DynConfig{
+			RefreshInterval: 10 * time.Second,
+		},
+		Host: &HostConfig{},
+		Manager: &ManagerConfig{
+			SchedulerClusterID: 1,
+			KeepAlive: KeepAliveConfig{
+				Interval: 5 * time.Second,
+			},
+		},
+		SeedPeer: &SeedPeerConfig{
+			Enable: true,
+		},
+		Job: &JobConfig{
+			Enable:             true,
+			GlobalWorkerNum:    10,
+			SchedulerWorkerNum: 10,
+			LocalWorkerNum:     10,
+			Redis: &RedisConfig{
+				Port:      6379,
+				BrokerDB:  1,
+				BackendDB: 2,
+			},
+		},
+		Storage: &StorageConfig{
+			MaxSize:    storage.DefaultMaxSize,
+			MaxBackups: storage.DefaultMaxBackups,
+			BufferSize: storage.DefaultBufferSize,
+		},
+		Metrics: &MetricsConfig{
+			Enable:         false,
+			EnablePeerHost: false,
+		},
+	})
 }

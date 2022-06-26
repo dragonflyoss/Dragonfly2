@@ -21,6 +21,7 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type persistentMetadata struct {
@@ -34,6 +35,7 @@ type persistentMetadata struct {
 	PieceMd5Sign  string                  `json:"pieceMd5Sign"`
 	DataFilePath  string                  `json:"dataFilePath"`
 	Done          bool                    `json:"done"`
+	Header        *source.Header          `json:"header"`
 }
 
 type PeerTaskMetadata struct {
@@ -47,6 +49,8 @@ type PieceMetadata struct {
 	Offset uint64           `json:"offset,omitempty"`
 	Range  clientutil.Range `json:"range,omitempty"`
 	Style  base.PieceStyle  `json:"style,omitempty"`
+	// time(nanosecond) consumed
+	Cost uint64 `json:"cost,omitempty"`
 }
 
 type CommonTaskRequest struct {
@@ -56,10 +60,11 @@ type CommonTaskRequest struct {
 }
 
 type RegisterTaskRequest struct {
-	CommonTaskRequest
-	ContentLength int64
-	TotalPieces   int32
-	PieceMd5Sign  string
+	PeerTaskMetadata
+	DesiredLocation string
+	ContentLength   int64
+	TotalPieces     int32
+	PieceMd5Sign    string
 }
 
 type WritePieceRequest struct {
@@ -67,13 +72,18 @@ type WritePieceRequest struct {
 	PieceMetadata
 	UnknownLength bool
 	Reader        io.Reader
+	// GenMetadata is used after the last piece in back source case
+	GenMetadata func(n int64) (total int32, contentLength int64, gen bool)
 }
 
 type StoreRequest struct {
 	CommonTaskRequest
 	MetadataOnly bool
-	StoreOnly    bool
-	TotalPieces  int32
+	// StoreDataOnly stands save file only without save metadata, used in reuse cases
+	StoreDataOnly bool
+	TotalPieces   int32
+	// OriginalOffset stands keep original offset in the target file, if the target file is not original file, return error
+	OriginalOffset bool
 }
 
 type ReadPieceRequest struct {
@@ -81,13 +91,30 @@ type ReadPieceRequest struct {
 	PieceMetadata
 }
 
+type ReadAllPiecesRequest struct {
+	PeerTaskMetadata
+	Range *clientutil.Range
+}
+
+type RegisterSubTaskRequest struct {
+	Parent  PeerTaskMetadata
+	SubTask PeerTaskMetadata
+	Range   *clientutil.Range
+}
+
 type UpdateTaskRequest struct {
 	PeerTaskMetadata
 	ContentLength int64
 	TotalPieces   int32
 	PieceMd5Sign  string
-	// GenPieceDigest is used when back source
-	GenPieceDigest bool
+	Header        *source.Header
 }
 
-type ReusePeerTask = UpdateTaskRequest
+type ReusePeerTask struct {
+	PeerTaskMetadata
+	ContentLength int64
+	TotalPieces   int32
+	PieceMd5Sign  string
+	Header        *source.Header
+	Storage       TaskStorageDriver
+}

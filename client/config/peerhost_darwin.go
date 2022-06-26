@@ -26,9 +26,10 @@ import (
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
+	"d7y.io/dragonfly/v2/manager/model"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 )
 
 var peerHostConfig = DaemonOption{
@@ -39,6 +40,14 @@ var peerHostConfig = DaemonOption{
 		Manager: ManagerOption{
 			Enable:          false,
 			RefreshInterval: 5 * time.Minute,
+			SeedPeer: SeedPeerOption{
+				Enable:    false,
+				Type:      model.SeedPeerTypeSuperSeed,
+				ClusterID: 1,
+				KeepAlive: KeepAliveOption{
+					Interval: 5 * time.Second,
+				},
+			},
 		},
 		NetAddrs: []dfnet.NetAddr{
 			{
@@ -49,15 +58,16 @@ var peerHostConfig = DaemonOption{
 		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
-		Hostname:       hostutils.Hostname,
+		Hostname:       fqdn.FQDNHostname,
 		ListenIP:       net.IPv4zero.String(),
-		AdvertiseIP:    iputils.IPv4,
+		AdvertiseIP:    ip.IPv4,
 		SecurityDomain: "",
 		Location:       "",
 		IDC:            "",
 		NetTopology:    "",
 	},
 	Download: DownloadOption{
+		DefaultPattern:       PatternP2P,
 		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
 		GetPiecesMaxRetry:    100,
@@ -69,7 +79,8 @@ var peerHostConfig = DaemonOption{
 		},
 		DownloadGRPC: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: true,
 			},
 			UnixListen: &UnixListenOption{
 				Socket: "/tmp/dfdaemon.sock",
@@ -77,7 +88,8 @@ var peerHostConfig = DaemonOption{
 		},
 		PeerGRPC: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: true,
 			},
 			TCPListen: &TCPListenOption{
 				Listen: net.IPv4zero.String(),
@@ -94,7 +106,8 @@ var peerHostConfig = DaemonOption{
 		},
 		ListenOption: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: false,
 			},
 			TCPListen: &TCPListenOption{
 				Listen: net.IPv4zero.String(),
@@ -105,10 +118,27 @@ var peerHostConfig = DaemonOption{
 			},
 		},
 	},
+	ObjectStorage: ObjectStorageOption{
+		Enable: false,
+		ListenOption: ListenOption{
+			Security: SecurityOption{
+				Insecure:  true,
+				TLSVerify: true,
+			},
+			TCPListen: &TCPListenOption{
+				Listen: net.IPv4zero.String(),
+				PortRange: TCPListenPortRange{
+					Start: 65004,
+					End:   65535,
+				},
+			},
+		},
+	},
 	Proxy: &ProxyOption{
 		ListenOption: ListenOption{
 			Security: SecurityOption{
-				Insecure: true,
+				Insecure:  true,
+				TLSVerify: false,
 			},
 			TCPListen: &TCPListenOption{
 				Listen:    net.IPv4zero.String(),
@@ -123,5 +153,10 @@ var peerHostConfig = DaemonOption{
 		StoreStrategy:          AdvanceLocalTaskStoreStrategy,
 		Multiplex:              false,
 		DiskGCThresholdPercent: 95,
+	},
+	Reload: ReloadOption{
+		Interval: clientutil.Duration{
+			Duration: time.Minute,
+		},
 	},
 }

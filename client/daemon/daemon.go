@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
@@ -40,17 +41,19 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
+	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/proxy"
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -78,6 +81,7 @@ type clientDaemon struct {
 
 	RPCManager     rpcserver.Server
 	UploadManager  upload.Manager
+	ObjectStorage  objectstorage.ObjectStorage
 	ProxyManager   proxy.Manager
 	StorageManager storage.Manager
 	GCManager      gc.Manager
@@ -88,7 +92,8 @@ type clientDaemon struct {
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
 	schedulers      []*manager.Scheduler
-	schedulerClient schedulerclient.SchedulerClient
+	managerClient   managerclient.Client
+	schedulerClient schedulerclient.Client
 }
 
 func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
@@ -96,7 +101,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	source.UpdatePluginDir(d.PluginDir())
 
 	host := &scheduler.PeerHost{
-		Uuid:           idgen.UUIDString(),
+		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
 		DownPort:       0,
@@ -107,23 +112,31 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		NetTopology:    opt.Host.NetTopology,
 	}
 
-	var addrs []dfnet.NetAddr
-	var schedulers []*manager.Scheduler
-	var dynconfig config.Dynconfig
-	if opt.Scheduler.Manager.Enable == true {
+	var (
+		addrs          []dfnet.NetAddr
+		schedulers     []*manager.Scheduler
+		dynconfig      config.Dynconfig
+		managerClient  managerclient.Client
+		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, base.Pattern_P2P)
+	)
+
+	if opt.Scheduler.Manager.Enable {
 		// New manager client
-		managerClient, err := managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
+		var err error
+		managerClient, err = managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
 
 		// New dynconfig client
-		if dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval); err != nil {
+		dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval)
+		if err != nil {
 			return nil, err
 		}
 
 		// Get schedulers from manager
-		if schedulers, err = dynconfig.GetSchedulers(); err != nil {
+		schedulers, err = dynconfig.GetSchedulers()
+		if err != nil {
 			return nil, err
 		}
 
@@ -131,10 +144,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	} else {
 		addrs = opt.Scheduler.NetAddrs
 	}
+	logger.Infof("initialize scheduler addresses: %#v", addrs)
 
 	var opts []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()), grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()))
+		opts = append(opts,
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		)
 	}
 	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
 	if err != nil {
@@ -160,7 +177,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 
-	pieceManager, err := peer.NewPieceManager(storageManager,
+	pieceManager, err := peer.NewPieceManager(
 		opt.Download.PieceDownloadTimeout,
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
 		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
@@ -169,7 +186,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		return nil, err
 	}
 	peerTaskManager, err := peer.NewPeerTaskManager(host, pieceManager, storageManager, sched, opt.Scheduler,
-		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.CalculateDigest, opt.Download.GetPiecesMaxRetry)
+		opt.Download.PerPeerRateLimit.Limit, opt.Storage.Multiplex, opt.Download.Prefetch, opt.Download.CalculateDigest,
+		opt.Download.GetPiecesMaxRetry, opt.Download.WatchdogTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -191,39 +209,47 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
-	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, downloadServerOption, peerServerOption)
+	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err
 	}
 
-	var proxyManager proxy.Manager
-	proxyManager, err = proxy.NewProxyManager(host, peerTaskManager, opt.Proxy)
+	proxyManager, err := proxy.NewProxyManager(host, peerTaskManager, defaultPattern, opt.Proxy)
 	if err != nil {
 		return nil, err
 	}
 
-	uploadManager, err := upload.NewUploadManager(storageManager,
+	uploadManager, err := upload.NewUploadManager(opt, storageManager, d.LogDir(),
 		upload.WithLimiter(rate.NewLimiter(opt.Upload.RateLimit.Limit, int(opt.Upload.RateLimit.Limit))))
 	if err != nil {
 		return nil, err
 	}
 
-	return &clientDaemon{
-		once:          &sync.Once{},
-		done:          make(chan bool),
-		schedPeerHost: host,
-		Option:        *opt,
+	var objectStorage objectstorage.ObjectStorage
+	if opt.ObjectStorage.Enable {
+		objectStorage, err = objectstorage.New(opt, dynconfig, peerTaskManager, storageManager, d.LogDir())
+		if err != nil {
+			return nil, err
+		}
+	}
 
+	return &clientDaemon{
+		once:            &sync.Once{},
+		done:            make(chan bool),
+		schedPeerHost:   host,
+		Option:          *opt,
 		RPCManager:      rpcManager,
 		PeerTaskManager: peerTaskManager,
 		PieceManager:    pieceManager,
 		ProxyManager:    proxyManager,
 		UploadManager:   uploadManager,
+		ObjectStorage:   objectStorage,
 		StorageManager:  storageManager,
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
 		dfpath:          d,
 		schedulers:      schedulers,
+		managerClient:   managerClient,
 		schedulerClient: sched,
 	}, nil
 }
@@ -284,12 +310,15 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		port int
 		err  error
 	)
-	if opt.TCPListen != nil {
-		ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
+	if opt.TCPListen == nil {
+		return nil, -1, errors.New("empty tcp listen option")
 	}
+
+	ln, port, err = rpc.ListenWithPortRange(opt.TCPListen.Listen, opt.TCPListen.PortRange.Start, opt.TCPListen.PortRange.End)
 	if err != nil {
 		return nil, -1, err
 	}
+
 	// when use grpc, tls config is in server option
 	if !withTLS || opt.Security.Insecure {
 		return ln, port, err
@@ -303,6 +332,7 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 	if opt.Security.TLSConfig == nil {
 		opt.Security.TLSConfig = &tls.Config{}
 	}
+
 	tlsConfig := opt.Security.TLSConfig
 	if opt.Security.CACert != "" {
 		caCert, err := os.ReadFile(opt.Security.CACert)
@@ -312,8 +342,11 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
 		tlsConfig.ClientCAs = caCertPool
-		tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		if opt.Security.TLSVerify {
+			tlsConfig.ClientAuth = tls.RequireAndVerifyClientCert
+		}
 	}
+
 	tlsConfig.Certificates = make([]tls.Certificate, 1)
 	tlsConfig.Certificates[0], err = tls.LoadX509KeyPair(opt.Security.Cert, opt.Security.Key)
 	if err != nil {
@@ -325,11 +358,13 @@ func (*clientDaemon) prepareTCPListener(opt config.ListenOption, withTLS bool) (
 
 func (cd *clientDaemon) Serve() error {
 	cd.GCManager.Start()
-	// TODO remove this field, and use directly dfpath.DaemonSockPath
-	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	// prepare download service listen
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
+	}
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
+	if cd.Option.Download.DownloadGRPC.UnixListen.Socket == "" {
+		return errors.New("download grpc unix listen socket is empty")
 	}
 	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
@@ -362,6 +397,19 @@ func (cd *clientDaemon) Serve() error {
 		return err
 	}
 	cd.schedPeerHost.DownPort = int32(uploadPort)
+
+	// prepare object storage service listen
+	var objectStorageListener net.Listener
+	if cd.Option.ObjectStorage.Enable {
+		if cd.Option.ObjectStorage.TCPListen == nil {
+			return errors.New("object storage tcp listen option is empty")
+		}
+		objectStorageListener, _, err = cd.prepareTCPListener(cd.Option.ObjectStorage.ListenOption, true)
+		if err != nil {
+			logger.Errorf("failed to listen for object storage service: %v", err)
+			return err
+		}
+	}
 
 	g := errgroup.Group{}
 	// serve download grpc service
@@ -411,7 +459,6 @@ func (cd *clientDaemon) Serve() error {
 		// serve proxy sni service
 		if cd.Option.Proxy.HijackHTTPS != nil && len(cd.Option.Proxy.HijackHTTPS.SNI) > 0 {
 			for _, opt := range cd.Option.Proxy.HijackHTTPS.SNI {
-
 				listener, port, err := cd.prepareTCPListener(config.ListenOption{
 					TCPListen: opt,
 				}, false)
@@ -445,28 +492,65 @@ func (cd *clientDaemon) Serve() error {
 		return nil
 	})
 
-	if cd.Option.AliveTime.Duration > 0 {
+	// serve object storage service
+	if cd.Option.ObjectStorage.Enable {
 		g.Go(func() error {
-			select {
-			case <-time.After(cd.Option.AliveTime.Duration):
-				var keepalives = []clientutil.KeepAlive{
-					cd.StorageManager,
-					cd.RPCManager,
-				}
-				var keep bool
-				for _, keepalive := range keepalives {
-					if keepalive.Alive(cd.Option.AliveTime.Duration) {
-						keep = true
-					}
-				}
-				if !keep {
-					cd.Stop()
-					logger.Infof("alive time reached, stop daemon")
-				}
-			case <-cd.done:
-				logger.Infof("peer host done, stop watch alive time")
+			defer objectStorageListener.Close()
+			logger.Infof("serve object storage service at %s://%s", objectStorageListener.Addr().Network(), objectStorageListener.Addr().String())
+			if err := cd.ObjectStorage.Serve(objectStorageListener); err != nil && err != http.ErrServerClosed {
+				logger.Errorf("failed to serve for object storage service: %v", err)
+				return err
+			} else if err == http.ErrServerClosed {
+				logger.Infof("object storage service closed")
 			}
 			return nil
+		})
+	}
+
+	// enable seed peer mode
+	if cd.managerClient != nil && cd.Option.Scheduler.Manager.SeedPeer.Enable {
+		logger.Info("announce to manager")
+		if err := cd.announceSeedPeer(); err != nil {
+			return err
+		}
+
+		g.Go(func() error {
+			logger.Info("keepalive to manager")
+			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &manager.KeepAliveRequest{
+				SourceType: manager.SourceType_SEED_PEER_SOURCE,
+				HostName:   cd.Option.Host.Hostname,
+				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
+			})
+			return err
+		})
+	}
+
+	if cd.Option.AliveTime.Duration > 0 {
+		g.Go(func() error {
+			for {
+				select {
+				case <-time.After(cd.Option.AliveTime.Duration):
+					var keepalives = []clientutil.KeepAlive{
+						cd.StorageManager,
+						cd.RPCManager,
+					}
+					var keep bool
+					for _, keepalive := range keepalives {
+						if keepalive.Alive(cd.Option.AliveTime.Duration) {
+							keep = true
+							break
+						}
+					}
+					if !keep {
+						cd.Stop()
+						logger.Infof("alive time reached, stop daemon")
+						return nil
+					}
+				case <-cd.done:
+					logger.Infof("peer host done, stop watch alive time")
+					return nil
+				}
+			}
 		})
 	}
 
@@ -475,7 +559,7 @@ func (cd *clientDaemon) Serve() error {
 		// dynconfig register client daemon
 		cd.dynconfig.Register(cd)
 
-		// servce dynconfig
+		// serve dynconfig
 		g.Go(func() error {
 			if err := cd.dynconfig.Serve(); err != nil {
 				logger.Errorf("dynconfig start failed %v", err)
@@ -499,6 +583,32 @@ func (cd *clientDaemon) Serve() error {
 		}()
 	}
 
+	if cd.Option.Health != nil {
+		if cd.Option.Health.ListenOption.TCPListen == nil {
+			logger.Fatalf("health listen not found")
+		}
+
+		r := gin.Default()
+		r.GET(cd.Option.Health.Path, func(c *gin.Context) {
+			c.JSON(http.StatusOK, http.StatusText(http.StatusOK))
+		})
+
+		listener, _, err := cd.prepareTCPListener(cd.Option.Health.ListenOption, false)
+		if err != nil {
+			logger.Fatalf("init health http server error: %v", err)
+		}
+
+		go func() {
+			logger.Infof("serve http health at %#v", cd.Option.Health.ListenOption.TCPListen)
+			if err = http.Serve(listener, r); err != nil {
+				if err == http.ErrServerClosed {
+					return
+				}
+				logger.Errorf("health http server error: %v", err)
+			}
+		}()
+	}
+
 	werr := g.Wait()
 	cd.Stop()
 	return werr
@@ -511,6 +621,12 @@ func (cd *clientDaemon) Stop() {
 		cd.RPCManager.Stop()
 		if err := cd.UploadManager.Stop(); err != nil {
 			logger.Errorf("upload manager stop failed %s", err)
+		}
+
+		if cd.Option.ObjectStorage.Enable {
+			if err := cd.ObjectStorage.Stop(); err != nil {
+				logger.Errorf("object storage stop failed %s", err)
+			}
 		}
 
 		if cd.ProxyManager.IsEnabled() {
@@ -530,13 +646,21 @@ func (cd *clientDaemon) Stop() {
 			}
 			logger.Info("dynconfig client closed")
 		}
+
+		if cd.managerClient != nil {
+			if err := cd.managerClient.Close(); err != nil {
+				logger.Errorf("manager client failed to stop: %s", err.Error())
+			}
+			logger.Info("manager client closed")
+		}
 	})
 }
 
 func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Infof("scheduler addresses deep equal: %v", ips)
+		logger.Debugf("scheduler addresses deep equal: %v, used: %#v",
+			ips, cd.schedulerClient.GetState())
 		return
 	}
 
@@ -547,10 +671,10 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
 
-	logger.Infof("scheduler addresses have been updated: %v", ips)
+	logger.Infof("scheduler addresses have been updated: %#v", addrs)
 }
 
-// getSchedulerIPs get ips by schedulers.
+// getSchedulerIPs gets ips by schedulers.
 func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 	ips := []string{}
 	for _, scheduler := range schedulers {
@@ -562,18 +686,24 @@ func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 
 // schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
 func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+	var schedulerClusterID uint64
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
+		// Check whether scheduler is in the same cluster
+		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
+			continue
+		}
+
 		// Check whether the ip can be reached
 		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
 		if err := ipReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
 			})
-
 			continue
 		}
 
@@ -582,6 +712,7 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 		if err := hostReachable.Check(); err != nil {
 			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
 		} else {
+			schedulerClusterID = scheduler.SchedulerClusterId
 			netAddrs = append(netAddrs, dfnet.NetAddr{
 				Type: dfnet.TCP,
 				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
@@ -590,6 +721,32 @@ func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetA
 	}
 
 	return netAddrs
+}
+
+// announceSeedPeer announces seed peer to manager.
+func (cd *clientDaemon) announceSeedPeer() error {
+	var objectStoragePort int32
+	if cd.Option.ObjectStorage.Enable {
+		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
+	}
+
+	if _, err := cd.managerClient.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
+		SourceType:        manager.SourceType_SEED_PEER_SOURCE,
+		HostName:          cd.Option.Host.Hostname,
+		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
+		Idc:               cd.Option.Host.IDC,
+		NetTopology:       cd.Option.Host.NetTopology,
+		Location:          cd.Option.Host.Location,
+		Ip:                cd.Option.Host.AdvertiseIP,
+		Port:              cd.schedPeerHost.RpcPort,
+		DownloadPort:      cd.schedPeerHost.DownPort,
+		ObjectStoragePort: objectStoragePort,
+		SeedPeerClusterId: uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
+	}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {

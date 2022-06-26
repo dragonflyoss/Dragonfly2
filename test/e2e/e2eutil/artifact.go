@@ -66,3 +66,17 @@ func UploadArtifactPrevStdout(namespace, podName, logDirName, logPrefix string) 
 
 	return nil
 }
+
+func UploadArtifactPProf(namespace, podName, logDirName, logPrefix string, pprofPort int) (string, error) {
+	logDirname := fmt.Sprintf("/tmp/artifact/%s/", logDirName)
+	out, err := KubeCtlCommand("-n", namespace, "exec", podName, "--", "sh", "-c", fmt.Sprintf(`
+      set -x
+      port=%d
+      dir=%s
+      prefix=%s
+      ip=$(hostname -i)
+      wget $ip:$port/debug/pprof/"goroutine?debug=1" -O $dir/$prefix-pprof-goroutine-1.log
+      wget $ip:$port/debug/pprof/"goroutine?debug=2" -O $dir/$prefix-pprof-goroutine-2.log
+      `, pprofPort, logDirname, logPrefix)).CombinedOutput()
+	return string(out), err
+}

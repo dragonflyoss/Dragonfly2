@@ -12,6 +12,12 @@ scheduler:
       - type: tcp
         addr: 127.0.0.1:65003
     refreshInterval: 5m
+    seedPeer:
+      enable: false
+      type: strong
+      clusterID: 2
+      keepAlive:
+        interval: 10s
   netAddrs:
     - type: tcp
       addr: 127.0.0.1:8002
@@ -36,6 +42,7 @@ download:
       caCert: caCert
       cert: cert
       key: key
+      tlsVerify: true
       tlsConfig: null
     unixListen:
       socket: /tmp/dfdaemon.sock
@@ -45,6 +52,7 @@ download:
       caCert: caCert
       cert: cert
       key: key
+      tlsVerify: true
       tlsConfig: null
     tcpListen:
       listen: 0.0.0.0
@@ -57,9 +65,22 @@ upload:
     caCert: caCert
     cert: cert
     key: key
+    tlsVerify: true
   tcpListen:
     listen: 0.0.0.0
     port: 65002
+
+objectStorage:
+  enable: true
+  security:
+    insecure: true
+    caCert: caCert
+    cert: cert
+    key: key
+    tlsVerify: true
+  tcpListen:
+    listen: 0.0.0.0
+    port: 65004
 
 storage:
   dataPath: /tmp/storage/data
@@ -72,6 +93,7 @@ proxy:
     caCert: caCert
     cert: cert
     key: key
+    tlsVerify: true
     tlsConfig: null
   tcpListen:
     listen: 0.0.0.0

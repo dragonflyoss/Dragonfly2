@@ -21,12 +21,11 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 type Bytes int64
@@ -51,7 +50,7 @@ func ToBytes(size int64) Bytes {
 
 // Set is used for command flag var
 func (f *Bytes) Set(s string) (err error) {
-	if stringutils.IsBlank(s) {
+	if pkgstrings.IsBlank(s) {
 		*f = 0
 	} else {
 		*f, err = parseSize(s)
@@ -96,8 +95,7 @@ func (f Bytes) String() string {
 var sizeRegexp = regexp.MustCompile(`^([0-9]+)(\.0*)?([MmKkGgTtPpEe])?[iI]?[bB]?$`)
 
 func parseSize(fsize string) (Bytes, error) {
-	fsize = strings.TrimSpace(fsize)
-	if stringutils.IsBlank(fsize) {
+	if pkgstrings.IsBlank(fsize) {
 		return 0, nil
 	}
 

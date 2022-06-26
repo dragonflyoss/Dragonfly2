@@ -35,24 +35,22 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/trace/jaeger"
+	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/semconv"
-	"go.uber.org/zap/zapcore"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/net/fqdn"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/hostutils"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -90,13 +88,8 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 }
 
 // InitMonitor initialize monitor and return final handler
-func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) func() {
+func InitMonitor(pprofPort int, otelOption base.TelemetryOption) func() {
 	var fc = make(chan func(), 5)
-
-	if verbose {
-		logcore.SetCoreLevel(zapcore.DebugLevel)
-		logcore.SetGrpcLevel(zapcore.DebugLevel)
-	}
 
 	if pprofPort >= 0 {
 		// Enable go pprof and statsview
@@ -105,7 +98,7 @@ func InitMonitor(verbose bool, pprofPort int, otelOption base.TelemetryOption) f
 				pprofPort, _ = freeport.GetFreePort()
 			}
 
-			debugAddr := fmt.Sprintf("%s:%d", iputils.IPv4, pprofPort)
+			debugAddr := fmt.Sprintf(":%d", pprofPort)
 			viewer.SetConfiguration(viewer.WithAddr(debugAddr))
 
 			logger.With("pprof", fmt.Sprintf("http://%s/debug/pprof", debugAddr),
@@ -160,15 +153,6 @@ func SetupQuitSignalHandler(handler func()) {
 			}
 		}
 	}()
-}
-
-func GetConfigPath(name string) string {
-	cfgFile := viper.GetString("config")
-	if cfgFile != "" {
-		return cfgFile
-	}
-
-	return filepath.Join(dfpath.DefaultConfigDir, fmt.Sprintf("%s.yaml", name))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -232,7 +216,7 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 
 // initTracer creates a new trace provider instance and registers it as global trace provider.
 func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
-	exp, err := jaeger.NewRawExporter(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(otelOption.Jaeger)))
 	if err != nil {
 		return nil, err
 	}
@@ -243,8 +227,9 @@ func initJaegerTracer(otelOption base.TelemetryOption) (func(), error) {
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
 		// Record information about this application in an Resource.
 		sdktrace.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(otelOption.ServiceName),
-			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", hostutils.FQDNHostname, iputils.IPv4)),
+			semconv.ServiceInstanceIDKey.String(fmt.Sprintf("%s|%s", fqdn.FQDNHostname, ip.IPv4)),
 			semconv.ServiceNamespaceKey.String("dragonfly"),
 			semconv.ServiceVersionKey.String(version.GitVersion))),
 	)

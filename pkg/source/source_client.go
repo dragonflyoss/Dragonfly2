@@ -32,6 +32,11 @@ import (
 )
 
 var (
+	// Clinet back-to-source download timeout
+	contextTimeout = 1 * time.Minute
+)
+
+var (
 	// ErrResourceNotReachable represents the url resource is a not reachable.
 	ErrResourceNotReachable = errors.New("resource is not reachable")
 
@@ -89,7 +94,6 @@ const (
 
 // ResourceClient defines the API interface to interact with source.
 type ResourceClient interface {
-
 	// GetContentLength get length of resource content
 	// return source.UnknownSourceFileLen if response status is not StatusOK and StatusPartialContent
 	GetContentLength(request *Request) (int64, error)
@@ -116,14 +120,17 @@ type ResourceLister interface {
 }
 
 type ClientManager interface {
-	// Register a source client with scheme
+	// Register registers a source client with scheme
 	Register(scheme string, resourceClient ResourceClient, adapter requestAdapter, hook ...Hook) error
 
-	// UnRegister a source client from manager
+	// UnRegister revoke a source client from manager
 	UnRegister(scheme string)
 
-	// GetClient a source client by scheme
+	// GetClient gets a source client by scheme
 	GetClient(scheme string, options ...Option) (ResourceClient, bool)
+
+	// ListClients lists all supported client scheme
+	ListClients() []string
 }
 
 // clientManager implements the interface ClientManager
@@ -182,6 +189,16 @@ func (m *clientManager) UnRegister(scheme string) {
 	delete(m.clients, scheme)
 }
 
+func (m *clientManager) ListClients() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var clients []string
+	for c := range m.clients {
+		clients = append(clients, c)
+	}
+	return clients
+}
+
 func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceClient, bool) {
 	logger.Debugf("current clients: %#v", m.clients)
 	m.mu.RLock()
@@ -220,6 +237,10 @@ func Register(scheme string, resourceClient ResourceClient, adaptor requestAdapt
 
 func UnRegister(scheme string) {
 	_defaultManager.UnRegister(scheme)
+}
+
+func ListClients() []string {
+	return _defaultManager.ListClients()
 }
 
 type requestAdapter func(request *Request) *Request
@@ -261,7 +282,7 @@ func GetContentLength(request *Request) (int64, error) {
 		return UnknownSourceFileLen, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -274,7 +295,7 @@ func IsSupportRange(request *Request) (bool, error) {
 		return false, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -290,7 +311,7 @@ func IsExpired(request *Request, info *ExpireInfo) (bool, error) {
 		return false, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}
@@ -303,7 +324,7 @@ func GetLastModified(request *Request) (int64, error) {
 		return -1, errors.Wrapf(ErrNoClientFound, "scheme: %s", request.URL.Scheme)
 	}
 	if _, ok := request.Context().Deadline(); !ok {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 		request = request.WithContext(ctx)
 		defer cancel()
 	}

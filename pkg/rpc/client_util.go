@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/semconv"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -31,8 +30,17 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/math"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/util/mathutils"
+)
+
+const (
+	// Identifier of message transmitted or received.
+	RPCMessageIDKey = attribute.Key("message.id")
+
+	// The uncompressed size of the message transmitted or received in
+	// bytes.
+	RPCMessageUncompressedSizeKey = attribute.Key("message.uncompressed_size")
 )
 
 func (conn *Connection) startGC() {
@@ -57,7 +65,7 @@ func (conn *Connection) startGC() {
 				serverNode := node.(string)
 				totalNodeSize++
 				atime := accessTime.(time.Time)
-				if time.Since(atime) < conn.connExpireTime {
+				if conn.connExpireTime == 0 || time.Since(atime) < conn.connExpireTime {
 					return true
 				}
 				conn.gcConn(serverNode)
@@ -86,19 +94,8 @@ func (conn *Connection) startGC() {
 // gcConn gc keys and clients associated with server node
 func (conn *Connection) gcConn(node string) {
 	logger.GrpcLogger.With("conn", conn.name).Infof("gc keys and clients associated with server node: %s starting", node)
-	value, ok := conn.node2ClientMap.Load(node)
-	if ok {
-		clientCon := value.(*grpc.ClientConn)
-		err := clientCon.Close()
-		if err == nil {
-			conn.node2ClientMap.Delete(node)
-			logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
-		} else {
-			logger.GrpcLogger.With("conn", conn.name).Warnf("failed to close clientConn: %s: %v", node, err)
-		}
-	} else {
-		logger.GrpcLogger.With("conn", conn.name).Warnf("server node: %s dose not found in node2ClientMap", node)
-	}
+	conn.node2ClientMap.Delete(node)
+	logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
 	// gc hash keys
 	conn.key2NodeMap.Range(func(key, value interface{}) bool {
 		if value == node {
@@ -124,8 +121,8 @@ func (m messageType) Event(ctx context.Context, id int, message interface{}) {
 		content, _ := proto.Marshal(p)
 		span.AddEvent("message", trace.WithAttributes(
 			attribute.KeyValue(m),
-			semconv.RPCMessageIDKey.Int(id),
-			semconv.RPCMessageUncompressedSizeKey.String(string(content)),
+			RPCMessageIDKey.Int(id),
+			RPCMessageUncompressedSizeKey.String(string(content)),
 		))
 	}
 }
@@ -226,7 +223,7 @@ func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBac
 			return res, cause
 		}
 		if i > 0 {
-			time.Sleep(mathutils.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+			time.Sleep(math.RandBackoff(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cause = f()

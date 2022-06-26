@@ -23,6 +23,8 @@ import (
 	"github.com/mitchellh/mapstructure"
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
+
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 func TestManagerConfig_Load(t *testing.T) {
@@ -51,6 +53,12 @@ func TestManagerConfig_Load(t *testing.T) {
 				Host:     "foo",
 				Port:     3306,
 				DBName:   "foo",
+				TLS: &TLSConfig{
+					Cert:               "foo",
+					Key:                "foo",
+					CA:                 "foo",
+					InsecureSkipVerify: true,
+				},
 			},
 			Redis: &RedisConfig{
 				Host:      "bar",
@@ -70,8 +78,17 @@ func TestManagerConfig_Load(t *testing.T) {
 				TTL:  1000,
 			},
 		},
-		Metrics: &RestConfig{
-			Addr: ":8000",
+		ObjectStorage: &ObjectStorageConfig{
+			Enable:    true,
+			Name:      objectstorage.ServiceNameS3,
+			Endpoint:  "127.0.0.1",
+			AccessKey: "foo",
+			SecretKey: "bar",
+		},
+		Metrics: &MetricsConfig{
+			Enable:          true,
+			Addr:            ":8000",
+			EnablePeerGauge: false,
 		},
 	}
 

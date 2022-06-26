@@ -22,7 +22,7 @@ type CreateJobRequest struct {
 	Args                map[string]interface{} `json:"args" binding:"omitempty"`
 	Result              map[string]interface{} `json:"result" binding:"omitempty"`
 	UserID              uint                   `json:"user_id" binding:"omitempty"`
-	CDNClusterIDs       []uint                 `json:"cdn_cluster_ids" binding:"omitempty"`
+	SeedPeerClusterIDs  []uint                 `json:"seed_peer_cluster_ids" binding:"omitempty"`
 	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
@@ -55,6 +55,7 @@ type CreatePreheatJobRequest struct {
 type PreheatArgs struct {
 	Type    string            `json:"type" binding:"required,oneof=image file"`
 	URL     string            `json:"url" binding:"required"`
+	Tag     string            `json:"tag" binding:"omitempty"`
 	Filter  string            `json:"filter" binding:"omitempty"`
 	Headers map[string]string `json:"headers" binding:"omitempty"`
 }

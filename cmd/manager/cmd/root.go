@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"path"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -25,7 +26,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/manager"
 	"d7y.io/dragonfly/v2/manager/config"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -41,7 +41,7 @@ var rootCmd = &cobra.Command{
 	Use:   "manager",
 	Short: "The central manager of dragonfly.",
 	Long: `manager is a long-running process and is mainly responsible 
-for managing schedulers and cdns, offering http apis and portal, etc.`,
+for managing schedulers and seed peers, offering http apis and portal, etc.`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
@@ -53,9 +53,10 @@ for managing schedulers and cdns, offering http apis and portal, etc.`,
 		}
 
 		// Initialize logger
-		if err := logcore.InitManager(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init manager logger")
 		}
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "manager"))
 
 		// Validate config
 		if err := cfg.Validate(); err != nil {
@@ -103,7 +104,7 @@ func runManager(d dfpath.Dfpath) error {
 
 	logger.Infof("manager configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := manager.New(cfg, d)

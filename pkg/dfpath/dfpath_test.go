@@ -17,6 +17,7 @@
 package dfpath
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,9 +30,20 @@ func TestNew(t *testing.T) {
 		expect  func(t *testing.T, options []Option)
 	}{
 		{
-			name: "new dfpath succeeded",
+			name:    "new dfpath failed",
+			options: []Option{WithLogDir("")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
+				_, err := New(options...)
+				assert.Error(err)
+			},
+		},
+		{
+			name: "new dfpath",
+			expect: func(t *testing.T, options []Option) {
+				assert := assert.New(t)
+				cache.Once = sync.Once{}
+				cache.errs = []error{}
 				d, err := New(options...)
 				assert.NoError(err)
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
@@ -41,41 +53,47 @@ func TestNew(t *testing.T) {
 			},
 		},
 		{
-			name:    "new dfpath succeeded by workHome",
+			name:    "new dfpath by workHome",
 			options: []Option{WithWorkHome("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
+				cache.Once = sync.Once{}
+				cache.errs = []error{}
 				d, err := New(options...)
 				assert.NoError(err)
-				assert.Equal(d.WorkHome(), DefaultWorkHome)
+				assert.Equal(d.WorkHome(), "foo")
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
 				assert.Equal(d.LogDir(), DefaultLogDir)
 				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 		{
-			name:    "new dfpath succeeded by cacheDir",
+			name:    "new dfpath by cacheDir",
 			options: []Option{WithCacheDir("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
+				cache.Once = sync.Once{}
+				cache.errs = []error{}
 				d, err := New(options...)
 				assert.NoError(err)
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
-				assert.Equal(d.CacheDir(), DefaultCacheDir)
+				assert.Equal(d.CacheDir(), "foo")
 				assert.Equal(d.LogDir(), DefaultLogDir)
 				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},
 		{
-			name:    "new dfpath succeeded by logDir",
+			name:    "new dfpath by logDir",
 			options: []Option{WithLogDir("foo")},
 			expect: func(t *testing.T, options []Option) {
 				assert := assert.New(t)
+				cache.Once = sync.Once{}
+				cache.errs = []error{}
 				d, err := New(options...)
 				assert.NoError(err)
 				assert.Equal(d.WorkHome(), DefaultWorkHome)
 				assert.Equal(d.CacheDir(), DefaultCacheDir)
-				assert.Equal(d.LogDir(), DefaultLogDir)
+				assert.Equal(d.LogDir(), "foo")
 				assert.Equal(d.DataDir(), DefaultDataDir)
 			},
 		},

@@ -30,6 +30,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
@@ -55,7 +56,7 @@ func TestUploadManager_Serve(t *testing.T) {
 				io.NopCloser(nil), nil
 		})
 
-	um, err := NewUploadManager(mockStorageManager, WithLimiter(rate.NewLimiter(16*1024, 16*1024)))
+	um, err := NewUploadManager(config.NewDaemonConfig(), mockStorageManager, os.TempDir(), WithLimiter(rate.NewLimiter(16*1024, 16*1024)))
 	assert.Nil(err, "NewUploadManager")
 
 	listen, err := net.Listen("tcp4", "127.0.0.1:0")
@@ -96,7 +97,7 @@ func TestUploadManager_Serve(t *testing.T) {
 
 	for _, tt := range tests {
 		req, _ := http.NewRequest(http.MethodGet,
-			fmt.Sprintf("http://%s%s%s/%s?peerId=%s", addr, PeerDownloadHTTPPathPrefix, "666", tt.taskID, tt.peerID), nil)
+			fmt.Sprintf("http://%s/%s/%s/%s?peerId=%s", addr, "download", "666", tt.taskID, tt.peerID), nil)
 		req.Header.Add("Range", tt.pieceRange)
 
 		resp, err := http.DefaultClient.Do(req)

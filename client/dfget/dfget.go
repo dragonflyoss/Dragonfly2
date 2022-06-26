@@ -28,19 +28,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 
 	"d7y.io/dragonfly/v2/client/config"
-	"d7y.io/dragonfly/v2/internal/dfheaders"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/util/digestutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
@@ -117,7 +117,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 					_ = pb.Close()
 				}
 
-				wLog.Infof("download from daemon success, length: %d bytes cost: %d ms", result.CompletedLength, time.Now().Sub(start).Milliseconds())
+				wLog.Infof("download from daemon success, length: %d bytes cost: %d ms", result.CompletedLength, time.Since(start).Milliseconds())
 				fmt.Printf("finish total length %d bytes\n", result.CompletedLength)
 
 				break
@@ -125,7 +125,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 		}
 	}
 
-	if downError != nil {
+	if downError != nil && !cfg.KeepOriginalOffset {
 		wLog.Warnf("daemon downloads file error: %v", downError)
 		fmt.Printf("daemon downloads file error: %v\n", downError)
 		downError = downloadFromSource(ctx, cfg, hdr)
@@ -165,17 +165,27 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 	defer response.Body.Close()
+	if err = response.Validate(); err != nil {
+		return err
+	}
 
 	if written, err = io.Copy(target, response.Body); err != nil {
 		return err
 	}
 
-	if !stringutils.IsBlank(cfg.Digest) {
-		parsedHash := digestutils.Parse(cfg.Digest)
-		realHash := digestutils.HashFile(target.Name(), digestutils.Algorithms[parsedHash[0]])
+	if !pkgstrings.IsBlank(cfg.Digest) {
+		d, err := digest.Parse(cfg.Digest)
+		if err != nil {
+			return err
+		}
 
-		if realHash != "" && realHash != parsedHash[1] {
-			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", parsedHash[0], realHash, parsedHash[1])
+		encoded, err := digest.HashFile(target.Name(), d.Algorithm)
+		if err != nil {
+			return err
+		}
+
+		if encoded != "" && encoded != d.Encoded {
+			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", d.Algorithm, encoded, d.Encoded)
 		}
 	}
 
@@ -188,7 +198,7 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		return err
 	}
 
-	wLog.Infof("download from source success, length: %d bytes cost: %d ms", written, time.Now().Sub(start).Milliseconds())
+	wLog.Infof("download from source success, length: %d bytes cost: %d ms", written, time.Since(start).Milliseconds())
 	fmt.Printf("finish total length %d bytes\n", written)
 
 	return nil
@@ -210,23 +220,30 @@ func parseHeader(s []string) map[string]string {
 }
 
 func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.DownRequest {
+	var rg string
+	if r, ok := hdr[headers.Range]; ok {
+		rg = strings.TrimLeft(r, "bytes=")
+	} else {
+		rg = cfg.Range
+	}
 	return &dfdaemon.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
 		Timeout:           uint64(cfg.Timeout),
-		Limit:             float64(cfg.RateLimit),
+		Limit:             float64(cfg.RateLimit.Limit),
 		DisableBackSource: cfg.DisableBackSource,
 		UrlMeta: &base.UrlMeta{
 			Digest: cfg.Digest,
 			Tag:    cfg.Tag,
-			Range:  hdr[dfheaders.Range],
+			Range:  rg,
 			Filter: cfg.Filter,
 			Header: hdr,
 		},
-		Pattern:    cfg.Pattern,
-		Callsystem: cfg.CallSystem,
-		Uid:        int64(basic.UserID),
-		Gid:        int64(basic.UserGroup),
+		Pattern:            cfg.Pattern,
+		Callsystem:         cfg.CallSystem,
+		Uid:                int64(basic.UserID),
+		Gid:                int64(basic.UserGroup),
+		KeepOriginalOffset: cfg.KeepOriginalOffset,
 	}
 }
 

@@ -14,13 +14,15 @@
 
 PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
-SEMVER := "2.0.1"
+DFCACHE_NAME := "dfcache"
+SEMVER := "2.0.3"
 VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
 GIT_COMMIT := $(shell git rev-parse --verify HEAD --short=7)
 GIT_COMMIT_LONG := $(shell git rev-parse --verify HEAD)
 DFGET_ARCHIVE_PREFIX := "$(DFGET_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
+DFCACHE_ARCHIVE_PREFIX := "$(DFCACHE_NAME)_$(SEMVER)-$(VERSION_RELEASE)_$(GIT_COMMIT)"
 
 all: help
 
@@ -30,20 +32,14 @@ build-dirs:
 .PHONY: build-dirs
 
 # Build dragonlfy
-docker-build: docker-build-cdn docker-build-dfdaemon docker-build-scheduler docker-build-manager
+docker-build: docker-build-dfdaemon docker-build-scheduler docker-build-manager
 	@echo "Build image done."
 .PHONY: docker-build
 
 # Push dragonfly images
-docker-push: docker-push-cdn docker-push-dfdaemon docker-push-scheduler docker-push-manager
+docker-push: docker-push-dfdaemon docker-push-scheduler docker-push-manager
 	@echo "Push image done."
 .PHONY: docker-push
-
-# Build cdn image
-docker-build-cdn:
-	@echo "Begin to use docker build cdn image."
-	./hack/docker-build.sh cdn
-.PHONY: docker-build-cdn
 
 # Build dfdaemon image
 docker-build-dfdaemon:
@@ -69,12 +65,6 @@ docker-build-testing-tools: build-dirs
 	./test/tools/no-content-length/build.sh
 .PHONY: docker-build-testing-tools
 
-# Push cdn image
-docker-push-cdn: docker-build-cdn
-	@echo "Begin to push cdn docker image."
-	./hack/docker-push.sh cdn
-.PHONY: docker-push-cdn
-
 # Push dfdaemon image
 docker-push-dfdaemon: docker-build-dfdaemon
 	@echo "Begin to push dfdaemon docker image."
@@ -83,7 +73,7 @@ docker-push-dfdaemon: docker-build-dfdaemon
 
 # Push scheduler image
 docker-push-scheduler: docker-build-scheduler
-	@echo "Begin to push dfdaemon docker image."
+	@echo "Begin to push scheduler docker image."
 	./hack/docker-push.sh scheduler
 .PHONY: docker-push-scheduler
 
@@ -94,14 +84,8 @@ docker-push-manager: docker-build-manager
 .PHONY: docker-push-manager
 
 # Build dragonfly
-build: build-cdn build-scheduler build-dfget build-manager
+build: build-scheduler build-dfget build-dfcache build-manager
 .PHONY: build
-
-# Build cdn
-build-cdn: build-dirs
-	@echo "Begin to build cdn."
-	./hack/build.sh cdn
-.PHONY: build-cdn
 
 # Build dfget
 build-dfget: build-dirs
@@ -115,6 +99,18 @@ build-linux-dfget: build-dirs
 	GOOS=linux GOARCH=amd64 ./hack/build.sh dfget
 .PHONY: build-linux-dfget
 
+# Build dfcache
+build-dfcache: build-dirs
+	@echo "Begin to build dfcache."
+	./hack/build.sh dfcache
+.PHONY: build-dfcache
+
+# Build linux dfcache
+build-linux-dfcache: build-dirs
+	@echo "Begin to build linux dfcache."
+	GOOS=linux GOARCH=amd64 ./hack/build.sh dfcache
+.PHONY: build-linux-dfcache
+
 # Build scheduler
 build-scheduler: build-dirs
 	@echo "Begin to build scheduler."
@@ -127,11 +123,11 @@ build-manager: build-dirs
 	./hack/build.sh manager
 .PHONY: build-manager
 
-# Install cdn
-install-cdn:
-	@echo "Begin to install cdn."
-	./hack/install.sh install cdn
-.PHONY: install-cdn
+# Build manager console
+build-manager-console: build-dirs
+	@echo "Begin to build manager."
+	./hack/build.sh manager-console
+.PHONY: build-manager-console
 
 # Install dfget
 install-dfget:
@@ -156,7 +152,7 @@ build-rpm-dfget: build-linux-dfget
 	@echo "Begin to build rpm dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
-	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
@@ -168,12 +164,29 @@ build-rpm-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.rpm"
 .PHONY: build-rpm-dfget
 
+# Build rpm dfcache
+build-rpm-dfcache: build-linux-dfcache build-dfcache-man-page
+	@echo "Begin to build rpm dfcache"
+	@docker run --rm \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
+	-v "$(PWD)/LICENSE:/root/License" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
+	goreleaser/nfpm pkg \
+		--config /root/build/package/nfpm/dfcache.yaml \
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.rpm"
+.PHONY: build-rpm-dfcache
+
 # Build deb dfget
 build-deb-dfget: build-linux-dfget
 	@echo "Begin to build deb dfget"
 	@docker run --rm \
 	-v "$(PWD)/build:/root/build" \
-	-v "$(PWD)/docs:/root/docs" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
 	-v "$(PWD)/LICENSE:/root/License" \
 	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
 	-v "$(PWD)/bin:/root/bin" \
@@ -185,10 +198,44 @@ build-deb-dfget: build-linux-dfget
 	@echo "Build package output: ./bin/$(DFGET_ARCHIVE_PREFIX)_linux_amd64.deb"
 .PHONY: build-deb-dfget
 
+# Build deb dfcache
+build-deb-dfcache: build-linux-dfcache build-dfcache-man-page
+	@echo "Begin to build deb dfcache"
+	@docker run --rm \
+	-v "$(PWD)/build:/root/build" \
+	-v "$(PWD)/build/package/docs:/root/docs" \
+	-v "$(PWD)/LICENSE:/root/License" \
+	-v "$(PWD)/CHANGELOG.md:/root/CHANGELOG.md" \
+	-v "$(PWD)/bin:/root/bin" \
+	-e "SEMVER=$(SEMVER)" \
+	-e "VERSION_RELEASE=$(VERSION_RELEASE)" \
+	goreleaser/nfpm pkg \
+		--config /root/build/package/nfpm/dfcache.yaml \
+		--target /root/bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb
+	@echo "Build package output: ./bin/$(DFCACHE_ARCHIVE_PREFIX)_linux_amd64.deb"
+.PHONY: build-deb-dfcache
+
 # Generate dfget man page
 build-dfget-man-page:
-	@pandoc -s -t man ./docs/en/cli-reference/dfget.1.md -o ./docs/en/cli-reference/dfget.1
-.PHONY: build-man-page
+	@pandoc -s -t man ./build/package/docs/dfget.1.md -o ./build/package/docs/dfget.1
+.PHONY: build-dfget-man-page
+
+# Genrate dfcache man pages
+build-dfcache-man-page:
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache.md -o ./build/package/docs/dfcache/dfcache.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_delete.md -o ./build/package/docs/dfcache/dfcache-delete.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_doc.md -o ./build/package/docs/dfcache/dfcache-doc.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_export.md -o ./build/package/docs/dfcache/dfcache-export.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_import.md -o ./build/package/docs/dfcache/dfcache-import.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_plugin.md -o ./build/package/docs/dfcache/dfcache-plugin.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_stat.md -o ./build/package/docs/dfcache/dfcache-stat.1
+	@pandoc -s -t man ./build/package/docs/dfcache/dfcache_version.md -o ./build/package/docs/dfcache/dfcache-version.1
+.PHONY: build-dfcache-man-page
+
+# Generate e2e sha256sum
+build-e2e-sha256sum:
+	@GOOS=linux GOARCH=amd64 go build -o /tmp/sha256sum-offset test/tools/sha256sum-offset/main.go
+.PHONY: build-e2e-sha256sum
 
 # Run unittests
 test:
@@ -203,8 +250,8 @@ test-coverage:
 
 # Run github actions E2E tests with coverage
 actions-e2e-test-coverage:
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: actions-e2e-test-coverage
 
 # Install E2E tests environment
@@ -213,30 +260,27 @@ install-e2e-test:
 .PHONY: install-e2e-test
 
 # Run E2E tests
-e2e-test: install-e2e-test
-	@ginkgo -v -r --race --failFast test/e2e --trace --progress
+e2e-test: install-e2e-test build-e2e-sha256sum
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
 .PHONY: e2e-test
 
 # Run E2E tests with coverage
-e2e-test-coverage: install-e2e-test
-	@ginkgo -v -r --race --failFast -cover test/e2e --trace --progress
-	@cat test/e2e/*.coverprofile >> coverage.txt
+e2e-test-coverage: install-e2e-test build-e2e-sha256sum
+	@ginkgo -v -r --race --fail-fast --cover --trace --progress test/e2e
+	@cat coverprofile.out >> coverage.txt
 .PHONY: e2e-test-coverage
 
 # Clean E2E tests
 clean-e2e-test: 
 	@kind delete cluster
+	@echo "cleaning log file"
+	@rm -rf test/e2e/*.log
 .PHONY: clean-e2e-test
 
 # Kind load dragonlfy
-kind-load: kind-load-cdn kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
+kind-load: kind-load-scheduler kind-load-dfdaemon kind-load-manager kind-load-testing-tools
 	@echo "Kind load image done."
 .PHONY: kind-load
-
-# Run kind load docker-image cdn
-kind-load-cdn:
-	@./hack/kind-load.sh cdn
-.PHONY: kind-load-cdn
 
 # Run kind load docker scheduler
 kind-load-scheduler:
@@ -275,6 +319,12 @@ generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
+# Generate grpc protos
+protoc:
+	@./hack/protoc.sh
+.PHONY: protoc
+
+# Generate swagger files
 swag:
 	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
 
@@ -283,6 +333,7 @@ changelog:
 	@git-chglog -o CHANGELOG.md
 .PHONY: changelog
 
+# Clear compiled files
 clean:
 	@go clean
 	@rm -rf bin .go .cache
@@ -292,25 +343,28 @@ help:
 	@echo "make build-dirs                     prepare required folders for build"
 	@echo "make docker-build                   build dragonfly image"
 	@echo "make docker-push                    push dragonfly image"
-	@echo "make docker-build-cdn               build CDN image"
 	@echo "make docker-build-dfdaemon          build dfdaemon image"
 	@echo "make docker-build-scheduler         build scheduler image"
-	@echo "make docker-push-cdn                push CDN image"
 	@echo "make docker-push-dfdaemon           push dfdaemon image"
 	@echo "make docker-push-scheduler          push scheduler image"
 	@echo "make build                          build dragonfly"
-	@echo "make build-cdn                      build CDN"
 	@echo "make build-dfget                    build dfget"
 	@echo "make build-dfget-linux              build linux dfget"
+	@echo "make build-dfcache                  build dfcache"
+	@echo "make build-dfcache-linux            build linux dfcache"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
-	@echo "make install-cdn                    install CDN"
+	@echo "make build-manager-console          build manager console"
+	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make install-dfget                  install dfget"
 	@echo "make install-scheduler              install scheduler"
 	@echo "make install-manager                install manager"
 	@echo "make build-rpm-dfget                build rpm dfget"
+	@echo "make build-rpm-dfcache              build rpm dfcache"
 	@echo "make build-deb-dfget                build deb dfget"
+	@echo "make build-deb-dfcache              build deb dfcache"
 	@echo "make build-dfget-man-page           generate dfget man page"
+	@echo "make build-dfcache-man-page         generate dfcache man page"
 	@echo "make test                           run unit tests"
 	@echo "make test-coverage                  run tests with coverage"
 	@echo "make actions-e2e-test-coverage      run github actons E2E tests with coverage"
@@ -319,14 +373,14 @@ help:
 	@echo "make e2e-test-coverage              run e2e tests with coverage"
 	@echo "make clean-e2e-test                 clean e2e tests"
 	@echo "make kind-load                      kind load docker image"
-	@echo "make kind-load-cdn                  kind load cdn docker image"
 	@echo "make kind-load-scheduler            kind load scheduler docker image"
 	@echo "make kind-load-dfdaemon             kind load dfdaemon docker image"
 	@echo "make kind-load-manager              kind load manager docker image"
 	@echo "make kind-load-testing-tools        kind load testing tools docker image"
 	@echo "make lint                           run code lint"
 	@echo "make markdownlint                   run markdown lint"
+	@echo "make generate                       run go generate"
+	@echo "make protoc                         generate grpc protos"
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
-	@echo "make generate                       run go generate"
 	@echo "make clean                          clean"

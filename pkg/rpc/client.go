@@ -26,13 +26,14 @@ import (
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/status"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
@@ -91,9 +92,9 @@ var defaultClientOpts = []grpc.DialOption{
 	grpc.WithBlock(),
 	grpc.WithDisableServiceConfig(),
 	grpc.WithInitialConnWindowSize(8 * 1024 * 1024),
-	grpc.WithInsecure(),
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
 	grpc.WithKeepaliveParams(keepalive.ClientParameters{
-		Time:    2 * time.Minute,
+		Time:    1 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
 	grpc.WithStreamInterceptor(streamClientInterceptor),
@@ -268,7 +269,6 @@ type candidateClient struct {
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	// should not retry
 	ctx, cancel := context.WithTimeout(context.Background(), conn.dialTimeout)
 	defer cancel()
 	return grpc.DialContext(ctx, target, opts...)
@@ -438,4 +438,8 @@ func (conn *Connection) UpdateState(addrs []dfnet.NetAddr) {
 	conn.hashRing = hashring.New(addresses)
 
 	logger.GrpcLogger.Infof("update grpc client addresses %v", addresses)
+}
+
+func (conn *Connection) GetState() []dfnet.NetAddr {
+	return conn.serverNodes
 }

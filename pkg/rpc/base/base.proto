@@ -45,6 +45,9 @@ enum Code{
   ClientWaitPieceReady = 4004; // when target peer downloads from source slowly, should wait
   ClientPieceDownloadFail = 4005;
   ClientRequestLimitFail = 4006;
+  ClientConnectionError = 4007;
+  ClientBackSourceError = 4008;
+  ClientPieceNotFound = 4404;
 
   // scheduler response error 5000-5999
   SchedError = 5000;
@@ -55,9 +58,7 @@ enum Code{
   SchedTaskStatusError = 5006; // task status is fail
 
   // cdnsystem response error 6000-6999
-  CDNError = 6000;
   CDNTaskRegistryFail = 6001;
-  CDNTaskDownloadFail = 6002;
   CDNTaskNotFound = 6404;
 
   // manager response error 7000-7999
@@ -76,8 +77,39 @@ enum SizeScope{
   // size <= 128 byte and be plain type
   TINY = 2;
 }
+
+// Pattern represents pattern of task.
+enum Pattern{
+  // Default pattern, scheduler will use all p2p node
+  // include dfdaemon and seed peers.
+  P2P = 0;
+
+  // Seed peer pattern, scheduler will use only seed peers.
+  SEED_PEER = 1;
+
+  // Source pattern, scheduler will say back source
+  // when there is no available peer in p2p.
+  SOURCE = 2;
+}
+
+// TaskType represents type of task.
+enum TaskType{
+	// Normal is normal type of task,
+	// normal task is a normal p2p task.
+  Normal = 0;
+
+	// DfCache is dfcache type of task,
+	// dfcache task is a cache task, and the task url is fake url.
+	// It can only be used for caching and cannot be downloaded back to source.
+  DfCache = 1;
+
+	// DfStore is dfstore type of task,
+	// dfstore task is a persistent task in backend.
+  DfStore = 2;
+}
+
 message GrpcDfError {
-  Code code = 1 [(validate.rules).enum.defined_only = true];
+  Code code = 1;
   string message = 2;
 }
 
@@ -88,7 +120,7 @@ message UrlMeta{
   // url tag identifies different task for same url, conflict with digest
   string tag = 2;
   // content range for url
-  string range = 3 [(validate.rules).string = {pattern: "^[0-9]+-[0-9]+$", ignore_empty:true}];
+  string range = 3 [(validate.rules).string = {pattern: "^[0-9]+-[0-9]*$", ignore_empty:true}];
   // filter url used to generate task id
   string filter = 4;
   // other url header infos
@@ -122,6 +154,17 @@ message PieceInfo{
   string piece_md5 = 4 [(validate.rules).string = {pattern:"([a-f\\d]{32}|[A-F\\d]{32}|[a-f\\d]{16}|[A-F\\d]{16})", ignore_empty:true}];
   uint64 piece_offset = 5 [(validate.rules).uint64.gte = 0];
   base.PieceStyle piece_style = 6;
+  // total time(millisecond) consumed
+  uint64 download_cost = 7 [(validate.rules).uint64.gte = 0];
+}
+
+message ExtendAttribute{
+  // task response header, eg: HTTP Response Header
+  map<string, string> header = 1;
+  // task response code, eg: HTTP Status Code
+  //int32 code = 2;
+  // task response status, eg: HTTP Status
+  //string status = 3;
 }
 
 message PiecePacket{
@@ -136,4 +179,6 @@ message PiecePacket{
   int64 content_length = 7;
   // sha256 code of all piece md5
   string piece_md5_sign = 8;
+  // task extend attribute
+  ExtendAttribute extend_attribute = 9;
 }

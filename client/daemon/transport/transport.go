@@ -17,32 +17,38 @@
 package transport
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"go.opentelemetry.io/otel/propagation"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/idgen"
+	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/util/net/httputils"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
 
 var (
 	// layerReg the regex to determine if it is an image download
-	layerReg = regexp.MustCompile("^.+/blobs/sha256.*$")
+	layerReg     = regexp.MustCompile("^.+/blobs/sha256.*$")
+	traceContext = propagation.TraceContext{}
 )
 
 // transport implements RoundTripper for dragonfly.
@@ -58,26 +64,28 @@ type transport struct {
 	// peerTaskManager is the peer task manager
 	peerTaskManager peer.TaskManager
 
-	// peerHost is the peer host info
-	peerHost *scheduler.PeerHost
-
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// defaultFilter is used for registering steam task
+	defaultPattern base.Pattern
 
 	// defaultBiz is used when http request without X-Dragonfly-Biz Header
 	defaultBiz string
 
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
+
+	peerIDGenerator peer.IDGenerator
 }
 
 // Option is functional config for transport.
 type Option func(rt *transport) *transport
 
-// WithPeerHost sets the peerHost for transport
-func WithPeerHost(peerHost *scheduler.PeerHost) Option {
+// WithPeerIDGenerator sets the peerIDGenerator for transport
+func WithPeerIDGenerator(peerIDGenerator peer.IDGenerator) Option {
 	return func(rt *transport) *transport {
-		rt.peerHost = peerHost
+		rt.peerIDGenerator = peerIDGenerator
 		return rt
 	}
 }
@@ -114,6 +122,14 @@ func WithDefaultFilter(f string) Option {
 	}
 }
 
+// WithDefaultPattern sets default pattern
+func WithDefaultPattern(pattern base.Pattern) Option {
+	return func(rt *transport) *transport {
+		rt.defaultPattern = pattern
+		return rt
+	}
+}
+
 // WithDefaultBiz sets default biz for http requests with X-Dragonfly-Biz Header
 func WithDefaultBiz(b string) Option {
 	return func(rt *transport) *transport {
@@ -144,20 +160,31 @@ func New(options ...Option) (http.RoundTripper, error) {
 }
 
 // RoundTrip only process first redirect at present
-// TODO: fix resource release
 func (rt *transport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	if rt.shouldUseDragonfly(req) {
 		// delete the Accept-Encoding header to avoid returning the same cached
 		// result for different requests
 		req.Header.Del("Accept-Encoding")
+
+		ctx := req.Context()
+		if req.URL.Scheme == "https" {
+			// for https, the trace info is in request header
+			ctx = traceContext.Extract(req.Context(), propagation.HeaderCarrier(req.Header))
+		}
+
 		logger.Debugf("round trip with dragonfly: %s", req.URL.String())
 		metrics.ProxyRequestViaDragonflyCount.Add(1)
-		resp, err = rt.download(req)
+		resp, err = rt.download(ctx, req)
 	} else {
 		logger.Debugf("round trip directly, method: %s, url: %s", req.Method, req.URL.String())
 		req.Host = req.URL.Host
 		req.Header.Set("Host", req.Host)
+		metrics.ProxyRequestNotViaDragonflyCount.Add(1)
 		resp, err = rt.baseRoundTripper.RoundTrip(req)
+	}
+
+	if err != nil {
+		return resp, err
 	}
 
 	if resp.ContentLength > 0 {
@@ -178,41 +205,52 @@ func NeedUseDragonfly(req *http.Request) bool {
 }
 
 // download uses dragonfly to download.
-func (rt *transport) download(req *http.Request) (*http.Response, error) {
+// the ctx has span info from transport, did not use the ctx from request
+func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Response, error) {
 	url := req.URL.String()
-	peerID := idgen.PeerID(rt.peerHost.Ip)
+	peerID := rt.peerIDGenerator.PeerID()
 	log := logger.With("peer", peerID, "component", "transport")
 	log.Infof("start download with url: %s", url)
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
+	var rg *clientutil.Range
 
 	// Set meta range's value
-	if rg := req.Header.Get("Range"); len(rg) > 0 {
-		meta.Digest = ""
-		meta.Range = rg
+	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
+		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		if err != nil {
+			return badRequest(req, err.Error())
+		}
+		if len(rgs) > 1 {
+			// TODO support multiple range request
+			return notImplemented(req, "multiple range is not supported")
+		} else if len(rgs) == 0 {
+			return requestedRangeNotSatisfiable(req, "zero range is not supported")
+		}
+		rg = &rgs[0]
+		// range in dragonfly is without "bytes="
+		meta.Range = strings.TrimLeft(rangeHeader, "bytes=")
 	}
 
 	// Pick header's parameters
-	filter := httputils.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
-	tag := httputils.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
+	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
 
-	meta.Header = httputils.HeaderToMap(req.Header)
+	meta.Header = nethttp.HeaderToMap(req.Header)
 	meta.Tag = tag
 	meta.Filter = filter
 
-	body, attr, err := rt.peerTaskManager.StartStreamPeerTask(
-		req.Context(),
-		&scheduler.PeerTaskRequest{
-			Url:         url,
-			UrlMeta:     meta,
-			PeerId:      peerID,
-			PeerHost:    rt.peerHost,
-			HostLoad:    nil,
-			IsMigrating: false,
+	body, attr, err := rt.peerTaskManager.StartStreamTask(
+		ctx,
+		&peer.StreamTaskRequest{
+			URL:     url,
+			URLMeta: meta,
+			Range:   rg,
+			PeerID:  peerID,
 		},
 	)
 	if err != nil {
@@ -225,7 +263,7 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		return nil, err
 	}
 
-	hdr := httputils.MapToHeader(attr)
+	hdr := nethttp.MapToHeader(attr)
 	log.Infof("download stream attribute: %v", hdr)
 
 	var contentLength int64 = -1
@@ -235,8 +273,18 @@ func (rt *transport) download(req *http.Request) (*http.Response, error) {
 		}
 	}
 
+	var status int
+	if meta.Range == "" {
+		status = http.StatusOK
+	} else {
+		status = http.StatusPartialContent
+		if hdr.Get(headers.ContentRange) == "" && contentLength > 0 {
+			value := fmt.Sprintf("bytes %d-%d/%d", rg.Start, rg.Start+contentLength-1, rg.Start+contentLength)
+			hdr.Set(headers.ContentRange, value)
+		}
+	}
 	resp := &http.Response{
-		StatusCode:    http.StatusOK,
+		StatusCode:    status,
 		Body:          body,
 		Header:        hdr,
 		ContentLength: contentLength,
@@ -291,6 +339,8 @@ func defaultHTTPTransport(cfg *tls.Config) *http.Transport {
 // obsoleted RFC 2616 (section 13.5.1) and are used for backward
 // compatibility.
 // copy from net/http/httputil/reverseproxy.go
+
+// dragonfly need generate task id with header, need to remove some other headers
 var hopHeaders = []string{
 	"Connection",
 	"Proxy-Connection", // non-standard but still sent by libcurl and rejected by e.g. google
@@ -301,6 +351,11 @@ var hopHeaders = []string{
 	"Trailer", // not Trailers per URL above; https://www.rfc-editor.org/errata_search.php?eid=4522
 	"Transfer-Encoding",
 	"Upgrade",
+
+	// remove by dragonfly
+	// "Accept", Accept header should not be removed, issue: https://github.com/dragonflyoss/Dragonfly2/issues/1290
+	"User-Agent",
+	"X-Forwarded-For",
 }
 
 // delHopHeaders delete hop-by-hop headers.
@@ -308,4 +363,33 @@ func delHopHeaders(header http.Header) {
 	for _, h := range hopHeaders {
 		header.Del(h)
 	}
+	// remove correlation with trace header
+	for _, h := range traceContext.Fields() {
+		header.Del(h)
+	}
+}
+
+func compositeErrorHTTPResponse(req *http.Request, status int, body string) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode:    status,
+		Body:          io.NopCloser(bytes.NewBufferString(body)),
+		ContentLength: int64(len(body)),
+
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
+	}
+	return resp, nil
+}
+
+func badRequest(req *http.Request, body string) (*http.Response, error) {
+	return compositeErrorHTTPResponse(req, http.StatusBadRequest, body)
+}
+
+func notImplemented(req *http.Request, body string) (*http.Response, error) {
+	return compositeErrorHTTPResponse(req, http.StatusNotImplemented, body)
+}
+
+func requestedRangeNotSatisfiable(req *http.Request, body string) (*http.Response, error) {
+	return compositeErrorHTTPResponse(req, http.StatusRequestedRangeNotSatisfiable, body)
 }

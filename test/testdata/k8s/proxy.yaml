@@ -1,3 +1,4 @@
+---
 kind: ConfigMap
 apiVersion: v1
 metadata:
@@ -7,9 +8,9 @@ data:
   dfget.yaml: |-
     aliveTime: 0s
     gcInterval: 1m0s
-    keepStorage: false
+    keepStorage: true
     verbose: true
-    pprof-port: 0
+    pprof-port: 9999
     scheduler:
       manager:
         enable: true
@@ -27,6 +28,7 @@ data:
       netTopology: ""
       securityDomain: ""
     download:
+      prefetch: true
       calculateDigest: true
       downloadGRPC:
         security:
@@ -54,7 +56,7 @@ data:
       strategy: io.d7y.storage.v2.simple
       taskExpireTime: 6h
     proxy:
-      defaultFilter: Expires&Signature
+      defaultFilter: Expires&Signature&ns
       tcpListen:
         listen: 0.0.0.0
         port: 65001

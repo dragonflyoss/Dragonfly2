@@ -33,5 +33,5 @@ import (
 // @Failure 500
 // @Router /healthy [get]
 func (h *Handlers) GetHealth(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, "OK")
+	ctx.JSON(http.StatusOK, http.StatusText(http.StatusOK))
 }

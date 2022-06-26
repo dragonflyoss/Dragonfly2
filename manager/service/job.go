@@ -26,10 +26,10 @@ import (
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/util/structutils"
+	"d7y.io/dragonfly/v2/pkg/structure"
 )
 
-func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
+func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJobRequest) (*model.Job, error) {
 	var schedulers []model.Scheduler
 	var schedulerClusters []model.SchedulerCluster
 
@@ -73,7 +73,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 		return nil, err
 	}
 
-	args, err := structutils.StructToMap(json.Args)
+	args, err := structure.StructToMap(json.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (s *rest) CreatePreheatJob(ctx context.Context, json types.CreatePreheatJob
 	return &job, nil
 }
 
-func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
+func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 	var job model.Job
 
 	if _, _, err := retry.Run(ctx, func() (interface{}, bool, error) {
@@ -140,22 +140,22 @@ func (s *rest) pollingJob(ctx context.Context, id uint, taskID string) {
 	}
 }
 
-func (s *rest) DestroyJob(ctx context.Context, id uint) error {
+func (s *service) DestroyJob(ctx context.Context, id uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err
 	}
 
-	if err := s.db.WithContext(ctx).Unscoped().Delete(&model.Job{}, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Delete(&model.Job{}, id).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
+func (s *service) UpdateJob(ctx context.Context, id uint, json types.UpdateJobRequest) (*model.Job, error) {
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
+	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").First(&job, id).Updates(model.Job{
 		BIO:    json.BIO,
 		UserID: json.UserID,
 	}).Error; err != nil {
@@ -165,30 +165,30 @@ func (s *rest) UpdateJob(ctx context.Context, id uint, json types.UpdateJobReque
 	return &job, nil
 }
 
-func (s *rest) GetJob(ctx context.Context, id uint) (*model.Job, error) {
+func (s *service) GetJob(ctx context.Context, id uint) (*model.Job, error) {
 	job := model.Job{}
-	if err := s.db.WithContext(ctx).Preload("CDNClusters").Preload("SchedulerClusters").First(&job, id).Error; err != nil {
+	if err := s.db.WithContext(ctx).Preload("SeedPeerClusters").Preload("SchedulerClusters").First(&job, id).Error; err != nil {
 		return nil, err
 	}
 
 	return &job, nil
 }
 
-func (s *rest) GetJobs(ctx context.Context, q types.GetJobsQuery) (*[]model.Job, int64, error) {
+func (s *service) GetJobs(ctx context.Context, q types.GetJobsQuery) ([]model.Job, int64, error) {
 	var count int64
 	var jobs []model.Job
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Job{
 		Type:   q.Type,
 		State:  q.State,
 		UserID: q.UserID,
-	}).Find(&jobs).Count(&count).Error; err != nil {
+	}).Find(&jobs).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return &jobs, count, nil
+	return jobs, count, nil
 }
 
-func (s *rest) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {
+func (s *service) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClusterIDs []uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err
@@ -210,22 +210,22 @@ func (s *rest) AddJobToSchedulerClusters(ctx context.Context, id, schedulerClust
 	return nil
 }
 
-func (s *rest) AddJobToCDNClusters(ctx context.Context, id, cdnClusterIDs []uint) error {
+func (s *service) AddJobToSeedPeerClusters(ctx context.Context, id, seedPeerClusterIDs []uint) error {
 	job := model.Job{}
 	if err := s.db.WithContext(ctx).First(&job, id).Error; err != nil {
 		return err
 	}
 
-	var cdnClusters []*model.CDNCluster
-	for _, cdnClusterID := range cdnClusterIDs {
-		cdnCluster := model.CDNCluster{}
-		if err := s.db.WithContext(ctx).First(&cdnCluster, cdnClusterID).Error; err != nil {
+	var seedPeerClusters []*model.SeedPeerCluster
+	for _, seedPeerClusterID := range seedPeerClusterIDs {
+		seedPeerCluster := model.SeedPeerCluster{}
+		if err := s.db.WithContext(ctx).First(&seedPeerCluster, seedPeerClusterID).Error; err != nil {
 			return err
 		}
-		cdnClusters = append(cdnClusters, &cdnCluster)
+		seedPeerClusters = append(seedPeerClusters, &seedPeerCluster)
 	}
 
-	if err := s.db.WithContext(ctx).Model(&job).Association("CDNClusters").Append(cdnClusters); err != nil {
+	if err := s.db.WithContext(ctx).Model(&job).Association("SeedPeerClusters").Append(seedPeerClusters); err != nil {
 		return err
 	}
 

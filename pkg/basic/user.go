@@ -17,12 +17,15 @@
 package basic
 
 import (
+	"fmt"
 	"os"
 	"os/user"
 	"strconv"
 	"strings"
+	"syscall"
 
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 var (
@@ -36,22 +39,28 @@ var (
 func init() {
 	u, err := user.Current()
 	if err != nil {
-		panic(err)
-	}
+		logger.Warnf("Failed to get current user: %s", err.Error())
+		logger.Info("Use uid as Username")
 
-	Username = u.Username
-	UserID, _ = strconv.Atoi(u.Uid)
-	UserGroup, _ = strconv.Atoi(u.Gid)
+		UserID = syscall.Getuid()
+		Username = fmt.Sprintf("%d", UserID)
+		UserGroup = syscall.Getgid()
+		HomeDir = "/"
+	} else {
+		Username = u.Username
+		UserID, _ = strconv.Atoi(u.Uid)
+		UserGroup, _ = strconv.Atoi(u.Gid)
 
-	HomeDir = u.HomeDir
-	HomeDir = strings.TrimSpace(HomeDir)
-	if stringutils.IsBlank(HomeDir) {
-		panic("home dir is empty")
+		HomeDir = u.HomeDir
+		HomeDir = strings.TrimSpace(HomeDir)
+		if pkgstrings.IsBlank(HomeDir) {
+			panic("home dir is empty")
+		}
 	}
 
 	TmpDir = os.TempDir()
 	TmpDir = strings.TrimSpace(TmpDir)
-	if stringutils.IsBlank(TmpDir) {
+	if pkgstrings.IsBlank(TmpDir) {
 		TmpDir = "/tmp"
 	}
 }

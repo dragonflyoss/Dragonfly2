@@ -43,7 +43,7 @@ const (
 
 var GinLogFileName = "gin.log"
 
-func Init(cfg *config.Config, logDir string, service service.REST, enforcer *casbin.Enforcer) (*gin.Engine, error) {
+func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer) (*gin.Engine, error) {
 	// Set mode
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
@@ -93,27 +93,28 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 
 	// User
 	u := apiv1.Group("/users")
-	u.GET("/:id", jwt.MiddlewareFunc(), rbac, h.GetUser)
+	u.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateUser)
+	u.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetUser)
 	u.GET("", jwt.MiddlewareFunc(), rbac, h.GetUsers)
-	u.POST("/signin", jwt.LoginHandler)
-	u.POST("/signout", jwt.LogoutHandler)
-	u.POST("/signup", h.SignUp)
-	u.GET("/signin/:name", h.OauthSignin)
-	u.GET("/signin/:name/callback", h.OauthSigninCallback(jwt))
-	u.POST("/refresh_token", jwt.RefreshHandler)
-	u.POST("/:id/reset_password", h.ResetPassword)
-	u.GET("/:id/roles", jwt.MiddlewareFunc(), rbac, h.GetRolesForUser)
-	u.PUT("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
-	u.DELETE("/:id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
+	u.POST("signin", jwt.LoginHandler)
+	u.POST("signout", jwt.LogoutHandler)
+	u.POST("signup", h.SignUp)
+	u.GET("signin/:name", h.OauthSignin)
+	u.GET("signin/:name/callback", h.OauthSigninCallback(jwt))
+	u.POST("refresh_token", jwt.RefreshHandler)
+	u.POST(":id/reset_password", h.ResetPassword)
+	u.GET(":id/roles", jwt.MiddlewareFunc(), rbac, h.GetRolesForUser)
+	u.PUT(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.AddRoleToUser)
+	u.DELETE(":id/roles/:role", jwt.MiddlewareFunc(), rbac, h.DeleteRoleForUser)
 
 	// Role
 	re := apiv1.Group("/roles", jwt.MiddlewareFunc(), rbac)
 	re.POST("", h.CreateRole)
-	re.DELETE("/:role", h.DestroyRole)
-	re.GET("/:role", h.GetRole)
+	re.DELETE(":role", h.DestroyRole)
+	re.GET(":role", h.GetRole)
 	re.GET("", h.GetRoles)
-	re.POST("/:role/permissions", h.AddPermissionForRole)
-	re.DELETE("/:role/permissions", h.DeletePermissionForRole)
+	re.POST(":role/permissions", h.AddPermissionForRole)
+	re.DELETE(":role/permissions", h.DeletePermissionForRole)
 
 	// Permission
 	pm := apiv1.Group("/permissions", jwt.MiddlewareFunc(), rbac)
@@ -121,9 +122,9 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 
 	// Oauth
 	oa := apiv1.Group("/oauth")
-	oa.POST("", h.CreateOauth, jwt.MiddlewareFunc(), rbac)
-	oa.DELETE(":id", h.DestroyOauth, jwt.MiddlewareFunc(), rbac)
-	oa.PATCH(":id", h.UpdateOauth, jwt.MiddlewareFunc(), rbac)
+	oa.POST("", jwt.MiddlewareFunc(), rbac, h.CreateOauth)
+	oa.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyOauth)
+	oa.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateOauth)
 	oa.GET(":id", h.GetOauth)
 	oa.GET("", h.GetOauths)
 
@@ -153,26 +154,26 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 	cs.GET("", h.GetApplications)
 	cs.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToApplication)
 	cs.DELETE(":id/scheduler-clusters/:scheduler_cluster_id", h.DeleteSchedulerClusterToApplication)
-	cs.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToApplication)
-	cs.DELETE(":id/cdn-clusters/:cdn_cluster_id", h.DeleteCDNClusterToApplication)
+	cs.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToApplication)
+	cs.DELETE(":id/seed-peer-clusters/:seed_peer_cluster_id", h.DeleteSeedPeerClusterToApplication)
 
-	// CDN Cluster
-	cc := apiv1.Group("/cdn-clusters", jwt.MiddlewareFunc(), rbac)
-	cc.POST("", h.CreateCDNCluster)
-	cc.DELETE(":id", h.DestroyCDNCluster)
-	cc.PATCH(":id", h.UpdateCDNCluster)
-	cc.GET(":id", h.GetCDNCluster)
-	cc.GET("", h.GetCDNClusters)
-	cc.PUT(":id/cdns/:cdn_id", h.AddCDNToCDNCluster)
-	cc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToCDNCluster)
+	// Seed Peer Cluster
+	spc := apiv1.Group("/seed-peer-clusters", jwt.MiddlewareFunc(), rbac)
+	spc.POST("", h.CreateSeedPeerCluster)
+	spc.DELETE(":id", h.DestroySeedPeerCluster)
+	spc.PATCH(":id", h.UpdateSeedPeerCluster)
+	spc.GET(":id", h.GetSeedPeerCluster)
+	spc.GET("", h.GetSeedPeerClusters)
+	spc.PUT(":id/seed-peers/:seed_peer_id", h.AddSeedPeerToSeedPeerCluster)
+	spc.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSeedPeerCluster)
 
-	// CDN
-	c := apiv1.Group("/cdns", jwt.MiddlewareFunc(), rbac)
-	c.POST("", h.CreateCDN)
-	c.DELETE(":id", h.DestroyCDN)
-	c.PATCH(":id", h.UpdateCDN)
-	c.GET(":id", h.GetCDN)
-	c.GET("", h.GetCDNs)
+	// Seed Peer
+	sp := apiv1.Group("/seed-peers", jwt.MiddlewareFunc(), rbac)
+	sp.POST("", h.CreateSeedPeer)
+	sp.DELETE(":id", h.DestroySeedPeer)
+	sp.PATCH(":id", h.UpdateSeedPeer)
+	sp.GET(":id", h.GetSeedPeer)
+	sp.GET("", h.GetSeedPeers)
 
 	// Security Rule
 	sr := apiv1.Group("/security-rules", jwt.MiddlewareFunc(), rbac)
@@ -190,16 +191,23 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 	sg.GET(":id", h.GetSecurityGroup)
 	sg.GET("", h.GetSecurityGroups)
 	sg.PUT(":id/scheduler-clusters/:scheduler_cluster_id", h.AddSchedulerClusterToSecurityGroup)
-	sg.PUT(":id/cdn-clusters/:cdn_cluster_id", h.AddCDNClusterToSecurityGroup)
+	sg.PUT(":id/seed-peer-clusters/:seed_peer_cluster_id", h.AddSeedPeerClusterToSecurityGroup)
 	sg.PUT(":id/security-rules/:security_rule_id", h.AddSecurityRuleToSecurityGroup)
 	sg.DELETE(":id/security-rules/:security_rule_id", h.DestroySecurityRuleToSecurityGroup)
 
+	// Bucket
+	bucket := apiv1.Group("/buckets", jwt.MiddlewareFunc(), rbac)
+	bucket.POST("", h.CreateBucket)
+	bucket.DELETE(":id", h.DestroyBucket)
+	bucket.GET(":id", h.GetBucket)
+	bucket.GET("", h.GetBuckets)
+
 	// Config
 	config := apiv1.Group("/configs")
-	config.POST("", h.CreateConfig)
-	config.DELETE(":id", h.DestroyConfig)
-	config.PATCH(":id", h.UpdateConfig)
-	config.GET(":id", h.GetConfig)
+	config.POST("", jwt.MiddlewareFunc(), rbac, h.CreateConfig)
+	config.DELETE(":id", jwt.MiddlewareFunc(), rbac, h.DestroyConfig)
+	config.PATCH(":id", jwt.MiddlewareFunc(), rbac, h.UpdateConfig)
+	config.GET(":id", jwt.MiddlewareFunc(), rbac, h.GetConfig)
 	config.GET("", h.GetConfigs)
 
 	// Job
@@ -211,13 +219,13 @@ func Init(cfg *config.Config, logDir string, service service.REST, enforcer *cas
 	job.GET("", h.GetJobs)
 
 	// Compatible with the V1 preheat.
-	pv1 := r.Group("preheats")
-	r.GET("/_ping", h.GetHealth)
+	pv1 := r.Group("/preheats")
+	r.GET("_ping", h.GetHealth)
 	pv1.POST("", h.CreateV1Preheat)
 	pv1.GET(":id", h.GetV1Preheat)
 
 	// Health Check
-	r.GET("/healthy/*action", h.GetHealth)
+	r.GET("/healthy", h.GetHealth)
 
 	// Swagger
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")

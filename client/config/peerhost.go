@@ -35,10 +35,11 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
+	netip "d7y.io/dragonfly/v2/pkg/net/ip"
+	rpcbase "d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type DaemonConfig = DaemonOption
@@ -57,13 +58,16 @@ type DaemonOption struct {
 	DataDir     string `mapstructure:"dataDir" yaml:"dataDir"`
 	KeepStorage bool   `mapstructure:"keepStorage" yaml:"keepStorage"`
 
-	Scheduler    SchedulerOption `mapstructure:"scheduler" yaml:"scheduler"`
-	Host         HostOption      `mapstructure:"host" yaml:"host"`
-	Download     DownloadOption  `mapstructure:"download" yaml:"download"`
-	Proxy        *ProxyOption    `mapstructure:"proxy" yaml:"proxy"`
-	Upload       UploadOption    `mapstructure:"upload" yaml:"upload"`
-	Storage      StorageOption   `mapstructure:"storage" yaml:"storage"`
-	ConfigServer string          `mapstructure:"configServer" yaml:"configServer"`
+	Scheduler     SchedulerOption     `mapstructure:"scheduler" yaml:"scheduler"`
+	Host          HostOption          `mapstructure:"host" yaml:"host"`
+	Download      DownloadOption      `mapstructure:"download" yaml:"download"`
+	Proxy         *ProxyOption        `mapstructure:"proxy" yaml:"proxy"`
+	Upload        UploadOption        `mapstructure:"upload" yaml:"upload"`
+	ObjectStorage ObjectStorageOption `mapstructure:"objectStorage" yaml:"objectStorage"`
+	Storage       StorageOption       `mapstructure:"storage" yaml:"storage"`
+	Health        *HealthOption       `mapstructure:"health" yaml:"health"`
+	// TODO WIP, did not use
+	Reload ReloadOption `mapstructure:"reloadOption" yaml:"reloadOption"`
 }
 
 func NewDaemonConfig() *DaemonOption {
@@ -98,7 +102,7 @@ func (p *DaemonOption) Convert() error {
 	// AdvertiseIP
 	ip := net.ParseIP(p.Host.AdvertiseIP)
 	if ip == nil || net.IPv4zero.Equal(ip) {
-		p.Host.AdvertiseIP = iputils.IPv4
+		p.Host.AdvertiseIP = netip.IPv4
 	} else {
 		p.Host.AdvertiseIP = ip.String()
 	}
@@ -112,52 +116,99 @@ func (p *DaemonOption) Convert() error {
 }
 
 func (p *DaemonOption) Validate() error {
-	if len(p.Scheduler.NetAddrs) == 0 && stringutils.IsBlank(p.ConfigServer) {
-		return errors.New("empty schedulers and config server is not specified")
-	}
-
 	if p.Scheduler.Manager.Enable {
-		if len(p.Scheduler.NetAddrs) == 0 {
+		if len(p.Scheduler.Manager.NetAddrs) == 0 {
 			return errors.New("manager addr is not specified")
 		}
 
 		if p.Scheduler.Manager.RefreshInterval == 0 {
 			return errors.New("manager refreshInterval is not specified")
 		}
+		return nil
 	}
 
+	if len(p.Scheduler.NetAddrs) == 0 {
+		return errors.New("empty schedulers and config server is not specified")
+	}
+
+	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
+	if int64(p.Upload.RateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
+	switch p.Download.DefaultPattern {
+	case PatternP2P, PatternSeedPeer, PatternSource:
+	default:
+		return errors.New("available pattern: p2p, seed-peer, source")
+	}
 	return nil
 }
 
+func ConvertPattern(p string, defaultPattern rpcbase.Pattern) rpcbase.Pattern {
+	switch p {
+	case PatternP2P:
+		return rpcbase.Pattern_P2P
+	case PatternSeedPeer:
+		return rpcbase.Pattern_SEED_PEER
+	case PatternSource:
+		return rpcbase.Pattern_SOURCE
+	case "":
+		return defaultPattern
+	}
+	logger.Warnf("unknown pattern, use default pattern: %s", rpcbase.Pattern_name[int32(defaultPattern)])
+	return defaultPattern
+}
+
 type SchedulerOption struct {
-	// Manager is to get the scheduler configuration remotely
+	// Manager is to get the scheduler configuration remotely.
 	Manager ManagerOption `mapstructure:"manager" yaml:"manager"`
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// ScheduleTimeout is request timeout.
 	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
-	// DisableAutoBackSource indicates not back source normally, only scheduler says back source
+	// DisableAutoBackSource indicates not back source normally, only scheduler says back source.
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
 }
 
 type ManagerOption struct {
-	// Enable get configuration from manager
+	// Enable get configuration from manager.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
 	// NetAddrs is manager addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
-	// RefreshInterval is the refresh interval
+	// RefreshInterval is the refresh interval.
 	RefreshInterval time.Duration `mapstructure:"refreshInterval" yaml:"refreshInterval"`
+	// SeedPeer configuration.
+	SeedPeer SeedPeerOption `mapstructure:"seedPeer" yaml:"seedPeer"`
+}
+
+type SeedPeerOption struct {
+	// Enable seed peer mode.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// Type is seed peer type.
+	Type string `mapstructure:"type" yaml:"type"`
+	// ClusterID is seed peer cluster id.
+	ClusterID uint `mapstructure:"clusterID" yaml:"clusterID"`
+	// KeepAlive configuration.
+	KeepAlive KeepAliveOption `yaml:"keepAlive" mapstructure:"keepAlive"`
+}
+
+type KeepAliveOption struct {
+	// Keep alive interval.
+	Interval time.Duration `yaml:"interval" mapstructure:"interval"`
 }
 
 type HostOption struct {
 	// SecurityDomain is the security domain
 	SecurityDomain string `mapstructure:"securityDomain" yaml:"securityDomain"`
-	// Location for scheduler
-	Location string `mapstructure:"location" yaml:"location"`
 	// IDC for scheduler
 	IDC string `mapstructure:"idc" yaml:"idc"`
 	// Peerhost net topology for scheduler
 	NetTopology string `mapstructure:"netTopology" yaml:"netTopology"`
+	// Location for scheduler
+	Location string `mapstructure:"location" yaml:"location"`
 	// Hostname is daemon host name
 	Hostname string `mapstructure:"hostname" yaml:"hostname"`
 	// The listen ip for all tcp services of daemon
@@ -167,6 +218,7 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
+	DefaultPattern       string               `mapstructure:"defaultPattern" yaml:"defaultPattern"`
 	TotalRateLimit       clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
 	PerPeerRateLimit     clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
 	PieceDownloadTimeout time.Duration        `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
@@ -175,6 +227,8 @@ type DownloadOption struct {
 	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
 	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
 	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
+	WatchdogTimeout      time.Duration        `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 }
 
 type TransportOption struct {
@@ -195,9 +249,11 @@ type ProxyOption struct {
 	MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 	RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
 	WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-	Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+	Proxies         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
 	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+	// ExtraRegistryMirrors add more mirror for different ports
+	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
@@ -280,7 +336,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 		MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 		RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
 		WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-		Proxies         []*Proxy        `mapstructure:"proxies" yaml:"proxies"`
+		Proxies         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
 		HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
 		DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	}{}
@@ -305,6 +361,13 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err 
 type UploadOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
 	RateLimit    clientutil.RateLimit `mapstructure:"rateLimit" yaml:"rateLimit"`
+}
+
+type ObjectStorageOption struct {
+	// Enable object storage.
+	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// ListenOption is object storage service listener.
+	ListenOption `yaml:",inline" mapstructure:",squash"`
 }
 
 type ListenOption struct {
@@ -420,6 +483,7 @@ type SecurityOption struct {
 	CACert    string      `mapstructure:"caCert" yaml:"caCert"`
 	Cert      string      `mapstructure:"cert" yaml:"cert"`
 	Key       string      `mapstructure:"key" yaml:"key"`
+	TLSVerify bool        `mapstructure:"tlsVerify" yaml:"tlsVerify"`
 	TLSConfig *tls.Config `mapstructure:"tlsConfig" yaml:"tlsConfig"`
 }
 
@@ -440,6 +504,15 @@ type StorageOption struct {
 }
 
 type StoreStrategy string
+
+type HealthOption struct {
+	ListenOption `yaml:",inline" mapstructure:",squash"`
+	Path         string `mapstructure:"path" yaml:"pash"`
+}
+
+type ReloadOption struct {
+	Interval clientutil.Duration
+}
 
 type FileString string
 
@@ -647,8 +720,8 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 	return roots, nil
 }
 
-// Proxy describes a regular expression matching rule for how to proxy a request.
-type Proxy struct {
+// ProxyRule describes a regular expression matching rule for how to proxy a request.
+type ProxyRule struct {
 	Regx     *Regexp `yaml:"regx" mapstructure:"regx"`
 	UseHTTPS bool    `yaml:"useHTTPS" mapstructure:"useHTTPS"`
 	Direct   bool    `yaml:"direct" mapstructure:"direct"`
@@ -657,13 +730,13 @@ type Proxy struct {
 	Redirect string `yaml:"redirect" mapstructure:"redirect"`
 }
 
-func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy, error) {
+func NewProxyRule(regx string, useHTTPS bool, direct bool, redirect string) (*ProxyRule, error) {
 	exp, err := NewRegexp(regx)
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid regexp")
 	}
 
-	return &Proxy{
+	return &ProxyRule{
 		Regx:     exp,
 		UseHTTPS: useHTTPS,
 		Direct:   direct,
@@ -672,7 +745,7 @@ func NewProxy(regx string, useHTTPS bool, direct bool, redirect string) (*Proxy,
 }
 
 // Match checks if the given url matches the rule.
-func (r *Proxy) Match(url string) bool {
+func (r *ProxyRule) Match(url string) bool {
 	return r.Regx != nil && r.Regx.MatchString(url)
 }
 

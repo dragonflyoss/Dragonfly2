@@ -17,7 +17,9 @@
 package cmd
 
 import (
+	"context"
 	"os"
+	"path"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -25,7 +27,6 @@ import (
 
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -40,12 +41,15 @@ var (
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "the scheduler of dragonfly",
-	Long: `Scheduler is a long-running process which receives and manages download tasks from the client, notify the CDN to return to the source, 
-generate and maintain a P2P network during the download process, and push suitable download nodes to the client`,
+	Long: `Scheduler is a long-running process which receives and manages download tasks from the dfdaemon, notify the seed peer to return to the source, 
+generate and maintain a P2P network during the download process, and push suitable download nodes to the dfdaemon`,
 	Args:              cobra.NoArgs,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// Initialize dfpath
 		d, err := initDfpath(cfg.Server)
 		if err != nil {
@@ -53,21 +57,17 @@ generate and maintain a P2P network during the download process, and push suitab
 		}
 
 		// Initialize logger
-		if err := logcore.InitScheduler(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init scheduler logger")
 		}
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "scheduler"))
 
 		// Validate config
 		if err := cfg.Validate(); err != nil {
 			return err
 		}
 
-		// Convert redis host config
-		if err := cfg.Convert(); err != nil {
-			return err
-		}
-
-		return runScheduler(d)
+		return runScheduler(ctx, d)
 	},
 }
 
@@ -100,7 +100,7 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 	return dfpath.New(options...)
 }
 
-func runScheduler(d dfpath.Dfpath) error {
+func runScheduler(ctx context.Context, d dfpath.Dfpath) error {
 	logger.Infof("Version:\n%s", version.Version())
 
 	// scheduler config values
@@ -108,10 +108,10 @@ func runScheduler(d dfpath.Dfpath) error {
 
 	logger.Infof("scheduler configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
-	svr, err := scheduler.New(cfg, d)
+	svr, err := scheduler.New(ctx, cfg, d)
 	if err != nil {
 		return err
 	}

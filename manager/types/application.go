@@ -30,14 +30,14 @@ type DeleteSchedulerClusterToApplicationParams struct {
 	SchedulerClusterID uint `uri:"scheduler_cluster_id" binding:"required"`
 }
 
-type AddCDNClusterToApplicationParams struct {
-	ID           uint `uri:"id" binding:"required"`
-	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
+type AddSeedPeerClusterToApplicationParams struct {
+	ID                uint `uri:"id" binding:"required"`
+	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
 }
 
-type DeleteCDNClusterToApplicationParams struct {
-	ID           uint `uri:"id" binding:"required"`
-	CDNClusterID uint `uri:"cdn_cluster_id" binding:"required"`
+type DeleteSeedPeerClusterToApplicationParams struct {
+	ID                uint `uri:"id" binding:"required"`
+	SeedPeerClusterID uint `uri:"seed_peer_cluster_id" binding:"required"`
 }
 
 type CreateApplicationRequest struct {

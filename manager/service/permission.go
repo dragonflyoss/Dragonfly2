@@ -24,6 +24,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 )
 
-func (s *rest) GetPermissions(ctx context.Context, g *gin.Engine) []rbac.Permission {
+func (s *service) GetPermissions(ctx context.Context, g *gin.Engine) []rbac.Permission {
 	return rbac.GetPermissions(g)
 }

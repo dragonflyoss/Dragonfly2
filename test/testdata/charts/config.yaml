@@ -2,41 +2,84 @@ scheduler:
   image: d7yio/scheduler
   tag: latest
   replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
   extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
-  - name: artifact
-    hostPath:
-      path: /tmp/artifact
-
-cdn:
-  image: d7yio/cdn
-  tag: latest
-  replicas: 3
-  extraVolumeMounts:
-  - name: artifact
-    mountPath: /tmp/artifact
-  extraVolumes:
-  - name: artifact
-    hostPath:
-      path: /tmp/artifact
-
-dfdaemon:
-  image: d7yio/dfdaemon
-  tag: latest
-  extraVolumeMounts:
-  - name: artifact
-    mountPath: /tmp/artifact
-  extraVolumes:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
   config:
+    verbose: true
+
+seedPeer:
+  image: d7yio/dfdaemon
+  tag: latest
+  replicas: 3
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/dragonfly"
+    subPath: dragonfly
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+
+dfdaemon:
+  image: d7yio/dfdaemon
+  tag: latest
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
+  - name: artifact
+    mountPath: /tmp/artifact
+  extraVolumes:
+  - name: logs
+    emptyDir: { }
+  - name: artifact
+    hostPath:
+      path: /tmp/artifact
+  config:
+    verbose: true
+    pprofPort: 9999
+    metrics: 127.0.0.1:8888
+    download:
+      prefetch: true
     scheduler:
       disableAutoBackSource: true
     proxy:
-      defaultFilter: "Expires&Signature"
+      defaultFilter: "Expires&Signature&ns"
       security:
         insecure: true
       tcpListen:
@@ -54,11 +97,24 @@ dfdaemon:
 manager:
   image: d7yio/manager
   tag: latest
-  replicas: 3
+  replicas: 1
+  resources:
+    requests:
+      cpu: "0"
+      memory: "0"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
   extraVolumeMounts:
+  - name: logs
+    mountPath: "/var/log/"
   - name: artifact
     mountPath: /tmp/artifact
   extraVolumes:
+  - name: logs
+    emptyDir: { }
   - name: artifact
     hostPath:
       path: /tmp/artifact
+  config:
+    verbose: true

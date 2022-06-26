@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -31,14 +32,17 @@ import (
 	"d7y.io/dragonfly/v2/manager/metrics"
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/router"
+	"d7y.io/dragonfly/v2/manager/rpcserver"
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/service"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	grpc_manager_server "d7y.io/dragonfly/v2/pkg/rpc/manager/server"
 )
 
 const (
+	// gracefulStopTimeout specifies a time limit for
+	// grpc server to complete a graceful shutdown
 	gracefulStopTimeout = 10 * time.Second
 )
 
@@ -86,8 +90,23 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 		return nil, err
 	}
 
+	// Initialize object storage
+	var objectStorage objectstorage.ObjectStorage
+	if cfg.ObjectStorage.Enable {
+		objectStorage, err = objectstorage.New(
+			cfg.ObjectStorage.Name,
+			cfg.ObjectStorage.Region,
+			cfg.ObjectStorage.Endpoint,
+			cfg.ObjectStorage.AccessKey,
+			cfg.ObjectStorage.SecretKey,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// Initialize REST server
-	restService := service.NewREST(db, cache, job, enforcer)
+	restService := service.New(db, cache, job, enforcer, objectStorage)
 	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
 	if err != nil {
 		return nil, err
@@ -104,16 +123,18 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 	}
 
 	// Initialize GRPC server
-	grpcService := service.NewGRPC(db, cache, searcher)
-	var enableJaeger bool
-	if cfg.Options.Telemetry.Jaeger != "" {
-		enableJaeger = true
+	var grpcOptions []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		grpcOptions = []grpc.ServerOption{
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		}
 	}
-	grpcServer := grpc_manager_server.New(grpcService, enableJaeger)
+	grpcServer := rpcserver.New(cfg, db, cache, searcher, objectStorage, cfg.ObjectStorage, grpcOptions...)
 	s.grpcServer = grpcServer
 
 	// Initialize prometheus
-	if cfg.Metrics != nil {
+	if cfg.Metrics.Enable {
 		s.metricsServer = metrics.New(cfg.Metrics, grpcServer)
 	}
 

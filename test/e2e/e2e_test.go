@@ -17,18 +17,52 @@
 package e2e
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"testing"
 
-	. "github.com/onsi/ginkgo" //nolint
-	. "github.com/onsi/gomega" //nolint
+	. "github.com/onsi/ginkgo/v2" //nolint
+	. "github.com/onsi/gomega"    //nolint
+	"k8s.io/component-base/featuregate"
 
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 	_ "d7y.io/dragonfly/v2/test/e2e/manager"
 )
+
+var (
+	featureGates     = featuregate.NewFeatureGate()
+	featureGatesFlag string
+
+	featureGateRange    featuregate.Feature = "dfget-range"
+	featureGateCommit   featuregate.Feature = "dfget-commit"
+	featureGateNoLength featuregate.Feature = "dfget-no-length"
+
+	defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
+		featureGateRange: {
+			Default:       false,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateCommit: {
+			Default:       true,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+		featureGateNoLength: {
+			Default:       true,
+			LockToDefault: false,
+			PreRelease:    featuregate.Alpha,
+		},
+	}
+)
+
+func init() {
+	_ = featureGates.Add(defaultFeatureGates)
+	flag.StringVar(&featureGatesFlag, "feature-gates", "", "e2e test feature gates")
+}
 
 var _ = AfterSuite(func() {
 	for _, server := range servers {
@@ -59,7 +93,7 @@ var _ = AfterSuite(func() {
 			out, err = pod.Command("sh", "-c", fmt.Sprintf(`
               set -x
               cp -r /var/log/dragonfly/%s /tmp/artifact/%s-%d
-							find /tmp/artifact -type d -exec chmod 777 {} \;
+              find /tmp/artifact -type d -exec chmod 777 {} \;
               `, server.logDirName, server.name, i)).CombinedOutput()
 			if err != nil {
 				fmt.Printf("copy log output: %s, error: %s\n", string(out), err)
@@ -75,13 +109,25 @@ var _ = AfterSuite(func() {
 				fmt.Printf("upload pod %s artifact prev stdout file error: %v\n", podName, err)
 			}
 
+			if server.pprofPort > 0 {
+				if out, err := e2eutil.UploadArtifactPProf(server.namespace, podName,
+					fmt.Sprintf("%s-%d", server.name, i), server.name, server.pprofPort); err != nil {
+					fmt.Printf("upload pod %s artifact pprof error: %v, output: %s\n", podName, err, out)
+				}
+			}
+
 		}
 	}
 })
 
 var _ = BeforeSuite(func() {
+	err := featureGates.Set(featureGatesFlag)
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Printf("feature gates: %q, flags: %q\n", featureGates.String(), featureGatesFlag)
+
 	mode := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE")
-	if mode != "" {
+	imageName := os.Getenv("DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE")
+	if mode != "" && imageName != "" {
 		rawImages, err := e2eutil.KubeCtlCommand("-n", dragonflyNamespace, "get", "pod", "-l", fmt.Sprintf("component=%s", mode),
 			"-o", "jsonpath='{range .items[0]}{.spec.containers[0].image}{end}'").CombinedOutput()
 		image := strings.Trim(string(rawImages), "'")
@@ -89,7 +135,7 @@ var _ = BeforeSuite(func() {
 		fmt.Printf("special image name: %s\n", image)
 
 		stableImageTag := os.Getenv("DRAGONFLY_STABLE_IMAGE_TAG")
-		Expect(fmt.Sprintf("dragonflyoss/%s:%s", mode, stableImageTag)).To(Equal(image))
+		Expect(fmt.Sprintf("dragonflyoss/%s:%s", imageName, stableImageTag)).To(Equal(image))
 	}
 
 	rawGitCommit, err := e2eutil.GitCommand("rev-parse", "--short", "HEAD").CombinedOutput()
@@ -107,15 +153,26 @@ var _ = BeforeSuite(func() {
 	rawDfgetVersion, err := pod.Command("dfget", "version").CombinedOutput()
 	Expect(err).NotTo(HaveOccurred())
 	dfgetGitCommit := strings.Fields(string(rawDfgetVersion))[7]
-	fmt.Printf("raw dfget version: %s\n", rawDfgetVersion)
+	fmt.Printf("raw dfget version:\n%s\n", rawDfgetVersion)
 	fmt.Printf("dfget merge commit: %s\n", dfgetGitCommit)
 
+	if !featureGates.Enabled(featureGateCommit) {
+		return
+	}
 	if mode == dfdaemonCompatibilityTestMode {
 		Expect(gitCommit).NotTo(Equal(dfgetGitCommit))
 		return
 	}
 
 	Expect(gitCommit).To(Equal(dfgetGitCommit))
+
+	if featureGates.Enabled(featureGateRange) {
+		out, err := e2eutil.DockerCopy("/bin/", "/tmp/sha256sum-offset").CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+		}
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 // TestE2E is the root of e2e test function

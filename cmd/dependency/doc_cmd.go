@@ -18,12 +18,12 @@ package dependency
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
-
-	"d7y.io/dragonfly/v2/pkg/util/fileutils"
 )
 
 // genDocCommand is used to implement 'doc' command.
@@ -60,8 +60,13 @@ func (g *genDocCommand) bindFlags() {
 }
 
 func (g *genDocCommand) runDoc() error {
-	_ = fileutils.MkdirAll(g.path)
-	if !fileutils.IsDir(g.path) {
+	_ = os.MkdirAll(g.path, fs.FileMode(0755))
+	file, err := os.Stat(g.path)
+	if err != nil {
+		return err
+	}
+
+	if !file.IsDir() {
 		return errors.Errorf("path %s is not dir, please check it", g.path)
 	}
 

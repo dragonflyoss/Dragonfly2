@@ -1,0 +1,180 @@
+# daemon alive time, when sets 0s, daemon will not auto exit
+# it is useful for longtime running
+aliveTime: 0s
+
+# daemon gc task running interval
+gcInterval: 1m0s
+
+# daemon work directory, daemon will change current working directory to this
+# in linux, default value is /usr/local/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly
+workHome: ""
+
+# cacheDir is dynconfig cache storage directory
+# in linux, default value is /var/cache/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/cache
+cacheDir: ""
+
+# logDir is the log storage directory
+# in linux, default value is /var/log/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/logs
+logDir: ""
+
+# dataDir is the download data storage directory
+# in linux, default value is /var/lib/dragonfly
+# in macos(just for testing), default value is /Users/$USER/.dragonfly/data
+dataDir: ""
+
+# when daemon exit, keep peer task data or not
+# it is usefully when upgrade daemon service, all local cache will be saved
+# default is false
+keepStorage: true
+
+# console shows log on console
+console: false
+
+# whether to enable debug level logger and enable pprof
+verbose: true
+
+# listen port for pprof, only valid when the verbose option is true
+# default is -1. If it is 0, pprof will use a random port.
+pprof-port: -1
+
+# jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""
+
+# all addresses of all schedulers
+# the schedulers of all daemons should be same in one region or zone.
+# daemon will send tasks to a fixed scheduler by hashing the task url and meta data
+# caution: only tcp is supported
+scheduler:
+  manager:
+    # get scheduler list dynamically from manager
+    enable: true
+    # manager service addresses
+    netAddrs:
+      - type: tcp
+        addr: __IP__:65003
+        # scheduler list refresh interval
+        refreshInterval: 10s
+    seedPeer:
+      enable: true
+      type: "super"
+      clusterID: 1
+  # schedule timeout
+  scheduleTimeout: 30s
+  # when true, only scheduler says back source, daemon can back source
+  disableAutoBackSource: false
+  # below example is a stand address
+  netAddrs:
+    - type: tcp
+      addr: __IP__:8002
+
+# current host info used for scheduler
+host:
+  # tcp service listen address
+  # port should be set by other options
+  listenIP: 0.0.0.0
+  # access ip for other peers
+  # when local ip is different with access ip, advertiseIP should be set
+  advertiseIP: __IP__
+  # geographical location, separated by "|" characters
+  location: ""
+  # idc deployed by daemon
+  idc: ""
+  # security domain deployed by daemon, network isolation between different security domains
+  securityDomain: ""
+  # network topology, separated by "|" characters
+  netTopology: ""
+  # daemon hostname
+  # hostname: ""
+
+# download service option
+download:
+  # calculate digest when transfer files, set false to save memory
+  calculateDigest: true
+  # total download limit per second
+  totalRateLimit: 2048Mi
+  # per peer task download limit per second
+  perPeerRateLimit: 1024Mi
+  # download piece timeout
+  pieceDownloadTimeout: 30s
+  # golang transport option
+  transportOption:
+    # dial timeout
+    dialTimeout: 2s
+    # keep alive
+    keepAlive: 30s
+    # same with http.Transport.MaxIdleConns
+    maxIdleConns: 100
+    # same with http.Transport.IdleConnTimeout
+    idleConnTimeout: 90s
+    # same with http.Transport.ResponseHeaderTimeout
+    responseHeaderTimeout: 2s
+    # same with http.Transport.TLSHandshakeTimeout
+    tlsHandshakeTimeout: 1s
+    # same with http.Transport.ExpectContinueTimeout
+    expectContinueTimeout: 2s
+  # download grpc option
+  downloadGRPC:
+    # security option
+    security:
+      insecure: true
+    # download service listen address
+    # current, only support unix domain socket
+    unixListen:
+      # in linux, default value is /var/run/dfdaemon.sock
+      # in macos(just for testing), default value is /tmp/dfdaemon.sock
+      socket: /var/run/dfdaemon.sock
+  # peer grpc option
+  # peer grpc service send pieces info to other peers
+  peerGRPC:
+    security:
+      insecure: true
+    tcpListen:
+      # listen address
+      listen: 0.0.0.0
+      # listen port, daemon will try to listen
+      # when this port is not available, daemon will try next port
+      port: 65100
+      # if want to limit upper port, please use blow format
+#     port:
+#       start: 65000
+#       end: 65009
+
+# upload service option
+upload:
+  # upload limit per second
+  rateLimit: 2048Mi
+  security:
+    insecure: true
+  tcpListen:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, daemon will try to listen
+    # when this port is not available, daemon will try next port
+    port: 65102
+    # if want to limit upper port, please use blow format
+#   port:
+#     start: 65020
+#     end: 65029
+
+# peer task storage option
+storage:
+  # task data expire time
+  # when there is no access to a task data, this task will be gc.
+  taskExpireTime: 6h
+  # storage strategy when process task data
+  # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
+  #                           the download file in date directory will be the peer data for uploading to other peers
+  # io.d7y.storage.v2.advance: download file directly to output path with postfix, hard link to final output,
+  #                            avoid copy to output path, fast than simple strategy, but:
+  #                            the output file with postfix will be the peer data for uploading to other peers
+  #                            when user delete or change this file, this peer data will be corrupted
+  # default is io.d7y.storage.v2.advance
+  strategy: io.d7y.storage.v2.advance
+  # disk used percent gc threshold, when the disk used percent exceeds, the oldest tasks will be reclaimed.
+  # eg, diskGCThresholdPercent=90, when the disk usage is above 80%, start to gc the oldest tasks
+  diskGCThresholdPercent: 90
+  # set to ture for reusing underlying storage for same task id
+  multiplex: true

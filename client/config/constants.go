@@ -40,16 +40,16 @@ const (
 
 /* download pattern */
 const (
-	PatternP2P    = "p2p"
-	PatternCDN    = "cdn"
-	PatternSource = "source"
+	PatternP2P      = "p2p"
+	PatternSeedPeer = "seed-peer"
+	PatternSource   = "source"
 )
 
 const (
 	DefaultPerPeerDownloadLimit = 20 * unit.MB
 	DefaultTotalDownloadLimit   = 100 * unit.MB
 	DefaultUploadLimit          = 100 * unit.MB
-	DefaultMinRate              = 64 * unit.KB
+	DefaultMinRate              = 20 * unit.MB
 )
 
 /* others */
@@ -60,7 +60,7 @@ const (
 	ServerPortLowerLimit = 15000
 	ServerPortUpperLimit = 65000
 
-	DefaultTaskExpireTime  = 3 * time.Minute
+	DefaultTaskExpireTime  = 6 * time.Hour
 	DefaultGCInterval      = 1 * time.Minute
 	DefaultDaemonAliveTime = 5 * time.Minute
 	DefaultScheduleTimeout = 5 * time.Minute
@@ -76,4 +76,12 @@ const (
 const (
 	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
 	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
+)
+
+/* dfcache subcommand names */
+const (
+	CmdStat   = "stat"
+	CmdImport = "import"
+	CmdExport = "export"
+	CmdDelete = "delete"
 )

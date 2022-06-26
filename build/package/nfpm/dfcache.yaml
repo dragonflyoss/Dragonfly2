@@ -1,0 +1,50 @@
+name: dfcache
+arch: amd64
+platform: linux
+epoch: 2
+version: v${SEMVER}
+version_schema: semver
+release: ${VERSION_RELEASE}
+section: default
+priority: extra
+description: dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates on files in P2P network
+license: "Apache 2.0"
+homepage: https://d7y.io
+maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
+
+provides:
+  - dfcache
+
+contents:
+  - src: /root/bin/linux_amd64/dfcache
+    dst: /usr/bin/dfcache
+
+  - src: /root/docs/dfcache/dfcache.1
+    dst: /usr/share/man/man1/dfcache.1
+
+  - src: /root/docs/dfcache/dfcache-delete.1
+    dst: /usr/share/man/man1/dfcache-delete.1
+
+  - src: /root/docs/dfcache/dfcache-doc.1
+    dst: /usr/share/man/man1/dfcache-doc.1
+
+  - src: /root/docs/dfcache/dfcache-export.1
+    dst: /usr/share/man/man1/dfcache-export.1
+
+  - src: /root/docs/dfcache/dfcache-import.1
+    dst: /usr/share/man/man1/dfcache-import.1
+
+  - src: /root/docs/dfcache/dfcache-plugin.1
+    dst: /usr/share/man/man1/dfcache-plugin.1
+
+  - src: /root/docs/dfcache/dfcache-stat.1
+    dst: /usr/share/man/man1/dfcache-stat.1
+
+  - src: /root/docs/dfcache/dfcache-version.1
+    dst: /usr/share/man/man1/dfcache-version.1
+
+  - src: /root/License
+    dst: /usr/share/doc/dfcache/License
+
+  - src: /root/CHANGELOG.md
+    dst: /usr/share/doc/dfcache/ChangeLog

@@ -1,5 +1,6 @@
 before:
   hooks:
+    - hack/update-version-gorelease.sh
     - go mod download
 
 builds:
@@ -11,6 +12,31 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+
+  - main: ./cmd/dfcache
+    id: dfcache
+    binary: dfcache
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
   - main: ./cmd/scheduler
     id: scheduler
@@ -20,15 +46,14 @@ builds:
       - darwin
     goarch:
       - amd64
-
-  - main: ./cmd/cdn
-    id: cdn
-    binary: cdn
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
   - main: ./cmd/manager
     id: manager
@@ -38,6 +63,14 @@ builds:
       - darwin
     goarch:
       - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
 archives:
   - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
@@ -46,7 +79,6 @@ archives:
       - LICENSE
       - README.md
       - CHANGELOG.md
-      - docs/*
 
 checksum:
   name_template: "checksums.txt"
@@ -65,6 +97,7 @@ nfpms:
   - id: dfget
     file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfget
+    maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
     description: dfget is the client of Dragonfly used to download and upload files
     license: "Apache 2.0"
     homepage: https://d7y.io
@@ -79,7 +112,7 @@ nfpms:
         dst: /etc/dragonfly/dfget.yaml
         type: config
 
-      - src: docs/en/cli-reference/dfget.1
+      - src: build/package/docs/dfget.1
         dst: /usr/share/man/man1/dfget.1
 
       - src: LICENSE
@@ -106,3 +139,46 @@ nfpms:
       postinstall: build/package/nfpm/dfget-postinstall.sh
       preremove: build/package/nfpm/dfget-preremove.sh
       postremove: build/package/nfpm/dfget-postremove.sh
+  - id: dfcache
+    file_name_template: "dfcache-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    package_name: dfcache
+    maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
+    description: dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates on files in P2P network
+    license: "Apache 2.0"
+    homepage: https://d7y.io
+    bindir: /usr/bin
+    builds:
+      - dfcache
+    formats:
+      - rpm
+      - deb
+    contents:
+      - src: build/package/docs/dfcache/dfcache.1
+        dst: /usr/share/man/man1/dfcache.1
+
+      - src: build/package/docs/dfcache/dfcache-delete.1
+        dst: /usr/share/man/man1/dfcache-delete.1
+
+      - src: build/package/docs/dfcache/dfcache-doc.1
+        dst: /usr/share/man/man1/dfcache-doc.1
+
+      - src: build/package/docs/dfcache/dfcache-export.1
+        dst: /usr/share/man/man1/dfcache-export.1
+
+      - src: build/package/docs/dfcache/dfcache-import.1
+        dst: /usr/share/man/man1/dfcache-import.1
+
+      - src: build/package/docs/dfcache/dfcache-plugin.1
+        dst: /usr/share/man/man1/dfcache-plugin.1
+
+      - src: build/package/docs/dfcache/dfcache-stat.1
+        dst: /usr/share/man/man1/dfcache-stat.1
+
+      - src: build/package/docs/dfcache/dfcache-version.1
+        dst: /usr/share/man/man1/dfcache-version.1
+
+      - src: LICENSE
+        dst: /usr/share/doc/dfcache/License
+
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/dfcache/ChangeLog

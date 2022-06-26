@@ -16,78 +16,41 @@
 
 Provide efficient, stable, secure, low-cost file and
 image distribution services to be the best practice and
-standard solution in the related Cloud-Native area.
+standard solution in cloud native architectures.
 
 ## Introduction
 
-Dragonfly is an open source intelligent P2P based image and
-file distribution system. Its goal is to
-tackle all distribution problems in cloud native scenarios.
+Dragonfly is an open source P2P-based file and
+image distribution system. It is hosted by the
+Cloud Native Computing Foundation ([CNCF](https://cncf.io/)) as
+an Incubating Level Project.
+Its goal is to tackle all distribution problems in cloud native architectures.
 Currently Dragonfly focuses on being:
 
-- Simple: well-defined user-facing API (HTTP), non-invasive to all container engines;
-- Efficient: CDN support, P2P based file distribution to save enterprise bandwidth;
-- Intelligent: host level speed limit, intelligent flow control due to host detection;
-- Secure: block transmission encryption, HTTPS connection support.
-
-Dragonfly is now hosted by the Cloud Native Computing Foundation (CNCF) as
-an Incubating Level Project. Originally it was born to
-solve all kinds of distribution at very large scales,
-such as application distribution, cache distribution,
-log distribution, image distribution, and so on.
-
-## Features
-
-- Implement P2P files distribution with various storage types
-(HDFS, storage services from various cloud vendors, Maven, Yum, etc.)
-through a unified back-to-source adapter layer.
-- Support more distribution modes:
-active pull, active push, real-time synchronization,
-remote replication, automatic warm-up,
-cross-cloud transmission, etc.
-- Provide separation and decoupling between systems,
-scheduling and plug-in CDN. Support on-demand deployment with
-flexible types: light or heavy, inside or outside,
-to meet the actual needs of different scenarios.
-- Newly designed P2P protocol framework based on
-GRPC with improved efficiency and stability.
-- Perform encrypted transmission, account-based transmission
-authentication and rate limit, and multi-tenant isolation mechanism.
-- Bear more efficient IO methods: multithreaded IO, memory mapping, DMA, etc.
-- Advocate dynamic compression, in-memory file systems,
-and more efficient scheduling algorithms to improve distribution efficiency.
-- Client allows third-party software to
-natively integrate Dragonfly’s P2P capabilities through C/S mode.
-- Productivity: Support file uploading, task management of
-various distribution modes, data visualization, global control, etc.
-- Consistent internal and external versions, shared core features,
-and individual extensions of non-generic features.
-- Enhanced integration with ecology:
-Harbor, Nydus (on-demand image download),
-warehouse services for various cloud vendors, etc.
+- **Simple**: Well-defined user-facing API (HTTP), non-invasive to all container engines;
+- **Efficient**: Seed peer support, P2P based file distribution to save enterprise bandwidth;
+- **Intelligent**: Host-level speed limit, intelligent flow control due to host detection;
+- **Secure**: Block transmission encryption, HTTPS connection support.
 
 ## Architecture
 
 ![alt][arch]
 
-**Manager:** Used to manage the dynamic configuration that
-each module depends on, and provide keepalive and metrics functions.
+**Manager:** Maintain the relationship between each P2P cluster, dynamic configuration management and RBAC.
+It also includes a front-end console, which is convenient for users to visually operate the cluster.
 
-**Scheduler:** The tracker and scheduler in the P2P
-network that choose appropriate downloading net-path for each peer.
+**Scheduler:** Select the optimal download parent peer for the download peer. Exceptions control Dfdaemon's back-to-source.
 
-**CDN:** A CDN server that caches downloaded data
-from source to avoid downloading same files repeatedly.
+**Seed Peer**: Dfdaemon turns on the Seed Peer mode can be used as
+  a back-to-source download peer in a P2P cluster,
+  which is the root peer for download in the entire cluster.
 
-**Daemon:** It's a daemon of dfget client.
-It establishes a proxy between containerd/CRI-O and registry.
-
-**Dfget:** The client of Dragonfly used for
-downloading files. It's similar to wget.
+**Peer**: Deploy with dfdaemon, based on the C/S architecture, it provides the `dfget` command download tool,
+  and the `dfget daemon` running daemon to provide task download capabilities.
 
 ## Documentation
 
-You can find the full documentation [on the repo][document].
+You can find the full documentation on the [d7y.io][d7y.io].
 
 ## Community
 
@@ -95,13 +58,16 @@ Welcome developers to actively participate in community discussions
 and contribute code to Dragonfly. We will remain
 concerned about the issues discussed in the community and respond quickly.
 
-- Discussions: [Github Discussion Forum][discussion]
-- Twitter: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
-- DingTalk: 23304666
+- **Slack Channel**: [#dragonfly](https://cloud-native.slack.com/messages/dragonfly/) on [CNCF Slack](https://slack.cncf.io/)
+- **Discussion Group**: <dragonfly-discuss@googlegroups.com>
+- **Developer Group**: <dragonfly-developers@googlegroups.com>
+- **Github Discussions**: [Dragonfly Discussion Forum][discussion]
+- **Twitter**: [@dragonfly_oss](https://twitter.com/dragonfly_oss)
+- **DingTalk**: [23304666](https://h5.dingtalk.com/circle/healthCheckin.html?dtaction=os&corpId=ding0ba5f94d8290b9f7f235fbadcd45de0c&f4462ef5-a7d=9bec3e94-b34&cbdbhh=qwertyuiop)
 
 <!-- markdownlint-disable -->
 <div align="center">
-  <img src="docs/en/images/community/dingtalk-group.jpeg" width="300" title="dingtalk">
+  <img src="docs/images/community/dingtalk-group.jpeg" width="300" title="dingtalk">
 </div>
 <!-- markdownlint-restore -->
 
@@ -114,11 +80,11 @@ You should check out our
 
 Please refer to our [Code of Conduct][codeconduct].
 
-[arch]: docs/en/images/arch.png
-[logo-linear]: docs/en/images/logo/dragonfly-linear.svg
+[arch]: docs/images/arch.png
+[logo-linear]: docs/images/logo/dragonfly-linear.svg
 [website]: https://d7y.io
 [discussion]: https://github.com/dragonflyoss/Dragonfly2/discussions
 [contributing]: CONTRIBUTING.md
 [codeconduct]: CODE_OF_CONDUCT.md
-[document]: docs/README.md
-[dingtalk]: docs/en/images/community/dingtalk-group.jpeg
+[d7y.io]: https://d7y.io/
+[dingtalk]: docs/images/community/dingtalk-group.jpeg

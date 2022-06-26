@@ -20,6 +20,7 @@ const (
 	HeaderDragonflyFilter = "X-Dragonfly-Filter"
 	HeaderDragonflyPeer   = "X-Dragonfly-Peer"
 	HeaderDragonflyTask   = "X-Dragonfly-Task"
+	HeaderDragonflyRange  = "X-Dragonfly-Range"
 	HeaderDragonflyBiz    = "X-Dragonfly-Biz"
 	// HeaderDragonflyRegistry is used for dynamic registry mirrors
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"

@@ -27,17 +27,34 @@ import (
 )
 
 const (
-	CDNNamespace        = "cdn"
-	SchedulerNamespace  = "scheduler"
+	// Seed Peer prefix of cache key.
+	SeedPeerNamespace = "seed-peer"
+
+	// Peer prefix of cache key.
+	PeerNamespace = "peer"
+
+	// Scheduler prefix of cache key.
+	SchedulerNamespace = "scheduler"
+
+	// Schedulers prefix of cache key.
 	SchedulersNamespace = "schedulers"
+
+	// Buckets prefix of cache key.
+	BucketsNamespace = "buckets"
 )
 
+const (
+	// PeerCacheTTL is the ttl for peer cache.
+	PeerCacheTTL = 30 * time.Minute
+)
+
+// Cache is cache client.
 type Cache struct {
 	*cache.Cache
 	TTL time.Duration
 }
 
-// New cache instance
+// New cache instance.
 func New(cfg *config.Config) (*Cache, error) {
 	var localCache *cache.TinyLFU
 	if cfg.Cache != nil {
@@ -60,18 +77,32 @@ func New(cfg *config.Config) (*Cache, error) {
 	}, nil
 }
 
+// Make cache key.
 func MakeCacheKey(namespace string, id string) string {
 	return fmt.Sprintf("manager:%s:%s", namespace, id)
 }
 
-func MakeCDNCacheKey(hostname string, clusterID uint) string {
-	return MakeCacheKey(CDNNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
+// Make cache key for seed peer.
+func MakeSeedPeerCacheKey(hostname string, clusterID uint) string {
+	return MakeCacheKey(SeedPeerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
+// Make cache key for peer.
+func MakePeerCacheKey(hostname, ip string) string {
+	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s", hostname, ip))
+}
+
+// Make cache key for scheduler.
 func MakeSchedulerCacheKey(hostname string, clusterID uint) string {
 	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
 }
 
+// Make cache key for schedulers.
 func MakeSchedulersCacheKey(hostname, ip string) string {
 	return MakeCacheKey(SchedulersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
+}
+
+// Make cache key for buckets.
+func MakeBucketsCacheKey(name string) string {
+	return MakeCacheKey(BucketsNamespace, name)
 }

@@ -62,41 +62,41 @@ func TestPeerID(t *testing.T) {
 	}
 }
 
-func TestCDNPeerID(t *testing.T) {
+func TestSeedPeerID(t *testing.T) {
 	tests := []struct {
 		name   string
 		ip     string
 		expect func(t *testing.T, d interface{})
 	}{
 		{
-			name: "generate CDNPeerID with ipv4",
+			name: "generate SeedPeerID with ipv4",
 			ip:   "127.0.0.1",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Regexp("127.0.0.1-.*-.*_CDN", d)
+				assert.Regexp("127.0.0.1-.*-.*_Seed", d)
 			},
 		},
 		{
-			name: "generate CDNPeerID with ipv6",
+			name: "generate SeedPeerID with ipv6",
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*_CDN", d)
+				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*_Seed", d)
 			},
 		},
 		{
-			name: "generate CDNPeerID with empty string",
+			name: "generate SeedPeerID with empty string",
 			ip:   "",
 			expect: func(t *testing.T, d interface{}) {
 				assert := assert.New(t)
-				assert.Regexp("-.*-.*_CDN", d)
+				assert.Regexp("-.*-.*_Seed", d)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			data := CDNPeerID(tc.ip)
+			data := SeedPeerID(tc.ip)
 			tc.expect(t, data)
 		})
 	}

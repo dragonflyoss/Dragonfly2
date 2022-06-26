@@ -1,0 +1,73 @@
+# current server info used for server
+server:
+  # grpc server configure
+  grpc:
+    # listen address
+    listen: 0.0.0.0
+    # listen port, manager will try to listen
+    # when this port is not available, manager will try next port
+    port:
+      start: 65003
+      end: 65003
+  # rest server configure
+  rest:
+    # stand address
+    addr: :8080
+  # front-end console resource path
+  # publicPath: /dist
+
+# database info used for server
+database:
+  # mysql configure
+  mysql:
+    user: dragonfly
+    password: dragonfly
+    host: __IP__
+    port: 3306
+    dbname: manager
+    migrate: true
+  # tls:
+  #   # client certificate file path
+  #   cert: /etc/ssl/certs/cert.pem
+  #   # client key file path
+  #   key: /etc/ssl/private/key.pem
+  #   # ca file path
+  #   ca: /etc/ssl/certs/ca.pem
+  #   # whether a client verifies the server's certificate chain and host name.
+  #   insecureSkipVerify: true
+  # redis configure
+  redis:
+    password: dragonfly
+    host: __IP__
+    port: 6379
+    db: 0
+# manager server cache
+# cache:
+#   # redis cache configure
+#   redis:
+#     # cache ttl configure
+#     ttl: 30s
+#   # local cache configure
+#   local:
+#     # lfu cache size
+#     size: 10000
+#     # cache ttl configure
+#     ttl: 30s
+
+# enable prometheus metrics
+# metrics:
+#  # metrics service address
+#  addr: ":8000"
+
+# console shows log on console
+console: false
+
+# whether to enable debug level logger and enable pprof
+verbose: true
+
+# listen port for pprof, only valid when the verbose option is true
+# default is -1. If it is 0, pprof will use a random port.
+pprof-port: -1
+
+# jaeger endpoint url, like: http://jaeger.dragonfly.svc:14268/api/traces
+jaeger: ""

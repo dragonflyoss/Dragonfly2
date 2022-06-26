@@ -23,13 +23,12 @@ import (
 	"d7y.io/dragonfly/v2/manager/types"
 )
 
-func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*model.Scheduler, error) {
+func (s *service) CreateScheduler(ctx context.Context, json types.CreateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{
 		HostName:           json.HostName,
-		VIPs:               json.VIPs,
 		IDC:                json.IDC,
+		NetTopology:        json.NetTopology,
 		Location:           json.Location,
-		NetConfig:          json.NetConfig,
 		IP:                 json.IP,
 		Port:               json.Port,
 		SchedulerClusterID: json.SchedulerClusterID,
@@ -42,7 +41,7 @@ func (s *rest) CreateScheduler(ctx context.Context, json types.CreateSchedulerRe
 	return &scheduler, nil
 }
 
-func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
+func (s *service) DestroyScheduler(ctx context.Context, id uint) error {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return err
@@ -55,13 +54,12 @@ func (s *rest) DestroyScheduler(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
+func (s *service) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Updates(model.Scheduler{
-		VIPs:               json.VIPs,
 		IDC:                json.IDC,
+		NetTopology:        json.NetTopology,
 		Location:           json.Location,
-		NetConfig:          json.NetConfig,
 		IP:                 json.IP,
 		Port:               json.Port,
 		SchedulerClusterID: json.SchedulerClusterID,
@@ -72,7 +70,7 @@ func (s *rest) UpdateScheduler(ctx context.Context, id uint, json types.UpdateSc
 	return &scheduler, nil
 }
 
-func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, error) {
+func (s *service) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, error) {
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, id).Error; err != nil {
 		return nil, err
@@ -81,7 +79,7 @@ func (s *rest) GetScheduler(ctx context.Context, id uint) (*model.Scheduler, err
 	return &scheduler, nil
 }
 
-func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*[]model.Scheduler, int64, error) {
+func (s *service) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) ([]model.Scheduler, int64, error) {
 	var count int64
 	var schedulers []model.Scheduler
 	if err := s.db.WithContext(ctx).Scopes(model.Paginate(q.Page, q.PerPage)).Where(&model.Scheduler{
@@ -91,9 +89,9 @@ func (s *rest) GetSchedulers(ctx context.Context, q types.GetSchedulersQuery) (*
 		IP:                 q.IP,
 		State:              q.State,
 		SchedulerClusterID: q.SchedulerClusterID,
-	}).Find(&schedulers).Count(&count).Error; err != nil {
+	}).Find(&schedulers).Limit(-1).Offset(-1).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return &schedulers, count, nil
+	return schedulers, count, nil
 }

@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"path"
 	"time"
 
 	"github.com/gofrs/flock"
@@ -31,8 +32,7 @@ import (
 	server "d7y.io/dragonfly/v2/client/daemon"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/internal/dfnet"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/version"
@@ -61,9 +61,10 @@ it supports container engine, wget and other downloading tools through proxy fun
 		}
 
 		// Initialize logger
-		if err := logcore.InitDaemon(cfg.Console, d.LogDir()); err != nil {
+		if err := logger.InitDaemon(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client daemon logger")
 		}
+		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "daemon"))
 
 		// Convert config
 		if err := cfg.Convert(); err != nil {
@@ -171,7 +172,7 @@ func runDaemon(d dfpath.Dfpath) error {
 	s, _ := yaml.Marshal(cfg)
 	logger.Infof("client daemon configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(cfg.Verbose, cfg.PProfPort, cfg.Telemetry)
+	ff := dependency.InitMonitor(cfg.PProfPort, cfg.Telemetry)
 	defer ff()
 
 	svr, err := server.New(cfg, d)

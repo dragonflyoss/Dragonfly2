@@ -16,6 +16,14 @@
 
 package types
 
+type UpdateUserRequest struct {
+	Email    string `json:"email" binding:"omitempty"`
+	Phone    string `json:"phone" binding:"omitempty"`
+	Avatar   string `json:"avatar" binding:"omitempty"`
+	Location string `json:"location" binding:"omitempty"`
+	BIO      string `json:"bio" binding:"omitempty"`
+}
+
 type UserParams struct {
 	ID uint `uri:"id" binding:"required"`
 }

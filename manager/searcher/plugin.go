@@ -35,5 +35,5 @@ func LoadPlugin(dir string) (Searcher, error) {
 	if rc, ok := client.(Searcher); ok {
 		return rc, err
 	}
-	return nil, errors.New("invalid client, not a ResourceClient")
+	return nil, errors.New("invalid searcher plugin")
 }

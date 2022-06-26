@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -package mocks -source client.go -destination ./mocks/client_mock.go
+
 package client
 
 import (
@@ -22,222 +24,188 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dfnet"
-	"d7y.io/dragonfly/v2/pkg/idgen"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (SchedulerClient, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("address list of scheduler is empty")
+// NewBeginOfPiece creates begin of piece.
+func NewBeginOfPiece(taskID, peerID string) *scheduler.PieceResult {
+	return &scheduler.PieceResult{
+		TaskId: taskID,
+		SrcPid: peerID,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.BeginOfPiece,
+		},
 	}
-	sc := &schedulerClient{
-		rpc.NewConnection(context.Background(), "scheduler-static", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(30 * time.Minute),
-			rpc.WithDialOption(opts),
-		}),
-	}
-	logger.Infof("scheduler server list: %s", addrs)
-	return sc, nil
 }
 
-// SchedulerClient see scheduler.SchedulerClient
-type SchedulerClient interface {
-	// RegisterPeerTask register peer task to scheduler
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
-	// ReportPieceResult IsMigrating of ptr will be set to true
-	ReportPieceResult(context.Context, string, *scheduler.PeerTaskRequest, ...grpc.CallOption) (PeerPacketStream, error)
+// NewBeginOfPiece creates end of piece.
+func NewEndOfPiece(taskID, peerID string, finishedCount int32) *scheduler.PieceResult {
+	return &scheduler.PieceResult{
+		TaskId:        taskID,
+		SrcPid:        peerID,
+		FinishedCount: finishedCount,
+		PieceInfo: &base.PieceInfo{
+			PieceNum: common.EndOfPiece,
+		},
+	}
+}
 
+// GetClientByAddr gets scheduler clients with net addresses.
+func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
+	if len(addrs) == 0 {
+		return nil, errors.New("scheduler addresses are empty")
+	}
+
+	logger.Infof("scheduler addresses: %s", addrs)
+	return &client{
+		rpc.NewConnection(context.Background(), "scheduler", addrs, []rpc.ConnOption{
+			rpc.WithConnExpireTime(60 * time.Second),
+			rpc.WithDialOption(opts),
+		}),
+	}, nil
+}
+
+// Client is the interface for grpc client.
+type Client interface {
+	// RegisterPeerTask registers a peer into task.
+	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
+
+	// ReportPieceResult reports piece results and receives peer packets.
+	ReportPieceResult(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
+
+	// ReportPeerResult reports downloading result for the peer.
 	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error
 
+	// LeaveTask makes the peer leaving from task.
 	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
 
-	UpdateState(addrs []dfnet.NetAddr)
+	// Checks if any peer has the given task.
+	StatTask(context.Context, *scheduler.StatTaskRequest, ...grpc.CallOption) (*scheduler.Task, error)
 
+	// A peer announces that it has the announced task to other peers.
+	AnnounceTask(context.Context, *scheduler.AnnounceTaskRequest, ...grpc.CallOption) error
+
+	// Update grpc addresses.
+	UpdateState([]dfnet.NetAddr)
+
+	// Get grpc addresses.
+	GetState() []dfnet.NetAddr
+
+	// Close grpc service.
 	Close() error
 }
 
-type schedulerClient struct {
+// client provides scheduler grpc function.
+type client struct {
 	*rpc.Connection
 }
 
-func (sc *schedulerClient) getSchedulerClient(key string, stick bool) (scheduler.SchedulerClient, string, error) {
+// getClient gets scheduler client with hashkey.
+func (sc *client) getClient(key string, stick bool) (scheduler.SchedulerClient, string, error) {
 	clientConn, err := sc.Connection.GetClientConn(key, stick)
 	if err != nil {
 		return nil, "", err
 	}
+
 	return scheduler.NewSchedulerClient(clientConn), clientConn.Target(), nil
 }
 
-func (sc *schedulerClient) RegisterPeerTask(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
-	var (
-		taskID        string
-		schedulerNode string
-		res           interface{}
-	)
-	key := idgen.TaskID(ptr.Url, ptr.UrlMeta)
-	logger.WithTaskAndPeerID(key, ptr.PeerId).Infof("generate hash key taskId: %s and start to register peer task for peer_id(%s) url(%s)", key, ptr.PeerId,
-		ptr.Url)
-	reg := func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(key, false)
-		if err != nil {
-			return nil, err
-		}
-		return client.RegisterPeerTask(ctx, ptr, opts...)
-	}
-	res, err := rpc.ExecuteWithRetry(reg, 0.2, 2.0, 3, nil)
+// RegisterPeerTask registers a peer into task.
+func (sc *client) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+	// Generate task id.
+	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
-		logger.WithTaskAndPeerID(key, ptr.PeerId).Errorf("RegisterPeerTask: register peer task to scheduler %s failed: %v", schedulerNode, err)
-		return sc.retryRegisterPeerTask(ctx, key, ptr, []string{schedulerNode}, err, opts)
+		return nil, err
 	}
-	rr := res.(*scheduler.RegisterResult)
-	taskID = rr.TaskId
-	if taskID != key {
-		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", key, taskID)
-		sc.Connection.CorrectKey2NodeRelation(key, taskID)
+
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("register peer task with %s request: %#v %#v %#v", target, req, req.UrlMeta, req.HostLoad)
+	resp, err := client.RegisterPeerTask(ctx, req, opts...)
+	if err != nil {
+		return nil, err
 	}
-	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
-		Infof("register peer task result success url: %s, scheduler: %s", ptr.Url, schedulerNode)
-	return rr, err
+
+	return resp, nil
 }
 
-func (sc *schedulerClient) retryRegisterPeerTask(ctx context.Context, hashKey string, ptr *scheduler.PeerTaskRequest, exclusiveNodes []string, cause error,
-	opts []grpc.CallOption) (*scheduler.RegisterResult, error) {
-	if status.Code(cause) == codes.Canceled || status.Code(cause) == codes.DeadlineExceeded {
-		return nil, cause
-	}
-	var (
-		taskID        string
-		schedulerNode string
-	)
-	preNode, err := sc.TryMigrate(hashKey, cause, exclusiveNodes)
+// ReportPieceResult reports piece results and receives peer packets.
+func (sc *client) ReportPieceResult(ctx context.Context, req *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
-		return nil, cause
+		return nil, err
 	}
-	exclusiveNodes = append(exclusiveNodes, preNode)
-	res, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(hashKey, true)
-		if err != nil {
-			return nil, err
-		}
-		return client.RegisterPeerTask(ctx, ptr, opts...)
-	}, 0.2, 2.0, 3, cause)
-	if err != nil {
-		logger.WithTaskAndPeerID(hashKey, ptr.PeerId).Errorf("retryRegisterPeerTask: register peer task to scheduler %s failed: %v", schedulerNode, err)
-		return sc.retryRegisterPeerTask(ctx, hashKey, ptr, exclusiveNodes, err, opts)
-	}
-	rr := res.(*scheduler.RegisterResult)
-	taskID = rr.TaskId
-	if taskID != hashKey {
-		logger.WithTaskAndPeerID(taskID, ptr.PeerId).Warnf("register peer task correct taskId from %s to %s", hashKey, taskID)
-		sc.Connection.CorrectKey2NodeRelation(hashKey, taskID)
-	}
-	logger.WithTaskAndPeerID(taskID, ptr.PeerId).
-		Infof("register peer task result success url: %s, scheduler: %s", ptr.Url, schedulerNode)
-	return rr, nil
 
+	stream, err := client.ReportPieceResult(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report piece result with %s request: %#v", target, req)
+	return stream, stream.Send(NewBeginOfPiece(req.TaskId, req.PeerId))
 }
 
-func (sc *schedulerClient) ReportPieceResult(ctx context.Context, taskID string, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (PeerPacketStream, error) {
-	pps, err := newPeerPacketStream(ctx, sc, taskID, ptr, opts)
+// ReportPeerResult reports downloading result for the peer.
+func (sc *client) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult, opts ...grpc.CallOption) error {
+	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
-		return pps, err
+		return err
 	}
-	logger.With("peerId", ptr.PeerId, "errMsg", err).Infof("start to report piece result for taskID: %s", taskID)
 
-	// trigger scheduling
-	return pps, pps.Send(scheduler.NewZeroPieceResult(taskID, ptr.PeerId))
-}
-
-func (sc *schedulerClient) ReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
-	var (
-		schedulerNode string
-	)
-	_, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		var err error
-		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
-		if err != nil {
-			return nil, err
-		}
-		return client.ReportPeerResult(ctx, pr, opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("ReportPeerResult: report peer result to scheduler %s failed: %v", schedulerNode, err)
-		return sc.retryReportPeerResult(ctx, pr, []string{schedulerNode}, err, opts)
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report peer result with %s request: %#v", target, req)
+	if _, err := client.ReportPeerResult(ctx, req, opts...); err != nil {
+		return err
 	}
+
 	return nil
 }
 
-func (sc *schedulerClient) retryReportPeerResult(ctx context.Context, pr *scheduler.PeerResult, exclusiveNodes []string,
-	cause error, opts []grpc.CallOption) (err error) {
-	if status.Code(cause) == codes.Canceled || status.Code(cause) == codes.DeadlineExceeded {
-		return cause
-	}
-	var (
-		schedulerNode string
-		suc           bool
-		code          base.Code
-	)
-	preNode, err := sc.TryMigrate(pr.TaskId, err, exclusiveNodes)
+// LeaveTask makes the peer leaving from task.
+func (sc *client) LeaveTask(ctx context.Context, req *scheduler.PeerTarget, opts ...grpc.CallOption) error {
+	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
-		return cause
-	}
-	exclusiveNodes = append(exclusiveNodes, preNode)
-	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		client, schedulerNode, err = sc.getSchedulerClient(pr.TaskId, true)
-		if err != nil {
-			code = base.Code_ServerUnavailable
-			return nil, err
-		}
-		return client.ReportPeerResult(ctx, pr, opts...)
-	}, 0.2, 2.0, 3, nil)
-	if err != nil {
-		logger.WithTaskAndPeerID(pr.TaskId, pr.PeerId).Errorf("retryReportPeerResult: report peer result to scheduler %s failed: %v", schedulerNode, err)
-		return sc.retryReportPeerResult(ctx, pr, exclusiveNodes, cause, opts)
+		return err
 	}
 
-	logger.With("peerId", pr.PeerId, "errMsg", err).
-		Infof("report peer result: %t[%d], peer task down result: %t[%d] for taskId: %s, url: %s, scheduler: %s, length: %d, traffic: %d, cost: %d", suc, int32(code),
-			pr.Success, int32(pr.Code), pr.TaskId, pr.Url, schedulerNode, pr.ContentLength, pr.Traffic, pr.Cost)
+	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("leave task with %s request: %#v", target, req)
+	if _, err := client.LeaveTask(ctx, req, opts...); err != nil {
+		return err
+	}
 
-	return
+	return nil
 }
 
-func (sc *schedulerClient) LeaveTask(ctx context.Context, pt *scheduler.PeerTarget, opts ...grpc.CallOption) (err error) {
-	var (
-		schedulerNode string
-		suc           bool
-	)
-	defer func() {
-		logger.With("peerId", pt.PeerId, "errMsg", err).Infof("leave from task result: %t for taskId: %s, scheduler server node: %s, err:%v", suc, pt.TaskId,
-			schedulerNode, err)
-	}()
+// Checks if any peer has the given task.
+func (sc *client) StatTask(ctx context.Context, req *scheduler.StatTaskRequest, opts ...grpc.CallOption) (*scheduler.Task, error) {
+	client, target, err := sc.getClient(req.TaskId, false)
+	if err != nil {
+		return nil, err
+	}
 
-	leaveFun := func() (interface{}, error) {
-		var client scheduler.SchedulerClient
-		client, schedulerNode, err = sc.getSchedulerClient(pt.TaskId, false)
-		if err != nil {
-			return nil, err
-		}
-		return client.LeaveTask(ctx, pt, opts...)
+	logger.WithTaskID(req.TaskId).Infof("stat task with %s request: %#v", target, req)
+	resp, err := client.StatTask(ctx, req, opts...)
+	if err != nil {
+		return nil, err
 	}
-	_, err = rpc.ExecuteWithRetry(leaveFun, 0.2, 2.0, 3, nil)
-	if err == nil {
-		suc = true
-	}
-	return
+
+	return resp, nil
 }
 
-var _ SchedulerClient = (*schedulerClient)(nil)
+// A peer announces that it has the announced task to other peers.
+func (sc *client) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest, opts ...grpc.CallOption) error {
+	client, target, err := sc.getClient(req.TaskId, false)
+	if err != nil {
+		return err
+	}
+
+	logger.WithTaskID(req.TaskId).Infof("announce task with %s request: %#v", target, req)
+	if _, err := client.AnnounceTask(ctx, req, opts...); err != nil {
+		return err
+	}
+
+	return nil
+}

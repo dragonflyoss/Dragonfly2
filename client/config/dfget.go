@@ -29,15 +29,15 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
 
+	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/net/url"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/urlutils"
-	"d7y.io/dragonfly/v2/pkg/util/stringutils"
 )
 
 type DfgetConfig = ClientOption
@@ -72,7 +72,7 @@ type ClientOption struct {
 	// CallSystem system name that executes dfget.
 	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
 
-	// Pattern download pattern, must be 'p2p' or 'cdn' or 'source',
+	// Pattern download pattern, must be 'p2p' or 'seed-peer' or 'source',
 	// default:`p2p`.
 	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
 
@@ -103,7 +103,7 @@ type ClientOption struct {
 	// WorkHome is working directory of dfget.
 	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
 
-	RateLimit rate.Limit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
+	RateLimit clientutil.RateLimit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
 
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].
@@ -127,6 +127,11 @@ type ClientOption struct {
 	RecursiveAcceptRegex string `yaml:"acceptRegex,omitempty" mapstructure:"accept-regex,omitempty"`
 
 	RecursiveRejectRegex string `yaml:"rejectRegex,omitempty" mapstructure:"reject-regex,omitempty"`
+
+	KeepOriginalOffset bool `yaml:"keepOriginalOffset,omitempty" mapstructure:"original-offset,omitempty"`
+
+	// Range stands download range for url, like: 0-9, will download 10 bytes from 0 to 9 ([0:9])
+	Range string `yaml:"range,omitempty" mapstructure:"range,omitempty"`
 }
 
 func NewDfgetConfig() *ClientOption {
@@ -138,7 +143,7 @@ func (cfg *ClientOption) Validate() error {
 		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
 	}
 
-	if !urlutils.IsValidURL(cfg.URL) {
+	if !url.IsValid(cfg.URL) {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
 	}
 
@@ -154,39 +159,19 @@ func (cfg *ClientOption) Validate() error {
 		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
 	}
 
+	if err := cfg.checkHeader(); err != nil {
+		return errors.Wrapf(dferrors.ErrInvalidHeader, "output: %v", err)
+	}
+
+	if int64(cfg.RateLimit.Limit) < DefaultMinRate.ToNumber() {
+		return errors.Wrapf(dferrors.ErrInvalidArgument, "rate limit must be greater than %s", DefaultMinRate.String())
+	}
+
 	return nil
 }
 
 func (cfg *ClientOption) Convert(args []string) error {
-	var err error
-
-	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
-		return err
-	}
-
-	if cfg.URL == "" && len(args) > 0 {
-		cfg.URL = args[0]
-	}
-
-	if cfg.Digest != "" {
-		cfg.Tag = ""
-	}
-
-	if cfg.Console {
-		cfg.ShowProgress = false
-	}
-
-	return nil
-}
-
-func (cfg *ClientOption) String() string {
-	js, _ := json.Marshal(cfg)
-	return string(js)
-}
-
-// This function must be called after checkURL
-func (cfg *ClientOption) checkOutput() error {
-	if stringutils.IsBlank(cfg.Output) {
+	if pkgstrings.IsBlank(cfg.Output) {
 		url := strings.TrimRight(cfg.URL, "/")
 		idx := strings.LastIndexByte(url, '/')
 		if idx < 0 {
@@ -202,7 +187,49 @@ func (cfg *ClientOption) checkOutput() error {
 		}
 		cfg.Output = absPath
 	}
+	if cfg.URL == "" && len(args) > 0 {
+		cfg.URL = args[0]
+	}
 
+	if cfg.Digest != "" {
+		cfg.Tag = ""
+	}
+
+	if cfg.Console {
+		cfg.ShowProgress = false
+	}
+	return nil
+}
+
+func (cfg *ClientOption) String() string {
+	js, _ := json.Marshal(cfg)
+	return string(js)
+}
+
+// checkHeader is for checking the header format
+func (cfg *ClientOption) checkHeader() error {
+	if len(cfg.Header) == 0 {
+		return nil
+	}
+
+	for _, header := range cfg.Header {
+		if !strings.Contains(header, ":") {
+			return fmt.Errorf("header format error: %v", header)
+		}
+		idx := strings.Index(header, ":")
+		if len(strings.TrimSpace(header[:idx])) == 0 || len(strings.TrimSpace(header[idx+1:])) == 0 {
+			return fmt.Errorf("header format error: %v", header)
+		}
+	}
+
+	return nil
+}
+
+// This function must be called after checkURL
+func (cfg *ClientOption) checkOutput() error {
+	if !filepath.IsAbs(cfg.Output) {
+		return fmt.Errorf("path[%s] is not absolute path", cfg.Output)
+	}
 	outputDir, _ := path.Split(cfg.Output)
 	if err := MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
 		return err
@@ -222,7 +249,7 @@ func (cfg *ClientOption) checkOutput() error {
 	}
 
 	// check permission
-	for dir := cfg.Output; !stringutils.IsBlank(dir); dir = filepath.Dir(dir) {
+	for dir := cfg.Output; !pkgstrings.IsBlank(dir); dir = filepath.Dir(dir) {
 		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
 			break
 		} else if os.IsPermission(err) || dir == "/" {

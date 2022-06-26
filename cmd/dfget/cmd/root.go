@@ -36,14 +36,13 @@ import (
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/internal/dflog/logcore"
-	"d7y.io/dragonfly/v2/internal/dfnet"
 	"d7y.io/dragonfly/v2/pkg/basic"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
+	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/unit"
-	"d7y.io/dragonfly/v2/pkg/util/net/iputils"
 	"d7y.io/dragonfly/v2/version"
 )
 
@@ -77,7 +76,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Initialize logger
-		if err := logcore.InitDfget(dfgetConfig.Console, d.LogDir()); err != nil {
+		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir()); err != nil {
 			return errors.Wrap(err, "init client dfget logger")
 		}
 
@@ -96,7 +95,7 @@ var rootCmd = &cobra.Command{
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
 		fmt.Printf("dfget version: %s\n", version.GitVersion)
-		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, iputils.IPv4)
+		fmt.Printf("current user: %s, default peer ip: %s\n", basic.Username, ip.IPv4)
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file
@@ -106,7 +105,7 @@ var rootCmd = &cobra.Command{
 			errInfo = fmt.Sprintf("error: %v", err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Now().Sub(start).Milliseconds(), errInfo)
+		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Since(start).Milliseconds(), errInfo)
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
 
@@ -140,7 +139,7 @@ func init() {
 
 	flagSet.Duration("timeout", dfgetConfig.Timeout, "Timeout for the downloading task, 0 is infinite")
 
-	flagSet.String("limit", unit.Bytes(dfgetConfig.RateLimit).String(),
+	flagSet.String("ratelimit", unit.Bytes(dfgetConfig.RateLimit.Limit).String(),
 		"The downloading network bandwidth limit per second in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite")
 
 	flagSet.String("digest", dfgetConfig.Digest,
@@ -158,7 +157,7 @@ func init() {
 	flagSet.Bool("disable-back-source", dfgetConfig.DisableBackSource,
 		"Disable downloading directly from source when the daemon fails to download file")
 
-	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/cdn/source")
+	flagSet.StringP("pattern", "p", dfgetConfig.Pattern, "The downloading pattern: p2p/seed-peer/source")
 
 	flagSet.BoolP("show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
 
@@ -182,6 +181,12 @@ func init() {
 
 	flagSet.String("reject-regex", dfgetConfig.RecursiveRejectRegex,
 		`Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it`)
+
+	flagSet.Bool("original-offset", dfgetConfig.KeepOriginalOffset,
+		`Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled`)
+
+	flagSet.String("range", dfgetConfig.Range,
+		`Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url`)
 
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
@@ -210,7 +215,7 @@ func runDfget(dfgetLockPath, daemonSockPath string) error {
 	s, _ := yaml.Marshal(dfgetConfig)
 	logger.Infof("client dfget configuration:\n%s", string(s))
 
-	ff := dependency.InitMonitor(dfgetConfig.Verbose, dfgetConfig.PProfPort, dfgetConfig.Telemetry)
+	ff := dependency.InitMonitor(dfgetConfig.PProfPort, dfgetConfig.Telemetry)
 	defer ff()
 
 	var (
@@ -245,6 +250,7 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 
 	lock := flock.New(dfgetLockPath)
 	if err := lock.Lock(); err != nil {
+		logger.Errorf("flock lock failed %s", err)
 		return nil, err
 	}
 
@@ -259,7 +265,7 @@ func checkAndSpawnDaemon(dfgetLockPath, daemonSockPath string) (client.DaemonCli
 		return daemonClient, nil
 	}
 
-	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()))
+	cmd := exec.Command(os.Args[0], "daemon", "--launcher", strconv.Itoa(os.Getpid()), "--config", viper.GetString("config"))
 	cmd.Stdin = nil
 	cmd.Stdout = nil
 	cmd.Stderr = nil

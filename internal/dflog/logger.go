@@ -18,25 +18,32 @@ package logger
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"strconv"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc/grpclog"
 )
 
 var (
 	CoreLogger       *zap.SugaredLogger
 	GrpcLogger       *zap.SugaredLogger
-	MetaGCLogger     *zap.SugaredLogger
+	GCLogger         *zap.SugaredLogger
 	StorageGCLogger  *zap.SugaredLogger
 	JobLogger        *zap.SugaredLogger
 	KeepAliveLogger  *zap.SugaredLogger
 	StatSeedLogger   *zap.Logger
 	DownloaderLogger *zap.Logger
+
+	coreLogLevelEnabler zapcore.LevelEnabler
 )
 
 func init() {
 	config := zap.NewDevelopmentConfig()
-	config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	log, err := config.Build(zap.AddCaller(), zap.AddStacktrace(zap.WarnLevel), zap.AddCallerSkip(1))
 	if err == nil {
 		sugar := log.Sugar()
@@ -49,14 +56,24 @@ func init() {
 		SetDownloadLogger(log)
 		SetJobLogger(sugar)
 	}
+	levels = append(levels, config.Level)
+}
+
+// SetLevel updates all log level
+func SetLevel(level zapcore.Level) {
+	Infof("change log level to %s", level.String())
+	for _, l := range levels {
+		l.SetLevel(level)
+	}
 }
 
 func SetCoreLogger(log *zap.SugaredLogger) {
 	CoreLogger = log
+	coreLogLevelEnabler = log.Desugar().Core()
 }
 
 func SetGCLogger(log *zap.SugaredLogger) {
-	MetaGCLogger = log
+	GCLogger = log
 }
 
 func SetStorageGCLogger(log *zap.SugaredLogger) {
@@ -77,7 +94,12 @@ func SetDownloadLogger(log *zap.Logger) {
 
 func SetGrpcLogger(log *zap.SugaredLogger) {
 	GrpcLogger = log
-	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger})
+	var v int
+	vLevel := os.Getenv("GRPC_GO_LOG_VERBOSITY_LEVEL")
+	if vl, err := strconv.Atoi(vLevel); err == nil {
+		v = vl
+	}
+	grpclog.SetLoggerV2(&zapGrpc{GrpcLogger, v})
 }
 
 func SetJobLogger(log *zap.SugaredLogger) {
@@ -94,21 +116,27 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 	}
 }
 
+func WithHostID(hostID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []interface{}{"hostID", hostID},
+	}
+}
+
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID},
+		withArgs: []interface{}{"taskID", taskID},
 	}
 }
 
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "peerID", peerID},
+		withArgs: []interface{}{"taskID", taskID, "peerID", peerID},
 	}
 }
 
 func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskId", taskID, "url", url},
+		withArgs: []interface{}{"taskID", taskID, "url", url},
 	}
 }
 
@@ -118,35 +146,66 @@ func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	}
 }
 
+func (log *SugaredLoggerOnWith) With(args ...interface{}) *SugaredLoggerOnWith {
+	args = append(args, log.withArgs...)
+	return &SugaredLoggerOnWith{
+		withArgs: args,
+	}
+}
+
 func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
+		return
+	}
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
+		return
+	}
 	CoreLogger.Infow(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
+		return
+	}
 	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Warn(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
+		return
+	}
 	CoreLogger.Warnw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
+		return
+	}
 	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
+		return
+	}
 	CoreLogger.Errorw(fmt.Sprint(args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
+		return
+	}
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
 func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
+		return
+	}
 	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
@@ -188,6 +247,7 @@ func Fatal(args ...interface{}) {
 
 type zapGrpc struct {
 	*zap.SugaredLogger
+	verbose int
 }
 
 func (z *zapGrpc) Infoln(args ...interface{}) {
@@ -215,5 +275,29 @@ func (z *zapGrpc) Fatalln(args ...interface{}) {
 }
 
 func (z *zapGrpc) V(level int) bool {
-	return level > 0
+	return level <= z.verbose
+}
+
+// Redirect stdout and stderr to file for debugging.
+func RedirectStdoutAndStderr(console bool, logDir string) {
+	// When console log is enabled, skip redirect.
+	if console {
+		return
+	}
+
+	// Redirect stdout to stdout.log file.
+	stdoutPath := path.Join(logDir, "stdout.log")
+	if stdout, err := os.OpenFile(stdoutPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+		Warnf("open %s error: %s", stdoutPath, err)
+	} else if err := unix.Dup2(int(stdout.Fd()), int(os.Stdout.Fd())); err != nil {
+		Warnf("redirect stdout error: %s", err)
+	}
+
+	// Redirect stderr to stderr.log file.
+	stderrPath := path.Join(logDir, "stderr.log")
+	if stderr, err := os.OpenFile(stderrPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND|os.O_SYNC, 0644); err != nil {
+		Warnf("open %s error: %s", stderrPath, err)
+	} else if err := unix.Dup2(int(stderr.Fd()), int(os.Stderr.Fd())); err != nil {
+		Warnf("redirect stderr error: %s", err)
+	}
 }

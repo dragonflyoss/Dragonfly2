@@ -224,26 +224,26 @@ func (h *Handlers) DeleteSchedulerClusterToApplication(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Add CDN to Application
-// @Description Add CDN to Application
+// @Summary Add SeedPeer to Application
+// @Description Add SeedPeer to Application
 // @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param cdn_cluster_id path string true "cdn cluster id"
+// @Param seed_peer_cluster_id path string true "seed peer cluster id"
 // @Success 200
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /applications/{id}/cdn-clusters/{cdn_cluster_id} [put]
-func (h *Handlers) AddCDNClusterToApplication(ctx *gin.Context) {
-	var params types.AddCDNClusterToApplicationParams
+// @Router /applications/{id}/seed-peer-clusters/{seed_peer_cluster_id} [put]
+func (h *Handlers) AddSeedPeerClusterToApplication(ctx *gin.Context) {
+	var params types.AddSeedPeerClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.AddCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
+	if err := h.service.AddSeedPeerClusterToApplication(ctx.Request.Context(), params.ID, params.SeedPeerClusterID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
@@ -251,26 +251,26 @@ func (h *Handlers) AddCDNClusterToApplication(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-// @Summary Delete CDN to Application
-// @Description Delete CDN to Application
+// @Summary Delete SeedPeer to Application
+// @Description Delete SeedPeer to Application
 // @Tags Application
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Param cdn_cluster_id path string true "cdn cluster id"
+// @Param seed_peer_cluster_id path string true "seed peer cluster id"
 // @Success 200
 // @Failure 400
 // @Failure 404
 // @Failure 500
-// @Router /applications/{id}/cdn-clusters/{cdn_cluster_id} [delete]
-func (h *Handlers) DeleteCDNClusterToApplication(ctx *gin.Context) {
-	var params types.DeleteCDNClusterToApplicationParams
+// @Router /applications/{id}/seed-peer-clusters/{seed_peer_cluster_id} [delete]
+func (h *Handlers) DeleteSeedPeerClusterToApplication(ctx *gin.Context) {
+	var params types.DeleteSeedPeerClusterToApplicationParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	if err := h.service.DeleteCDNClusterToApplication(ctx.Request.Context(), params.ID, params.CDNClusterID); err != nil {
+	if err := h.service.DeleteSeedPeerClusterToApplication(ctx.Request.Context(), params.ID, params.SeedPeerClusterID); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}

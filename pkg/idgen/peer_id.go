@@ -23,10 +23,16 @@ import (
 	"github.com/google/uuid"
 )
 
-func CDNPeerID(ip string) string {
-	return fmt.Sprintf("%s_%s", PeerID(ip), "CDN")
+var pid int
+
+func init() {
+	pid = os.Getpid()
 }
 
 func PeerID(ip string) string {
-	return fmt.Sprintf("%s-%d-%s", ip, os.Getpid(), uuid.New())
+	return fmt.Sprintf("%s-%d-%s", ip, pid, uuid.New())
+}
+
+func SeedPeerID(ip string) string {
+	return fmt.Sprintf("%s_%s", PeerID(ip), "Seed")
 }
