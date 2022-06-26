@@ -221,7 +221,7 @@ message ListSchedulersRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
   // Source service ip.
   string ip = 3 [(validate.rules).string.ip = true];
-  // Source service host infomation.
+  // Source service host information.
   map<string, string> host_info = 5 [(validate.rules).map.ignore_empty = true];
 }
 

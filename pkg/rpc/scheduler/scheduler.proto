@@ -64,7 +64,7 @@ message RegisterResult{
   base.ExtendAttribute extend_attribute = 6;
 }
 
-// SinglePiece represents infomation of single piece.
+// SinglePiece represents information of single piece.
 message SinglePiece{
   // Destination peer id.
   string dst_pid = 1 [(validate.rules).string.min_len = 1];
@@ -74,7 +74,7 @@ message SinglePiece{
   base.PieceInfo piece_info = 3;
 }
 
-// PeerHost represents infomation of peer host.
+// PeerHost represents information of peer host.
 message PeerHost{
   // Peer host id.
   string id = 1 [(validate.rules).string.min_len = 1];
