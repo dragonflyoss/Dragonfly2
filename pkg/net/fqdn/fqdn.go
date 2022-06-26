@@ -17,20 +17,36 @@
 package fqdn
 
 import (
+	"os"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"github.com/Showmax/go-fqdn"
 )
 
+var Hostname string
 var FQDNHostname string
 
 func init() {
+	Hostname = hostname()
 	FQDNHostname = fqdnHostname()
+}
+
+// Get kernel hostname
+func hostname() string {
+	name, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	return name
 }
 
 // Get FQDN hostname
 func fqdnHostname() string {
 	fqdn, err := fqdn.FqdnHostname()
 	if err != nil {
-		panic(err)
+		logger.Infof("failed to get fqdn hostname, use hostname: %s", err.Error())
+		fqdn = hostname()
 	}
 
 	return fqdn
