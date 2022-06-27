@@ -140,8 +140,8 @@ func (p *DaemonOption) Validate() error {
 	}
 
 	if p.ObjectStorage.Enable {
-		if p.ObjectStorage.MaxReplicas < 0 {
-			return errors.Errorf("max replicas must be greater than or equal to %d", 0)
+		if p.ObjectStorage.MaxReplicas <= 0 {
+			return errors.New("max replicas must be greater than 0")
 		}
 	}
 

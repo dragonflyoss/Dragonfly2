@@ -47,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const (
@@ -495,6 +496,7 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 			}
 		}
 	}
+	seedPeerHosts = pkgstrings.Unique(seedPeerHosts)
 
 	var replicas int
 	for _, seedPeerHost := range seedPeerHosts {
