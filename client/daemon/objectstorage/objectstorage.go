@@ -307,11 +307,12 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	}
 
 	var (
-		bucketName = params.ID
-		objectKey  = form.Key
-		mode       = form.Mode
-		filter     = form.Filter
-		fileHeader = form.File
+		bucketName  = params.ID
+		objectKey   = form.Key
+		mode        = form.Mode
+		filter      = form.Filter
+		maxReplicas = form.MaxReplicas
+		fileHeader  = form.File
 	)
 
 	client, err := o.client()
@@ -344,6 +345,11 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	urlMeta.Digest = dgst.String()
 	if filter != "" {
 		urlMeta.Filter = filter
+	}
+
+	// Initialize max replicas.
+	if maxReplicas == 0 {
+		maxReplicas = o.config.ObjectStorage.MaxReplicas
 	}
 
 	// Initialize task id and peer id.
@@ -381,7 +387,7 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		// Import object to seed peer.
 		go func() {
 			log.Infof("import object %s to seed peer", objectKey)
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader); err != nil {
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas); err != nil {
 				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
 			}
 		}()
@@ -399,8 +405,8 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	case AsyncWriteBack:
 		// Import object to seed peer.
 		go func() {
-			log.Infof("import object %s to seed peer", objectKey)
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader); err != nil {
+			log.Infof("import object %s to seed peer and max replicas is %d", objectKey, maxReplicas)
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas); err != nil {
 				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
 			}
 		}()
@@ -477,7 +483,11 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 }
 
 // importObjectToSeedPeers uses to import object to available seed peers.
-func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader) error {
+func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader, maxReplicas int) error {
+	if maxReplicas == 0 {
+		return nil
+	}
+
 	schedulers, err := o.dynconfig.GetSchedulers()
 	if err != nil {
 		return err
@@ -490,6 +500,10 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 				seedPeerHosts = append(seedPeerHosts, fmt.Sprintf("%s:%d", seedPeer.Ip, seedPeer.ObjectStoragePort))
 			}
 		}
+	}
+
+	if len(seedPeerHosts) > maxReplicas {
+		seedPeerHosts = seedPeerHosts[:maxReplicas-1]
 	}
 
 	for _, seedPeerHost := range seedPeerHosts {

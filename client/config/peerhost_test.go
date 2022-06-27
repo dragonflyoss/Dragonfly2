@@ -327,8 +327,9 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		ObjectStorage: ObjectStorageOption{
-			Enable: true,
-			Filter: "Expires&Signature&ns",
+			Enable:      true,
+			Filter:      "Expires&Signature&ns",
+			MaxReplicas: 3,
 			ListenOption: ListenOption{
 				Security: SecurityOption{
 					Insecure:  true,
