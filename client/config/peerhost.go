@@ -366,6 +366,10 @@ type UploadOption struct {
 type ObjectStorageOption struct {
 	// Enable object storage.
 	Enable bool `mapstructure:"enable" yaml:"enable"`
+	// Filter is used to generate a unique Task ID by
+	// filtering unnecessary query params in the URL,
+	// it is separated by & character.
+	Filter string `mapstructure:"filter" yaml:"filter"`
 	// ListenOption is object storage service listener.
 	ListenOption `yaml:",inline" mapstructure:",squash"`
 }
