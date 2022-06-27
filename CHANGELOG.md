@@ -1453,7 +1453,7 @@
 - update runtime guide in helm deploy ([#612](https://github.com/dragonflyoss/Dragonfly2/issues/612))
 
 ### Feat
-- update verison ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
+- update version ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
 - changelog ([#638](https://github.com/dragonflyoss/Dragonfly2/issues/638))
 - update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
 - update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
