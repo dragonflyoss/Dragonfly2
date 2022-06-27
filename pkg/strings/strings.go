@@ -36,7 +36,7 @@ func Contains(slice []string, ele string) bool {
 	return false
 }
 
-// Remove the duplicate elements in the string slice
+// Remove the duplicate elements in the string slice.
 func Unique(slice []string) []string {
 	keys := make(map[string]bool)
 	result := []string{}
