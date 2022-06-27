@@ -32,3 +32,11 @@ func TestContains(t *testing.T) {
 	assert.True(t, Contains([]string{"a", "B"}, "B"))
 	assert.False(t, Contains([]string{"a", "B"}, "b"))
 }
+
+func TestUnique(t *testing.T) {
+	assert.EqualValues(t, Unique([]string{"a", "B"}), []string{"a", "B"})
+	assert.EqualValues(t, Unique([]string{"a", "a", "B", "B"}), []string{"a", "B"})
+	assert.EqualValues(t, Unique([]string{"a", "B", "a", "B"}), []string{"a", "B"})
+	assert.EqualValues(t, Unique([]string{}), []string{})
+	assert.EqualValues(t, Unique([]string{}), []string{})
+}

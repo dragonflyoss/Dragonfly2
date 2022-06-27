@@ -73,6 +73,7 @@ upload:
 objectStorage:
   enable: true
   filter: Expires&Signature&ns
+  maxReplicas: 3
   security:
     insecure: true
     caCert: caCert
