@@ -35,3 +35,17 @@ func Contains(slice []string, ele string) bool {
 
 	return false
 }
+
+// Remove the duplicate elements in the string slice
+func Unique(slice []string) []string {
+	keys := make(map[string]bool)
+	result := []string{}
+	for _, entry := range slice {
+		if _, ok := keys[entry]; !ok {
+			keys[entry] = true
+			result = append(result, entry)
+		}
+	}
+
+	return result
+}

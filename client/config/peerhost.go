@@ -139,6 +139,12 @@ func (p *DaemonOption) Validate() error {
 		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
 	}
 
+	if p.ObjectStorage.Enable {
+		if p.ObjectStorage.MaxReplicas <= 0 {
+			return errors.New("max replicas must be greater than 0")
+		}
+	}
+
 	switch p.Download.DefaultPattern {
 	case PatternP2P, PatternSeedPeer, PatternSource:
 	default:
@@ -370,6 +376,8 @@ type ObjectStorageOption struct {
 	// filtering unnecessary query params in the URL,
 	// it is separated by & character.
 	Filter string `mapstructure:"filter" yaml:"filter"`
+	// MaxReplicas is the maximum number of replicas of an object cache in seed peers.
+	MaxReplicas int `mapstructure:"maxReplicas" yaml:"maxReplicas"`
 	// ListenOption is object storage service listener.
 	ListenOption `yaml:",inline" mapstructure:",squash"`
 }
