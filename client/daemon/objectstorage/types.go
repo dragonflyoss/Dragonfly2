@@ -28,7 +28,12 @@ type CreateObjectParams struct {
 }
 
 type CreateObjectRequset struct {
-	Key  string                `form:"key" binding:"required"`
-	Mode uint                  `form:"mode,default=0" binding:"omitempty,gte=0,lte=2"`
-	File *multipart.FileHeader `form:"file" binding:"required"`
+	Key    string                `form:"key" binding:"required"`
+	Mode   uint                  `form:"mode,default=0" binding:"omitempty,gte=0,lte=2"`
+	Filter string                `form:"filter" binding:"omitempty"`
+	File   *multipart.FileHeader `form:"file" binding:"required"`
+}
+
+type GetObjectQuery struct {
+	Filter string `form:"filter" binding:"omitempty"`
 }

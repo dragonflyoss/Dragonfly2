@@ -119,6 +119,7 @@ var peerHostConfig = DaemonOption{
 	},
 	ObjectStorage: ObjectStorageOption{
 		Enable: false,
+		Filter: "Expires&Signature&ns",
 		ListenOption: ListenOption{
 			Security: SecurityOption{
 				Insecure:  true,

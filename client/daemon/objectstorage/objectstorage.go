@@ -174,12 +174,24 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		return
 	}
 
+	var query GetObjectQuery
+	if err := ctx.ShouldBindQuery(&query); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
 	var (
 		urlMeta       *base.UrlMeta
 		artifactRange *clientutil.Range
 		ranges        []clientutil.Range
 		err           error
 	)
+
+	// Initialize filter field.
+	urlMeta.Filter = o.config.ObjectStorage.Filter
+	if query.Filter != "" {
+		urlMeta.Filter = query.Filter
+	}
 
 	// Parse http range header.
 	rangeHeader := ctx.GetHeader(headers.Range)
@@ -300,10 +312,19 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 		return
 	}
 
+	// Initialize url meta.
+	var urlMeta *base.UrlMeta
 	dgst := o.md5FromFileHeader(form.File)
-	urlMeta := &base.UrlMeta{Digest: dgst.String()}
+	urlMeta.Digest = dgst.String()
+	urlMeta.Filter = o.config.ObjectStorage.Filter
+	if form.Filter != "" {
+		urlMeta.Filter = form.Filter
+	}
+
+	// Initialize task id and peer id.
 	taskID := idgen.TaskID(signURL, urlMeta)
 	peerID := o.peerIDGenerator.PeerID()
+
 	log := logger.WithTaskAndPeerID(taskID, peerID)
 	log.Infof("upload object %s urlMeta: %v", signURL, urlMeta)
 
