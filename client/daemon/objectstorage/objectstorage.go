@@ -47,6 +47,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const (
@@ -307,11 +308,12 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	}
 
 	var (
-		bucketName = params.ID
-		objectKey  = form.Key
-		mode       = form.Mode
-		filter     = form.Filter
-		fileHeader = form.File
+		bucketName  = params.ID
+		objectKey   = form.Key
+		mode        = form.Mode
+		filter      = form.Filter
+		maxReplicas = form.MaxReplicas
+		fileHeader  = form.File
 	)
 
 	client, err := o.client()
@@ -344,6 +346,11 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	urlMeta.Digest = dgst.String()
 	if filter != "" {
 		urlMeta.Filter = filter
+	}
+
+	// Initialize max replicas.
+	if maxReplicas == 0 {
+		maxReplicas = o.config.ObjectStorage.MaxReplicas
 	}
 
 	// Initialize task id and peer id.
@@ -380,9 +387,8 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	case WriteBack:
 		// Import object to seed peer.
 		go func() {
-			log.Infof("import object %s to seed peer", objectKey)
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader); err != nil {
-				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas, log); err != nil {
+				log.Errorf("import object %s to seed peers failed: %s", objectKey, err)
 			}
 		}()
 
@@ -399,9 +405,8 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	case AsyncWriteBack:
 		// Import object to seed peer.
 		go func() {
-			log.Infof("import object %s to seed peer", objectKey)
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader); err != nil {
-				log.Errorf("import object %s to seed peer failed: %s", objectKey, err)
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas, log); err != nil {
+				log.Errorf("import object %s to seed peers failed: %s", objectKey, err)
 			}
 		}()
 
@@ -477,7 +482,7 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 }
 
 // importObjectToSeedPeers uses to import object to available seed peers.
-func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader) error {
+func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader, maxReplicas int, log *logger.SugaredLoggerOnWith) error {
 	schedulers, err := o.dynconfig.GetSchedulers()
 	if err != nil {
 		return err
@@ -491,13 +496,23 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 			}
 		}
 	}
+	seedPeerHosts = pkgstrings.Unique(seedPeerHosts)
 
+	var replicas int
 	for _, seedPeerHost := range seedPeerHosts {
+		log.Infof("import object %s to seed peer %s", objectKey, seedPeerHost)
 		if err := o.importObjectToSeedPeer(ctx, seedPeerHost, bucketName, objectKey, mode, fileHeader); err != nil {
-			return err
+			log.Errorf("import object %s to seed peer %s failed: %s", objectKey, seedPeerHost, err)
+			continue
+		}
+
+		replicas++
+		if replicas >= maxReplicas {
+			break
 		}
 	}
 
+	log.Infof("import %d object %s to seed peers", replicas, objectKey)
 	return nil
 }
 
