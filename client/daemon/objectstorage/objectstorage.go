@@ -305,6 +305,7 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	taskID := idgen.TaskID(signURL, urlMeta)
 	peerID := o.peerIDGenerator.PeerID()
 	log := logger.WithTaskAndPeerID(taskID, peerID)
+	log.Infof("upload object %s urlMeta: %v", signURL, urlMeta)
 
 	// Import object to local storage.
 	if err := o.importObjectToLocalStorage(ctx, taskID, peerID, form.File); err != nil {
