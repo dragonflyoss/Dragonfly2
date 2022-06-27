@@ -73,7 +73,7 @@ type ObjectStorage interface {
 	ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error)
 
 	// GetObjectMetadata returns metadata of object.
-	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error)
+	GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error)
 
 	// GetOject returns data of object.
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
