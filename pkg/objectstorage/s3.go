@@ -91,13 +91,18 @@ func (s *s3) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error)
 }
 
 // GetObjectMetadata returns metadata of object.
-func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error) {
+func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error) {
 	resp, err := s.client.HeadObjectWithContext(ctx, &awss3.HeadObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(objectKey),
 	})
 	if err != nil {
-		return nil, err
+		// S3 is missing this error code.
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
+			return nil, false, nil
+		}
+
+		return nil, false, err
 	}
 
 	return &ObjectMetadata{
@@ -109,7 +114,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 		ContentType:        aws.StringValue(resp.ContentType),
 		Etag:               aws.StringValue(resp.ETag),
 		Digest:             aws.StringValue(resp.Metadata[MetaDigest]),
-	}, nil
+	}, true, nil
 }
 
 // GetOject returns data of object.
@@ -175,13 +180,14 @@ func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 
 // IsObjectExist returns whether the object exists.
 func (s *s3) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
-	if _, err := s.GetObjectMetadata(ctx, bucketName, objectKey); err != nil {
-		// S3 is missing this error code.
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NotFound" {
-			return false, nil
-		}
+	_, isExist, err := s.GetObjectMetadata(ctx, bucketName, objectKey)
+	if err != nil {
 
 		return false, err
+	}
+
+	if !isExist {
+		return false, nil
 	}
 
 	return true, nil

@@ -191,13 +191,19 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		err           error
 	)
 
+	// Initialize filter field.
+	urlMeta := &base.UrlMeta{Filter: o.config.ObjectStorage.Filter}
+	if filter != "" {
+		urlMeta.Filter = filter
+	}
+
 	client, err := o.client()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	isExist, err := client.IsObjectExist(ctx, bucketName, objectKey)
+	meta, isExist, err := client.GetObjectMetadata(ctx, bucketName, objectKey)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
@@ -208,11 +214,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		return
 	}
 
-	// Initialize filter field.
-	urlMeta := &base.UrlMeta{Filter: o.config.ObjectStorage.Filter}
-	if filter != "" {
-		urlMeta.Filter = filter
-	}
+	urlMeta.Digest = meta.Digest
 
 	// Parse http range header.
 	rangeHeader := ctx.GetHeader(headers.Range)
@@ -227,13 +229,6 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
 	}
-
-	meta, err := client.GetObjectMetadata(ctx, bucketName, objectKey)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-	urlMeta.Digest = meta.Digest
 
 	signURL, err := client.GetSignURL(ctx, bucketName, objectKey, objectstorage.MethodGet, defaultSignExpireTime)
 	if err != nil {
