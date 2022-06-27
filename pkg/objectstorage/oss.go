@@ -20,11 +20,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"time"
 
 	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 )
 
 type oss struct {
@@ -86,20 +88,24 @@ func (o *oss) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error
 }
 
 // GetObjectMetadata returns metadata of object.
-func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, error) {
+func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*ObjectMetadata, bool, error) {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	header, err := bucket.GetObjectMeta(objectKey)
+	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
-		return nil, err
+		if serr, ok := errors.Cause(err).(aliyunoss.ServiceError); ok && serr.StatusCode == http.StatusNotFound {
+			return nil, false, nil
+		}
+
+		return nil, false, err
 	}
 
 	contentLength, err := strconv.ParseInt(header.Get(headers.ContentLength), 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	return &ObjectMetadata{
@@ -111,7 +117,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentType:        header.Get(headers.ContentType),
 		Etag:               header.Get(headers.ETag),
 		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
-	}, nil
+	}, true, nil
 }
 
 // GetOject returns data of object.
