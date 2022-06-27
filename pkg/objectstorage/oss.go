@@ -92,7 +92,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		return nil, err
 	}
 
-	header, err := bucket.GetObjectMeta(objectKey)
+	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
 		return nil, err
 	}
