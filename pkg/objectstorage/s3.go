@@ -112,7 +112,7 @@ func (s *s3) GetObjectMetadata(ctx context.Context, bucketName, objectKey string
 		ContentLanguage:    aws.StringValue(resp.ContentLanguage),
 		ContentLength:      aws.Int64Value(resp.ContentLength),
 		ContentType:        aws.StringValue(resp.ContentType),
-		Etag:               aws.StringValue(resp.ETag),
+		ETag:               aws.StringValue(resp.ETag),
 		Digest:             aws.StringValue(resp.Metadata[MetaDigest]),
 	}, true, nil
 }
@@ -171,7 +171,7 @@ func (s *s3) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker
 	for _, object := range resp.Contents {
 		metadatas = append(metadatas, &ObjectMetadata{
 			Key:  aws.StringValue(object.Key),
-			Etag: aws.StringValue(object.ETag),
+			ETag: aws.StringValue(object.ETag),
 		})
 	}
 
