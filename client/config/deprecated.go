@@ -17,10 +17,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 var DefaultSupernodesValue = &SupernodesValue{

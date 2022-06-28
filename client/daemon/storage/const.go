@@ -17,9 +17,8 @@
 package storage
 
 import (
+	"errors"
 	"os"
-
-	"github.com/pkg/errors"
 )
 
 const (

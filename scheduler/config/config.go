@@ -17,9 +17,8 @@
 package config
 
 import (
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"

@@ -18,8 +18,9 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -75,8 +76,8 @@ func (drs *DownResultStream) initStream() error {
 		return client.Download(drs.ctx, drs.req, drs.opts...)
 	}, drs.InitBackoff, drs.MaxBackOff, drs.MaxAttempts, nil)
 	if err != nil {
-		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
-			return errors.Wrapf(err, "get grpc server instance failed")
+		if errors.Is(err, dferrors.ErrNoCandidateNode) {
+			return fmt.Errorf("get grpc server instance failed: %w", err)
 		}
 		logger.WithTaskID(drs.hashKey).Infof("initStream: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(err)

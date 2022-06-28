@@ -19,6 +19,7 @@ package objectstorage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -35,7 +36,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -567,7 +567,7 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 	defer resp.Body.Close()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return errors.Errorf("%v: %v", targetURL.String(), resp.Status)
+		return fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
 	}
 
 	return nil

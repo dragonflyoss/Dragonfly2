@@ -18,6 +18,7 @@ package dfget
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -29,7 +30,6 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 	"github.com/schollz/progressbar/v3"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -68,7 +68,7 @@ func Download(cfg *config.DfgetConfig, client daemonclient.DaemonClient) error {
 	<-ctx.Done()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return errors.Errorf("download timeout(%s)", cfg.Timeout)
+		return fmt.Errorf("download timeout(%s)", cfg.Timeout)
 	}
 	return downError
 }
@@ -185,13 +185,13 @@ func downloadFromSource(ctx context.Context, cfg *config.DfgetConfig, hdr map[st
 		}
 
 		if encoded != "" && encoded != d.Encoded {
-			return errors.Errorf("%s digest is not matched: real[%s] expected[%s]", d.Algorithm, encoded, d.Encoded)
+			return fmt.Errorf("%s digest is not matched: real[%s] expected[%s]", d.Algorithm, encoded, d.Encoded)
 		}
 	}
 
 	// change file owner
 	if err = os.Chown(target.Name(), basic.UserID, basic.UserGroup); err != nil {
-		return errors.Wrapf(err, "change file owner to uid[%d] gid[%d]", basic.UserID, basic.UserGroup)
+		return fmt.Errorf("change file owner to uid[%d] gid[%d]: %w", basic.UserID, basic.UserGroup, err)
 	}
 
 	if err = os.Rename(target.Name(), cfg.Output); err != nil {

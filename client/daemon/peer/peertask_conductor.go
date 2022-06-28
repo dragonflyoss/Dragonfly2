@@ -19,13 +19,13 @@ package peer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"runtime/debug"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
@@ -317,7 +317,7 @@ func (pt *peerTaskConductor) register() error {
 					Content: piece.PieceContent,
 				}
 			} else {
-				err = errors.Errorf("scheduler return tiny piece but can not parse piece content")
+				err = errors.New("scheduler return tiny piece but can not parse piece content")
 				// when peer register failed, some actions need to do with peerPacketStream
 				pt.peerPacketStream = &dummyPeerPacketStream{}
 				pt.span.RecordError(err)
