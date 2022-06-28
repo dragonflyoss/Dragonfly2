@@ -22,6 +22,8 @@ const (
 	HeaderDragonflyTask   = "X-Dragonfly-Task"
 	HeaderDragonflyRange  = "X-Dragonfly-Range"
 	HeaderDragonflyBiz    = "X-Dragonfly-Biz"
-	// HeaderDragonflyRegistry is used for dynamic registry mirrors
+	// HeaderDragonflyRegistry is used for dynamic registry mirrors.
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"
+	// HeaderDragonflyObjectMetaDigest is used for digest of object storage.
+	HeaderDragonflyObjectMetaDigest = "X-Dragonfly-Object-Meta-Digest"
 )

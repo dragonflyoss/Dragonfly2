@@ -44,8 +44,8 @@ type ObjectMetadata struct {
 	// ContentType is Content-Type header.
 	ContentType string
 
-	// Etag is Etag header.
-	Etag string
+	// ETag is ETag header.
+	ETag string
 
 	// Digest is object digest.
 	Digest string

@@ -51,11 +51,11 @@ import (
 )
 
 const (
-	// WriteBack writes the object synchronously to the backend.
-	WriteBack = iota
-
 	// AsyncWriteBack writes the object asynchronously to the backend.
-	AsyncWriteBack
+	AsyncWriteBack = iota
+
+	// WriteBack writes the object synchronously to the backend.
+	WriteBack
 
 	// Ephemeral only writes the object to the dfdaemon.
 	// It is only provided for creating temporary objects between peers,
@@ -157,6 +157,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	// Buckets
 	b := r.Group("/buckets")
+	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
 	b.DELETE(":id/objects/*object_key", o.destroyObject)
 	b.POST(":id/objects", o.createObject)
@@ -167,6 +168,49 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 // getHealth uses to check server health.
 func (o *objectStorage) getHealth(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, http.StatusText(http.StatusOK))
+}
+
+// headObject uses to head object.
+func (o *objectStorage) headObject(ctx *gin.Context) {
+	var params ObjectParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	var (
+		bucketName = params.ID
+		objectKey  = strings.TrimPrefix(params.ObjectKey, "/")
+	)
+
+	client, err := o.client()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	meta, isExist, err := client.GetObjectMetadata(ctx, bucketName, objectKey)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	if !isExist {
+		ctx.JSON(http.StatusNotFound, gin.H{"errors": http.StatusText(http.StatusNotFound)})
+		return
+	}
+
+	ctx.Header(headers.ContentDisposition, meta.ContentDisposition)
+	ctx.Header(headers.ContentEncoding, meta.ContentEncoding)
+	ctx.Header(headers.ContentLanguage, meta.ContentLanguage)
+	ctx.Header(headers.ContentLength, fmt.Sprint(meta.ContentLength))
+	ctx.Header(headers.ContentType, meta.ContentType)
+	ctx.Header(headers.ETag, meta.ETag)
+	ctx.Header(headers.ETag, meta.ETag)
+	ctx.Header(config.HeaderDragonflyObjectMetaDigest, meta.Digest)
+
+	ctx.Status(http.StatusOK)
+	return
 }
 
 // getObject uses to download object data.
@@ -387,7 +431,7 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	case WriteBack:
 		// Import object to seed peer.
 		go func() {
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas, log); err != nil {
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, urlMeta.Filter, Ephemeral, fileHeader, maxReplicas, log); err != nil {
 				log.Errorf("import object %s to seed peers failed: %s", objectKey, err)
 			}
 		}()
@@ -405,7 +449,7 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	case AsyncWriteBack:
 		// Import object to seed peer.
 		go func() {
-			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, Ephemeral, fileHeader, maxReplicas, log); err != nil {
+			if err := o.importObjectToSeedPeers(context.Background(), bucketName, objectKey, urlMeta.Filter, Ephemeral, fileHeader, maxReplicas, log); err != nil {
 				log.Errorf("import object %s to seed peers failed: %s", objectKey, err)
 			}
 		}()
@@ -482,7 +526,7 @@ func (o *objectStorage) importObjectToLocalStorage(ctx context.Context, taskID, 
 }
 
 // importObjectToSeedPeers uses to import object to available seed peers.
-func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader, maxReplicas int, log *logger.SugaredLoggerOnWith) error {
+func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName, objectKey, filter string, mode int, fileHeader *multipart.FileHeader, maxReplicas int, log *logger.SugaredLoggerOnWith) error {
 	schedulers, err := o.dynconfig.GetSchedulers()
 	if err != nil {
 		return err
@@ -501,7 +545,7 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 	var replicas int
 	for _, seedPeerHost := range seedPeerHosts {
 		log.Infof("import object %s to seed peer %s", objectKey, seedPeerHost)
-		if err := o.importObjectToSeedPeer(ctx, seedPeerHost, bucketName, objectKey, mode, fileHeader); err != nil {
+		if err := o.importObjectToSeedPeer(ctx, seedPeerHost, bucketName, objectKey, filter, mode, fileHeader); err != nil {
 			log.Errorf("import object %s to seed peer %s failed: %s", objectKey, seedPeerHost, err)
 			continue
 		}
@@ -517,7 +561,7 @@ func (o *objectStorage) importObjectToSeedPeers(ctx context.Context, bucketName,
 }
 
 // importObjectToSeedPeer uses to import object to seed peer.
-func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey string, mode int, fileHeader *multipart.FileHeader) error {
+func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost, bucketName, objectKey, filter string, mode int, fileHeader *multipart.FileHeader) error {
 	f, err := fileHeader.Open()
 	if err != nil {
 		return err
@@ -535,6 +579,12 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 		return err
 	}
 
+	if filter != "" {
+		if err := writer.WriteField("filter", filter); err != nil {
+			return err
+		}
+	}
+
 	part, err := writer.CreateFormFile("file", fileHeader.Filename)
 	if err != nil {
 		return err
@@ -548,13 +598,13 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 		return err
 	}
 
-	targetURL := url.URL{
+	u := url.URL{
 		Scheme: "http",
 		Host:   seedPeerHost,
 		Path:   filepath.Join("buckets", bucketName, "objects"),
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, targetURL.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), body)
 	if err != nil {
 		return err
 	}
@@ -566,8 +616,8 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return errors.Errorf("%v: %v", targetURL.String(), resp.Status)
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("bad response status %s", resp.Status)
 	}
 
 	return nil
