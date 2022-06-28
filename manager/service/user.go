@@ -18,6 +18,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/VividCortex/mysqlerr"
@@ -178,7 +179,8 @@ func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*
 		State:  model.UserStateEnabled,
 	}
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
-		if err, ok := err.(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+		var merr *mysql.MySQLError
+		if errors.As(err, &merr) && merr.Number == mysqlerr.ER_DUP_ENTRY {
 			return &user, nil
 		}
 

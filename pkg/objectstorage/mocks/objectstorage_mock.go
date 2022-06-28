@@ -109,12 +109,13 @@ func (mr *MockObjectStorageMockRecorder) GetBucketMetadata(ctx, bucketName inter
 }
 
 // GetObjectMetadata mocks base method.
-func (m *MockObjectStorage) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*objectstorage.ObjectMetadata, error) {
+func (m *MockObjectStorage) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*objectstorage.ObjectMetadata, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadata", ctx, bucketName, objectKey)
 	ret0, _ := ret[0].(*objectstorage.ObjectMetadata)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(bool)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetObjectMetadata indicates an expected call of GetObjectMetadata.
@@ -151,6 +152,21 @@ func (m *MockObjectStorage) GetSignURL(ctx context.Context, bucketName, objectKe
 func (mr *MockObjectStorageMockRecorder) GetSignURL(ctx, bucketName, objectKey, method, expire interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignURL", reflect.TypeOf((*MockObjectStorage)(nil).GetSignURL), ctx, bucketName, objectKey, method, expire)
+}
+
+// IsObjectExist mocks base method.
+func (m *MockObjectStorage) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsObjectExist", ctx, bucketName, objectKey)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsObjectExist indicates an expected call of IsObjectExist.
+func (mr *MockObjectStorageMockRecorder) IsObjectExist(ctx, bucketName, objectKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsObjectExist", reflect.TypeOf((*MockObjectStorage)(nil).IsObjectExist), ctx, bucketName, objectKey)
 }
 
 // ListBucketMetadatas mocks base method.

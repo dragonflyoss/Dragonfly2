@@ -18,6 +18,7 @@ package objectstorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -95,7 +96,8 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 
 	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
-		if serr, ok := err.(aliyunoss.ServiceError); ok && serr.StatusCode == http.StatusNotFound {
+		var serr *aliyunoss.ServiceError
+		if errors.As(err, &serr) && serr.StatusCode == http.StatusNotFound {
 			return nil, false, nil
 		}
 
@@ -114,7 +116,7 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 		ContentLanguage:    header.Get(headers.ContentLanguage),
 		ContentLength:      contentLength,
 		ContentType:        header.Get(headers.ContentType),
-		Etag:               header.Get(headers.ETag),
+		ETag:               header.Get(headers.ETag),
 		Digest:             header.Get(aliyunoss.HTTPHeaderOssMetaPrefix + MetaDigest),
 	}, true, nil
 }
@@ -166,7 +168,7 @@ func (o *oss) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marke
 	for _, object := range resp.Objects {
 		metadatas = append(metadatas, &ObjectMetadata{
 			Key:  object.Key,
-			Etag: object.ETag,
+			ETag: object.ETag,
 		})
 	}
 
