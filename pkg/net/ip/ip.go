@@ -17,10 +17,9 @@
 package ip
 
 import (
+	"fmt"
 	"net"
 	"os"
-
-	"github.com/pkg/errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
@@ -59,7 +58,7 @@ func externalIPv4() (string, error) {
 	}
 
 	if len(externalIPs) == 0 {
-		return "", errors.Errorf("can not found external ipv4")
+		return "", fmt.Errorf("can not found external ipv4")
 	}
 
 	return externalIPs[0], nil

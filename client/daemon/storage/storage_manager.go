@@ -19,6 +19,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -31,7 +32,6 @@ import (
 	"time"
 
 	"github.com/docker/go-units"
-	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/v3/disk"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"

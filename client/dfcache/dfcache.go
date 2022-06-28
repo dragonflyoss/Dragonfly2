@@ -18,12 +18,11 @@ package dfcache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -52,7 +51,7 @@ func Stat(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	)
 
 	if err := cfg.Validate(config.CmdStat); err != nil {
-		return errors.Wrap(err, "validate stat option failed")
+		return fmt.Errorf("validate stat option failed: %w", err)
 	}
 
 	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag)
@@ -72,7 +71,7 @@ func Stat(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	<-ctx.Done()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return errors.Errorf("stat timeout(%s)", cfg.Timeout)
+		return fmt.Errorf("stat timeout(%s)", cfg.Timeout)
 	}
 	return statError
 }
@@ -118,7 +117,7 @@ func Import(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	)
 
 	if err := cfg.Validate(config.CmdImport); err != nil {
-		return errors.Wrap(err, "validate import option failed")
+		return fmt.Errorf("validate import option failed: %w", err)
 	}
 
 	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag, "file", cfg.Path)
@@ -138,7 +137,7 @@ func Import(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	<-ctx.Done()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return errors.Errorf("import timeout(%s)", cfg.Timeout)
+		return fmt.Errorf("import timeout(%s)", cfg.Timeout)
 	}
 	return importError
 }
@@ -180,7 +179,7 @@ func Export(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	)
 
 	if err := cfg.Validate(config.CmdExport); err != nil {
-		return errors.Wrap(err, "validate export option failed")
+		return fmt.Errorf("validate export option failed: %w", err)
 	}
 
 	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag, "output", cfg.Output)
@@ -200,7 +199,7 @@ func Export(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	<-ctx.Done()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return errors.Errorf("export timeout(%s)", cfg.Timeout)
+		return fmt.Errorf("export timeout(%s)", cfg.Timeout)
 	}
 	return exportError
 }
@@ -250,7 +249,7 @@ func Delete(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	)
 
 	if err := cfg.Validate(config.CmdDelete); err != nil {
-		return errors.Wrap(err, "validate delete option failed")
+		return fmt.Errorf("validate delete option failed: %w", err)
 	}
 
 	wLog := logger.With("Cid", cfg.Cid, "Tag", cfg.Tag)
@@ -270,7 +269,7 @@ func Delete(cfg *config.DfcacheConfig, client daemonclient.DaemonClient) error {
 	<-ctx.Done()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return errors.Errorf("delete timeout(%s)", cfg.Timeout)
+		return fmt.Errorf("delete timeout(%s)", cfg.Timeout)
 	}
 	return deleteError
 }

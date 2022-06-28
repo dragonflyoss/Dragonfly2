@@ -20,9 +20,8 @@ package resource
 
 import (
 	"context"
+	"fmt"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
@@ -149,7 +148,7 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, err
 	host, ok := s.hostManager.Load(ps.HostId)
 	if !ok {
 		task.Log.Errorf("can not find seed host id: %s", ps.HostId)
-		return nil, errors.Errorf("can not find host id: %s", ps.HostId)
+		return nil, fmt.Errorf("can not find host id: %s", ps.HostId)
 	}
 
 	// New seed peer.

@@ -19,6 +19,7 @@ package objectstorage
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -35,7 +36,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
 	"d7y.io/dragonfly/v2/client/clientutil"

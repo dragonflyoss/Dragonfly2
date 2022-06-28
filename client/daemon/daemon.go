@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -30,7 +31,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
@@ -155,7 +155,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get schedulers")
+		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
 
 	// Storage.Option.DataPath is same with Daemon DataDir

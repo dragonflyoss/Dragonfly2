@@ -17,6 +17,7 @@
 package ossprotocol
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/strings"
@@ -95,15 +95,15 @@ func (osc *ossSourceClient) GetContentLength(request *source.Request) (int64, er
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return source.UnknownSourceFileLen, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return source.UnknownSourceFileLen, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
 	header, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {
-		return source.UnknownSourceFileLen, errors.Wrapf(err, "get oss object %s meta", request.URL.Path)
+		return source.UnknownSourceFileLen, fmt.Errorf("get oss object %s meta: %w", request.URL.Path, err)
 	}
 	contentLen, err := strconv.ParseInt(header.Get(oss.HTTPHeaderContentLength), 10, 64)
 	if err != nil {
-		return source.UnknownSourceFileLen, errors.Wrapf(err, "parse content-length str to int64")
+		return source.UnknownSourceFileLen, fmt.Errorf("parse content-length str to int64: %w", err)
 	}
 	return contentLen, nil
 }
@@ -114,11 +114,11 @@ func (osc *ossSourceClient) IsSupportRange(request *source.Request) (bool, error
 	}
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return false, errors.Wrap(err, "get oss client")
+		return false, fmt.Errorf("get oss client: %w", err)
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return false, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return false, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
 	exist, err := bucket.IsObjectExist(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {
@@ -133,11 +133,11 @@ func (osc *ossSourceClient) IsSupportRange(request *source.Request) (bool, error
 func (osc *ossSourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return false, errors.Wrap(err, "get oss client")
+		return false, fmt.Errorf("get oss client: %w", err)
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return false, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return false, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
 	resHeader, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {
@@ -149,15 +149,15 @@ func (osc *ossSourceClient) IsExpired(request *source.Request, info *source.Expi
 func (osc *ossSourceClient) Download(request *source.Request) (*source.Response, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get oss client")
+		return nil, fmt.Errorf("get oss client: %w", err)
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
 	objectResult, err := bucket.DoGetObject(&oss.GetObjectRequest{ObjectKey: request.URL.Path}, getOptions(request.Header))
 	if err != nil {
-		return nil, errors.Wrapf(err, "get oss Object: %s", request.URL.Path)
+		return nil, fmt.Errorf("get oss Object %s: %w", request.URL.Path, err)
 	}
 	err = source.CheckResponseCode(objectResult.Response.StatusCode, []int{http.StatusOK, http.StatusPartialContent})
 	if err != nil {
@@ -178,11 +178,11 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {
-		return -1, errors.Wrap(err, "get oss client")
+		return -1, fmt.Errorf("get oss client: %w", err)
 	}
 	bucket, err := client.Bucket(request.URL.Host)
 	if err != nil {
-		return -1, errors.Wrapf(err, "get oss bucket: %s", request.URL.Host)
+		return -1, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
 	header, err := bucket.GetObjectMeta(request.URL.Path, getOptions(request.Header)...)
 	if err != nil {

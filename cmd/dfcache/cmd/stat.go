@@ -17,7 +17,8 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -49,7 +50,7 @@ func initStat() {
 	flags := statCmd.Flags()
 	flags.BoolVarP(&dfcacheConfig.LocalOnly, "local", "l", dfcacheConfig.LocalOnly, "only check task exists locally, and don't check other peers in P2P network")
 	if err := viper.BindPFlags(flags); err != nil {
-		panic(errors.Wrap(err, "bind cache stat flags to viper"))
+		panic(fmt.Errorf("bind cache stat flags to viper: %w", err))
 	}
 }
 

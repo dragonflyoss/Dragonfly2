@@ -21,7 +21,6 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/cobra/doc"
 )
@@ -67,7 +66,7 @@ func (g *genDocCommand) runDoc() error {
 	}
 
 	if !file.IsDir() {
-		return errors.Errorf("path %s is not dir, please check it", g.path)
+		return fmt.Errorf("path %s is not dir, please check it", g.path)
 	}
 
 	return doc.GenMarkdownTree(g.cmd.Parent(), g.path)

@@ -31,7 +31,6 @@ import (
 	"github.com/go-echarts/statsview/viewer"
 	"github.com/mitchellh/mapstructure"
 	"github.com/phayes/freeport"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -72,7 +71,7 @@ func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
 
 		// Bind common flags
 		if err := viper.BindPFlags(flags); err != nil {
-			panic(errors.Wrap(err, "bind common flags to viper"))
+			panic(fmt.Errorf("bind common flags to viper: %w", err))
 		}
 
 		// Config for binding env
@@ -178,12 +177,12 @@ func initConfig(useConfigFile bool, name string, config interface{}) {
 				}
 			}
 			if !ignoreErr {
-				panic(errors.Wrap(err, "viper read config"))
+				panic(fmt.Errorf("viper read config: %w", err))
 			}
 		}
 	}
 	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
-		panic(errors.Wrap(err, "unmarshal config to struct"))
+		panic(fmt.Errorf("unmarshal config to struct: %w", err))
 	}
 }
 

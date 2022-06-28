@@ -18,8 +18,9 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,8 +77,8 @@ func (pss *PieceSeedStream) initStream() error {
 		return client.ObtainSeeds(pss.ctx, pss.sr, pss.opts...)
 	}, pss.InitBackoff, pss.MaxBackOff, pss.MaxAttempts, nil)
 	if err != nil {
-		if errors.Cause(err) == dferrors.ErrNoCandidateNode {
-			return errors.Wrapf(err, "get grpc server instance failed")
+		if errors.Is(err, dferrors.ErrNoCandidateNode) {
+			return fmt.Errorf("get grpc server instance failed: %w", err)
 		}
 		logger.WithTaskID(pss.hashKey).Errorf("initStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceClient(pss.hashKey, err)

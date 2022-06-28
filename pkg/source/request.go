@@ -18,9 +18,8 @@ package source
 
 import (
 	"context"
+	"errors"
 	"net/url"
-
-	"github.com/pkg/errors"
 )
 
 type Request struct {

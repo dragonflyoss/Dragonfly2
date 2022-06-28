@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -88,7 +88,7 @@ func init() {
 
 	// Bind common flags
 	if err := viper.BindPFlags(flags); err != nil {
-		panic(errors.Wrap(err, "bind cache common flags to viper"))
+		panic(fmt.Errorf("bind cache common flags to viper: %w", err))
 	}
 
 	initStat()
@@ -125,7 +125,7 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 
 	// Initialize logger
 	if err := logger.InitDfcache(dfcacheConfig.Console, d.LogDir()); err != nil {
-		return errors.Wrap(err, "init client dfcache logger")
+		return fmt.Errorf("init client dfcache logger: %w", err)
 	}
 	logger.Infof("Version:\n%s", version.Version())
 
