@@ -91,7 +91,10 @@ type MysqlConfig struct {
 	// Enable migration
 	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 
-	// TLS configuration
+	// TLS mode (can be one of "true", "false", "skip-verify",  or "preferred")
+	TLSConfig string `yaml:"tlsConfig" mapstructure:"tlsConfig"`
+
+	// Custom TLS configuration (overrides "TLSConfig" setting above)
 	TLS *TLSConfig `yaml:"tls" mapstructure:"tls"`
 }
 
