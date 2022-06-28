@@ -18,10 +18,10 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -81,7 +81,7 @@ var _ CdnClient = (*cdnClient)(nil)
 func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
 	clientConn, err := cc.Connection.GetClientConn(key, stick)
 	if err != nil {
-		return nil, "", errors.Wrapf(err, "get ClientConn for hashKey %s", key)
+		return nil, "", fmt.Errorf("get ClientConn for hashKey %s: %w", key, err)
 	}
 	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
 }

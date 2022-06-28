@@ -17,7 +17,8 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -50,7 +51,7 @@ func initExport() {
 	flags.StringVarP(&dfcacheConfig.Output, "output", "O", "", "export file path")
 	flags.BoolVarP(&dfcacheConfig.LocalOnly, "local", "l", false, "only export file from local cache")
 	if err := viper.BindPFlags(flags); err != nil {
-		panic(errors.Wrap(err, "bind cache export flags to viper"))
+		panic(fmt.Errorf("bind cache export flags to viper: %w", err))
 	}
 }
 

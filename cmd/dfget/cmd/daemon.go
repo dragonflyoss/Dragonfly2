@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"path"
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -62,7 +63,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 
 		// Initialize logger
 		if err := logger.InitDaemon(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
-			return errors.Wrap(err, "init client daemon logger")
+			return fmt.Errorf("init client daemon logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "daemon"))
 

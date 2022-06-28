@@ -17,7 +17,8 @@
 package cmd
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -49,7 +50,7 @@ func initImport() {
 	flags := importCmd.Flags()
 	flags.StringVarP(&dfcacheConfig.Path, "input", "I", "", "import the given file into P2P network")
 	if err := viper.BindPFlags(flags); err != nil {
-		panic(errors.Wrap(err, "bind cache import flags to viper"))
+		panic(fmt.Errorf("bind cache import flags to viper: %w", err))
 	}
 }
 

@@ -18,6 +18,7 @@ package rpcserver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -25,7 +26,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

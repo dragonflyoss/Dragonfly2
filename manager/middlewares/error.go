@@ -17,13 +17,13 @@
 package middlewares
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	redigo "github.com/gomodule/redigo/redis"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
@@ -55,8 +55,9 @@ func Error() gin.HandlerFunc {
 		}
 
 		// RPC error handler
-		if err, ok := errors.Cause(err.Err).(*dferrors.DfError); ok {
-			switch err.Code {
+		var dferr *dferrors.DfError
+		if errors.As(err.Err, &dferr) {
+			switch dferr.Code {
 			case base.Code_InvalidResourceType:
 				c.JSON(http.StatusBadRequest, ErrorResponse{
 					Message: http.StatusText(http.StatusBadRequest),
@@ -91,8 +92,9 @@ func Error() gin.HandlerFunc {
 		}
 
 		// Mysql error handler
-		if err, ok := errors.Cause(err.Err).(*mysql.MySQLError); ok {
-			switch err.Number {
+		var merr *mysql.MySQLError
+		if errors.As(err.Err, &merr) {
+			switch merr.Number {
 			case mysqlerr.ER_DUP_ENTRY:
 				c.JSON(http.StatusConflict, ErrorResponse{
 					Message: http.StatusText(http.StatusConflict),

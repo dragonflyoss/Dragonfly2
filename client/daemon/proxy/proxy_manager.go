@@ -27,7 +27,6 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -101,7 +100,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 		if hijackHTTPS.Cert != "" && hijackHTTPS.Key != "" {
 			cert, err := certFromFile(hijackHTTPS.Cert, hijackHTTPS.Key)
 			if err != nil {
-				return nil, errors.Wrap(err, "cert from file")
+				return nil, fmt.Errorf("cert from file: %w", err)
 			}
 			if cert.Leaf != nil && cert.Leaf.IsCA {
 				logger.Debugf("hijack https request with CA <%s>", cert.Leaf.Subject.CommonName)
@@ -112,7 +111,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 
 	p, err := NewProxy(options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "create proxy")
+		return nil, fmt.Errorf("create proxy: %w", err)
 	}
 
 	return &proxyManager{
@@ -198,14 +197,14 @@ func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
 	// cert.Certificate is a chain of one or more certificates, leaf first.
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "load cert")
+		return nil, fmt.Errorf("load cert: %w", err)
 	}
 	logger.Infof("use self-signed certificate (%s, %s) for https hijacking", certFile, keyFile)
 
 	// leaf is CA cert or server cert
 	leaf, err := x509.ParseCertificate(cert.Certificate[0])
 	if err != nil {
-		return nil, errors.Wrap(err, "load leaf cert")
+		return nil, fmt.Errorf("load leaf cert: %w", err)
 	}
 
 	cert.Leaf = leaf

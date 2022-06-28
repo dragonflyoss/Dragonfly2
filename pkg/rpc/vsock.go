@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/mdlayher/vsock"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -41,16 +40,16 @@ func VsockDialer(_ctx context.Context, address string) (net.Conn, error) {
 
 	cid, err := strconv.ParseUint(addr[0], 10, 32)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert %q to vsock cid", addr[0])
+		return nil, fmt.Errorf("failed to convert %q to vsock cid: %w", addr[0], err)
 	}
 	port, err := strconv.ParseUint(addr[1], 10, 32)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to convert %q to vsock port", addr[1])
+		return nil, fmt.Errorf("failed to convert %q to vsock port: %w", addr[1], err)
 	}
 
 	conn, err := vsock.Dial(uint32(cid), uint32(port), nil)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to dial vsock %v:%v, address %s", uint32(cid), uint32(port), address)
+		return nil, fmt.Errorf("failed to dial vsock %v:%v, address %s: %w", uint32(cid), uint32(port), address, err)
 	}
 	return conn, nil
 }

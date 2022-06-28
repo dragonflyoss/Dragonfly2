@@ -18,11 +18,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/go-sql-driver/mysql"
-	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 
 	manageroauth "d7y.io/dragonfly/v2/manager/auth/oauth"
@@ -179,7 +179,8 @@ func (s *service) OauthSigninCallback(ctx context.Context, name, code string) (*
 		State:  model.UserStateEnabled,
 	}
 	if err := s.db.WithContext(ctx).Create(&user).Error; err != nil {
-		if err, ok := errors.Cause(err).(*mysql.MySQLError); ok && err.Number == mysqlerr.ER_DUP_ENTRY {
+		var merr *mysql.MySQLError
+		if errors.As(err, &merr) && merr.Number == mysqlerr.ER_DUP_ENTRY {
 			return &user, nil
 		}
 

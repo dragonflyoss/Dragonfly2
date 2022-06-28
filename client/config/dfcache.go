@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -25,7 +26,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
@@ -82,14 +82,14 @@ func validateCacheStat(cfg *CacheOption) error {
 
 func validateCacheImport(cfg *CacheOption) error {
 	if err := cfg.checkInput(); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "input path: %v", err)
+		return fmt.Errorf("input path %s: %w", err.Error(), dferrors.ErrInvalidArgument)
 	}
 	return nil
 }
 
 func ValidateCacheExport(cfg *CacheOption) error {
 	if err := cfg.checkOutput(); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
+		return fmt.Errorf("output %s: %w", err.Error(), dferrors.ErrInvalidArgument)
 	}
 	return nil
 }
@@ -101,13 +101,13 @@ func ValidateCacheDelete(cfg *CacheOption) error {
 func (cfg *CacheOption) Validate(cmd string) error {
 	// Some common validations
 	if cfg == nil {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
+		return fmt.Errorf("runtime config: %w", dferrors.ErrInvalidArgument)
 	}
 	if cfg.Cid == "" {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "missing Cid")
+		return fmt.Errorf("missing Cid: %w", dferrors.ErrInvalidArgument)
 	}
 	if strings.IsBlank(cfg.Cid) {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "Cid are all blanks")
+		return fmt.Errorf("Cid are all blanks: %w", dferrors.ErrInvalidArgument)
 	}
 
 	// cmd specific validations
@@ -121,7 +121,7 @@ func (cfg *CacheOption) Validate(cmd string) error {
 	case CmdDelete:
 		return ValidateCacheDelete(cfg)
 	default:
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "unknown cache subcommand: %s", cmd)
+		return fmt.Errorf("unknown cache subcommand %s: %w", cmd, dferrors.ErrInvalidArgument)
 	}
 }
 
@@ -135,11 +135,11 @@ func convertCacheImport(cfg *CacheOption, args []string) error {
 		cfg.Path = args[0]
 	}
 	if cfg.Path == "" {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "missing input file")
+		return fmt.Errorf("missing input file: %w", dferrors.ErrInvalidArgument)
 	}
 
 	if cfg.Path, err = filepath.Abs(cfg.Path); err != nil {
-		return errors.Wrapf(err, "get absulate path for %s", cfg.Path)
+		return fmt.Errorf("get absulate path for %s: %w", cfg.Path, err)
 	}
 	return nil
 }
@@ -150,11 +150,11 @@ func ConvertCacheExport(cfg *CacheOption, args []string) error {
 		cfg.Output = args[0]
 	}
 	if cfg.Output == "" {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "missing output file")
+		return fmt.Errorf("missing output file: %w", dferrors.ErrInvalidArgument)
 	}
 
 	if cfg.Output, err = filepath.Abs(cfg.Output); err != nil {
-		return errors.Wrapf(err, "get absulate path for %s", cfg.Output)
+		return fmt.Errorf("get absulate path for %s: %w", cfg.Output, err)
 	}
 	return nil
 }
@@ -165,7 +165,7 @@ func ConvertCacheDelete(cfg *CacheOption, args []string) error {
 
 func (cfg *CacheOption) Convert(cmd string, args []string) error {
 	if cfg == nil {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
+		return fmt.Errorf("runtime config: %w", dferrors.ErrInvalidArgument)
 	}
 
 	switch cmd {
@@ -178,7 +178,7 @@ func (cfg *CacheOption) Convert(cmd string, args []string) error {
 	case CmdDelete:
 		return ConvertCacheDelete(cfg, args)
 	default:
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "unknown cache subcommand: %s", cmd)
+		return fmt.Errorf("unknown cache subcommand %s: %w", cmd, dferrors.ErrInvalidArgument)
 	}
 }
 
@@ -190,13 +190,13 @@ func (cfg *CacheOption) String() string {
 func (cfg *CacheOption) checkInput() error {
 	stat, err := os.Stat(cfg.Path)
 	if err != nil {
-		return errors.Wrapf(err, "stat input path %q", cfg.Path)
+		return fmt.Errorf("stat input path %q: %w", cfg.Path, err)
 	}
 	if stat.IsDir() {
 		return fmt.Errorf("path[%q] is directory but requires file path", cfg.Path)
 	}
 	if err := syscall.Access(cfg.Path, syscall.O_RDONLY); err != nil {
-		return errors.Wrapf(err, "access %q", cfg.Path)
+		return fmt.Errorf("access %q: %w", cfg.Path, err)
 	}
 	return nil
 }

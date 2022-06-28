@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -72,7 +70,7 @@ func GetRange(rangeStr string) (r *Range, err error) {
 // length is file total length
 func ParseRange(rangeStr string, length uint64) (*Range, error) {
 	if strings.Count(rangeStr, "-") != 1 {
-		return nil, errors.Errorf("invalid range: %s, should be like 0-1023", rangeStr)
+		return nil, fmt.Errorf("invalid range: %s, should be like 0-1023", rangeStr)
 	}
 
 	// -{endIndex}
@@ -103,11 +101,11 @@ func ParseRange(rangeStr string, length uint64) (*Range, error) {
 func handlePrefixRange(rangeStr string, length uint64) (*Range, error) {
 	downLength, err := strconv.ParseUint(strings.TrimPrefix(rangeStr, "-"), 10, 64)
 	if err != nil {
-		return nil, errors.Errorf("failed to parse range: %s to int: %v", rangeStr, err)
+		return nil, fmt.Errorf("failed to parse range: %s to int: %v", rangeStr, err)
 	}
 
 	if downLength > length {
-		return nil, errors.Errorf("range: %s, the downLength is larger than length", rangeStr)
+		return nil, fmt.Errorf("range: %s, the downLength is larger than length", rangeStr)
 	}
 
 	return &Range{
@@ -119,11 +117,11 @@ func handlePrefixRange(rangeStr string, length uint64) (*Range, error) {
 func handleSuffixRange(rangeStr string, length uint64) (*Range, error) {
 	startIndex, err := strconv.ParseUint(strings.TrimSuffix(rangeStr, "-"), 10, 64)
 	if err != nil {
-		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
 	}
 
 	if startIndex > length {
-		return nil, errors.Errorf("range: %s, the startIndex is larger than length", rangeStr)
+		return nil, fmt.Errorf("range: %s, the startIndex is larger than length", rangeStr)
 	}
 
 	return &Range{
@@ -137,15 +135,15 @@ func handlePairRange(rangeStr string, length uint64) (*Range, error) {
 
 	startIndex, err := strconv.ParseUint(rangePair[0], 10, 64)
 	if err != nil {
-		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
 	}
 	if startIndex > length {
-		return nil, errors.Errorf("range: %s, the startIndex is larger than length", rangeStr)
+		return nil, fmt.Errorf("range: %s, the startIndex is larger than length", rangeStr)
 	}
 
 	endIndex, err := strconv.ParseUint(rangePair[1], 10, 64)
 	if err != nil {
-		return nil, errors.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
+		return nil, fmt.Errorf("failed to parse range: %s to uint: %v", rangeStr, err)
 	}
 	if endIndex >= length {
 		//attention
@@ -153,7 +151,7 @@ func handlePairRange(rangeStr string, length uint64) (*Range, error) {
 	}
 
 	if endIndex < startIndex {
-		return nil, errors.Errorf("range: %s, the start is larger the end", rangeStr)
+		return nil, fmt.Errorf("range: %s, the start is larger the end", rangeStr)
 	}
 
 	return &Range{

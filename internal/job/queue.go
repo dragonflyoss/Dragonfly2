@@ -17,9 +17,8 @@
 package job
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 type Queue string

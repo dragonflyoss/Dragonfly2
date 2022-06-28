@@ -18,6 +18,7 @@ package objectstorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,7 +27,6 @@ import (
 
 	aliyunoss "github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 )
 
 type oss struct {
@@ -96,7 +96,8 @@ func (o *oss) GetObjectMetadata(ctx context.Context, bucketName, objectKey strin
 
 	header, err := bucket.GetObjectDetailedMeta(objectKey)
 	if err != nil {
-		if serr, ok := errors.Cause(err).(aliyunoss.ServiceError); ok && serr.StatusCode == http.StatusNotFound {
+		var serr *aliyunoss.ServiceError
+		if errors.As(err, &serr) && serr.StatusCode == http.StatusNotFound {
 			return nil, false, nil
 		}
 

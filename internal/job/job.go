@@ -19,6 +19,7 @@ package job
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -28,7 +29,6 @@ import (
 	machineryv1log "github.com/RichardKnop/machinery/v1/log"
 	machineryv1tasks "github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/go-redis/redis/v8"
-	"github.com/pkg/errors"
 )
 
 const (

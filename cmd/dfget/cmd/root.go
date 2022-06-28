@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -77,7 +77,7 @@ var rootCmd = &cobra.Command{
 
 		// Initialize logger
 		if err := logger.InitDfget(dfgetConfig.Verbose, dfgetConfig.Console, d.LogDir()); err != nil {
-			return errors.Wrap(err, "init client dfget logger")
+			return fmt.Errorf("init client dfget logger: %w", err)
 		}
 
 		// update plugin directory
@@ -99,17 +99,18 @@ var rootCmd = &cobra.Command{
 		fmt.Printf("output path: %s\n", dfgetConfig.Output)
 
 		//  do get file
-		var errInfo string
 		err = runDfget(d.DfgetLockPath(), d.DaemonSockPath())
 		if err != nil {
-			errInfo = fmt.Sprintf("error: %v", err)
+			msg := fmt.Sprintf("download success: %t cost: %d ms error: %s", false, time.Since(start).Milliseconds(), err.Error())
+			logger.With("url", dfgetConfig.URL).Info(msg)
+			fmt.Println(msg)
+			return fmt.Errorf("download url %s: %w", dfgetConfig.URL, err)
 		}
 
-		msg := fmt.Sprintf("download success: %t cost: %d ms %s", err == nil, time.Since(start).Milliseconds(), errInfo)
+		msg := fmt.Sprintf("download success: %t cost: %d ms", true, time.Since(start).Milliseconds())
 		logger.With("url", dfgetConfig.URL).Info(msg)
 		fmt.Println(msg)
-
-		return errors.Wrapf(err, "download url: %s", dfgetConfig.URL)
+		return nil
 	},
 }
 
@@ -190,7 +191,7 @@ func init() {
 
 	// Bind cmd flags
 	if err := viper.BindPFlags(flagSet); err != nil {
-		panic(errors.Wrap(err, "bind dfget flags to viper"))
+		panic(fmt.Errorf("bind dfget flags to viper: %w", err))
 	}
 }
 
