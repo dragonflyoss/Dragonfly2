@@ -915,8 +915,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 				assert := assert.New(t)
 				peer.Task.ID = "foobar"
 				_, err := peer.DownloadTinyFile()
-				assert.EqualError(err, fmt.Sprintf("http://%s:%d/download/%s/%s?peerId=%s: 404 Not Found",
-					peer.Host.IP, peer.Host.DownloadPort, peer.Task.ID[:3], peer.Task.ID, peer.ID))
+				assert.EqualError(err, "bad response status 404 Not Found")
 			},
 		},
 	}

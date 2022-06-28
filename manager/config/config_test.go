@@ -48,11 +48,12 @@ func TestManagerConfig_Load(t *testing.T) {
 		},
 		Database: &DatabaseConfig{
 			Mysql: &MysqlConfig{
-				User:     "foo",
-				Password: "foo",
-				Host:     "foo",
-				Port:     3306,
-				DBName:   "foo",
+				User:      "foo",
+				Password:  "foo",
+				Host:      "foo",
+				Port:      3306,
+				DBName:    "foo",
+				TLSConfig: "preferred",
 				TLS: &TLSConfig{
 					Cert:               "foo",
 					Key:                "foo",

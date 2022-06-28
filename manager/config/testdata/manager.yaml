@@ -17,6 +17,7 @@ database:
     host: foo
     port: 3306
     dbname: foo
+    tlsConfig: preferred
     tls:
       cert: foo
       key: foo
