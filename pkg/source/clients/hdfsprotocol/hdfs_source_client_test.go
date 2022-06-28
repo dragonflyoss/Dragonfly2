@@ -20,6 +20,7 @@
 package hdfsprotocol
 
 import (
+	"errors"
 	"io"
 	"os"
 	"reflect"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/agiledragon/gomonkey/v2"
 	"github.com/colinmarc/hdfs/v2"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/net/http"

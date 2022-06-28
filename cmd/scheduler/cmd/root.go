@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -58,7 +58,7 @@ generate and maintain a P2P network during the download process, and push suitab
 
 		// Initialize logger
 		if err := logger.InitScheduler(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
-			return errors.Wrap(err, "init scheduler logger")
+			return fmt.Errorf("init scheduler logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "scheduler"))
 

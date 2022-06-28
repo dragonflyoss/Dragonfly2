@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -26,7 +27,6 @@ import (
 	"time"
 
 	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )

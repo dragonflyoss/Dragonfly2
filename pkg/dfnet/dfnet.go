@@ -18,8 +18,8 @@ package dfnet
 
 import (
 	"encoding/json"
+	"errors"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 

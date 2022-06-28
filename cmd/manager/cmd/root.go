@@ -17,10 +17,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 
@@ -54,7 +54,7 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 
 		// Initialize logger
 		if err := logger.InitManager(cfg.Verbose, cfg.Console, d.LogDir()); err != nil {
-			return errors.Wrap(err, "init manager logger")
+			return fmt.Errorf("init manager logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "manager"))
 

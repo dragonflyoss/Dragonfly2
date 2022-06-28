@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -30,7 +31,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/clientutil"
@@ -132,11 +132,11 @@ func (p *DaemonOption) Validate() error {
 	}
 
 	if int64(p.Download.TotalRateLimit.Limit) < DefaultMinRate.ToNumber() {
-		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+		return fmt.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
 	}
 
 	if int64(p.Upload.RateLimit.Limit) < DefaultMinRate.ToNumber() {
-		return errors.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
+		return fmt.Errorf("rate limit must be greater than %s", DefaultMinRate.String())
 	}
 
 	if p.ObjectStorage.Enable {
@@ -723,10 +723,10 @@ func certPoolFromFiles(files ...string) (*x509.CertPool, error) {
 	for _, f := range files {
 		cert, err := os.ReadFile(f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "read cert file %s", f)
+			return nil, fmt.Errorf("read cert file %s: %w", f, err)
 		}
 		if !roots.AppendCertsFromPEM(cert) {
-			return nil, errors.Errorf("invalid cert: %s", f)
+			return nil, fmt.Errorf("invalid cert: %s", f)
 		}
 	}
 	return roots, nil
@@ -745,7 +745,7 @@ type ProxyRule struct {
 func NewProxyRule(regx string, useHTTPS bool, direct bool, redirect string) (*ProxyRule, error) {
 	exp, err := NewRegexp(regx)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid regexp")
+		return nil, fmt.Errorf("invalid regexp: %w", err)
 	}
 
 	return &ProxyRule{

@@ -26,7 +26,6 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
@@ -196,7 +195,7 @@ func (suite *HTTPSourceClientTestSuite) TestHttpSourceClientDownloadWithResponse
 			request:    errorRequest,
 			content:    "",
 			expireInfo: nil,
-			wantErr:    errors.Errorf("Get \"https://error.com\": error"),
+			wantErr:    fmt.Errorf("Get \"https://error.com\": error"),
 		},
 	}
 	for _, tt := range tests {

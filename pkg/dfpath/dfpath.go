@@ -17,12 +17,11 @@
 package dfpath
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 // Dfpath is the interface used for init project path
@@ -110,7 +109,7 @@ func New(options ...Option) (Dfpath, error) {
 		for name, dir := range map[string]string{"workHome": d.workHome, "cacheDir": d.cacheDir, "logDir": d.logDir, "dataDir": d.dataDir,
 			"pluginDir": d.pluginDir} {
 			if err := os.MkdirAll(dir, fs.FileMode(0755)); err != nil {
-				cache.errs = append(cache.errs, errors.Errorf("create %s dir %s failed: %v", name, dir, err))
+				cache.errs = append(cache.errs, fmt.Errorf("create %s dir %s failed: %v", name, dir, err))
 			}
 		}
 
@@ -118,7 +117,7 @@ func New(options ...Option) (Dfpath, error) {
 	})
 
 	if len(cache.errs) > 0 {
-		return nil, errors.Errorf("create dfpath failed: %s", cache.errs)
+		return nil, fmt.Errorf("create dfpath failed: %s", cache.errs)
 	}
 
 	d := *cache.d

@@ -18,11 +18,11 @@ package unit
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
@@ -101,7 +101,7 @@ func parseSize(fsize string) (Bytes, error) {
 
 	matches := sizeRegexp.FindStringSubmatch(fsize)
 	if len(matches) == 0 {
-		return 0, errors.Errorf("parse size %s: invalid format", fsize)
+		return 0, fmt.Errorf("parse size %s: invalid format", fsize)
 	}
 
 	var unit Bytes
@@ -124,7 +124,7 @@ func parseSize(fsize string) (Bytes, error) {
 
 	num, err := strconv.ParseInt(matches[1], 0, 64)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to parse size: %s", fsize)
+		return 0, fmt.Errorf("failed to parse size %s: %w", fsize, err)
 	}
 
 	return ToBytes(num) * unit, nil
@@ -161,7 +161,7 @@ func (f *Bytes) unmarshal(unmarshal func(in []byte, out interface{}) (err error)
 	case string:
 		size, err := parseSize(value)
 		if err != nil {
-			return errors.WithMessage(err, "invalid byte size")
+			return fmt.Errorf("invalid byte size: %w", err)
 		}
 		*f = size
 		return nil

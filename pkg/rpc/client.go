@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/serialx/hashring"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -292,7 +291,7 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 	defer conn.rwMutex.RUnlock()
 	clientConn, err := conn.loadOrCreateClientConnByNode(node)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get client conn by conn %s", node)
+		return nil, fmt.Errorf("get client conn by conn %s: %w", node, err)
 	}
 	logger.GrpcLogger.With("conn", conn.name).Debugf("successfully get %s client conn", node)
 	return clientConn, nil
@@ -301,7 +300,7 @@ func (conn *Connection) GetClientConnByTarget(node string) (*grpc.ClientConn, er
 func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *grpc.ClientConn, err error) {
 	defer func() {
 		if desc := recover(); desc != nil {
-			err = errors.Errorf("%v", desc)
+			err = fmt.Errorf("%v", desc)
 		}
 	}()
 	conn.accessNodeMap.Store(node, time.Now())
@@ -320,7 +319,7 @@ func (conn *Connection) loadOrCreateClientConnByNode(node string) (clientConn *g
 		return clientConn, nil
 	}
 
-	return nil, errors.Wrapf(err, "cannot found clientConn associated with node %s and create client conn failed", node)
+	return nil, fmt.Errorf("cannot found clientConn associated with node %s and create client conn failed: %w", node, err)
 }
 
 // GetClientConn get conn or bind hashKey to candidate node, don't do the migrate action
@@ -354,7 +353,7 @@ func (conn *Connection) GetClientConn(hashKey string, stick bool) (clientConn *g
 	defer conn.rwMutex.Unlock()
 	client, err := conn.findCandidateClientConn(hashKey, sets.NewString())
 	if err != nil {
-		return nil, errors.Wrapf(err, "prob candidate client conn for hash key %s", hashKey)
+		return nil, fmt.Errorf("prob candidate client conn for hash key %s: %w", hashKey, err)
 	}
 	conn.key2NodeMap.Store(hashKey, client.node)
 	conn.node2ClientMap.Store(client.node, client.Ref)
@@ -388,7 +387,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	defer conn.rwMutex.Unlock()
 	client, err := conn.findCandidateClientConn(key, sets.NewString(exclusiveNodes...))
 	if err != nil {
-		return "", errors.Wrapf(err, "find candidate client conn for hash key %s", key)
+		return "", fmt.Errorf("find candidate client conn for hash key %s: %w", key, err)
 	}
 	logger.GrpcLogger.With("conn", conn.name).Infof("successfully migrate hash key %s from server node %s to %s", key, currentNode, client.node)
 	conn.key2NodeMap.Store(key, client.node)

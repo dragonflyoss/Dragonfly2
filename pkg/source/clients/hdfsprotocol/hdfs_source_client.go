@@ -17,6 +17,7 @@
 package hdfsprotocol
 
 import (
+	"fmt"
 	"io"
 	"net/url"
 	"os/user"
@@ -25,7 +26,6 @@ import (
 	"time"
 
 	"github.com/colinmarc/hdfs/v2"
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -127,7 +127,7 @@ func (h *hdfsSourceClient) Download(request *source.Request) (*source.Response, 
 	// default read all data when rang is nil
 	var limitReadN = fileInfo.Size()
 	if limitReadN < 0 {
-		return nil, errors.Errorf("file length is illegal, length: %d", limitReadN)
+		return nil, fmt.Errorf("file length is illegal, length: %d", limitReadN)
 	}
 
 	if request.Header.Get(source.Range) != "" {
@@ -203,7 +203,7 @@ func (h *hdfsSourceClient) getHDFSClient(url *url.URL) (*hdfs.Client, error) {
 func (h *hdfsSourceClient) getHDFSClientAndPath(url *url.URL) (*hdfs.Client, string, error) {
 	client, err := h.getHDFSClient(url)
 	if err != nil {
-		return nil, "", errors.Errorf("hdfs create client failed, url is %s", url)
+		return nil, "", fmt.Errorf("hdfs create client failed, url is %s", url)
 	}
 	return client, url.Path, nil
 }

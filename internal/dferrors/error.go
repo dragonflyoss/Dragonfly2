@@ -17,9 +17,8 @@
 package dferrors
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )

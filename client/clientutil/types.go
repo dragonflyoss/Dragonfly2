@@ -18,10 +18,11 @@ package clientutil
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/docker/go-units"
-	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 	"gopkg.in/yaml.v3"
 )
@@ -58,7 +59,7 @@ func (r *RateLimit) unmarshal(unmarshal func(in []byte, out interface{}) (err er
 	case string:
 		limit, err := units.RAMInBytes(value)
 		if err != nil {
-			return errors.WithMessage(err, "invalid rate limit")
+			return fmt.Errorf("invalid rate limit: %w", err)
 		}
 		r.Limit = rate.Limit(limit)
 		return nil

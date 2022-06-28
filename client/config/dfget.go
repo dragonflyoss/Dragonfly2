@@ -28,8 +28,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
@@ -140,11 +138,11 @@ func NewDfgetConfig() *ClientOption {
 
 func (cfg *ClientOption) Validate() error {
 	if cfg == nil {
-		return errors.Wrap(dferrors.ErrInvalidArgument, "runtime config")
+		return fmt.Errorf("runtime config: %w", dferrors.ErrInvalidArgument)
 	}
 
 	if !url.IsValid(cfg.URL) {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "url: %v", cfg.URL)
+		return fmt.Errorf("url %s: %w", cfg.URL, dferrors.ErrInvalidArgument)
 	}
 
 	if _, err := regexp.Compile(cfg.RecursiveAcceptRegex); err != nil {
@@ -156,15 +154,15 @@ func (cfg *ClientOption) Validate() error {
 	}
 
 	if err := cfg.checkOutput(); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "output: %v", err)
+		return fmt.Errorf("output %s: %w", err.Error(), dferrors.ErrInvalidArgument)
 	}
 
 	if err := cfg.checkHeader(); err != nil {
-		return errors.Wrapf(dferrors.ErrInvalidHeader, "output: %v", err)
+		return fmt.Errorf("output %s: %w", err.Error(), dferrors.ErrInvalidHeader)
 	}
 
 	if int64(cfg.RateLimit.Limit) < DefaultMinRate.ToNumber() {
-		return errors.Wrapf(dferrors.ErrInvalidArgument, "rate limit must be greater than %s", DefaultMinRate.String())
+		return fmt.Errorf("rate limit must be greater than %s: %w", DefaultMinRate.String(), dferrors.ErrInvalidArgument)
 	}
 
 	return nil

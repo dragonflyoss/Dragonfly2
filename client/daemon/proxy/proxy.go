@@ -19,6 +19,7 @@ package proxy
 import (
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"github.com/golang/groupcache/lru"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
