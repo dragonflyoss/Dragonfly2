@@ -523,8 +523,8 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	// The HTTP 206 Partial Content success status response code indicates that
 	// the request has succeeded and the body contains the requested ranges of data, as described in the Range header of the request.
 	// Refer to https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/206.
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
-		return []byte{}, fmt.Errorf("%v: %v", targetURL.String(), resp.Status)
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("bad response status %s", resp.Status)
 	}
 
 	return io.ReadAll(resp.Body)
