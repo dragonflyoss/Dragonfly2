@@ -7,7 +7,7 @@ on:
     branches: [ main, release-* ]
 
 env:
-  GO_VERSION: 1.17
+  GO_VERSION: 1.18
 
 jobs:
   lint:
@@ -21,7 +21,7 @@ jobs:
       - name: Golangci lint
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.45.2
+          version: v1.46.2
 
       - name: Markdown lint
         uses: docker://avtodev/markdown-lint:v1

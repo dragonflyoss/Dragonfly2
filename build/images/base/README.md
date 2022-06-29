@@ -5,13 +5,13 @@
 ### Build Base Image
 
 ```shell
-docker build -t dragonflyoss/base:bpftrace-v0.13.0-go-v1.17.4 -f Dockerfile .
+docker build -t dragonflyoss/base:bpftrace-v0.13.0-go-v1.18.3 -f Dockerfile .
 ```
 
 ### Run Debug Container
 
 ```shell
-BASE_IMAGE=dragonflyoss/base:bpftrace-v0.13.0-go-v1.17.4
+BASE_IMAGE=dragonflyoss/base:bpftrace-v0.13.0-go-v1.18.3
 
 # run debug container
 docker run -ti -v /usr/src:/usr/src:ro \
@@ -29,7 +29,7 @@ export GOTAGS="debug"
 # gcflags for dlv
 export GOGCFLAGS="all=-N -l"
 # base image
-export BASE_IMAGE=dragonflyoss/base:bpftrace-v0.13.0-go-v1.17.4
+export BASE_IMAGE=dragonflyoss/base:bpftrace-v0.13.0-go-v1.18.3
 
 make docker-build
 ```
