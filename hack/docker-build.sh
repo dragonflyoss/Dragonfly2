@@ -10,7 +10,7 @@ cd "${curDir}/../" || return
 D7Y_VERSION=${D7Y_VERSION:-"latest"}
 D7Y_REGISTRY=${D7Y_REGISTRY:-d7yio}
 IMAGES_DIR="build/images"
-BASE_IMAGE=${BASE_IMAGE:-alpine:3.14}
+BASE_IMAGE=${BASE_IMAGE:-alpine:3.16}
 
 CGO_ENABLED=${CGO_ENABLED:-0}
 GOPROXY=${GOPROXY:-`go env GOPROXY`}

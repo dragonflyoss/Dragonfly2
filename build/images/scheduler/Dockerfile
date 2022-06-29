@@ -1,6 +1,6 @@
-ARG BASE_IMAGE=alpine:3.14
+ARG BASE_IMAGE=alpine:3.16
 
-FROM golang:1.17.3-alpine3.14 as builder
+FROM golang:1.18.3-alpine3.16 as builder
 
 ARG GOPROXY
 ARG GOTAGS
@@ -14,9 +14,9 @@ COPY . /go/src/d7y.io/dragonfly/v2
 
 RUN make build-scheduler && make install-scheduler
 
-FROM alpine:3.14 as health
+FROM ${BASE_IMAGE} as health
 
-ENV GRPC_HEALTH_PROBE_VERSION v0.4.8
+ENV GRPC_HEALTH_PROBE_VERSION v0.4.11
 
 RUN wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
     chmod +x /bin/grpc_health_probe

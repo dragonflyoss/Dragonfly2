@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=alpine:3.14
+ARG BASE_IMAGE=alpine:3.16
 
 FROM node:12-alpine as console-builder
 WORKDIR /build
