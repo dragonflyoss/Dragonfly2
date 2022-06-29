@@ -1,6 +1,6 @@
 module d7y.io/dragonfly/v2
 
-go 1.17
+go 1.18
 
 require (
 	github.com/RichardKnop/machinery v1.10.6
