@@ -31,8 +31,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	ms "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -50,7 +50,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		name           string
 		request        *FileTaskRequest
 		enablePrefetch bool
-		storageManager func(sm *ms.MockManager)
+		storageManager func(sm *mocks.MockManager)
 		verify         func(pg chan *FileTaskProgress, ok bool)
 	}{
 		{
@@ -71,7 +71,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  nil,
 			},
 			enablePrefetch: false,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -115,7 +115,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  nil,
 			},
 			enablePrefetch: false,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				//sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
 				//	func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
 				//		return nil
@@ -152,7 +152,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  &clientutil.Range{Start: 200, Length: 100},
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -196,7 +196,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  &clientutil.Range{Start: 0, Length: 10},
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
 						return nil
@@ -229,7 +229,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  &clientutil.Range{Start: 300, Length: 100},
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -278,7 +278,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				Range:  &clientutil.Range{Start: 300, Length: 100000},
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -314,7 +314,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			defer os.Remove(testOutput)
-			sm := ms.NewMockManager(ctrl)
+			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
 				host:           &scheduler.PeerHost{},
@@ -337,7 +337,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 		name           string
 		request        *StreamTaskRequest
 		enablePrefetch bool
-		storageManager func(sm *ms.MockManager)
+		storageManager func(sm *mocks.MockManager)
 		verify         func(rc io.ReadCloser, attr map[string]string, ok bool)
 	}{
 		{
@@ -355,7 +355,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: false,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -408,7 +408,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: false,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				//sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
 				//	func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
 				//		return nil
@@ -443,7 +443,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -495,7 +495,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
 						return nil
@@ -526,7 +526,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -582,7 +582,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -642,7 +642,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 				PeerID: "",
 			},
 			enablePrefetch: true,
-			storageManager: func(sm *ms.MockManager) {
+			storageManager: func(sm *mocks.MockManager) {
 				var taskID string
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
 					func(id string) *storage.ReusePeerTask {
@@ -691,7 +691,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			sm := ms.NewMockManager(ctrl)
+			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
 				host:           &scheduler.PeerHost{},

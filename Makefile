@@ -239,12 +239,12 @@ build-e2e-sha256sum:
 
 # Run unittests
 test:
-	@go test -v -gcflags "all=-l" -race -short ${PKG_LIST}
+	@go test -v -race -short ${PKG_LIST}
 .PHONY: test
 
 # Run tests with coverage
 test-coverage:
-	@go test -v -gcflags "all=-l" -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
+	@go test -v -race -short ${PKG_LIST} -coverprofile cover.out -covermode=atomic
 	@cat cover.out >> coverage.txt
 .PHONY: test-coverage
 

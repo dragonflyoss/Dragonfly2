@@ -33,8 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
-	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
+	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
@@ -54,7 +53,7 @@ func Test_ServeDownload(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockPeerTaskManager := mock_peer.NewMockTaskManager(ctrl)
+	mockPeerTaskManager := peer.NewMockTaskManager(ctrl)
 	mockPeerTaskManager.EXPECT().StartFileTask(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, req *peer.FileTaskRequest) (chan *peer.FileTaskProgress, bool, error) {
 			ch := make(chan *peer.FileTaskProgress)
@@ -119,7 +118,7 @@ func Test_ServePeer(t *testing.T) {
 	defer ctrl.Finish()
 
 	var maxPieceNum uint32 = 10
-	mockStorageManger := mock_storage.NewMockManager(ctrl)
+	mockStorageManger := mocks.NewMockManager(ctrl)
 	mockStorageManger.EXPECT().GetPieces(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 		var (
 			pieces    []*base.PieceInfo
@@ -367,7 +366,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, delay := range []bool{false, true} {
 				delay := delay
-				mockStorageManger := mock_storage.NewMockManager(ctrl)
+				mockStorageManger := mocks.NewMockManager(ctrl)
 
 				if tc.limit == 0 {
 					tc.limit = 1024
@@ -431,7 +430,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 							},
 						}, nil
 					})
-				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
+				mockTaskManager := peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().Subscribe(gomock.Any()).AnyTimes().DoAndReturn(
 					func(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
 						ch := make(chan *peer.PieceInfo)

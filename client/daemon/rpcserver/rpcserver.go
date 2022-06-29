@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/rpcserver_mock.go -source rpcserver.go -package mocks
+
 package rpcserver
 
 import (

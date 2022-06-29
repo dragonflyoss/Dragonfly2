@@ -46,7 +46,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -56,13 +55,14 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	mock_scheduler_client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	sourcemocks "d7y.io/dragonfly/v2/pkg/source/mocks"
 )
 
 func TestMain(m *testing.M) {
@@ -84,12 +84,11 @@ type componentsOption struct {
 	getPieceTasks      bool
 }
 
-//go:generate mockgen -package mock_server_grpc -source ../../../pkg/rpc/dfdaemon/dfdaemon.pb.go -destination ../test/mock/daemongrpc/daemon_server_grpc.go
 func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOption) (
 	schedulerclient.Client, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
+	var daemon = servermocks.NewMockDaemonServer(ctrl)
 
 	// 1.1 calculate piece digest and total digest
 	r := bytes.NewBuffer(opt.content)
@@ -425,7 +424,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
-				sourceClient := sourceMock.NewMockResourceClient(ctrl)
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
 						return int64(len(taskData)), nil
@@ -453,7 +452,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			},
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
-				sourceClient := sourceMock.NewMockResourceClient(ctrl)
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
 						assert := testifyassert.New(t)
@@ -491,7 +490,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
-				sourceClient := sourceMock.NewMockResourceClient(ctrl)
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
 						return -1, nil
@@ -515,7 +514,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			sizeScope:           base.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *clientutil.Range, taskData []byte, url string) source.ResourceClient {
-				sourceClient := sourceMock.NewMockResourceClient(ctrl)
+				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 				sourceClient.EXPECT().GetContentLength(source.RequestEq(url)).AnyTimes().DoAndReturn(
 					func(request *source.Request) (int64, error) {
 						return -1, nil

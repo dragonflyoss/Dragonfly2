@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination runner_mock.go -source task.go -package gc
+
 package gc
 
 import (
@@ -25,7 +27,7 @@ type Runner interface {
 	RunGC() error
 }
 
-// Task is an struct used to run GC instance
+// Task is an struct used to run GC instance.
 type Task struct {
 	ID       string
 	Interval time.Duration
@@ -33,7 +35,7 @@ type Task struct {
 	Runner   Runner
 }
 
-// Validate task params
+// Validate task params.
 func (t *Task) validate() error {
 	if t.ID == "" {
 		return errors.New("empty ID is not specified")

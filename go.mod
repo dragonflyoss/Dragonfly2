@@ -6,7 +6,6 @@ require (
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/VividCortex/mysqlerr v1.0.0
-	github.com/agiledragon/gomonkey/v2 v2.3.1
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.4+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.8.0
 	github.com/aws/aws-sdk-go v1.44.44

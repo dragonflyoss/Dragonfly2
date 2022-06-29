@@ -24,19 +24,17 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-
-	"d7y.io/dragonfly/v2/pkg/container/list/mocks"
 )
 
 func TestSortedUniqueListInsert(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "insert values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				ul.Insert(items[0])
@@ -46,7 +44,7 @@ func TestSortedUniqueListInsert(t *testing.T) {
 		},
 		{
 			name: "insert multi values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -63,7 +61,7 @@ func TestSortedUniqueListInsert(t *testing.T) {
 		},
 		{
 			name: "insert same values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				ul.Insert(items[0])
@@ -79,7 +77,7 @@ func TestSortedUniqueListInsert(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
+			mockItems := []*MockItem{NewMockItem(ctl), NewMockItem(ctl)}
 			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
 			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
 		})
@@ -97,7 +95,7 @@ func TestSortedUniqueListInsert_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 	}
@@ -125,12 +123,12 @@ func TestSortedUniqueListInsert_Concurrent(t *testing.T) {
 func TestSortedUniqueListRemove(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "remove values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -153,7 +151,7 @@ func TestSortedUniqueListRemove(t *testing.T) {
 		},
 		{
 			name: "remove value dost not exits",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				ul.Insert(items[0])
@@ -171,7 +169,7 @@ func TestSortedUniqueListRemove(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
+			mockItems := []*MockItem{NewMockItem(ctl), NewMockItem(ctl)}
 			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
 			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
 		})
@@ -189,7 +187,7 @@ func TestSortedUniqueListRemove_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 		ul.Insert(mockItem)
@@ -213,12 +211,12 @@ func TestSortedUniqueListRemove_Concurrent(t *testing.T) {
 func TestSortedUniqueListContains(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "contains values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -234,7 +232,7 @@ func TestSortedUniqueListContains(t *testing.T) {
 		},
 		{
 			name: "contains value dost not exits",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				ul.Insert(items[0])
@@ -248,7 +246,7 @@ func TestSortedUniqueListContains(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
+			mockItems := []*MockItem{NewMockItem(ctl), NewMockItem(ctl)}
 			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
 			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
 		})
@@ -266,7 +264,7 @@ func TestSortedUniqueListContains_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 		ul.Insert(mockItem)
@@ -288,12 +286,12 @@ func TestSortedUniqueListContains_Concurrent(t *testing.T) {
 func TestSortedUniqueListLen(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "get length",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -308,7 +306,7 @@ func TestSortedUniqueListLen(t *testing.T) {
 		},
 		{
 			name: "get empty list length",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				assert.Equal(ul.Len(), 0)
@@ -316,7 +314,7 @@ func TestSortedUniqueListLen(t *testing.T) {
 		},
 		{
 			name: "get same values length",
-			mock: func(m ...*mocks.MockItemMockRecorder) {},
+			mock: func(m ...*MockItemMockRecorder) {},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
 				ul.Insert(items[0])
@@ -331,7 +329,7 @@ func TestSortedUniqueListLen(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
 
-			mockItems := []*mocks.MockItem{mocks.NewMockItem(ctl), mocks.NewMockItem(ctl)}
+			mockItems := []*MockItem{NewMockItem(ctl), NewMockItem(ctl)}
 			tc.mock(mockItems[0].EXPECT(), mockItems[1].EXPECT())
 			tc.expect(t, NewSortedUniqueList(), mockItems[0], mockItems[1])
 		})
@@ -349,7 +347,7 @@ func TestSortedUniqueListLen_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 	}
@@ -376,12 +374,12 @@ func TestSortedUniqueListLen_Concurrent(t *testing.T) {
 func TestSortedUniqueListRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "range values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -403,7 +401,7 @@ func TestSortedUniqueListRange(t *testing.T) {
 		},
 		{
 			name: "range multi values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				for i := range m {
 					m[i].SortedValue().Return(i).AnyTimes()
 				}
@@ -426,7 +424,7 @@ func TestSortedUniqueListRange(t *testing.T) {
 		},
 		{
 			name: "range stoped",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -446,7 +444,7 @@ func TestSortedUniqueListRange(t *testing.T) {
 		},
 		{
 			name: "range same values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).AnyTimes(),
 				)
@@ -469,7 +467,7 @@ func TestSortedUniqueListRange(t *testing.T) {
 		},
 		{
 			name: "range empty list",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 			},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
@@ -489,9 +487,9 @@ func TestSortedUniqueListRange(t *testing.T) {
 			defer ctl.Finish()
 
 			var mockItems []Item
-			var mockItemRecorders []*mocks.MockItemMockRecorder
+			var mockItemRecorders []*MockItemMockRecorder
 			for i := 0; i < 10; i++ {
-				mockItem := mocks.NewMockItem(ctl)
+				mockItem := NewMockItem(ctl)
 				mockItemRecorders = append(mockItemRecorders, mockItem.EXPECT())
 				mockItems = append(mockItems, mockItem)
 			}
@@ -513,7 +511,7 @@ func TestSortedUniqueListRange_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 	}
@@ -547,12 +545,12 @@ func TestSortedUniqueListRange_Concurrent(t *testing.T) {
 func TestSortedUniqueListReverseRange(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(m ...*mocks.MockItemMockRecorder)
+		mock   func(m ...*MockItemMockRecorder)
 		expect func(t *testing.T, ul SortedUniqueList, items ...Item)
 	}{
 		{
 			name: "reverse range values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -574,7 +572,7 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 		},
 		{
 			name: "reverse range multi values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				for i := range m {
 					m[i].SortedValue().Return(i).AnyTimes()
 				}
@@ -597,7 +595,7 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 		},
 		{
 			name: "reverse range stoped",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).Times(1),
 					m[1].SortedValue().Return(1).Times(1),
@@ -617,7 +615,7 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 		},
 		{
 			name: "reverse range same values",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 				gomock.InOrder(
 					m[0].SortedValue().Return(0).AnyTimes(),
 				)
@@ -640,7 +638,7 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 		},
 		{
 			name: "reverse range empty list",
-			mock: func(m ...*mocks.MockItemMockRecorder) {
+			mock: func(m ...*MockItemMockRecorder) {
 			},
 			expect: func(t *testing.T, ul SortedUniqueList, items ...Item) {
 				assert := assert.New(t)
@@ -660,9 +658,9 @@ func TestSortedUniqueListReverseRange(t *testing.T) {
 			defer ctl.Finish()
 
 			var mockItems []Item
-			var mockItemRecorders []*mocks.MockItemMockRecorder
+			var mockItemRecorders []*MockItemMockRecorder
 			for i := 0; i < 10; i++ {
-				mockItem := mocks.NewMockItem(ctl)
+				mockItem := NewMockItem(ctl)
 				mockItemRecorders = append(mockItemRecorders, mockItem.EXPECT())
 				mockItems = append(mockItems, mockItem)
 			}
@@ -684,7 +682,7 @@ func TestSortedUniqueListReverseRange_Concurrent(t *testing.T) {
 
 	var mockItems []Item
 	for _, v := range nums {
-		mockItem := mocks.NewMockItem(ctl)
+		mockItem := NewMockItem(ctl)
 		mockItem.EXPECT().SortedValue().DoAndReturn(func() int { return v }).AnyTimes()
 		mockItems = append(mockItems, mockItem)
 	}

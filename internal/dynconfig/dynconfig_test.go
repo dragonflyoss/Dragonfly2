@@ -27,7 +27,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 
-	mock_manager_client "d7y.io/dragonfly/v2/internal/dynconfig/mocks"
+	"d7y.io/dragonfly/v2/internal/dynconfig/mocks"
 )
 
 type TestDynconfig struct {
@@ -51,7 +51,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 		dynconfig      TestDynconfig
 		sleep          func()
 		cleanFileCache func(t *testing.T)
-		mock           func(m *mock_manager_client.MockmanagerClientMockRecorder)
+		mock           func(m *mocks.MockManagerClientMockRecorder)
 		expect         func(t *testing.T, data interface{})
 	}{
 		{
@@ -64,7 +64,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			},
 			sleep:          func() {},
 			cleanFileCache: func(t *testing.T) {},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				var d map[string]interface{}
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
@@ -106,7 +106,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				var d map[string]interface{}
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
@@ -143,7 +143,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			mock: func(m *mock_manager_client.MockmanagerClientMockRecorder) {
+			mock: func(m *mocks.MockManagerClientMockRecorder) {
 				var d map[string]interface{}
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
@@ -171,7 +171,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			mockManagerClient := mock_manager_client.NewMockmanagerClient(ctl)
+			mockManagerClient := mocks.NewMockManagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
 			d, err := New(ManagerSourceType, []Option{

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/keepalive_mock.go -source keepalive.go -package mocks
+
 package clientutil
 
 import (
@@ -24,8 +26,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
-var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
-
 type KeepAlive interface {
 	Keep()
 	Alive(alive time.Duration) bool
@@ -35,8 +35,6 @@ type keepAlive struct {
 	name   string
 	access atomic.Int64
 }
-
-var _ KeepAlive = (*keepAlive)(nil)
 
 func NewKeepAlive(name string) KeepAlive {
 	return &keepAlive{

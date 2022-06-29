@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination gc_mock.go -source gc.go -package gc
+
 package gc
 
 import (
@@ -24,42 +26,42 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// GC is the interface used for release resource
+// GC is the interface used for release resource.
 type GC interface {
-	// Add adds GC task
+	// Add adds GC task.
 	Add(Task) error
 
-	// Run GC task
+	// Run GC task.
 	Run(string) error
 
-	// Run all registered GC tasks
+	// Run all registered GC tasks.
 	RunAll()
 
-	// Serve running the GC task
+	// Serve running the GC task.
 	Serve()
 
-	// Stop running the GC task
+	// Stop running the GC task.
 	Stop()
 }
 
-// GC provides task release function
+// GC provides task release function.
 type gc struct {
 	tasks  *sync.Map
 	logger Logger
 	done   chan bool
 }
 
-// Option is a functional option for configuring the GC
+// Option is a functional option for configuring the GC.
 type Option func(g *gc)
 
-// WithLogger set the logger for GC
+// WithLogger set the logger for GC.
 func WithLogger(logger Logger) Option {
 	return func(g *gc) {
 		g.logger = logger
 	}
 }
 
-// New returns a new GC instence
+// New returns a new GC instence.
 func New(options ...Option) GC {
 	g := &gc{
 		tasks:  &sync.Map{},

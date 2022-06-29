@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/set_mock.go -source set.go -package mocks
+
 package set
 
 type Set interface {
