@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/upload_manager_mock.go -source upload_manager.go -package mocks
+
 package upload
 
 import (

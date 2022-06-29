@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination ./mocks/list_mock.go -package mocks d7y.io/dragonfly/v2/pkg/container/list Item
+//go:generate mockgen -destination sorted_list_mock.go -source sorted_list.go -package list
 
 package list
 

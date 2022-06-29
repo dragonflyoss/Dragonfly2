@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/searcher_mock.go -source searcher.go -package mocks
+
 package searcher
 
 import (

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/reachable_mock.go -source reachable.go -package mocks
+
 package reachable
 
 import (

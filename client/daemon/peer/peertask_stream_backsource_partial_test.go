@@ -42,7 +42,6 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_daemon "d7y.io/dragonfly/v2/client/daemon/test/mock/daemon"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -50,20 +49,21 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
+	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	mock_scheduler_client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
-	sourceMock "d7y.io/dragonfly/v2/pkg/source/mock"
+	sourcemocks "d7y.io/dragonfly/v2/pkg/source/mocks"
 )
 
 func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte, opt componentsOption) (
 	schedulerclient.Client, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = mock_daemon.NewMockDaemonServer(ctrl)
+	var daemon = servermocks.NewMockDaemonServer(ctrl)
 
 	var piecesMd5 []string
 	pieceCount := int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize)))
@@ -104,7 +104,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go func(daemon *mock_daemon.MockDaemonServer, ln net.Listener) {
+	go func(daemon *servermocks.MockDaemonServer, ln net.Listener) {
 		if err := daemonserver.New(daemon).Serve(ln); err != nil {
 			log.Fatal(err)
 		}
@@ -230,7 +230,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 			return rc, rc, nil
 		})
 
-	sourceClient := sourceMock.NewMockResourceClient(ctrl)
+	sourceClient := sourcemocks.NewMockResourceClient(ctrl)
 	source.UnRegister("http")
 	require.Nil(t, source.Register("http", sourceClient, httpprotocol.Adapter))
 	defer source.UnRegister("http")

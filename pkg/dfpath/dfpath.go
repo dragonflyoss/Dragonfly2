@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/dfpath_mock.go -source dfpath.go -package mocks
+
 package dfpath
 
 import (

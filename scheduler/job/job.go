@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/job_mock.go -source job.go -package mocks
+
 package job
 
 import (

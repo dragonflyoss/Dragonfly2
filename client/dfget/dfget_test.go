@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/source"
-	sourcemock "d7y.io/dragonfly/v2/pkg/source/mock"
+	"d7y.io/dragonfly/v2/pkg/source/mocks"
 )
 
 func Test_downloadFromSource(t *testing.T) {
@@ -44,7 +44,7 @@ func Test_downloadFromSource(t *testing.T) {
 
 	content := idgen.UUIDString()
 
-	sourceClient := sourcemock.NewMockResourceClient(gomock.NewController(t))
+	sourceClient := mocks.NewMockResourceClient(gomock.NewController(t))
 	require.Nil(t, source.Register("http", sourceClient, func(request *source.Request) *source.Request {
 		return request
 	}))

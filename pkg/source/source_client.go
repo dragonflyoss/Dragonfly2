@@ -13,7 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//go:generate mockgen -destination ./mock/mock_source_client.go -package mock d7y.io/dragonfly/v2/pkg/source ResourceClient
+
+//go:generate mockgen -destination mocks/mock_source_client.go -source source_client.go -package mocks
 
 package source
 
@@ -120,7 +121,7 @@ type ResourceLister interface {
 
 type ClientManager interface {
 	// Register registers a source client with scheme
-	Register(scheme string, resourceClient ResourceClient, adapter requestAdapter, hook ...Hook) error
+	Register(scheme string, resourceClient ResourceClient, adapter RequestAdapter, hook ...Hook) error
 
 	// UnRegister revoke a source client from manager
 	UnRegister(scheme string)
@@ -155,7 +156,7 @@ func UpdatePluginDir(pluginDir string) {
 	_defaultManager.(*clientManager).pluginDir = pluginDir
 }
 
-func (m *clientManager) Register(scheme string, resourceClient ResourceClient, adaptor requestAdapter, hooks ...Hook) error {
+func (m *clientManager) Register(scheme string, resourceClient ResourceClient, adaptor RequestAdapter, hooks ...Hook) error {
 	scheme = strings.ToLower(scheme)
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -230,7 +231,7 @@ func (m *clientManager) GetClient(scheme string, options ...Option) (ResourceCli
 	return client, true
 }
 
-func Register(scheme string, resourceClient ResourceClient, adaptor requestAdapter, hooks ...Hook) error {
+func Register(scheme string, resourceClient ResourceClient, adaptor RequestAdapter, hooks ...Hook) error {
 	return _defaultManager.Register(scheme, resourceClient, adaptor, hooks...)
 }
 
@@ -242,7 +243,7 @@ func ListClients() []string {
 	return _defaultManager.ListClients()
 }
 
-type requestAdapter func(request *Request) *Request
+type RequestAdapter func(request *Request) *Request
 
 // Hook TODO hook
 type Hook interface {
@@ -251,7 +252,7 @@ type Hook interface {
 }
 
 type clientWrapper struct {
-	adapter requestAdapter
+	adapter RequestAdapter
 	hooks   []Hook
 	rc      ResourceClient
 }

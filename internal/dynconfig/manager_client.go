@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/manager_client_mock.go -source manager_client.go -package mocks
+
 package dynconfig
 
 // managerClient is a client of manager

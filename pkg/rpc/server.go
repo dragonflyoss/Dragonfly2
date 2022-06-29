@@ -14,6 +14,12 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination base/mocks/base_mock.go -source base/base.pb.go -package mocks
+//go:generate mockgen -destination cdnsystem/mocks/cdnsystem_mock.go -source cdnsystem/cdnsystem.pb.go -package mocks
+//go:generate mockgen -destination dfdaemon/mocks/dfdaemon_mock.go -source dfdaemon/dfdaemon.pb.go -package mocks
+//go:generate mockgen -destination manager/mocks/manager_mock.go -source manager/manager.pb.go -package mocks
+//go:generate mockgen -destination scheduler/mocks/scheduler_mock.go -source scheduler/scheduler.pb.go -package mocks
+
 package rpc
 
 import (
