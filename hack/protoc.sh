@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROTOC_ALL_IMAGE=${PROTOC_ALL_IMAGE:-"namely/protoc-all:1.42_1"}
+PROTOC_ALL_IMAGE=${PROTOC_ALL_IMAGE:-"namely/protoc-all:1.47_0"}
 PROTO_PATH=pkg/rpc
 LANGUAGE=go
 

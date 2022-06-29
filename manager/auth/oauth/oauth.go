@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/oauth_mock.go -source oauth.go -package mocks
+
 package oauth
 
 import (

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/proxy_manager_mock.go -source proxy_manager.go -package mocks
+
 package proxy
 
 import (
