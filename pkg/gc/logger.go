@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination logger_mock.go -source logger.go -package gc
+
 package gc
 
-// Logger is the interface used in GC for logging
+// Logger is the interface used in GC for logging.
 type Logger interface {
-	// Infof logs routine messages for GC
+	// Infof logs routine messages for GC.
 	Infof(template string, args ...interface{})
-	// Error logs error messages for GC
+	// Error logs error messages for GC.
 	Errorf(template string, args ...interface{})
 }

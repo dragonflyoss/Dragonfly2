@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/server_mock.go -source server.go -package mocks
+
 package server
 
 import (
@@ -32,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
-//go:generate mockgen -source server.go -destination ../../../../client/daemon/test/mock/daemon/daemon_server.go
 // DaemonServer refer to dfdaemon.DaemonServer
 type DaemonServer interface {
 	// Download triggers client to download file

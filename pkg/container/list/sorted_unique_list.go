@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination sorted_unique_list_mock.go -source sorted_unique_list.go -package list
+
 package list
 
 import (

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/preheat_mock.go -source preheat.go -package mocks
+
 package job
 
 import (

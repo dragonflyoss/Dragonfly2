@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination piece_downloader_mock.go -source piece_downloader.go -package peer
+
 package peer
 
 import (
@@ -52,7 +54,6 @@ type DownloadPieceResult struct {
 	FinishTime int64
 }
 
-//go:generate mockgen -source piece_downloader.go -destination ../test/mock/peer/piece_downloader.go
 type PieceDownloader interface {
 	DownloadPiece(context.Context, *DownloadPieceRequest) (io.Reader, io.Closer, error)
 }

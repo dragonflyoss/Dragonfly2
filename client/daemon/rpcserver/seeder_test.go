@@ -34,8 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
-	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
-	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
+	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
@@ -190,7 +189,7 @@ func Test_ObtainSeeds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, delay := range []bool{false, true} {
 				delay := delay
-				mockStorageManger := mock_storage.NewMockManager(ctrl)
+				mockStorageManger := mocks.NewMockManager(ctrl)
 
 				if tc.limit == 0 {
 					tc.limit = 1024
@@ -254,7 +253,7 @@ func Test_ObtainSeeds(t *testing.T) {
 							},
 						}, nil
 					})
-				mockTaskManager := mock_peer.NewMockTaskManager(ctrl)
+				mockTaskManager := peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().StartSeedTask(gomock.Any(), gomock.Any()).DoAndReturn(
 					func(ctx context.Context, req *peer.SeedTaskRequest) (*peer.SeedTaskResponse, bool, error) {
 						ch := make(chan *peer.PieceInfo)

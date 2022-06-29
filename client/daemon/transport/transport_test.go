@@ -29,7 +29,6 @@ import (
 
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_peer "d7y.io/dragonfly/v2/client/daemon/test/mock/peer"
 )
 
 func TestMain(m *testing.M) {
@@ -43,7 +42,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 	assert.Nil(err, "load test file")
 
 	var url = "http://x/y"
-	peerTaskManager := mock_peer.NewMockTaskManager(ctrl)
+	peerTaskManager := peer.NewMockTaskManager(ctrl)
 	peerTaskManager.EXPECT().StartStreamTask(gomock.Any(), gomock.Any()).DoAndReturn(
 		func(ctx context.Context, req *peer.StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
 			assert.Equal(req.URL, url)

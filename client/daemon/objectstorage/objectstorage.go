@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/objectstorage_mock.go -source objectstorage.go -package mocks
+
 package objectstorage
 
 import (

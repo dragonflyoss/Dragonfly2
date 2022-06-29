@@ -32,8 +32,8 @@ import (
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	mock_storage "d7y.io/dragonfly/v2/client/daemon/test/mock/storage"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
@@ -49,7 +49,7 @@ func TestUploadManager_Serve(t *testing.T) {
 	testData, err := os.ReadFile(test.File)
 	assert.Nil(err, "load test file")
 
-	mockStorageManager := mock_storage.NewMockManager(ctrl)
+	mockStorageManager := mocks.NewMockManager(ctrl)
 	mockStorageManager.EXPECT().ReadPiece(gomock.Any(), gomock.Any()).AnyTimes().
 		DoAndReturn(func(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 			return bytes.NewBuffer(testData[req.Range.Start : req.Range.Start+req.Range.Length]),

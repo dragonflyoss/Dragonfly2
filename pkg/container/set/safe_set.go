@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/safe_set_mock.go -source safe_set.go -package mocks
+
 package set
 
 import (
