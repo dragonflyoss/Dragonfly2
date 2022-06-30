@@ -25,7 +25,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/net/fqdn"
@@ -33,8 +33,8 @@ import (
 )
 
 var peerHostConfig = DaemonOption{
-	AliveTime:   clientutil.Duration{Duration: DefaultDaemonAliveTime},
-	GCInterval:  clientutil.Duration{Duration: DefaultGCInterval},
+	AliveTime:   util.Duration{Duration: DefaultDaemonAliveTime},
+	GCInterval:  util.Duration{Duration: DefaultGCInterval},
 	KeepStorage: false,
 	Scheduler: SchedulerOption{
 		Manager: ManagerOption{
@@ -55,7 +55,7 @@ var peerHostConfig = DaemonOption{
 				Addr: "127.0.0.1:8002",
 			},
 		},
-		ScheduleTimeout: clientutil.Duration{Duration: DefaultScheduleTimeout},
+		ScheduleTimeout: util.Duration{Duration: DefaultScheduleTimeout},
 	},
 	Host: HostOption{
 		Hostname:       fqdn.FQDNHostname,
@@ -71,10 +71,10 @@ var peerHostConfig = DaemonOption{
 		CalculateDigest:      true,
 		PieceDownloadTimeout: 30 * time.Second,
 		GetPiecesMaxRetry:    100,
-		TotalRateLimit: clientutil.RateLimit{
+		TotalRateLimit: util.RateLimit{
 			Limit: rate.Limit(DefaultTotalDownloadLimit),
 		},
-		PerPeerRateLimit: clientutil.RateLimit{
+		PerPeerRateLimit: util.RateLimit{
 			Limit: rate.Limit(DefaultPerPeerDownloadLimit),
 		},
 		DownloadGRPC: ListenOption{
@@ -101,7 +101,7 @@ var peerHostConfig = DaemonOption{
 		},
 	},
 	Upload: UploadOption{
-		RateLimit: clientutil.RateLimit{
+		RateLimit: util.RateLimit{
 			Limit: rate.Limit(DefaultUploadLimit),
 		},
 		ListenOption: ListenOption{
@@ -149,7 +149,7 @@ var peerHostConfig = DaemonOption{
 		},
 	},
 	Storage: StorageOption{
-		TaskExpireTime: clientutil.Duration{
+		TaskExpireTime: util.Duration{
 			Duration: DefaultTaskExpireTime,
 		},
 		StoreStrategy:          AdvanceLocalTaskStoreStrategy,
@@ -157,7 +157,7 @@ var peerHostConfig = DaemonOption{
 		DiskGCThresholdPercent: 95,
 	},
 	Reload: ReloadOption{
-		Interval: clientutil.Duration{
+		Interval: util.Duration{
 			Duration: time.Minute,
 		},
 	},

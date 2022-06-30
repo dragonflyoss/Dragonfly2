@@ -34,10 +34,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -66,7 +66,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
 			DataPath: t.TempDir(),
-			TaskExpireTime: clientutil.Duration{
+			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})

@@ -33,7 +33,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -48,9 +48,9 @@ type DaemonOption struct {
 	// AliveTime indicates alive duration for which daemon keeps no accessing by any uploading and download requests,
 	// after this period daemon will automatically exit
 	// when AliveTime == 0, will run infinitely
-	AliveTime  clientutil.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
-	GCInterval clientutil.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
-	Metrics    string              `yaml:"metrics" mapstructure:"metrics"`
+	AliveTime  util.Duration `mapstructure:"aliveTime" yaml:"aliveTime"`
+	GCInterval util.Duration `mapstructure:"gcInterval" yaml:"gcInterval"`
+	Metrics    string        `yaml:"metrics" mapstructure:"metrics"`
 
 	WorkHome    string `mapstructure:"workHome" yaml:"workHome"`
 	CacheDir    string `mapstructure:"cacheDir" yaml:"cacheDir"`
@@ -174,7 +174,7 @@ type SchedulerOption struct {
 	// NetAddrs is scheduler addresses.
 	NetAddrs []dfnet.NetAddr `mapstructure:"netAddrs" yaml:"netAddrs"`
 	// ScheduleTimeout is request timeout.
-	ScheduleTimeout clientutil.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
+	ScheduleTimeout util.Duration `mapstructure:"scheduleTimeout" yaml:"scheduleTimeout"`
 	// DisableAutoBackSource indicates not back source normally, only scheduler says back source.
 	DisableAutoBackSource bool `mapstructure:"disableAutoBackSource" yaml:"disableAutoBackSource"`
 }
@@ -224,17 +224,17 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	DefaultPattern       string               `mapstructure:"defaultPattern" yaml:"defaultPattern"`
-	TotalRateLimit       clientutil.RateLimit `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
-	PerPeerRateLimit     clientutil.RateLimit `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
-	PieceDownloadTimeout time.Duration        `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
-	DownloadGRPC         ListenOption         `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
-	PeerGRPC             ListenOption         `mapstructure:"peerGRPC" yaml:"peerGRPC"`
-	CalculateDigest      bool                 `mapstructure:"calculateDigest" yaml:"calculateDigest"`
-	TransportOption      *TransportOption     `mapstructure:"transportOption" yaml:"transportOption"`
-	GetPiecesMaxRetry    int                  `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
-	Prefetch             bool                 `mapstructure:"prefetch" yaml:"prefetch"`
-	WatchdogTimeout      time.Duration        `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
+	DefaultPattern       string           `mapstructure:"defaultPattern" yaml:"defaultPattern"`
+	TotalRateLimit       util.RateLimit   `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
+	PerPeerRateLimit     util.RateLimit   `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
+	PieceDownloadTimeout time.Duration    `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
+	DownloadGRPC         ListenOption     `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
+	PeerGRPC             ListenOption     `mapstructure:"peerGRPC" yaml:"peerGRPC"`
+	CalculateDigest      bool             `mapstructure:"calculateDigest" yaml:"calculateDigest"`
+	TransportOption      *TransportOption `mapstructure:"transportOption" yaml:"transportOption"`
+	GetPiecesMaxRetry    int              `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool             `mapstructure:"prefetch" yaml:"prefetch"`
+	WatchdogTimeout      time.Duration    `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
 }
 
 type TransportOption struct {
@@ -366,7 +366,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), 
 
 type UploadOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
-	RateLimit    clientutil.RateLimit `mapstructure:"rateLimit" yaml:"rateLimit"`
+	RateLimit    util.RateLimit `mapstructure:"rateLimit" yaml:"rateLimit"`
 }
 
 type ObjectStorageOption struct {
@@ -504,7 +504,7 @@ type StorageOption struct {
 	DataPath string `mapstructure:"dataPath" yaml:"dataPath"`
 	// TaskExpireTime indicates caching duration for which cached file keeps no accessed by any process,
 	// after this period cache file will be gc
-	TaskExpireTime clientutil.Duration `mapstructure:"taskExpireTime" yaml:"taskExpireTime"`
+	TaskExpireTime util.Duration `mapstructure:"taskExpireTime" yaml:"taskExpireTime"`
 	// DiskGCThreshold indicates the threshold to gc the oldest tasks
 	DiskGCThreshold unit.Bytes `mapstructure:"diskGCThreshold" yaml:"diskGCThreshold"`
 	// DiskGCThresholdPercent indicates the threshold to gc the oldest tasks according the disk usage
@@ -523,7 +523,7 @@ type HealthOption struct {
 }
 
 type ReloadOption struct {
-	Interval clientutil.Duration
+	Interval util.Duration
 }
 
 type FileString string

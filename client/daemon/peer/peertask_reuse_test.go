@@ -29,10 +29,10 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -117,7 +117,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 			enablePrefetch: false,
 			storageManager: func(sm *mocks.MockManager) {
 				//sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-				//	func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+				//	func(taskID string, rg *util.Range) *storage.ReusePeerTask {
 				//		return nil
 				//	})
 				//sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
@@ -149,7 +149,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 					},
 				},
 				Output: testOutput,
-				Range:  &clientutil.Range{Start: 200, Length: 100},
+				Range:  &util.Range{Start: 200, Length: 100},
 			},
 			enablePrefetch: true,
 			storageManager: func(sm *mocks.MockManager) {
@@ -193,12 +193,12 @@ func TestReuseFilePeerTask(t *testing.T) {
 					},
 				},
 				Output: testOutput,
-				Range:  &clientutil.Range{Start: 0, Length: 10},
+				Range:  &util.Range{Start: 0, Length: 10},
 			},
 			enablePrefetch: true,
 			storageManager: func(sm *mocks.MockManager) {
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(taskID string, rg *util.Range) *storage.ReusePeerTask {
 						return nil
 					})
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
@@ -226,7 +226,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 					},
 				},
 				Output: testOutput,
-				Range:  &clientutil.Range{Start: 300, Length: 100},
+				Range:  &util.Range{Start: 300, Length: 100},
 			},
 			enablePrefetch: true,
 			storageManager: func(sm *mocks.MockManager) {
@@ -236,7 +236,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 						return nil
 					})
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(id string, rg *util.Range) *storage.ReusePeerTask {
 						taskID = id
 						return &storage.ReusePeerTask{
 							PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -275,7 +275,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 					},
 				},
 				Output: testOutput,
-				Range:  &clientutil.Range{Start: 300, Length: 100000},
+				Range:  &util.Range{Start: 300, Length: 100000},
 			},
 			enablePrefetch: true,
 			storageManager: func(sm *mocks.MockManager) {
@@ -285,7 +285,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 						return nil
 					})
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(id string, rg *util.Range) *storage.ReusePeerTask {
 						taskID = id
 						return &storage.ReusePeerTask{
 							PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -410,7 +410,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			enablePrefetch: false,
 			storageManager: func(sm *mocks.MockManager) {
 				//sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-				//	func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+				//	func(taskID string, rg *util.Range) *storage.ReusePeerTask {
 				//		return nil
 				//	})
 				//sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
@@ -439,7 +439,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					Filter: "",
 					Header: nil,
 				},
-				Range:  &clientutil.Range{Start: 0, Length: 10},
+				Range:  &util.Range{Start: 0, Length: 10},
 				PeerID: "",
 			},
 			enablePrefetch: true,
@@ -491,13 +491,13 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					Filter: "",
 					Header: nil,
 				},
-				Range:  &clientutil.Range{Start: 0, Length: 10},
+				Range:  &util.Range{Start: 0, Length: 10},
 				PeerID: "",
 			},
 			enablePrefetch: true,
 			storageManager: func(sm *mocks.MockManager) {
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(taskID string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(taskID string, rg *util.Range) *storage.ReusePeerTask {
 						return nil
 					})
 				sm.EXPECT().FindCompletedSubTask(gomock.Any()).DoAndReturn(
@@ -522,7 +522,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					Filter: "",
 					Header: nil,
 				},
-				Range:  &clientutil.Range{Start: 0, Length: 10},
+				Range:  &util.Range{Start: 0, Length: 10},
 				PeerID: "",
 			},
 			enablePrefetch: true,
@@ -533,7 +533,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 						return nil
 					})
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(id string, rg *util.Range) *storage.ReusePeerTask {
 						taskID = id
 						return &storage.ReusePeerTask{
 							PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -578,7 +578,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					Filter: "",
 					Header: nil,
 				},
-				Range:  &clientutil.Range{Start: 0, Length: 100},
+				Range:  &util.Range{Start: 0, Length: 100},
 				PeerID: "",
 			},
 			enablePrefetch: true,
@@ -589,7 +589,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 						return nil
 					})
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(id string, rg *util.Range) *storage.ReusePeerTask {
 						taskID = id
 						return &storage.ReusePeerTask{
 							PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -638,7 +638,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					Filter: "",
 					Header: nil,
 				},
-				Range:  &clientutil.Range{Start: 100, Length: 100000},
+				Range:  &util.Range{Start: 100, Length: 100000},
 				PeerID: "",
 			},
 			enablePrefetch: true,
@@ -649,7 +649,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 						return nil
 					})
 				sm.EXPECT().FindPartialCompletedTask(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(id string, rg *clientutil.Range) *storage.ReusePeerTask {
+					func(id string, rg *util.Range) *storage.ReusePeerTask {
 						taskID = id
 						return &storage.ReusePeerTask{
 							PeerTaskMetadata: storage.PeerTaskMetadata{

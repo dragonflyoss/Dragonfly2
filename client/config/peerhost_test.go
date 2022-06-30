@@ -25,7 +25,7 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/unit"
@@ -69,9 +69,9 @@ port:
 timeout: 1000000000
 `,
 			target: &struct {
-				Timeout clientutil.Duration `yaml:"timeout"`
+				Timeout util.Duration `yaml:"timeout"`
 			}{
-				Timeout: clientutil.Duration{
+				Timeout: util.Duration{
 					Duration: time.Second,
 				},
 			},
@@ -81,9 +81,9 @@ timeout: 1000000000
 timeout: 1s
 `,
 			target: &struct {
-				Timeout clientutil.Duration `yaml:"timeout"`
+				Timeout util.Duration `yaml:"timeout"`
 			}{
-				Timeout: clientutil.Duration{
+				Timeout: util.Duration{
 					Duration: time.Second,
 				},
 			},
@@ -93,9 +93,9 @@ timeout: 1s
 limit: 100Mi
 `,
 			target: &struct {
-				Limit clientutil.RateLimit `yaml:"limit"`
+				Limit util.RateLimit `yaml:"limit"`
 			}{
-				Limit: clientutil.RateLimit{
+				Limit: util.RateLimit{
 					Limit: 100 * 1024 * 1024,
 				},
 			},
@@ -105,9 +105,9 @@ limit: 100Mi
 limit: 2097152
 `,
 			target: &struct {
-				Limit clientutil.RateLimit `yaml:"limit"`
+				Limit util.RateLimit `yaml:"limit"`
 			}{
-				Limit: clientutil.RateLimit{
+				Limit: util.RateLimit{
 					Limit: 2 * 1024 * 1024,
 				},
 			},
@@ -192,19 +192,19 @@ schedulers2:
 `)
 
 	var s = struct {
-		TLSConfig   *TLSConfig           `yaml:"tls"`
-		URL         *URL                 `yaml:"url"`
-		Certs       *CertPool            `yaml:"certs"`
-		Regx        *Regexp              `yaml:"regx"`
-		Port1       TCPListenPortRange   `yaml:"port1"`
-		Port2       TCPListenPortRange   `yaml:"port2"`
-		Timeout     clientutil.Duration  `yaml:"timeout"`
-		Limit       clientutil.RateLimit `yaml:"limit"`
-		Type        dfnet.NetworkType    `yaml:"type"`
-		Proxy1      ProxyOption          `yaml:"proxy1"`
-		Proxy2      ProxyOption          `yaml:"proxy2"`
-		Schedulers1 SchedulerOption      `yaml:"schedulers1"`
-		Schedulers2 SchedulerOption      `yaml:"schedulers2"`
+		TLSConfig   *TLSConfig         `yaml:"tls"`
+		URL         *URL               `yaml:"url"`
+		Certs       *CertPool          `yaml:"certs"`
+		Regx        *Regexp            `yaml:"regx"`
+		Port1       TCPListenPortRange `yaml:"port1"`
+		Port2       TCPListenPortRange `yaml:"port2"`
+		Timeout     util.Duration      `yaml:"timeout"`
+		Limit       util.RateLimit     `yaml:"limit"`
+		Type        dfnet.NetworkType  `yaml:"type"`
+		Proxy1      ProxyOption        `yaml:"proxy1"`
+		Proxy2      ProxyOption        `yaml:"proxy2"`
+		Schedulers1 SchedulerOption    `yaml:"schedulers1"`
+		Schedulers2 SchedulerOption    `yaml:"schedulers2"`
 	}{}
 
 	if err := yaml.Unmarshal(bytes, &s); err != nil {
@@ -219,10 +219,10 @@ func TestPeerHostOption_Load(t *testing.T) {
 	hijackExp, _ := NewRegexp("mirror.aliyuncs.com:443")
 
 	peerHostOption := &DaemonOption{
-		AliveTime: clientutil.Duration{
+		AliveTime: util.Duration{
 			Duration: 0,
 		},
-		GCInterval: clientutil.Duration{
+		GCInterval: util.Duration{
 			Duration: 60000000000,
 		},
 		WorkHome:    "/tmp/dragonfly/dfdaemon/",
@@ -255,7 +255,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 					Addr: "127.0.0.1:8002",
 				},
 			},
-			ScheduleTimeout: clientutil.Duration{
+			ScheduleTimeout: util.Duration{
 				Duration: 0,
 			},
 		},
@@ -270,10 +270,10 @@ func TestPeerHostOption_Load(t *testing.T) {
 		},
 		Download: DownloadOption{
 			PieceDownloadTimeout: 30 * time.Second,
-			TotalRateLimit: clientutil.RateLimit{
+			TotalRateLimit: util.RateLimit{
 				Limit: 209715200,
 			},
-			PerPeerRateLimit: clientutil.RateLimit{
+			PerPeerRateLimit: util.RateLimit{
 				Limit: 20971520,
 			},
 			DownloadGRPC: ListenOption{
@@ -306,7 +306,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 			},
 		},
 		Upload: UploadOption{
-			RateLimit: clientutil.RateLimit{
+			RateLimit: util.RateLimit{
 				Limit: 104857600,
 			},
 			ListenOption: ListenOption{
@@ -349,7 +349,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 		},
 		Storage: StorageOption{
 			DataPath: "/tmp/storage/data",
-			TaskExpireTime: clientutil.Duration{
+			TaskExpireTime: util.Duration{
 				Duration: 180000000000,
 			},
 			StoreStrategy: StoreStrategy("io.d7y.storage.v2.simple"),

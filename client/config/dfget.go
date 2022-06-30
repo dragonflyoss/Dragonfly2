@@ -28,7 +28,7 @@ import (
 	"syscall"
 	"time"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -101,7 +101,7 @@ type ClientOption struct {
 	// WorkHome is working directory of dfget.
 	WorkHome string `yaml:"workHome,omitempty" mapstructure:"workHome,omitempty"`
 
-	RateLimit clientutil.RateLimit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
+	RateLimit util.RateLimit `yaml:"rateLimit,omitempty" mapstructure:"rateLimit,omitempty"`
 
 	// Config file paths,
 	// default:["/etc/dragonfly/dfget.yaml","/etc/dragonfly.conf"].
