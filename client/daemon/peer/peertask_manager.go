@@ -31,10 +31,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -183,7 +183,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *util.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, error) {
 	ptc, created, err := ptm.getOrCreatePeerTaskConductor(ctx, taskID, request, limit, parent, rg, desiredLocation, seed)
@@ -206,7 +206,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *util.Range,
 	desiredLocation string,
 	seed bool) (*peerTaskConductor, bool, error) {
 	if ptc, ok := ptm.findPeerTaskConductor(taskID); ok {
@@ -234,7 +234,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	return ptc, true, ptc.initStorage(desiredLocation)
 }
 
-func (ptm *peerTaskManager) enabledPrefetch(rg *clientutil.Range) bool {
+func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
 	return ptm.enablePrefetch && rg != nil
 }
 

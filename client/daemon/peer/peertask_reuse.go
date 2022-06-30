@@ -27,9 +27,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -50,7 +50,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	var (
 		reuse      *storage.ReusePeerTask
-		reuseRange *clientutil.Range // the range of parent peer task data to read
+		reuseRange *util.Range // the range of parent peer task data to read
 		log        *logger.SugaredLoggerOnWith
 		length     int64
 		err        error
@@ -162,7 +162,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 }
 
 func (ptm *peerTaskManager) storePartialFile(ctx context.Context, request *FileTaskRequest,
-	log *logger.SugaredLoggerOnWith, reuse *storage.ReusePeerTask, rg *clientutil.Range) error {
+	log *logger.SugaredLoggerOnWith, reuse *storage.ReusePeerTask, rg *util.Range) error {
 	f, err := os.OpenFile(request.Output, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Errorf("open dest file error when reuse peer task: %s", err)
@@ -192,7 +192,7 @@ func (ptm *peerTaskManager) tryReuseStreamPeerTask(ctx context.Context,
 	taskID := idgen.TaskID(request.URL, request.URLMeta)
 	var (
 		reuse      *storage.ReusePeerTask
-		reuseRange *clientutil.Range // the range of parent peer task data to read
+		reuseRange *util.Range // the range of parent peer task data to read
 		log        *logger.SugaredLoggerOnWith
 		length     int64
 	)
@@ -299,7 +299,7 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 	taskID := idgen.TaskID(request.Url, request.UrlMeta)
 	var (
 		reuse      *storage.ReusePeerTask
-		reuseRange *clientutil.Range // the range of parent peer task data to read
+		reuseRange *util.Range // the range of parent peer task data to read
 		log        *logger.SugaredLoggerOnWith
 	)
 

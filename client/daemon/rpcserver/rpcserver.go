@@ -35,10 +35,10 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -53,14 +53,14 @@ import (
 )
 
 type Server interface {
-	clientutil.KeepAlive
+	util.KeepAlive
 	ServeDownload(listener net.Listener) error
 	ServePeer(listener net.Listener) error
 	Stop()
 }
 
 type server struct {
-	clientutil.KeepAlive
+	util.KeepAlive
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
@@ -75,7 +75,7 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
 	storageManager storage.Manager, defaultPattern base.Pattern,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
-		KeepAlive:       clientutil.NewKeepAlive("rpc server"),
+		KeepAlive:       util.NewKeepAlive("rpc server"),
 		peerHost:        peerHost,
 		peerTaskManager: peerTaskManager,
 		storageManager:  storageManager,
@@ -341,7 +341,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 			err = fmt.Errorf("parse range %s error: %s", req.UrlMeta.Range, err)
 			return err
 		}
-		peerTask.Range = &clientutil.Range{
+		peerTask.Range = &util.Range{
 			Start:  int64(r.StartIndex),
 			Length: int64(r.Length()),
 		}

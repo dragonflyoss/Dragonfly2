@@ -38,10 +38,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -183,7 +183,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
 			DataPath: tempDir,
-			TaskExpireTime: clientutil.Duration{
+			TaskExpireTime: util.Duration{
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
@@ -259,7 +259,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 		storageManager:   storageManager,
 		schedulerClient:  schedulerClient,
 		schedulerOption: config.SchedulerOption{
-			ScheduleTimeout: clientutil.Duration{Duration: 10 * time.Minute},
+			ScheduleTimeout: util.Duration{Duration: 10 * time.Minute},
 		},
 	}
 	req := &scheduler.PeerTaskRequest{

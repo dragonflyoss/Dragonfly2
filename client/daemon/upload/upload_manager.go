@@ -34,9 +34,9 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
@@ -164,7 +164,7 @@ func (um *uploadManager) getDownload(ctx *gin.Context) {
 
 	log := logger.WithTaskAndPeerID(taskID, peerID).With("component", "uploadManager")
 	log.Debugf("upload piece for task %s/%s to %s, request header: %#v", taskID, peerID, ctx.Request.RemoteAddr, ctx.Request.Header)
-	rg, err := clientutil.ParseRange(ctx.GetHeader(headers.Range), math.MaxInt64)
+	rg, err := util.ParseRange(ctx.GetHeader(headers.Range), math.MaxInt64)
 	if err != nil {
 		log.Errorf("parse range with error: %s", err)
 		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})

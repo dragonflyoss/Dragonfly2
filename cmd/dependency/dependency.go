@@ -41,8 +41,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"gopkg.in/yaml.v3"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
@@ -191,8 +191,8 @@ func initDecoderConfig(dc *mapstructure.DecoderConfig) {
 		switch to {
 		case reflect.TypeOf(unit.B),
 			reflect.TypeOf(dfnet.NetAddr{}),
-			reflect.TypeOf(clientutil.RateLimit{}),
-			reflect.TypeOf(clientutil.Duration{}),
+			reflect.TypeOf(util.RateLimit{}),
+			reflect.TypeOf(util.Duration{}),
 			reflect.TypeOf(&config.ProxyOption{}),
 			reflect.TypeOf(config.TCPListenPortRange{}),
 			reflect.TypeOf(config.FileString("")),

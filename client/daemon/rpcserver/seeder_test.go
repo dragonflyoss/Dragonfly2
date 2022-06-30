@@ -30,11 +30,11 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
@@ -312,7 +312,7 @@ func Test_ObtainSeeds(t *testing.T) {
 					})
 
 				s := &server{
-					KeepAlive:       clientutil.NewKeepAlive("test"),
+					KeepAlive:       util.NewKeepAlive("test"),
 					peerHost:        &scheduler.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,

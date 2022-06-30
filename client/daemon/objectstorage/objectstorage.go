@@ -40,10 +40,10 @@ import (
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -233,8 +233,8 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 		bucketName    = params.ID
 		objectKey     = strings.TrimPrefix(params.ObjectKey, "/")
 		filter        = query.Filter
-		artifactRange *clientutil.Range
-		ranges        []clientutil.Range
+		artifactRange *util.Range
+		ranges        []util.Range
 		err           error
 	)
 
@@ -641,8 +641,8 @@ func (o *objectStorage) client() (objectstorage.ObjectStorage, error) {
 }
 
 // parseRangeHeader uses to parse range http header for dragonfly.
-func (o *objectStorage) parseRangeHeader(rangeHeader string) ([]clientutil.Range, error) {
-	ranges, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+func (o *objectStorage) parseRangeHeader(rangeHeader string) ([]util.Range, error) {
+	ranges, err := util.ParseRange(rangeHeader, math.MaxInt)
 	if err != nil {
 		return nil, err
 	}

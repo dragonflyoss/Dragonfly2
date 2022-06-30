@@ -20,9 +20,10 @@
 package config
 
 import (
-	"d7y.io/dragonfly/v2/client/clientutil"
-	"d7y.io/dragonfly/v2/pkg/unit"
 	"golang.org/x/time/rate"
+
+	"d7y.io/dragonfly/v2/client/util"
+	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
 var dfgetConfig = ClientOption{
@@ -30,7 +31,7 @@ var dfgetConfig = ClientOption{
 	Output:        "",
 	Timeout:       0,
 	BenchmarkRate: 128 * unit.KB,
-	RateLimit: clientutil.RateLimit{
+	RateLimit: util.RateLimit{
 		Limit: rate.Limit(DefaultTotalDownloadLimit),
 	},
 	Md5:               "",
