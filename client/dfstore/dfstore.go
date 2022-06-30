@@ -258,6 +258,10 @@ func (ds *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOj
 		return nil, err
 	}
 
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
 	u, err := url.Parse(ds.endpoint)
 	if err != nil {
 		return nil, err
