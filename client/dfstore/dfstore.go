@@ -107,6 +107,9 @@ type GetObjectInput struct {
 	// filtering unnecessary query params in the URL,
 	// it is separated by & character.
 	Filter string
+
+	// Range is the HTTP range header.
+	Range string
 }
 
 // Validate validates GetObjectInput fields.
@@ -140,10 +143,18 @@ func (ds *dfstore) GetObjectRequestWithContext(ctx context.Context, input *GetOb
 	if input.Filter != "" {
 		query.Set("filter", input.Filter)
 	}
-
 	u.RawQuery = query.Encode()
 
-	return http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if input.Range != "" {
+		req.Header.Set(headers.Range, input.Range)
+	}
+
+	return req, nil
 }
 
 // GetObject returns data of object.
