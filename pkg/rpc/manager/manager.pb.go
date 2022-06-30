@@ -1928,7 +1928,7 @@ func file_pkg_rpc_manager_manager_proto_rawDescGZIP() []byte {
 
 var file_pkg_rpc_manager_manager_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_pkg_rpc_manager_manager_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
-var file_pkg_rpc_manager_manager_proto_goTypes = []interface{}{
+var file_pkg_rpc_manager_manager_proto_goTypes = []any{
 	(SourceType)(0),                 // 0: manager.SourceType
 	(*SecurityGroup)(nil),           // 1: manager.SecurityGroup
 	(*SeedPeerCluster)(nil),         // 2: manager.SeedPeerCluster
@@ -1997,7 +1997,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_manager_manager_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*SecurityGroup); i {
 			case 0:
 				return &v.state
@@ -2009,7 +2009,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*SeedPeerCluster); i {
 			case 0:
 				return &v.state
@@ -2021,7 +2021,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*SeedPeer); i {
 			case 0:
 				return &v.state
@@ -2033,7 +2033,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*GetSeedPeerRequest); i {
 			case 0:
 				return &v.state
@@ -2045,7 +2045,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*UpdateSeedPeerRequest); i {
 			case 0:
 				return &v.state
@@ -2057,7 +2057,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*SchedulerCluster); i {
 			case 0:
 				return &v.state
@@ -2069,7 +2069,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*Scheduler); i {
 			case 0:
 				return &v.state
@@ -2081,7 +2081,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*GetSchedulerRequest); i {
 			case 0:
 				return &v.state
@@ -2093,7 +2093,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*UpdateSchedulerRequest); i {
 			case 0:
 				return &v.state
@@ -2105,7 +2105,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*ListSchedulersRequest); i {
 			case 0:
 				return &v.state
@@ -2117,7 +2117,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[10].Exporter = func(v any, i int) any {
 			switch v := v.(*ListSchedulersResponse); i {
 			case 0:
 				return &v.state
@@ -2129,7 +2129,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[11].Exporter = func(v any, i int) any {
 			switch v := v.(*ObjectStorage); i {
 			case 0:
 				return &v.state
@@ -2141,7 +2141,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[12].Exporter = func(v any, i int) any {
 			switch v := v.(*GetObjectStorageRequest); i {
 			case 0:
 				return &v.state
@@ -2153,7 +2153,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[13].Exporter = func(v any, i int) any {
 			switch v := v.(*Bucket); i {
 			case 0:
 				return &v.state
@@ -2165,7 +2165,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[14].Exporter = func(v any, i int) any {
 			switch v := v.(*ListBucketsRequest); i {
 			case 0:
 				return &v.state
@@ -2177,7 +2177,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[15].Exporter = func(v any, i int) any {
 			switch v := v.(*ListBucketsResponse); i {
 			case 0:
 				return &v.state
@@ -2189,7 +2189,7 @@ func file_pkg_rpc_manager_manager_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_manager_manager_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_manager_manager_proto_msgTypes[16].Exporter = func(v any, i int) any {
 			switch v := v.(*KeepAliveRequest); i {
 			case 0:
 				return &v.state
@@ -2411,7 +2411,7 @@ func RegisterManagerServer(s *grpc.Server, srv ManagerServer) {
 	s.RegisterService(&_Manager_serviceDesc, srv)
 }
 
-func _Manager_GetSeedPeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_GetSeedPeer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(GetSeedPeerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2423,13 +2423,13 @@ func _Manager_GetSeedPeer_Handler(srv interface{}, ctx context.Context, dec func
 		Server:     srv,
 		FullMethod: "/manager.Manager/GetSeedPeer",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).GetSeedPeer(ctx, req.(*GetSeedPeerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_UpdateSeedPeer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_UpdateSeedPeer_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UpdateSeedPeerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2441,13 +2441,13 @@ func _Manager_UpdateSeedPeer_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/manager.Manager/UpdateSeedPeer",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).UpdateSeedPeer(ctx, req.(*UpdateSeedPeerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_GetScheduler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_GetScheduler_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(GetSchedulerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2459,13 +2459,13 @@ func _Manager_GetScheduler_Handler(srv interface{}, ctx context.Context, dec fun
 		Server:     srv,
 		FullMethod: "/manager.Manager/GetScheduler",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).GetScheduler(ctx, req.(*GetSchedulerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_UpdateScheduler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_UpdateScheduler_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(UpdateSchedulerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2477,13 +2477,13 @@ func _Manager_UpdateScheduler_Handler(srv interface{}, ctx context.Context, dec 
 		Server:     srv,
 		FullMethod: "/manager.Manager/UpdateScheduler",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).UpdateScheduler(ctx, req.(*UpdateSchedulerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_ListSchedulers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_ListSchedulers_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ListSchedulersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2495,13 +2495,13 @@ func _Manager_ListSchedulers_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/manager.Manager/ListSchedulers",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).ListSchedulers(ctx, req.(*ListSchedulersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_GetObjectStorage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_GetObjectStorage_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(GetObjectStorageRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2513,13 +2513,13 @@ func _Manager_GetObjectStorage_Handler(srv interface{}, ctx context.Context, dec
 		Server:     srv,
 		FullMethod: "/manager.Manager/GetObjectStorage",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).GetObjectStorage(ctx, req.(*GetObjectStorageRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_ListBuckets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Manager_ListBuckets_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(ListBucketsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -2531,13 +2531,13 @@ func _Manager_ListBuckets_Handler(srv interface{}, ctx context.Context, dec func
 		Server:     srv,
 		FullMethod: "/manager.Manager/ListBuckets",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(ManagerServer).ListBuckets(ctx, req.(*ListBucketsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Manager_KeepAlive_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Manager_KeepAlive_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(ManagerServer).KeepAlive(&managerKeepAliveServer{stream})
 }
 

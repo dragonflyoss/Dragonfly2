@@ -212,7 +212,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"location": "location-1",
 					},
 					Schedulers: []model.Scheduler{
@@ -244,7 +244,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc": "idc|idc-1",
 					},
 					Schedulers: []model.Scheduler{
@@ -256,7 +256,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bar",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc": "idc-2|idc-3",
 					},
 					Schedulers: []model.Scheduler{
@@ -280,7 +280,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"net_topology": "net-topology-1",
 					},
 					Schedulers: []model.Scheduler{
@@ -313,7 +313,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"location": "location-1|location-2",
 						"idc":      "idc-1|idc-2",
 					},
@@ -350,7 +350,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"location": "location-1",
 					},
 					SecurityGroup: model.SecurityGroup{
@@ -393,7 +393,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc": "idc-1",
 					},
 					SecurityGroup: model.SecurityGroup{
@@ -436,7 +436,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "idc-1",
 						"location": "location-1",
 					},
@@ -456,7 +456,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bar",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "idc-2",
 						"location": "location-1|location-2",
 					},
@@ -476,7 +476,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "baz",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "idc-2",
 						"location": "location-1",
 					},
@@ -512,7 +512,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "idc-1",
 						"location": "location-2",
 					},
@@ -532,7 +532,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bar",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "idc-1",
 						"location": "location-1",
 					},
@@ -552,7 +552,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "baz",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "idc-1",
 						"location":     "location-1|location-2",
 						"net_topology": "net_topology-1",
@@ -566,7 +566,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bax",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "idc-1",
 						"location":     "location-2",
 						"net_topology": "net_topology-1|net_topology-2",
@@ -581,7 +581,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bac",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "idc-1",
 						"location":     "location-2",
 						"net_topology": "net_topology-1|net_topology-2",
@@ -621,7 +621,7 @@ func TestSchedulerCluster(t *testing.T) {
 			schedulerClusters: []model.SchedulerCluster{
 				{
 					Name: "foo",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-2",
 					},
@@ -641,7 +641,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bar",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":      "IDC-1",
 						"location": "LOCATION-1",
 					},
@@ -661,7 +661,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "baz",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "IDC-1",
 						"location":     "LOCATION-1|LOCATION-2",
 						"net_topology": "NET_TOPOLOGY-1",
@@ -675,7 +675,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bax",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "IDC-1",
 						"location":     "LOCATION-2",
 						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",
@@ -690,7 +690,7 @@ func TestSchedulerCluster(t *testing.T) {
 				},
 				{
 					Name: "bac",
-					Scopes: map[string]interface{}{
+					Scopes: map[string]any{
 						"idc":          "IDC-1",
 						"location":     "LOCATION-2",
 						"net_topology": "NET_TOPOLOGY-1|NET_TOPOLOGY-2",

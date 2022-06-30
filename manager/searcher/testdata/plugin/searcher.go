@@ -29,6 +29,6 @@ func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters 
 	return []model.SchedulerCluster{{Name: "foo"}}, nil
 }
 
-func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
+func DragonflyPluginInit(option map[string]string) (any, map[string]string, error) {
 	return &searcher{}, map[string]string{"type": "manager", "name": "searcher"}, nil
 }

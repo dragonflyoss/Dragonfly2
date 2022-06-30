@@ -107,10 +107,10 @@ func SetJobLogger(log *zap.SugaredLogger) {
 }
 
 type SugaredLoggerOnWith struct {
-	withArgs []interface{}
+	withArgs []any
 }
 
-func With(args ...interface{}) *SugaredLoggerOnWith {
+func With(args ...any) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
 		withArgs: args,
 	}
@@ -118,130 +118,130 @@ func With(args ...interface{}) *SugaredLoggerOnWith {
 
 func WithHostID(hostID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"hostID", hostID},
+		withArgs: []any{"hostID", hostID},
 	}
 }
 
 func WithTaskID(taskID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskID", taskID},
+		withArgs: []any{"taskID", taskID},
 	}
 }
 
 func WithTaskAndPeerID(taskID, peerID string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskID", taskID, "peerID", peerID},
+		withArgs: []any{"taskID", taskID, "peerID", peerID},
 	}
 }
 
 func WithTaskIDAndURL(taskID, url string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"taskID", taskID, "url", url},
+		withArgs: []any{"taskID", taskID, "url", url},
 	}
 }
 
 func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	return &SugaredLoggerOnWith{
-		withArgs: []interface{}{"hostname", hostname, "ip", ip},
+		withArgs: []any{"hostname", hostname, "ip", ip},
 	}
 }
 
-func (log *SugaredLoggerOnWith) With(args ...interface{}) *SugaredLoggerOnWith {
+func (log *SugaredLoggerOnWith) With(args ...any) *SugaredLoggerOnWith {
 	args = append(args, log.withArgs...)
 	return &SugaredLoggerOnWith{
 		withArgs: args,
 	}
 }
 
-func (log *SugaredLoggerOnWith) Infof(template string, args ...interface{}) {
+func (log *SugaredLoggerOnWith) Infof(template string, args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
 		return
 	}
 	CoreLogger.Infow(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Info(args ...interface{}) {
+func (log *SugaredLoggerOnWith) Info(args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.InfoLevel) {
 		return
 	}
 	CoreLogger.Infow(fmt.Sprint(args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Warnf(template string, args ...interface{}) {
+func (log *SugaredLoggerOnWith) Warnf(template string, args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
 		return
 	}
 	CoreLogger.Warnw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Warn(args ...interface{}) {
+func (log *SugaredLoggerOnWith) Warn(args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.WarnLevel) {
 		return
 	}
 	CoreLogger.Warnw(fmt.Sprint(args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Errorf(template string, args ...interface{}) {
+func (log *SugaredLoggerOnWith) Errorf(template string, args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
 		return
 	}
 	CoreLogger.Errorw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Error(args ...interface{}) {
+func (log *SugaredLoggerOnWith) Error(args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.ErrorLevel) {
 		return
 	}
 	CoreLogger.Errorw(fmt.Sprint(args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Debugf(template string, args ...interface{}) {
+func (log *SugaredLoggerOnWith) Debugf(template string, args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
 		return
 	}
 	CoreLogger.Debugw(fmt.Sprintf(template, args...), log.withArgs...)
 }
 
-func (log *SugaredLoggerOnWith) Debug(args ...interface{}) {
+func (log *SugaredLoggerOnWith) Debug(args ...any) {
 	if !coreLogLevelEnabler.Enabled(zap.DebugLevel) {
 		return
 	}
 	CoreLogger.Debugw(fmt.Sprint(args...), log.withArgs...)
 }
 
-func Infof(template string, args ...interface{}) {
+func Infof(template string, args ...any) {
 	CoreLogger.Infof(template, args...)
 }
 
-func Info(args ...interface{}) {
+func Info(args ...any) {
 	CoreLogger.Info(args...)
 }
 
-func Warnf(template string, args ...interface{}) {
+func Warnf(template string, args ...any) {
 	CoreLogger.Warnf(template, args...)
 }
 
-func Warn(args ...interface{}) {
+func Warn(args ...any) {
 	CoreLogger.Warn(args...)
 }
 
-func Errorf(template string, args ...interface{}) {
+func Errorf(template string, args ...any) {
 	CoreLogger.Errorf(template, args...)
 }
 
-func Error(args ...interface{}) {
+func Error(args ...any) {
 	CoreLogger.Error(args...)
 }
 
-func Debugf(template string, args ...interface{}) {
+func Debugf(template string, args ...any) {
 	CoreLogger.Debugf(template, args...)
 }
 
-func Fatalf(template string, args ...interface{}) {
+func Fatalf(template string, args ...any) {
 	CoreLogger.Fatalf(template, args...)
 }
 
-func Fatal(args ...interface{}) {
+func Fatal(args ...any) {
 	CoreLogger.Fatal(args...)
 }
 
@@ -250,27 +250,27 @@ type zapGrpc struct {
 	verbose int
 }
 
-func (z *zapGrpc) Infoln(args ...interface{}) {
+func (z *zapGrpc) Infoln(args ...any) {
 	z.SugaredLogger.Info(args...)
 }
 
-func (z *zapGrpc) Warning(args ...interface{}) {
+func (z *zapGrpc) Warning(args ...any) {
 	z.SugaredLogger.Warn(args...)
 }
 
-func (z *zapGrpc) Warningln(args ...interface{}) {
+func (z *zapGrpc) Warningln(args ...any) {
 	z.SugaredLogger.Warn(args...)
 }
 
-func (z *zapGrpc) Warningf(format string, args ...interface{}) {
+func (z *zapGrpc) Warningf(format string, args ...any) {
 	z.SugaredLogger.Warnf(format, args...)
 }
 
-func (z *zapGrpc) Errorln(args ...interface{}) {
+func (z *zapGrpc) Errorln(args ...any) {
 	z.SugaredLogger.Error(args...)
 }
 
-func (z *zapGrpc) Fatalln(args ...interface{}) {
+func (z *zapGrpc) Fatalln(args ...any) {
 	z.SugaredLogger.Fatal(args...)
 }
 

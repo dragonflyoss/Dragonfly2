@@ -54,7 +54,7 @@ func New(code base.Code, msg string) *DfError {
 	}
 }
 
-func Newf(code base.Code, format string, a ...interface{}) *DfError {
+func Newf(code base.Code, format string, a ...any) *DfError {
 	return &DfError{
 		Code:    code,
 		Message: fmt.Sprintf(format, a...),

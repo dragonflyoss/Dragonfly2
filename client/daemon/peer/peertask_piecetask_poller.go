@@ -160,7 +160,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		count             int
 		ptc               = poller.peerTaskConductor
 	)
-	p, _, err := retry.Run(ptc.ctx, func() (interface{}, bool, error) {
+	p, _, err := retry.Run(ptc.ctx, func() (any, bool, error) {
 		// GetPieceTasks must be fast, so short time out is okay
 		ctx, cancel := context.WithTimeout(ptc.ctx, 4*time.Second)
 		defer cancel()

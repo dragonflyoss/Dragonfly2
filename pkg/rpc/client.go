@@ -264,7 +264,7 @@ func (conn *Connection) findCandidateClientConn(key string, exclusiveNodes sets.
 
 type candidateClient struct {
 	node string
-	Ref  interface{}
+	Ref  any
 }
 
 func (conn *Connection) createClient(target string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
@@ -413,7 +413,7 @@ func (conn *Connection) Close() error {
 			}
 		}
 		// gc hash keys
-		conn.key2NodeMap.Range(func(key, value interface{}) bool {
+		conn.key2NodeMap.Range(func(key, value any) bool {
 			if value == serverNode {
 				conn.key2NodeMap.Delete(key)
 				logger.GrpcLogger.With("conn", conn.name).Infof("success gc key: %s associated with server node %s", key, serverNode)

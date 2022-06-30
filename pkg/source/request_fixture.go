@@ -32,7 +32,7 @@ type requestMatcher struct {
 }
 
 // Matches returns whether x is a match.
-func (req requestMatcher) Matches(x interface{}) bool {
+func (req requestMatcher) Matches(x any) bool {
 	return x.(*Request).URL.String() == req.url
 }
 

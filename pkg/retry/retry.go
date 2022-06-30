@@ -24,13 +24,13 @@ import (
 )
 
 func Run(ctx context.Context,
-	f func() (data interface{}, cancel bool, err error),
+	f func() (data any, cancel bool, err error),
 	initBackoff float64,
 	maxBackoff float64,
 	maxAttempts int,
-	cause error) (interface{}, bool, error) {
+	cause error) (any, bool, error) {
 	var (
-		res    interface{}
+		res    any
 		cancel bool
 	)
 	for i := 0; i < maxAttempts; i++ {

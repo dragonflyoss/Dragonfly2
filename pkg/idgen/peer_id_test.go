@@ -26,12 +26,12 @@ func TestPeerID(t *testing.T) {
 	tests := []struct {
 		name   string
 		ip     string
-		expect func(t *testing.T, d interface{})
+		expect func(t *testing.T, d any)
 	}{
 		{
 			name: "generate PeerID with ipv4",
 			ip:   "127.0.0.1",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("127.0.0.1-.*-.*", d)
 			},
@@ -39,7 +39,7 @@ func TestPeerID(t *testing.T) {
 		{
 			name: "generate PeerID with ipv6",
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*", d)
 			},
@@ -47,7 +47,7 @@ func TestPeerID(t *testing.T) {
 		{
 			name: "generate PeerID with empty string",
 			ip:   "",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("-.*-.*", d)
 			},
@@ -66,12 +66,12 @@ func TestSeedPeerID(t *testing.T) {
 	tests := []struct {
 		name   string
 		ip     string
-		expect func(t *testing.T, d interface{})
+		expect func(t *testing.T, d any)
 	}{
 		{
 			name: "generate SeedPeerID with ipv4",
 			ip:   "127.0.0.1",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("127.0.0.1-.*-.*_Seed", d)
 			},
@@ -79,7 +79,7 @@ func TestSeedPeerID(t *testing.T) {
 		{
 			name: "generate SeedPeerID with ipv6",
 			ip:   "2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("2001:0db8:3c4d:0015:0000:0000:1a2f:1a2b-.*-.*_Seed", d)
 			},
@@ -87,7 +87,7 @@ func TestSeedPeerID(t *testing.T) {
 		{
 			name: "generate SeedPeerID with empty string",
 			ip:   "",
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Regexp("-.*-.*_Seed", d)
 			},

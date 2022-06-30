@@ -476,7 +476,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		return dferrors.New(base.Code_SchedTaskStatusError, msg)
 	}
 
-	peer.Children.Range(func(_, value interface{}) bool {
+	peer.Children.Range(func(_, value any) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
 			return true
@@ -726,7 +726,7 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
-	peer.Children.Range(func(_, value interface{}) bool {
+	peer.Children.Range(func(_, value any) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
 			return true
@@ -752,7 +752,7 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
-	peer.Children.Range(func(_, value interface{}) bool {
+	peer.Children.Range(func(_, value any) bool {
 		child, ok := value.(*resource.Peer)
 		if !ok {
 			return true

@@ -57,7 +57,7 @@ func (n NetAddr) String() string {
 }
 
 func (n *NetAddr) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (n *NetAddr) UnmarshalJSON(b []byte) error {
 		n.Type = TCP
 		n.Addr = value
 		return nil
-	case map[string]interface{}:
+	case map[string]any:
 		if err := n.unmarshal(json.Unmarshal, b); err != nil {
 			return err
 		}
@@ -88,11 +88,11 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 		n.Addr = addr
 		return nil
 	case yaml.MappingNode:
-		var m = make(map[string]interface{})
+		var m = make(map[string]any)
 		for i := 0; i < len(node.Content); i += 2 {
 			var (
 				key   string
-				value interface{}
+				value any
 			)
 			if err := node.Content[i].Decode(&key); err != nil {
 				return err
@@ -117,7 +117,7 @@ func (n *NetAddr) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-func (n *NetAddr) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+func (n *NetAddr) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
 	nt := struct {
 		Type NetworkType `json:"type" yaml:"type"`
 		Addr string      `json:"addr" yaml:"addr"` // see https://github.com/grpc/grpc/blob/master/doc/naming.md

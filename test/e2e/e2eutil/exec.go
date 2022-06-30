@@ -85,7 +85,7 @@ func (p *PodExec) Command(arg ...string) *exec.Cmd {
 	return KubeCtlCommand(extArgs...)
 }
 
-func (p *PodExec) CurlCommand(method string, header map[string]string, data map[string]interface{}, target string) *exec.Cmd {
+func (p *PodExec) CurlCommand(method string, header map[string]string, data map[string]any, target string) *exec.Cmd {
 	extArgs := []string{"/usr/bin/curl", target, "-s"}
 	if method != "" {
 		extArgs = append(extArgs, "-X", method)

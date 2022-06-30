@@ -92,7 +92,7 @@ func New(cfg *config.Config, resource resource.Resource) (Job, error) {
 		config:       cfg,
 	}
 
-	namedJobFuncs := map[string]interface{}{
+	namedJobFuncs := map[string]any{
 		internaljob.PreheatJob: t.preheat,
 	}
 

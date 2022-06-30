@@ -220,7 +220,7 @@ func TestOnEvicted(t *testing.T) {
 	tc := New(DefaultExpiration, 0)
 	tc.Set(v1, 3, DefaultExpiration)
 	works := false
-	tc.OnEvicted(func(k string, v interface{}) {
+	tc.OnEvicted(func(k string, v any) {
 		if k == v1 && v.(int) == 3 {
 			works = true
 		}
@@ -423,7 +423,7 @@ func BenchmarkRWMutexMapGet(b *testing.B) {
 func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 	b.StopTimer()
 	s := struct{ name string }{name: v1}
-	m := map[interface{}]string{
+	m := map[any]string{
 		s: v2,
 	}
 	var mu sync.RWMutex
@@ -437,7 +437,7 @@ func BenchmarkRWMutexInterfaceMapGetStruct(b *testing.B) {
 
 func BenchmarkRWMutexInterfaceMapGetString(b *testing.B) {
 	b.StopTimer()
-	m := map[interface{}]string{
+	m := map[any]string{
 		v1: v2,
 	}
 	var mu sync.RWMutex
