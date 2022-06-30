@@ -66,7 +66,7 @@ func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, 
 
 func (drs *DownResultStream) initStream() error {
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client dfdaemon.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, false)
@@ -119,7 +119,7 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 		return cause
 	}
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client dfdaemon.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)
@@ -146,7 +146,7 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 	drs.failedServers = append(drs.failedServers, preNode)
 
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client dfdaemon.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)

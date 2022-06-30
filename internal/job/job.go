@@ -94,7 +94,7 @@ func ping(options *redis.Options) error {
 	return client.Ping(context.Background()).Err()
 }
 
-func (t *Job) RegisterJob(namedJobFuncs map[string]interface{}) error {
+func (t *Job) RegisterJob(namedJobFuncs map[string]any) error {
 	return t.Server.RegisterTasks(namedJobFuncs)
 }
 
@@ -146,7 +146,7 @@ func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
 	}, nil
 }
 
-func MarshalRequest(v interface{}) ([]machineryv1tasks.Arg, error) {
+func MarshalRequest(v any) ([]machineryv1tasks.Arg, error) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func MarshalRequest(v interface{}) ([]machineryv1tasks.Arg, error) {
 	}}, nil
 }
 
-func UnmarshalResponse(data []reflect.Value, v interface{}) error {
+func UnmarshalResponse(data []reflect.Value, v any) error {
 	if len(data) == 0 {
 		return errors.New("empty data is not specified")
 	}
@@ -169,6 +169,6 @@ func UnmarshalResponse(data []reflect.Value, v interface{}) error {
 	return nil
 }
 
-func UnmarshalRequest(data string, v interface{}) error {
+func UnmarshalRequest(data string, v any) error {
 	return json.Unmarshal([]byte(data), v)
 }

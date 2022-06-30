@@ -148,7 +148,7 @@ func (dc *daemonClient) SyncPieceTasks(ctx context.Context, target dfnet.NetAddr
 }
 
 func (dc *daemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) (err error) {
-	_, err = rpc.ExecuteWithRetry(func() (interface{}, error) {
+	_, err = rpc.ExecuteWithRetry(func() (any, error) {
 		client, err := dc.getDaemonClientWithTarget(target.GetEndpoint())
 		if err != nil {
 			return nil, fmt.Errorf("failed to connect server %s: %v", target.GetEndpoint(), err)

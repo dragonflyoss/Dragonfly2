@@ -67,7 +67,7 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 
 func (pss *PieceSeedStream) initStream() error {
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client cdnsystem.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(pss.hashKey, false)
@@ -110,7 +110,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 		return cause
 	}
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client cdnsystem.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(pss.hashKey, true)
@@ -136,7 +136,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	}
 	pss.failedServers = append(pss.failedServers, preNode)
 	var target string
-	stream, err := rpc.ExecuteWithRetry(func() (interface{}, error) {
+	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
 		var client cdnsystem.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(key, true)

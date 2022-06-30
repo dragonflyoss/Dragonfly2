@@ -232,7 +232,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 	var candidateParents []*resource.Peer
 	var candidateParentIDs []string
 	var n int
-	peer.Task.Peers.Range(func(_, value interface{}) bool {
+	peer.Task.Peers.Range(func(_, value any) bool {
 		if n > filterParentLimit {
 			return false
 		}

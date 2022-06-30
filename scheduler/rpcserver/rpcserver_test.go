@@ -44,11 +44,11 @@ var (
 func TestRPCServer_New(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s interface{})
+		expect func(t *testing.T, s any)
 	}{
 		{
 			name: "new server",
-			expect: func(t *testing.T, s interface{}) {
+			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "Server")
 			},

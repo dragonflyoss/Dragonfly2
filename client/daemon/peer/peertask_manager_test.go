@@ -848,7 +848,7 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	assert.True(success, "task should success")
 
 	for i := 0; i < 3; i++ {
-		ptm.runningPeerTasks.Range(func(key, value interface{}) bool {
+		ptm.runningPeerTasks.Range(func(key, value any) bool {
 			noRunningTask = false
 			return false
 		})

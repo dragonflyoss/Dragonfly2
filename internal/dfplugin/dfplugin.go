@@ -48,9 +48,9 @@ const (
 	PluginTypeScheduler = PluginType("scheduler")
 )
 
-type PluginInitFunc func(option map[string]string) (plugin interface{}, meta map[string]string, err error)
+type PluginInitFunc func(option map[string]string) (plugin any, meta map[string]string, err error)
 
-func Load(dir string, typ PluginType, name string, option map[string]string) (interface{}, map[string]string, error) {
+func Load(dir string, typ PluginType, name string, option map[string]string) (any, map[string]string, error) {
 	soName := fmt.Sprintf(PluginFormat, string(typ), name)
 	p, err := plugin.Open(path.Join(dir, soName))
 	if err != nil {
@@ -63,7 +63,7 @@ func Load(dir string, typ PluginType, name string, option map[string]string) (in
 	}
 
 	// FIXME when use symbol.(PluginInitFunc), ok is always false
-	f, ok := symbol.(func(option map[string]string) (plugin interface{}, meta map[string]string, err error))
+	f, ok := symbol.(func(option map[string]string) (plugin any, meta map[string]string, err error))
 	if !ok {
 		return nil, nil, errors.New("invalid plugin init function signature")
 	}

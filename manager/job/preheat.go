@@ -289,7 +289,7 @@ func getAuthToken(ctx context.Context, header http.Header) (string, error) {
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.Unmarshal(body, &result); err != nil {
 		return "", err
 	}

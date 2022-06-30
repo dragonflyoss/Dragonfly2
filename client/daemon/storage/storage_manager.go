@@ -775,7 +775,7 @@ func (s *storageManager) TryGC() (bool, error) {
 	// FIXME gc subtask
 	var markedTasks []PeerTaskMetadata
 	var totalNotMarkedSize int64
-	s.tasks.Range(func(key, task interface{}) bool {
+	s.tasks.Range(func(key, task any) bool {
 		if task.(Reclaimer).CanReclaim() {
 			task.(Reclaimer).MarkReclaim()
 			markedTasks = append(markedTasks, key.(PeerTaskMetadata))
@@ -804,7 +804,7 @@ func (s *storageManager) TryGC() (bool, error) {
 		}
 		logger.Infof("quota threshold reached, start gc oldest task, size: %d bytes", bytesExceed)
 		var tasks []*localTaskStore
-		s.tasks.Range(func(key, val interface{}) bool {
+		s.tasks.Range(func(key, val any) bool {
 			// skip reclaimed task
 			task, ok := val.(*localTaskStore)
 			if !ok { // skip subtask
@@ -911,7 +911,7 @@ func (s *storageManager) CleanUp() {
 }
 
 func (s *storageManager) forceGC() (bool, error) {
-	s.tasks.Range(func(key, task interface{}) bool {
+	s.tasks.Range(func(key, task any) bool {
 		meta := key.(PeerTaskMetadata)
 		err := s.deleteTask(meta)
 		if err != nil {

@@ -40,7 +40,7 @@ const (
 )
 
 type strategy interface {
-	Unmarshal(rawVal interface{}) error
+	Unmarshal(rawVal any) error
 }
 
 type Dynconfig struct {
@@ -154,7 +154,7 @@ func (d *Dynconfig) validate() error {
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *Dynconfig) Unmarshal(rawVal interface{}) error {
+func (d *Dynconfig) Unmarshal(rawVal any) error {
 	return d.strategy.Unmarshal(rawVal)
 }
 
@@ -164,7 +164,7 @@ type DecoderConfigOption func(*mapstructure.DecoderConfig)
 
 // defaultDecoderConfig returns default mapstructure.DecoderConfig with support
 // of time.Duration values & string slices
-func defaultDecoderConfig(output interface{}) *mapstructure.DecoderConfig {
+func defaultDecoderConfig(output any) *mapstructure.DecoderConfig {
 	c := &mapstructure.DecoderConfig{
 		Metadata:         nil,
 		Result:           output,
@@ -178,7 +178,7 @@ func defaultDecoderConfig(output interface{}) *mapstructure.DecoderConfig {
 }
 
 // A wrapper around mapstructure.Decode that mimics the WeakDecode functionality
-func decode(input interface{}, config *mapstructure.DecoderConfig) error {
+func decode(input any, config *mapstructure.DecoderConfig) error {
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {
 		return err
