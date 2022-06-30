@@ -42,11 +42,11 @@ type Dfstore interface {
 	// GetObject returns data of object.
 	GetObject(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error)
 
-	// CreateObjectRequestWithContext returns *http.Request of creating object.
-	CreateObjectRequestWithContext(ctx context.Context, input *CreateOjectInput) (*http.Request, error)
+	// PutObjectRequestWithContext returns *http.Request of putting object.
+	PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error)
 
-	// CreateObject creates data of object.
-	CreateObject(ctx context.Context, input *CreateOjectInput) error
+	// PutObject puts data of object.
+	PutObject(ctx context.Context, input *PutOjectInput) error
 
 	// DeleteObjectRequestWithContext returns *http.Request of deleting object.
 	DeleteObjectRequestWithContext(ctx context.Context, input *DeleteObjectInput) (*http.Request, error)
@@ -176,8 +176,8 @@ func (ds *dfstore) GetObject(ctx context.Context, input *GetObjectInput) (io.Rea
 	return resp.Body, nil
 }
 
-// CreateOjectInput is used to construct request of creating object.
-type CreateOjectInput struct {
+// PutOjectInput is used to construct request of putting object.
+type PutOjectInput struct {
 	// BucketName is bucket name.
 	BucketName string
 
@@ -201,8 +201,8 @@ type CreateOjectInput struct {
 	Reader io.Reader
 }
 
-// Validate validates CreateOjectInput fields.
-func (i *CreateOjectInput) Validate() error {
+// Validate validates PutOjectInput fields.
+func (i *PutOjectInput) Validate() error {
 	if i.BucketName == "" {
 		return errors.New("invalid BucketName")
 
@@ -223,18 +223,14 @@ func (i *CreateOjectInput) Validate() error {
 	return nil
 }
 
-// CreateObjectRequestWithContext returns *http.Request of creating object.
-func (ds *dfstore) CreateObjectRequestWithContext(ctx context.Context, input *CreateOjectInput) (*http.Request, error) {
+// PutObjectRequestWithContext returns *http.Request of putting object.
+func (ds *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
-
-	if err := writer.WriteField("key", input.ObjectKey); err != nil {
-		return nil, err
-	}
 
 	// AsyncWriteBack mode is used by default.
 	if err := writer.WriteField("mode", fmt.Sprint(input.Mode)); err != nil {
@@ -267,9 +263,9 @@ func (ds *dfstore) CreateObjectRequestWithContext(ctx context.Context, input *Cr
 		return nil, err
 	}
 
-	u.Path = filepath.Join("buckets", input.BucketName, "objects")
+	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +274,9 @@ func (ds *dfstore) CreateObjectRequestWithContext(ctx context.Context, input *Cr
 	return req, nil
 }
 
-// CreateObject creates data of object.
-func (ds *dfstore) CreateObject(ctx context.Context, input *CreateOjectInput) error {
-	req, err := ds.CreateObjectRequestWithContext(ctx, input)
+// PutObject puts data of object.
+func (ds *dfstore) PutObject(ctx context.Context, input *PutOjectInput) error {
+	req, err := ds.PutObjectRequestWithContext(ctx, input)
 	if err != nil {
 		return err
 	}
