@@ -26,7 +26,7 @@ import (
 	"github.com/docker/go-units"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 )
 
@@ -81,10 +81,10 @@ func (nv *NetAddrsValue) Type() string {
 }
 
 type RateLimitValue struct {
-	rate *clientutil.RateLimit
+	rate *util.RateLimit
 }
 
-func NewLimitRateValue(rate *clientutil.RateLimit) *RateLimitValue {
+func NewLimitRateValue(rate *util.RateLimit) *RateLimitValue {
 	return &RateLimitValue{rate: rate}
 }
 

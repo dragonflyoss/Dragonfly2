@@ -22,8 +22,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -32,7 +32,7 @@ type SeedTaskRequest struct {
 	scheduler.PeerTaskRequest
 	Limit      float64
 	Callsystem string
-	Range      *clientutil.Range
+	Range      *util.Range
 }
 
 type SeedTaskResponse struct {

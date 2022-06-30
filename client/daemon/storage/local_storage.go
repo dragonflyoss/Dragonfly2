@@ -30,7 +30,7 @@ import (
 
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"

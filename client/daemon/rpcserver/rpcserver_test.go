@@ -30,10 +30,10 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
@@ -76,7 +76,7 @@ func Test_ServeDownload(t *testing.T) {
 			return ch, false, nil
 		})
 	m := &server{
-		KeepAlive:       clientutil.NewKeepAlive("test"),
+		KeepAlive:       util.NewKeepAlive("test"),
 		peerHost:        &scheduler.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
@@ -145,7 +145,7 @@ func Test_ServePeer(t *testing.T) {
 		}, nil
 	})
 	s := &server{
-		KeepAlive:      clientutil.NewKeepAlive("test"),
+		KeepAlive:      util.NewKeepAlive("test"),
 		peerHost:       &scheduler.PeerHost{},
 		storageManager: mockStorageManger,
 	}
@@ -482,7 +482,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 					})
 
 				s := &server{
-					KeepAlive:       clientutil.NewKeepAlive("test"),
+					KeepAlive:       util.NewKeepAlive("test"),
 					peerHost:        &scheduler.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,

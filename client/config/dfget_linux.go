@@ -22,14 +22,14 @@ package config
 import (
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 )
 
 var dfgetConfig = ClientOption{
 	URL:     "",
 	Output:  "",
 	Timeout: 0,
-	RateLimit: clientutil.RateLimit{
+	RateLimit: util.RateLimit{
 		Limit: rate.Limit(DefaultTotalDownloadLimit),
 	},
 	Md5:               "",

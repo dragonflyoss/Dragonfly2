@@ -25,10 +25,10 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -41,7 +41,7 @@ type StreamTaskRequest struct {
 	// url meta info
 	URLMeta *base.UrlMeta
 	// http range
-	Range *clientutil.Range
+	Range *util.Range
 	// peer's id and must be global uniqueness
 	PeerID string
 	// Pattern to register to scheduler
@@ -67,7 +67,7 @@ type streamTask struct {
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
 	request *scheduler.PeerTaskRequest,
-	rg *clientutil.Range) (*streamTask, error) {
+	rg *util.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf
 	if ptm.perPeerRateLimit > 0 {
