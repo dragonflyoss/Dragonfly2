@@ -55,7 +55,7 @@ import (
 
 // InitCobra initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
-func InitCobra(cmd *cobra.Command, useConfigFile bool, config interface{}) {
+func InitCobra(cmd *cobra.Command, useConfigFile bool, config any) {
 	rootName := cmd.Root().Name()
 	cobra.OnInitialize(func() { initConfig(useConfigFile, rootName, config) })
 
@@ -155,7 +155,7 @@ func SetupQuitSignalHandler(handler func()) {
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(useConfigFile bool, name string, config interface{}) {
+func initConfig(useConfigFile bool, name string, config any) {
 	// Use config file and read once.
 	if useConfigFile {
 		cfgFile := viper.GetString("config")
@@ -187,7 +187,7 @@ func initConfig(useConfigFile bool, name string, config interface{}) {
 }
 
 func initDecoderConfig(dc *mapstructure.DecoderConfig) {
-	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v interface{}) (interface{}, error) {
+	dc.DecodeHook = mapstructure.ComposeDecodeHookFunc(func(from, to reflect.Type, v any) (any, error) {
 		switch to {
 		case reflect.TypeOf(unit.B),
 			reflect.TypeOf(dfnet.NetAddr{}),

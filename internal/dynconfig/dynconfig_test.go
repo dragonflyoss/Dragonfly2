@@ -52,7 +52,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 		sleep          func()
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockManagerClientMockRecorder)
-		expect         func(t *testing.T, data interface{})
+		expect         func(t *testing.T, data any)
 	}{
 		{
 			name:   "unmarshals dynconfig success without file cache",
@@ -65,7 +65,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			sleep:          func() {},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
-				var d map[string]interface{}
+				var d map[string]any
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
@@ -76,7 +76,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 
 				m.Get().Return(d, nil).AnyTimes()
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := assert.New(t)
 				var d TestDynconfig
 				if err := mapstructure.Decode(data, &d); err != nil {
@@ -107,7 +107,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				}
 			},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
-				var d map[string]interface{}
+				var d map[string]any
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
@@ -118,7 +118,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 
 				m.Get().Return(d, nil).Times(1)
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := assert.New(t)
 				assert.EqualValues(data, TestDynconfig{
 					Scheduler: SchedulerOption{
@@ -144,7 +144,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				}
 			},
 			mock: func(m *mocks.MockManagerClientMockRecorder) {
-				var d map[string]interface{}
+				var d map[string]any
 				if err := mapstructure.Decode(TestDynconfig{
 					Scheduler: SchedulerOption{
 						Name: schedulerName,
@@ -156,7 +156,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 				m.Get().Return(d, nil).Times(1)
 				m.Get().Return(nil, errors.New("manager serivce error")).Times(1)
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := assert.New(t)
 				assert.EqualValues(data, TestDynconfig{
 					Scheduler: SchedulerOption{
@@ -205,7 +205,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 		dynconfig  TestDynconfig
 		configPath string
 		sleep      func()
-		expect     func(t *testing.T, data interface{})
+		expect     func(t *testing.T, data any)
 	}{
 		{
 			name:   "unmarshals dynconfig success with local file",
@@ -217,7 +217,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 			},
 			configPath: configPath,
 			sleep:      func() {},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := assert.New(t)
 				var d TestDynconfig
 				if err := mapstructure.Decode(data, &d); err != nil {
@@ -243,7 +243,7 @@ func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
 			sleep: func() {
 				time.Sleep(30 * time.Millisecond)
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := assert.New(t)
 				assert.EqualValues(data, TestDynconfig{
 					Scheduler: SchedulerOption{

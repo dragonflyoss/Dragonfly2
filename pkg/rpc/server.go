@@ -67,7 +67,7 @@ func DefaultServerOptions() []grpc.ServerOption {
 	}
 }
 
-func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func streamServerInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	err := handler(srv, ss)
 	if err != nil {
 		err = convertServerError(err)
@@ -76,7 +76,7 @@ func streamServerInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.S
 	return err
 }
 
-func unaryServerInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func unaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	m, err := handler(ctx, req)
 	if err != nil {
 		err = convertServerError(err)

@@ -100,7 +100,7 @@ func (s *service) CreatePreheatJob(ctx context.Context, json types.CreatePreheat
 func (s *service) pollingJob(ctx context.Context, id uint, taskID string) {
 	var job model.Job
 
-	if _, _, err := retry.Run(ctx, func() (interface{}, bool, error) {
+	if _, _, err := retry.Run(ctx, func() (any, bool, error) {
 		groupJob, err := s.job.GetGroupJobState(taskID)
 		if err != nil {
 			logger.Errorf("polling job %d and task %s failed: %v", id, taskID, err)

@@ -263,7 +263,7 @@ type ProxyOption struct {
 }
 
 func (p *ProxyOption) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (p *ProxyOption) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		return nil
-	case map[string]interface{}:
+	case map[string]any:
 		if err := p.unmarshal(json.Unmarshal, b); err != nil {
 			return err
 		}
@@ -305,11 +305,11 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 		}
 		return nil
 	case yaml.MappingNode:
-		var m = make(map[string]interface{})
+		var m = make(map[string]any)
 		for i := 0; i < len(node.Content); i += 2 {
 			var (
 				key   string
-				value interface{}
+				value any
 			)
 			if err := node.Content[i].Decode(&key); err != nil {
 				return err
@@ -334,7 +334,7 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 	}
 }
 
-func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
+func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
 	pt := struct {
 		ListenOption    `mapstructure:",squash" yaml:",inline"`
 		BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
@@ -412,7 +412,7 @@ type TCPListenPortRange struct {
 }
 
 func (t *TCPListenPortRange) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -420,10 +420,10 @@ func (t *TCPListenPortRange) UnmarshalJSON(b []byte) error {
 }
 
 func (t *TCPListenPortRange) UnmarshalYAML(node *yaml.Node) error {
-	var v interface{}
+	var v any
 	switch node.Kind {
 	case yaml.MappingNode:
-		var m = make(map[string]interface{})
+		var m = make(map[string]any)
 		for i := 0; i < len(node.Content); i += 2 {
 			var (
 				key   string
@@ -448,7 +448,7 @@ func (t *TCPListenPortRange) UnmarshalYAML(node *yaml.Node) error {
 	return t.unmarshal(v)
 }
 
-func (t *TCPListenPortRange) unmarshal(v interface{}) error {
+func (t *TCPListenPortRange) unmarshal(v any) error {
 	switch value := v.(type) {
 	case int:
 		t.Start = value
@@ -456,7 +456,7 @@ func (t *TCPListenPortRange) unmarshal(v interface{}) error {
 	case float64:
 		t.Start = int(value)
 		return nil
-	case map[string]interface{}:
+	case map[string]any:
 		if s, ok := value["start"]; ok {
 			switch start := s.(type) {
 			case float64:
@@ -638,11 +638,11 @@ type URL struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (u *URL) UnmarshalJSON(b []byte) error {
-	return u.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+	return u.unmarshal(func(v any) error { return json.Unmarshal(b, v) })
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler.
-func (u *URL) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (u *URL) UnmarshalYAML(unmarshal func(any) error) error {
 	return u.unmarshal(unmarshal)
 }
 
@@ -652,11 +652,11 @@ func (u *URL) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalYAML implements yaml.Marshaller to print the url.
-func (u *URL) MarshalYAML() (interface{}, error) {
+func (u *URL) MarshalYAML() (any, error) {
 	return u.String(), nil
 }
 
-func (u *URL) unmarshal(unmarshal func(interface{}) error) error {
+func (u *URL) unmarshal(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
@@ -680,11 +680,11 @@ type CertPool struct {
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (cp *CertPool) UnmarshalJSON(b []byte) error {
-	return cp.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+	return cp.unmarshal(func(v any) error { return json.Unmarshal(b, v) })
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler.
-func (cp *CertPool) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (cp *CertPool) UnmarshalYAML(unmarshal func(any) error) error {
 	return cp.unmarshal(unmarshal)
 }
 
@@ -694,11 +694,11 @@ func (cp *CertPool) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalYAML implements yaml.Marshaller to print the cert pool.
-func (cp *CertPool) MarshalYAML() (interface{}, error) {
+func (cp *CertPool) MarshalYAML() (any, error) {
 	return cp.Files, nil
 }
 
-func (cp *CertPool) unmarshal(unmarshal func(interface{}) error) error {
+func (cp *CertPool) unmarshal(unmarshal func(any) error) error {
 	if err := unmarshal(&cp.Files); err != nil {
 		return err
 	}
@@ -776,16 +776,16 @@ func NewRegexp(exp string) (*Regexp, error) {
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler.
-func (r *Regexp) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (r *Regexp) UnmarshalYAML(unmarshal func(any) error) error {
 	return r.unmarshal(unmarshal)
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (r *Regexp) UnmarshalJSON(b []byte) error {
-	return r.unmarshal(func(v interface{}) error { return json.Unmarshal(b, v) })
+	return r.unmarshal(func(v any) error { return json.Unmarshal(b, v) })
 }
 
-func (r *Regexp) unmarshal(unmarshal func(interface{}) error) error {
+func (r *Regexp) unmarshal(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
@@ -803,7 +803,7 @@ func (r *Regexp) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalYAML implements yaml.Marshaller to print the regexp.
-func (r *Regexp) MarshalYAML() (interface{}, error) {
+func (r *Regexp) MarshalYAML() (any, error) {
 	return r.String(), nil
 }
 

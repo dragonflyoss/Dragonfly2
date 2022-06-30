@@ -17,13 +17,13 @@
 package types
 
 type CreateJobRequest struct {
-	BIO                 string                 `json:"bio" binding:"omitempty"`
-	Type                string                 `json:"type" binding:"required"`
-	Args                map[string]interface{} `json:"args" binding:"omitempty"`
-	Result              map[string]interface{} `json:"result" binding:"omitempty"`
-	UserID              uint                   `json:"user_id" binding:"omitempty"`
-	SeedPeerClusterIDs  []uint                 `json:"seed_peer_cluster_ids" binding:"omitempty"`
-	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                map[string]any `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SeedPeerClusterIDs  []uint         `json:"seed_peer_cluster_ids" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type UpdateJobRequest struct {
@@ -44,12 +44,12 @@ type GetJobsQuery struct {
 }
 
 type CreatePreheatJobRequest struct {
-	BIO                 string                 `json:"bio" binding:"omitempty"`
-	Type                string                 `json:"type" binding:"required"`
-	Args                PreheatArgs            `json:"args" binding:"omitempty"`
-	Result              map[string]interface{} `json:"result" binding:"omitempty"`
-	UserID              uint                   `json:"user_id" binding:"omitempty"`
-	SchedulerClusterIDs []uint                 `json:"scheduler_cluster_ids" binding:"omitempty"`
+	BIO                 string         `json:"bio" binding:"omitempty"`
+	Type                string         `json:"type" binding:"required"`
+	Args                PreheatArgs    `json:"args" binding:"omitempty"`
+	Result              map[string]any `json:"result" binding:"omitempty"`
+	UserID              uint           `json:"user_id" binding:"omitempty"`
+	SchedulerClusterIDs []uint         `json:"scheduler_cluster_ids" binding:"omitempty"`
 }
 
 type PreheatArgs struct {

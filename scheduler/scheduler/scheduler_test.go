@@ -93,12 +93,12 @@ func TestScheduler_New(t *testing.T) {
 	tests := []struct {
 		name      string
 		pluginDir string
-		expect    func(t *testing.T, s interface{})
+		expect    func(t *testing.T, s any)
 	}{
 		{
 			name:      "new scheduler",
 			pluginDir: "bar",
-			expect: func(t *testing.T, s interface{}) {
+			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduler")
 			},
@@ -106,7 +106,7 @@ func TestScheduler_New(t *testing.T) {
 		{
 			name:      "new scheduler with empty pluginDir",
 			pluginDir: "",
-			expect: func(t *testing.T, s interface{}) {
+			expect: func(t *testing.T, s any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(s).Elem().Name(), "scheduler")
 			},

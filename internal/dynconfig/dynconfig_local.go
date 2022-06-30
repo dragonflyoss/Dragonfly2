@@ -37,7 +37,7 @@ func newDynconfigLocal(path string) (*dynconfigLocal, error) {
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *dynconfigLocal) Unmarshal(rawVal interface{}) error {
+func (d *dynconfigLocal) Unmarshal(rawVal any) error {
 	b, err := os.ReadFile(d.filepath)
 	if err != nil {
 		return err

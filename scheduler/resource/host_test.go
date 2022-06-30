@@ -337,7 +337,7 @@ func TestHost_LeavePeers(t *testing.T) {
 				host.StorePeer(mockPeer)
 				assert.Equal(host.PeerCount.Load(), int32(1))
 				host.LeavePeers()
-				host.Peers.Range(func(_, value interface{}) bool {
+				host.Peers.Range(func(_, value any) bool {
 					peer := value.(*Peer)
 					assert.True(peer.FSM.Is(PeerStateLeave))
 					return true
@@ -351,7 +351,7 @@ func TestHost_LeavePeers(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(host.PeerCount.Load(), int32(0))
 				host.LeavePeers()
-				host.Peers.Range(func(_, value interface{}) bool {
+				host.Peers.Range(func(_, value any) bool {
 					assert.Fail("host peers is not empty")
 					return true
 				})

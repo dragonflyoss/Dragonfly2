@@ -212,7 +212,7 @@ func newManagerClient(client managerclient.Client, hostOption HostOption) intern
 	}
 }
 
-func (mc *managerClient) Get() (interface{}, error) {
+func (mc *managerClient) Get() (any, error) {
 	listSchedulersResp, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
 		SourceType: manager.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,

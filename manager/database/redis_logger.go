@@ -25,6 +25,6 @@ import (
 
 type redisLogger struct{}
 
-func (rl *redisLogger) Printf(ctx context.Context, format string, v ...interface{}) {
+func (rl *redisLogger) Printf(ctx context.Context, format string, v ...any) {
 	logger.CoreLogger.Desugar().Info(fmt.Sprintf(format, v...))
 }

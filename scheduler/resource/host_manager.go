@@ -100,7 +100,7 @@ func (h *hostManager) Delete(key string) {
 }
 
 func (h *hostManager) RunGC() error {
-	h.Map.Range(func(_, value interface{}) bool {
+	h.Map.Range(func(_, value any) bool {
 		host := value.(*Host)
 		elapsed := time.Since(host.UpdateAt.Load())
 

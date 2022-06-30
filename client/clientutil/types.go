@@ -44,8 +44,8 @@ func (r *RateLimit) UnmarshalYAML(node *yaml.Node) error {
 	return r.unmarshal(yaml.Unmarshal, []byte(node.Value))
 }
 
-func (r *RateLimit) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
-	var v interface{}
+func (r *RateLimit) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
+	var v any
 	if err := unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ type Duration struct {
 }
 
 func (d *Duration) UnmarshalJSON(b []byte) error {
-	var v interface{}
+	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 }
 
 func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
-	var v interface{}
+	var v any
 	switch node.Kind {
 	case yaml.ScalarNode:
 		switch node.Tag {
@@ -106,7 +106,7 @@ func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
 	return d.unmarshal(v)
 }
 
-func (d *Duration) unmarshal(v interface{}) error {
+func (d *Duration) unmarshal(v any) error {
 	switch value := v.(type) {
 	case float64:
 		d.Duration = time.Duration(value)

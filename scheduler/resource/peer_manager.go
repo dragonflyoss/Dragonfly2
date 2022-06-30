@@ -124,7 +124,7 @@ func (p *peerManager) Delete(key string) {
 }
 
 func (p *peerManager) RunGC() error {
-	p.Map.Range(func(_, value interface{}) bool {
+	p.Map.Range(func(_, value any) bool {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 

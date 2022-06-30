@@ -129,14 +129,14 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 				ID: uint(1),
 			},
 			Name: "scheduler-cluster-1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"filter_parent_limit": schedulerconfig.DefaultSchedulerFilterParentLimit,
 			},
-			ClientConfig: map[string]interface{}{
+			ClientConfig: map[string]any{
 				"load_limit":     schedulerconfig.DefaultClientLoadLimit,
 				"parallel_count": schedulerconfig.DefaultClientParallelCount,
 			},
-			Scopes:    map[string]interface{}{},
+			Scopes:    map[string]any{},
 			IsDefault: true,
 		}).Error; err != nil {
 			return err
@@ -154,7 +154,7 @@ func seed(cfg *config.Config, db *gorm.DB) error {
 				ID: uint(1),
 			},
 			Name: "seed-peer-cluster-1",
-			Config: map[string]interface{}{
+			Config: map[string]any{
 				"load_limit": schedulerconfig.DefaultSeedPeerLoadLimit,
 			},
 			IsDefault: true,

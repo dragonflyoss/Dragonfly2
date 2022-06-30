@@ -21,8 +21,8 @@ import (
 )
 
 // StructToMap coverts struct to map.
-func StructToMap(t interface{}) (map[string]interface{}, error) {
-	var m map[string]interface{}
+func StructToMap(t any) (map[string]any, error) {
+	var m map[string]any
 	b, err := json.Marshal(t)
 	if err != nil {
 		return nil, err

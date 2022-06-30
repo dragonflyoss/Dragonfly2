@@ -39,7 +39,7 @@ func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 		MaxRefresh:  2 * 24 * time.Hour,
 		IdentityKey: identityKey,
 
-		IdentityHandler: func(c *gin.Context) interface{} {
+		IdentityHandler: func(c *gin.Context) any {
 			claims := jwt.ExtractClaims(c)
 
 			id, ok := claims[identityKey]
@@ -55,7 +55,7 @@ func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 			return id
 		},
 
-		Authenticator: func(c *gin.Context) (interface{}, error) {
+		Authenticator: func(c *gin.Context) (any, error) {
 			// Oauth2 signin
 			if rawUser, ok := c.Get("user"); ok {
 				user, ok := rawUser.(*model.User)
@@ -79,7 +79,7 @@ func Jwt(service service.Service) (*jwt.GinJWTMiddleware, error) {
 			return user, nil
 		},
 
-		PayloadFunc: func(data interface{}) jwt.MapClaims {
+		PayloadFunc: func(data any) jwt.MapClaims {
 			if user, ok := data.(*model.User); ok {
 				return jwt.MapClaims{
 					identityKey: user.ID,

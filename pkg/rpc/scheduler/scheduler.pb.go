@@ -1464,7 +1464,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_rpc_scheduler_scheduler_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
-var file_pkg_rpc_scheduler_scheduler_proto_goTypes = []interface{}{
+var file_pkg_rpc_scheduler_scheduler_proto_goTypes = []any{
 	(*PeerTaskRequest)(nil),      // 0: scheduler.PeerTaskRequest
 	(*RegisterResult)(nil),       // 1: scheduler.RegisterResult
 	(*SinglePiece)(nil),          // 2: scheduler.SinglePiece
@@ -1536,7 +1536,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerTaskRequest); i {
 			case 0:
 				return &v.state
@@ -1548,7 +1548,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*RegisterResult); i {
 			case 0:
 				return &v.state
@@ -1560,7 +1560,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[2].Exporter = func(v any, i int) any {
 			switch v := v.(*SinglePiece); i {
 			case 0:
 				return &v.state
@@ -1572,7 +1572,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[3].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerHost); i {
 			case 0:
 				return &v.state
@@ -1584,7 +1584,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[4].Exporter = func(v any, i int) any {
 			switch v := v.(*PieceResult); i {
 			case 0:
 				return &v.state
@@ -1596,7 +1596,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerPacket); i {
 			case 0:
 				return &v.state
@@ -1608,7 +1608,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[6].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerResult); i {
 			case 0:
 				return &v.state
@@ -1620,7 +1620,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[7].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerTarget); i {
 			case 0:
 				return &v.state
@@ -1632,7 +1632,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[8].Exporter = func(v any, i int) any {
 			switch v := v.(*StatTaskRequest); i {
 			case 0:
 				return &v.state
@@ -1644,7 +1644,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[9].Exporter = func(v any, i int) any {
 			switch v := v.(*Task); i {
 			case 0:
 				return &v.state
@@ -1656,7 +1656,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[10].Exporter = func(v any, i int) any {
 			switch v := v.(*AnnounceTaskRequest); i {
 			case 0:
 				return &v.state
@@ -1668,7 +1668,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_pkg_rpc_scheduler_scheduler_proto_msgTypes[11].Exporter = func(v any, i int) any {
 			switch v := v.(*PeerPacket_DestPeer); i {
 			case 0:
 				return &v.state
@@ -1681,7 +1681,7 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 			}
 		}
 	}
-	file_pkg_rpc_scheduler_scheduler_proto_msgTypes[1].OneofWrappers = []interface{}{
+	file_pkg_rpc_scheduler_scheduler_proto_msgTypes[1].OneofWrappers = []any{
 		(*RegisterResult_SinglePiece)(nil),
 		(*RegisterResult_PieceContent)(nil),
 	}
@@ -1858,7 +1858,7 @@ func RegisterSchedulerServer(s *grpc.Server, srv SchedulerServer) {
 	s.RegisterService(&_Scheduler_serviceDesc, srv)
 }
 
-func _Scheduler_RegisterPeerTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Scheduler_RegisterPeerTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(PeerTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1870,13 +1870,13 @@ func _Scheduler_RegisterPeerTask_Handler(srv interface{}, ctx context.Context, d
 		Server:     srv,
 		FullMethod: "/scheduler.Scheduler/RegisterPeerTask",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SchedulerServer).RegisterPeerTask(ctx, req.(*PeerTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_ReportPieceResult_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _Scheduler_ReportPieceResult_Handler(srv any, stream grpc.ServerStream) error {
 	return srv.(SchedulerServer).ReportPieceResult(&schedulerReportPieceResultServer{stream})
 }
 
@@ -1902,7 +1902,7 @@ func (x *schedulerReportPieceResultServer) Recv() (*PieceResult, error) {
 	return m, nil
 }
 
-func _Scheduler_ReportPeerResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Scheduler_ReportPeerResult_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(PeerResult)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1914,13 +1914,13 @@ func _Scheduler_ReportPeerResult_Handler(srv interface{}, ctx context.Context, d
 		Server:     srv,
 		FullMethod: "/scheduler.Scheduler/ReportPeerResult",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SchedulerServer).ReportPeerResult(ctx, req.(*PeerResult))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_LeaveTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Scheduler_LeaveTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(PeerTarget)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1932,13 +1932,13 @@ func _Scheduler_LeaveTask_Handler(srv interface{}, ctx context.Context, dec func
 		Server:     srv,
 		FullMethod: "/scheduler.Scheduler/LeaveTask",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SchedulerServer).LeaveTask(ctx, req.(*PeerTarget))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_StatTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Scheduler_StatTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(StatTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1950,13 +1950,13 @@ func _Scheduler_StatTask_Handler(srv interface{}, ctx context.Context, dec func(
 		Server:     srv,
 		FullMethod: "/scheduler.Scheduler/StatTask",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SchedulerServer).StatTask(ctx, req.(*StatTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Scheduler_AnnounceTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Scheduler_AnnounceTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
 	in := new(AnnounceTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1968,7 +1968,7 @@ func _Scheduler_AnnounceTask_Handler(srv interface{}, ctx context.Context, dec f
 		Server:     srv,
 		FullMethod: "/scheduler.Scheduler/AnnounceTask",
 	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return srv.(SchedulerServer).AnnounceTask(ctx, req.(*AnnounceTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)

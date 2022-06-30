@@ -21,7 +21,7 @@ package gc
 // Logger is the interface used in GC for logging.
 type Logger interface {
 	// Infof logs routine messages for GC.
-	Infof(template string, args ...interface{})
+	Infof(template string, args ...any)
 	// Error logs error messages for GC.
-	Errorf(template string, args ...interface{})
+	Errorf(template string, args ...any)
 }
