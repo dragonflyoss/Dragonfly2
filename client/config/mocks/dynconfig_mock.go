@@ -62,21 +62,6 @@ func (mr *MockDynconfigMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfig)(nil).Get))
 }
 
-// GetBuckets mocks base method.
-func (m *MockDynconfig) GetBuckets() ([]*manager.Bucket, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBuckets")
-	ret0, _ := ret[0].([]*manager.Bucket)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBuckets indicates an expected call of GetBuckets.
-func (mr *MockDynconfigMockRecorder) GetBuckets() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockDynconfig)(nil).GetBuckets))
-}
-
 // GetObjectStorage mocks base method.
 func (m *MockDynconfig) GetObjectStorage() (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()
