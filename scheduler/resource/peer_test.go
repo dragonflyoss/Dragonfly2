@@ -29,7 +29,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -868,7 +868,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			assert.Equal(r.URL.Path, fmt.Sprintf("/download/%s/%s", peer.Task.ID[:3], peer.Task.ID))
 			assert.Equal(r.URL.RawQuery, fmt.Sprintf("peerId=%s", peer.ID))
 
-			rgs, err := clientutil.ParseRange(r.Header.Get(headers.Range), 128)
+			rgs, err := util.ParseRange(r.Header.Get(headers.Range), 128)
 			assert.Nil(err)
 			assert.Equal(1, len(rgs))
 			rg := rgs[0]

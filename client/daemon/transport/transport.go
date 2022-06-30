@@ -34,10 +34,10 @@ import (
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/propagation"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -214,11 +214,11 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Init meta value
 	meta := &base.UrlMeta{Header: map[string]string{}}
-	var rg *clientutil.Range
+	var rg *util.Range
 
 	// Set meta range's value
 	if rangeHeader := req.Header.Get("Range"); len(rangeHeader) > 0 {
-		rgs, err := clientutil.ParseRange(rangeHeader, math.MaxInt)
+		rgs, err := util.ParseRange(rangeHeader, math.MaxInt)
 		if err != nil {
 			return badRequest(req, err.Error())
 		}

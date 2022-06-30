@@ -24,7 +24,7 @@ import (
 
 	"go.uber.org/atomic"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
@@ -40,7 +40,7 @@ type localSubTaskStore struct {
 	// when digest not match, invalid will be set
 	invalid atomic.Bool
 
-	Range *clientutil.Range
+	Range *util.Range
 }
 
 func (t *localSubTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest) (int64, error) {

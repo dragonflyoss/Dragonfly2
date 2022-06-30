@@ -16,7 +16,7 @@
 
 //go:generate mockgen -destination mocks/keepalive_mock.go -source keepalive.go -package mocks
 
-package clientutil
+package util
 
 import (
 	"time"

@@ -25,10 +25,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
@@ -84,7 +84,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 			log.Errorf(err.Error())
 			return err
 		}
-		req.Range = &clientutil.Range{
+		req.Range = &util.Range{
 			Start:  int64(r.StartIndex),
 			Length: int64(r.Length()),
 		}

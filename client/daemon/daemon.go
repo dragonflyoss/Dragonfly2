@@ -37,7 +37,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -47,6 +46,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/rpcserver"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/upload"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
@@ -530,7 +530,7 @@ func (cd *clientDaemon) Serve() error {
 			for {
 				select {
 				case <-time.After(cd.Option.AliveTime.Duration):
-					var keepalives = []clientutil.KeepAlive{
+					var keepalives = []util.KeepAlive{
 						cd.StorageManager,
 						cd.RPCManager,
 					}

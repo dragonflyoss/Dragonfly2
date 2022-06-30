@@ -38,9 +38,9 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
+	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
@@ -87,7 +87,7 @@ type Reclaimer interface {
 type Manager interface {
 	TaskStorageDriver
 	// KeepAlive tests if storage is used in given time duration
-	clientutil.KeepAlive
+	util.KeepAlive
 	// RegisterTask registers a task in storage driver
 	RegisterTask(ctx context.Context, req *RegisterTaskRequest) (TaskStorageDriver, error)
 	// RegisterSubTask registers a subtask in storage driver
@@ -99,7 +99,7 @@ type Manager interface {
 	// FindCompletedSubTask try to find a completed subtask for fast path
 	FindCompletedSubTask(taskID string) *ReusePeerTask
 	// FindPartialCompletedTask try to find a partial completed task for fast path
-	FindPartialCompletedTask(taskID string, rg *clientutil.Range) *ReusePeerTask
+	FindPartialCompletedTask(taskID string, rg *util.Range) *ReusePeerTask
 	// CleanUp cleans all storage data
 	CleanUp()
 }
@@ -125,7 +125,7 @@ func init() {
 
 type storageManager struct {
 	sync.Mutex
-	clientutil.KeepAlive
+	util.KeepAlive
 	storeStrategy      config.StoreStrategy
 	storeOption        *config.StorageOption
 	tasks              sync.Map
@@ -173,7 +173,7 @@ func NewStorageManager(storeStrategy config.StoreStrategy, opt *config.StorageOp
 	}
 
 	s := &storageManager{
-		KeepAlive:             clientutil.NewKeepAlive("storage manager"),
+		KeepAlive:             util.NewKeepAlive("storage manager"),
 		storeStrategy:         storeStrategy,
 		storeOption:           opt,
 		dataPathStat:          stat.Sys().(*syscall.Stat_t),
@@ -515,7 +515,7 @@ func (s *storageManager) FindCompletedTask(taskID string) *ReusePeerTask {
 	return nil
 }
 
-func (s *storageManager) FindPartialCompletedTask(taskID string, rg *clientutil.Range) *ReusePeerTask {
+func (s *storageManager) FindPartialCompletedTask(taskID string, rg *util.Range) *ReusePeerTask {
 	s.indexRWMutex.RLock()
 	defer s.indexRWMutex.RUnlock()
 	ts, ok := s.indexTask2PeerTask[taskID]

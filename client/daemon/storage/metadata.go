@@ -19,7 +19,7 @@ package storage
 import (
 	"io"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -44,11 +44,11 @@ type PeerTaskMetadata struct {
 }
 
 type PieceMetadata struct {
-	Num    int32            `json:"num,omitempty"`
-	Md5    string           `json:"md5,omitempty"`
-	Offset uint64           `json:"offset,omitempty"`
-	Range  clientutil.Range `json:"range,omitempty"`
-	Style  base.PieceStyle  `json:"style,omitempty"`
+	Num    int32           `json:"num,omitempty"`
+	Md5    string          `json:"md5,omitempty"`
+	Offset uint64          `json:"offset,omitempty"`
+	Range  util.Range      `json:"range,omitempty"`
+	Style  base.PieceStyle `json:"style,omitempty"`
 	// time(nanosecond) consumed
 	Cost uint64 `json:"cost,omitempty"`
 }
@@ -93,13 +93,13 @@ type ReadPieceRequest struct {
 
 type ReadAllPiecesRequest struct {
 	PeerTaskMetadata
-	Range *clientutil.Range
+	Range *util.Range
 }
 
 type RegisterSubTaskRequest struct {
 	Parent  PeerTaskMetadata
 	SubTask PeerTaskMetadata
-	Range   *clientutil.Range
+	Range   *util.Range
 }
 
 type UpdateTaskRequest struct {

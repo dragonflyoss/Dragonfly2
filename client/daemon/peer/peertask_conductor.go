@@ -31,10 +31,10 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
-	"d7y.io/dragonfly/v2/client/clientutil"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
+	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -161,7 +161,7 @@ type peerTaskConductor struct {
 
 	// subtask only
 	parent *peerTaskConductor
-	rg     *clientutil.Range
+	rg     *util.Range
 }
 
 func (ptm *peerTaskManager) newPeerTaskConductor(
@@ -169,7 +169,7 @@ func (ptm *peerTaskManager) newPeerTaskConductor(
 	request *scheduler.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
-	rg *clientutil.Range,
+	rg *util.Range,
 	seed bool) *peerTaskConductor {
 	// use a new context with span info
 	ctx = trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx))
@@ -575,7 +575,7 @@ func (pt *peerTaskConductor) storeTinyPeerTask() {
 				Num:    0,
 				Md5:    "",
 				Offset: 0,
-				Range: clientutil.Range{
+				Range: util.Range{
 					Start:  0,
 					Length: contentLength,
 				},
