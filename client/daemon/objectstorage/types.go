@@ -23,12 +23,7 @@ type ObjectParams struct {
 	ObjectKey string `uri:"object_key" binding:"required"`
 }
 
-type CreateObjectParams struct {
-	ID string `uri:"id" binding:"required"`
-}
-
-type CreateObjectRequset struct {
-	Key         string                `form:"key" binding:"required"`
+type PutObjectRequset struct {
 	Mode        uint                  `form:"mode,default=0" binding:"omitempty,gte=0,lte=2"`
 	Filter      string                `form:"filter" binding:"omitempty"`
 	MaxReplicas int                   `form:"maxReplicas" binding:"omitempty,gt=0,lte=100"`

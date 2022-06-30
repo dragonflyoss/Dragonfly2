@@ -130,8 +130,8 @@ func (s *s3) GetOject(ctx context.Context, bucketName, objectKey string) (io.Rea
 	return resp.Body, nil
 }
 
-// CreateObject creates data of object.
-func (s *s3) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
+// PutObject puts data of object.
+func (s *s3) PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	meta := map[string]string{}
 	meta[MetaDigest] = digest
 

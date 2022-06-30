@@ -78,8 +78,8 @@ type ObjectStorage interface {
 	// GetOject returns data of object.
 	GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error)
 
-	// CreateObject creates data of object.
-	CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error
+	// PutObject puts data of object.
+	PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error
 
 	// DeleteObject deletes data of object.
 	DeleteObject(ctx context.Context, bucketName, objectKey string) error
