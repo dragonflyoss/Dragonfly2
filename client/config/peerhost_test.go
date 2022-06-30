@@ -35,7 +35,7 @@ func Test_AllUnmarshalYAML(t *testing.T) {
 	assert := testifyassert.New(t)
 	var cases = []struct {
 		text   string
-		target interface{}
+		target any
 	}{
 		{
 			text: `

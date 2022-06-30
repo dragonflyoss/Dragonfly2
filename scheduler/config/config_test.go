@@ -102,7 +102,7 @@ func TestConfig_Load(t *testing.T) {
 
 	schedulerConfigYAML := &Config{}
 	contentYAML, _ := os.ReadFile("./testdata/scheduler.yaml")
-	var dataYAML map[string]interface{}
+	var dataYAML map[string]any
 	if err := yaml.Unmarshal(contentYAML, &dataYAML); err != nil {
 		t.Fatal(err)
 	}

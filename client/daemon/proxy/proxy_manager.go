@@ -159,17 +159,17 @@ func getEnv(w http.ResponseWriter, r *http.Request) {
 // ensureStringKey recursively ensures all maps in the given interface are string,
 // to make the result marshalable by json. This is meant to be used with viper
 // settings, so only maps and slices are handled.
-func ensureStringKey(obj interface{}) interface{} {
+func ensureStringKey(obj any) any {
 	rt, rv := reflect.TypeOf(obj), reflect.ValueOf(obj)
 	switch rt.Kind() {
 	case reflect.Map:
-		res := make(map[string]interface{})
+		res := make(map[string]any)
 		for _, k := range rv.MapKeys() {
 			res[fmt.Sprintf("%v", k.Interface())] = ensureStringKey(rv.MapIndex(k).Interface())
 		}
 		return res
 	case reflect.Slice:
-		res := make([]interface{}, rv.Len())
+		res := make([]any, rv.Len())
 		for i := 0; i < rv.Len(); i++ {
 			res[i] = ensureStringKey(rv.Index(i).Interface())
 		}

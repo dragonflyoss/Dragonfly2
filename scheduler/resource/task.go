@@ -217,7 +217,7 @@ func (t *Task) DeletePeer(key string) {
 // HasAvailablePeer returns whether there is an available peer.
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
-	t.Peers.Range(func(_, v interface{}) bool {
+	t.Peers.Range(func(_, v any) bool {
 		peer, ok := v.(*Peer)
 		if !ok {
 			return true
@@ -237,7 +237,7 @@ func (t *Task) HasAvailablePeer() bool {
 // LoadSeedPeer return latest seed peer in peers sync map.
 func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
-	t.Peers.Range(func(_, v interface{}) bool {
+	t.Peers.Range(func(_, v any) bool {
 		peer, ok := v.(*Peer)
 		if !ok {
 			return true
@@ -326,7 +326,7 @@ func (t *Task) CanBackToSource() bool {
 
 // NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(code base.Code, event string) {
-	t.Peers.Range(func(_, value interface{}) bool {
+	t.Peers.Range(func(_, value any) bool {
 		peer := value.(*Peer)
 		if peer.FSM.Is(PeerStateRunning) {
 			stream, ok := peer.LoadStream()

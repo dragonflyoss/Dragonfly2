@@ -27,7 +27,7 @@ import (
 func TestJobMarshal(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  interface{}
+		value  any
 		expect func(t *testing.T, result []machineryv1tasks.Arg, err error)
 	}{
 		{
@@ -114,8 +114,8 @@ func TestJobUnmarshal(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   []reflect.Value
-		value  interface{}
-		expect func(t *testing.T, result interface{}, err error)
+		value  any
+		expect func(t *testing.T, result any, err error)
 	}{
 		{
 			name: "unmarshal common struct",
@@ -127,7 +127,7 @@ func TestJobUnmarshal(t *testing.T) {
 				F float64 `json:"f" binding:"omitempty"`
 				S string  `json:"s" binding:"omitempty"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					I int64   `json:"i" binding:"omitempty"`
@@ -146,7 +146,7 @@ func TestJobUnmarshal(t *testing.T) {
 				F float64 `json:"f" binding:"omitempty"`
 				S string  `json:"s" binding:"omitempty"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					I int64   `json:"i" binding:"omitempty"`
@@ -163,7 +163,7 @@ func TestJobUnmarshal(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					S []string `json:"s" binding:"required"`
@@ -178,7 +178,7 @@ func TestJobUnmarshal(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					S []string `json:"s" binding:"required"`
@@ -191,7 +191,7 @@ func TestJobUnmarshal(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal("empty data is not specified", err.Error())
 			},
@@ -210,8 +210,8 @@ func TestUnmarshalRequest(t *testing.T) {
 	tests := []struct {
 		name   string
 		data   string
-		value  interface{}
-		expect func(t *testing.T, result interface{}, err error)
+		value  any
+		expect func(t *testing.T, result any, err error)
 	}{
 		{
 			name: "unmarshal common struct",
@@ -221,7 +221,7 @@ func TestUnmarshalRequest(t *testing.T) {
 				F float64 `json:"f" binding:"omitempty"`
 				S string  `json:"s" binding:"omitempty"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					I int64   `json:"i" binding:"omitempty"`
@@ -238,7 +238,7 @@ func TestUnmarshalRequest(t *testing.T) {
 				F float64 `json:"f" binding:"omitempty"`
 				S string  `json:"s" binding:"omitempty"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					I int64   `json:"i" binding:"omitempty"`
@@ -253,7 +253,7 @@ func TestUnmarshalRequest(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					S []string `json:"s" binding:"required"`
@@ -266,7 +266,7 @@ func TestUnmarshalRequest(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal(&struct {
 					S []string `json:"s" binding:"required"`
@@ -279,7 +279,7 @@ func TestUnmarshalRequest(t *testing.T) {
 			value: &struct {
 				S []string `json:"s" binding:"required"`
 			}{},
-			expect: func(t *testing.T, result interface{}, err error) {
+			expect: func(t *testing.T, result any, err error) {
 				assert := assert.New(t)
 				assert.Equal("unexpected end of JSON input", err.Error())
 			},

@@ -119,9 +119,9 @@ func TestGCRun(t *testing.T) {
 				defer wg.Wait()
 
 				gomock.InOrder(
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 					mr.EXPECT().RunGC().Do(func() { wg.Done() }).Return(nil).Times(1),
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 				)
 
 				if err := gc.Run(id); err != nil {
@@ -143,10 +143,10 @@ func TestGCRun(t *testing.T) {
 
 				err := errors.New("bar")
 				gomock.InOrder(
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 					mr.EXPECT().RunGC().Do(func() { wg.Done() }).Return(err).Times(1),
-					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template any, args ...any) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 				)
 
 				if err := gc.Run(id); err != nil {
@@ -214,9 +214,9 @@ func TestGCRunAll(t *testing.T) {
 				defer wg.Wait()
 
 				gomock.InOrder(
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 					mr.EXPECT().RunGC().Do(func() { wg.Done() }).Return(nil).Times(1),
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 				)
 
 				gc.RunAll()
@@ -241,10 +241,10 @@ func TestGCRunAll(t *testing.T) {
 
 				err := errors.New("baz")
 				gomock.InOrder(
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 					mr.EXPECT().RunGC().Do(func() { wg.Done() }).Return(err).Times(1),
-					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
-					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template interface{}, args ...interface{}) { wg.Done() }).Times(1),
+					ml.EXPECT().Errorf(gomock.Any(), gomock.Eq("foo"), gomock.Eq(err)).Do(func(template any, args ...any) { wg.Done() }).Times(1),
+					ml.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template any, args ...any) { wg.Done() }).Times(1),
 				)
 
 				gc.RunAll()
@@ -293,7 +293,7 @@ func TestGCServe(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	mockLogger.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template string, args ...interface{}) {
+	mockLogger.EXPECT().Infof(gomock.Any(), gomock.Eq("foo")).Do(func(template string, args ...any) {
 		wg.Done()
 	}).Times(1)
 

@@ -183,7 +183,7 @@ func (h *Host) DeletePeer(key string) {
 
 // LeavePeers set peer state to PeerStateLeave.
 func (h *Host) LeavePeers() {
-	h.Peers.Range(func(_, value interface{}) bool {
+	h.Peers.Range(func(_, value any) bool {
 		if peer, ok := value.(*Peer); ok {
 			if err := peer.FSM.Event(PeerEventDownloadFailed); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())

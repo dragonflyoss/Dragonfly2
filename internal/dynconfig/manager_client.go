@@ -20,5 +20,5 @@ package dynconfig
 
 // managerClient is a client of manager
 type ManagerClient interface {
-	Get() (interface{}, error)
+	Get() (any, error)
 }

@@ -25,8 +25,8 @@ import (
 func TestStructToMap(t *testing.T) {
 	tests := []struct {
 		name   string
-		s      interface{}
-		expect func(*testing.T, map[string]interface{}, error)
+		s      any
+		expect func(*testing.T, map[string]any, error)
 	}{
 		{
 			name: "conver struct to map",
@@ -37,9 +37,9 @@ func TestStructToMap(t *testing.T) {
 				Name: "foo",
 				Age:  18,
 			},
-			expect: func(t *testing.T, m map[string]interface{}, err error) {
+			expect: func(t *testing.T, m map[string]any, err error) {
 				assert := assert.New(t)
-				assert.Equal(m, map[string]interface{}{
+				assert.Equal(m, map[string]any{
 					"Name": "foo",
 					"Age":  float64(18),
 				})
@@ -48,7 +48,7 @@ func TestStructToMap(t *testing.T) {
 		{
 			name: "conver string to map failed",
 			s:    "foo",
-			expect: func(t *testing.T, m map[string]interface{}, err error) {
+			expect: func(t *testing.T, m map[string]any, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "json: cannot unmarshal string into Go value of type map[string]interface {}")
 			},
@@ -56,7 +56,7 @@ func TestStructToMap(t *testing.T) {
 		{
 			name: "conver number to map failed",
 			s:    1,
-			expect: func(t *testing.T, m map[string]interface{}, err error) {
+			expect: func(t *testing.T, m map[string]any, err error) {
 				assert := assert.New(t)
 				assert.EqualError(err, "json: cannot unmarshal number into Go value of type map[string]interface {}")
 			},
@@ -64,9 +64,9 @@ func TestStructToMap(t *testing.T) {
 		{
 			name: "conver nil to map",
 			s:    nil,
-			expect: func(t *testing.T, m map[string]interface{}, err error) {
+			expect: func(t *testing.T, m map[string]any, err error) {
 				assert := assert.New(t)
-				assert.Equal(m, map[string]interface{}(nil))
+				assert.Equal(m, map[string]any(nil))
 			},
 		},
 	}

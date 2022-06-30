@@ -37,14 +37,14 @@ func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
 
 // NewResWithCodeAndMsg returns a response ptr with code and msg,
 // ptr is a expected type ptr.
-func NewResWithCodeAndMsg(ptr interface{}, code base.Code, msg string) interface{} {
+func NewResWithCodeAndMsg(ptr any, code base.Code, msg string) any {
 	typ := reflect.TypeOf(ptr)
 	v := reflect.New(typ.Elem())
 
 	return v.Interface()
 }
 
-func NewResWithErr(ptr interface{}, err error) interface{} {
+func NewResWithErr(ptr any, err error) any {
 	st := status.Convert(err)
 	var code base.Code
 	switch st.Code() {

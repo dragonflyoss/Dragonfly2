@@ -27,7 +27,7 @@ func TestHeaderToMap(t *testing.T) {
 	tests := []struct {
 		name   string
 		header http.Header
-		expect func(t *testing.T, data interface{})
+		expect func(t *testing.T, data any)
 	}{
 		{
 			name: "normal conversion",
@@ -35,7 +35,7 @@ func TestHeaderToMap(t *testing.T) {
 				"foo": {"foo"},
 				"bar": {"bar"},
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, map[string]string{
 					"foo": "foo",
@@ -46,7 +46,7 @@ func TestHeaderToMap(t *testing.T) {
 		{
 			name:   "header is empty",
 			header: http.Header{},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, map[string]string{})
 			},
@@ -57,7 +57,7 @@ func TestHeaderToMap(t *testing.T) {
 				"foo": {"foo1", "foo2"},
 				"bar": {"bar"},
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, map[string]string{
 					"foo": "foo1",
@@ -79,7 +79,7 @@ func TestMapToHeader(t *testing.T) {
 	tests := []struct {
 		name   string
 		m      map[string]string
-		expect func(t *testing.T, data interface{})
+		expect func(t *testing.T, data any)
 	}{
 		{
 			name: "normal conversion",
@@ -87,7 +87,7 @@ func TestMapToHeader(t *testing.T) {
 				"Foo": "foo",
 				"Bar": "bar",
 			},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, http.Header{
 					"Foo": {"foo"},
@@ -98,7 +98,7 @@ func TestMapToHeader(t *testing.T) {
 		{
 			name: "map is empty",
 			m:    map[string]string{},
-			expect: func(t *testing.T, data interface{}) {
+			expect: func(t *testing.T, data any) {
 				assert := testifyassert.New(t)
 				assert.EqualValues(data, http.Header{})
 			},

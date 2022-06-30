@@ -30,13 +30,13 @@ func TestTaskID(t *testing.T) {
 		url         string
 		meta        *base.UrlMeta
 		ignoreRange bool
-		expect      func(t *testing.T, d interface{})
+		expect      func(t *testing.T, d any)
 	}{
 		{
 			name: "generate taskID with url",
 			url:  "https://example.com",
 			meta: nil,
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Equal("100680ad546ce6a577f42f52df33b4cfdca756859e664b8d7de329b150d09ce9", d)
 			},
@@ -49,7 +49,7 @@ func TestTaskID(t *testing.T) {
 				Digest: "bar",
 				Tag:    "",
 			},
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Equal("aeee0e0a2a0c75130582641353c539aaf9011a0088b31347f7588e70e449a3e0", d)
 			},
@@ -63,7 +63,7 @@ func TestTaskID(t *testing.T) {
 				Tag:    "",
 			},
 			ignoreRange: true,
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Equal("63dee2822037636b0109876b58e95692233840753a882afa69b9b5ee82a6c57d", d)
 			},
@@ -75,7 +75,7 @@ func TestTaskID(t *testing.T) {
 				Tag:    "foo",
 				Filter: "foo&bar",
 			},
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
 			},
@@ -86,7 +86,7 @@ func TestTaskID(t *testing.T) {
 			meta: &base.UrlMeta{
 				Tag: "foo",
 			},
-			expect: func(t *testing.T, d interface{}) {
+			expect: func(t *testing.T, d any) {
 				assert := assert.New(t)
 				assert.Equal("2773851c628744fb7933003195db436ce397c1722920696c4274ff804d86920b", d)
 			},

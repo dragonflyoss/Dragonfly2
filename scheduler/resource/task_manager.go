@@ -100,7 +100,7 @@ func (t *taskManager) Delete(key string) {
 }
 
 func (t *taskManager) RunGC() error {
-	t.Map.Range(func(_, value interface{}) bool {
+	t.Map.Range(func(_, value any) bool {
 		task := value.(*Task)
 		elapsed := time.Since(task.UpdateAt.Load())
 

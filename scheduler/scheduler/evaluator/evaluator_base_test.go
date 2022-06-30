@@ -58,11 +58,11 @@ var (
 func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, e interface{})
+		expect func(t *testing.T, e any)
 	}{
 		{
 			name: "new evaluator base",
-			expect: func(t *testing.T, e interface{}) {
+			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
 			},

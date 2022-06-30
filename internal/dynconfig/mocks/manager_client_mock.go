@@ -34,10 +34,10 @@ func (m *MockManagerClient) EXPECT() *MockManagerClientMockRecorder {
 }
 
 // Get mocks base method.
-func (m *MockManagerClient) Get() (interface{}, error) {
+func (m *MockManagerClient) Get() (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get")
-	ret0, _ := ret[0].(interface{})
+	ret0, _ := ret[0].(any)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

@@ -126,7 +126,7 @@ func (m *SeedPeerCluster) Validate() error {
 
 	// no validation rules for Scopes
 
-	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
+	if v, ok := any(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SeedPeerClusterValidationError{
 				field:  "SecurityGroup",
@@ -222,7 +222,7 @@ func (m *SeedPeer) Validate() error {
 
 	// no validation rules for SeedPeerClusterId
 
-	if v, ok := interface{}(m.GetSeedPeerCluster()).(interface{ Validate() error }); ok {
+	if v, ok := any(m.GetSeedPeerCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SeedPeerValidationError{
 				field:  "SeedPeerCluster",
@@ -235,7 +235,7 @@ func (m *SeedPeer) Validate() error {
 	for idx, item := range m.GetSchedulers() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := any(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return SeedPeerValidationError{
 					field:  fmt.Sprintf("Schedulers[%v]", idx),
@@ -642,7 +642,7 @@ func (m *SchedulerCluster) Validate() error {
 
 	// no validation rules for Scopes
 
-	if v, ok := interface{}(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
+	if v, ok := any(m.GetSecurityGroup()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerClusterValidationError{
 				field:  "SecurityGroup",
@@ -736,7 +736,7 @@ func (m *Scheduler) Validate() error {
 
 	// no validation rules for SchedulerClusterId
 
-	if v, ok := interface{}(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
+	if v, ok := any(m.GetSchedulerCluster()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SchedulerValidationError{
 				field:  "SchedulerCluster",
@@ -749,7 +749,7 @@ func (m *Scheduler) Validate() error {
 	for idx, item := range m.GetSeedPeers() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := any(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return SchedulerValidationError{
 					field:  fmt.Sprintf("SeedPeers[%v]", idx),
@@ -1261,7 +1261,7 @@ func (m *ListSchedulersResponse) Validate() error {
 	for idx, item := range m.GetSchedulers() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := any(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ListSchedulersResponseValidationError{
 					field:  fmt.Sprintf("Schedulers[%v]", idx),
@@ -1768,7 +1768,7 @@ func (m *ListBucketsResponse) Validate() error {
 	for idx, item := range m.GetBuckets() {
 		_, _ = idx, item
 
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+		if v, ok := any(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return ListBucketsResponseValidationError{
 					field:  fmt.Sprintf("Buckets[%v]", idx),

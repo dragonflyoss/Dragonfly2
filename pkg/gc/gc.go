@@ -100,7 +100,7 @@ func (g gc) RunAll() {
 }
 
 func (g gc) Serve() {
-	g.tasks.Range(func(k interface{}, v interface{}) bool {
+	g.tasks.Range(func(k, v any) bool {
 		go func() {
 			task := v.(Task)
 			tick := time.NewTicker(task.Interval)
@@ -123,7 +123,7 @@ func (g gc) Stop() {
 }
 
 func (g gc) runAll() {
-	g.tasks.Range(func(k, v interface{}) bool {
+	g.tasks.Range(func(k, v any) bool {
 		go g.run(v.(Task))
 		return true
 	})

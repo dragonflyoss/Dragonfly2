@@ -34,7 +34,7 @@ func (m *MockSafeSet) EXPECT() *MockSafeSetMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockSafeSet) Add(arg0 interface{}) bool {
+func (m *MockSafeSet) Add(arg0 any) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
 	ret0, _ := ret[0].(bool)
@@ -60,7 +60,7 @@ func (mr *MockSafeSetMockRecorder) Clear() *gomock.Call {
 }
 
 // Contains mocks base method.
-func (m *MockSafeSet) Contains(arg0 ...interface{}) bool {
+func (m *MockSafeSet) Contains(arg0 ...any) bool {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
@@ -78,7 +78,7 @@ func (mr *MockSafeSetMockRecorder) Contains(arg0 ...interface{}) *gomock.Call {
 }
 
 // Delete mocks base method.
-func (m *MockSafeSet) Delete(arg0 interface{}) {
+func (m *MockSafeSet) Delete(arg0 any) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Delete", arg0)
 }
@@ -104,7 +104,7 @@ func (mr *MockSafeSetMockRecorder) Len() *gomock.Call {
 }
 
 // Range mocks base method.
-func (m *MockSafeSet) Range(arg0 func(interface{}) bool) {
+func (m *MockSafeSet) Range(arg0 func(any) bool) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Range", arg0)
 }
@@ -116,10 +116,10 @@ func (mr *MockSafeSetMockRecorder) Range(arg0 interface{}) *gomock.Call {
 }
 
 // Values mocks base method.
-func (m *MockSafeSet) Values() []interface{} {
+func (m *MockSafeSet) Values() []any {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Values")
-	ret0, _ := ret[0].([]interface{})
+	ret0, _ := ret[0].([]any)
 	return ret0
 }
 

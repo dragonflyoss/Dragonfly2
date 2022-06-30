@@ -61,7 +61,7 @@ func (conn *Connection) startGC() {
 			// TODO use anther locker, @santong
 			conn.rwMutex.Lock()
 			// range all connections and determine whether they are expired
-			conn.accessNodeMap.Range(func(node, accessTime interface{}) bool {
+			conn.accessNodeMap.Range(func(node, accessTime any) bool {
 				serverNode := node.(string)
 				totalNodeSize++
 				atime := accessTime.(time.Time)
@@ -79,7 +79,7 @@ func (conn *Connection) startGC() {
 				logger.GrpcLogger.With("conn", conn.name).Warnf("gc %d conns, cost: %.3f seconds", removedConnCount, timeElapse.Seconds())
 			}
 			actualTotal := 0
-			conn.node2ClientMap.Range(func(key, value interface{}) bool {
+			conn.node2ClientMap.Range(func(key, value any) bool {
 				if value != nil {
 					actualTotal++
 				}
@@ -97,7 +97,7 @@ func (conn *Connection) gcConn(node string) {
 	conn.node2ClientMap.Delete(node)
 	logger.GrpcLogger.With("conn", conn.name).Infof("success gc clientConn: %s", node)
 	// gc hash keys
-	conn.key2NodeMap.Range(func(key, value interface{}) bool {
+	conn.key2NodeMap.Range(func(key, value any) bool {
 		if value == node {
 			conn.key2NodeMap.Delete(key)
 			logger.GrpcLogger.With("conn", conn.name).Infof("success gc key: %s associated with server node %s", key, node)
@@ -115,7 +115,7 @@ var (
 	messageReceived = messageType(attribute.Key("message.type").String("response"))
 )
 
-func (m messageType) Event(ctx context.Context, id int, message interface{}) {
+func (m messageType) Event(ctx context.Context, id int, message any) {
 	span := trace.SpanFromContext(ctx)
 	if p, ok := message.(proto.Message); ok {
 		content, _ := proto.Marshal(p)
@@ -136,7 +136,7 @@ type wrappedClientStream struct {
 	sentMessageID     int
 }
 
-func (w *wrappedClientStream) RecvMsg(m interface{}) error {
+func (w *wrappedClientStream) RecvMsg(m any) error {
 	err := w.ClientStream.RecvMsg(m)
 	if err != nil && err != io.EOF {
 		err = convertClientError(err)
@@ -149,7 +149,7 @@ func (w *wrappedClientStream) RecvMsg(m interface{}) error {
 	return err
 }
 
-func (w *wrappedClientStream) SendMsg(m interface{}) error {
+func (w *wrappedClientStream) SendMsg(m any) error {
 	err := w.ClientStream.SendMsg(m)
 	w.sentMessageID++
 	messageSent.Event(w.Context(), w.sentMessageID, m)
@@ -175,7 +175,7 @@ func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grp
 	}, nil
 }
 
-func unaryClientInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+func unaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 	messageSent.Event(ctx, 1, req)
 	err := invoker(ctx, method, req, reply, cc, opts...)
 
@@ -213,8 +213,8 @@ type RetryMeta struct {
 	MaxBackOff  float64 // second
 }
 
-func ExecuteWithRetry(f func() (interface{}, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (interface{}, error) {
-	var res interface{}
+func ExecuteWithRetry(f func() (any, error), initBackoff float64, maxBackoff float64, maxAttempts int, cause error) (any, error) {
+	var res any
 	for i := 0; i < maxAttempts; i++ {
 		if _, ok := cause.(*dferrors.DfError); ok {
 			return res, cause

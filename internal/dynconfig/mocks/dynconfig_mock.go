@@ -34,7 +34,7 @@ func (m *Mockstrategy) EXPECT() *MockstrategyMockRecorder {
 }
 
 // Unmarshal mocks base method.
-func (m *Mockstrategy) Unmarshal(rawVal interface{}) error {
+func (m *Mockstrategy) Unmarshal(rawVal any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unmarshal", rawVal)
 	ret0, _ := ret[0].(error)

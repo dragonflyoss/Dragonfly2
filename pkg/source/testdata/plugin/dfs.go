@@ -56,7 +56,7 @@ func (c *client) GetLastModified(request *source.Request) (int64, error) {
 	panic("implement me")
 }
 
-func DragonflyPluginInit(option map[string]string) (interface{}, map[string]string, error) {
+func DragonflyPluginInit(option map[string]string) (any, map[string]string, error) {
 	return &client{}, map[string]string{
 		"type":        "resource",
 		"name":        "dfs",

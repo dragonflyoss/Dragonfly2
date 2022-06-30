@@ -130,7 +130,7 @@ func parseSize(fsize string) (Bytes, error) {
 	return ToBytes(num) * unit, nil
 }
 
-func (f Bytes) MarshalYAML() (interface{}, error) {
+func (f Bytes) MarshalYAML() (any, error) {
 	result := f.String()
 	return result, nil
 }
@@ -143,8 +143,8 @@ func (f *Bytes) UnmarshalYAML(node *yaml.Node) error {
 	return f.unmarshal(yaml.Unmarshal, []byte(node.Value))
 }
 
-func (f *Bytes) unmarshal(unmarshal func(in []byte, out interface{}) (err error), b []byte) error {
-	var v interface{}
+func (f *Bytes) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
+	var v any
 	if err := unmarshal(b, &v); err != nil {
 		return err
 	}
