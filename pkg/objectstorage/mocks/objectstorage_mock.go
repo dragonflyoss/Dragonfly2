@@ -51,20 +51,6 @@ func (mr *MockObjectStorageMockRecorder) CreateBucket(ctx, bucketName interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockObjectStorage)(nil).CreateBucket), ctx, bucketName)
 }
 
-// CreateObject mocks base method.
-func (m *MockObjectStorage) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateObject", ctx, bucketName, objectKey, digest, reader)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateObject indicates an expected call of CreateObject.
-func (mr *MockObjectStorageMockRecorder) CreateObject(ctx, bucketName, objectKey, digest, reader interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateObject", reflect.TypeOf((*MockObjectStorage)(nil).CreateObject), ctx, bucketName, objectKey, digest, reader)
-}
-
 // DeleteBucket mocks base method.
 func (m *MockObjectStorage) DeleteBucket(ctx context.Context, bucketName string) error {
 	m.ctrl.T.Helper()
@@ -197,4 +183,18 @@ func (m *MockObjectStorage) ListObjectMetadatas(ctx context.Context, bucketName,
 func (mr *MockObjectStorageMockRecorder) ListObjectMetadatas(ctx, bucketName, prefix, marker, limit interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).ListObjectMetadatas), ctx, bucketName, prefix, marker, limit)
+}
+
+// PutObject mocks base method.
+func (m *MockObjectStorage) PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutObject", ctx, bucketName, objectKey, digest, reader)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutObject indicates an expected call of PutObject.
+func (mr *MockObjectStorageMockRecorder) PutObject(ctx, bucketName, objectKey, digest, reader interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockObjectStorage)(nil).PutObject), ctx, bucketName, objectKey, digest, reader)
 }

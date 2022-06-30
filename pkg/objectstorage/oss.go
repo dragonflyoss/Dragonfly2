@@ -59,7 +59,7 @@ func (o *oss) GetBucketMetadata(ctx context.Context, bucketName string) (*Bucket
 	}, nil
 }
 
-// GetBucketMetadata returns metadata of bucket.
+// CreateBucket creates bucket of object storage.
 func (o *oss) CreateBucket(ctx context.Context, bucketName string) error {
 	return o.client.CreateBucket(bucketName)
 }
@@ -131,8 +131,8 @@ func (o *oss) GetOject(ctx context.Context, bucketName, objectKey string) (io.Re
 	return bucket.GetObject(bucketName)
 }
 
-// CreateObject creates data of object.
-func (o *oss) CreateObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
+// PutObject puts data of object.
+func (o *oss) PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	bucket, err := o.client.Bucket(bucketName)
 	if err != nil {
 		return err
