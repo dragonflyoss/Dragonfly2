@@ -162,7 +162,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
 	b.DELETE(":id/objects/*object_key", o.destroyObject)
-	b.POST(":id/objects", o.createObject)
+	b.PUT(":id/objects/*object_key", o.putObject)
 
 	return r
 }
@@ -339,15 +339,15 @@ func (o *objectStorage) destroyObject(ctx *gin.Context) {
 	return
 }
 
-// createObject uses to upload object data.
-func (o *objectStorage) createObject(ctx *gin.Context) {
-	var params CreateObjectParams
+// putObject uses to upload object data.
+func (o *objectStorage) putObject(ctx *gin.Context) {
+	var params ObjectParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	var form CreateObjectRequset
+	var form PutObjectRequset
 	if err := ctx.ShouldBind(&form); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
@@ -355,7 +355,7 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 
 	var (
 		bucketName  = params.ID
-		objectKey   = form.Key
+		objectKey   = strings.TrimPrefix(params.ObjectKey, "/")
 		mode        = form.Mode
 		filter      = form.Filter
 		maxReplicas = form.MaxReplicas
@@ -365,18 +365,6 @@ func (o *objectStorage) createObject(ctx *gin.Context) {
 	client, err := o.client()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-
-	isExist, err := client.IsObjectExist(ctx, bucketName, objectKey)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
-		return
-	}
-
-	// If it is temporary storage, whether the data exists in the backend is not considered.
-	if isExist && mode != Ephemeral {
-		ctx.JSON(http.StatusConflict, gin.H{"errors": http.StatusText(http.StatusConflict)})
 		return
 	}
 
@@ -492,7 +480,7 @@ func (o *objectStorage) importObjectToBackend(ctx context.Context, bucketName, o
 	}
 	defer f.Close()
 
-	if err := client.CreateObject(ctx, bucketName, objectKey, dgst.String(), f); err != nil {
+	if err := client.PutObject(ctx, bucketName, objectKey, dgst.String(), f); err != nil {
 		return err
 	}
 	return nil
@@ -573,10 +561,6 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
-	if err := writer.WriteField("key", objectKey); err != nil {
-		return err
-	}
-
 	if err := writer.WriteField("mode", fmt.Sprint(mode)); err != nil {
 		return err
 	}
@@ -603,10 +587,10 @@ func (o *objectStorage) importObjectToSeedPeer(ctx context.Context, seedPeerHost
 	u := url.URL{
 		Scheme: "http",
 		Host:   seedPeerHost,
-		Path:   filepath.Join("buckets", bucketName, "objects"),
+		Path:   filepath.Join("buckets", bucketName, "objects", objectKey),
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, u.String(), body)
 	if err != nil {
 		return err
 	}
