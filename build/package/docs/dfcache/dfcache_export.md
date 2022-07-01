@@ -1,4 +1,4 @@
-% DFCACHE(1) Version v2.0.3 | Frivolous "Dfcache" Documentation
+% DFCACHE(1) Version v2.0.4 | Frivolous "Dfcache" Documentation
 
 ## dfcache export
 
@@ -39,5 +39,4 @@ dfcache export <-i cid> <output>|<-O output> [flags]
 
 ### SEE ALSO
 
-* [dfcache](dfcache.md)	 - the P2P cache client of dragonfly
-
+- [dfcache](dfcache.md) - the P2P cache client of dragonfly
