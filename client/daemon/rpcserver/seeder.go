@@ -157,8 +157,9 @@ type seedSynchronizer struct {
 
 func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 	var (
-		ctx     = s.Context
-		desired int32
+		ctx           = s.Context
+		desired       int32
+		contentLength int64
 	)
 	for {
 		select {
@@ -185,7 +186,7 @@ func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 			return status.Errorf(codes.Internal, "seed task failed")
 		case p := <-s.PieceInfoChannel:
 			s.Infof("receive piece info, num: %d, ordered num: %d, finish: %v", p.Num, p.OrderedNum, p.Finished)
-			desired, err = s.sendOrderedPieceSeeds(desired, p.OrderedNum, p.Finished, reuse)
+			contentLength, desired, err = s.sendOrderedPieceSeeds(desired, p.OrderedNum, p.Finished)
 			if err != nil {
 				s.Span.RecordError(err)
 				s.Span.SetAttributes(config.AttributeSeedTaskSuccess.Bool(false))
@@ -194,6 +195,7 @@ func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 			if p.Finished {
 				s.Debugf("send piece seeds finished")
 				s.Span.SetAttributes(config.AttributeSeedTaskSuccess.Bool(true))
+				s.updateMetric(reuse, contentLength)
 				return nil
 			}
 		}
@@ -224,7 +226,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) er
 
 		// we must send done to scheduler
 		if len(pp.PieceInfos) == 0 {
-			ps := s.compositePieceSeed(pp, nil, reuse)
+			ps := s.compositePieceSeed(pp, nil)
 			ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 			s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
 			err = s.seedsServer.Send(&ps)
@@ -239,7 +241,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) er
 				s.Errorf("desired piece %d, not found", desired)
 				return status.Errorf(codes.Internal, "seed task piece %d not found", desired)
 			}
-			ps := s.compositePieceSeed(pp, p, reuse)
+			ps := s.compositePieceSeed(pp, p)
 			if p.PieceNum == pp.TotalPiece-1 {
 				ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 				s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
@@ -255,14 +257,16 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) er
 			desired++
 		}
 		if desired == pp.TotalPiece {
+			s.updateMetric(reuse, pp.ContentLength)
 			s.Debugf("send reminding piece seeds ok")
 			return nil
 		}
 	}
 }
 
-func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, finished bool, reuse bool) (int32, error) {
+func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, finished bool) (int64, int32, error) {
 	cur := desired
+	var contentLength int64 = -1
 	for ; cur <= orderedNum; cur++ {
 		pp, err := s.Storage.GetPieces(s.Context,
 			&base.PieceTaskRequest{
@@ -272,23 +276,23 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 			})
 		if err != nil {
 			s.Errorf("get pieces error %s, desired: %d", err.Error(), cur)
-			return -1, err
+			return -1, -1, err
 		}
 		if len(pp.PieceInfos) < 1 {
 			s.Errorf("desired pieces %d not found", cur)
-			return -1, fmt.Errorf("get seed piece %d info failed", cur)
+			return -1, -1, fmt.Errorf("get seed piece %d info failed", cur)
 		}
 		if !s.attributeSent {
 			exa, err := s.Storage.GetExtendAttribute(s.Context, nil)
 			if err != nil {
 				s.Errorf("get extend attribute error: %s", err.Error())
-				return -1, err
+				return -1, -1, err
 			}
 			pp.ExtendAttribute = exa
 			s.attributeSent = true
 		}
 
-		ps := s.compositePieceSeed(pp, pp.PieceInfos[0], reuse)
+		ps := s.compositePieceSeed(pp, pp.PieceInfos[0])
 		if cur == orderedNum && finished {
 			ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
 			s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
@@ -296,21 +300,16 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 		err = s.seedsServer.Send(&ps)
 		if err != nil {
 			s.Errorf("send ordered piece seeds error: %s", err.Error())
-			return -1, err
+			return -1, -1, err
 		}
 		s.Debugf("send piece %d seeds ok", cur)
 		s.Span.AddEvent(fmt.Sprintf("send piece %d ok", cur))
+		contentLength = pp.ContentLength
 	}
-	return cur, nil
+	return contentLength, cur, nil
 }
 
-func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo, reuse bool) cdnsystem.PieceSeed {
-	seedPeerDownloadType := metrics.SeedPeerDownloadTypeBackToSource
-	if reuse {
-		seedPeerDownloadType = metrics.SeedPeerDownloadTypeP2P
-	}
-	metrics.SeedPeerDownloadTraffic.WithLabelValues(seedPeerDownloadType).Add(float64(pp.ContentLength))
-
+func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
 	return cdnsystem.PieceSeed{
 		PeerId:          s.seedTaskRequest.PeerId,
 		HostId:          s.seedTaskRequest.PeerHost.Id,
@@ -320,4 +319,16 @@ func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.
 		BeginTime:       uint64(s.startNanoSecond),
 		EndTime:         uint64(time.Now().UnixNano()),
 	}
+}
+
+func (s *seedSynchronizer) updateMetric(reuse bool, contentLength int64) {
+	seedPeerDownloadType := metrics.SeedPeerDownloadTypeBackToSource
+	if reuse {
+		seedPeerDownloadType = metrics.SeedPeerDownloadTypeP2P
+	}
+	if contentLength == -1 {
+		s.Warnf("seed task content length is unknown, did not update metric")
+		return
+	}
+	metrics.SeedPeerDownloadTraffic.WithLabelValues(seedPeerDownloadType).Add(float64(contentLength))
 }
