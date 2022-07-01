@@ -37,35 +37,6 @@ func (m *MockDfstore) EXPECT() *MockDfstoreMockRecorder {
 	return m.recorder
 }
 
-// CreateObject mocks base method.
-func (m *MockDfstore) CreateObject(ctx context.Context, input *dfstore.CreateOjectInput) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateObject", ctx, input)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateObject indicates an expected call of CreateObject.
-func (mr *MockDfstoreMockRecorder) CreateObject(ctx, input interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateObject", reflect.TypeOf((*MockDfstore)(nil).CreateObject), ctx, input)
-}
-
-// CreateObjectRequestWithContext mocks base method.
-func (m *MockDfstore) CreateObjectRequestWithContext(ctx context.Context, input *dfstore.CreateOjectInput) (*http.Request, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateObjectRequestWithContext", ctx, input)
-	ret0, _ := ret[0].(*http.Request)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateObjectRequestWithContext indicates an expected call of CreateObjectRequestWithContext.
-func (mr *MockDfstoreMockRecorder) CreateObjectRequestWithContext(ctx, input interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).CreateObjectRequestWithContext), ctx, input)
-}
-
 // DeleteObject mocks base method.
 func (m *MockDfstore) DeleteObject(ctx context.Context, input *dfstore.DeleteObjectInput) error {
 	m.ctrl.T.Helper()
@@ -153,4 +124,33 @@ func (m *MockDfstore) IsObjectExistRequestWithContext(ctx context.Context, input
 func (mr *MockDfstoreMockRecorder) IsObjectExistRequestWithContext(ctx, input interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsObjectExistRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).IsObjectExistRequestWithContext), ctx, input)
+}
+
+// PutObject mocks base method.
+func (m *MockDfstore) PutObject(ctx context.Context, input *dfstore.PutOjectInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutObject", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PutObject indicates an expected call of PutObject.
+func (mr *MockDfstoreMockRecorder) PutObject(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObject", reflect.TypeOf((*MockDfstore)(nil).PutObject), ctx, input)
+}
+
+// PutObjectRequestWithContext mocks base method.
+func (m *MockDfstore) PutObjectRequestWithContext(ctx context.Context, input *dfstore.PutOjectInput) (*http.Request, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PutObjectRequestWithContext", ctx, input)
+	ret0, _ := ret[0].(*http.Request)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// PutObjectRequestWithContext indicates an expected call of PutObjectRequestWithContext.
+func (mr *MockDfstoreMockRecorder) PutObjectRequestWithContext(ctx, input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).PutObjectRequestWithContext), ctx, input)
 }

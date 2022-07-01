@@ -44,7 +44,6 @@ var (
 type DynconfigData struct {
 	Schedulers    []*manager.Scheduler
 	ObjectStorage *manager.ObjectStorage
-	Buckets       []*manager.Bucket
 }
 
 type Dynconfig interface {
@@ -53,9 +52,6 @@ type Dynconfig interface {
 
 	// Get the dynamic object storage config from manager.
 	GetObjectStorage() (*manager.ObjectStorage, error)
-
-	// Get the dynamic buckets config from manager.
-	GetBuckets() ([]*manager.Bucket, error)
 
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
@@ -124,15 +120,6 @@ func (d *dynconfig) GetObjectStorage() (*manager.ObjectStorage, error) {
 	}
 
 	return data.ObjectStorage, nil
-}
-
-func (d *dynconfig) GetBuckets() ([]*manager.Bucket, error) {
-	data, err := d.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	return data.Buckets, nil
 }
 
 func (d *dynconfig) Get() (*DynconfigData, error) {
@@ -244,18 +231,8 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
-	listBucketsResp, err := mc.ListBuckets(&manager.ListBucketsRequest{
-		SourceType: manager.SourceType_PEER_SOURCE,
-		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.AdvertiseIP,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	return DynconfigData{
 		Schedulers:    listSchedulersResp.Schedulers,
 		ObjectStorage: getObjectStorageResp,
-		Buckets:       listBucketsResp.Buckets,
 	}, nil
 }

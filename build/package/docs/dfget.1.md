@@ -1,4 +1,4 @@
-% DFGET(1) Version v2.0.3 | Frivolous "Dfget" Documentation
+% DFGET(1) Version v2.0.4 | Frivolous "Dfget" Documentation
 
 NAME
 ====
