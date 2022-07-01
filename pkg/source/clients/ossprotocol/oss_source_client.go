@@ -130,6 +130,11 @@ func (osc *ossSourceClient) IsSupportRange(request *source.Request) (bool, error
 	return true, nil
 }
 
+func (osc *ossSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (osc *ossSourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {
 	client, err := osc.getClient(request.Header)
 	if err != nil {

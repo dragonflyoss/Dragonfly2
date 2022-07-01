@@ -98,7 +98,7 @@ func (mr *MockResourceClientMockRecorder) IsExpired(request, info interface{}) *
 // IsSupportRange mocks base method.
 func (m *MockResourceClient) IsSupportRange(request *source.Request) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsSupportRange", request)
+	ret := m.ctrl.Call(m, "SupportRange", request)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -107,7 +107,7 @@ func (m *MockResourceClient) IsSupportRange(request *source.Request) (bool, erro
 // IsSupportRange indicates an expected call of IsSupportRange.
 func (mr *MockResourceClientMockRecorder) IsSupportRange(request interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSupportRange", reflect.TypeOf((*MockResourceClient)(nil).IsSupportRange), request)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SupportRange", reflect.TypeOf((*MockResourceClient)(nil).IsSupportRange), request)
 }
 
 // MockResourceLister is a mock of ResourceLister interface.

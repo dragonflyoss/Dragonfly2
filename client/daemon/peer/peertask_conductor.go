@@ -486,7 +486,7 @@ func (pt *peerTaskConductor) backSource() {
 
 	ctx, span := tracer.Start(pt.ctx, config.SpanBackSource)
 	pt.SetContentLength(-1)
-	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request)
+	err := pt.pieceManager.DownloadSource(ctx, pt, pt.request, pt.rg)
 	if err != nil {
 		pt.Errorf("download from source error: %s", err)
 		span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))

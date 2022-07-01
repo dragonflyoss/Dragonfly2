@@ -23,9 +23,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -37,8 +40,16 @@ const (
 	ProxyEnv = "D7Y_SOURCE_PROXY"
 )
 
-var _defaultHTTPClient *http.Client
-var _ source.ResourceClient = (*httpSourceClient)(nil)
+var (
+	_defaultHTTPClient *http.Client
+	_                  source.ResourceClient = (*httpSourceClient)(nil)
+
+	// Syntax:
+	//   Content-Range: <unit> <range-start>-<range-end>/<size> -> Done
+	//   Content-Range: <unit> <range-start>-<range-end>/* -> Done
+	//   Content-Range: <unit> */<size> -> TODO
+	contentRangeRegexp = `bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`
+)
 
 func init() {
 	// TODO support customize source client
@@ -153,6 +164,41 @@ func (client *httpSourceClient) IsSupportRange(request *source.Request) (bool, e
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusPartialContent, nil
+}
+
+func (client *httpSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	request.Header.Set(headers.Range, "bytes=0-0")
+	resp, err := client.doRequest(http.MethodGet, request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var totalContentLength int64 = -1
+	cr := resp.Header.Get(headers.ContentRange)
+	if cr != "" {
+		re := regexp.MustCompile(contentRangeRegexp)
+		matches := re.FindStringSubmatch(cr)
+		if len(matches) > 0 {
+			length := matches[re.SubexpIndex("Length")]
+			if length != "*" {
+				totalContentLength, err = strconv.ParseInt(length, 10, 64)
+				if err != nil {
+					return nil, errors.Wrapf(err, "convert length from string %q error", length)
+				}
+			}
+		}
+	}
+
+	hdr := source.Header{}
+	for k, v := range exportPassThroughHeader(resp.Header) {
+		hdr.Set(k, v)
+	}
+	return &source.Metadata{
+		Header:             hdr,
+		SupportRange:       resp.StatusCode == http.StatusPartialContent,
+		TotalContentLength: totalContentLength,
+	}, nil
 }
 
 func (client *httpSourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {

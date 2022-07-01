@@ -181,6 +181,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		opt.Download.PieceDownloadTimeout,
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
 		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
+		peer.WithConcurrentOption(opt.Download.ConcurrentOption),
 	)
 	if err != nil {
 		return nil, err
