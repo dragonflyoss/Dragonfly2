@@ -2,20 +2,135 @@
 ## [Unreleased]
 
 
-<a name="v2.0.3"></a>
-## [v2.0.3] - 2022-06-02
+<a name="v2.0.4-rc.3"></a>
+## [v2.0.4-rc.3] - 2022-06-30
+### Feat
+- dfstore closes writer ([#1424](https://github.com/dragonflyoss/Dragonfly2/issues/1424))
+
+
+<a name="v2.0.4-rc.1"></a>
+## [v2.0.4-rc.1] - 2022-06-30
+
+<a name="v2.0.4-rc.2"></a>
+## [v2.0.4-rc.2] - 2022-06-30
+### Feat
+- use put object action ([#1422](https://github.com/dragonflyoss/Dragonfly2/issues/1422))
+- GetObjectInput add range field ([#1421](https://github.com/dragonflyoss/Dragonfly2/issues/1421))
+- rename client/clientutil to client/util ([#1420](https://github.com/dragonflyoss/Dragonfly2/issues/1420))
+
+
+<a name="v2.0.4-rc.0"></a>
+## [v2.0.4-rc.0] - 2022-06-30
+### Feat
+- rewrite interface{} to any ([#1419](https://github.com/dragonflyoss/Dragonfly2/issues/1419))
+
+
+<a name="v2.0.4-beta.2"></a>
+## [v2.0.4-beta.2] - 2022-06-29
+### Feat
+- update namely/protoc-all image version to 1.47_0 ([#1418](https://github.com/dragonflyoss/Dragonfly2/issues/1418))
+- update golang to 1.18.3 ([#1417](https://github.com/dragonflyoss/Dragonfly2/issues/1417))
+
+
+<a name="v2.0.4-beta.1"></a>
+## [v2.0.4-beta.1] - 2022-06-28
+### Feat
+- remove github/pkg/errors package ([#1416](https://github.com/dragonflyoss/Dragonfly2/issues/1416))
+- add dfstore client interface ([#1415](https://github.com/dragonflyoss/Dragonfly2/issues/1415))
+- scheduler http status ([#1414](https://github.com/dragonflyoss/Dragonfly2/issues/1414))
+- enable configuration of the tls parameter for the mysql connection. i.e. tls=preferred ([#1300](https://github.com/dragonflyoss/Dragonfly2/issues/1300))
+
+
+<a name="v2.0.4-beta.0"></a>
+## [v2.0.4-beta.0] - 2022-06-27
 ### Chore
+- update submodule version
+
+### Feat
+- import object to seed peer with max replicas ([#1413](https://github.com/dragonflyoss/Dragonfly2/issues/1413))
+- object storage add filter field ([#1412](https://github.com/dragonflyoss/Dragonfly2/issues/1412))
+- dfdaemon add destroyObject rest api ([#1410](https://github.com/dragonflyoss/Dragonfly2/issues/1410))
+- client add create object storage ([#1409](https://github.com/dragonflyoss/Dragonfly2/issues/1409))
+- seed peer add object storage port ([#1408](https://github.com/dragonflyoss/Dragonfly2/issues/1408))
+- rename digest func and add new digest func ([#1405](https://github.com/dragonflyoss/Dragonfly2/issues/1405))
+- dfdaemon upload and object storage service add middlewares ([#1404](https://github.com/dragonflyoss/Dragonfly2/issues/1404))
+
+### Fix
+- pkg/strings comment typo
+
+### Refactor
+- scheduler announce task ([#1407](https://github.com/dragonflyoss/Dragonfly2/issues/1407))
+- digest package ([#1403](https://github.com/dragonflyoss/Dragonfly2/issues/1403))
+
+
+<a name="v2.0.4-alpha.1"></a>
+## [v2.0.4-alpha.1] - 2022-06-20
+### Chore
+- goreleaser remove cdn
+
+### Feat
+- remove cdn ([#1401](https://github.com/dragonflyoss/Dragonfly2/issues/1401))
+- redirect stdout and stderr to file ([#1399](https://github.com/dragonflyoss/Dragonfly2/issues/1399))
+- dfdaemon add GetObject rest api ([#1398](https://github.com/dragonflyoss/Dragonfly2/issues/1398))
+- add seed peer for list scheduler grpc interface ([#1393](https://github.com/dragonflyoss/Dragonfly2/issues/1393))
+- dfdaemon add object storage rest api ([#1390](https://github.com/dragonflyoss/Dragonfly2/issues/1390))
+- replace gin-gonic/gin with gorilla/mux ([#1389](https://github.com/dragonflyoss/Dragonfly2/issues/1389))
+
+### Fix
+- downloadFromSource() doesn't validate response ([#1400](https://github.com/dragonflyoss/Dragonfly2/issues/1400))
+- default repository does not exist and missing dependency containers ([#1395](https://github.com/dragonflyoss/Dragonfly2/issues/1395))
+- validate rate limiter ([#1392](https://github.com/dragonflyoss/Dragonfly2/issues/1392))
+- dfget ratelimit params ([#1391](https://github.com/dragonflyoss/Dragonfly2/issues/1391))
+- count error & totalPage error ([#1373](https://github.com/dragonflyoss/Dragonfly2/issues/1373)) ([#1376](https://github.com/dragonflyoss/Dragonfly2/issues/1376))
+- manager router middlewares order ([#1385](https://github.com/dragonflyoss/Dragonfly2/issues/1385))
+
+### Refactor
+- pkg util ([#1402](https://github.com/dragonflyoss/Dragonfly2/issues/1402))
+
+
+<a name="v2.0.4-alpha.0"></a>
+## [v2.0.4-alpha.0] - 2022-06-14
+### Chore
+- add check size workflows ([#1364](https://github.com/dragonflyoss/Dragonfly2/issues/1364))
+
+### Feat
+- add enable config to peer gauge ([#1382](https://github.com/dragonflyoss/Dragonfly2/issues/1382))
+- dfdaemon add ns filter ([#1379](https://github.com/dragonflyoss/Dragonfly2/issues/1379))
+- remove connection gc ([#1378](https://github.com/dragonflyoss/Dragonfly2/issues/1378))
+- dynconfig add object storage ([#1369](https://github.com/dragonflyoss/Dragonfly2/issues/1369))
+- manager add bucket interface ([#1368](https://github.com/dragonflyoss/Dragonfly2/issues/1368))
+- add objectstorage pkg ([#1366](https://github.com/dragonflyoss/Dragonfly2/issues/1366))
+
+### Fix
+- dfget build error ([#1381](https://github.com/dragonflyoss/Dragonfly2/issues/1381))
+- preheat tack id ([#1375](https://github.com/dragonflyoss/Dragonfly2/issues/1375))
+
+
+<a name="v2.0.3"></a>
+## [v2.0.3] - 2022-06-13
+### Chore
+- add hack/gen-containerd-hosts.sh ([#1361](https://github.com/dragonflyoss/Dragonfly2/issues/1361))
 - release v2.0.3 ([#1360](https://github.com/dragonflyoss/Dragonfly2/issues/1360))
 - update content range for partial content ([#1357](https://github.com/dragonflyoss/Dragonfly2/issues/1357))
 
 ### Docs
+- update CHANGELOG
+- update CHANGELOG
 - update readme system features ([#1359](https://github.com/dragonflyoss/Dragonfly2/issues/1359))
 
 ### Feat
-- add seed peer e2e test ([#1358](https://github.com/dragonflyoss/Dragonfly2/issues/1358))
+- remove connection gc
+- preheat
+- preheat
+- remove preheat tag validate with required ([#1363](https://github.com/dragonflyoss/Dragonfly2/issues/1363))
+- e2e seed peer ([#1358](https://github.com/dragonflyoss/Dragonfly2/issues/1358))
 - update console and helm-charts submodule ([#1355](https://github.com/dragonflyoss/Dragonfly2/issues/1355))
 - use uid/gid as UserID and UserGroup if current user not found in passwd ([#1352](https://github.com/dragonflyoss/Dragonfly2/issues/1352))
 - use 127.0.0.1 as IPv4 if there's no external IPv4 addr ([#1353](https://github.com/dragonflyoss/Dragonfly2/issues/1353))
+
+### Fix
+- preheat with task id
+- add end time to seed piece
 
 
 <a name="v2.0.3-beta.9"></a>
@@ -720,14 +835,14 @@
 - when peer state is PeerStateSucceeded, return size scope is small ([#1103](https://github.com/dragonflyoss/Dragonfly2/issues/1103))
 
 
-<a name="v2.0.2-rc.16"></a>
-## [v2.0.2-rc.16] - 2022-02-28
+<a name="v2.0.2-rc.15"></a>
+## [v2.0.2-rc.15] - 2022-02-28
 ### Feat
 - limit tree depth
 
 
-<a name="v2.0.2-rc.15"></a>
-## [v2.0.2-rc.15] - 2022-02-28
+<a name="v2.0.2-rc.16"></a>
+## [v2.0.2-rc.16] - 2022-02-28
 ### Feat
 - limit tree depth
 - update load limit ([#1097](https://github.com/dragonflyoss/Dragonfly2/issues/1097))
@@ -1453,7 +1568,7 @@
 - update runtime guide in helm deploy ([#612](https://github.com/dragonflyoss/Dragonfly2/issues/612))
 
 ### Feat
-- update version ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
+- update verison ([#640](https://github.com/dragonflyoss/Dragonfly2/issues/640))
 - changelog ([#638](https://github.com/dragonflyoss/Dragonfly2/issues/638))
 - update console submodule ([#637](https://github.com/dragonflyoss/Dragonfly2/issues/637))
 - update submodule ([#632](https://github.com/dragonflyoss/Dragonfly2/issues/632))
@@ -1739,7 +1854,16 @@
 - idgen add digest ([#243](https://github.com/dragonflyoss/Dragonfly2/issues/243))
 
 
-[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3...HEAD
+[Unreleased]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.3...HEAD
+[v2.0.4-rc.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.1...v2.0.4-rc.3
+[v2.0.4-rc.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.2...v2.0.4-rc.1
+[v2.0.4-rc.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-rc.0...v2.0.4-rc.2
+[v2.0.4-rc.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.2...v2.0.4-rc.0
+[v2.0.4-beta.2]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.1...v2.0.4-beta.2
+[v2.0.4-beta.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-beta.0...v2.0.4-beta.1
+[v2.0.4-beta.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-alpha.1...v2.0.4-beta.0
+[v2.0.4-alpha.1]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.4-alpha.0...v2.0.4-alpha.1
+[v2.0.4-alpha.0]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3...v2.0.4-alpha.0
 [v2.0.3]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.9...v2.0.3
 [v2.0.3-beta.9]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.8...v2.0.3-beta.9
 [v2.0.3-beta.8]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.3-beta.7...v2.0.3-beta.8
@@ -1765,9 +1889,9 @@
 [v2.0.2-rc.20]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.19...v2.0.2-rc.20
 [v2.0.2-rc.19]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.18...v2.0.2-rc.19
 [v2.0.2-rc.18]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.17...v2.0.2-rc.18
-[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.17
-[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.16
-[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.15
+[v2.0.2-rc.17]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.15...v2.0.2-rc.17
+[v2.0.2-rc.15]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.16...v2.0.2-rc.15
+[v2.0.2-rc.16]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.14...v2.0.2-rc.16
 [v2.0.2-rc.14]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.13...v2.0.2-rc.14
 [v2.0.2-rc.13]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.12...v2.0.2-rc.13
 [v2.0.2-rc.12]: https://github.com/dragonflyoss/Dragonfly2/compare/v2.0.2-rc.11...v2.0.2-rc.12

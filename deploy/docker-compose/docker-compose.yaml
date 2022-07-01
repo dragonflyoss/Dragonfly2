@@ -28,7 +28,7 @@ services:
       retries: 30
 
   manager:
-    image: dragonflyoss/manager:v2.0.3
+    image: dragonflyoss/manager:v2.0.4
     container_name: manager
     network_mode: host
     depends_on:
@@ -45,7 +45,7 @@ services:
       retries: 30
 
   dfdaemon:
-    image: dragonflyoss/dfdaemon:v2.0.3
+    image: dragonflyoss/dfdaemon:v2.0.4
     depends_on:
       - manager
       - scheduler
@@ -63,7 +63,7 @@ services:
       - ./config/dfget.yaml:/etc/dragonfly/dfget.yaml:ro
 
   scheduler:
-    image: dragonflyoss/scheduler:v2.0.3
+    image: dragonflyoss/scheduler:v2.0.4
     depends_on:
       - manager
     container_name: scheduler
@@ -79,7 +79,7 @@ services:
       - ./config/scheduler.yaml:/etc/dragonfly/scheduler.yaml:ro
 
   seed-peer:
-    image: dragonflyoss/dfdaemon:v2.0.3
+    image: dragonflyoss/dfdaemon:v2.0.4
     depends_on:
       - manager
       - scheduler
