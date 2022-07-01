@@ -117,6 +117,8 @@ type ResourceClient interface {
 	GetLastModified(request *Request) (int64, error)
 }
 
+// ResourceMetadataGetter defines the API interface to get metadata for special resource
+// The metadata will be used for concurrent multiple pieces downloading
 type ResourceMetadataGetter interface {
 	GetMetadata(request *Request) (*Metadata, error)
 }
