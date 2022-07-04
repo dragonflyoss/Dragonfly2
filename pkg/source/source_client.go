@@ -32,7 +32,7 @@ import (
 )
 
 var (
-	// Clinet back-to-source download timeout
+	// client back-to-source timeout for metadata
 	contextTimeout = 1 * time.Minute
 )
 
@@ -45,6 +45,9 @@ var (
 
 	// ErrClientNotSupportList represents the source client not support list action
 	ErrClientNotSupportList = errors.New("source client not support list")
+
+	// ErrClientNotSupportGetMetadata represents the source client not support get metadata
+	ErrClientNotSupportGetMetadata = errors.New("source client not support get metadata")
 )
 
 // UnexpectedStatusCodeError is returned when a source responds with neither an error
@@ -112,6 +115,12 @@ type ResourceClient interface {
 
 	// GetLastModified gets last modified timestamp milliseconds of resource
 	GetLastModified(request *Request) (int64, error)
+}
+
+// ResourceMetadataGetter defines the API interface to get metadata for special resource
+// The metadata will be used for concurrent multiple pieces downloading
+type ResourceMetadataGetter interface {
+	GetMetadata(request *Request) (*Metadata, error)
 }
 
 // ResourceLister defines the interface to list all downloadable resources in request url
@@ -349,4 +358,16 @@ func List(request *Request) ([]*url.URL, error) {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportList)
 	}
 	return lister.List(request)
+}
+
+func GetMetadata(request *Request) (*Metadata, error) {
+	client, ok := _defaultManager.GetClient(request.URL.Scheme)
+	if !ok {
+		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
+	}
+	getter, ok := client.(*clientWrapper).rc.(ResourceMetadataGetter)
+	if !ok {
+		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportGetMetadata)
+	}
+	return getter.GetMetadata(request)
 }

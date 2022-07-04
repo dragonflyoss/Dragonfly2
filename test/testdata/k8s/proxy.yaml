@@ -43,6 +43,9 @@ data:
           port: 65000
       perPeerRateLimit: 100Mi
       totalRateLimit: 200Mi
+      concurrent:
+        thresholdSize: 10M
+        goroutineCount: 4
     upload:
       rateLimit: 100Mi
       security:

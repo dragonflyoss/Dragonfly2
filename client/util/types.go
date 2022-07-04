@@ -36,6 +36,8 @@ type RateLimit struct {
 	rate.Limit
 }
 
+type Size = RateLimit
+
 func (r *RateLimit) UnmarshalJSON(b []byte) error {
 	return r.unmarshal(json.Unmarshal, b)
 }

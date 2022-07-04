@@ -110,6 +110,44 @@ func (mr *MockResourceClientMockRecorder) IsSupportRange(request interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSupportRange", reflect.TypeOf((*MockResourceClient)(nil).IsSupportRange), request)
 }
 
+// MockResourceMetadataGetter is a mock of ResourceMetadataGetter interface.
+type MockResourceMetadataGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockResourceMetadataGetterMockRecorder
+}
+
+// MockResourceMetadataGetterMockRecorder is the mock recorder for MockResourceMetadataGetter.
+type MockResourceMetadataGetterMockRecorder struct {
+	mock *MockResourceMetadataGetter
+}
+
+// NewMockResourceMetadataGetter creates a new mock instance.
+func NewMockResourceMetadataGetter(ctrl *gomock.Controller) *MockResourceMetadataGetter {
+	mock := &MockResourceMetadataGetter{ctrl: ctrl}
+	mock.recorder = &MockResourceMetadataGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockResourceMetadataGetter) EXPECT() *MockResourceMetadataGetterMockRecorder {
+	return m.recorder
+}
+
+// GetMetadata mocks base method.
+func (m *MockResourceMetadataGetter) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetadata", request)
+	ret0, _ := ret[0].(*source.Metadata)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetadata indicates an expected call of GetMetadata.
+func (mr *MockResourceMetadataGetterMockRecorder) GetMetadata(request interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockResourceMetadataGetter)(nil).GetMetadata), request)
+}
+
 // MockResourceLister is a mock of ResourceLister interface.
 type MockResourceLister struct {
 	ctrl     *gomock.Controller

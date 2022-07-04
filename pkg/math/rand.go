@@ -50,7 +50,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
-func RandBackoff(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
+func RandBackoffSeconds(initBackoff float64, maxBackoff float64, base float64, exp int) time.Duration {
 	m := math.Max(initBackoff, rand.Float64()*math.Min(math.Pow(base, float64(exp))*initBackoff, maxBackoff))
 	return time.Duration(m * float64(time.Second))
 }

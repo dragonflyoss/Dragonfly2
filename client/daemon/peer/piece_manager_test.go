@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-http-utils/headers"
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,6 +81,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		pieceSize         uint32
 		withContentLength bool
 		checkDigest       bool
+		concurrentOption  *config.ConcurrentOption
 	}{
 		{
 			name:              "multiple pieces with content length, check digest",
@@ -92,6 +94,18 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			pieceSize:         1024,
 			checkDigest:       false,
 			withContentLength: true,
+		},
+		{
+			name:              "multiple pieces with content length, concurrent download",
+			pieceSize:         2048,
+			checkDigest:       false,
+			withContentLength: true,
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: util.Size{
+					Limit: 1024,
+				},
+			},
 		},
 		{
 			name:              "multiple pieces without content length, check digest",
@@ -188,16 +202,37 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			/********** prepare test end **********/
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if tc.withContentLength {
-					w.Header().Set("Content-Length",
+					w.Header().Set(headers.ContentLength,
 						fmt.Sprintf("%d", len(testBytes)))
 				}
-				n, err := io.Copy(w, bytes.NewBuffer(testBytes))
+				var (
+					buf *bytes.Buffer
+					l   int
+				)
+				rg := r.Header.Get(headers.Range)
+				if rg == "" {
+					buf = bytes.NewBuffer(testBytes)
+					l = len(testBytes)
+				} else {
+					parsedRange, err := util.ParseRange(rg, int64(len(testBytes)))
+					assert.Nil(err)
+					w.Header().Set(headers.ContentRange,
+						fmt.Sprintf("bytes %d-%d/%d",
+							parsedRange[0].Start,
+							parsedRange[0].Start+parsedRange[0].Length-1,
+							len(testBytes)))
+					w.WriteHeader(http.StatusPartialContent)
+
+					buf = bytes.NewBuffer(testBytes[parsedRange[0].Start : parsedRange[0].Start+parsedRange[0].Length])
+					l = int(parsedRange[0].Length)
+				}
+				n, err := io.Copy(w, buf)
 				assert.Nil(err)
-				assert.Equal(int64(len(testBytes)), n)
+				assert.Equal(int64(l), n)
 			}))
 			defer ts.Close()
 
-			pm, err := NewPieceManager(pieceDownloadTimeout)
+			pm, err := NewPieceManager(pieceDownloadTimeout, WithConcurrentOption(tc.concurrentOption))
 			assert.Nil(err)
 			pm.(*pieceManager).computePieceSize = func(length int64) uint32 {
 				return tc.pieceSize
@@ -215,7 +250,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				request.UrlMeta.Digest = digest
 			}
 
-			err = pm.DownloadSource(context.Background(), mockPeerTask, request)
+			err = pm.DownloadSource(context.Background(), mockPeerTask, request, nil)
 			assert.Nil(err)
 
 			err = storageManager.Store(context.Background(),

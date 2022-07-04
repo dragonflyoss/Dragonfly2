@@ -224,17 +224,18 @@ type HostOption struct {
 }
 
 type DownloadOption struct {
-	DefaultPattern       string           `mapstructure:"defaultPattern" yaml:"defaultPattern"`
-	TotalRateLimit       util.RateLimit   `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
-	PerPeerRateLimit     util.RateLimit   `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
-	PieceDownloadTimeout time.Duration    `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
-	DownloadGRPC         ListenOption     `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
-	PeerGRPC             ListenOption     `mapstructure:"peerGRPC" yaml:"peerGRPC"`
-	CalculateDigest      bool             `mapstructure:"calculateDigest" yaml:"calculateDigest"`
-	TransportOption      *TransportOption `mapstructure:"transportOption" yaml:"transportOption"`
-	GetPiecesMaxRetry    int              `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
-	Prefetch             bool             `mapstructure:"prefetch" yaml:"prefetch"`
-	WatchdogTimeout      time.Duration    `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
+	DefaultPattern       string            `mapstructure:"defaultPattern" yaml:"defaultPattern"`
+	TotalRateLimit       util.RateLimit    `mapstructure:"totalRateLimit" yaml:"totalRateLimit"`
+	PerPeerRateLimit     util.RateLimit    `mapstructure:"perPeerRateLimit" yaml:"perPeerRateLimit"`
+	PieceDownloadTimeout time.Duration     `mapstructure:"pieceDownloadTimeout" yaml:"pieceDownloadTimeout"`
+	DownloadGRPC         ListenOption      `mapstructure:"downloadGRPC" yaml:"downloadGRPC"`
+	PeerGRPC             ListenOption      `mapstructure:"peerGRPC" yaml:"peerGRPC"`
+	CalculateDigest      bool              `mapstructure:"calculateDigest" yaml:"calculateDigest"`
+	Transport            *TransportOption  `mapstructure:"transportOption" yaml:"transportOption"`
+	GetPiecesMaxRetry    int               `mapstructure:"getPiecesMaxRetry" yaml:"getPiecesMaxRetry"`
+	Prefetch             bool              `mapstructure:"prefetch" yaml:"prefetch"`
+	WatchdogTimeout      time.Duration     `mapstructure:"watchdogTimeout" yaml:"watchdogTimeout"`
+	Concurrent           *ConcurrentOption `mapstructure:"concurrent" yaml:"concurrent"`
 }
 
 type TransportOption struct {
@@ -245,6 +246,19 @@ type TransportOption struct {
 	ResponseHeaderTimeout time.Duration `mapstructure:"responseHeaderTimeout" yaml:"responseHeaderTimeout"`
 	TLSHandshakeTimeout   time.Duration `mapstructure:"tlsHandshakeTimeout" yaml:"tlsHandshakeTimeout"`
 	ExpectContinueTimeout time.Duration `mapstructure:"expectContinueTimeout" yaml:"expectContinueTimeout"`
+}
+
+type ConcurrentOption struct {
+	// ThresholdSize indicates the threshold to download pieces concurrently
+	ThresholdSize util.Size `mapstructure:"thresholdSize" yaml:"thresholdSize"`
+	// GoroutineCount indicates the concurrent goroutine count for every task
+	GoroutineCount int `mapstructure:"goroutineCount" yaml:"goroutineCount"`
+	// InitBackoff second for every piece failed, default: 0.5
+	InitBackoff float64 `mapstructure:"initBackoff" yaml:"initBackoff"`
+	// MaxBackoff second for every piece failed, default: 3
+	MaxBackoff float64 `mapstructure:"maxBackoff" yaml:"maxBackoff"`
+	// MaxAttempts for every piece failed,default: 3
+	MaxAttempts int `mapstructure:"maxAttempts" yaml:"MaxAttempts"`
 }
 
 type ProxyOption struct {
