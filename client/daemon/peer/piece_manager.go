@@ -720,6 +720,8 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 			for {
 				select {
 				case <-ctx.Done():
+					log.Warnf("concurrent worker %d context done due to %s", i, ctx.Err())
+					return
 				case num, ok := <-pieceCh:
 					if !ok {
 						log.Debugf("concurrent worker %d exit", i)
