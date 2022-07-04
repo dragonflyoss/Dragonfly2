@@ -49,7 +49,8 @@ var (
 	//   Content-Range: <unit> <range-start>-<range-end>/<size> -> Done
 	//   Content-Range: <unit> <range-start>-<range-end>/* -> Done
 	//   Content-Range: <unit> */<size> -> TODO
-	contentRangeRegexp = `bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`
+	contentRangeRegexp            = regexp.MustCompile(`bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`)
+	contentRangeRegexpLengthIndex = contentRangeRegexp.SubexpIndex("Length")
 )
 
 func init() {
@@ -183,10 +184,9 @@ func (client *httpSourceClient) GetMetadata(request *source.Request) (*source.Me
 	var totalContentLength int64 = -1
 	cr := resp.Header.Get(headers.ContentRange)
 	if cr != "" {
-		re := regexp.MustCompile(contentRangeRegexp)
-		matches := re.FindStringSubmatch(cr)
-		if len(matches) > 0 {
-			length := matches[re.SubexpIndex("Length")]
+		matches := contentRangeRegexp.FindStringSubmatch(cr)
+		if len(matches) > contentRangeRegexpLengthIndex {
+			length := matches[contentRangeRegexpLengthIndex]
 			if length != "*" {
 				totalContentLength, err = strconv.ParseInt(length, 10, 64)
 				if err != nil {
