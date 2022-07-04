@@ -128,6 +128,9 @@ func WithConcurrentOption(opt *config.ConcurrentOption) func(*pieceManager) {
 		if manager.concurrentOption == nil {
 			return
 		}
+		if manager.concurrentOption.GoroutineCount <= 0 {
+			manager.concurrentOption.GoroutineCount = 4
+		}
 		if manager.concurrentOption.InitBackoff <= 0 {
 			manager.concurrentOption.InitBackoff = 0.5
 		}
@@ -319,6 +322,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 						Header:        &metadata.Header,
 					})
 				if err != nil {
+					log.Errorf("update task error: %s", err)
 					return err
 				}
 				// use concurrent piece download mode
@@ -776,6 +780,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 	downloadedPieceCount *atomic.Int32) error {
 	backSourceRequest, err := source.NewRequestWithContext(ctx, peerTaskRequest.Url, peerTaskRequest.UrlMeta.Header)
 	if err != nil {
+		log.Errorf("build piece %d back source request error: %s", num, err)
 		return err
 	}
 	size := pieceSize
@@ -792,16 +797,18 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 
 	response, err := source.Download(backSourceRequest)
 	if err != nil {
+		log.Errorf("piece %d back source response error: %s", num, err)
 		return err
 	}
 	defer response.Body.Close()
 
 	err = response.Validate()
 	if err != nil {
+		log.Errorf("piece %d back source response validate error: %s", num, err)
 		return err
 	}
 
-	log.Debugf("download piece %d", num)
+	log.Debugf("piece %d back source response ok", num)
 	result, md5, err := pm.processPieceFromSource(
 		pt, response.Body, parsedRange.Length, num, offset, size,
 		func(int64) (int32, int64, bool) {
