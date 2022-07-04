@@ -19,13 +19,17 @@ package httpprotocol
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/go-http-utils/headers"
+	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -37,8 +41,17 @@ const (
 	ProxyEnv = "D7Y_SOURCE_PROXY"
 )
 
-var _defaultHTTPClient *http.Client
-var _ source.ResourceClient = (*httpSourceClient)(nil)
+var (
+	_defaultHTTPClient *http.Client
+	_                  source.ResourceClient = (*httpSourceClient)(nil)
+
+	// Syntax:
+	//   Content-Range: <unit> <range-start>-<range-end>/<size> -> Done
+	//   Content-Range: <unit> <range-start>-<range-end>/* -> Done
+	//   Content-Range: <unit> */<size> -> TODO
+	contentRangeRegexp            = regexp.MustCompile(`bytes (?P<Start>\d+)-(?P<End>\d+)/(?P<Length>(\d*|\*))`)
+	contentRangeRegexpLengthIndex = contentRangeRegexp.SubexpIndex("Length")
+)
 
 func init() {
 	// TODO support customize source client
@@ -153,6 +166,52 @@ func (client *httpSourceClient) IsSupportRange(request *source.Request) (bool, e
 	}
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusPartialContent, nil
+}
+
+func (client *httpSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+	// clone a new request to avoid change original request
+	request = request.Clone(request.Context())
+	request.Header.Set(headers.Range, "bytes=0-0")
+
+	// use GET method to get metadata instead of HEAD method
+	// some object service like OSS, only sign url with GET method, so did not use HEAD method
+	resp, err := client.doRequest(http.MethodGet, request)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var totalContentLength int64 = -1
+	cr := resp.Header.Get(headers.ContentRange)
+	if cr != "" {
+		matches := contentRangeRegexp.FindStringSubmatch(cr)
+		if len(matches) > contentRangeRegexpLengthIndex {
+			length := matches[contentRangeRegexpLengthIndex]
+			if length != "*" {
+				totalContentLength, err = strconv.ParseInt(length, 10, 64)
+				if err != nil {
+					return nil, errors.Wrapf(err, "convert length from string %q error", length)
+				}
+			}
+		}
+
+		// this server supports Range request
+		// we can discard the only one byte for reuse underlay connection
+		_, err = io.Copy(io.Discard, io.LimitReader(resp.Body, 1))
+		if err != io.EOF && err != nil {
+			return nil, err
+		}
+	}
+
+	hdr := source.Header{}
+	for k, v := range exportPassThroughHeader(resp.Header) {
+		hdr.Set(k, v)
+	}
+	return &source.Metadata{
+		Header:             hdr,
+		SupportRange:       resp.StatusCode == http.StatusPartialContent,
+		TotalContentLength: totalContentLength,
+	}, nil
 }
 
 func (client *httpSourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {

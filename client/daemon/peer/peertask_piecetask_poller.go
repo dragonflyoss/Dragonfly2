@@ -160,7 +160,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		count             int
 		ptc               = poller.peerTaskConductor
 	)
-	p, _, err := retry.Run(ptc.ctx, func() (any, bool, error) {
+	p, _, err := retry.Run(ptc.ctx, 0.05, 0.2, 40, func() (any, bool, error) {
 		// GetPieceTasks must be fast, so short time out is okay
 		ctx, cancel := context.WithTimeout(ptc.ctx, 4*time.Second)
 		defer cancel()
@@ -235,7 +235,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			trace.WithAttributes(config.AttributeGetPieceRetry.Int(count)))
 		ptc.Infof("peer %s returns success but with empty pieces, retry later", peer.PeerId)
 		return nil, false, dferrors.ErrEmptyValue
-	}, 0.05, 0.2, 40, nil)
+	})
 	if peerPacketChanged {
 		return nil, errPeerPacketChanged
 	}

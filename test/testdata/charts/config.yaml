@@ -76,6 +76,9 @@ dfdaemon:
     metrics: 127.0.0.1:8888
     download:
       prefetch: true
+      concurrent:
+        thresholdSize: 10M
+        goroutineCount: 4
     scheduler:
       disableAutoBackSource: true
     proxy:
