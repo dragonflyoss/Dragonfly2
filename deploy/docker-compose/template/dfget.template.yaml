@@ -87,6 +87,9 @@ host:
 
 # download service option
 download:
+  concurrent:
+    thresholdSize: 10M
+    goroutineCount: 4
   # calculate digest when transfer files, set false to save memory
   calculateDigest: true
   # total download limit per second
@@ -262,6 +265,6 @@ proxy:
     # the host of the whitelist
     - host: ""
       # match whitelist hosts
-      regx:
+      regx: ".*"
       # port that need to be added to the whitelist
       ports:
