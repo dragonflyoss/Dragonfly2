@@ -92,5 +92,5 @@ services:
       timeout: 3s
       retries: 30
     volumes:
-      - /tmp/log/dragonfly:/var/log/dragonfly
+      - /tmp/log/dragonfly/seedpeer:/var/log/dragonfly/daemon
       - ./config/seed-peer.yaml:/etc/dragonfly/dfget.yaml:ro
