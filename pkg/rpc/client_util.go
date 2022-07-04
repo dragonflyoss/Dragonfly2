@@ -223,7 +223,7 @@ func ExecuteWithRetry(f func() (any, error), initBackoff float64, maxBackoff flo
 			return res, cause
 		}
 		if i > 0 {
-			time.Sleep(math.RandBackoff(initBackoff, maxBackoff, 2.0, i))
+			time.Sleep(math.RandBackoffSeconds(initBackoff, maxBackoff, 2.0, i))
 		}
 
 		res, cause = f()
