@@ -180,8 +180,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	pieceManager, err := peer.NewPieceManager(
 		opt.Download.PieceDownloadTimeout,
 		peer.WithLimiter(rate.NewLimiter(opt.Download.TotalRateLimit.Limit, int(opt.Download.TotalRateLimit.Limit))),
-		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.TransportOption),
-		peer.WithConcurrentOption(opt.Download.ConcurrentOption),
+		peer.WithCalculateDigest(opt.Download.CalculateDigest), peer.WithTransportOption(opt.Download.Transport),
+		peer.WithConcurrentOption(opt.Download.Concurrent),
 	)
 	if err != nil {
 		return nil, err
