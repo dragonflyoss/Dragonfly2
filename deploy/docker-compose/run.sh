@@ -74,15 +74,20 @@ case "$1" in
 
   *)
     if [ -z "$1" ]; then
-
         # start all of docker-compose defined service
-        docker-compose up -d
+        COMPOSE=docker-compose
+        # use docker compose plugin
+        if docker compose version; then
+          COMPOSE="docker compose"
+        fi
+
+        $COMPOSE up -d
 
         # docker-compose version 3 depends_on does not wait for redis and mysql to be “ready” before starting manager ...
         # doc https://docs.docker.com/compose/compose-file/compose-file-v3/#depends_on
         for i in $(seq 0 10); do
-          service_num=$(docker-compose ps --services |wc -l)
-          ready_num=$(docker-compose ps | grep healthy | wc -l)
+          service_num=$($COMPOSE ps --services |wc -l)
+          ready_num=$($COMPOSE ps | grep healthy | wc -l)
            if [ "$service_num" -eq "$ready_num" ]; then
              break
            fi
@@ -91,7 +96,7 @@ case "$1" in
         done
 
         # print service list info
-        docker-compose ps
+        $COMPOSE ps
         exit 0
     fi
     echo "unknown argument: $1"
