@@ -290,6 +290,9 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 	}
 
 	if pm.concurrentOption != nil {
+		// check metadata
+		// 1. support range request
+		// 2. target content length is greater than concurrentOption.ThresholdSize
 		metadata, err := source.GetMetadata(backSourceRequest)
 		if err == nil && metadata.SupportRange && metadata.TotalContentLength > -1 {
 			var (
@@ -299,11 +302,13 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 				if parsedRange.Length > -1 {
 					targetContentLength = parsedRange.Length
 				} else {
+					// for range like "Range: bytes=1-", complete the length in range
 					targetContentLength = metadata.TotalContentLength - parsedRange.Start
 					// update length from metadata
 					parsedRange.Length = targetContentLength
 				}
 			} else {
+				// for non-ranged request, add a dummy range
 				parsedRange = &clientutil.Range{
 					Start:  0,
 					Length: metadata.TotalContentLength,
