@@ -258,7 +258,7 @@ type ConcurrentOption struct {
 	// MaxBackoff second for every piece failed, default: 3
 	MaxBackoff float64 `mapstructure:"maxBackoff" yaml:"maxBackoff"`
 	// MaxAttempts for every piece failed,default: 3
-	MaxAttempts int `mapstructure:"maxAttempts" yaml:"MaxAttempts"`
+	MaxAttempts int `mapstructure:"maxAttempts" yaml:"maxAttempts"`
 }
 
 type ProxyOption struct {
@@ -350,21 +350,22 @@ func (p *ProxyOption) UnmarshalYAML(node *yaml.Node) error {
 
 func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), b []byte) error {
 	pt := struct {
-		ListenOption    `mapstructure:",squash" yaml:",inline"`
-		BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
-		DefaultFilter   string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
-		MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
-		RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
-		WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-		Proxies         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
-		HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
-		DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+		ListenOption         `mapstructure:",squash" yaml:",inline"`
+		BasicAuth            *BasicAuth        `mapstructure:"basicAuth" yaml:"basicAuth"`
+		DefaultFilter        string            `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+		MaxConcurrency       int64             `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+		RegistryMirror       *RegistryMirror   `mapstructure:"registryMirror" yaml:"registryMirror"`
+		WhiteList            []*WhiteList      `mapstructure:"whiteList" yaml:"whiteList"`
+		Proxies              []*ProxyRule      `mapstructure:"proxies" yaml:"proxies"`
+		HijackHTTPS          *HijackConfig     `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+		DumpHTTPContent      bool              `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+		ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 	}{}
 
 	if err := unmarshal(b, &pt); err != nil {
 		return err
 	}
-
+	p.ExtraRegistryMirrors = pt.ExtraRegistryMirrors
 	p.ListenOption = pt.ListenOption
 	p.RegistryMirror = pt.RegistryMirror
 	p.Proxies = pt.Proxies
@@ -533,11 +534,11 @@ type StoreStrategy string
 
 type HealthOption struct {
 	ListenOption `yaml:",inline" mapstructure:",squash"`
-	Path         string `mapstructure:"path" yaml:"pash"`
+	Path         string `mapstructure:"path" yaml:"path"`
 }
 
 type ReloadOption struct {
-	Interval util.Duration
+	Interval util.Duration `mapstructure:"interval" yaml:"interval"`
 }
 
 type FileString string
