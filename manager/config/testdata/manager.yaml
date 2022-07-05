@@ -23,6 +23,7 @@ database:
       key: foo
       ca: foo
       insecureSkipVerify: true
+    migrate: true
   redis:
     password: bar
     host: bar
@@ -44,6 +45,7 @@ objectStorage:
   endpoint: 127.0.0.1
   accessKey: foo
   secretKey: bar
+  region: baz
 
 metrics:
   enable: true

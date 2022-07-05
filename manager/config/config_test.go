@@ -60,6 +60,7 @@ func TestManagerConfig_Load(t *testing.T) {
 					CA:                 "foo",
 					InsecureSkipVerify: true,
 				},
+				Migrate: true,
 			},
 			Redis: &RedisConfig{
 				Host:      "bar",
@@ -85,6 +86,7 @@ func TestManagerConfig_Load(t *testing.T) {
 			Endpoint:  "127.0.0.1",
 			AccessKey: "foo",
 			SecretKey: "bar",
+			Region:    "baz",
 		},
 		Metrics: &MetricsConfig{
 			Enable:          true,
