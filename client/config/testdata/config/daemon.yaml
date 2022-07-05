@@ -1,3 +1,9 @@
+console: true
+verbose: true
+pprof-port: -1
+jaeger: "foo"
+service-name: "bar"
+metrics: ":8000"
 aliveTime: 0s
 gcInterval: 1m0s
 workHome: /tmp/dragonfly/dfdaemon/
@@ -22,6 +28,7 @@ scheduler:
     - type: tcp
       addr: 127.0.0.1:8002
   scheduleTimeout: 0
+  disableAutoBackSource: true
 
 host:
   hostname: d7y.io
@@ -33,6 +40,8 @@ host:
   netTopology: d7y
 
 download:
+  calculateDigest: true
+  defaultPattern: p2p
   pieceDownloadTimeout: 30s
   totalRateLimit: 200Mi
   perPeerRateLimit: 20Mi
@@ -57,7 +66,23 @@ download:
     tcpListen:
       listen: 0.0.0.0
       port: 65000
-
+  transportOption:
+    dialTimeout: 1s
+    keepAlive: 1s
+    maxIdleConns: 1
+    idleConnTimeout: 1s
+    responseHeaderTimeout: 1s
+    tlsHandshakeTimeout: 1s
+    expectContinueTimeout: 1s
+  getPiecesMaxRetry: 1
+  prefetch: true
+  watchdogTimeout: 1s
+  concurrent:
+    thresholdSize: 1
+    goroutineCount: 1
+    initBackoff: 1
+    maxBackoff: 1
+    maxAttempts: 1
 upload:
   rateLimit: 100Mi
   security:
@@ -85,11 +110,21 @@ objectStorage:
     port: 65004
 
 storage:
+  diskGCThreshold: 60m
+  diskGCThresholdPercent: 0.6
   dataPath: /tmp/storage/data
   taskExpireTime: 3m0s
   strategy: io.d7y.storage.v2.simple
+  multiplex: true
+health:
+  path: "/health"
 
 proxy:
+  basicAuth:
+    username: "foo"
+    password: "bar"
+  defaultFilter: "baz"
+  maxConcurrency: 1
   security:
     insecure: true
     caCert: caCert
@@ -104,6 +139,14 @@ proxy:
     url: https://index.docker.io
     insecure: true
     direct: false
+    useProxies: true
+    dynamic: true
+  extraRegistryMirrors:
+    - url: https://index.docker.io
+      insecure: true
+      direct: true
+      useProxies: true
+      dynamic: true
   proxies:
     - regx: blobs/sha256.*
       useHTTPS: false
@@ -115,3 +158,12 @@ proxy:
     hosts:
       - regx: mirror.aliyuncs.com:443
         insecure: true
+  whiteList:
+    - host: "foo"
+      regx: "blobs/sha256.*"
+      ports:
+        - "1000"
+        - "2000"
+  dumpHTTPContent: true
+reloadOption:
+  interval: 3m0s
