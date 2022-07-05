@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/go-http-utils/headers"
-	"github.com/pkg/errors"
 
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -190,7 +189,7 @@ func (client *httpSourceClient) GetMetadata(request *source.Request) (*source.Me
 			if length != "*" {
 				totalContentLength, err = strconv.ParseInt(length, 10, 64)
 				if err != nil {
-					return nil, errors.Wrapf(err, "convert length from string %q error", length)
+					return nil, fmt.Errorf("convert length from string %q error: %w", length, err)
 				}
 			}
 		}
