@@ -17,7 +17,11 @@
 package fqdn
 
 import (
+	"os"
+
 	"github.com/Showmax/go-fqdn"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
 )
 
 var FQDNHostname string
@@ -30,7 +34,13 @@ func init() {
 func fqdnHostname() string {
 	fqdn, err := fqdn.FqdnHostname()
 	if err != nil {
-		panic(err)
+		logger.Warnf("can not found fqdn: %s", err.Error())
+		hostname, err := os.Hostname()
+		if err != nil {
+			panic(err)
+		}
+
+		return hostname
 	}
 
 	return fqdn
