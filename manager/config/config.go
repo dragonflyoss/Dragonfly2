@@ -245,7 +245,7 @@ func New() *Config {
 			},
 			Local: &LocalCacheConfig{
 				Size: 10000,
-				TTL:  30 * time.Second,
+				TTL:  10 * time.Second,
 			},
 		},
 		ObjectStorage: &ObjectStorageConfig{
