@@ -102,7 +102,7 @@ func WithValidate(validate func() error) func(*Response) {
 
 func WithTemporary(temporary func() bool) func(*Response) {
 	return func(resp *Response) {
-		resp.Validate = validate
+		resp.Temporary = temporary
 	}
 }
 
