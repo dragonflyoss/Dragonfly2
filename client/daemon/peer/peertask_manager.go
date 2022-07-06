@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -97,6 +98,8 @@ type Task interface {
 
 	PublishPieceInfo(pieceNum int32, size uint32)
 	ReportPieceResult(request *DownloadPieceRequest, result *DownloadPieceResult, err error)
+
+	UpdateSourceErrorStatus(st *status.Status)
 }
 
 type Logger interface {

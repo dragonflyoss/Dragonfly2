@@ -14,6 +14,7 @@ import (
 	base "d7y.io/dragonfly/v2/pkg/rpc/base"
 	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
+	status "google.golang.org/grpc/status"
 )
 
 // MockTaskManager is a mock of TaskManager interface.
@@ -393,6 +394,18 @@ func (m *MockTask) SetTotalPieces(arg0 int32) {
 func (mr *MockTaskMockRecorder) SetTotalPieces(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTotalPieces", reflect.TypeOf((*MockTask)(nil).SetTotalPieces), arg0)
+}
+
+// UpdateSourceErrorStatus mocks base method.
+func (m *MockTask) UpdateSourceErrorStatus(st *status.Status) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "UpdateSourceErrorStatus", st)
+}
+
+// UpdateSourceErrorStatus indicates an expected call of UpdateSourceErrorStatus.
+func (mr *MockTaskMockRecorder) UpdateSourceErrorStatus(st interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSourceErrorStatus", reflect.TypeOf((*MockTask)(nil).UpdateSourceErrorStatus), st)
 }
 
 // MockLogger is a mock of Logger interface.

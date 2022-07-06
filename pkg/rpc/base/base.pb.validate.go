@@ -502,6 +502,10 @@ func (m *ExtendAttribute) Validate() error {
 
 	// no validation rules for Header
 
+	// no validation rules for StatusCode
+
+	// no validation rules for Status
+
 	return nil
 }
 
@@ -591,7 +595,7 @@ func (m *PiecePacket) Validate() error {
 	for idx, item := range m.GetPieceInfos() {
 		_, _ = idx, item
 
-		if v, ok := any(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PiecePacketValidationError{
 					field:  fmt.Sprintf("PieceInfos[%v]", idx),
@@ -609,7 +613,7 @@ func (m *PiecePacket) Validate() error {
 
 	// no validation rules for PieceMd5Sign
 
-	if v, ok := any(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PiecePacketValidationError{
 				field:  "ExtendAttribute",
