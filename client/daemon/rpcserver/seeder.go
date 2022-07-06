@@ -129,10 +129,6 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		return err
 	}
 
-	st := status.New(codes.Internal, "")
-	st.WithDetails()
-	st.Err()
-
 	sync := seedSynchronizer{
 		SeedTaskResponse:    resp,
 		SugaredLoggerOnWith: log,
