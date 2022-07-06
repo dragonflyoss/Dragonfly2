@@ -230,8 +230,13 @@ loop:
 			s.Unlock()
 			break loop
 		case <-s.Fail:
-			s.Errorf("peer task failed")
-			return dferrors.Newf(base.Code_ClientError, "peer task failed")
+			reason := s.FailReason()
+			s.Errorf("peer task failed: %s", reason)
+			// return underlay status to peer
+			if st, ok := status.FromError(reason); ok {
+				return st.Err()
+			}
+			return status.Errorf(codes.Internal, "peer task failed: %s", reason)
 		}
 	}
 	select {

@@ -360,6 +360,9 @@ func (ptm *peerTaskManager) tryReuseSeedPeerTask(ctx context.Context,
 			PieceInfoChannel: nil,
 			Success:          successCh,
 			Fail:             nil,
+			FailReason: func() error {
+				return nil
+			},
 		},
 	}, true
 }

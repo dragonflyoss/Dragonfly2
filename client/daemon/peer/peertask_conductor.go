@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -162,6 +163,8 @@ type peerTaskConductor struct {
 	// subtask only
 	parent *peerTaskConductor
 	rg     *util.Range
+
+	sourceErrorStatus *status.Status
 }
 
 func (ptm *peerTaskManager) newPeerTaskConductor(
@@ -438,6 +441,10 @@ func (pt *peerTaskConductor) Context() context.Context {
 
 func (pt *peerTaskConductor) Log() *logger.SugaredLoggerOnWith {
 	return pt.SugaredLoggerOnWith
+}
+
+func (pt *peerTaskConductor) UpdateSourceErrorStatus(st *status.Status) {
+	pt.sourceErrorStatus = st
 }
 
 func (pt *peerTaskConductor) cancel(code base.Code, reason string) {
@@ -1634,4 +1641,11 @@ func (pt *peerTaskConductor) sendPieceResult(pr *scheduler.PieceResult) error {
 	err := pt.peerPacketStream.Send(pr)
 	pt.sendPieceResultLock.Unlock()
 	return err
+}
+
+func (pt *peerTaskConductor) getFailedError() error {
+	if pt.sourceErrorStatus != nil {
+		return pt.sourceErrorStatus.Err()
+	}
+	return fmt.Errorf("peer task failed: %d/%s", pt.failedCode, pt.failedReason)
 }

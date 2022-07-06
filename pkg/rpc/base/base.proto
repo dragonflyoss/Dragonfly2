@@ -162,9 +162,9 @@ message ExtendAttribute{
   // task response header, eg: HTTP Response Header
   map<string, string> header = 1;
   // task response code, eg: HTTP Status Code
-  //int32 code = 2;
+  int32 status_code = 2;
   // task response status, eg: HTTP Status
-  //string status = 3;
+  string status = 3;
 }
 
 message PiecePacket{

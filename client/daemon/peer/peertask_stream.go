@@ -111,9 +111,8 @@ func (s *streamTask) Start(ctx context.Context) (io.ReadCloser, map[string]strin
 		s.span.End()
 		return nil, attr, ctx.Err()
 	case <-s.peerTaskConductor.failCh:
-		err := fmt.Errorf("peer task failed: %d/%s",
-			s.peerTaskConductor.failedCode, s.peerTaskConductor.failedReason)
-		s.Errorf("wait first piece failed due to %s ", err.Error())
+		err := s.peerTaskConductor.getFailedError()
+		s.Errorf("wait first piece failed due to %s", err.Error())
 		return nil, attr, err
 	case <-s.peerTaskConductor.successCh:
 		if s.peerTaskConductor.GetContentLength() != -1 {
