@@ -267,13 +267,12 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 						hdr.Set(k, v)
 					}
 					resp := &http.Response{
-						StatusCode:    int(d.Metadata.StatusCode),
-						Body:          nil,
-						Header:        hdr,
-						ContentLength: 0,
-						Proto:         req.Proto,
-						ProtoMajor:    req.ProtoMajor,
-						ProtoMinor:    req.ProtoMinor,
+						StatusCode: int(d.Metadata.StatusCode),
+						Body:       io.NopCloser(bytes.NewBufferString(d.Metadata.Status)),
+						Header:     hdr,
+						Proto:      req.Proto,
+						ProtoMajor: req.ProtoMajor,
+						ProtoMinor: req.ProtoMinor,
 					}
 					log.Errorf("underlay response code: %d", d.Metadata.StatusCode)
 					return resp, nil
