@@ -502,6 +502,10 @@ func (m *ExtendAttribute) Validate() error {
 
 	// no validation rules for Header
 
+	// no validation rules for StatusCode
+
+	// no validation rules for Status
+
 	return nil
 }
 

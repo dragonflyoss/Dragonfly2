@@ -79,6 +79,7 @@ func (ptm *peerTaskManager) newSeedTask(
 			PieceInfoChannel: ptc.broker.Subscribe(),
 			Success:          ptc.successCh,
 			Fail:             ptc.failCh,
+			FailReason:       ptc.getFailedError,
 		},
 	}
 	return resp, nil

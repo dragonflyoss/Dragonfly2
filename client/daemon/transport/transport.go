@@ -33,6 +33,7 @@ import (
 
 	"github.com/go-http-utils/headers"
 	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -41,6 +42,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -254,7 +256,29 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		},
 	)
 	if err != nil {
-		log.Errorf("download fail: %v", err)
+		log.Errorf("start steam task error: %v", err)
+		// check underlay status code
+		if st, ok := status.FromError(err); ok {
+			for _, detail := range st.Details() {
+				switch d := detail.(type) {
+				case *errordetails.SourceError:
+					hdr := nethttp.MapToHeader(attr)
+					for k, v := range d.Metadata.Header {
+						hdr.Set(k, v)
+					}
+					resp := &http.Response{
+						StatusCode: int(d.Metadata.StatusCode),
+						Body:       io.NopCloser(bytes.NewBufferString(d.Metadata.Status)),
+						Header:     hdr,
+						Proto:      req.Proto,
+						ProtoMajor: req.ProtoMajor,
+						ProtoMinor: req.ProtoMinor,
+					}
+					log.Errorf("underlay response code: %d", d.Metadata.StatusCode)
+					return resp, nil
+				}
+			}
+		}
 		// add more info for debugging
 		if attr != nil {
 			err = fmt.Errorf("task: %s\npeer: %s\nerror: %s",

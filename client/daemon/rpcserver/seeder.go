@@ -180,10 +180,15 @@ func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 			}
 			return err
 		case <-s.Fail:
-			s.Error("seed task failed")
+			reason := s.FailReason()
+			s.Errorf("seed task failed: %s", reason)
 			s.Span.RecordError(err)
 			s.Span.SetAttributes(config.AttributeSeedTaskSuccess.Bool(false))
-			return status.Errorf(codes.Internal, "seed task failed")
+			// return underlay status to scheduler
+			if st, ok := status.FromError(reason); ok {
+				return st.Err()
+			}
+			return status.Errorf(codes.Internal, "seed task failed: %s", reason)
 		case p := <-s.PieceInfoChannel:
 			s.Infof("receive piece info, num: %d, ordered num: %d, finish: %v", p.Num, p.OrderedNum, p.Finished)
 			contentLength, desired, err = s.sendOrderedPieceSeeds(desired, p.OrderedNum, p.Finished)
