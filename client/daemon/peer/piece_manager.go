@@ -31,6 +31,8 @@ import (
 	"github.com/go-http-utils/headers"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -41,6 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/retry"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -294,7 +297,10 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		// 1. support range request
 		// 2. target content length is greater than concurrentOption.ThresholdSize
 		metadata, err := source.GetMetadata(backSourceRequest)
-		if err == nil && metadata.SupportRange && metadata.TotalContentLength > -1 {
+		if err == nil && metadata.Validate != nil && metadata.Validate() == nil {
+			if !metadata.SupportRange || metadata.TotalContentLength == -1 {
+				goto singleDownload
+			}
 			var (
 				targetContentLength int64
 			)
@@ -336,6 +342,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		}
 	}
 
+singleDownload:
 	// 1. download pieces from source
 	response, err := source.Download(backSourceRequest)
 	// TODO update expire info
@@ -344,7 +351,33 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 	}
 	err = response.Validate()
 	if err != nil {
-		return err
+		log.Errorf("back source status code %s", response.Status)
+		// convert error details to status
+		st := status.Newf(codes.Aborted, "response is not valid")
+		hdr := map[string]string{}
+		for k, v := range response.Header {
+			if len(v) > 0 {
+				hdr[k] = response.Header.Get(k)
+			}
+		}
+		srcErr := &errordetails.SourceError{
+			Temporary: response.Temporary != nil && response.Temporary(),
+			Metadata: &base.ExtendAttribute{
+				Header:     hdr,
+				StatusCode: int32(response.StatusCode),
+				Status:     response.Status,
+			},
+		}
+		st, err = st.WithDetails(srcErr)
+		if err != nil {
+			log.Errorf("convert source error details error: %s", err.Error())
+			return err
+		}
+		pt.UpdateSourceErrorStatus(st)
+		return &backSourceError{
+			err: st.Err(),
+			st:  st,
+		}
 	}
 	contentLength := response.ContentLength
 	if contentLength < 0 {
