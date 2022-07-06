@@ -1642,3 +1642,10 @@ func (pt *peerTaskConductor) sendPieceResult(pr *scheduler.PieceResult) error {
 	pt.sendPieceResultLock.Unlock()
 	return err
 }
+
+func (pt *peerTaskConductor) getFailedError() error {
+	if pt.sourceErrorStatus != nil {
+		return pt.sourceErrorStatus.Err()
+	}
+	return fmt.Errorf("peer task failed: %d/%s", pt.failedCode, pt.failedReason)
+}

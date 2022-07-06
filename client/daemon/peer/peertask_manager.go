@@ -369,6 +369,7 @@ type SubscribeResponse struct {
 	PieceInfoChannel chan *PieceInfo
 	Success          chan struct{}
 	Fail             chan struct{}
+	FailReason       func() error
 }
 
 func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
@@ -382,6 +383,7 @@ func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*Subscrib
 		PieceInfoChannel: ptc.broker.Subscribe(),
 		Success:          ptc.successCh,
 		Fail:             ptc.failCh,
+		FailReason:       ptc.getFailedError,
 	}
 	return result, true
 }

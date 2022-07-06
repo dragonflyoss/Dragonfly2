@@ -299,7 +299,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		metadata, err := source.GetMetadata(backSourceRequest)
 		if err == nil && metadata.Validate != nil && metadata.Validate() == nil {
 			if !metadata.SupportRange || metadata.TotalContentLength == -1 {
-				goto normalDownload
+				goto singleDownload
 			}
 			var (
 				targetContentLength int64
@@ -342,7 +342,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 		}
 	}
 
-normalDownload:
+singleDownload:
 	// 1. download pieces from source
 	response, err := source.Download(backSourceRequest)
 	// TODO update expire info
@@ -351,8 +351,9 @@ normalDownload:
 	}
 	err = response.Validate()
 	if err != nil {
+		log.Errorf("back source status code %d/%s", response.StatusCode, response.Status)
 		// convert error details to status
-		st := status.Newf(codes.Code(base.Code_ClientBackSourceError), "")
+		st := status.Newf(codes.Aborted, "response is not valid")
 		hdr := map[string]string{}
 		for k, v := range response.Header {
 			if len(v) > 0 {
@@ -372,7 +373,11 @@ normalDownload:
 			log.Errorf("convert source error details error: %s", err.Error())
 			return err
 		}
-		return st.Err()
+		pt.UpdateSourceErrorStatus(st)
+		return &backSourceError{
+			err: st.Err(),
+			st:  st,
+		}
 	}
 	contentLength := response.ContentLength
 	if contentLength < 0 {
