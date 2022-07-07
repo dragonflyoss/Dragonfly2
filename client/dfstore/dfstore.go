@@ -64,8 +64,6 @@ type Dfstore interface {
 // dfstore provides object storage function.
 type dfstore struct {
 	endpoint   string
-	accessKey  string
-	secretKey  string
 	httpClient *http.Client
 }
 
@@ -80,11 +78,9 @@ func WithHTTPClient(client *http.Client) Option {
 }
 
 // New dfstore instance.
-func New(endpoint, accessKey, secretKey string, options ...Option) Dfstore {
+func New(endpoint string, options ...Option) Dfstore {
 	ds := &dfstore{
 		endpoint:   endpoint,
-		accessKey:  accessKey,
-		secretKey:  secretKey,
 		httpClient: http.DefaultClient,
 	}
 
