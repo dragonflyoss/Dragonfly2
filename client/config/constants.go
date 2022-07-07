@@ -58,9 +58,6 @@ const (
 	DefaultTimestampFormat = "2006-01-02 15:04:05"
 	SchemaHTTP             = "http"
 
-	ServerPortLowerLimit = 15000
-	ServerPortUpperLimit = 65000
-
 	DefaultTaskExpireTime  = 6 * time.Hour
 	DefaultGCInterval      = 1 * time.Minute
 	DefaultDaemonAliveTime = 5 * time.Minute
@@ -87,4 +84,12 @@ const (
 	CmdImport = "import"
 	CmdExport = "export"
 	CmdDelete = "delete"
+)
+
+// Service defalut port of listening.
+const (
+	DefaultEndPort                = 65535
+	DefaultPeerStartPort          = 65000
+	DefaultUploadStartPort        = 65002
+	DefaultObjectStorageStartPort = 65004
 )

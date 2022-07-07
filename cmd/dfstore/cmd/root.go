@@ -15,3 +15,65 @@
  */
 
 package cmd
+
+import (
+	"os"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"d7y.io/dragonfly/v2/client/config"
+	"d7y.io/dragonfly/v2/cmd/dependency"
+)
+
+const (
+	// DfstoreScheme if the scheme of object storage.
+	DfstoreScheme = "dfs"
+)
+
+// Initialize default dfstore config.
+var cfg = config.NewDfstore()
+
+var dfstoreDescription = `
+dfcache is a storage client for dragonfly. It can rely on different types of object storage,
+such as S3 or OSS, to provide stable object storage capabilities.
+
+dfstore uses the entire P2P network as a cache when storing objects.
+Rely on S3 or OSS as the backend to ensure storage reliability.
+In the process of object storage, P2P Cache is effectively used for fast read and write storage.
+`
+
+// rootCmd represents the base command when called without any subcommands
+var rootCmd = &cobra.Command{
+	Use:                "dfcache <command> [flags]",
+	Short:              "object storage client of dragonfly.",
+	Long:               dfstoreDescription,
+	Args:               cobra.MaximumNArgs(1),
+	DisableAutoGenTag:  true,
+	SilenceUsage:       true,
+	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
+}
+
+// Execute adds all child commands to the root command and sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
+
+func init() {
+	// Bind more cache specific persistent flags.
+	flags := rootCmd.PersistentFlags()
+	flags.StringP("endpoint", "e", cfg.Endpoint, "endpoint of object storage service, e.g. https://localhost:65004")
+
+	// Bind common flags.
+	if err := viper.BindPFlags(flags); err != nil {
+		panic(err)
+	}
+
+	// Add sub command.
+	rootCmd.AddCommand(copyCmd)
+	rootCmd.AddCommand(removeCmd)
+	rootCmd.AddCommand(dependency.VersionCmd)
+}
