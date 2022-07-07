@@ -89,7 +89,7 @@ func init() {
 		// Initialize default daemon config
 		cfg = config.NewDaemonConfig()
 		// Initialize cobra
-		dependency.InitCobra(daemonCmd, true, cfg)
+		dependency.InitCommandAndConfig(daemonCmd, true, cfg)
 
 		flags := daemonCmd.Flags()
 		flags.Int("launcher", -1, "pid of process launching daemon, a negative number implies that the daemon is started directly by the user")

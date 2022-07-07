@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 
 	"d7y.io/dragonfly/v2/client/config"
 )
@@ -234,4 +235,40 @@ func TestMatchWithRedirect(t *testing.T) {
 		WithTest("http://index.docker.io/1", false, true, "https://r/t/1").
 		TestMirror(t)
 
+}
+
+func TestUpdateRules(t *testing.T) {
+	var v atomic.Value
+	r1 := []*config.ProxyRule{
+		{
+			Regx:     nil,
+			UseHTTPS: false,
+			Direct:   false,
+			Redirect: "1",
+		},
+		{
+			Regx:     nil,
+			UseHTTPS: false,
+			Direct:   false,
+			Redirect: "2",
+		},
+	}
+	r2 := []*config.ProxyRule{
+		{
+			Regx:     nil,
+			UseHTTPS: false,
+			Direct:   false,
+			Redirect: "3",
+		},
+		{
+			Regx:     nil,
+			UseHTTPS: false,
+			Direct:   false,
+			Redirect: "4",
+		},
+	}
+	v.Store(r1)
+	fmt.Printf("1 %#v\n", v.Load().([]*config.ProxyRule))
+	v.Store(r2)
+	fmt.Printf("2 %#v\n", v.Load().([]*config.ProxyRule))
 }
