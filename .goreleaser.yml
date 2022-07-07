@@ -90,7 +90,7 @@ builds:
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
 archives:
-  - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  - name_template: "dragonfly-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     format: tar.gz
     files:
       - LICENSE
@@ -112,7 +112,7 @@ changelog:
 
 nfpms:
   - id: dfget
-    file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    file_name_template: "dfget-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfget
     maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
     description: dfget is the client of Dragonfly used to download and upload files
