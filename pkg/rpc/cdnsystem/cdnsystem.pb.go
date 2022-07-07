@@ -295,7 +295,7 @@ func file_pkg_rpc_cdnsystem_cdnsystem_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_pkg_rpc_cdnsystem_cdnsystem_proto_goTypes = []any{
+var file_pkg_rpc_cdnsystem_cdnsystem_proto_goTypes = []interface{}{
 	(*SeedRequest)(nil),           // 0: cdnsystem.SeedRequest
 	(*PieceSeed)(nil),             // 1: cdnsystem.PieceSeed
 	(*base.UrlMeta)(nil),          // 2: base.UrlMeta
@@ -327,7 +327,7 @@ func file_pkg_rpc_cdnsystem_cdnsystem_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SeedRequest); i {
 			case 0:
 				return &v.state
@@ -339,7 +339,7 @@ func file_pkg_rpc_cdnsystem_cdnsystem_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PieceSeed); i {
 			case 0:
 				return &v.state
@@ -500,7 +500,7 @@ func RegisterSeederServer(s *grpc.Server, srv SeederServer) {
 	s.RegisterService(&_Seeder_serviceDesc, srv)
 }
 
-func _Seeder_ObtainSeeds_Handler(srv any, stream grpc.ServerStream) error {
+func _Seeder_ObtainSeeds_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(SeedRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
@@ -521,7 +521,7 @@ func (x *seederObtainSeedsServer) Send(m *PieceSeed) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Seeder_GetPieceTasks_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Seeder_GetPieceTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(base.PieceTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -533,13 +533,13 @@ func _Seeder_GetPieceTasks_Handler(srv any, ctx context.Context, dec func(any) e
 		Server:     srv,
 		FullMethod: "/cdnsystem.Seeder/GetPieceTasks",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SeederServer).GetPieceTasks(ctx, req.(*base.PieceTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Seeder_SyncPieceTasks_Handler(srv any, stream grpc.ServerStream) error {
+func _Seeder_SyncPieceTasks_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(SeederServer).SyncPieceTasks(&seederSyncPieceTasksServer{stream})
 }
 

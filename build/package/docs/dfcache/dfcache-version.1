@@ -2,26 +2,19 @@
 .\"
 .TH "DFCACHE" "1" "" "Version v2.0.4" "Frivolous \[lq]Dfcache\[rq] Documentation"
 .hy
-.SS dfcache version
+.SH NAME
 .PP
-show version
-.SS Synopsis
+\f[B]dfcache version\f[R] \[em] show version
+.SH SYNOPSIS
 .PP
-show the version details of dragonfly.
+Show the version details of dragonfly.
 .IP
 .nf
 \f[C]
 dfcache version [flags]
 \f[R]
 .fi
-.SS Options
-.IP
-.nf
-\f[C]
-  -h, --help   help for version
-\f[R]
-.fi
-.SS Options inherited from parent commands
+.SS OPTIONS
 .IP
 .nf
 \f[C]
@@ -37,8 +30,9 @@ dfcache version [flags]
       --timeout duration      Timeout for this cache operation, 0 is infinite
       --verbose               whether logger use debug level
       --workhome string       Dfcache working directory
+  -h, --help   help for version
 \f[R]
 .fi
-.SS SEE ALSO
+.SH SEE ALSO
 .IP \[bu] 2
 dfcache - the P2P cache client of dragonfly

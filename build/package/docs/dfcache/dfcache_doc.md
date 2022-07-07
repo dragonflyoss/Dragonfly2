@@ -1,25 +1,18 @@
 % DFCACHE(1) Version v2.0.4 | Frivolous "Dfcache" Documentation
 
-## dfcache doc
+# NAME
 
-generate documents
+**dfcache doc** — generate documents
 
-### Synopsis
+# SYNOPSIS
 
-generate markdown documents for cmd: dfcache .
+Generate markdown documents for cmd: dfcache.
 
-```
+```shell
 dfcache doc [flags]
 ```
 
-### Options
-
-```
-  -h, --help          help for doc
-      --path string   destination dir of generated markdown documents (default "./")
-```
-
-### Options inherited from parent commands
+## OPTIONS
 
 ```
       --callsystem string     The caller name which is mainly used for statistics and access control
@@ -34,9 +27,10 @@ dfcache doc [flags]
       --timeout duration      Timeout for this cache operation, 0 is infinite
       --verbose               whether logger use debug level
       --workhome string       Dfcache working directory
+  -h, --help          help for doc
+      --path string   destination dir of generated markdown documents (default "./")
 ```
 
-### SEE ALSO
+# SEE ALSO
 
-* [dfcache](dfcache.md)	 - the P2P cache client of dragonfly
-
+- [dfcache](dfcache.md) - the P2P cache client of dragonfly
