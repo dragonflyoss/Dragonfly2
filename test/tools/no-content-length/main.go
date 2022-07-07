@@ -54,14 +54,16 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		enableContentLength = true
 	}
 	if r.Header.Get("X-Dragonfly-E2E-Status-Code") != "" {
-		if code, err := strconv.Atoi(r.Header.Get("X-Dragonfly-E2E-Status-Code")); err == nil {
-			w.WriteHeader(code)
-			return
-		} else {
+		str := r.Header.Get("X-Dragonfly-E2E-Status-Code")
+		code, err := strconv.Atoi(str)
+		if err != nil {
+			log.Printf("wrong X-Dragonfly-E2E-Status-Code format %s, error: %s", str, err)
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte(fmt.Sprintf("wrong X-Dragonfly-E2E-Status-Code format")))
 			return
 		}
+		w.WriteHeader(code)
+		return
 	}
 	var rg *httpRange
 	if s := r.Header.Get("Range"); s != "" {
