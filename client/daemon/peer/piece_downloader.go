@@ -27,6 +27,8 @@ import (
 	"net/url"
 	"time"
 
+	"google.golang.org/grpc/status"
+
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
@@ -73,6 +75,7 @@ type pieceDownloadError struct {
 
 type backSourceError struct {
 	err error
+	st  *status.Status
 }
 
 func isConnectionError(err error) bool {
@@ -107,6 +110,9 @@ func (e *pieceDownloadError) Error() string {
 }
 
 func (e *backSourceError) Error() string {
+	if e.st != nil {
+		return e.st.Err().Error()
+	}
 	return e.err.Error()
 }
 

@@ -4,7 +4,7 @@ PROTOC_ALL_IMAGE=${PROTOC_ALL_IMAGE:-"namely/protoc-all:1.47_0"}
 PROTO_PATH=pkg/rpc
 LANGUAGE=go
 
-proto_modules="base cdnsystem dfdaemon manager scheduler"
+proto_modules="base cdnsystem dfdaemon manager scheduler errordetails"
 
 echo "generate protos..."
 

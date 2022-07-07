@@ -32,9 +32,11 @@ type Response struct {
 	Header        Header
 	Body          io.ReadCloser
 	ContentLength int64
-	// validate this response is okay to transfer in p2p network, like status 200 or 206 in http is valid to do this,
+	// Validate this response is okay to transfer in p2p network, like status 200 or 206 in http is valid to do this,
 	// otherwise return status code to original client
 	Validate func() error
+	// Temporary check the error whether the error is temporary, if is true, we can retry it later
+	Temporary func() bool
 }
 
 func NewResponse(rc io.ReadCloser, opts ...func(*Response)) *Response {
@@ -95,6 +97,12 @@ func WithExpireInfo(info ExpireInfo) func(*Response) {
 func WithValidate(validate func() error) func(*Response) {
 	return func(resp *Response) {
 		resp.Validate = validate
+	}
+}
+
+func WithTemporary(temporary func() bool) func(*Response) {
+	return func(resp *Response) {
+		resp.Temporary = temporary
 	}
 }
 
