@@ -1107,7 +1107,7 @@ func file_pkg_rpc_base_base_proto_rawDescGZIP() []byte {
 
 var file_pkg_rpc_base_base_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_pkg_rpc_base_base_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_pkg_rpc_base_base_proto_goTypes = []any{
+var file_pkg_rpc_base_base_proto_goTypes = []interface{}{
 	(Code)(0),                // 0: base.Code
 	(PieceStyle)(0),          // 1: base.PieceStyle
 	(SizeScope)(0),           // 2: base.SizeScope
@@ -1143,7 +1143,7 @@ func file_pkg_rpc_base_base_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_base_base_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GrpcDfError); i {
 			case 0:
 				return &v.state
@@ -1155,7 +1155,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UrlMeta); i {
 			case 0:
 				return &v.state
@@ -1167,7 +1167,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[2].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*HostLoad); i {
 			case 0:
 				return &v.state
@@ -1179,7 +1179,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[3].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PieceTaskRequest); i {
 			case 0:
 				return &v.state
@@ -1191,7 +1191,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[4].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PieceInfo); i {
 			case 0:
 				return &v.state
@@ -1203,7 +1203,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[5].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ExtendAttribute); i {
 			case 0:
 				return &v.state
@@ -1215,7 +1215,7 @@ func file_pkg_rpc_base_base_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_base_base_proto_msgTypes[6].Exporter = func(v any, i int) any {
+		file_pkg_rpc_base_base_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PiecePacket); i {
 			case 0:
 				return &v.state

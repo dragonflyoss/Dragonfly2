@@ -1,27 +1,20 @@
 % DFCACHE(1) Version v2.0.4 | Frivolous "Dfcache" Documentation
 
-## dfcache import
+# NAME
 
-import file into P2P cache system
+**dfcache import** — import file into P2P cache system
 
-### Synopsis
+# SYNOPSIS
 
-import file into P2P cache system
+Import file into P2P cache system.
 
-```
+```shell
 dfcache import <-i cid> <file>|<-I file> [flags]
 ```
 
-### Options
+## OPTIONS
 
-```
-  -h, --help           help for import
-  -I, --input string   import the given file into P2P network
-```
-
-### Options inherited from parent commands
-
-```
+```shell
       --callsystem string     The caller name which is mainly used for statistics and access control
   -i, --cid string            content or cache ID, e.g. sha256 digest of the content
       --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/dfcache.yaml, it can also be set by env var: DFCACHE_CONFIG
@@ -34,9 +27,10 @@ dfcache import <-i cid> <file>|<-I file> [flags]
       --timeout duration      Timeout for this cache operation, 0 is infinite
       --verbose               whether logger use debug level
       --workhome string       Dfcache working directory
+  -h, --help           help for import
+  -I, --input string   import the given file into P2P network
 ```
 
-### SEE ALSO
+# SEE ALSO
 
-* [dfcache](dfcache.md)	 - the P2P cache client of dragonfly
-
+- [dfcache](dfcache.md) - the P2P cache client of dragonfly
