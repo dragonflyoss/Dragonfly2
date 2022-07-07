@@ -208,7 +208,6 @@ func (o *objectStorage) headObject(ctx *gin.Context) {
 	ctx.Header(headers.ContentLength, fmt.Sprint(meta.ContentLength))
 	ctx.Header(headers.ContentType, meta.ContentType)
 	ctx.Header(headers.ETag, meta.ETag)
-	ctx.Header(headers.ETag, meta.ETag)
 	ctx.Header(config.HeaderDragonflyObjectMetaDigest, meta.Digest)
 
 	ctx.Status(http.StatusOK)
