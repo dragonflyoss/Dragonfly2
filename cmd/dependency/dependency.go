@@ -188,6 +188,9 @@ func initConfig(useConfigFile bool, name string, config any) {
 }
 
 func LoadConfig(config any) error {
+	if err := viper.ReadInConfig(); err != nil {
+		return err
+	}
 	return viper.Unmarshal(config, initDecoderConfig)
 }
 
