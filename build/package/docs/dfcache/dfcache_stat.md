@@ -1,27 +1,20 @@
 % DFCACHE(1) Version v2.0.4 | Frivolous "Dfcache" Documentation
 
-## dfcache stat
+# NAME
 
-stat checks if a file exists in P2P cache system
+**dfcache stat** — stat checks if a file exists in P2P cache system
 
-### Synopsis
+# SYNOPSIS
 
-stat checks if a file exists in P2P cache system
+Stat checks if a file exists in P2P cache system.
 
-```
+```shell
 dfcache stat <-i cid> [flags]
 ```
 
-### Options
+## OPTIONS
 
-```
-  -h, --help    help for stat
-  -l, --local   only check task exists locally, and don't check other peers in P2P network
-```
-
-### Options inherited from parent commands
-
-```
+```shell
       --callsystem string     The caller name which is mainly used for statistics and access control
   -i, --cid string            content or cache ID, e.g. sha256 digest of the content
       --config string         the path of configuration file with yaml extension name, default is /etc/dragonfly/dfcache.yaml, it can also be set by env var: DFCACHE_CONFIG
@@ -34,8 +27,10 @@ dfcache stat <-i cid> [flags]
       --timeout duration      Timeout for this cache operation, 0 is infinite
       --verbose               whether logger use debug level
       --workhome string       Dfcache working directory
+  -h, --help    help for stat
+  -l, --local   only check task exists locally, and don't check other peers in P2P network
 ```
 
-### SEE ALSO
+# SEE ALSO
 
 - [dfcache](dfcache.md) - the P2P cache client of dragonfly

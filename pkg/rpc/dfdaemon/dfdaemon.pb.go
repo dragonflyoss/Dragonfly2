@@ -724,7 +724,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
-var file_pkg_rpc_dfdaemon_dfdaemon_proto_goTypes = []any{
+var file_pkg_rpc_dfdaemon_dfdaemon_proto_goTypes = []interface{}{
 	(*DownRequest)(nil),           // 0: dfdaemon.DownRequest
 	(*DownResult)(nil),            // 1: dfdaemon.DownResult
 	(*StatTaskRequest)(nil),       // 2: dfdaemon.StatTaskRequest
@@ -773,7 +773,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DownRequest); i {
 			case 0:
 				return &v.state
@@ -785,7 +785,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[1].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DownResult); i {
 			case 0:
 				return &v.state
@@ -797,7 +797,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[2].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*StatTaskRequest); i {
 			case 0:
 				return &v.state
@@ -809,7 +809,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[3].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ImportTaskRequest); i {
 			case 0:
 				return &v.state
@@ -821,7 +821,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[4].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ExportTaskRequest); i {
 			case 0:
 				return &v.state
@@ -833,7 +833,7 @@ func file_pkg_rpc_dfdaemon_dfdaemon_proto_init() {
 				return nil
 			}
 		}
-		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[5].Exporter = func(v any, i int) any {
+		file_pkg_rpc_dfdaemon_dfdaemon_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DeleteTaskRequest); i {
 			case 0:
 				return &v.state
@@ -1074,7 +1074,7 @@ func RegisterDaemonServer(s *grpc.Server, srv DaemonServer) {
 	s.RegisterService(&_Daemon_serviceDesc, srv)
 }
 
-func _Daemon_Download_Handler(srv any, stream grpc.ServerStream) error {
+func _Daemon_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(DownRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
@@ -1095,7 +1095,7 @@ func (x *daemonDownloadServer) Send(m *DownResult) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Daemon_GetPieceTasks_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_GetPieceTasks_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(base.PieceTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1107,13 +1107,13 @@ func _Daemon_GetPieceTasks_Handler(srv any, ctx context.Context, dec func(any) e
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/GetPieceTasks",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).GetPieceTasks(ctx, req.(*base.PieceTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Daemon_CheckHealth_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_CheckHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1125,13 +1125,13 @@ func _Daemon_CheckHealth_Handler(srv any, ctx context.Context, dec func(any) err
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/CheckHealth",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).CheckHealth(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Daemon_SyncPieceTasks_Handler(srv any, stream grpc.ServerStream) error {
+func _Daemon_SyncPieceTasks_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(DaemonServer).SyncPieceTasks(&daemonSyncPieceTasksServer{stream})
 }
 
@@ -1157,7 +1157,7 @@ func (x *daemonSyncPieceTasksServer) Recv() (*base.PieceTaskRequest, error) {
 	return m, nil
 }
 
-func _Daemon_StatTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_StatTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(StatTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1169,13 +1169,13 @@ func _Daemon_StatTask_Handler(srv any, ctx context.Context, dec func(any) error,
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/StatTask",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).StatTask(ctx, req.(*StatTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Daemon_ImportTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_ImportTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ImportTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1187,13 +1187,13 @@ func _Daemon_ImportTask_Handler(srv any, ctx context.Context, dec func(any) erro
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/ImportTask",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).ImportTask(ctx, req.(*ImportTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Daemon_ExportTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_ExportTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ExportTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1205,13 +1205,13 @@ func _Daemon_ExportTask_Handler(srv any, ctx context.Context, dec func(any) erro
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/ExportTask",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).ExportTask(ctx, req.(*ExportTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Daemon_DeleteTask_Handler(srv any, ctx context.Context, dec func(any) error, interceptor grpc.UnaryServerInterceptor) (any, error) {
+func _Daemon_DeleteTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteTaskRequest)
 	if err := dec(in); err != nil {
 		return nil, err
@@ -1223,7 +1223,7 @@ func _Daemon_DeleteTask_Handler(srv any, ctx context.Context, dec func(any) erro
 		Server:     srv,
 		FullMethod: "/dfdaemon.Daemon/DeleteTask",
 	}
-	handler := func(ctx context.Context, req any) (any, error) {
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DaemonServer).DeleteTask(ctx, req.(*DeleteTaskRequest))
 	}
 	return interceptor(ctx, in, info, handler)

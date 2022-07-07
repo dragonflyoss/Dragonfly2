@@ -35,7 +35,7 @@ const (
 var cfg = config.NewDfstore()
 
 var dfstoreDescription = `
-dfcache is a storage client for dragonfly. It can rely on different types of object storage,
+dfstore is a storage client for dragonfly. It can rely on different types of object storage,
 such as S3 or OSS, to provide stable object storage capabilities.
 
 dfstore uses the entire P2P network as a cache when storing objects.
@@ -65,7 +65,7 @@ func Execute() {
 func init() {
 	// Bind more cache specific persistent flags.
 	flags := rootCmd.PersistentFlags()
-	flags.StringP("endpoint", "e", cfg.Endpoint, "endpoint of object storage service, e.g. https://localhost:65004")
+	flags.StringP("endpoint", "e", cfg.Endpoint, "endpoint of object storage service")
 
 	// Bind common flags.
 	if err := viper.BindPFlags(flags); err != nil {
