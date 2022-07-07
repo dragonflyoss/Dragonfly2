@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"net/http"
 	"net/textproto"
@@ -35,7 +36,7 @@ var port = flag.Int("port", 80, "")
 
 func main() {
 	http.Handle("/", &fileHandler{dir: "/static"})
-	fmt.Printf("listen on %d", *port)
+	log.Printf("listen on %d", *port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
 		panic(err)
@@ -48,6 +49,22 @@ type fileHandler struct {
 }
 
 func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	enableContentLength := f.enableContentLength
+	if strings.ToLower(r.Header.Get("X-Dragonfly-Enable-Content-Length")) == "true" {
+		enableContentLength = true
+	}
+	if r.Header.Get("X-Dragonfly-E2E-Status-Code") != "" {
+		str := r.Header.Get("X-Dragonfly-E2E-Status-Code")
+		code, err := strconv.Atoi(str)
+		if err != nil {
+			log.Printf("wrong X-Dragonfly-E2E-Status-Code format %s, error: %s", str, err)
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(fmt.Sprintf("wrong X-Dragonfly-E2E-Status-Code format")))
+			return
+		}
+		w.WriteHeader(code)
+		return
+	}
 	var rg *httpRange
 	if s := r.Header.Get("Range"); s != "" {
 		rgs, err := parseRange(s, math.MaxInt)
@@ -106,7 +123,7 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rd = io.LimitReader(file, rg.length)
 	}
 
-	if f.enableContentLength {
+	if enableContentLength {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 	}
 	_, _ = io.Copy(w, rd)
