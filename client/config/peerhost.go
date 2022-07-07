@@ -70,7 +70,7 @@ type DaemonOption struct {
 }
 
 func NewDaemonConfig() *DaemonOption {
-	return &peerHostConfig
+	return peerHostConfig()
 }
 
 func (p *DaemonOption) Load(path string) error {

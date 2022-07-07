@@ -197,13 +197,19 @@ func LoadConfig(config any) error {
 func WatchConfig(interval time.Duration, newConfig func() (cfg any), watcher func(cfg any)) {
 	var oldData string
 	file := viper.ConfigFileUsed()
+
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		logger.Errorf("read file %s error: %v", file, err)
+	}
+	oldData = string(data)
 loop:
 	for {
 		select {
 		case <-time.After(interval):
 			// for k8s configmap case, the config file is symbol link
 			// reload file instead use fsnotify
-			data, err := ioutil.ReadFile(file)
+			data, err = ioutil.ReadFile(file)
 			if err != nil {
 				logger.Errorf("read file %s error: %v", file, err)
 				continue loop

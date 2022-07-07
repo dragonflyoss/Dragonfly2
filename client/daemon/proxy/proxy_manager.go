@@ -159,8 +159,12 @@ func (pm *proxyManager) Watch(opt *config.ProxyOption) {
 		logger.Errorf("yaml marshal proxy rules error: %s", err.Error())
 		return
 	}
-	logger.Infof("update proxy rules, previous rules: %s, updated rules: %s", string(old), string(fresh))
-	pm.Proxy.rules.Store(opt.ProxyRules)
+	logger.Infof("previous rules: %s", string(old))
+	logger.Infof("current rules: %s", string(fresh))
+	if string(old) != string(fresh) {
+		logger.Infof("update proxy rules")
+		pm.Proxy.rules.Store(opt.ProxyRules)
+	}
 }
 
 func newDirectHandler() *http.ServeMux {
