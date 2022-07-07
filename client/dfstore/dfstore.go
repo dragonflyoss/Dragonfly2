@@ -28,71 +28,152 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"strconv"
 
 	"github.com/go-http-utils/headers"
 
+	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/objectstorage"
+	pkgobjectstorage "d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 // Dfstore is the interface used for object storage.
 type Dfstore interface {
+	// GetObjectMetadataRequestWithContext returns *http.Request of getting object metadata.
+	GetObjectMetadataRequestWithContext(ctx context.Context, input *GetObjectMetadataInput) (*http.Request, error)
+
+	// GetObjectMetadataWithContext returns matedata of object.
+	GetObjectMetadataWithContext(ctx context.Context, input *GetObjectMetadataInput) (*pkgobjectstorage.ObjectMetadata, error)
+
 	// GetObjectRequestWithContext returns *http.Request of getting object.
 	GetObjectRequestWithContext(ctx context.Context, input *GetObjectInput) (*http.Request, error)
 
-	// GetObject returns data of object.
-	GetObject(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error)
+	// GetObjectWithContext returns data of object.
+	GetObjectWithContext(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error)
 
 	// PutObjectRequestWithContext returns *http.Request of putting object.
 	PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error)
 
-	// PutObject puts data of object.
-	PutObject(ctx context.Context, input *PutOjectInput) error
+	// PutObjectWithContext puts data of object.
+	PutObjectWithContext(ctx context.Context, input *PutOjectInput) error
 
 	// DeleteObjectRequestWithContext returns *http.Request of deleting object.
 	DeleteObjectRequestWithContext(ctx context.Context, input *DeleteObjectInput) (*http.Request, error)
 
-	// DeleteObject deletes data of object.
-	DeleteObject(ctx context.Context, input *DeleteObjectInput) error
+	// DeleteObjectWithContext deletes data of object.
+	DeleteObjectWithContext(ctx context.Context, input *DeleteObjectInput) error
 
 	// IsObjectExistRequestWithContext returns *http.Request of heading object.
 	IsObjectExistRequestWithContext(ctx context.Context, input *IsObjectExistInput) (*http.Request, error)
 
-	// IsObjectExist returns whether the object exists.
-	IsObjectExist(ctx context.Context, input *IsObjectExistInput) (bool, error)
+	// IsObjectExistWithContext returns whether the object exists.
+	IsObjectExistWithContext(ctx context.Context, input *IsObjectExistInput) (bool, error)
 }
 
 // dfstore provides object storage function.
 type dfstore struct {
 	endpoint   string
-	accessKey  string
-	secretKey  string
 	httpClient *http.Client
 }
 
 // Option is a functional option for configuring the dfstore.
-type Option func(ds *dfstore)
+type Option func(dfs *dfstore)
 
 // WithHTTPClient set http client for dfstore.
 func WithHTTPClient(client *http.Client) Option {
-	return func(ds *dfstore) {
-		ds.httpClient = client
+	return func(dfs *dfstore) {
+		dfs.httpClient = client
 	}
 }
 
 // New dfstore instance.
-func New(endpoint, accessKey, secretKey string, options ...Option) Dfstore {
-	ds := &dfstore{
+func New(endpoint string, options ...Option) Dfstore {
+	dfs := &dfstore{
 		endpoint:   endpoint,
-		accessKey:  accessKey,
-		secretKey:  secretKey,
 		httpClient: http.DefaultClient,
 	}
 
 	for _, opt := range options {
-		opt(ds)
+		opt(dfs)
 	}
 
-	return ds
+	return dfs
+}
+
+// GetObjectMetadataInput is used to construct request of getting object metadata.
+type GetObjectMetadataInput struct {
+	// BucketName is bucket name.
+	BucketName string
+
+	// ObjectKey is object key.
+	ObjectKey string
+}
+
+// Validate validates GetObjectMetadataInput fields.
+func (i *GetObjectMetadataInput) Validate() error {
+	if i.BucketName == "" {
+		return errors.New("invalid BucketName")
+
+	}
+
+	if i.ObjectKey == "" {
+		return errors.New("invalid ObjectKey")
+	}
+
+	return nil
+}
+
+// GetObjectMetadataRequestWithContext returns *http.Request of getting object metadata.
+func (dfs *dfstore) GetObjectMetadataRequestWithContext(ctx context.Context, input *GetObjectMetadataInput) (*http.Request, error) {
+	if err := input.Validate(); err != nil {
+		return nil, err
+	}
+
+	u, err := url.Parse(dfs.endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Path = filepath.Join("buckets", input.BucketName, "objects", input.ObjectKey)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// GetObjectMetadataWithContext returns metadata of object.
+func (dfs *dfstore) GetObjectMetadataWithContext(ctx context.Context, input *GetObjectMetadataInput) (*pkgobjectstorage.ObjectMetadata, error) {
+	req, err := dfs.GetObjectMetadataRequestWithContext(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := dfs.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("bad response status %s", resp.Status)
+	}
+
+	contentLength, err := strconv.ParseInt(resp.Header.Get(headers.ContentLength), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pkgobjectstorage.ObjectMetadata{
+		ContentDisposition: resp.Header.Get(headers.ContentDisposition),
+		ContentEncoding:    resp.Header.Get(headers.ContentEncoding),
+		ContentLanguage:    resp.Header.Get(headers.ContentLanguage),
+		ContentLength:      int64(contentLength),
+		ContentType:        resp.Header.Get(headers.ContentType),
+		ETag:               resp.Header.Get(headers.ContentType),
+		Digest:             resp.Header.Get(config.HeaderDragonflyObjectMetaDigest),
+	}, nil
 }
 
 // GetObjectInput is used to construct request of getting object.
@@ -127,12 +208,12 @@ func (i *GetObjectInput) Validate() error {
 }
 
 // GetObjectRequestWithContext returns *http.Request of getting object.
-func (ds *dfstore) GetObjectRequestWithContext(ctx context.Context, input *GetObjectInput) (*http.Request, error) {
+func (dfs *dfstore) GetObjectRequestWithContext(ctx context.Context, input *GetObjectInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 
-	u, err := url.Parse(ds.endpoint)
+	u, err := url.Parse(dfs.endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +238,14 @@ func (ds *dfstore) GetObjectRequestWithContext(ctx context.Context, input *GetOb
 	return req, nil
 }
 
-// GetObject returns data of object.
-func (ds *dfstore) GetObject(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error) {
-	req, err := ds.GetObjectRequestWithContext(ctx, input)
+// GetObjectWithContext returns data of object.
+func (dfs *dfstore) GetObjectWithContext(ctx context.Context, input *GetObjectInput) (io.ReadCloser, error) {
+	req, err := dfs.GetObjectRequestWithContext(ctx, input)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := ds.httpClient.Do(req)
+	resp, err := dfs.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +305,7 @@ func (i *PutOjectInput) Validate() error {
 }
 
 // PutObjectRequestWithContext returns *http.Request of putting object.
-func (ds *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error) {
+func (dfs *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOjectInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
@@ -262,7 +343,7 @@ func (ds *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOj
 		return nil, err
 	}
 
-	u, err := url.Parse(ds.endpoint)
+	u, err := url.Parse(dfs.endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -278,9 +359,9 @@ func (ds *dfstore) PutObjectRequestWithContext(ctx context.Context, input *PutOj
 	return req, nil
 }
 
-// PutObject puts data of object.
-func (ds *dfstore) PutObject(ctx context.Context, input *PutOjectInput) error {
-	req, err := ds.PutObjectRequestWithContext(ctx, input)
+// PutObjectWithContext puts data of object.
+func (dfs *dfstore) PutObjectWithContext(ctx context.Context, input *PutOjectInput) error {
+	req, err := dfs.PutObjectRequestWithContext(ctx, input)
 	if err != nil {
 		return err
 	}
@@ -322,12 +403,12 @@ func (i *DeleteObjectInput) Validate() error {
 }
 
 // DeleteObjectRequestWithContext returns *http.Request of deleting object.
-func (ds *dfstore) DeleteObjectRequestWithContext(ctx context.Context, input *DeleteObjectInput) (*http.Request, error) {
+func (dfs *dfstore) DeleteObjectRequestWithContext(ctx context.Context, input *DeleteObjectInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 
-	u, err := url.Parse(ds.endpoint)
+	u, err := url.Parse(dfs.endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -336,9 +417,9 @@ func (ds *dfstore) DeleteObjectRequestWithContext(ctx context.Context, input *De
 	return http.NewRequestWithContext(ctx, http.MethodDelete, u.String(), nil)
 }
 
-// DeleteObject deletes data of object.
-func (ds *dfstore) DeleteObject(ctx context.Context, input *DeleteObjectInput) error {
-	req, err := ds.DeleteObjectRequestWithContext(ctx, input)
+// DeleteObjectWithContext deletes data of object.
+func (dfs *dfstore) DeleteObjectWithContext(ctx context.Context, input *DeleteObjectInput) error {
+	req, err := dfs.DeleteObjectRequestWithContext(ctx, input)
 	if err != nil {
 		return err
 	}
@@ -380,12 +461,12 @@ func (i *IsObjectExistInput) Validate() error {
 }
 
 // IsObjectExistRequestWithContext returns *http.Request of heading object.
-func (ds *dfstore) IsObjectExistRequestWithContext(ctx context.Context, input *IsObjectExistInput) (*http.Request, error) {
+func (dfs *dfstore) IsObjectExistRequestWithContext(ctx context.Context, input *IsObjectExistInput) (*http.Request, error) {
 	if err := input.Validate(); err != nil {
 		return nil, err
 	}
 
-	u, err := url.Parse(ds.endpoint)
+	u, err := url.Parse(dfs.endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -394,9 +475,9 @@ func (ds *dfstore) IsObjectExistRequestWithContext(ctx context.Context, input *I
 	return http.NewRequestWithContext(ctx, http.MethodHead, u.String(), nil)
 }
 
-// IsObjectExist returns whether the object exists.
-func (ds *dfstore) IsObjectExist(ctx context.Context, input *IsObjectExistInput) (bool, error) {
-	req, err := ds.IsObjectExistRequestWithContext(ctx, input)
+// IsObjectExistWithContext returns whether the object exists.
+func (dfs *dfstore) IsObjectExistWithContext(ctx context.Context, input *IsObjectExistInput) (bool, error) {
+	req, err := dfs.IsObjectExistRequestWithContext(ctx, input)
 	if err != nil {
 		return false, err
 	}

@@ -1,0 +1,38 @@
+name: dfstore
+arch: amd64
+platform: linux
+epoch: 2
+version: v${SEMVER}
+version_schema: semver
+release: ${VERSION_RELEASE}
+section: default
+priority: extra
+description: dfstore is a storage client for dragonfly. It can rely on different types of object storage, such as S3 or OSS, to provide stable object storage capabilities.
+license: "Apache 2.0"
+homepage: https://d7y.io
+maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
+
+provides:
+  - dfstore
+
+contents:
+  - src: /root/bin/linux_amd64/dfstore
+    dst: /usr/bin/dfstore
+
+  - src: /root/docs/dfstore/dfstore.1
+    dst: /usr/share/man/man1/dfstore.1
+
+  - src: /root/docs/dfstore/dfstore-copy.1
+    dst: /usr/share/man/man1/dfstore-copy.1
+
+  - src: /root/docs/dfstore/dfstore-remove.1
+    dst: /usr/share/man/man1/dfstore-remove.1
+
+  - src: /root/docs/dfstore/dfstore-version.1
+    dst: /usr/share/man/man1/dfstore-version.1
+
+  - src: /root/License
+    dst: /usr/share/doc/dfstore/License
+
+  - src: /root/CHANGELOG.md
+    dst: /usr/share/doc/dfstore/ChangeLog

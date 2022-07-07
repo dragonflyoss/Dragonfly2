@@ -1,138 +1,49 @@
 % DFGET(1) Version v2.0.4 | Frivolous "Dfget" Documentation
 
-NAME
-====
+# NAME
 
 **dfget** — client of Dragonfly used to download and upload files
 
-SYNOPSIS
-========
+# SYNOPSIS
 
 dfget is the client of Dragonfly which takes a role of peer in a P2P network. When user triggers a file downloading
 task, dfget will download the pieces of file from other peers. Meanwhile, it will act as an uploader to support other
 peers to download pieces from it if it owns them. In addition, dfget has the abilities to provide more advanced
 functionality, such as network bandwidth limit, transmission encryption and so on.
 
-Options
--------
+## OPTIONS
 
---alivetime
+```shell
+      --accept-regex string   Recursively download only. Specify a regular expression to accept the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it
+      --callsystem string     The caller name which is mainly used for statistics and access control
+      --config string         the path of configuration file with yaml extension name, default is /Users/qiwenbo/.dragonfly/config/dfget.yaml, it can also be set by env var: DFGET_CONFIG
+      --console               whether logger output records to the stdout
+      --digest string         Check the integrity of the downloaded file with digest, in format of md5:xxx or sha256:yyy
+      --disable-back-source   Disable downloading directly from source when the daemon fails to download file
+      --filter string         Filter the query parameters of the url, P2P overlay is the same one if the filtered url is same, in format of key&sign, which will filter 'key' and 'sign' query parameters
+  -H, --header strings        url header, eg: --header='Accept: *' --header='Host: abc'
+  -h, --help                  help for dfget
+      --jaeger string         jaeger endpoint url, like: http://localhost:14250/api/traces
+      --level uint            Recursively download only. Set the maximum number of subdirectories that dfget will recurse into. Set to 0 for no limit (default 5)
+  -l, --list                  Recursively download only. List all urls instead of downloading them.
+      --logdir string         Dfget log directory
+      --original-offset       Range request only. Download ranged data into target file with original offset. Daemon will make a hardlink to target file. Client can download many ranged data into one file for same url. When enabled, back source in client will be disabled
+  -O, --output string         Destination path which is used to store the downloaded file, it must be a full path
+  -p, --pattern string        The downloading pattern: p2p/seed-peer/source
+      --pprof-port int        listen port for pprof, 0 represents random port (default -1)
+      --range string          Download range. Like: 0-9, stands download 10 bytes from 0 -9, [0:9] in real url
+      --ratelimit string      The downloading network bandwidth limit per second in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will be parsed as Byte, 0 is infinite (default "100.0MB")
+  -r, --recursive             Recursively download all resources in target url, the target source client must support list action
+      --reject-regex string   Recursively download only. Specify a regular expression to reject the complete URL. In this case, you have to enclose the pattern into quotes to prevent your shell from expanding it
+      --service-name string   name of the service for tracer (default "dragonfly-dfget")
+  -b, --show-progress         Show progress bar, it conflicts with --console
+      --tag string            Different tags for the same url will be divided into different P2P overlay, it conflicts with --digest
+      --timeout duration      Timeout for the downloading task, 0 is infinite
+  -u, --url string            Download one file from the url, equivalent to the command's first position argument
+      --verbose               whether logger use debug level
+      --workhome string       Dfget working directory
+```
 
-:   alive duration for which uploader keeps no accessing by any uploading requests, after this period uploader will automatically exit (default 5m0s)
-
---cacerts
-
-:   the cacert file which is used to verify remote server when supernode interact with the source.
-
---callsystem
-
-:   the name of dfget caller which is for debugging. Once set, it will be passed to all components around the request to make debugging easy
-
---clientqueue
-
-:   specify the size of client queue which controls the number of pieces that can be processed simultaneously
-
---console
-
-:   show log on console, it's conflict with '--showbar'
-
---daemon-pid
-
-:   the daemon pid (default "/tmp/dfdaemon.pid")
-
---daemon-sock
-
-:   the unix domain socket address for grpc with daemon (default "/tmp/dfdamon.sock")
-
---dfdaemon
-
-:   identify whether the request is from dfdaemon
-
---expiretime
-
-:   caching duration for which cached file keeps no accessed by any process, after this period cache file will be deleted (default 3m0s)
-
--f, --filter
-
-:   filter some query params of URL, use char '&' to separate different params
-
---header
-
-:   http header
-
--h, --help
-
-:   help for dfget
-
---home
-
-:   the work home directory of dfget (default "/Users/jim/.dragonfly/dfdaemon/")
-
--i, --identifier
-
-:   the usage of identifier is making different downloading tasks generate different downloading task IDs even if they have the same URLs. conflict with --md5.
-
---insecure
-
-:   identify whether supernode should skip secure verify when interact with the source.
-
---ip
-
-:   IP address that server will listen on (default "0.0.0.0")
-
--m, --md5
-
-:   md5 value input from user for the requested downloading file to enhance security
-
---more-daemon-options
-
-:   more options passed to daemon by command line, please confirm your options with "dfget daemon --help"
-
--n, --node
-
-:   deprecated, please use schedulers instead. specify the addresses(host:port=weight) of supernodes where the host is necessary, the port(default: 8002) and the weight(default:1) are optional. And the type of weight must be integer
-
---notbacksource
-
-:   disable back source downloading for requested file when p2p fails to download it
-
--o, --output
-
-:   destination path which is used to store the requested downloading file. It must contain detailed directory and specific filename, for example, '/tmp/file.mp4'
-
--p, --pattern
-
-:   download pattern, must be p2p/seed-peer/source, seed-peer and source do not support flag --totallimit (default "p2p")
-
---port
-
-:   port number that server will listen on (default 65002)
-
---schedulers
-
-:   the scheduler addresses
-
--b, --showbar
-
-:   show progress bar, it is conflict with '--console'
-
--e, --timeout
-
-:   timeout set for file downloading task. If dfget has not finished downloading all pieces of file before --timeout, the dfget will throw an error and exit
-
---totallimit
-
-:   network bandwidth rate limit for the whole host, in format of G(B)/g/M(B)/m/K(B)/k/B, pure number will also be parsed as Byte (default 104857600.000000)
-
--u, --url
-
-:   URL of user requested downloading file(only HTTP/HTTPs supported)
-
---verbose
-
-:   enable verbose mode, all debug log will be display
-
-BUGS
-====
+# BUGS
 
 See GitHub Issues: <https://github.com/dragonflyoss/Dragonfly2/issues>
