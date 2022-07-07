@@ -214,6 +214,7 @@ loop:
 				}
 				logger.Infof("config file %s changed", file)
 				watcher(cfg)
+				oldData = string(data)
 			}
 		}
 	}
