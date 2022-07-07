@@ -66,7 +66,7 @@ type DaemonOption struct {
 	ObjectStorage ObjectStorageOption `mapstructure:"objectStorage" yaml:"objectStorage"`
 	Storage       StorageOption       `mapstructure:"storage" yaml:"storage"`
 	Health        *HealthOption       `mapstructure:"health" yaml:"health"`
-	Reload        ReloadOption        `mapstructure:"reloadOption" yaml:"reloadOption"`
+	Reload        ReloadOption        `mapstructure:"reload" yaml:"reload"`
 }
 
 func NewDaemonConfig() *DaemonOption {
