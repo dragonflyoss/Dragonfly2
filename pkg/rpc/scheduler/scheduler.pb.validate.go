@@ -821,6 +821,22 @@ func (m *PeerResult) Validate() error {
 		}
 	}
 
+	switch m.ErrorDetail.(type) {
+
+	case *PeerResult_SourceError:
+
+		if v, ok := interface{}(m.GetSourceError()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return PeerResultValidationError{
+					field:  "SourceError",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	return nil
 }
 
