@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -804,6 +805,16 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *scheduler.PeerPacket) bool
 		// 6xxx
 		pt.failedCode = pp.Code
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
+		return true
+	case base.Code_BackToSourceAborted:
+		st := status.Newf(codes.Aborted, "response is not valid")
+		st, err := st.WithDetails(pp.GetSourceError())
+		if err != nil {
+			pt.Errorf("convert source error details error: %s", err.Error())
+			return false
+		}
+
+		pt.sourceErrorStatus = st
 		return true
 	}
 	return false

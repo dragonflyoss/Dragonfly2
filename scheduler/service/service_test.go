@@ -32,6 +32,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/manager/types"
@@ -39,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	rpcschedulermocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -2893,10 +2896,24 @@ func TestService_handleTaskSuccess(t *testing.T) {
 }
 
 func TestService_handleTaskFail(t *testing.T) {
+	rst := status.Newf(codes.Aborted, "response is not valid")
+	st, err := rst.WithDetails(&errordetails.SourceError{Temporary: false})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rtst := status.Newf(codes.Aborted, "response is not valid")
+	tst, err := rtst.WithDetails(&errordetails.SourceError{Temporary: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
-		name   string
-		mock   func(task *resource.Task)
-		expect func(t *testing.T, task *resource.Task)
+		name            string
+		backToSourceErr *errordetails.SourceError
+		seedPeerErr     error
+		mock            func(task *resource.Task)
+		expect          func(t *testing.T, task *resource.Task)
 	}{
 		{
 			name: "task state is TaskStatePending",
@@ -2939,9 +2956,56 @@ func TestService_handleTaskFail(t *testing.T) {
 			},
 		},
 		{
+			name:            "peer back-to-source fails due to an unrecoverable error",
+			backToSourceErr: &errordetails.SourceError{Temporary: false},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+				assert.Equal(task.PeerFailedCount.Load(), int32(0))
+			},
+		},
+		{
+			name:            "peer back-to-source fails due to an temporary error",
+			backToSourceErr: &errordetails.SourceError{Temporary: true},
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+			},
+		},
+		{
+			name:        "seed peer back-to-source fails due to an unrecoverable error",
+			seedPeerErr: st.Err(),
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+				assert.Equal(task.PeerFailedCount.Load(), int32(0))
+			},
+		},
+		{
+			name:        "seed peer back-to-source fails due to an temporary error",
+			seedPeerErr: tst.Err(),
+			mock: func(task *resource.Task) {
+				task.FSM.SetState(resource.TaskStateRunning)
+			},
+			expect: func(t *testing.T, task *resource.Task) {
+				assert := assert.New(t)
+				assert.True(task.FSM.Is(resource.TaskStateFailed))
+				assert.Equal(task.PeerFailedCount.Load(), int32(0))
+			},
+		},
+		{
 			name: "number of failed peers in the task is greater than FailedPeerCountLimit",
 			mock: func(task *resource.Task) {
-				task.FSM.SetState(resource.TaskStateFailed)
+				task.FSM.SetState(resource.TaskStateRunning)
 				task.PeerFailedCount.Store(201)
 			},
 			expect: func(t *testing.T, task *resource.Task) {
@@ -2964,7 +3028,7 @@ func TestService_handleTaskFail(t *testing.T) {
 			task := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 			tc.mock(task)
-			svc.handleTaskFail(context.Background(), task)
+			svc.handleTaskFail(context.Background(), task, tc.backToSourceErr, tc.seedPeerErr)
 			tc.expect(t, task)
 		})
 	}
