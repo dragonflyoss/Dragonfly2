@@ -92,7 +92,7 @@ func (m *DownRequest) Validate() error {
 
 	// no validation rules for DisableBackSource
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return DownRequestValidationError{
 				field:  "UrlMeta",
@@ -294,7 +294,7 @@ func (m *StatTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return StatTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -378,7 +378,7 @@ func (m *ImportTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ImportTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -492,7 +492,7 @@ func (m *ExportTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ExportTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -584,7 +584,7 @@ func (m *DeleteTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return DeleteTaskRequestValidationError{
 				field:  "UrlMeta",

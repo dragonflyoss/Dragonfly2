@@ -41,6 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -1551,22 +1552,36 @@ func (pt *peerTaskConductor) fail() {
 	ctx := trace.ContextWithSpan(context.Background(), trace.SpanFromContext(pt.ctx))
 	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
-	err = pt.schedulerClient.ReportPeerResult(
-		peerResultCtx,
-		&scheduler.PeerResult{
-			TaskId:          pt.GetTaskID(),
-			PeerId:          pt.GetPeerID(),
-			SrcIp:           pt.peerTaskManager.host.Ip,
-			SecurityDomain:  pt.peerTaskManager.host.SecurityDomain,
-			Idc:             pt.peerTaskManager.host.Idc,
-			Url:             pt.request.Url,
-			ContentLength:   pt.GetContentLength(),
-			Traffic:         pt.GetTraffic(),
-			TotalPieceCount: pt.GetTotalPieces(),
-			Cost:            uint32(end.Sub(pt.startTime).Milliseconds()),
-			Success:         false,
-			Code:            pt.failedCode,
-		})
+
+	var sourceError *errordetails.SourceError
+	if pt.sourceErrorStatus != nil {
+		for _, detail := range pt.sourceErrorStatus.Details() {
+			switch d := detail.(type) {
+			case *errordetails.SourceError:
+				sourceError = d
+			}
+		}
+	}
+	peerResult := &scheduler.PeerResult{
+		TaskId:          pt.GetTaskID(),
+		PeerId:          pt.GetPeerID(),
+		SrcIp:           pt.peerTaskManager.host.Ip,
+		SecurityDomain:  pt.peerTaskManager.host.SecurityDomain,
+		Idc:             pt.peerTaskManager.host.Idc,
+		Url:             pt.request.Url,
+		ContentLength:   pt.GetContentLength(),
+		Traffic:         pt.GetTraffic(),
+		TotalPieceCount: pt.GetTotalPieces(),
+		Cost:            uint32(end.Sub(pt.startTime).Milliseconds()),
+		Success:         false,
+		Code:            pt.failedCode,
+	}
+	if sourceError != nil {
+		peerResult.ErrorDetail = &scheduler.PeerResult_SourceError{
+			SourceError: sourceError,
+		}
+	}
+	err = pt.schedulerClient.ReportPeerResult(peerResultCtx, peerResult)
 	if err != nil {
 		peerResultSpan.RecordError(err)
 		pt.Log().Errorf("step 3: report fail peer result, error: %v", err)

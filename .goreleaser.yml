@@ -38,6 +38,23 @@ builds:
       - -X "d7y.io/dragonfly/v2/version.Gotags=none"
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
+  - main: ./cmd/dfstore
+    id: dfstore
+    binary: dfstore
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
+      - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
+      - -X d7y.io/dragonfly/v2/version.GitVersion={{ .Tag }}
+      - -X d7y.io/dragonfly/v2/version.GitCommit={{ .ShortCommit }}
+      - -X d7y.io/dragonfly/v2/version.BuildTime={{ .Date }}
+      - -X "d7y.io/dragonfly/v2/version.Gotags=none"
+      - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
+
   - main: ./cmd/scheduler
     id: scheduler
     binary: scheduler
@@ -73,7 +90,7 @@ builds:
       - -X "d7y.io/dragonfly/v2/version.Gogcflags=none"
 
 archives:
-  - name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+  - name_template: "dragonfly-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     format: tar.gz
     files:
       - LICENSE
@@ -95,7 +112,7 @@ changelog:
 
 nfpms:
   - id: dfget
-    file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    file_name_template: "dfget-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfget
     maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
     description: dfget is the client of Dragonfly used to download and upload files
@@ -139,6 +156,7 @@ nfpms:
       postinstall: build/package/nfpm/dfget-postinstall.sh
       preremove: build/package/nfpm/dfget-preremove.sh
       postremove: build/package/nfpm/dfget-postremove.sh
+
   - id: dfcache
     file_name_template: "dfcache-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
     package_name: dfcache
@@ -182,3 +200,35 @@ nfpms:
 
       - src: CHANGELOG.md
         dst: /usr/share/doc/dfcache/ChangeLog
+
+  - id: dfstore
+    file_name_template: "dfstore-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+    package_name: dfstore
+    maintainer: Dragonfly Maintainers <dragonfly-maintainers@googlegroups.com>
+    description: dfstore is a storage client for dragonfly. It can rely on different types of object storage, such as S3 or OSS, to provide stable object storage capabilities.
+    license: "Apache 2.0"
+    homepage: https://d7y.io
+    bindir: /usr/bin
+    builds:
+      - dfstore
+    formats:
+      - rpm
+      - deb
+    contents:
+      - src: build/package/docs/dfstore/dfstore.1
+        dst: /usr/share/man/man1/dfstore.1
+
+      - src: build/package/docs/dfstore/dfstore-copy.1
+        dst: /usr/share/man/man1/dfstore-copy.1
+
+      - src: build/package/docs/dfstore/dfstore-remove.1
+        dst: /usr/share/man/man1/dfstore-remove.1
+
+      - src: build/package/docs/dfstore/dfstore-version.1
+        dst: /usr/share/man/man1/dfstore-version.1
+
+      - src: LICENSE
+        dst: /usr/share/doc/dfstore/License
+
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/dfstore/ChangeLog

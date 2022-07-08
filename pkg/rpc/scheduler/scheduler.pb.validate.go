@@ -79,7 +79,7 @@ func (m *PeerTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -96,7 +96,7 @@ func (m *PeerTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetPeerHost()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPeerHost()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "PeerHost",
@@ -106,7 +106,7 @@ func (m *PeerTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetHostLoad()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerTaskRequestValidationError{
 				field:  "HostLoad",
@@ -208,7 +208,7 @@ func (m *RegisterResult) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return RegisterResultValidationError{
 				field:  "ExtendAttribute",
@@ -222,7 +222,7 @@ func (m *RegisterResult) Validate() error {
 
 	case *RegisterResult_SinglePiece:
 
-		if v, ok := any(m.GetSinglePiece()).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(m.GetSinglePiece()).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return RegisterResultValidationError{
 					field:  "SinglePiece",
@@ -316,7 +316,7 @@ func (m *SinglePiece) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SinglePieceValidationError{
 				field:  "PieceInfo",
@@ -545,7 +545,7 @@ func (m *PieceResult) Validate() error {
 
 	// no validation rules for DstPid
 
-	if v, ok := any(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceResultValidationError{
 				field:  "PieceInfo",
@@ -563,7 +563,7 @@ func (m *PieceResult) Validate() error {
 
 	// no validation rules for Code
 
-	if v, ok := any(m.GetHostLoad()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetHostLoad()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceResultValidationError{
 				field:  "HostLoad",
@@ -575,7 +575,7 @@ func (m *PieceResult) Validate() error {
 
 	// no validation rules for FinishedCount
 
-	if v, ok := any(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceResultValidationError{
 				field:  "ExtendAttribute",
@@ -670,7 +670,7 @@ func (m *PeerPacket) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetMainPeer()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetMainPeer()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PeerPacketValidationError{
 				field:  "MainPeer",
@@ -683,7 +683,7 @@ func (m *PeerPacket) Validate() error {
 	for idx, item := range m.GetStealPeers() {
 		_, _ = idx, item
 
-		if v, ok := any(item).(interface{ Validate() error }); ok {
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PeerPacketValidationError{
 					field:  fmt.Sprintf("StealPeers[%v]", idx),
@@ -819,6 +819,22 @@ func (m *PeerResult) Validate() error {
 			field:  "TotalPieceCount",
 			reason: "value must be greater than or equal to -1",
 		}
+	}
+
+	switch m.ErrorDetail.(type) {
+
+	case *PeerResult_SourceError:
+
+		if v, ok := interface{}(m.GetSourceError()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return PeerResultValidationError{
+					field:  "SourceError",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	return nil
@@ -1170,7 +1186,7 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AnnounceTaskRequestValidationError{
 				field:  "UrlMeta",
@@ -1180,7 +1196,7 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetPeerHost()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPeerHost()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AnnounceTaskRequestValidationError{
 				field:  "PeerHost",
@@ -1197,7 +1213,7 @@ func (m *AnnounceTaskRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetPiecePacket()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPiecePacket()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return AnnounceTaskRequestValidationError{
 				field:  "PiecePacket",

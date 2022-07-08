@@ -61,7 +61,7 @@ func (m *SeedRequest) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetUrlMeta()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetUrlMeta()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SeedRequestValidationError{
 				field:  "UrlMeta",
@@ -149,7 +149,7 @@ func (m *PieceSeed) Validate() error {
 		}
 	}
 
-	if v, ok := any(m.GetPieceInfo()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetPieceInfo()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceSeedValidationError{
 				field:  "PieceInfo",
@@ -169,7 +169,7 @@ func (m *PieceSeed) Validate() error {
 
 	// no validation rules for EndTime
 
-	if v, ok := any(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetExtendAttribute()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return PieceSeedValidationError{
 				field:  "ExtendAttribute",

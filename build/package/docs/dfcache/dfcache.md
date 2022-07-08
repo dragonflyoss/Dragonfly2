@@ -1,11 +1,10 @@
 % DFCACHE(1) Version v2.0.4 | Frivolous "Dfcache" Documentation
 
-## dfcache
+# NAME
 
-the P2P cache client of dragonfly
+**dfcache** — the P2P cache client of dragonfly
 
-### Synopsis
-
+# SYNOPSIS
 
 dfcache is the cache client to of dragonfly that communicates with dfdaemon and operates
 on files in P2P network, where the P2P network acts as a cache system.
@@ -16,8 +15,7 @@ responsibility to download file from source; but dfcache could only export or do
 file that has been imported or added into P2P network by other peer, it's the user's
 responsibility to go back to source and add file into P2P network.
 
-
-### Options
+## OPTIONS
 
 ```
       --callsystem string     The caller name which is mainly used for statistics and access control
@@ -35,14 +33,17 @@ responsibility to go back to source and add file into P2P network.
       --workhome string       Dfcache working directory
 ```
 
-### SEE ALSO
+# SEE ALSO
 
-* [dfcache completion](dfcache_completion.md)	 - generate the autocompletion script for the specified shell
-* [dfcache delete](dfcache_delete.md)	 - delete file from P2P cache system
-* [dfcache doc](dfcache_doc.md)	 - generate documents
-* [dfcache export](dfcache_export.md)	 - export file from P2P cache system
-* [dfcache import](dfcache_import.md)	 - import file into P2P cache system
-* [dfcache plugin](dfcache_plugin.md)	 - show plugin
-* [dfcache stat](dfcache_stat.md)	 - stat checks if a file exists in P2P cache system
-* [dfcache version](dfcache_version.md)	 - show version
+- [dfcache completion](dfcache_completion.md) - generate the autocompletion script for the specified shell
+- [dfcache delete](dfcache_delete.md) - delete file from P2P cache system
+- [dfcache doc](dfcache_doc.md) - generate documents
+- [dfcache export](dfcache_export.md) - export file from P2P cache system
+- [dfcache import](dfcache_import.md) - import file into P2P cache system
+- [dfcache plugin](dfcache_plugin.md) - show plugin
+- [dfcache stat](dfcache_stat.md) - stat checks if a file exists in P2P cache system
+- [dfcache version](dfcache_version.md) - show version
 
+# BUGS
+
+See GitHub Issues: <https://github.com/dragonflyoss/Dragonfly2/issues>

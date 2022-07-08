@@ -22,7 +22,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
-/* the reason of backing to source */
+// Reason of backing to source.
 const (
 	BackSourceReasonNone          = 0
 	BackSourceReasonRegisterFail  = 1
@@ -38,13 +38,14 @@ const (
 	ForceNotBackSourceAddition    = 1000
 )
 
-/* download pattern */
+// Download pattern.
 const (
 	PatternP2P      = "p2p"
 	PatternSeedPeer = "seed-peer"
 	PatternSource   = "source"
 )
 
+// Download limit.
 const (
 	DefaultPerPeerDownloadLimit = 20 * unit.MB
 	DefaultTotalDownloadLimit   = 100 * unit.MB
@@ -52,13 +53,10 @@ const (
 	DefaultMinRate              = 20 * unit.MB
 )
 
-/* others */
+// Others.
 const (
 	DefaultTimestampFormat = "2006-01-02 15:04:05"
 	SchemaHTTP             = "http"
-
-	ServerPortLowerLimit = 15000
-	ServerPortUpperLimit = 65000
 
 	DefaultTaskExpireTime  = 6 * time.Hour
 	DefaultGCInterval      = 1 * time.Minute
@@ -74,15 +72,24 @@ const (
 	DefaultObjectMaxReplicas = 3
 )
 
+// Store strategy.
 const (
 	SimpleLocalTaskStoreStrategy  = StoreStrategy("io.d7y.storage.v2.simple")
 	AdvanceLocalTaskStoreStrategy = StoreStrategy("io.d7y.storage.v2.advance")
 )
 
-/* dfcache subcommand names */
+// Dfcache subcommand names.
 const (
 	CmdStat   = "stat"
 	CmdImport = "import"
 	CmdExport = "export"
 	CmdDelete = "delete"
+)
+
+// Service defalut port of listening.
+const (
+	DefaultEndPort                = 65535
+	DefaultPeerStartPort          = 65000
+	DefaultUploadStartPort        = 65002
+	DefaultObjectStorageStartPort = 65004
 )
