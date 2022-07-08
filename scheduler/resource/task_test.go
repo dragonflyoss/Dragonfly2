@@ -885,7 +885,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStatePending",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStatePending)
-				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStatePending))
@@ -895,7 +895,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStateRunning and stream is empty",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
-				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -908,7 +908,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 				mockPeer.StoreStream(stream)
 				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
-				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -921,7 +921,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 				mockPeer.StoreStream(stream)
 				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
-				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventRegisterNormal)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -934,7 +934,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 				mockPeer.StoreStream(stream)
 				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1)
 
-				task.NotifyPeers(base.Code_SchedTaskStatusError, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateFailed))

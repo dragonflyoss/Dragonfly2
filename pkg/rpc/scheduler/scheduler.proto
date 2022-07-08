@@ -147,6 +147,11 @@ message PeerPacket{
   repeated DestPeer steal_peers = 6;
   // Result code.
   base.Code code = 7;
+  // Error detail.
+  oneof error_detail{
+    // Source error.
+    errordetails.SourceError source_error = 8;
+  }
 }
 
 // PeerResult represents response of ReportPeerResult.
@@ -175,6 +180,7 @@ message PeerResult{
   base.Code code = 11;
   // Task total piece count.
   int32 total_piece_count = 12 [(validate.rules).int32.gte = -1];
+  // Error detail.
   oneof error_detail{
     // Source error.
     errordetails.SourceError source_error = 13;
