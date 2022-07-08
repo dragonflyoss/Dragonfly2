@@ -325,7 +325,7 @@ func (t *Task) CanBackToSource() bool {
 }
 
 // NotifyPeers notify all peers in the task with the state code.
-func (t *Task) NotifyPeers(code base.Code, event string) {
+func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
 	t.Peers.Range(func(_, value any) bool {
 		peer := value.(*Peer)
 		if peer.FSM.Is(PeerStateRunning) {
@@ -334,11 +334,11 @@ func (t *Task) NotifyPeers(code base.Code, event string) {
 				return true
 			}
 
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: code}); err != nil {
+			if err := stream.Send(peerPacket); err != nil {
 				t.Log.Errorf("send packet to peer %s failed: %s", peer.ID, err.Error())
 				return true
 			}
-			t.Log.Infof("task notify peer %s code %s", peer.ID, code)
+			t.Log.Infof("task notify peer %s code %s", peer.ID, peerPacket.Code)
 
 			if err := peer.FSM.Event(event); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())

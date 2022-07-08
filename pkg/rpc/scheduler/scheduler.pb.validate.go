@@ -697,6 +697,22 @@ func (m *PeerPacket) Validate() error {
 
 	// no validation rules for Code
 
+	switch m.ErrorDetail.(type) {
+
+	case *PeerPacket_SourceError:
+
+		if v, ok := interface{}(m.GetSourceError()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return PeerPacketValidationError{
+					field:  "SourceError",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	return nil
 }
 

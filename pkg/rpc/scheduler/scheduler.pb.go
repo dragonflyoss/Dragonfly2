@@ -623,6 +623,11 @@ type PeerPacket struct {
 	StealPeers []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=steal_peers,json=stealPeers,proto3" json:"steal_peers,omitempty"`
 	// Result code.
 	Code base.Code `protobuf:"varint,7,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	// Error detail.
+	//
+	// Types that are assignable to ErrorDetail:
+	//	*PeerPacket_SourceError
+	ErrorDetail isPeerPacket_ErrorDetail `protobuf_oneof:"error_detail"`
 }
 
 func (x *PeerPacket) Reset() {
@@ -699,6 +704,31 @@ func (x *PeerPacket) GetCode() base.Code {
 	return base.Code(0)
 }
 
+func (m *PeerPacket) GetErrorDetail() isPeerPacket_ErrorDetail {
+	if m != nil {
+		return m.ErrorDetail
+	}
+	return nil
+}
+
+func (x *PeerPacket) GetSourceError() *errordetails.SourceError {
+	if x, ok := x.GetErrorDetail().(*PeerPacket_SourceError); ok {
+		return x.SourceError
+	}
+	return nil
+}
+
+type isPeerPacket_ErrorDetail interface {
+	isPeerPacket_ErrorDetail()
+}
+
+type PeerPacket_SourceError struct {
+	// Source error.
+	SourceError *errordetails.SourceError `protobuf:"bytes,8,opt,name=source_error,json=sourceError,proto3,oneof"`
+}
+
+func (*PeerPacket_SourceError) isPeerPacket_ErrorDetail() {}
+
 // PeerResult represents response of ReportPeerResult.
 type PeerResult struct {
 	state         protoimpl.MessageState
@@ -729,6 +759,8 @@ type PeerResult struct {
 	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
 	// Task total piece count.
 	TotalPieceCount int32 `protobuf:"varint,12,opt,name=total_piece_count,json=totalPieceCount,proto3" json:"total_piece_count,omitempty"`
+	// Error detail.
+	//
 	// Types that are assignable to ErrorDetail:
 	//	*PeerResult_SourceError
 	ErrorDetail isPeerResult_ErrorDetail `protobuf_oneof:"error_detail"`
@@ -1354,7 +1386,7 @@ var file_pkg_rpc_scheduler_scheduler_proto_rawDesc = []byte{
 	0x74, 0x65, 0x6e, 0x64, 0x5f, 0x61, 0x74, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x65, 0x18, 0x0b,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x45, 0x78, 0x74, 0x65,
 	0x6e, 0x64, 0x41, 0x74, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x65, 0x52, 0x0f, 0x65, 0x78, 0x74,
-	0x65, 0x6e, 0x64, 0x41, 0x74, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x65, 0x22, 0x8e, 0x03, 0x0a,
+	0x65, 0x6e, 0x64, 0x41, 0x74, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x65, 0x22, 0xde, 0x03, 0x0a,
 	0x0a, 0x50, 0x65, 0x65, 0x72, 0x50, 0x61, 0x63, 0x6b, 0x65, 0x74, 0x12, 0x20, 0x0a, 0x07, 0x74,
 	0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42,
 	0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64, 0x12, 0x20, 0x0a,
@@ -1372,14 +1404,19 @@ var file_pkg_rpc_scheduler_scheduler_proto_rawDesc = []byte{
 	0x65, 0x72, 0x50, 0x61, 0x63, 0x6b, 0x65, 0x74, 0x2e, 0x44, 0x65, 0x73, 0x74, 0x50, 0x65, 0x65,
 	0x72, 0x52, 0x0a, 0x73, 0x74, 0x65, 0x61, 0x6c, 0x50, 0x65, 0x65, 0x72, 0x73, 0x12, 0x1e, 0x0a,
 	0x04, 0x63, 0x6f, 0x64, 0x65, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x0a, 0x2e, 0x62, 0x61,
-	0x73, 0x65, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x1a, 0x6e, 0x0a,
+	0x73, 0x65, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x52, 0x04, 0x63, 0x6f, 0x64, 0x65, 0x12, 0x3e, 0x0a,
+	0x0c, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x08, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x64, 0x65, 0x74, 0x61, 0x69,
+	0x6c, 0x73, 0x2e, 0x53, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x48, 0x00,
+	0x52, 0x0b, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x45, 0x72, 0x72, 0x6f, 0x72, 0x1a, 0x6e, 0x0a,
 	0x08, 0x44, 0x65, 0x73, 0x74, 0x50, 0x65, 0x65, 0x72, 0x12, 0x17, 0x0a, 0x02, 0x69, 0x70, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x70, 0x01, 0x52, 0x02,
 	0x69, 0x70, 0x12, 0x27, 0x0a, 0x08, 0x72, 0x70, 0x63, 0x5f, 0x70, 0x6f, 0x72, 0x74, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x05, 0x42, 0x0c, 0xfa, 0x42, 0x09, 0x1a, 0x07, 0x10, 0xff, 0xff, 0x03, 0x28,
 	0x80, 0x08, 0x52, 0x07, 0x72, 0x70, 0x63, 0x50, 0x6f, 0x72, 0x74, 0x12, 0x20, 0x0a, 0x07, 0x70,
 	0x65, 0x65, 0x72, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42,
-	0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x06, 0x70, 0x65, 0x65, 0x72, 0x49, 0x64, 0x22, 0xf6, 0x03,
+	0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x06, 0x70, 0x65, 0x65, 0x72, 0x49, 0x64, 0x42, 0x0e, 0x0a,
+	0x0c, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x5f, 0x64, 0x65, 0x74, 0x61, 0x69, 0x6c, 0x22, 0xf6, 0x03,
 	0x0a, 0x0a, 0x50, 0x65, 0x65, 0x72, 0x52, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x12, 0x20, 0x0a, 0x07,
 	0x74, 0x61, 0x73, 0x6b, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa,
 	0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x06, 0x74, 0x61, 0x73, 0x6b, 0x49, 0x64, 0x12, 0x20,
@@ -1543,30 +1580,31 @@ var file_pkg_rpc_scheduler_scheduler_proto_depIdxs = []int32{
 	11, // 13: scheduler.PeerPacket.main_peer:type_name -> scheduler.PeerPacket.DestPeer
 	11, // 14: scheduler.PeerPacket.steal_peers:type_name -> scheduler.PeerPacket.DestPeer
 	19, // 15: scheduler.PeerPacket.code:type_name -> base.Code
-	19, // 16: scheduler.PeerResult.code:type_name -> base.Code
-	20, // 17: scheduler.PeerResult.source_error:type_name -> errordetails.SourceError
-	15, // 18: scheduler.Task.type:type_name -> base.TaskType
-	12, // 19: scheduler.AnnounceTaskRequest.url_meta:type_name -> base.UrlMeta
-	3,  // 20: scheduler.AnnounceTaskRequest.peer_host:type_name -> scheduler.PeerHost
-	21, // 21: scheduler.AnnounceTaskRequest.piece_packet:type_name -> base.PiecePacket
-	15, // 22: scheduler.AnnounceTaskRequest.task_type:type_name -> base.TaskType
-	0,  // 23: scheduler.Scheduler.RegisterPeerTask:input_type -> scheduler.PeerTaskRequest
-	4,  // 24: scheduler.Scheduler.ReportPieceResult:input_type -> scheduler.PieceResult
-	6,  // 25: scheduler.Scheduler.ReportPeerResult:input_type -> scheduler.PeerResult
-	7,  // 26: scheduler.Scheduler.LeaveTask:input_type -> scheduler.PeerTarget
-	8,  // 27: scheduler.Scheduler.StatTask:input_type -> scheduler.StatTaskRequest
-	10, // 28: scheduler.Scheduler.AnnounceTask:input_type -> scheduler.AnnounceTaskRequest
-	1,  // 29: scheduler.Scheduler.RegisterPeerTask:output_type -> scheduler.RegisterResult
-	5,  // 30: scheduler.Scheduler.ReportPieceResult:output_type -> scheduler.PeerPacket
-	22, // 31: scheduler.Scheduler.ReportPeerResult:output_type -> google.protobuf.Empty
-	22, // 32: scheduler.Scheduler.LeaveTask:output_type -> google.protobuf.Empty
-	9,  // 33: scheduler.Scheduler.StatTask:output_type -> scheduler.Task
-	22, // 34: scheduler.Scheduler.AnnounceTask:output_type -> google.protobuf.Empty
-	29, // [29:35] is the sub-list for method output_type
-	23, // [23:29] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	20, // 16: scheduler.PeerPacket.source_error:type_name -> errordetails.SourceError
+	19, // 17: scheduler.PeerResult.code:type_name -> base.Code
+	20, // 18: scheduler.PeerResult.source_error:type_name -> errordetails.SourceError
+	15, // 19: scheduler.Task.type:type_name -> base.TaskType
+	12, // 20: scheduler.AnnounceTaskRequest.url_meta:type_name -> base.UrlMeta
+	3,  // 21: scheduler.AnnounceTaskRequest.peer_host:type_name -> scheduler.PeerHost
+	21, // 22: scheduler.AnnounceTaskRequest.piece_packet:type_name -> base.PiecePacket
+	15, // 23: scheduler.AnnounceTaskRequest.task_type:type_name -> base.TaskType
+	0,  // 24: scheduler.Scheduler.RegisterPeerTask:input_type -> scheduler.PeerTaskRequest
+	4,  // 25: scheduler.Scheduler.ReportPieceResult:input_type -> scheduler.PieceResult
+	6,  // 26: scheduler.Scheduler.ReportPeerResult:input_type -> scheduler.PeerResult
+	7,  // 27: scheduler.Scheduler.LeaveTask:input_type -> scheduler.PeerTarget
+	8,  // 28: scheduler.Scheduler.StatTask:input_type -> scheduler.StatTaskRequest
+	10, // 29: scheduler.Scheduler.AnnounceTask:input_type -> scheduler.AnnounceTaskRequest
+	1,  // 30: scheduler.Scheduler.RegisterPeerTask:output_type -> scheduler.RegisterResult
+	5,  // 31: scheduler.Scheduler.ReportPieceResult:output_type -> scheduler.PeerPacket
+	22, // 32: scheduler.Scheduler.ReportPeerResult:output_type -> google.protobuf.Empty
+	22, // 33: scheduler.Scheduler.LeaveTask:output_type -> google.protobuf.Empty
+	9,  // 34: scheduler.Scheduler.StatTask:output_type -> scheduler.Task
+	22, // 35: scheduler.Scheduler.AnnounceTask:output_type -> google.protobuf.Empty
+	30, // [30:36] is the sub-list for method output_type
+	24, // [24:30] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_pkg_rpc_scheduler_scheduler_proto_init() }
@@ -1723,6 +1761,9 @@ func file_pkg_rpc_scheduler_scheduler_proto_init() {
 	file_pkg_rpc_scheduler_scheduler_proto_msgTypes[1].OneofWrappers = []interface{}{
 		(*RegisterResult_SinglePiece)(nil),
 		(*RegisterResult_PieceContent)(nil),
+	}
+	file_pkg_rpc_scheduler_scheduler_proto_msgTypes[5].OneofWrappers = []interface{}{
+		(*PeerPacket_SourceError)(nil),
 	}
 	file_pkg_rpc_scheduler_scheduler_proto_msgTypes[6].OneofWrappers = []interface{}{
 		(*PeerResult_SourceError)(nil),
