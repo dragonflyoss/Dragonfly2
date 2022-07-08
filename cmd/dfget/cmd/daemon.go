@@ -104,17 +104,21 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
 	}
 
-	if cfg.CacheDir != "" {
-		options = append(options, dfpath.WithCacheDir(cfg.CacheDir))
-	}
-
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
-	if cfg.DataDir != "" {
-		options = append(options, dfpath.WithDataDir(cfg.DataDir))
+	cacheDir := dfpath.DefaultCacheDir
+	if cfg.CacheDir != "" {
+		cacheDir = cfg.CacheDir
 	}
+	options = append(options, dfpath.WithCacheDir(cacheDir))
+
+	dataDir := dfpath.DefaultDataDir
+	if cfg.DataDir != "" {
+		dataDir = cfg.DataDir
+	}
+	options = append(options, dfpath.WithDataDir(dataDir))
 
 	return dfpath.New(options...)
 }
