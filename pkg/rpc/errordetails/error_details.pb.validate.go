@@ -43,7 +43,7 @@ func (m *SourceError) Validate() error {
 
 	// no validation rules for Temporary
 
-	if v, ok := any(m.GetMetadata()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetMetadata()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return SourceErrorValidationError{
 				field:  "Metadata",

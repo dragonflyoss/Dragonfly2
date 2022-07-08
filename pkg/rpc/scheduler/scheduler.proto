@@ -19,6 +19,7 @@ syntax = "proto3";
 package scheduler;
 
 import "pkg/rpc/base/base.proto";
+import "pkg/rpc/errordetails/error_details.proto";
 import "validate/validate.proto";
 import "google/protobuf/empty.proto";
 
@@ -174,6 +175,10 @@ message PeerResult{
   base.Code code = 11;
   // Task total piece count.
   int32 total_piece_count = 12 [(validate.rules).int32.gte = -1];
+  oneof error_detail{
+    // Source error.
+    errordetails.SourceError source_error = 13;
+  }
 }
 
 // PeerTarget represents request of LeaveTask.

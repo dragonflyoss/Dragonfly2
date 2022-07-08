@@ -125,7 +125,7 @@ func file_pkg_rpc_errordetails_error_details_proto_rawDescGZIP() []byte {
 }
 
 var file_pkg_rpc_errordetails_error_details_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_pkg_rpc_errordetails_error_details_proto_goTypes = []any{
+var file_pkg_rpc_errordetails_error_details_proto_goTypes = []interface{}{
 	(*SourceError)(nil),          // 0: errordetails.SourceError
 	(*base.ExtendAttribute)(nil), // 1: base.ExtendAttribute
 }
@@ -144,7 +144,7 @@ func file_pkg_rpc_errordetails_error_details_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_pkg_rpc_errordetails_error_details_proto_msgTypes[0].Exporter = func(v any, i int) any {
+		file_pkg_rpc_errordetails_error_details_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SourceError); i {
 			case 0:
 				return &v.state
