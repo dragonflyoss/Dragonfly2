@@ -23,12 +23,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc/status"
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -348,7 +350,7 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 			s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
 			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
 
-			s.handleTaskFail(ctx, peer.Task)
+			s.handleTaskFail(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFail(ctx, peer)
 			return nil
 		}
@@ -570,7 +572,7 @@ func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) 
 		trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx)), task)
 	if err != nil {
 		task.Log.Errorf("trigger seed peer download task failed: %s", err.Error())
-		s.handleTaskFail(ctx, task)
+		s.handleTaskFail(ctx, task, nil, err)
 		return
 	}
 
@@ -786,12 +788,47 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. Seed peer downloads the resource falied.
 // 2. Dfdaemon back-to-source to download failed.
-func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task) {
-	// If the number of failed peers in the task is greater than FailedPeerCountLimit,
-	// then scheduler notifies running peers of failure.
-	if task.PeerFailedCount.Load() > resource.FailedPeerCountLimit {
+func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backToSourceErr *errordetails.SourceError, seedPeerErr error) {
+	// If peer back-to-source fails due to an unrecoverable error,
+	// notify other peers of the failure,
+	// and return the source metadata to peer.
+	if backToSourceErr != nil {
+		if !backToSourceErr.Temporary {
+			task.NotifyPeers(&rpcscheduler.PeerPacket{
+				Code: base.Code_BackToSourceAborted,
+				ErrorDetail: &rpcscheduler.PeerPacket_SourceError{
+					SourceError: backToSourceErr,
+				},
+			}, resource.PeerEventDownloadFailed)
+			task.PeerFailedCount.Store(0)
+		}
+	} else if seedPeerErr != nil {
+		// If seed peer back-to-source fails due to an unrecoverable error,
+		// notify other peers of the failure,
+		// and return the source metadata to peer.
+		if st, ok := status.FromError(seedPeerErr); ok {
+			for _, detail := range st.Details() {
+				switch d := detail.(type) {
+				case *errordetails.SourceError:
+					if !d.Temporary {
+						task.NotifyPeers(&rpcscheduler.PeerPacket{
+							Code: base.Code_BackToSourceAborted,
+							ErrorDetail: &rpcscheduler.PeerPacket_SourceError{
+								SourceError: d,
+							},
+						}, resource.PeerEventDownloadFailed)
+						task.PeerFailedCount.Store(0)
+					}
+				}
+			}
+		}
+	} else if task.PeerFailedCount.Load() > resource.FailedPeerCountLimit {
+		// If the number of failed peers in the task is greater than FailedPeerCountLimit,
+		// then scheduler notifies running peers of failure.
+		task.NotifyPeers(&rpcscheduler.PeerPacket{
+			Code: base.Code_SchedTaskStatusError,
+		}, resource.PeerEventDownloadFailed)
 		task.PeerFailedCount.Store(0)
-		task.NotifyPeers(base.Code_SchedTaskStatusError, resource.PeerEventDownloadFailed)
 	}
 
 	if task.FSM.Is(resource.TaskStateFailed) {

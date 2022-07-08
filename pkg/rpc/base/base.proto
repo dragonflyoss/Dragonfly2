@@ -32,6 +32,7 @@ enum Code{
   // common response error 1000-1999
   // client can be migrated to another scheduler/CDN
   ResourceLacked = 1000;
+  BackToSourceAborted = 1001;
   BadRequest = 1400;
   PeerTaskNotFound = 1404;
   UnknownError = 1500;
