@@ -216,7 +216,7 @@ func (t *localTaskStore) UpdateTask(ctx context.Context, req *UpdateTaskRequest)
 		t.PieceMd5Sign = req.PieceMd5Sign
 		t.Debugf("update piece md5 sign: %s", t.PieceMd5Sign)
 	}
-	if t.Header == nil && req.Header != nil {
+	if t.Header == nil && req.Header != nil && len(*req.Header) > 0 {
 		t.Header = req.Header
 		t.Debugf("update header: %#v", t.Header)
 	}
