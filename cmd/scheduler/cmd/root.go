@@ -83,8 +83,8 @@ func Execute() {
 func init() {
 	// Initialize default scheduler config
 	cfg = config.New()
-	// Initialize cobra
-	dependency.InitCobra(rootCmd, true, cfg)
+	// Initialize command and config
+	dependency.InitCommandAndConfig(rootCmd, true, cfg)
 }
 
 func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {

@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -66,7 +67,7 @@ type Proxy struct {
 	registry *config.RegistryMirror
 
 	// proxy rules
-	rules []*config.ProxyRule
+	rules atomic.Value
 
 	// httpsHosts is the list of hosts whose https requests will be hijacked
 	httpsHosts []*config.HijackHost
@@ -185,7 +186,7 @@ func WithDirectHandler(h *http.ServeMux) Option {
 // WithRules sets the proxy rules
 func WithRules(rules []*config.ProxyRule) Option {
 	return func(p *Proxy) *Proxy {
-		p.rules = rules
+		p.rules.Store(rules)
 		return p
 	}
 }
@@ -540,12 +541,6 @@ func (proxy *Proxy) remoteConfig(host string) *tls.Config {
 	return nil
 }
 
-// setRules changes the rule lists of the proxy to the given rules.
-func (proxy *Proxy) setRules(rules []*config.ProxyRule) error {
-	proxy.rules = rules
-	return nil
-}
-
 // checkWhiteList check proxy white list.
 func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 	whiteList := proxy.whiteList
@@ -577,14 +572,14 @@ func (proxy *Proxy) checkWhiteList(r *http.Request) bool {
 }
 
 // shouldUseDragonfly returns whether we should use dragonfly to proxy a request. It
-// also change the scheme of the given request if the matched rule has
+// also changes the scheme of the given request if the matched rule has
 // UseHTTPS = true
 func (proxy *Proxy) shouldUseDragonfly(req *http.Request) bool {
 	if req.Method != http.MethodGet {
 		return false
 	}
 
-	for _, rule := range proxy.rules {
+	for _, rule := range proxy.rules.Load().([]*config.ProxyRule) {
 		if rule.Match(req.URL.String()) {
 			if rule.UseHTTPS {
 				req.URL.Scheme = schemaHTTPS

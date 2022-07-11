@@ -19,6 +19,7 @@ package dependency
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -53,9 +54,9 @@ import (
 	"d7y.io/dragonfly/v2/version"
 )
 
-// InitCobra initializes flags binding and common sub cmds.
+// InitCommandAndConfig initializes flags binding and common sub cmds.
 // config is a pointer to configuration struct.
-func InitCobra(cmd *cobra.Command, useConfigFile bool, config any) {
+func InitCommandAndConfig(cmd *cobra.Command, useConfigFile bool, config any) {
 	rootName := cmd.Root().Name()
 	cobra.OnInitialize(func() { initConfig(useConfigFile, rootName, config) })
 
@@ -183,6 +184,48 @@ func initConfig(useConfigFile bool, name string, config any) {
 	}
 	if err := viper.Unmarshal(config, initDecoderConfig); err != nil {
 		panic(fmt.Errorf("unmarshal config to struct: %w", err))
+	}
+}
+
+func LoadConfig(config any) error {
+	if err := viper.ReadInConfig(); err != nil {
+		return err
+	}
+	return viper.Unmarshal(config, initDecoderConfig)
+}
+
+func WatchConfig(interval time.Duration, newConfig func() (cfg any), watcher func(cfg any)) {
+	var oldData string
+	file := viper.ConfigFileUsed()
+
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		logger.Errorf("read file %s error: %v", file, err)
+	}
+	oldData = string(data)
+loop:
+	for {
+		select {
+		case <-time.After(interval):
+			// for k8s configmap case, the config file is symbol link
+			// reload file instead use fsnotify
+			data, err = ioutil.ReadFile(file)
+			if err != nil {
+				logger.Errorf("read file %s error: %v", file, err)
+				continue loop
+			}
+			if oldData != string(data) {
+				cfg := newConfig()
+				err = LoadConfig(cfg)
+				if err != nil {
+					logger.Errorf("load config file %s error: %v", file, err)
+					continue loop
+				}
+				logger.Infof("config file %s changed", file)
+				watcher(cfg)
+				oldData = string(data)
+			}
+		}
 	}
 }
 

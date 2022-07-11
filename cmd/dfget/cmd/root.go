@@ -126,8 +126,8 @@ func Execute() {
 func init() {
 	// Initialize default dfget config
 	dfgetConfig = config.NewDfgetConfig()
-	// Initialize cobra
-	dependency.InitCobra(rootCmd, false, dfgetConfig)
+	// Initialize command and config
+	dependency.InitCommandAndConfig(rootCmd, false, dfgetConfig)
 
 	// Add flags
 	flagSet := rootCmd.Flags()

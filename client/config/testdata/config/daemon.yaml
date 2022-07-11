@@ -165,5 +165,5 @@ proxy:
         - "1000"
         - "2000"
   dumpHTTPContent: true
-reloadOption:
+reload:
   interval: 3m0s
