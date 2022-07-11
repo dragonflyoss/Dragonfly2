@@ -73,8 +73,8 @@ func Execute() {
 func init() {
 	// Initialize default dfcache config
 	dfcacheConfig = config.NewDfcacheConfig()
-	// Initialize cobra
-	dependency.InitCobra(rootCmd, false, dfcacheConfig)
+	// Initialize command and config
+	dependency.InitCommandAndConfig(rootCmd, false, dfcacheConfig)
 
 	// Bind more cache specific persistent flags
 	flags := rootCmd.PersistentFlags()

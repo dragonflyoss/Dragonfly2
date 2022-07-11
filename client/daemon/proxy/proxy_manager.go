@@ -30,6 +30,7 @@ import (
 	"reflect"
 
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -39,10 +40,15 @@ import (
 )
 
 type Manager interface {
+	ConfigWatcher
 	Serve(net.Listener) error
 	ServeSNI(net.Listener) error
 	Stop() error
 	IsEnabled() bool
+}
+
+type ConfigWatcher interface {
+	Watch(*config.ProxyOption)
 }
 
 type proxyManager struct {
@@ -53,28 +59,28 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern base.Pattern, opts *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern base.Pattern, proxyOption *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
-	if opts == nil {
+	if proxyOption == nil {
 		logger.Infof("proxy config is empty, disabled")
 		return &proxyManager{}, nil
 	}
-	registry := opts.RegistryMirror
-	proxies := opts.Proxies
-	hijackHTTPS := opts.HijackHTTPS
-	whiteList := opts.WhiteList
+	registry := proxyOption.RegistryMirror
+	proxyRules := proxyOption.ProxyRules
+	hijackHTTPS := proxyOption.HijackHTTPS
+	whiteList := proxyOption.WhiteList
 
 	options := []Option{
 		WithPeerHost(peerHost),
 		WithPeerIDGenerator(peer.NewPeerIDGenerator(peerHost.Ip)),
 		WithPeerTaskManager(peerTaskManager),
-		WithRules(proxies),
+		WithRules(proxyRules),
 		WithWhiteList(whiteList),
-		WithMaxConcurrency(opts.MaxConcurrency),
-		WithDefaultFilter(opts.DefaultFilter),
+		WithMaxConcurrency(proxyOption.MaxConcurrency),
+		WithDefaultFilter(proxyOption.DefaultFilter),
 		WithDefaultPattern(defaultPattern),
-		WithBasicAuth(opts.BasicAuth),
-		WithDumpHTTPContent(opts.DumpHTTPContent),
+		WithBasicAuth(proxyOption.BasicAuth),
+		WithDumpHTTPContent(proxyOption.DumpHTTPContent),
 	}
 
 	if registry != nil {
@@ -82,9 +88,9 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 		options = append(options, WithRegistryMirror(registry))
 	}
 
-	if len(proxies) > 0 {
-		logger.Infof("load %d proxy rules", len(proxies))
-		for i, r := range proxies {
+	if len(proxyRules) > 0 {
+		logger.Infof("load %d proxy rules", len(proxyRules))
+		for i, r := range proxyRules {
 			method := "with dragonfly"
 			if r.Direct {
 				method = "directly"
@@ -119,7 +125,7 @@ func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskMana
 	return &proxyManager{
 		Server:       &http.Server{},
 		Proxy:        p,
-		ListenOption: opts.ListenOption,
+		ListenOption: proxyOption.ListenOption,
 	}, nil
 }
 
@@ -139,6 +145,26 @@ func (pm *proxyManager) Stop() error {
 
 func (pm *proxyManager) IsEnabled() bool {
 	return pm.ListenOption.TCPListen != nil && pm.ListenOption.TCPListen.PortRange.Start != 0
+}
+
+func (pm *proxyManager) Watch(opt *config.ProxyOption) {
+	old, err := yaml.Marshal(pm.Proxy.rules.Load().([]*config.ProxyRule))
+	if err != nil {
+		logger.Errorf("yaml marshal proxy rules error: %s", err.Error())
+		return
+	}
+
+	fresh, err := yaml.Marshal(opt.ProxyRules)
+	if err != nil {
+		logger.Errorf("yaml marshal proxy rules error: %s", err.Error())
+		return
+	}
+	logger.Infof("previous rules: %s", string(old))
+	logger.Infof("current rules: %s", string(fresh))
+	if string(old) != string(fresh) {
+		logger.Infof("update proxy rules")
+		pm.Proxy.rules.Store(opt.ProxyRules)
+	}
 }
 
 func newDirectHandler() *http.ServeMux {
@@ -195,7 +221,6 @@ func getArgs(w http.ResponseWriter, r *http.Request) {
 }
 
 func certFromFile(certFile string, keyFile string) (*tls.Certificate, error) {
-
 	// cert.Certificate is a chain of one or more certificates, leaf first.
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
