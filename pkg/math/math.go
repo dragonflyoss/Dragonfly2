@@ -16,50 +16,28 @@
 
 package math
 
-func MaxInt(a, b int) int {
-	if a < b {
-		return a
+import "golang.org/x/exp/constraints"
+
+// Max returns the maximum of values.
+func Max[T constraints.Ordered](values ...T) T {
+	max := values[0]
+	for _, value := range values {
+		if value > max {
+			max = value
+		}
 	}
 
-	return b
+	return max
 }
 
-func MaxInt32(a, b int32) int32 {
-	if a > b {
-		return a
+// Min returns the minimum of values.
+func Min[T constraints.Ordered](values ...T) T {
+	min := values[0]
+	for _, value := range values {
+		if value < min {
+			min = value
+		}
 	}
 
-	return b
-}
-
-func MaxInt64(a, b int64) int64 {
-	if a > b {
-		return a
-	}
-
-	return b
-}
-
-func MinInt(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
-}
-
-func MinInt32(a, b int32) int32 {
-	if a < b {
-		return a
-	}
-
-	return b
-}
-
-func MinInt64(a, b int64) int64 {
-	if a < b {
-		return a
-	}
-
-	return b
+	return min
 }

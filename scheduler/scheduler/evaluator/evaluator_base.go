@@ -159,7 +159,7 @@ func calculateMultiElementAffinityScore(dst, src string) float64 {
 	var score, elementLen int
 	dstElements := strings.Split(dst, "|")
 	srcElements := strings.Split(src, "|")
-	elementLen = math.MaxInt(len(dstElements), len(srcElements))
+	elementLen = math.Min(len(dstElements), len(srcElements))
 
 	// Maximum element length is 5.
 	if elementLen > maxElementLen {
