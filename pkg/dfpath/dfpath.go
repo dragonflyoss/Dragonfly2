@@ -19,14 +19,15 @@
 package dfpath
 
 import (
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/hashicorp/go-multierror"
 )
 
-// Dfpath is the interface used for init project path
+// Dfpath is the interface used for init project path.
 type Dfpath interface {
 	WorkHome() string
 	CacheDir() string
@@ -38,7 +39,7 @@ type Dfpath interface {
 	DfgetLockPath() string
 }
 
-// Dfpath provides init project path function
+// Dfpath provides init project path function.
 type dfpath struct {
 	workHome       string
 	cacheDir       string
@@ -50,76 +51,103 @@ type dfpath struct {
 	dfgetLockPath  string
 }
 
-// Cache of the dfpath
+// Cache of the dfpath.
 var cache struct {
 	sync.Once
-	d    *dfpath
-	errs []error
+	d   *dfpath
+	err *multierror.Error
 }
 
-// Option is a functional option for configuring the dfpath
+// Option is a functional option for configuring the dfpath.
 type Option func(d *dfpath)
 
-// WithWorkHome set the workhome directory
+// WithWorkHome set the workhome directory.
 func WithWorkHome(dir string) Option {
 	return func(d *dfpath) {
 		d.workHome = dir
 	}
 }
 
-// WithCacheDir set the cache directory
+// WithCacheDir set the cache directory.
 func WithCacheDir(dir string) Option {
 	return func(d *dfpath) {
 		d.cacheDir = dir
 	}
 }
 
-// WithLogDir set the log directory
+// WithLogDir set the log directory.
 func WithLogDir(dir string) Option {
 	return func(d *dfpath) {
 		d.logDir = dir
 	}
 }
 
-// WithDataDir set download data directory
+// WithDataDir set download data directory.
 func WithDataDir(dir string) Option {
 	return func(d *dfpath) {
 		d.dataDir = dir
 	}
 }
 
-// New returns a new dfpath interface
+// WithPluginDir set plugin directory.
+func WithPluginDir(dir string) Option {
+	return func(d *dfpath) {
+		d.pluginDir = dir
+	}
+}
+
+// New returns a new dfpath interface.
 func New(options ...Option) (Dfpath, error) {
 	cache.Do(func() {
 		d := &dfpath{
-			workHome: DefaultWorkHome,
-			cacheDir: DefaultCacheDir,
-			logDir:   DefaultLogDir,
-			dataDir:  DefaultDataDir,
+			workHome:  DefaultWorkHome,
+			logDir:    DefaultLogDir,
+			pluginDir: DefaultPluginDir,
 		}
 
 		for _, opt := range options {
 			opt(d)
 		}
 
-		d.pluginDir = filepath.Join(d.workHome, "plugins")
+		// Initialize dfdaemon path.
 		d.daemonSockPath = filepath.Join(d.workHome, "daemon.sock")
 		d.daemonLockPath = filepath.Join(d.workHome, "daemon.lock")
 		d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
 
-		// Create directories
-		for name, dir := range map[string]string{"workHome": d.workHome, "cacheDir": d.cacheDir, "logDir": d.logDir, "dataDir": d.dataDir,
-			"pluginDir": d.pluginDir} {
-			if err := os.MkdirAll(dir, fs.FileMode(0755)); err != nil {
-				cache.errs = append(cache.errs, fmt.Errorf("create %s dir %s failed: %v", name, dir, err))
+		// Create workhome directory.
+		if err := os.MkdirAll(d.workHome, fs.FileMode(0755)); err != nil {
+			cache.err = multierror.Append(cache.err, err)
+		}
+
+		// Create log directory.
+		if err := os.MkdirAll(d.logDir, fs.FileMode(0755)); err != nil {
+			cache.err = multierror.Append(cache.err, err)
+		}
+
+		// Create plugin directory.
+		if err := os.MkdirAll(d.pluginDir, fs.FileMode(0755)); err != nil {
+			cache.err = multierror.Append(cache.err, err)
+		}
+
+		// Create cache directory.
+		if d.cacheDir != "" {
+			if err := os.MkdirAll(d.cacheDir, fs.FileMode(0755)); err != nil {
+				cache.err = multierror.Append(cache.err, err)
+			}
+		}
+
+		// Create data directory.
+		if d.dataDir != "" {
+			if err := os.MkdirAll(d.dataDir, fs.FileMode(0755)); err != nil {
+				cache.err = multierror.Append(cache.err, err)
 			}
 		}
 
 		cache.d = d
 	})
 
-	if len(cache.errs) > 0 {
-		return nil, fmt.Errorf("create dfpath failed: %s", cache.errs)
+	if cache.err.ErrorOrNil() != nil {
+		return nil, cache.err
 	}
 
 	d := *cache.d
