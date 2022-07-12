@@ -283,10 +283,9 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 			return true
 		}
 
-		// Peer's depth exceeds limit depth.
-		peerDepth := peer.Depth()
-		if parentDepth+peerDepth > defaultDepthLimit {
-			peer.Log.Debugf("exceeds the %d depth limit of the tree, peer depth is %d, candidate parent %s is %d", defaultDepthLimit, peerDepth, candidateParent.ID, parentDepth)
+		// Parent's depth exceeds limit depth.
+		if parentDepth > defaultDepthLimit {
+			peer.Log.Debugf("exceeds the %d depth limit of the tree, candidate parent %s is %d", defaultDepthLimit, candidateParent.ID, parentDepth)
 			return true
 		}
 
