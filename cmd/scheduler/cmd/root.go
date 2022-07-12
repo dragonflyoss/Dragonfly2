@@ -99,6 +99,12 @@ func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 	}
 	options = append(options, dfpath.WithCacheDir(cacheDir))
 
+	dataDir := dfpath.DefaultDataDir
+	if cfg.DataDir != "" {
+		dataDir = cfg.DataDir
+	}
+	options = append(options, dfpath.WithDataDir(dataDir))
+
 	return dfpath.New(options...)
 }
 
