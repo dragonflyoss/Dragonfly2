@@ -126,6 +126,7 @@ type ResourceMetadataGetter interface {
 // ResourceLister defines the interface to list all downloadable resources in request url
 type ResourceLister interface {
 	List(request *Request) (urls []*url.URL, err error)
+	IsDirectory(request *Request) (bool, error)
 }
 
 type ClientManager interface {
@@ -353,11 +354,33 @@ func List(request *Request) ([]*url.URL, error) {
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
 	}
+	if wrap, ok := client.(*clientWrapper); ok {
+		if rc, ok := wrap.rc.(ResourceLister); ok {
+			return rc.List(wrap.adapter(request))
+		}
+	}
 	lister, ok := client.(ResourceLister)
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportList)
 	}
 	return lister.List(request)
+}
+
+func IsDirectory(request *Request) (bool, error) {
+	client, ok := _defaultManager.GetClient(request.URL.Scheme)
+	if !ok {
+		return false, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
+	}
+	if wrap, ok := client.(*clientWrapper); ok {
+		if rc, ok := wrap.rc.(ResourceLister); ok {
+			return rc.IsDirectory(wrap.adapter(request))
+		}
+	}
+	lister, ok := client.(ResourceLister)
+	if !ok {
+		return false, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportList)
+	}
+	return lister.IsDirectory(request)
 }
 
 func GetMetadata(request *Request) (*Metadata, error) {

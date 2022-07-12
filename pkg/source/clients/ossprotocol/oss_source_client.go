@@ -20,7 +20,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/textproto"
+	"net/url"
 	"strconv"
+	gostrings "strings"
 	"sync"
 	"time"
 
@@ -61,6 +64,7 @@ func adaptor(request *source.Request) *source.Request {
 		clonedRequest.Header.Set(oss.HTTPHeaderEtag, request.Header.Get(source.ETag))
 		clonedRequest.Header.Del(source.ETag)
 	}
+	clonedRequest.URL.Path = removeLeadingSlash(clonedRequest.URL.Path)
 	return clonedRequest
 }
 
@@ -155,7 +159,10 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 	if err != nil {
 		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
-	objectResult, err := bucket.DoGetObject(&oss.GetObjectRequest{ObjectKey: request.URL.Path}, getOptions(request.Header))
+	objectResult, err := bucket.DoGetObject(
+		&oss.GetObjectRequest{ObjectKey: request.URL.Path},
+		getOptions(request.Header),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get oss Object %s: %w", request.URL.Path, err)
 	}
@@ -202,6 +209,69 @@ func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, err
 	return t.UnixNano() / time.Millisecond.Nanoseconds(), nil
 }
 
+func (osc *ossSourceClient) List(request *source.Request) (urls []*url.URL, err error) {
+	client, err := osc.getClient(request.Header)
+	if err != nil {
+		return nil, fmt.Errorf("get oss client: %w", err)
+	}
+	bucket, err := client.Bucket(request.URL.Host)
+	if err != nil {
+		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
+	}
+	// list all files and directory
+	path := request.URL.Path
+	prefix := oss.Prefix(path)
+	marker := oss.Marker("")
+	delimiter := "/"
+	for {
+		lsRes, err := bucket.ListObjects(prefix, marker, oss.Delimiter(delimiter))
+		if err != nil {
+			return urls, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, path, err)
+		}
+		for _, object := range lsRes.Objects {
+			if object.Key != lsRes.Prefix {
+				url := *request.URL
+				url.Path = addLeadingSlash(object.Key)
+				urls = append(urls, &url)
+			}
+		}
+		for _, object := range lsRes.CommonPrefixes {
+			url := *request.URL
+			url.Path = addLeadingSlash(object)
+			urls = append(urls, &url)
+		}
+		if lsRes.IsTruncated {
+			prefix = oss.Prefix(lsRes.Prefix)
+			marker = oss.Marker(lsRes.NextMarker)
+		} else {
+			break
+		}
+	}
+	return urls, nil
+}
+
+func (osc *ossSourceClient) IsDirectory(request *source.Request) (bool, error) {
+	client, err := osc.getClient(request.Header)
+	if err != nil {
+		return false, fmt.Errorf("get oss client: %w", err)
+	}
+	bucket, err := client.Bucket(request.URL.Host)
+	if err != nil {
+		return false, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
+	}
+	path := addTailingSlash(removeLeadingSlash(request.URL.Path))
+	lsRes, err := bucket.ListObjects(oss.Prefix(path), oss.Marker(""), oss.Delimiter("/"), oss.MaxKeys(1))
+	if err != nil {
+		return false, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, path, err)
+	}
+	for _, object := range lsRes.Objects {
+		if object.Key == path && object.Size == 0 {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func (osc *ossSourceClient) getClient(header source.Header) (*oss.Client, error) {
 	endpoint := header.Get(endpoint)
 	if strings.IsBlank(endpoint) {
@@ -233,11 +303,36 @@ func buildClientKey(endpoint, accessKeyID, accessKeySecret string) string {
 
 func getOptions(header source.Header) []oss.Option {
 	opts := make([]oss.Option, 0, len(header))
-	for key, value := range header {
-		if key == endpoint || key == accessKeyID || key == accessKeySecret {
+	for key, values := range header {
+		if key == textproto.CanonicalMIMEHeaderKey(endpoint) || key == textproto.CanonicalMIMEHeaderKey(accessKeyID) || key == textproto.CanonicalMIMEHeaderKey(accessKeySecret) {
 			continue
 		}
+		// oss Header value must be string type, while http header value is []string type
+		// according to HTTP RFC2616 Multiple message-header fields with the same field-name MAY be present in a message
+		// if and only if the entire field-value for that header field is defined as a comma-separated list
+		value := gostrings.Join(values, ",")
 		opts = append(opts, oss.SetHeader(key, value))
 	}
 	return opts
+}
+
+func removeLeadingSlash(s string) string {
+	if s[0] == '/' {
+		return s[1:]
+	}
+	return s
+}
+
+func addLeadingSlash(s string) string {
+	if s[0] == '/' {
+		return s
+	}
+	return "/" + s
+}
+
+func addTailingSlash(s string) string {
+	if s[len(s)-1] == '/' {
+		return s
+	}
+	return s + "/"
 }

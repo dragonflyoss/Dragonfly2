@@ -266,11 +266,7 @@ func newProgressBar(max int64) *progressbar.ProgressBar {
 		}))
 }
 
-func accept(u string, parent, sub string, level uint, accept, reject string) bool {
-	if !checkDirectoryLevel(parent, sub, level) {
-		logger.Debugf("url %s not accept by level: %d", u, level)
-		return false
-	}
+func accept(u string, accept, reject string) bool {
 	if !acceptRegex(u, accept) {
 		logger.Debugf("url %s not accept by regex: %s", u, accept)
 		return false
@@ -280,14 +276,6 @@ func accept(u string, parent, sub string, level uint, accept, reject string) boo
 		return false
 	}
 	return true
-}
-
-func checkDirectoryLevel(parent, sub string, level uint) bool {
-	if level == 0 {
-		return true
-	}
-	dirs := strings.Split(strings.Trim(strings.TrimLeft(sub, parent), "/"), "/")
-	return uint(len(dirs)) <= level
 }
 
 func acceptRegex(u string, accept string) bool {
@@ -315,6 +303,22 @@ func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cf
 	}
 	logger.Debugf("dirURL: %s", cfg.URL)
 
+	isDir, err := source.IsDirectory(request)
+	if err != nil {
+		logger.Errorf("judge url whether is direcotory error: %v", err)
+	}
+
+	if !isDir {
+		if cfg.RecursiveList {
+			return nil
+		}
+		cfg.Recursive = false
+		return singleDownload(ctx, client, cfg, logger.With("url", cfg.URL))
+	}
+	if cfg.RecursiveLevel == 0 {
+		return nil
+	}
+	cfg.RecursiveLevel--
 	urls, err := source.List(request)
 	if err != nil {
 		return err
@@ -323,15 +327,12 @@ func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cf
 		// reuse dfget config
 		c := *cfg
 		// update some attributes
-		c.Recursive, c.URL, c.Output = false, u.String(), path.Join(cfg.Output, strings.TrimPrefix(u.Path, dirURL.Path))
-		if !accept(c.URL, dirURL.Path, u.Path, cfg.RecursiveLevel, cfg.RecursiveAcceptRegex, cfg.RecursiveRejectRegex) {
+		c.Recursive, c.URL, c.Output = true, u.String(), path.Join(cfg.Output, strings.TrimPrefix(u.Path, dirURL.Path))
+		if !accept(c.URL, cfg.RecursiveAcceptRegex, cfg.RecursiveRejectRegex) {
 			logger.Debugf("url %s is not accepted, skip", c.URL)
 			continue
 		}
-		if cfg.RecursiveList {
-			fmt.Printf("%s\n", u.String())
-			continue
-		}
+		fmt.Printf("%s://%s%s\n", u.Scheme, u.Host, u.Path)
 		// validate new dfget config
 		if err = c.Validate(); err != nil {
 			logger.Errorf("validate failed: %s", err)
