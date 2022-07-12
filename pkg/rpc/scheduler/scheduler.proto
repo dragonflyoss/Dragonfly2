@@ -42,7 +42,7 @@ message PeerTaskRequest{
   // Pattern includes p2p, seed-peer and source.
   base.Pattern pattern = 7;
   // Task id.
-  string task_id = 8 [(validate.rules).string.min_len = 1];
+  string task_id = 8;
 }
 
 // RegisterResult represents response of RegisterPeerTask.

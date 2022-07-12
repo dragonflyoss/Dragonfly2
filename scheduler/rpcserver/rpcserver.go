@@ -24,6 +24,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -53,6 +54,11 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
 func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+	// FIXME: Scheudler will not generate task id.
+	if req.TaskId == "" {
+		req.TaskId = idgen.TaskID(req.Url, req.UrlMeta)
+	}
+
 	bizTag := resource.DefaultBizTag
 	if req.UrlMeta.Tag != "" {
 		bizTag = req.UrlMeta.Tag
