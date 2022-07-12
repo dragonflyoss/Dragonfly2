@@ -106,3 +106,15 @@ func MakeSchedulersCacheKey(hostname, ip string) string {
 func MakeBucketsCacheKey(name string) string {
 	return MakeCacheKey(BucketsNamespace, name)
 }
+
+func MakeModelKey(clusterID uint, hostname, ip, id, version string) string {
+	return fmt.Sprintf("%s:%s", MakeVersionKey(clusterID, hostname, ip, id), version)
+}
+
+func MakeVersionKey(clusterID uint, hostname, ip, id string) string {
+	return fmt.Sprintf("%s:%s", MakePrefixKey(clusterID, hostname, ip), id)
+}
+
+func MakePrefixKey(clusterID uint, hostname, ip string) string {
+	return fmt.Sprintf("manager:%s:%d:%s-%s", SchedulerNamespace, clusterID, hostname, ip)
+}
