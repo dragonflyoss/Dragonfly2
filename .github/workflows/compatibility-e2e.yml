@@ -15,7 +15,6 @@ env:
   KIND_VERSION: v0.11.1
   CONTAINERD_VERSION: v1.5.2
   KIND_CONFIG_PATH: test/testdata/kind/config.yaml
-  DRAGONFLY_STABLE_IMAGE_TAG: v2.0.3
   DRAGONFLY_CHARTS_PATH: deploy/helm-charts/charts/dragonfly
   DRAGONFLY_CHARTS_CONFIG_PATH: test/testdata/charts/config.yaml
   DRAGONFLY_FILE_SERVER_PATH: test/testdata/k8s/file-server.yaml
@@ -32,15 +31,19 @@ jobs:
         include:
           - module: manager
             image: manager
+            image-tag: v2.0.3
             chart-name: manager
           - module: scheduler
             image: scheduler 
+            image-tag: v2.0.3
             chart-name: scheduler
           - module: dfdaemon
             image: dfdaemon
+            image-tag: v2.0.2
             chart-name: dfdaemon
           - module: seed-peer
             image: dfdaemon
+            image-tag: v2.0.3
             chart-name: seedPeer
     steps:
       - name: Checkout code
@@ -76,13 +79,13 @@ jobs:
         run: |
           hack/gen-buildx.sh
           make docker-build docker-build-testing-tools
-          docker pull dragonflyoss/${{ matrix.image }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
+          docker pull dragonflyoss/${{ matrix.image }}:${{ matrix.image-tag }}
           make kind-load
-          kind load docker-image dragonflyoss/${{ matrix.image }}:${{ env.DRAGONFLY_STABLE_IMAGE_TAG }}
+          kind load docker-image dragonflyoss/${{ matrix.image }}:${{ matrix.image-tag }}
 
       - name: Setup dragonfly
         run: |
-          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.tag=${{ env.DRAGONFLY_STABLE_IMAGE_TAG }} --set ${{ matrix.chart-name }}.image=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
+          helm install --wait --timeout 10m --dependency-update --create-namespace --namespace dragonfly-system --set ${{ matrix.chart-name }}.tag=${{ matrix.image-tag }} --set ${{ matrix.chart-name }}.image=dragonflyoss/${{ matrix.image }} -f ${{ env.DRAGONFLY_CHARTS_CONFIG_PATH }} dragonfly ${{ env.DRAGONFLY_CHARTS_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_FILE_SERVER_PATH }}
           kubectl apply -f ${{ env.DRAGONFLY_PROXY_SERVER_PATH }}
           kubectl wait po file-server-0 --namespace dragonfly-e2e --for=condition=ready --timeout=10m
@@ -95,6 +98,7 @@ jobs:
         env:
           DRAGONFLY_COMPATIBILITY_E2E_TEST_MODE: ${{ matrix.module }}
           DRAGONFLY_COMPATIBILITY_E2E_TEST_IMAGE: ${{ matrix.image }}
+          DRAGONFLY_STABLE_IMAGE_TAG: ${{ matrix.image-tag }}
         run: make actions-e2e-test-coverage
 
       - name: Upload coverage to Codecov
