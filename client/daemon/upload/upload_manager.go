@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-http-utils/headers"
@@ -43,6 +44,10 @@ import (
 const (
 	PrometheusSubsystemName = "dragonfly_dfdaemon_upload"
 	OtelServiceName         = "dragonfly-dfdaemon-upload"
+)
+
+const (
+	RouterGroupDownload = "/download"
 )
 
 var GinLogFileName = "gin-upload.log"
@@ -124,6 +129,15 @@ func (um *uploadManager) initRouter(cfg *config.DaemonOption, logDir string) *gi
 
 	// Prometheus metrics
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
+	// Prometheus metrics need to reduce label,
+	// refer to https://prometheus.io/docs/practices/instrumentation/#do-not-overuse-labels.
+	p.ReqCntURLLabelMappingFn = func(c *gin.Context) string {
+		if strings.HasPrefix(c.Request.URL.Path, RouterGroupDownload) {
+			return RouterGroupDownload
+		}
+
+		return c.Request.URL.Path
+	}
 	p.Use(r)
 
 	// Opentelemetry
@@ -135,7 +149,8 @@ func (um *uploadManager) initRouter(cfg *config.DaemonOption, logDir string) *gi
 	r.GET("/healthy", um.getHealth)
 
 	// Peer download task.
-	r.GET("/download/:task_prefix/:task_id", um.getDownload)
+	d := r.Group(RouterGroupDownload)
+	d.GET(":task_prefix/:task_id", um.getDownload)
 
 	return r
 }

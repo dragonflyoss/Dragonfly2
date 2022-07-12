@@ -62,6 +62,12 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 
 	// Prometheus metrics
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
+	// URL removes query string.
+	// Prometheus metrics need to reduce label,
+	// refer to https://prometheus.io/docs/practices/instrumentation/#do-not-overuse-labels.
+	p.ReqCntURLLabelMappingFn = func(c *gin.Context) string {
+		return c.Request.URL.Path
+	}
 	p.Use(r)
 
 	// Opentelemetry
