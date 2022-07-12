@@ -5,6 +5,7 @@ server:
   port: 8002
   cacheDir: foo
   logDir: bar
+  dataDir: baz
 
 scheduler:
   algorithm: default

@@ -261,6 +261,9 @@ type ServerConfig struct {
 
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
+
+	// Server storage data directory.
+	DataDir string `yaml:"dataDir" mapstructure:"dataDir"`
 }
 
 type SchedulerConfig struct {
