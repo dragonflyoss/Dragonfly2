@@ -70,6 +70,10 @@ const (
 	OtelServiceName         = "dragonfly-dfdaemon-object-storage"
 )
 
+const (
+	RouterGroupBuckets = "/buckets"
+)
+
 var GinLogFileName = "gin-object-stroage.log"
 
 const (
@@ -147,6 +151,15 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 
 	// Prometheus metrics
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
+	// Prometheus metrics need to reduce label,
+	// refer to https://prometheus.io/docs/practices/instrumentation/#do-not-overuse-labels.
+	p.ReqCntURLLabelMappingFn = func(c *gin.Context) string {
+		if strings.HasPrefix(c.Request.URL.Path, RouterGroupBuckets) {
+			return RouterGroupBuckets
+		}
+
+		return c.Request.URL.Path
+	}
 	p.Use(r)
 
 	// Opentelemetry
@@ -158,7 +171,7 @@ func (o *objectStorage) initRouter(cfg *config.DaemonOption, logDir string) *gin
 	r.GET("/healthy", o.getHealth)
 
 	// Buckets
-	b := r.Group("/buckets")
+	b := r.Group(RouterGroupBuckets)
 	b.HEAD(":id/objects/*object_key", o.headObject)
 	b.GET(":id/objects/*object_key", o.getObject)
 	b.DELETE(":id/objects/*object_key", o.destroyObject)
