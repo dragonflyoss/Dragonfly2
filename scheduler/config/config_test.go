@@ -56,6 +56,7 @@ func TestConfig_Load(t *testing.T) {
 			Port:     8002,
 			CacheDir: "foo",
 			LogDir:   "bar",
+			DataDir:  "baz",
 		},
 		DynConfig: &DynConfig{
 			RefreshInterval: 5 * time.Minute,
