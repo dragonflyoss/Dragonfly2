@@ -87,7 +87,7 @@ type ClientOption struct {
 	Header []string `yaml:"header,omitempty" mapstructure:"header,omitempty"`
 
 	// DisableBackSource indicates whether to not back source to download when p2p fails.
-	DisableBackSource bool `yaml:"disableBackSource,omitempty" mapstructure:"disableBackSource,omitempty"`
+	DisableBackSource bool `yaml:"disableBackSource,omitempty" mapstructure:"disable-back-source,omitempty"`
 
 	// Insecure indicates whether skip secure verify when supernode interact with the source.
 	Insecure bool `yaml:"insecure,omitempty" mapstructure:"insecure,omitempty"`
