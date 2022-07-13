@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -125,8 +124,11 @@ type ResourceMetadataGetter interface {
 
 // ResourceLister defines the interface to list all downloadable resources in request url
 type ResourceLister interface {
-	List(request *Request) (urls []*url.URL, err error)
-	IsDirectory(request *Request) (bool, error)
+	// List only list current level resources in request url
+	// the request may represent a single file or a directory
+	// if the request represent a directory, the result should return all file entries and subdirectory entries below the request directory
+	// if the request represent a single file, the result should return a single file entry or empty slice
+	List(request *Request) (urls []URLEntry, err error)
 }
 
 type ClientManager interface {
@@ -349,7 +351,7 @@ func Download(request *Request) (*Response, error) {
 	return client.Download(request)
 }
 
-func List(request *Request) ([]*url.URL, error) {
+func List(request *Request) ([]URLEntry, error) {
 	client, ok := _defaultManager.GetClient(request.URL.Scheme)
 	if !ok {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
@@ -364,23 +366,6 @@ func List(request *Request) ([]*url.URL, error) {
 		return nil, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportList)
 	}
 	return lister.List(request)
-}
-
-func IsDirectory(request *Request) (bool, error) {
-	client, ok := _defaultManager.GetClient(request.URL.Scheme)
-	if !ok {
-		return false, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrNoClientFound)
-	}
-	if wrap, ok := client.(*clientWrapper); ok {
-		if rc, ok := wrap.rc.(ResourceLister); ok {
-			return rc.IsDirectory(wrap.adapter(request))
-		}
-	}
-	lister, ok := client.(ResourceLister)
-	if !ok {
-		return false, fmt.Errorf("scheme %s: %w", request.URL.Scheme, ErrClientNotSupportList)
-	}
-	return lister.IsDirectory(request)
 }
 
 func GetMetadata(request *Request) (*Metadata, error) {
