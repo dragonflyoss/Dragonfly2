@@ -16,16 +16,97 @@
 
 package config
 
+import (
+	"net"
+	"time"
+)
+
 const (
-	// Default number of seed peer load limit.
+	// DefaultSeedPeerLoadLimit is default number for seed peer load limit.
 	DefaultSeedPeerLoadLimit = 300
 
-	// Default number of client load limit.
+	// DefaultClientLoadLimit is default number for client load limit.
 	DefaultClientLoadLimit = 50
 
-	// Default number of pieces to download in parallel.
+	// DefaultClientParallelCount is default number for pieces to download in parallel.
 	DefaultClientParallelCount = 4
 
-	// Default limit the number of filter traversals.
+	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
 	DefaultSchedulerFilterParentLimit = 3
+)
+
+// DefaultServerListen is default listen for server.
+var DefaultServerListen = net.IPv4zero.String()
+
+const (
+	// DefaultServerPort is default port for server.
+	DefaultServerPort = 8002
+)
+
+const (
+	// DefaultSchedulerAlgorithm is default algorithm for scheduler.
+	DefaultSchedulerAlgorithm = "default"
+
+	// DefaultSchedulerBackSourceCount is default back-to-source count for scheduler.
+	DefaultSchedulerBackSourceCount = 3
+
+	// DefaultSchedulerRetryBackSourceLimit is default retry back-to-source limit for scheduler.
+	DefaultSchedulerRetryBackSourceLimit = 5
+
+	// DefaultSchedulerRetryLimit is default retry limit for scheduler.
+	DefaultSchedulerRetryLimit = 10
+
+	// DefaultSchedulerRetryInterval is default retry interval for scheduler.
+	DefaultSchedulerRetryInterval = 50 * time.Millisecond
+
+	// DefaultSchedulerPeerGCInterval is default interval for peer gc.
+	DefaultSchedulerPeerGCInterval = 10 * time.Minute
+
+	// DefaultSchedulerPeerTTL is default ttl for peer.
+	DefaultSchedulerPeerTTL = 24 * time.Hour
+
+	// DefaultSchedulerTaskGCInterval is default interval for task gc.
+	DefaultSchedulerTaskGCInterval = 10 * time.Minute
+
+	// DefaultSchedulerTaskTTL is default ttl for task.
+	DefaultSchedulerTaskTTL = 24 * time.Hour
+
+	// DefaultSchedulerHostGCInterval is default interval for host gc.
+	DefaultSchedulerHostGCInterval = 30 * time.Minute
+
+	// DefaultSchedulerHostTTL is default ttl for host.
+	DefaultSchedulerHostTTL = 48 * time.Hour
+)
+
+const (
+	// DefaultDynConfigRefreshInterval is default refresh interval for dynamic configuration.
+	DefaultDynConfigRefreshInterval = 10 * time.Second
+)
+
+const (
+	// DefaultManagerSchedulerClusterID is default id for scheduler cluster.
+	DefaultManagerSchedulerClusterID = 1
+
+	// DefaultManagerKeepAliveInterval is default interval for keepalive.
+	DefaultManagerKeepAliveInterval = 5 * time.Second
+)
+
+const (
+	// DefaultJobGlobalWorkerNum is default global worker number for job.
+	DefaultJobGlobalWorkerNum = 10
+
+	// DefaultJobSchedulerWorkerNum is default scheduler worker number for job.
+	DefaultJobSchedulerWorkerNum = 10
+
+	// DefaultJobGlobalWorkerNum is default local worker number for job.
+	DefaultJobLocalWorkerNum = 10
+
+	// DefaultJobRedisPort is default port for redis.
+	DefaultJobRedisPort = 6379
+
+	// DefaultJobRedisBrokerDB is default db for redis broker.
+	DefaultJobRedisBrokerDB = 1
+
+	// DefaultJobRedisBackendDB is default db for redis backend.
+	DefaultJobRedisBackendDB = 2
 )
