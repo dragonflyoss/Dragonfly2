@@ -195,7 +195,7 @@ func (o *objectStorage) headObject(ctx *gin.Context) {
 
 	var (
 		bucketName = params.ID
-		objectKey  = strings.TrimPrefix(params.ObjectKey, "/")
+		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 	)
 
 	client, err := o.client()
@@ -243,7 +243,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 
 	var (
 		bucketName    = params.ID
-		objectKey     = strings.TrimPrefix(params.ObjectKey, "/")
+		objectKey     = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		filter        = query.Filter
 		artifactRange *util.Range
 		ranges        []util.Range
@@ -338,7 +338,7 @@ func (o *objectStorage) destroyObject(ctx *gin.Context) {
 
 	var (
 		bucketName = params.ID
-		objectKey  = strings.TrimPrefix(params.ObjectKey, "/")
+		objectKey  = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 	)
 
 	logger.Infof("destroy object %s in bucket %s", objectKey, bucketName)
@@ -367,7 +367,7 @@ func (o *objectStorage) putObject(ctx *gin.Context) {
 
 	var (
 		bucketName  = params.ID
-		objectKey   = strings.TrimPrefix(params.ObjectKey, "/")
+		objectKey   = strings.TrimPrefix(params.ObjectKey, string(os.PathSeparator))
 		mode        = form.Mode
 		filter      = form.Filter
 		maxReplicas = form.MaxReplicas
