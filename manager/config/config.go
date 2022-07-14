@@ -28,84 +28,90 @@ import (
 )
 
 type Config struct {
-	// Base options
+	// Base options.
 	base.Options `yaml:",inline" mapstructure:",squash"`
 
-	// Server configuration
+	// Server configuration.
 	Server *ServerConfig `yaml:"server" mapstructure:"server"`
 
-	// Database configuration
+	// Database configuration.
 	Database *DatabaseConfig `yaml:"database" mapstructure:"database"`
 
-	// Cache configuration
+	// Cache configuration.
 	Cache *CacheConfig `yaml:"cache" mapstructure:"cache"`
 
-	// ObjectStorage configuration
+	// ObjectStorage configuration.
 	ObjectStorage *ObjectStorageConfig `yaml:"objectStorage" mapstructure:"objectStorage"`
 
-	// Metrics configuration
+	// Metrics configuration.
 	Metrics *MetricsConfig `yaml:"metrics" mapstructure:"metrics"`
 }
 
 type ServerConfig struct {
-	// Server name
+	// Server name.
 	Name string `yaml:"name" mapstructure:"name"`
 
-	// Server log directory
+	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
-	// Console resource path
+	// Console resource path.
 	PublicPath string `yaml:"publicPath" mapstructure:"publicPath"`
 
-	// GRPC server configuration
+	// GRPC server configuration.
 	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 
-	// REST server configuration
+	// REST server configuration.
 	REST *RestConfig `yaml:"rest" mapstructure:"rest"`
 }
 
 type DatabaseConfig struct {
-	// Mysql configuration
+	// Database type.
+	Type string `yaml:"type" mapstructure:"type"`
+
+	// Mysql configuration.
 	Mysql *MysqlConfig `yaml:"mysql" mapstructure:"mysql"`
 
-	// Redis configuration
+	// Postgres configuration.
+	Postgres *PostgresConfig `yaml:"postgres" mapstructure:"postgres"`
+
+	// Redis configuration.
 	Redis *RedisConfig `yaml:"redis" mapstructure:"redis"`
 }
 
 type MysqlConfig struct {
-	// Server username
+	// Server username.
 	User string `yaml:"user" mapstructure:"user"`
 
-	// Server password
+	// Server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
-	// Server host
+	// Server host.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server port
+	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
 
-	// Server DB name
+	// Server DB name.
 	DBName string `yaml:"dbname" mapstructure:"dbname"`
 
-	// Enable migration
-	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
-
-	// TLS mode (can be one of "true", "false", "skip-verify",  or "preferred")
+	// TLS mode (can be one of "true", "false", "skip-verify",  or "preferred").
 	TLSConfig string `yaml:"tlsConfig" mapstructure:"tlsConfig"`
 
-	// Custom TLS configuration (overrides "TLSConfig" setting above)
+	// Custom TLS configuration (overrides "TLSConfig" setting above).
 	TLS *TLSConfig `yaml:"tls" mapstructure:"tls"`
+
+	// Enable migration.
+	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
 }
 
 type TLSConfig struct {
-	// Client certificate file path
+	// Client certificate file path.
 	Cert string `yaml:"cert" mapstructure:"cert"`
 
-	// Client key file path
+	// Client key file path.
 	Key string `yaml:"key" mapstructure:"key"`
 
-	// CA file path
+	// CA file path.
 	CA string `yaml:"ca" mapstructure:"ca"`
 
 	// InsecureSkipVerify controls whether a client verifies the
@@ -113,7 +119,33 @@ type TLSConfig struct {
 	InsecureSkipVerify bool `yaml:"insecureSkipVerify" mapstructure:"insecureSkipVerify"`
 }
 
-// Generate client tls config
+type PostgresConfig struct {
+	// Server username.
+	User string `yaml:"user" mapstructure:"user"`
+
+	// Server password.
+	Password string `yaml:"password" mapstructure:"password"`
+
+	// Server host.
+	Host string `yaml:"host" mapstructure:"host"`
+
+	// Server port.
+	Port int `yaml:"port" mapstructure:"port"`
+
+	// Server DB name.
+	DBName string `yaml:"dbname" mapstructure:"dbname"`
+
+	// SSL mode.
+	SSLMode string `yaml:"sslMode" mapstructure:"sslMode"`
+
+	// Server timezone.
+	Timezone string `yaml:"timezone" mapstructure:"timezone"`
+
+	// Enable migration.
+	Migrate bool `yaml:"migrate" mapstructure:"migrate"`
+}
+
+// Generate client tls config.
 func (t *TLSConfig) Client() (*tls.Config, error) {
 	return tlsconfig.Client(tlsconfig.Options{
 		CAFile:             t.CA,
@@ -124,48 +156,48 @@ func (t *TLSConfig) Client() (*tls.Config, error) {
 }
 
 type RedisConfig struct {
-	// Server host
+	// Server host.
 	Host string `yaml:"host" mapstructure:"host"`
 
-	// Server port
+	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
 
-	// Server password
+	// Server password.
 	Password string `yaml:"password" mapstructure:"password"`
 
-	// Server cache DB name
+	// Server cache DB name.
 	CacheDB int `yaml:"cacheDB" mapstructure:"cacheDB"`
 
-	// Server broker DB name
+	// Server broker DB name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
 
-	// Server backend DB name
+	// Server backend DB name.
 	BackendDB int `yaml:"backendDB" mapstructure:"backendDB"`
 }
 
 type CacheConfig struct {
-	// Redis cache configuration
+	// Redis cache configuration.
 	Redis *RedisCacheConfig `yaml:"redis" mapstructure:"redis"`
 
-	// Local cache configuration
+	// Local cache configuration.
 	Local *LocalCacheConfig `yaml:"local" mapstructure:"local"`
 }
 
 type RedisCacheConfig struct {
-	// Cache TTL
+	// Cache TTL.
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type LocalCacheConfig struct {
-	// Size of LFU cache
+	// Size of LFU cache.
 	Size int `yaml:"size" mapstructure:"size"`
 
-	// Cache TTL
+	// Cache TTL.
 	TTL time.Duration `yaml:"ttl" mapstructure:"ttl"`
 }
 
 type RestConfig struct {
-	// REST server address
+	// REST server address.
 	Addr string `yaml:"addr" mapstructure:"addr"`
 }
 
@@ -181,10 +213,10 @@ type MetricsConfig struct {
 }
 
 type TCPListenConfig struct {
-	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1
+	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1.
 	Listen string `mapstructure:"listen" yaml:"listen"`
 
-	// PortRange stands listen port
+	// PortRange stands listen port.
 	PortRange TCPListenPortRange `yaml:"port" mapstructure:"port"`
 }
 
@@ -213,39 +245,49 @@ type ObjectStorageConfig struct {
 	SecretKey string `mapstructure:"secretKey" yaml:"secretKey"`
 }
 
-// New config instance
+// New config instance.
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			Name:       "d7y/manager",
-			PublicPath: "manager/console/dist",
+			Name:       DefaultServerName,
+			PublicPath: DefaultPublicPath,
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
-					Start: 65003,
-					End:   65003,
+					Start: DefaultGRPCPort,
+					End:   DefaultGRPCPort,
 				},
 			},
 			REST: &RestConfig{
-				Addr: ":8080",
+				Addr: DefaultRESTAddr,
 			},
 		},
 		Database: &DatabaseConfig{
-			Redis: &RedisConfig{
-				CacheDB:   0,
-				BrokerDB:  1,
-				BackendDB: 2,
-			},
+			Type: DatabaseTypeMysql,
 			Mysql: &MysqlConfig{
+				Port:    DefaultMysqlPort,
+				DBName:  DefaultMysqlDBName,
 				Migrate: true,
+			},
+			Postgres: &PostgresConfig{
+				Port:     DefaultPostgresPort,
+				DBName:   DefaultPostgresDBName,
+				SSLMode:  DefaultPostgresSSLMode,
+				Timezone: DefaultPostgresTimezone,
+				Migrate:  true,
+			},
+			Redis: &RedisConfig{
+				CacheDB:   DefaultRedisCacheDB,
+				BrokerDB:  DefaultRedisBrokerDB,
+				BackendDB: DefaultRedisBackendDB,
 			},
 		},
 		Cache: &CacheConfig{
 			Redis: &RedisCacheConfig{
-				TTL: 30 * time.Second,
+				TTL: DefaultRedisCacheTTL,
 			},
 			Local: &LocalCacheConfig{
-				Size: 10000,
-				TTL:  10 * time.Second,
+				Size: DefaultLFUCacheSize,
+				TTL:  DefaultLFUCacheTTL,
 			},
 		},
 		ObjectStorage: &ObjectStorageConfig{
@@ -280,6 +322,84 @@ func (cfg *Config) Validate() error {
 		return errors.New("config requires parameter database")
 	}
 
+	if cfg.Database.Type == "" {
+		return errors.New("database requires parameter type")
+	}
+
+	if cfg.Database.Type == DatabaseTypeMysql || cfg.Database.Type == DatabaseTypeMariaDB {
+		if cfg.Database.Mysql == nil {
+			return errors.New("database requires parameter mysql")
+		}
+
+		if cfg.Database.Mysql.User == "" {
+			return errors.New("mysql requires parameter user")
+		}
+
+		if cfg.Database.Mysql.Password == "" {
+			return errors.New("mysql requires parameter password")
+		}
+
+		if cfg.Database.Mysql.Host == "" {
+			return errors.New("mysql requires parameter host")
+		}
+
+		if cfg.Database.Mysql.Port <= 0 {
+			return errors.New("mysql requires parameter port")
+		}
+
+		if cfg.Database.Mysql.DBName == "" {
+			return errors.New("mysql requires parameter dbname")
+		}
+
+		if cfg.Database.Mysql.TLS != nil {
+			if cfg.Database.Mysql.TLS.Cert == "" {
+				return errors.New("tls requires parameter cert")
+			}
+
+			if cfg.Database.Mysql.TLS.Key == "" {
+				return errors.New("tls requires parameter key")
+			}
+
+			if cfg.Database.Mysql.TLS.CA == "" {
+				return errors.New("tls requires parameter ca")
+			}
+		}
+	}
+
+	if cfg.Database.Type == DatabaseTypePostgres {
+		if cfg.Database.Postgres == nil {
+			return errors.New("database requires parameter postgres")
+		}
+
+		if cfg.Database.Postgres.User == "" {
+			return errors.New("postgres requires parameter user")
+		}
+
+		if cfg.Database.Postgres.Password == "" {
+			return errors.New("postgres requires parameter password")
+		}
+
+		if cfg.Database.Postgres.Host == "" {
+			return errors.New("postgres requires parameter host")
+		}
+
+		if cfg.Database.Postgres.Port <= 0 {
+			return errors.New("postgres requires parameter port")
+		}
+
+		if cfg.Database.Postgres.DBName == "" {
+			return errors.New("postgres requires parameter dbname")
+		}
+
+		if cfg.Database.Postgres.SSLMode == "" {
+			return errors.New("postgres requires parameter sslMode")
+		}
+
+		if cfg.Database.Postgres.Timezone == "" {
+			return errors.New("postgres requires parameter timezone")
+		}
+	}
+
 	if cfg.Database.Redis == nil {
 		return errors.New("database requires parameter redis")
 	}
@@ -302,44 +422,6 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Database.Redis.BackendDB < 0 {
 		return errors.New("redis requires parameter backendDB")
-	}
-
-	if cfg.Database.Mysql == nil {
-		return errors.New("database requires parameter mysql")
-	}
-
-	if cfg.Database.Mysql.User == "" {
-		return errors.New("mysql requires parameter user")
-	}
-
-	if cfg.Database.Mysql.Password == "" {
-		return errors.New("mysql requires parameter password")
-	}
-
-	if cfg.Database.Mysql.Host == "" {
-		return errors.New("mysql requires parameter host")
-	}
-
-	if cfg.Database.Mysql.Port <= 0 {
-		return errors.New("mysql requires parameter port")
-	}
-
-	if cfg.Database.Mysql.DBName == "" {
-		return errors.New("mysql requires parameter dbname")
-	}
-
-	if cfg.Database.Mysql.TLS != nil {
-		if cfg.Database.Mysql.TLS.Cert == "" {
-			return errors.New("tls requires parameter cert")
-		}
-
-		if cfg.Database.Mysql.TLS.Key == "" {
-			return errors.New("tls requires parameter key")
-		}
-
-		if cfg.Database.Mysql.TLS.CA == "" {
-			return errors.New("tls requires parameter ca")
-		}
 	}
 
 	if cfg.Cache == nil {

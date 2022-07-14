@@ -11,6 +11,7 @@ server:
     addr: :8080
 
 database:
+  type: mysql
   mysql:
     user: foo
     password: foo
@@ -23,6 +24,15 @@ database:
       key: foo
       ca: foo
       insecureSkipVerify: true
+    migrate: true
+  postgres:
+    user: foo
+    password: foo
+    host: foo
+    port: 5432
+    dbname: foo
+    sslMode: disable
+    timezone: UTC
     migrate: true
   redis:
     password: bar

@@ -18,6 +18,8 @@ server:
 
 # database info used for server
 database:
+  # database type, supported types include mysql, mariadb and postgres
+  type: mysql
   # mysql configure
   mysql:
     user: dragonfly

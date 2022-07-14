@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,8 @@ package database
 
 import (
 	"fmt"
-	"time"
 
-	"github.com/go-sql-driver/mysql"
-	drivermysql "gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"moul.io/zapgorm2"
@@ -30,17 +28,14 @@ import (
 	"d7y.io/dragonfly/v2/manager/config"
 )
 
-func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
-	m := cfg.Database.Mysql
+func newPostgres(cfg *config.Config) (*gorm.DB, error) {
+	p := cfg.Database.Postgres
 
 	// Format dsn string.
-	dsn, err := formatMysqlDSN(m)
-	if err != nil {
-		return nil, err
-	}
+	dsn := formatPostgresDSN(p)
 
 	// Connect to mysql.
-	db, err := gorm.Open(drivermysql.Open(dsn), &gorm.Config{
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
@@ -52,7 +47,7 @@ func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// Run migration.
-	if m.Migrate {
+	if p.Migrate {
 		if err := migrate(db); err != nil {
 			return nil, err
 		}
@@ -66,33 +61,14 @@ func newMyqsl(cfg *config.Config) (*gorm.DB, error) {
 	return db, nil
 }
 
-func formatMysqlDSN(cfg *config.MysqlConfig) (string, error) {
-	mysqlCfg := mysql.Config{
-		User:                 cfg.User,
-		Passwd:               cfg.Password,
-		Addr:                 fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Net:                  "tcp",
-		DBName:               cfg.DBName,
-		Loc:                  time.Local,
-		AllowNativePasswords: true,
-		ParseTime:            true,
-		InterpolateParams:    true,
-	}
-
-	// Support TLS connection.
-	if cfg.TLS != nil {
-		mysqlCfg.TLSConfig = "custom"
-		tls, err := cfg.TLS.Client()
-		if err != nil {
-			return "", err
-		}
-
-		if err := mysql.RegisterTLSConfig("custom", tls); err != nil {
-			return "", err
-		}
-	} else if cfg.TLSConfig != "" { // If no custom config is specified, use tlsConfig parameter if it is set.
-		mysqlCfg.TLSConfig = cfg.TLSConfig
-	}
-
-	return mysqlCfg.FormatDSN(), nil
+func formatPostgresDSN(cfg *config.PostgresConfig) string {
+	return fmt.Sprintf("host=%v user=%v password=%v dbname=%v port=%v sslmode=%v TimeZone=%v",
+		cfg.Host,
+		cfg.User,
+		cfg.Password,
+		cfg.DBName,
+		cfg.Port,
+		cfg.SSLMode,
+		cfg.Timezone,
+	)
 }

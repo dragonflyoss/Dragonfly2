@@ -47,6 +47,7 @@ func TestManagerConfig_Load(t *testing.T) {
 			},
 		},
 		Database: &DatabaseConfig{
+			Type: "mysql",
 			Mysql: &MysqlConfig{
 				User:      "foo",
 				Password:  "foo",
@@ -61,6 +62,16 @@ func TestManagerConfig_Load(t *testing.T) {
 					InsecureSkipVerify: true,
 				},
 				Migrate: true,
+			},
+			Postgres: &PostgresConfig{
+				User:     "foo",
+				Password: "foo",
+				Host:     "foo",
+				Port:     5432,
+				DBName:   "foo",
+				SSLMode:  "disable",
+				Timezone: "UTC",
+				Migrate:  true,
 			},
 			Redis: &RedisConfig{
 				Host:      "bar",
