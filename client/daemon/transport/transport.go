@@ -72,8 +72,8 @@ type transport struct {
 	// defaultFilter is used for registering steam task
 	defaultPattern base.Pattern
 
-	// defaultBiz is used when http request without X-Dragonfly-Biz Header
-	defaultBiz string
+	// defaultTag is used when http request without X-Dragonfly-Tag Header
+	defaultTag string
 
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
@@ -132,10 +132,10 @@ func WithDefaultPattern(pattern base.Pattern) Option {
 	}
 }
 
-// WithDefaultBiz sets default biz for http requests with X-Dragonfly-Biz Header
-func WithDefaultBiz(b string) Option {
+// WithDefaultTag sets default tag for http requests with X-Dragonfly-Tag Header
+func WithDefaultTag(b string) Option {
 	return func(rt *transport) *transport {
-		rt.defaultBiz = b
+		rt.defaultTag = b
 		return rt
 	}
 }
@@ -237,7 +237,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 
 	// Pick header's parameters
 	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
-	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyBiz, rt.defaultBiz)
+	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyTag, rt.defaultTag)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
