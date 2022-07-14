@@ -59,17 +59,17 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 		req.TaskId = idgen.TaskID(req.Url, req.UrlMeta)
 	}
 
-	bizTag := resource.DefaultBizTag
+	tag := resource.DefaultTag
 	if req.UrlMeta.Tag != "" {
-		bizTag = req.UrlMeta.Tag
+		tag = req.UrlMeta.Tag
 	}
-	metrics.RegisterPeerTaskCount.WithLabelValues(bizTag).Inc()
+	metrics.RegisterPeerTaskCount.WithLabelValues(tag).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
 	if err != nil {
-		metrics.RegisterPeerTaskFailureCount.WithLabelValues(bizTag).Inc()
+		metrics.RegisterPeerTaskFailureCount.WithLabelValues(tag).Inc()
 	} else {
-		metrics.PeerTaskCounter.WithLabelValues(bizTag, resp.SizeScope.String()).Inc()
+		metrics.PeerTaskCounter.WithLabelValues(tag, resp.SizeScope.String()).Inc()
 	}
 
 	return resp, err

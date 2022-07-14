@@ -300,9 +300,9 @@ func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 
 			// Collect peer host traffic metrics.
 			if s.config.Metrics != nil && s.config.Metrics.EnablePeerHost {
-				metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.PeerHostTraffic.WithLabelValues(peer.Tag, metrics.PeerHostTrafficDownloadType, peer.Host.ID, peer.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				if parent, ok := s.resource.PeerManager().Load(piece.DstPid); ok {
-					metrics.PeerHostTraffic.WithLabelValues(peer.BizTag, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
+					metrics.PeerHostTraffic.WithLabelValues(peer.Tag, metrics.PeerHostTrafficUploadType, parent.Host.ID, parent.Host.IP).Add(float64(piece.PieceInfo.RangeSize))
 				} else {
 					peer.Log.Warnf("dst peer %s not found for piece %#v %#v", piece.DstPid, piece, piece.PieceInfo)
 				}
@@ -310,9 +310,9 @@ func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 
 			// Collect traffic metrics.
 			if piece.DstPid != "" {
-				metrics.Traffic.WithLabelValues(peer.BizTag, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(peer.Tag, metrics.TrafficP2PType).Add(float64(piece.PieceInfo.RangeSize))
 			} else {
-				metrics.Traffic.WithLabelValues(peer.BizTag, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
+				metrics.Traffic.WithLabelValues(peer.Tag, metrics.TrafficBackToSourceType).Add(float64(piece.PieceInfo.RangeSize))
 			}
 			continue
 		}
@@ -342,13 +342,13 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		logger.Error(msg)
 		return dferrors.New(base.Code_SchedPeerNotFound, msg)
 	}
-	metrics.DownloadCount.WithLabelValues(peer.BizTag).Inc()
+	metrics.DownloadCount.WithLabelValues(peer.Tag).Inc()
 
 	if !req.Success {
 		peer.Log.Errorf("report peer failed result: %s %#v", req.Code, req)
 		if peer.FSM.Is(resource.PeerStateBackToSource) {
 			s.createRecord(peer, storage.PeerStateBackToSourceFailed, req)
-			metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureBackToSourceType).Inc()
+			metrics.DownloadFailureCount.WithLabelValues(peer.Tag, metrics.DownloadFailureBackToSourceType).Inc()
 
 			s.handleTaskFail(ctx, peer.Task, req.GetSourceError(), nil)
 			s.handlePeerFail(ctx, peer)
@@ -356,12 +356,12 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 		}
 
 		s.createRecord(peer, storage.PeerStateFailed, req)
-		metrics.DownloadFailureCount.WithLabelValues(peer.BizTag, metrics.DownloadFailureP2PType).Inc()
+		metrics.DownloadFailureCount.WithLabelValues(peer.Tag, metrics.DownloadFailureP2PType).Inc()
 
 		s.handlePeerFail(ctx, peer)
 		return nil
 	}
-	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.BizTag).Observe(float64(req.Cost))
+	metrics.PeerTaskDownloadDuration.WithLabelValues(peer.Tag).Observe(float64(req.Cost))
 
 	peer.Log.Infof("report peer result: %#v", req)
 	if peer.FSM.Is(resource.PeerStateBackToSource) {
@@ -467,11 +467,11 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		logger.Error(msg)
 		return dferrors.New(base.Code_SchedPeerNotFound, msg)
 	}
-	metrics.LeaveTaskCount.WithLabelValues(peer.BizTag).Inc()
+	metrics.LeaveTaskCount.WithLabelValues(peer.Tag).Inc()
 
 	peer.Log.Infof("leave task: %#v", req)
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
-		metrics.LeaveTaskFailureCount.WithLabelValues(peer.BizTag).Inc()
+		metrics.LeaveTaskFailureCount.WithLabelValues(peer.Tag).Inc()
 
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
@@ -552,7 +552,7 @@ func (s *Service) registerHost(ctx context.Context, rawHost *rpcscheduler.PeerHo
 func (s *Service) registerPeer(ctx context.Context, peerID string, task *resource.Task, host *resource.Host, tag string) *resource.Peer {
 	var options []resource.PeerOption
 	if tag != "" {
-		options = append(options, resource.WithBizTag(tag))
+		options = append(options, resource.WithTag(tag))
 	}
 
 	peer, loaded := s.resource.PeerManager().LoadOrStore(resource.NewPeer(peerID, task, host, options...))
@@ -847,7 +847,7 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		ID:              peer.ID,
 		IP:              peer.Host.IP,
 		Hostname:        peer.Host.Hostname,
-		BizTag:          peer.BizTag,
+		Tag:             peer.Tag,
 		Cost:            req.Cost,
 		PieceCount:      int32(peer.Pieces.Count()),
 		TotalPieceCount: peer.Task.TotalPieceCount.Load(),
@@ -867,7 +867,7 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		record.ParentID = parent.ID
 		record.ParentIP = parent.Host.IP
 		record.ParentHostname = parent.Host.Hostname
-		record.ParentBizTag = parent.BizTag
+		record.ParentTag = parent.Tag
 		record.ParentPieceCount = int32(parent.Pieces.Count())
 		record.ParentSecurityDomain = parent.Host.SecurityDomain
 		record.ParentIDC = parent.Host.IDC

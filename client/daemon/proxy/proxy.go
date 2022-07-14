@@ -52,9 +52,6 @@ import (
 var (
 	okHeader = []byte("HTTP/1.1 200 OK\r\n\r\n")
 
-	// Default biz value is empty.
-	bizTag = ""
-
 	schemaHTTPS = "https"
 
 	portHTTPS = 443
@@ -98,6 +95,9 @@ type Proxy struct {
 
 	// defaultFilter is used when http request without X-Dragonfly-Filter Header
 	defaultFilter string
+
+	// defaultTag is used when http request without X-Dragonfly-Tag Header
+	defaultTag string
 
 	// defaultFilter is used for registering steam task
 	defaultPattern base.Pattern
@@ -213,6 +213,14 @@ func WithMaxConcurrency(con int64) Option {
 func WithDefaultFilter(f string) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultFilter = f
+		return p
+	}
+}
+
+// WithDefaultTag sets default tag for http requests without X-Dragonfly-Tag Header
+func WithDefaultTag(t string) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultTag = t
 		return p
 	}
 }
@@ -494,7 +502,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithCondition(proxy.shouldUseDragonfly),
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultPattern(proxy.defaultPattern),
-		transport.WithDefaultBiz(bizTag),
+		transport.WithDefaultTag(proxy.defaultTag),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	return rt
@@ -508,7 +516,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithTLS(proxy.registry.TLSConfig()),
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
 		transport.WithDefaultFilter(proxy.defaultFilter),
-		transport.WithDefaultBiz(bizTag),
+		transport.WithDefaultTag(proxy.defaultTag),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	if err != nil {

@@ -2297,7 +2297,7 @@ func TestService_registerPeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.BizTag, resource.DefaultBizTag)
+				assert.Equal(peer.Tag, resource.DefaultTag)
 			},
 		},
 		{
@@ -2315,7 +2315,7 @@ func TestService_registerPeer(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Equal(peer.BizTag, resource.DefaultBizTag)
+				assert.Equal(peer.Tag, resource.DefaultTag)
 			},
 		},
 	}
