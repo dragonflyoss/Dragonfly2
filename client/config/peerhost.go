@@ -269,6 +269,7 @@ type ProxyOption struct {
 	ListenOption    `mapstructure:",squash" yaml:",inline"`
 	BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
 	DefaultFilter   string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+	DefaultTag      string          `mapstructure:"defaultTag" yaml:"defaultTag"`
 	MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 	RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
 	WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
@@ -356,6 +357,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), 
 		ListenOption         `mapstructure:",squash" yaml:",inline"`
 		BasicAuth            *BasicAuth        `mapstructure:"basicAuth" yaml:"basicAuth"`
 		DefaultFilter        string            `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+		DefaultTag           string            `mapstructure:"defaultTag" yaml:"defaultTag"`
 		MaxConcurrency       int64             `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 		RegistryMirror       *RegistryMirror   `mapstructure:"registryMirror" yaml:"registryMirror"`
 		WhiteList            []*WhiteList      `mapstructure:"whiteList" yaml:"whiteList"`
@@ -376,6 +378,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), 
 	p.WhiteList = pt.WhiteList
 	p.MaxConcurrency = pt.MaxConcurrency
 	p.DefaultFilter = pt.DefaultFilter
+	p.DefaultTag = pt.DefaultTag
 	p.BasicAuth = pt.BasicAuth
 	p.DumpHTTPContent = pt.DumpHTTPContent
 
