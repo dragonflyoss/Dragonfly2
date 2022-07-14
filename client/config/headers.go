@@ -21,7 +21,7 @@ const (
 	HeaderDragonflyPeer   = "X-Dragonfly-Peer"
 	HeaderDragonflyTask   = "X-Dragonfly-Task"
 	HeaderDragonflyRange  = "X-Dragonfly-Range"
-	HeaderDragonflyBiz    = "X-Dragonfly-Biz"
+	HeaderDragonflyTag    = "X-Dragonfly-Tag"
 	// HeaderDragonflyRegistry is used for dynamic registry mirrors.
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"
 	// HeaderDragonflyObjectMetaDigest is used for digest of object storage.

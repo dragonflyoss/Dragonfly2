@@ -56,28 +56,28 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "register_peer_task_total",
 		Help:      "Counter of the number of the register peer task.",
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	RegisterPeerTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "register_peer_task_failure_total",
 		Help:      "Counter of the number of failed of the register peer task.",
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	DownloadCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "download_total",
 		Help:      "Counter of the number of the downloading.",
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	DownloadFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "download_failure_total",
 		Help:      "Counter of the number of failed of the downloading.",
-	}, []string{"biz_tag", "type"})
+	}, []string{"tag", "type"})
 
 	StatTaskCount = promauto.NewCounter(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
@@ -112,35 +112,35 @@ var (
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "leave_task_total",
 		Help:      "Counter of the number of the leaving task.",
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	LeaveTaskFailureCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "leave_task_failure_total",
 		Help:      "Counter of the number of failed of the leaving task.",
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	Traffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "traffic",
 		Help:      "Counter of the number of traffic.",
-	}, []string{"biz_tag", "type"})
+	}, []string{"tag", "type"})
 
 	PeerHostTraffic = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_host_traffic",
 		Help:      "Counter of the number of per peer host traffic.",
-	}, []string{"biz_tag", "traffic_type", "peer_host_id", "peer_host_ip"})
+	}, []string{"tag", "traffic_type", "peer_host_id", "peer_host_ip"})
 
 	PeerTaskCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 		Namespace: constants.MetricsNamespace,
 		Subsystem: constants.SchedulerMetricsName,
 		Name:      "peer_task_total",
 		Help:      "Counter of the number of peer task.",
-	}, []string{"biz_tag", "type"})
+	}, []string{"tag", "type"})
 
 	PeerTaskDownloadDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
 		Namespace: constants.MetricsNamespace,
@@ -148,7 +148,7 @@ var (
 		Name:      "peer_task_download_duration_milliseconds",
 		Help:      "Histogram of the time each peer task downloading.",
 		Buckets:   []float64{100, 200, 500, 1000, 1500, 2 * 1000, 3 * 1000, 5 * 1000, 10 * 1000, 20 * 1000, 60 * 1000, 120 * 1000, 300 * 1000},
-	}, []string{"biz_tag"})
+	}, []string{"tag"})
 
 	ConcurrentScheduleGauge = promauto.NewGauge(prometheus.GaugeOpts{
 		Namespace: constants.MetricsNamespace,

@@ -36,8 +36,8 @@ import (
 )
 
 const (
-	// Default value of biz tag.
-	DefaultBizTag = "unknow"
+	// Default value of tag.
+	DefaultTag = "unknow"
 
 	// Download tiny file timeout.
 	downloadTinyFileContextTimeout = 30 * time.Second
@@ -101,10 +101,10 @@ const (
 // PeerOption is a functional option for configuring the peer.
 type PeerOption func(p *Peer) *Peer
 
-// WithBizTag sets peer's BizTag.
-func WithBizTag(bizTag string) PeerOption {
+// WithTag sets peer's Tag.
+func WithTag(tag string) PeerOption {
 	return func(p *Peer) *Peer {
-		p.BizTag = bizTag
+		p.Tag = tag
 		return p
 	}
 }
@@ -113,8 +113,8 @@ type Peer struct {
 	// ID is peer id.
 	ID string
 
-	// BizTag is peer biz tag.
-	BizTag string
+	// Tag is peer tag.
+	Tag string
 
 	// Pieces is piece bitset.
 	Pieces *bitset.BitSet
@@ -180,7 +180,7 @@ type Peer struct {
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:               id,
-		BizTag:           DefaultBizTag,
+		Tag:              DefaultTag,
 		Pieces:           &bitset.BitSet{},
 		pieceCosts:       []int64{},
 		Stream:           &atomic.Value{},

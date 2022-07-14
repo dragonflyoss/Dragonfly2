@@ -88,8 +88,8 @@ type Record struct {
 	// Hostname is host name.
 	Hostname string `csv:"hostname"`
 
-	// BizTag is peer biz tag.
-	BizTag string `csv:"bizTag"`
+	// Tag is peer tag.
+	Tag string `csv:"tag"`
 
 	// Cost is the task download time(millisecond).
 	Cost uint32 `csv:"cost"`
@@ -141,8 +141,8 @@ type Record struct {
 	// ParentHostname is parent hostname.
 	ParentHostname string `csv:"parentHostname"`
 
-	// ParentBizTag is parent peer biz tag.
-	ParentBizTag string `csv:"parentBizTag"`
+	// ParentTag is parent peer tag.
+	ParentTag string `csv:"parentTag"`
 
 	// ParentPieceCount is parent total piece count.
 	ParentPieceCount int32 `csv:"parentPieceCount"`

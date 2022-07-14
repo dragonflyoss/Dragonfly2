@@ -31,7 +31,7 @@ import (
 
 const (
 	// Default value of biz tag for seed peer.
-	SeedBizTag = "d7y/seed"
+	SeedTag = "d7y/seed"
 )
 
 const (
@@ -152,7 +152,7 @@ func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, err
 	}
 
 	// New seed peer.
-	peer = NewPeer(ps.PeerId, task, host, WithBizTag(SeedBizTag))
+	peer = NewPeer(ps.PeerId, task, host, WithTag(SeedTag))
 	peer.Log.Info("new seed peer successfully")
 
 	// Store seed peer.
