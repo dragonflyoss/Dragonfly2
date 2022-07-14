@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -120,6 +121,21 @@ type ResourceClient interface {
 // The metadata will be used for concurrent multiple pieces downloading
 type ResourceMetadataGetter interface {
 	GetMetadata(request *Request) (*Metadata, error)
+}
+
+// URLEntry is an entry which read from url with specific protocol
+// It is used in recursive downloading
+type URLEntry struct {
+	//URL download url
+	URL *url.URL
+
+	// Name returns the name of the file (or subdirectory) described by the entry.
+	// Name will be used in recursive downloading as file name or subdirectory name
+	// This name is only the final element of the path (the base name), not the entire path.
+	// For example, Name would return "hello.go" not "home/gopher/hello.go".
+	Name string
+	// IsDir reports whether the entry describes a directory.
+	IsDir bool
 }
 
 // ResourceLister defines the interface to list all downloadable resources in request url

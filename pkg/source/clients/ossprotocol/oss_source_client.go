@@ -319,10 +319,10 @@ func buildURLEntry(isDir bool, url *url.URL) source.URLEntry {
 	if isDir {
 		url.Path = addTrailingSlash(url.Path)
 		list := strings.Split(url.Path, "/")
-		return source.NewURLEntry(url, list[len(list)-2], true)
+		return source.URLEntry{URL: url, Name: list[len(list)-2], IsDir: true}
 	}
 	_, name := filepath.Split(url.Path)
-	return source.NewURLEntry(url, name, false)
+	return source.URLEntry{URL: url, Name: name, IsDir: false}
 
 }
 

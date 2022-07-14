@@ -323,9 +323,9 @@ func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cf
 		}
 		for _, urlEntry := range urlEntries {
 			childCfg := *parentCfg //create new cfg
-			childCfg.Output = path.Join(parentCfg.Output, urlEntry.Name())
+			childCfg.Output = path.Join(parentCfg.Output, urlEntry.Name)
 			fmt.Printf("%s\n", strings.TrimPrefix(childCfg.Output, cfg.Output))
-			u := urlEntry.URL()
+			u := urlEntry.URL
 			childCfg.URL = u.String()
 
 			if !accept(childCfg.URL, childCfg.RecursiveAcceptRegex, childCfg.RecursiveRejectRegex) {
@@ -334,7 +334,7 @@ func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cf
 			}
 
 			logger.Debugf("download %s to %s", childCfg.URL, childCfg.Output)
-			if !urlEntry.IsDir() {
+			if !urlEntry.IsDir {
 				if childCfg.RecursiveList {
 					continue
 				}
