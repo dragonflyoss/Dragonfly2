@@ -8,8 +8,8 @@ import (
 	"encoding/json"
 )
 
-func (s *service) GetModelById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) (*model.MachineModel, error) {
-	modelVal, err := s.rdb.Get(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionId)).Result()
+func (s *service) GetModel(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) (*model.MachineModel, error) {
+	modelVal, err := s.rdb.Get(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionID)).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -54,21 +54,21 @@ func (s *service) GetModels(ctx context.Context, params types.ModelParams, model
 	return modelCollections, nil
 }
 
-func (s *service) UpdateModelById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
+func (s *service) UpdateModel(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
 	modelStored := model.MachineModel{
-		Id:      modelInfo.SchedulerClusterID,
+		ID:      modelInfo.SchedulerClusterID,
 		Params:  modelInfo.Params,
-		Version: params.VersionId,
+		Version: params.VersionID,
 	}
-	_, err := s.rdb.Set(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionId), modelStored, -1).Result()
+	_, err := s.rdb.Set(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionID), modelStored, -1).Result()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *service) DeleteModelById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
-	_, err := s.rdb.Del(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionId)).Result()
+func (s *service) DeleteModel(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
+	_, err := s.rdb.Del(ctx, cache.MakeModelKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID, params.VersionID)).Result()
 	if err != nil {
 		return err
 	}

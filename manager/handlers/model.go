@@ -22,7 +22,7 @@ import (
 	"net/http"
 )
 
-func (h *Handlers) GetModelById(ctx *gin.Context) {
+func (h *Handlers) GetModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -33,7 +33,7 @@ func (h *Handlers) GetModelById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	models, err := h.service.GetModelById(ctx.Request.Context(), params, json)
+	models, err := h.service.GetModel(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
@@ -62,7 +62,7 @@ func (h *Handlers) GetModels(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models)
 }
 
-func (h *Handlers) UpdateModelById(ctx *gin.Context) {
+func (h *Handlers) UpdateModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -73,7 +73,7 @@ func (h *Handlers) UpdateModelById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.service.UpdateModelById(ctx.Request.Context(), params, json)
+	err := h.service.UpdateModel(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
@@ -82,7 +82,7 @@ func (h *Handlers) UpdateModelById(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (h *Handlers) DeleteModelById(ctx *gin.Context) {
+func (h *Handlers) DeleteModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -93,7 +93,7 @@ func (h *Handlers) DeleteModelById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.service.DeleteModelById(ctx.Request.Context(), params, json)
+	err := h.service.DeleteModel(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return

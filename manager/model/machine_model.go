@@ -19,13 +19,13 @@ package model
 import "encoding/json"
 
 type MachineModel struct {
-	Id      uint               `json:"id" binding:"required"`      //模型对应的scheduler的id
+	ID      uint               `json:"id" binding:"required"`      //模型对应的scheduler的id
 	Params  map[string]float64 `json:"params" binding:"required"`  //线形模型的参数
 	Version string             `json:"version" binding:"required"` //模型版本号
 }
 
-type ModelVersion struct {
-	VersionId string  `json:"version_id" binding:"required"`
+type Version struct {
+	VersionID string  `json:"version_id" binding:"required"`
 	Precision float64 `json:"precision" binding:"required"`
 	Recall    float64 `json:"recall" binding:"required"`
 }
@@ -34,6 +34,6 @@ func (m MachineModel) MarshalBinary() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (m ModelVersion) MarshalBinary() ([]byte, error) {
+func (m Version) MarshalBinary() ([]byte, error) {
 	return json.Marshal(m)
 }

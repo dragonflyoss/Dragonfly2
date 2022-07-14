@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func (h *Handlers) GetVerisonById(ctx *gin.Context) {
+func (h *Handlers) GetVerison(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -17,7 +17,7 @@ func (h *Handlers) GetVerisonById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	models, err := h.service.GetVersionById(ctx.Request.Context(), params, json)
+	models, err := h.service.GetVersion(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
@@ -41,7 +41,7 @@ func (h *Handlers) GetVersions(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, versions)
 }
 
-func (h *Handlers) UpdateVersionById(ctx *gin.Context) {
+func (h *Handlers) UpdateVersion(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -52,7 +52,7 @@ func (h *Handlers) UpdateVersionById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.service.UpdateVersionById(ctx.Request.Context(), params, json)
+	err := h.service.UpdateVersion(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
@@ -61,7 +61,7 @@ func (h *Handlers) UpdateVersionById(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (h *Handlers) DeleteVersionById(ctx *gin.Context) {
+func (h *Handlers) DeleteVersion(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
@@ -72,7 +72,7 @@ func (h *Handlers) DeleteVersionById(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	err := h.service.DeleteVersionById(ctx.Request.Context(), params, json)
+	err := h.service.DeleteVersion(ctx.Request.Context(), params, json)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return

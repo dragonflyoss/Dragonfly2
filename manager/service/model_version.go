@@ -2,26 +2,30 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"encoding/json"
 )
 
-func (s *service) GetVersionById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) (*model.ModelVersion, error) {
+func (s *service) GetVersion(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) (*model.Version, error) {
 	modelVal, err := s.rdb.Get(ctx, cache.MakeVersionKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID)).Result()
 	if err != nil {
 		return nil, err
 	}
-	var model model.ModelVersion
-	json.Unmarshal([]byte(modelVal), &model)
+	var model model.Version
+	err = json.Unmarshal([]byte(modelVal), &model)
+	if err != nil {
+		return nil, err
+	}
 	return &model, nil
 }
 
-func (s *service) GetVersions(ctx context.Context, modelInfo types.ModelInfos) ([]*model.ModelVersion, error) {
+func (s *service) GetVersions(ctx context.Context, modelInfo types.ModelInfos) ([]*model.Version, error) {
 	var (
-		versionCollections []*model.ModelVersion
+		versionCollections []*model.Version
 		cursor             uint64
 		keys               []string
 		err                error
@@ -37,7 +41,7 @@ func (s *service) GetVersions(ctx context.Context, modelInfo types.ModelInfos) (
 			if err != nil {
 				return nil, err
 			}
-			var modelVersionFromDb model.ModelVersion
+			var modelVersionFromDb model.Version
 			err = json.Unmarshal([]byte(versionVal), &modelVersionFromDb)
 			if err != nil {
 				return nil, err
@@ -52,9 +56,9 @@ func (s *service) GetVersions(ctx context.Context, modelInfo types.ModelInfos) (
 	return versionCollections, nil
 }
 
-func (s *service) UpdateVersionById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
-	versionStored := model.ModelVersion{
-		VersionId: modelInfo.VersionId,
+func (s *service) UpdateVersion(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
+	versionStored := model.Version{
+		VersionID: modelInfo.VersionID,
 		Recall:    modelInfo.Recall,
 		Precision: modelInfo.Precision,
 	}
@@ -66,7 +70,7 @@ func (s *service) UpdateVersionById(ctx context.Context, params types.ModelParam
 	return nil
 }
 
-func (s *service) DeleteVersionById(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
+func (s *service) DeleteVersion(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
 	_, err := s.rdb.Del(ctx, cache.MakeVersionKey(modelInfo.SchedulerClusterID, modelInfo.Hostname, modelInfo.IP, params.ID)).Result()
 	if err != nil {
 		return err
