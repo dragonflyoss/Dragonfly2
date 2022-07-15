@@ -20,7 +20,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/textproto"
+	"net/url"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,7 +32,7 @@ import (
 	"github.com/go-http-utils/headers"
 
 	"d7y.io/dragonfly/v2/pkg/source"
-	"d7y.io/dragonfly/v2/pkg/strings"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const OSSClient = "oss"
@@ -61,6 +65,7 @@ func adaptor(request *source.Request) *source.Request {
 		clonedRequest.Header.Set(oss.HTTPHeaderEtag, request.Header.Get(source.ETag))
 		clonedRequest.Header.Del(source.ETag)
 	}
+	clonedRequest.URL.Path = strings.TrimPrefix(clonedRequest.URL.Path, "/")
 	return clonedRequest
 }
 
@@ -155,7 +160,10 @@ func (osc *ossSourceClient) Download(request *source.Request) (*source.Response,
 	if err != nil {
 		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
 	}
-	objectResult, err := bucket.DoGetObject(&oss.GetObjectRequest{ObjectKey: request.URL.Path}, getOptions(request.Header))
+	objectResult, err := bucket.DoGetObject(
+		&oss.GetObjectRequest{ObjectKey: request.URL.Path},
+		getOptions(request.Header),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("get oss Object %s: %w", request.URL.Path, err)
 	}
@@ -202,17 +210,78 @@ func (osc *ossSourceClient) GetLastModified(request *source.Request) (int64, err
 	return t.UnixNano() / time.Millisecond.Nanoseconds(), nil
 }
 
+func (osc *ossSourceClient) List(request *source.Request) (urls []source.URLEntry, err error) {
+	client, err := osc.getClient(request.Header)
+	if err != nil {
+		return nil, fmt.Errorf("get oss client: %w", err)
+	}
+	bucket, err := client.Bucket(request.URL.Host)
+	if err != nil {
+		return nil, fmt.Errorf("get oss bucket %s: %w", request.URL.Host, err)
+	}
+	isDir, err := osc.isDirectory(bucket, request)
+	if err != nil {
+		return nil, err
+	}
+	// if request is a single file, just return
+	if !isDir {
+		return []source.URLEntry{buildURLEntry(false, request.URL)}, nil
+	}
+	// list all files and subdirectory
+	path := addTrailingSlash(request.URL.Path)
+	prefix := oss.Prefix(path)
+	marker := oss.Marker("")
+	delimiter := "/"
+	for {
+		lsRes, err := bucket.ListObjects(prefix, marker, oss.Delimiter(delimiter))
+		if err != nil {
+			return urls, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, path, err)
+		}
+		for _, object := range lsRes.Objects {
+			if object.Key != lsRes.Prefix {
+				url := *request.URL
+				url.Path = addLeadingSlash(object.Key)
+				urls = append(urls, buildURLEntry(false, &url))
+			}
+		}
+		for _, object := range lsRes.CommonPrefixes {
+			url := *request.URL
+			url.Path = addLeadingSlash(object)
+			urls = append(urls, buildURLEntry(true, &url))
+		}
+		if lsRes.IsTruncated {
+			prefix = oss.Prefix(lsRes.Prefix)
+			marker = oss.Marker(lsRes.NextMarker)
+		} else {
+			break
+		}
+	}
+	return urls, nil
+}
+
+func (osc *ossSourceClient) isDirectory(bucket *oss.Bucket, request *source.Request) (bool, error) {
+	uPath := addTrailingSlash(request.URL.Path)
+	lsRes, err := bucket.ListObjects(oss.Prefix(uPath), oss.Marker(""), oss.Delimiter("/"), oss.MaxKeys(1))
+	if err != nil {
+		return false, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, uPath, err)
+	}
+	if len(lsRes.Objects) > 0 && lsRes.Objects[0].Key == uPath && lsRes.Objects[0].Size == 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (osc *ossSourceClient) getClient(header source.Header) (*oss.Client, error) {
 	endpoint := header.Get(endpoint)
-	if strings.IsBlank(endpoint) {
+	if pkgstrings.IsBlank(endpoint) {
 		return nil, errors.New("endpoint is empty")
 	}
 	accessKeyID := header.Get(accessKeyID)
-	if strings.IsBlank(accessKeyID) {
+	if pkgstrings.IsBlank(accessKeyID) {
 		return nil, errors.New("accessKeyID is empty")
 	}
 	accessKeySecret := header.Get(accessKeySecret)
-	if strings.IsBlank(accessKeySecret) {
+	if pkgstrings.IsBlank(accessKeySecret) {
 		return nil, errors.New("accessKeySecret is empty")
 	}
 	clientKey := buildClientKey(endpoint, accessKeyID, accessKeySecret)
@@ -233,11 +302,40 @@ func buildClientKey(endpoint, accessKeyID, accessKeySecret string) string {
 
 func getOptions(header source.Header) []oss.Option {
 	opts := make([]oss.Option, 0, len(header))
-	for key, value := range header {
-		if key == endpoint || key == accessKeyID || key == accessKeySecret {
+	for key, values := range header {
+		if key == textproto.CanonicalMIMEHeaderKey(endpoint) || key == textproto.CanonicalMIMEHeaderKey(accessKeyID) || key == textproto.CanonicalMIMEHeaderKey(accessKeySecret) {
 			continue
 		}
+		// oss-http Header value must be string type, while http header value is []string type
+		// according to HTTP RFC2616 Multiple message-header fields with the same field-name MAY be present in a message
+		// if and only if the entire field-value for that header field is defined as a comma-separated list
+		value := strings.Join(values, ",")
 		opts = append(opts, oss.SetHeader(key, value))
 	}
 	return opts
+}
+
+func buildURLEntry(isDir bool, url *url.URL) source.URLEntry {
+	if isDir {
+		url.Path = addTrailingSlash(url.Path)
+		list := strings.Split(url.Path, "/")
+		return source.URLEntry{URL: url, Name: list[len(list)-2], IsDir: true}
+	}
+	_, name := filepath.Split(url.Path)
+	return source.URLEntry{URL: url, Name: name, IsDir: false}
+
+}
+
+func addLeadingSlash(s string) string {
+	if strings.HasPrefix(s, "/") {
+		return s
+	}
+	return "/" + s
+}
+
+func addTrailingSlash(s string) string {
+	if strings.HasSuffix(s, "/") {
+		return s
+	}
+	return s + "/"
 }

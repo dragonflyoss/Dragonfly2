@@ -234,16 +234,9 @@ func (cfg *ClientOption) checkOutput() error {
 	}
 
 	f, err := os.Stat(cfg.Output)
-	// when recursive download, need a directory
-	if cfg.Recursive {
-		if err == nil && !f.IsDir() {
-			return fmt.Errorf("path[%s] is file but requires directory path", cfg.Output)
-		}
-	} else {
-		// when not recursive download, need a file
-		if err == nil && f.IsDir() {
-			return fmt.Errorf("path[%s] is directory but requires file path", cfg.Output)
-		}
+	// when not recursive download, need a file
+	if !cfg.Recursive && err == nil && f.IsDir() {
+		return fmt.Errorf("path[%s] is directory but requires file path", cfg.Output)
 	}
 
 	// check permission
