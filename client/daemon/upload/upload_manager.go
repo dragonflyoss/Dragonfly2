@@ -212,6 +212,9 @@ func (um *uploadManager) getDownload(ctx *gin.Context) {
 	}
 	defer closer.Close()
 
+	// write header immediately, prevent client disconnecting after limiter.Wait() due to response header timeout
+	ctx.Writer.WriteHeaderNow()
+
 	if um.Limiter != nil {
 		if err = um.Limiter.WaitN(ctx, int(rg[0].Length)); err != nil {
 			log.Errorf("get limit failed: %s", err)
