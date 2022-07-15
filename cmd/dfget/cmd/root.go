@@ -69,6 +69,15 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		start := time.Now()
 
+		// Convert config
+		if err := dfgetConfig.Convert(args); err != nil {
+			return err
+		}
+		// Validate config
+		if err := dfgetConfig.Validate(); err != nil {
+			return err
+		}
+
 		// Initialize daemon dfpath
 		d, err := initDfgetDfpath(dfgetConfig)
 		if err != nil {
@@ -82,16 +91,6 @@ var rootCmd = &cobra.Command{
 
 		// update plugin directory
 		source.UpdatePluginDir(d.PluginDir())
-
-		// Convert config
-		if err := dfgetConfig.Convert(args); err != nil {
-			return err
-		}
-
-		// Validate config
-		if err := dfgetConfig.Validate(); err != nil {
-			return err
-		}
 
 		fmt.Printf("--%s--  %s\n", start.Format("2006-01-02 15:04:05"), dfgetConfig.URL)
 		fmt.Printf("dfget version: %s\n", version.GitVersion)
