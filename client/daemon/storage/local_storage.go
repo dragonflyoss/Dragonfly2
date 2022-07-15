@@ -101,6 +101,7 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 	t.RLock()
 	if piece, ok := t.Pieces[req.Num]; ok {
 		t.RUnlock()
+		t.Debugf("piece %d already exist,ignore writing piece", req.Num)
 		// discard already downloaded data for back source
 		n, err := io.CopyN(io.Discard, req.Reader, piece.Range.Length)
 		if err != nil && err != io.EOF {
@@ -109,6 +110,11 @@ func (t *localTaskStore) WritePiece(ctx context.Context, req *WritePieceRequest)
 		if n != piece.Range.Length {
 			return n, ErrShortRead
 		}
+		// GenMetadata need to be called when using concurrent download, a Counter will increase in GenMetadata
+		if req.GenMetadata != nil {
+			req.GenMetadata(n)
+		}
+
 		return piece.Range.Length, nil
 	}
 	t.RUnlock()
