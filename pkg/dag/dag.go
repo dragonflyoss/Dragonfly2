@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//go:generate mockgen -destination mocks/dag_mock.go -source dag.go -package mocks
+
 package dag
 
 import (

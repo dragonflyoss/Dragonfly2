@@ -50,6 +50,76 @@ func (mr *MockisRegisterResult_DirectPieceMockRecorder) isRegisterResult_DirectP
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isRegisterResult_DirectPiece", reflect.TypeOf((*MockisRegisterResult_DirectPiece)(nil).isRegisterResult_DirectPiece))
 }
 
+// MockisPeerPacket_ErrorDetail is a mock of isPeerPacket_ErrorDetail interface.
+type MockisPeerPacket_ErrorDetail struct {
+	ctrl     *gomock.Controller
+	recorder *MockisPeerPacket_ErrorDetailMockRecorder
+}
+
+// MockisPeerPacket_ErrorDetailMockRecorder is the mock recorder for MockisPeerPacket_ErrorDetail.
+type MockisPeerPacket_ErrorDetailMockRecorder struct {
+	mock *MockisPeerPacket_ErrorDetail
+}
+
+// NewMockisPeerPacket_ErrorDetail creates a new mock instance.
+func NewMockisPeerPacket_ErrorDetail(ctrl *gomock.Controller) *MockisPeerPacket_ErrorDetail {
+	mock := &MockisPeerPacket_ErrorDetail{ctrl: ctrl}
+	mock.recorder = &MockisPeerPacket_ErrorDetailMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockisPeerPacket_ErrorDetail) EXPECT() *MockisPeerPacket_ErrorDetailMockRecorder {
+	return m.recorder
+}
+
+// isPeerPacket_ErrorDetail mocks base method.
+func (m *MockisPeerPacket_ErrorDetail) isPeerPacket_ErrorDetail() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "isPeerPacket_ErrorDetail")
+}
+
+// isPeerPacket_ErrorDetail indicates an expected call of isPeerPacket_ErrorDetail.
+func (mr *MockisPeerPacket_ErrorDetailMockRecorder) isPeerPacket_ErrorDetail() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isPeerPacket_ErrorDetail", reflect.TypeOf((*MockisPeerPacket_ErrorDetail)(nil).isPeerPacket_ErrorDetail))
+}
+
+// MockisPeerResult_ErrorDetail is a mock of isPeerResult_ErrorDetail interface.
+type MockisPeerResult_ErrorDetail struct {
+	ctrl     *gomock.Controller
+	recorder *MockisPeerResult_ErrorDetailMockRecorder
+}
+
+// MockisPeerResult_ErrorDetailMockRecorder is the mock recorder for MockisPeerResult_ErrorDetail.
+type MockisPeerResult_ErrorDetailMockRecorder struct {
+	mock *MockisPeerResult_ErrorDetail
+}
+
+// NewMockisPeerResult_ErrorDetail creates a new mock instance.
+func NewMockisPeerResult_ErrorDetail(ctrl *gomock.Controller) *MockisPeerResult_ErrorDetail {
+	mock := &MockisPeerResult_ErrorDetail{ctrl: ctrl}
+	mock.recorder = &MockisPeerResult_ErrorDetailMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockisPeerResult_ErrorDetail) EXPECT() *MockisPeerResult_ErrorDetailMockRecorder {
+	return m.recorder
+}
+
+// isPeerResult_ErrorDetail mocks base method.
+func (m *MockisPeerResult_ErrorDetail) isPeerResult_ErrorDetail() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "isPeerResult_ErrorDetail")
+}
+
+// isPeerResult_ErrorDetail indicates an expected call of isPeerResult_ErrorDetail.
+func (mr *MockisPeerResult_ErrorDetailMockRecorder) isPeerResult_ErrorDetail() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isPeerResult_ErrorDetail", reflect.TypeOf((*MockisPeerResult_ErrorDetail)(nil).isPeerResult_ErrorDetail))
+}
+
 // MockSchedulerClient is a mock of SchedulerClient interface.
 type MockSchedulerClient struct {
 	ctrl     *gomock.Controller

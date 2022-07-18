@@ -5,7 +5,6 @@
 package mocks
 
 import (
-	url "net/url"
 	reflect "reflect"
 
 	source "d7y.io/dragonfly/v2/pkg/source"
@@ -172,10 +171,10 @@ func (m *MockResourceLister) EXPECT() *MockResourceListerMockRecorder {
 }
 
 // List mocks base method.
-func (m *MockResourceLister) List(request *source.Request) ([]*url.URL, error) {
+func (m *MockResourceLister) List(request *source.Request) ([]source.URLEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", request)
-	ret0, _ := ret[0].([]*url.URL)
+	ret0, _ := ret[0].([]source.URLEntry)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
