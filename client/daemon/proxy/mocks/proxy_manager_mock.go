@@ -8,6 +8,7 @@ import (
 	net "net"
 	reflect "reflect"
 
+	config "d7y.io/dragonfly/v2/client/config"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -88,4 +89,51 @@ func (m *MockManager) Stop() error {
 func (mr *MockManagerMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockManager)(nil).Stop))
+}
+
+// Watch mocks base method.
+func (m *MockManager) Watch(arg0 *config.ProxyOption) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Watch", arg0)
+}
+
+// Watch indicates an expected call of Watch.
+func (mr *MockManagerMockRecorder) Watch(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockManager)(nil).Watch), arg0)
+}
+
+// MockConfigWatcher is a mock of ConfigWatcher interface.
+type MockConfigWatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigWatcherMockRecorder
+}
+
+// MockConfigWatcherMockRecorder is the mock recorder for MockConfigWatcher.
+type MockConfigWatcherMockRecorder struct {
+	mock *MockConfigWatcher
+}
+
+// NewMockConfigWatcher creates a new mock instance.
+func NewMockConfigWatcher(ctrl *gomock.Controller) *MockConfigWatcher {
+	mock := &MockConfigWatcher{ctrl: ctrl}
+	mock.recorder = &MockConfigWatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigWatcher) EXPECT() *MockConfigWatcherMockRecorder {
+	return m.recorder
+}
+
+// Watch mocks base method.
+func (m *MockConfigWatcher) Watch(arg0 *config.ProxyOption) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "Watch", arg0)
+}
+
+// Watch indicates an expected call of Watch.
+func (mr *MockConfigWatcherMockRecorder) Watch(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Watch", reflect.TypeOf((*MockConfigWatcher)(nil).Watch), arg0)
 }
