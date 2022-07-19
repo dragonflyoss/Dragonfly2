@@ -128,11 +128,10 @@ func (p *peerManager) RunGC() error {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 
-		if elapsed > p.ttl && peer.ChildCount.Load() == 0 {
+		if elapsed > p.ttl {
 			// If the status is PeerStateLeave,
 			// clear peer information.
 			if peer.FSM.Is(PeerStateLeave) {
-				peer.DeleteParent()
 				p.Delete(peer.ID)
 				peer.Log.Info("peer has been reclaimed")
 				return true

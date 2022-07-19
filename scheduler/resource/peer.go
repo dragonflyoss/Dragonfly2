@@ -33,7 +33,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 const (
@@ -135,18 +134,6 @@ type Peer struct {
 	// Host is peer host.
 	Host *Host
 
-	// Parent is peer parent.
-	Parent *atomic.Value
-
-	// Children is peer children.
-	Children *sync.Map
-
-	// ChildCount is child count.
-	ChildCount *atomic.Int32
-
-	// StealPeers is steal peer ids.
-	StealPeers set.SafeSet
-
 	// BlockPeers is bad peer ids.
 	BlockPeers set.SafeSet
 
@@ -187,10 +174,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Stream:           &atomic.Value{},
 		Task:             task,
 		Host:             host,
-		Parent:           &atomic.Value{},
-		Children:         &sync.Map{},
-		ChildCount:       atomic.NewInt32(0),
-		StealPeers:       set.NewSafeSet(),
 		BlockPeers:       set.NewSafeSet(),
 		NeedBackToSource: atomic.NewBool(false),
 		IsBackToSource:   atomic.NewBool(false),
@@ -241,7 +224,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p)
-				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
@@ -251,7 +233,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
 				p.Task.PeerFailedCount.Store(0)
 				p.UpdateAt.Store(time.Now())
@@ -263,13 +244,11 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
-				p.DeleteParent()
 				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -281,197 +260,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	}
 
 	return p
-}
-
-// LoadChild return peer child for a key.
-func (p *Peer) LoadChild(key string) (*Peer, bool) {
-	rawChild, ok := p.Children.Load(key)
-	if !ok {
-		return nil, false
-	}
-
-	return rawChild.(*Peer), ok
-}
-
-// StoreChild set peer child.
-func (p *Peer) StoreChild(child *Peer) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if _, loaded := p.Children.LoadOrStore(child.ID, child); !loaded {
-		p.ChildCount.Inc()
-		p.Host.UploadPeerCount.Inc()
-	}
-
-	child.Parent.Store(p)
-}
-
-// DeleteChild deletes peer child for a key.
-func (p *Peer) DeleteChild(key string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	child, ok := p.LoadChild(key)
-	if !ok {
-		return
-	}
-
-	if _, loaded := p.Children.LoadAndDelete(child.ID); loaded {
-		p.ChildCount.Dec()
-		p.Host.UploadPeerCount.Dec()
-	}
-
-	child.Parent = &atomic.Value{}
-}
-
-// LoadParent return peer parent.
-func (p *Peer) LoadParent() (*Peer, bool) {
-	rawParent := p.Parent.Load()
-	if rawParent == nil {
-		return nil, false
-	}
-
-	return rawParent.(*Peer), true
-}
-
-// StoreParent set peer parent.
-func (p *Peer) StoreParent(parent *Peer) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.Parent.Store(parent)
-	if _, loaded := parent.Children.LoadOrStore(p.ID, p); !loaded {
-		parent.ChildCount.Inc()
-		parent.Host.UploadPeerCount.Inc()
-	}
-}
-
-// DeleteParent deletes peer parent.
-func (p *Peer) DeleteParent() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	parent, ok := p.LoadParent()
-	if !ok {
-		return
-	}
-	p.Parent = &atomic.Value{}
-
-	if _, loaded := parent.Children.LoadAndDelete(p.ID); loaded {
-		parent.ChildCount.Dec()
-		parent.Host.UploadPeerCount.Dec()
-	}
-}
-
-// ReplaceParent replaces peer parent.
-func (p *Peer) ReplaceParent(parent *Peer) {
-	p.DeleteParent()
-	p.StoreParent(parent)
-}
-
-// Depth represents depth of tree.
-func (p *Peer) Depth() int {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	var (
-		node      = p
-		ancestors = []string{p.ID}
-	)
-	for node != nil {
-		if node.Host.Type != HostTypeNormal {
-			break
-		}
-
-		parent, ok := node.LoadParent()
-		if !ok {
-			break
-		}
-
-		ancestors = append(ancestors, parent.ID)
-
-		// Prevent traversal tree from infinite loop.
-		if _, found := slices.FindDuplicate(ancestors); found {
-			p.Log.Error("tree structure produces an infinite loop")
-			break
-		}
-
-		node = parent
-	}
-
-	return len(ancestors)
-}
-
-// Ancestors returns peer's ancestors.
-func (p *Peer) Ancestors() []string {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	var (
-		node      = p
-		ancestors = []string{p.ID}
-	)
-	for node != nil {
-		parent, ok := node.LoadParent()
-		if !ok {
-			return ancestors
-		}
-
-		ancestors = append(ancestors, parent.ID)
-
-		// Prevent traversal tree from infinite loop.
-		if _, found := slices.FindDuplicate(ancestors); found {
-			p.Log.Error("tree structure produces an infinite loop")
-			break
-		}
-
-		node = parent
-	}
-
-	return ancestors
-}
-
-// IsDescendant determines whether it is ancestor of peer.
-func (p *Peer) IsDescendant(ancestor *Peer) bool {
-	return ancestor.isDescendant(p)
-}
-
-// IsAncestor determines whether it is descendant of peer.
-func (p *Peer) IsAncestor(descendant *Peer) bool {
-	return p.isDescendant(descendant)
-}
-
-// isDescendant determines whether it is ancestor of peer.
-func (p *Peer) isDescendant(descendant *Peer) bool {
-	p.mu.RLock()
-	defer p.mu.RUnlock()
-
-	var (
-		node      = descendant
-		ancestors = []string{descendant.ID}
-	)
-	for node != nil {
-		parent, ok := node.LoadParent()
-		if !ok {
-			return false
-		}
-
-		if parent.ID == p.ID {
-			return true
-		}
-
-		ancestors = append(ancestors, parent.ID)
-
-		// Prevent traversal tree from infinite loop.
-		if _, found := slices.FindDuplicate(ancestors); found {
-			p.Log.Error("tree structure produces an infinite loop")
-			break
-		}
-
-		node = parent
-	}
-
-	return false
 }
 
 // AppendPieceCost append piece cost to costs slice.

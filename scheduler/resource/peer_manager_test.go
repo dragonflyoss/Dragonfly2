@@ -353,42 +353,6 @@ func TestPeerManager_RunGC(t *testing.T) {
 				assert.Equal(ok, false)
 			},
 		},
-		{
-			name: "peer has children",
-			mock: func(m *gc.MockGCMockRecorder) {
-				m.Add(gomock.Any()).Return(nil).Times(1)
-			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
-				assert := assert.New(t)
-				peerManager.Store(mockPeer)
-				mockPeer.FSM.SetState(PeerStateSucceeded)
-				mockPeer.StoreChild(mockPeer)
-				err := peerManager.RunGC()
-				assert.NoError(err)
-
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(peer.FSM.Current(), PeerStateSucceeded)
-			},
-		},
-		{
-			name: "peer state is PeerStatePending",
-			mock: func(m *gc.MockGCMockRecorder) {
-				m.Add(gomock.Any()).Return(nil).Times(1)
-			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
-				assert := assert.New(t)
-				peerManager.Store(mockPeer)
-				mockPeer.FSM.SetState(PeerStatePending)
-				mockPeer.StoreChild(mockPeer)
-				err := peerManager.RunGC()
-				assert.NoError(err)
-
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(peer.FSM.Current(), PeerStatePending)
-			},
-		},
 	}
 
 	for _, tc := range tests {

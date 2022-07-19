@@ -27,6 +27,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/dag"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -118,6 +119,9 @@ type Task struct {
 	// if one peer succeeds, the value is reset to zero.
 	PeerFailedCount *atomic.Int32
 
+	// DAG is directed acyclic graph of peers.
+	DAG dag.DAG
+
 	// CreateAt is task create time.
 	CreateAt *atomic.Time
 
@@ -143,6 +147,7 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 		Peers:             &sync.Map{},
 		PeerCount:         atomic.NewInt32(0),
 		PeerFailedCount:   atomic.NewInt32(0),
+		DAG:               dag.NewDAG(),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
 		Log:               logger.WithTaskIDAndURL(id, url),
