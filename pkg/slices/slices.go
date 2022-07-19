@@ -26,3 +26,18 @@ func Contains[T comparable](s []T, e T) bool {
 
 	return false
 }
+
+// FindDuplicate returns duplicate element in a collection.
+func FindDuplicate[T comparable](s []T) (T, bool) {
+	visited := make(map[T]struct{})
+	for _, v := range s {
+		if _, ok := visited[v]; ok {
+			return v, true
+		}
+
+		visited[v] = struct{}{}
+	}
+
+	var zero T
+	return zero, false
+}
