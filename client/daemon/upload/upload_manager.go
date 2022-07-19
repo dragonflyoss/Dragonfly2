@@ -192,8 +192,6 @@ func (um *uploadManager) getDownload(ctx *gin.Context) {
 		return
 	}
 
-	// Add header "Content-Length" to avoid chunked body in http client.
-	ctx.Header(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
 	reader, closer, err := um.storageManager.ReadPiece(ctx,
 		&storage.ReadPieceRequest{
 			PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -212,8 +210,12 @@ func (um *uploadManager) getDownload(ctx *gin.Context) {
 	}
 	defer closer.Close()
 
+	// Add header "Content-Length" to avoid chunked body in http client.
+	ctx.Header(headers.ContentLength, fmt.Sprintf("%d", rg[0].Length))
+
 	// write header immediately, prevent client disconnecting after limiter.Wait() due to response header timeout
 	ctx.Writer.WriteHeaderNow()
+	ctx.Writer.Flush()
 
 	if um.Limiter != nil {
 		if err = um.Limiter.WaitN(ctx, int(rg[0].Length)); err != nil {
