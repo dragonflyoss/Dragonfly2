@@ -51,6 +51,13 @@ type DAG interface {
 	// GetVertex gets vertex from graph.
 	GetVertex(id string) (*Vertex, error)
 
+	// LenVertex returns length of vertices.
+	LenVertex() int
+
+	// RangeVertex calls f sequentially for each key and value present in the vertices.
+	// If f returns false, range stops the iteration.
+	RangeVertex(fn func(key string, value *Vertex) bool)
+
 	// AddEdge adds edge between two vertices.
 	AddEdge(fromVertexID, toVertexID string) error
 
@@ -128,6 +135,24 @@ func (d *dag) GetVertex(id string) (*Vertex, error) {
 	}
 
 	return vertex, nil
+}
+
+// LenVertex returns length of vertices.
+func (d *dag) LenVertex() int {
+	return len(d.vertices)
+}
+
+// RangeVertex calls f sequentially for each key and value present in the vertices.
+// If f returns false, range stops the iteration.
+func (d *dag) RangeVertex(fn func(key string, value *Vertex) bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	for k, v := range d.vertices {
+		if !fn(k, v) {
+			break
+		}
+	}
 }
 
 // AddEdge adds edge between two vertices.

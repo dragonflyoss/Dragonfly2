@@ -207,61 +207,6 @@ func TestTask_StorePeer(t *testing.T) {
 	}
 }
 
-func TestTask_LoadOrStorePeer(t *testing.T) {
-	tests := []struct {
-		name              string
-		id                string
-		urlMeta           *base.UrlMeta
-		url               string
-		backToSourceLimit int32
-		peerID            string
-		expect            func(t *testing.T, task *Task, mockPeer *Peer)
-	}{
-		{
-			name:              "load peer exist",
-			id:                mockTaskID,
-			urlMeta:           mockTaskURLMeta,
-			url:               mockTaskURL,
-			backToSourceLimit: mockTaskBackToSourceLimit,
-			peerID:            mockPeerID,
-			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
-				assert := assert.New(t)
-				peer, ok := task.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, true)
-				assert.Equal(peer.ID, mockPeerID)
-			},
-		},
-		{
-			name:              "load peer does not exist",
-			id:                mockTaskID,
-			urlMeta:           mockTaskURLMeta,
-			url:               mockTaskURL,
-			backToSourceLimit: mockTaskBackToSourceLimit,
-			peerID:            mockPeerID,
-			expect: func(t *testing.T, task *Task, mockPeer *Peer) {
-				assert := assert.New(t)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				peer, ok := task.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, false)
-				assert.Equal(peer.ID, mockPeer.ID)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
-			mockPeer := NewPeer(mockPeerID, task, mockHost)
-
-			task.StorePeer(mockPeer)
-			tc.expect(t, task, mockPeer)
-		})
-	}
-}
-
 func TestTask_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name              string

@@ -231,53 +231,6 @@ func TestHost_StorePeer(t *testing.T) {
 	}
 }
 
-func TestHost_LoadOrStorePeer(t *testing.T) {
-	tests := []struct {
-		name    string
-		rawHost *scheduler.PeerHost
-		peerID  string
-		options []HostOption
-		expect  func(t *testing.T, host *Host, mockPeer *Peer)
-	}{
-		{
-			name:    "load peer exist",
-			rawHost: mockRawHost,
-			peerID:  mockPeerID,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				peer, ok := host.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, true)
-				assert.Equal(peer.ID, mockPeerID)
-			},
-		},
-		{
-			name:    "load peer does not exist",
-			rawHost: mockRawHost,
-			peerID:  mockPeerID,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				peer, ok := host.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, false)
-				assert.Equal(peer.ID, mockPeer.ID)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
-			mockPeer := NewPeer(mockPeerID, mockTask, host)
-
-			host.StorePeer(mockPeer)
-			tc.expect(t, host, mockPeer)
-		})
-	}
-}
-
 func TestHost_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name    string

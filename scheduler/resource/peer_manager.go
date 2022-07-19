@@ -95,8 +95,8 @@ func (p *peerManager) Store(peer *Peer) {
 	defer p.mu.Unlock()
 
 	p.Map.Store(peer.ID, peer)
-	peer.Host.LoadOrStorePeer(peer)
-	peer.Task.LoadOrStorePeer(peer)
+	peer.Host.StorePeer(peer)
+	peer.Task.StorePeer(peer)
 }
 
 func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
@@ -105,8 +105,8 @@ func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 
 	rawPeer, loaded := p.Map.LoadOrStore(peer.ID, peer)
 	if !loaded {
-		peer.Host.LoadOrStorePeer(peer)
-		peer.Task.LoadOrStorePeer(peer)
+		peer.Host.StorePeer(peer)
+		peer.Task.StorePeer(peer)
 	}
 
 	return rawPeer.(*Peer), loaded

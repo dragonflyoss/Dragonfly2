@@ -109,18 +109,12 @@ type Task struct {
 	// Piece sync map.
 	Pieces *sync.Map
 
-	// Peer sync map.
-	Peers *sync.Map
-
-	// PeerCount is peer count.
-	PeerCount *atomic.Int32
+	// DAG is directed acyclic graph of peers.
+	DAG dag.DAG
 
 	// PeerFailedCount is peer failed count,
 	// if one peer succeeds, the value is reset to zero.
 	PeerFailedCount *atomic.Int32
-
-	// DAG is directed acyclic graph of peers.
-	DAG dag.DAG
 
 	// CreateAt is task create time.
 	CreateAt *atomic.Time
@@ -144,10 +138,8 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 		BackToSourceLimit: atomic.NewInt32(0),
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
-		Peers:             &sync.Map{},
-		PeerCount:         atomic.NewInt32(0),
-		PeerFailedCount:   atomic.NewInt32(0),
 		DAG:               dag.NewDAG(),
+		PeerFailedCount:   atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
 		Log:               logger.WithTaskIDAndURL(id, url),
@@ -186,44 +178,39 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 
 // LoadPeer return peer for a key.
 func (t *Task) LoadPeer(key string) (*Peer, bool) {
-	rawPeer, ok := t.Peers.Load(key)
-	if !ok {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
 		return nil, false
 	}
 
-	return rawPeer.(*Peer), ok
+	value := vertex.Value
+	if value == nil {
+		return nil, false
+	}
+
+	return value.(*Peer), true
 }
 
 // StorePeer set peer.
 func (t *Task) StorePeer(peer *Peer) {
-	t.Peers.Store(peer.ID, peer)
-	t.PeerCount.Inc()
-}
-
-// LoadOrStorePeer returns peer the key if present.
-// Otherwise, it stores and returns the given peer.
-// The loaded result is true if the peer was loaded, false if stored.
-func (t *Task) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
-	rawPeer, loaded := t.Peers.LoadOrStore(peer.ID, peer)
-	if !loaded {
-		t.PeerCount.Inc()
-	}
-
-	return rawPeer.(*Peer), loaded
+	t.DAG.AddVertex(peer.ID, peer) // nolint: errcheck
 }
 
 // DeletePeer deletes peer for a key.
 func (t *Task) DeletePeer(key string) {
-	if _, loaded := t.Peers.LoadAndDelete(key); loaded {
-		t.PeerCount.Dec()
-	}
+	t.DAG.DeleteVertex(key)
 }
 
 // HasAvailablePeer returns whether there is an available peer.
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
-	t.Peers.Range(func(_, v any) bool {
-		peer, ok := v.(*Peer)
+	t.DAG.RangeVertex(func(_ string, vertex *dag.Vertex) bool {
+		value := vertex.Value
+		if value == nil {
+			return true
+		}
+
+		peer, ok := value.(*Peer)
 		if !ok {
 			return true
 		}
@@ -242,8 +229,13 @@ func (t *Task) HasAvailablePeer() bool {
 // LoadSeedPeer return latest seed peer in peers sync map.
 func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
-	t.Peers.Range(func(_, v any) bool {
-		peer, ok := v.(*Peer)
+	t.DAG.RangeVertex(func(_ string, vertex *dag.Vertex) bool {
+		value := vertex.Value
+		if value == nil {
+			return true
+		}
+
+		peer, ok := value.(*Peer)
 		if !ok {
 			return true
 		}
@@ -331,7 +323,12 @@ func (t *Task) CanBackToSource() bool {
 
 // NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
-	t.Peers.Range(func(_, value any) bool {
+	t.DAG.RangeVertex(func(_ string, vertex *dag.Vertex) bool {
+		value := vertex.Value
+		if value == nil {
+			return true
+		}
+
 		peer := value.(*Peer)
 		if peer.FSM.Is(PeerStateRunning) {
 			stream, ok := peer.LoadStream()

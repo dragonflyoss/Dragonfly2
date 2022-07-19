@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/bits-and-blooms/bitset"
@@ -157,9 +156,6 @@ type Peer struct {
 	// UpdateAt is peer update time.
 	UpdateAt *atomic.Time
 
-	// Peer mutex.
-	mu *sync.RWMutex
-
 	// Peer log.
 	Log *logger.SugaredLoggerOnWith
 }
@@ -179,7 +175,6 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		IsBackToSource:   atomic.NewBool(false),
 		CreateAt:         atomic.NewTime(time.Now()),
 		UpdateAt:         atomic.NewTime(time.Now()),
-		mu:               &sync.RWMutex{},
 		Log:              logger.WithTaskAndPeerID(task.ID, id),
 	}
 
