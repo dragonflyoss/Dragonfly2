@@ -63,6 +63,8 @@ type DAG interface {
 
 	// DeleteEdge deletes edge between two vertices.
 	DeleteEdge(fromVertexID, toVertexID string) error
+
+	StartVertex() string
 }
 
 // dag provides directed acyclic graph function.
@@ -218,6 +220,18 @@ func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
 	fromVertex.Children.Delete(toVertex)
 	toVertex.Parents.Delete(fromVertex)
 	return nil
+}
+
+func (d *dag) StartVertex() string {
+	start := ""
+	d.RangeVertex(func(key string, value *Vertex) bool {
+		if value.InDegree() == 0 {
+			start = key
+			return true
+		}
+		return false
+	})
+	return start
 }
 
 // depthFirstSearch is a depth-first search of the directed acyclic graph.
