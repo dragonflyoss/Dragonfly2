@@ -526,7 +526,7 @@ func TestPeer_Depth(t *testing.T) {
 				peer.StoreParent(peer)
 
 				assert := assert.New(t)
-				assert.Equal(peer.Depth(), 1)
+				assert.Equal(peer.Depth(), 2)
 			},
 		},
 	}
@@ -557,8 +557,8 @@ func TestPeer_Ancestors(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
 				assert := assert.New(t)
 				peer.StoreChild(mockChildPeer)
-				assert.Equal(len(mockChildPeer.Ancestors()), 1)
-				assert.EqualValues(mockChildPeer.Ancestors(), []string{peer.ID})
+				assert.Equal(len(mockChildPeer.Ancestors()), 2)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string{mockChildPeer.ID, peer.ID})
 			},
 		},
 		{
@@ -566,8 +566,8 @@ func TestPeer_Ancestors(t *testing.T) {
 			childID: idgen.PeerID("127.0.0.1"),
 			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
 				assert := assert.New(t)
-				assert.Equal(len(mockChildPeer.Ancestors()), 0)
-				assert.EqualValues(mockChildPeer.Ancestors(), []string(nil))
+				assert.Equal(len(mockChildPeer.Ancestors()), 1)
+				assert.EqualValues(mockChildPeer.Ancestors(), []string{mockChildPeer.ID})
 			},
 		},
 		{
@@ -576,8 +576,8 @@ func TestPeer_Ancestors(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer, mockChildPeer *Peer) {
 				assert := assert.New(t)
 				peer.StoreChild(peer)
-				assert.Equal(len(peer.Ancestors()), 0)
-				assert.Equal(peer.Ancestors(), []string(nil))
+				assert.Equal(len(peer.Ancestors()), 2)
+				assert.Equal(peer.Ancestors(), []string{peer.ID, peer.ID})
 			},
 		},
 	}
