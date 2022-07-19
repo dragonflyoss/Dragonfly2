@@ -164,6 +164,95 @@ func TestDAGGetVertex(t *testing.T) {
 	}
 }
 
+func TestDAGVertexLenVertex(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, d DAG)
+	}{
+		{
+			name: "get length of vertex",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+				if err := d.AddVertex(mockVertexID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				d.LenVertex()
+				assert.Equal(d.LenVertex(), 1)
+
+				d.DeleteVertex(mockVertexID)
+				assert.Equal(d.LenVertex(), 0)
+			},
+		},
+		{
+			name: "empty dag",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+				assert.Equal(d.LenVertex(), 0)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDAG()
+			tc.expect(t, d)
+		})
+	}
+}
+
+func TestDAGRange(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, d DAG)
+	}{
+		{
+			name: "range vertices",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+				if err := d.AddVertex(mockVertexID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				d.RangeVertex(func(k string, v *Vertex) bool {
+					assert.Equal(k, mockVertexID)
+					return true
+				})
+			},
+		},
+		{
+			name: "range failed",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+
+				var (
+					mockVertexEID = "bae"
+					mockVertexFID = "baf"
+				)
+				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
+					assert.NoError(err)
+				}
+
+				d.RangeVertex(func(k string, v *Vertex) bool {
+					assert.Contains([]string{mockVertexEID, mockVertexFID}, k)
+					return false
+				})
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			d := NewDAG()
+			tc.expect(t, d)
+		})
+	}
+}
+
 func TestDAGAddEdge(t *testing.T) {
 	tests := []struct {
 		name   string
