@@ -31,6 +31,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/dag"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -219,6 +220,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p)
+				p.Task.DeletePeerInEdges(p.ID)
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
@@ -228,8 +230,9 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.Host.DeletePeer(p.ID)
 				p.Task.PeerFailedCount.Store(0)
+				p.Task.DeletePeerInEdges(p.ID)
+				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -239,11 +242,13 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				p.Task.DeletePeer(p.ID)
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
+				p.Task.DeletePeer(p.ID)
 				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -322,4 +327,35 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+// Children returns children of peer.
+func (p *Peer) Children() []*Peer {
+	vertex, err := p.Task.DAG.GetVertex(p.ID)
+	if err != nil {
+		p.Log.Warn("can not find vertex in dag")
+		return nil
+	}
+
+	var children []*Peer
+	for _, value := range vertex.Children.Values() {
+		vertex, ok := value.(*dag.Vertex)
+		if !ok {
+			continue
+		}
+
+		vertexVal := vertex.Value
+		if vertexVal == nil {
+			continue
+		}
+
+		child, ok := vertexVal.(*Peer)
+		if !ok {
+			continue
+		}
+
+		children = append(children, child)
+	}
+
+	return children
 }

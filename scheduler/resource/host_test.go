@@ -328,25 +328,34 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 		name    string
 		rawHost *scheduler.PeerHost
 		options []HostOption
-		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+		expect  func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer)
 	}{
 		{
 			name:    "get free upload load",
 			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+			expect: func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
-				mockPeer.StoreParent(mockPeer)
+				mockSeedPeer := NewPeer(mockSeedPeerID, mockTask, host)
+				err := mockPeer.Task.DAG.AddVertex(mockSeedPeer.ID, mockSeedPeer)
+				assert.NoError(err)
+				err = mockPeer.Task.DAG.AddVertex(mockPeer.ID, mockPeer)
+				assert.NoError(err)
+				err = mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
+				assert.NoError(err)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
-				mockPeer.StoreParent(mockPeer)
+				mockTask.DeletePeerInEdges(mockPeer.ID)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
+				err = mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
+				assert.NoError(err)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
-				mockPeer.DeleteParent()
+				mockTask.DeletePeerOutEdges(mockSeedPeer.ID)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
 		},
 		{
 			name:    "upload peer does not exist",
 			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+			expect: func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
@@ -359,7 +368,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
-			tc.expect(t, host, mockPeer)
+			tc.expect(t, host, mockTask, mockPeer)
 		})
 	}
 }

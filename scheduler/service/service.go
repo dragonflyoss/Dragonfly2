@@ -172,16 +172,36 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				}, nil
 			}
 
+			// Delete inedges of peer.
+			if err := task.DeletePeerInEdges(peer.ID); err != nil {
+				msg := fmt.Sprintf("peer deletes inedges failed: %s", err.Error())
+				peer.Log.Error(msg)
+				return nil, dferrors.New(base.Code_SchedError, msg)
+			}
+
+			// Add edges between parent and peer.
+			if err := task.AddPeerEdge(parent, peer); err != nil {
+				peer.Log.Warnf("peer adds edge failed: %s", err.Error())
+				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
+					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
+					peer.Log.Error(msg)
+					return nil, dferrors.New(base.Code_SchedError, msg)
+				}
+
+				return &rpcscheduler.RegisterResult{
+					TaskId:    task.ID,
+					TaskType:  task.Type,
+					SizeScope: base.SizeScope_NORMAL,
+				}, nil
+			}
+
 			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
 				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 				peer.Log.Error(msg)
 				return nil, dferrors.New(base.Code_SchedError, msg)
 			}
 
-			peer.ReplaceParent(parent)
 			peer.Log.Infof("schedule parent successful, replace parent to %s ", parent.ID)
-			peer.Log.Debugf("peer ancestors is %v", peer.Ancestors())
-
 			singlePiece := &rpcscheduler.SinglePiece{
 				DstPid:  parent.ID,
 				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
@@ -392,7 +412,7 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 		ContentLength:    task.ContentLength.Load(),
 		TotalPieceCount:  task.TotalPieceCount.Load(),
 		State:            task.FSM.Current(),
-		PeerCount:        task.PeerCount.Load(),
+		PeerCount:        int32(task.PeerCount()),
 		HasAvailablePeer: task.HasAvailablePeer(),
 	}, nil
 }
@@ -478,17 +498,11 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 		return dferrors.New(base.Code_SchedTaskStatusError, msg)
 	}
 
-	peer.Children.Range(func(_, value any) bool {
-		child, ok := value.(*resource.Peer)
-		if !ok {
-			return true
-		}
-
-		// Reschedule a new parent to children of peer to exclude the current leave peer.
+	// Reschedule a new parent to children of peer to exclude the current leave peer.
+	for _, child := range peer.Children() {
 		child.Log.Infof("schedule parent because of parent peer %s is leaving", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
-		return true
-	})
+	}
 
 	s.resource.PeerManager().Delete(peer.ID)
 	return nil
@@ -728,16 +742,10 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
-	peer.Children.Range(func(_, value any) bool {
-		child, ok := value.(*resource.Peer)
-		if !ok {
-			return true
-		}
-
+	for _, child := range peer.Children() {
 		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
-		return true
-	})
+	}
 }
 
 // handleLegacySeedPeer handles seed server's task has left,
@@ -754,16 +762,10 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current failed peer.
-	peer.Children.Range(func(_, value any) bool {
-		child, ok := value.(*resource.Peer)
-		if !ok {
-			return true
-		}
-
+	for _, child := range peer.Children() {
 		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
-		return true
-	})
+	}
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:
@@ -861,22 +863,6 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		HostType:        int(peer.Host.Type),
 		CreateAt:        peer.CreateAt.Load().UnixNano(),
 		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
-	}
-
-	if parent, ok := peer.LoadParent(); ok {
-		record.ParentID = parent.ID
-		record.ParentIP = parent.Host.IP
-		record.ParentHostname = parent.Host.Hostname
-		record.ParentTag = parent.Tag
-		record.ParentPieceCount = int32(parent.Pieces.Count())
-		record.ParentSecurityDomain = parent.Host.SecurityDomain
-		record.ParentIDC = parent.Host.IDC
-		record.ParentNetTopology = parent.Host.NetTopology
-		record.ParentLocation = parent.Host.Location
-		record.ParentFreeUploadLoad = parent.Host.FreeUploadLoad()
-		record.ParentHostType = int(parent.Host.Type)
-		record.ParentCreateAt = parent.CreateAt.Load().UnixNano()
-		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano()
 	}
 
 	if err := s.storage.Create(record); err != nil {

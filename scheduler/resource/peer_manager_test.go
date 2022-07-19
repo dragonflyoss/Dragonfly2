@@ -18,6 +18,7 @@ package resource
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -309,12 +310,17 @@ func TestPeerManager_Delete(t *testing.T) {
 
 func TestPeerManager_RunGC(t *testing.T) {
 	tests := []struct {
-		name   string
-		mock   func(m *gc.MockGCMockRecorder)
-		expect func(t *testing.T, peerManager PeerManager, mockPeer *Peer)
+		name     string
+		gcConfig *config.GCConfig
+		mock     func(m *gc.MockGCMockRecorder)
+		expect   func(t *testing.T, peerManager PeerManager, mockPeer *Peer)
 	}{
 		{
 			name: "peer leave",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Microsecond,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
@@ -332,6 +338,10 @@ func TestPeerManager_RunGC(t *testing.T) {
 		},
 		{
 			name: "peer reclaimed",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Microsecond,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
@@ -339,6 +349,39 @@ func TestPeerManager_RunGC(t *testing.T) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
 				mockPeer.FSM.SetState(PeerStateSucceeded)
+				err := peerManager.RunGC()
+				assert.NoError(err)
+
+				peer, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, true)
+				assert.Equal(peer.FSM.Current(), PeerStateLeave)
+
+				err = peerManager.RunGC()
+				assert.NoError(err)
+
+				_, ok = peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, false)
+			},
+		},
+		{
+			name: "peer reclaimed with PeerCountLimitForTask",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Hour,
+			},
+			mock: func(m *gc.MockGCMockRecorder) {
+				m.Add(gomock.Any()).Return(nil).Times(1)
+			},
+			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
+				assert := assert.New(t)
+				peerManager.Store(mockPeer)
+				mockPeer.FSM.SetState(PeerStateSucceeded)
+				for i := 0; i < PeerCountLimitForTask+1; i++ {
+					if err := mockPeer.Task.DAG.AddVertex(fmt.Sprint(i), fmt.Sprint(i)); err != nil {
+						t.Fatal(err)
+					}
+				}
+
 				err := peerManager.RunGC()
 				assert.NoError(err)
 

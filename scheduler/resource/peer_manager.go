@@ -95,8 +95,8 @@ func (p *peerManager) Store(peer *Peer) {
 	defer p.mu.Unlock()
 
 	p.Map.Store(peer.ID, peer)
-	peer.Host.StorePeer(peer)
 	peer.Task.StorePeer(peer)
+	peer.Host.StorePeer(peer)
 }
 
 func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
@@ -118,8 +118,8 @@ func (p *peerManager) Delete(key string) {
 
 	if peer, ok := p.Load(key); ok {
 		p.Map.Delete(key)
-		peer.Host.DeletePeer(key)
 		peer.Task.DeletePeer(key)
+		peer.Host.DeletePeer(key)
 	}
 }
 
@@ -128,7 +128,7 @@ func (p *peerManager) RunGC() error {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
 
-		if elapsed > p.ttl {
+		if elapsed > p.ttl || peer.Task.PeerCount() > PeerCountLimitForTask {
 			// If the status is PeerStateLeave,
 			// clear peer information.
 			if peer.FSM.Is(PeerStateLeave) {

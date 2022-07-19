@@ -164,7 +164,7 @@ func TestDAGGetVertex(t *testing.T) {
 	}
 }
 
-func TestDAGVertexLenVertex(t *testing.T) {
+func TestDAGVertexVertexCount(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DAG)
@@ -177,18 +177,18 @@ func TestDAGVertexLenVertex(t *testing.T) {
 					assert.NoError(err)
 				}
 
-				d.LenVertex()
-				assert.Equal(d.LenVertex(), 1)
+				d.VertexCount()
+				assert.Equal(d.VertexCount(), 1)
 
 				d.DeleteVertex(mockVertexID)
-				assert.Equal(d.LenVertex(), 0)
+				assert.Equal(d.VertexCount(), 0)
 			},
 		},
 		{
 			name: "empty dag",
 			expect: func(t *testing.T, d DAG) {
 				assert := assert.New(t)
-				assert.Equal(d.LenVertex(), 0)
+				assert.Equal(d.VertexCount(), 0)
 			},
 		},
 	}
@@ -201,46 +201,26 @@ func TestDAGVertexLenVertex(t *testing.T) {
 	}
 }
 
-func TestDAGRange(t *testing.T) {
+func TestDAGVertices(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, d DAG)
 	}{
 		{
-			name: "range vertices",
+			name: "get vertices",
 			expect: func(t *testing.T, d DAG) {
 				assert := assert.New(t)
 				if err := d.AddVertex(mockVertexID, mockVertexValue); err != nil {
 					assert.NoError(err)
 				}
 
-				d.RangeVertex(func(k string, v *Vertex) bool {
-					assert.Equal(k, mockVertexID)
-					return true
-				})
-			},
-		},
-		{
-			name: "range failed",
-			expect: func(t *testing.T, d DAG) {
-				assert := assert.New(t)
+				vertices := d.Vertices()
+				assert.Equal(len(vertices), 1)
+				assert.Equal(vertices[mockVertexID].ID, mockVertexID)
+				assert.Equal(vertices[mockVertexID].Value, mockVertexValue)
 
-				var (
-					mockVertexEID = "bae"
-					mockVertexFID = "baf"
-				)
-				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
-					assert.NoError(err)
-				}
-
-				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
-					assert.NoError(err)
-				}
-
-				d.RangeVertex(func(k string, v *Vertex) bool {
-					assert.Contains([]string{mockVertexEID, mockVertexFID}, k)
-					return false
-				})
+				d.DeleteVertex(mockVertexID)
+				assert.Equal(len(vertices), 0)
 			},
 		},
 	}

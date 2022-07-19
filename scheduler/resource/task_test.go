@@ -79,7 +79,7 @@ func TestTask_NewTask(t *testing.T) {
 				assert.Equal(task.BackToSourcePeers.Len(), uint(0))
 				assert.Equal(task.FSM.Current(), TaskStatePending)
 				assert.Empty(task.Pieces)
-				assert.Empty(task.Peers)
+				assert.Equal(task.PeerCount(), 0)
 				assert.NotEqual(task.CreateAt.Load(), 0)
 				assert.NotEqual(task.UpdateAt.Load(), 0)
 				assert.NotNil(task.Log)

@@ -51,12 +51,11 @@ type DAG interface {
 	// GetVertex gets vertex from graph.
 	GetVertex(id string) (*Vertex, error)
 
-	// LenVertex returns length of vertices.
-	LenVertex() int
+	// VertexCount returns count of vertices.
+	VertexCount() int
 
-	// RangeVertex calls f sequentially for each key and value present in the vertices.
-	// If f returns false, range stops the iteration.
-	RangeVertex(fn func(key string, value *Vertex) bool)
+	// Vertices returns map of vertices.
+	Vertices() map[string]*Vertex
 
 	// AddEdge adds edge between two vertices.
 	AddEdge(fromVertexID, toVertexID string) error
@@ -101,25 +100,24 @@ func (d *dag) DeleteVertex(id string) {
 		return
 	}
 
-	vertex.Parents.Range(func(item any) bool {
-		parent, ok := item.(*Vertex)
+	for _, value := range vertex.Parents.Values() {
+		parent, ok := value.(*Vertex)
 		if !ok {
-			return true
+			continue
 		}
 
 		parent.Children.Delete(vertex)
-		return true
-	})
+	}
 
-	vertex.Children.Range(func(item any) bool {
-		child, ok := item.(*Vertex)
+	for _, value := range vertex.Children.Values() {
+		child, ok := value.(*Vertex)
 		if !ok {
-			return true
+			continue
 		}
 
 		child.Parents.Delete(vertex)
-		return true
-	})
+		continue
+	}
 
 	delete(d.vertices, id)
 }
@@ -137,22 +135,17 @@ func (d *dag) GetVertex(id string) (*Vertex, error) {
 	return vertex, nil
 }
 
-// LenVertex returns length of vertices.
-func (d *dag) LenVertex() int {
+// VertexCount returns count of vertices.
+func (d *dag) VertexCount() int {
 	return len(d.vertices)
 }
 
-// RangeVertex calls f sequentially for each key and value present in the vertices.
-// If f returns false, range stops the iteration.
-func (d *dag) RangeVertex(fn func(key string, value *Vertex) bool) {
+// Vertices returns map of vertices.
+func (d *dag) Vertices() map[string]*Vertex {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	for k, v := range d.vertices {
-		if !fn(k, v) {
-			break
-		}
-	}
+	return d.vertices
 }
 
 // AddEdge adds edge between two vertices.

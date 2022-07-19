@@ -28,7 +28,6 @@ type SafeSet interface {
 	Delete(any)
 	Contains(...any) bool
 	Len() uint
-	Range(func(any) bool)
 	Clear()
 }
 
@@ -45,11 +44,13 @@ func NewSafeSet() SafeSet {
 }
 
 func (s *safeSet) Values() []any {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	var result []any
-	s.Range(func(v any) bool {
-		result = append(result, v)
-		return true
-	})
+	for k := range s.data {
+		result = append(result, k)
+	}
 
 	return result
 }
@@ -91,16 +92,6 @@ func (s *safeSet) Len() uint {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return uint(len(s.data))
-}
-
-func (s *safeSet) Range(fn func(any) bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	for v := range s.data {
-		if !fn(v) {
-			break
-		}
-	}
 }
 
 func (s *safeSet) Clear() {
