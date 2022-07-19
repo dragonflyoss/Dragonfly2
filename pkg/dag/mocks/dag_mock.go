@@ -102,3 +102,29 @@ func (mr *MockDAGMockRecorder) GetVertex(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertex", reflect.TypeOf((*MockDAG)(nil).GetVertex), id)
 }
+
+// LenVertex mocks base method.
+func (m *MockDAG) LenVertex() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LenVertex")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// LenVertex indicates an expected call of LenVertex.
+func (mr *MockDAGMockRecorder) LenVertex() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LenVertex", reflect.TypeOf((*MockDAG)(nil).LenVertex))
+}
+
+// RangeVertex mocks base method.
+func (m *MockDAG) RangeVertex(fn func(string, *dag.Vertex) bool) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RangeVertex", fn)
+}
+
+// RangeVertex indicates an expected call of RangeVertex.
+func (mr *MockDAGMockRecorder) RangeVertex(fn interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RangeVertex", reflect.TypeOf((*MockDAG)(nil).RangeVertex), fn)
+}
