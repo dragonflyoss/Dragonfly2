@@ -100,13 +100,26 @@ func TestRecordsTransData(t *testing.T) {
 		records[i] = record1
 	}
 	fmt.Println(record2)
-	data := RecordsTransData(records)
-	instances, _ := DataToInstances(data)
-	fmt.Println(instances)
-	regression, err := train(instances)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(regression)
+	/*
+		fmt.Println(record2)
+		data := RecordsTransData(records)
+		instances, _ := DataToInstances(data)
+		fmt.Println(instances)
+		regression, err := train(instances)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(regression)
+	*/
+	t1 := new(Training)
+	model, re, _ := t1.Serve(records)
+	fmt.Println(re)
+	fmt.Println(model)
+	s1 := new(Saving)
+	data, _ := s1.Serve(model)
+	fmt.Println(data)
+	l1 := new(Loading)
+	mo, _ := l1.Serve(data)
+	fmt.Println(mo)
 }
