@@ -19,9 +19,6 @@ package types
 const (
 	// Server is boot.
 	IsBootConfigName = "is_boot"
-
-	// Object storage is enabled.
-	ObjectStorageIsEnabledConfigName = "object_storage_is_enabled"
 )
 
 type ConfigParams struct {

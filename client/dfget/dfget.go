@@ -29,6 +29,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gammazero/deque"
 	"github.com/go-http-utils/headers"
 	"github.com/schollz/progressbar/v3"
 
@@ -266,11 +267,7 @@ func newProgressBar(max int64) *progressbar.ProgressBar {
 		}))
 }
 
-func accept(u string, parent, sub string, level uint, accept, reject string) bool {
-	if !checkDirectoryLevel(parent, sub, level) {
-		logger.Debugf("url %s not accept by level: %d", u, level)
-		return false
-	}
+func accept(u string, accept, reject string) bool {
 	if !acceptRegex(u, accept) {
 		logger.Debugf("url %s not accept by regex: %s", u, accept)
 		return false
@@ -280,14 +277,6 @@ func accept(u string, parent, sub string, level uint, accept, reject string) boo
 		return false
 	}
 	return true
-}
-
-func checkDirectoryLevel(parent, sub string, level uint) bool {
-	if level == 0 {
-		return true
-	}
-	dirs := strings.Split(strings.Trim(strings.TrimLeft(sub, parent), "/"), "/")
-	return uint(len(dirs)) <= level
 }
 
 func acceptRegex(u string, accept string) bool {
@@ -304,44 +293,64 @@ func rejectRegex(u string, reject string) bool {
 	return regexp.MustCompile(reject).Match([]byte(u))
 }
 
+// recursiveDownload breadth-first download all resources
 func recursiveDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *config.DfgetConfig) error {
-	request, err := source.NewRequestWithContext(ctx, cfg.URL, parseHeader(cfg.Header))
-	if err != nil {
-		return err
-	}
-	dirURL, err := url.Parse(cfg.URL)
-	if err != nil {
-		return err
-	}
-	logger.Debugf("dirURL: %s", cfg.URL)
-
-	urls, err := source.List(request)
-	if err != nil {
-		return err
-	}
-	for _, u := range urls {
-		// reuse dfget config
-		c := *cfg
-		// update some attributes
-		c.Recursive, c.URL, c.Output = false, u.String(), path.Join(cfg.Output, strings.TrimPrefix(u.Path, dirURL.Path))
-		if !accept(c.URL, dirURL.Path, u.Path, cfg.RecursiveLevel, cfg.RecursiveAcceptRegex, cfg.RecursiveRejectRegex) {
-			logger.Debugf("url %s is not accepted, skip", c.URL)
+	var queue deque.Deque[*config.DfgetConfig]
+	queue.PushBack(cfg)
+	downloadMap := map[url.URL]struct{}{}
+	for {
+		if queue.Len() == 0 {
+			break
+		}
+		parentCfg := queue.PopFront()
+		if parentCfg.RecursiveLevel == 0 {
 			continue
 		}
-		if cfg.RecursiveList {
-			fmt.Printf("%s\n", u.String())
-			continue
-		}
-		// validate new dfget config
-		if err = c.Validate(); err != nil {
-			logger.Errorf("validate failed: %s", err)
-			return err
-		}
-
-		logger.Debugf("download %s to %s", c.URL, c.Output)
-		err = download(ctx, client, &c, logger.With("url", c.URL))
+		parentCfg.RecursiveLevel--
+		request, err := source.NewRequestWithContext(ctx, parentCfg.URL, parseHeader(parentCfg.Header))
 		if err != nil {
 			return err
+		}
+		// prevent loop downloading
+		if _, exist := downloadMap[*request.URL]; exist {
+			continue
+		}
+		downloadMap[*request.URL] = struct{}{}
+
+		urlEntries, err := source.List(request)
+		if err != nil {
+			logger.Errorf("url [%v] source lister error: %v", request.URL, err)
+		}
+		for _, urlEntry := range urlEntries {
+			childCfg := *parentCfg //create new cfg
+			childCfg.Output = path.Join(parentCfg.Output, urlEntry.Name)
+			fmt.Printf("%s\n", strings.TrimPrefix(childCfg.Output, cfg.Output))
+			u := urlEntry.URL
+			childCfg.URL = u.String()
+
+			if !accept(childCfg.URL, childCfg.RecursiveAcceptRegex, childCfg.RecursiveRejectRegex) {
+				logger.Debugf("url %s is not accepted, skip", childCfg.URL)
+				continue
+			}
+
+			logger.Debugf("download %s to %s", childCfg.URL, childCfg.Output)
+			if !urlEntry.IsDir {
+				if childCfg.RecursiveList {
+					continue
+				}
+				childCfg.Recursive = false
+				// validate new dfget config
+				if err = childCfg.Validate(); err != nil {
+					logger.Errorf("validate failed: %s", err)
+					return err
+				}
+				if err := singleDownload(ctx, client, &childCfg, logger.With("url", childCfg.URL)); err != nil {
+					return err
+				}
+			} else {
+				queue.PushBack(&childCfg)
+			}
+
 		}
 	}
 	return nil

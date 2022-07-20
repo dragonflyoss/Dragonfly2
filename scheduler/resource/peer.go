@@ -33,11 +33,12 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 const (
-	// Default value of biz tag.
-	DefaultBizTag = "unknow"
+	// Default value of tag.
+	DefaultTag = "unknow"
 
 	// Download tiny file timeout.
 	downloadTinyFileContextTimeout = 30 * time.Second
@@ -101,10 +102,10 @@ const (
 // PeerOption is a functional option for configuring the peer.
 type PeerOption func(p *Peer) *Peer
 
-// WithBizTag sets peer's BizTag.
-func WithBizTag(bizTag string) PeerOption {
+// WithTag sets peer's Tag.
+func WithTag(tag string) PeerOption {
 	return func(p *Peer) *Peer {
-		p.BizTag = bizTag
+		p.Tag = tag
 		return p
 	}
 }
@@ -113,8 +114,8 @@ type Peer struct {
 	// ID is peer id.
 	ID string
 
-	// BizTag is peer biz tag.
-	BizTag string
+	// Tag is peer tag.
+	Tag string
 
 	// Pieces is piece bitset.
 	Pieces *bitset.BitSet
@@ -180,7 +181,7 @@ type Peer struct {
 func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:               id,
-		BizTag:           DefaultBizTag,
+		Tag:              DefaultTag,
 		Pieces:           &bitset.BitSet{},
 		pieceCosts:       []int64{},
 		Stream:           &atomic.Value{},
@@ -373,11 +374,11 @@ func (p *Peer) Depth() int {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	node := p
-	var depth int
+	var (
+		node      = p
+		ancestors = []string{p.ID}
+	)
 	for node != nil {
-		depth++
-
 		if node.Host.Type != HostTypeNormal {
 			break
 		}
@@ -387,8 +388,10 @@ func (p *Peer) Depth() int {
 			break
 		}
 
+		ancestors = append(ancestors, parent.ID)
+
 		// Prevent traversal tree from infinite loop.
-		if p.ID == parent.ID {
+		if _, found := slices.FindDuplicate(ancestors); found {
 			p.Log.Error("tree structure produces an infinite loop")
 			break
 		}
@@ -396,7 +399,7 @@ func (p *Peer) Depth() int {
 		node = parent
 	}
 
-	return depth
+	return len(ancestors)
 }
 
 // Ancestors returns peer's ancestors.
@@ -404,22 +407,25 @@ func (p *Peer) Ancestors() []string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	var ancestors []string
-	node := p
+	var (
+		node      = p
+		ancestors = []string{p.ID}
+	)
 	for node != nil {
 		parent, ok := node.LoadParent()
 		if !ok {
 			return ancestors
 		}
 
+		ancestors = append(ancestors, parent.ID)
+
 		// Prevent traversal tree from infinite loop.
-		if parent.ID == node.ID {
+		if _, found := slices.FindDuplicate(ancestors); found {
 			p.Log.Error("tree structure produces an infinite loop")
-			return ancestors
+			break
 		}
 
 		node = parent
-		ancestors = append(ancestors, node.ID)
 	}
 
 	return ancestors
@@ -427,34 +433,39 @@ func (p *Peer) Ancestors() []string {
 
 // IsDescendant determines whether it is ancestor of peer.
 func (p *Peer) IsDescendant(ancestor *Peer) bool {
-	return p.isDescendant(ancestor, p)
+	return ancestor.isDescendant(p)
 }
 
 // IsAncestor determines whether it is descendant of peer.
 func (p *Peer) IsAncestor(descendant *Peer) bool {
-	return p.isDescendant(p, descendant)
+	return p.isDescendant(descendant)
 }
 
 // isDescendant determines whether it is ancestor of peer.
-func (p *Peer) isDescendant(ancestor, descendant *Peer) bool {
+func (p *Peer) isDescendant(descendant *Peer) bool {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	node := descendant
+	var (
+		node      = descendant
+		ancestors = []string{descendant.ID}
+	)
 	for node != nil {
 		parent, ok := node.LoadParent()
 		if !ok {
 			return false
 		}
 
-		if parent.ID == ancestor.ID {
+		if parent.ID == p.ID {
 			return true
 		}
 
+		ancestors = append(ancestors, parent.ID)
+
 		// Prevent traversal tree from infinite loop.
-		if parent.ID == descendant.ID {
+		if _, found := slices.FindDuplicate(ancestors); found {
 			p.Log.Error("tree structure produces an infinite loop")
-			return true
+			break
 		}
 
 		node = parent

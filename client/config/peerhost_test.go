@@ -420,6 +420,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				Password: "bar",
 			},
 			DefaultFilter:  "baz",
+			DefaultTag:     "tag",
 			MaxConcurrency: 1,
 			RegistryMirror: &RegistryMirror{
 				Remote: &URL{

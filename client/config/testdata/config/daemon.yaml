@@ -124,6 +124,7 @@ proxy:
     username: "foo"
     password: "bar"
   defaultFilter: "baz"
+  defaultTag: "tag"
   maxConcurrency: 1
   security:
     insecure: true
