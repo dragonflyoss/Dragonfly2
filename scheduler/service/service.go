@@ -842,26 +842,48 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 
 // createRecord stores peer download records.
 func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcscheduler.PeerResult) {
+	//strFeatureTrans := func(str1 string, str2 string) int {
+	//	if str1 == str2 {
+	//		return 0
+	//	}
+	//	return 1
+	//}
+
+	//figureFeatureTrans := func(a float64, b float64) float64 {
+	//	if b == 0 {
+	//		return -1
+	//	}
+	//	return a / b
+	//}
+
 	record := storage.Record{
-		ID:              peer.ID,
-		IP:              peer.Host.IP,
-		Hostname:        peer.Host.Hostname,
-		Tag:             peer.Tag,
-		Cost:            req.Cost,
-		PieceCount:      int32(peer.Pieces.Count()),
-		TotalPieceCount: peer.Task.TotalPieceCount.Load(),
-		ContentLength:   peer.Task.ContentLength.Load(),
-		SecurityDomain:  peer.Host.SecurityDomain,
-		IDC:             peer.Host.IDC,
-		NetTopology:     peer.Host.NetTopology,
-		Location:        peer.Host.Location,
-		FreeUploadLoad:  peer.Host.FreeUploadLoad(),
-		State:           peerState,
-		HostType:        int(peer.Host.Type),
-		CreateAt:        peer.CreateAt.Load().UnixNano(),
-		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
+		ID: peer.ID,
+		//Rate:     figureFeatureTrans(float64(peer.Task.ContentLength.Load()), float64(req.Cost)),
+		State:    peerState,
+		HostType: int(peer.Host.Type),
+		CreateAt: peer.CreateAt.Load().UnixNano() / 7200,
+		UpdateAt: peer.UpdateAt.Load().UnixNano() / 7200,
 	}
 
+	//<<<<<<< HEAD
+	//=======
+	//if parent, ok := peer.LoadParent(); ok {
+	//	record.ParentID = parent.ID
+	//	record.IP = strFeatureTrans(peer.Host.IP, parent.Host.IP)
+	//	record.HostName = strFeatureTrans(peer.Host.Hostname, parent.Host.Hostname)
+	//	record.Tag = strFeatureTrans(peer.Tag, parent.Tag)
+	//	record.ParentPiece = figureFeatureTrans(float64(peer.Task.TotalPieceCount.Load()), float64(parent.Pieces.Count()))
+	//	record.SecurityDomain = strFeatureTrans(peer.Host.SecurityDomain, parent.Host.SecurityDomain)
+	//	record.IDC = strFeatureTrans(peer.Host.IDC, parent.Host.IDC)
+	//	record.NetTopology = strFeatureTrans(peer.Host.NetTopology, parent.Host.NetTopology)
+	//	record.Location = strFeatureTrans(peer.Host.Location, parent.Host.Location)
+	//	record.UploadRate = figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad()))
+	//	record.ParentHostType = int(parent.Host.Type)
+	//	record.ParentCreateAt = parent.CreateAt.Load().UnixNano() / 7200
+	//	record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano() / 7200
+	//}
+
+	//>>>>>>> 3bbc50ea... feat: modify record struct (#1329)
 	if err := s.storage.Create(record); err != nil {
 		peer.Log.Error(err)
 	}
