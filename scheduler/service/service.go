@@ -861,8 +861,8 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		//Rate:     figureFeatureTrans(float64(peer.Task.ContentLength.Load()), float64(req.Cost)),
 		State:    peerState,
 		HostType: int(peer.Host.Type),
-		CreateAt: peer.CreateAt.Load().UnixNano() / 7200,
-		UpdateAt: peer.UpdateAt.Load().UnixNano() / 7200,
+		CreateAt: peer.CreateAt.Load().Unix() / 7200,
+		UpdateAt: peer.UpdateAt.Load().Unix() / 7200,
 	}
 
 	//<<<<<<< HEAD
@@ -884,6 +884,7 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 	//}
 
 	//>>>>>>> 3bbc50ea... feat: modify record struct (#1329)
+
 	if err := s.storage.Create(record); err != nil {
 		peer.Log.Error(err)
 	}

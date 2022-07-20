@@ -19,107 +19,96 @@ package training
 import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 	"fmt"
+	"github.com/sjwhitworth/golearn/base"
+	"github.com/stretchr/testify/assert"
+	"os"
+	"reflect"
 	"testing"
+	"time"
 )
 
-func TestGetInstanceHeaders(t *testing.T) {
-	_, i, err := GetInstanceHeaders()
-	if err != nil {
-		return
+func TestTraining_New(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		expect  func(t *testing.T, s Training, err error)
+	}{
+		{
+			name:    "new training module.",
+			baseDir: os.TempDir(),
+			expect: func(t *testing.T, s Training, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "training")
+				assert.Equal(s.(*training).maxRecordLine, DefaultMaxRecordLine)
+				assert.Equal(s.(*training).maxBufferLine, DefaultMaxBufferLine)
+			},
+		},
 	}
-	fmt.Println(i)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir)
+			tc.expect(t, s, err)
+		})
+	}
 }
 
-func TestRecordsTransData(t *testing.T) {
-	record1 := &storage.Record{
-		ID:                   "0",
-		IP:                   "1.1.1.1",
-		Hostname:             "test-host-name",
-		BizTag:               "test-biz-tag",
-		Cost:                 250,
-		PieceCount:           10,
-		TotalPieceCount:      20,
-		ContentLength:        15230,
-		SecurityDomain:       "test-security",
-		IDC:                  "test-idc",
-		NetTopology:          "test-netTopology",
-		Location:             "test-location",
-		FreeUploadLoad:       120,
-		State:                2,
-		HostType:             10,
-		CreateAt:             1657463259,
-		UpdateAt:             1658463259,
-		ParentID:             "103",
-		ParentIP:             "1.1.1.2",
-		ParentHostname:       "test-p-hostname",
-		ParentBizTag:         "test-biz-tag",
-		ParentPieceCount:     24,
-		ParentSecurityDomain: "test-domain",
-		ParentIDC:            "test-idc",
-		ParentNetTopology:    "test-topology",
-		ParentLocation:       "test-location-123",
-		ParentFreeUploadLoad: 222,
-		ParentHostType:       13,
-		ParentCreateAt:       1657464259,
-		ParentUpdateAt:       1657474742,
+func TestStorage_Saving(t *testing.T) {
+	sto, _ := storage.New(os.TempDir())
+	record := storage.Record{
+		ID:             "1",
+		IP:             0,
+		HostName:       1,
+		Tag:            0,
+		Rate:           13,
+		ParentPiece:    23,
+		SecurityDomain: 0,
+		IDC:            1,
+		NetTopology:    1,
+		Location:       0,
+		UploadRate:     13,
+		State:          4,
+		CreateAt:       time.Now().Unix() / 7200,
+		UpdateAt:       time.Now().Unix() / 7200,
+		ParentID:       "2",
+		ParentCreateAt: time.Now().Unix() / 7200,
+		ParentUpdateAt: time.Now().Unix() / 7200,
 	}
-	record2 := &storage.Record{
-		ID:                   "0",
-		IP:                   "1.1.135.2",
-		Hostname:             "test-host-name",
-		BizTag:               "test-biz-tag",
-		Cost:                 260,
-		PieceCount:           15,
-		TotalPieceCount:      34,
-		ContentLength:        152324,
-		SecurityDomain:       "test-security",
-		IDC:                  "test-idc",
-		NetTopology:          "test-netTopology",
-		Location:             "test-location",
-		FreeUploadLoad:       120,
-		State:                2,
-		HostType:             10,
-		CreateAt:             1657463259,
-		UpdateAt:             1658543939,
-		ParentID:             "103",
-		ParentIP:             "1.1.1.2",
-		ParentHostname:       "test-p-hostname",
-		ParentBizTag:         "test-biz-tag",
-		ParentPieceCount:     54,
-		ParentSecurityDomain: "test-domain",
-		ParentIDC:            "test-idc",
-		ParentNetTopology:    "test-topology",
-		ParentLocation:       "test-location-123",
-		ParentFreeUploadLoad: 236,
-		ParentHostType:       13,
-		ParentCreateAt:       1657464259,
-		ParentUpdateAt:       1657474742,
-	}
-	records := make([]*storage.Record, 1000)
-	for i := 0; i < 1000; i++ {
-		records[i] = record1
-	}
-	fmt.Println(record2)
-	/*
-		fmt.Println(record2)
-		data := RecordsTransData(records)
-		instances, _ := DataToInstances(data)
-		fmt.Println(instances)
-		regression, err := train(instances)
+	for i := 0; i < 130; i++ {
+		err := sto.Create(record)
 		if err != nil {
 			fmt.Println(err)
-			return
 		}
-		fmt.Println(regression)
-	*/
-	t1 := new(Training)
-	model, re, _ := t1.Serve(records)
-	fmt.Println(re)
-	fmt.Println(model)
-	s1 := new(Saving)
-	data, _ := s1.Serve(model)
-	fmt.Println(data)
-	l1 := new(Loading)
-	mo, _ := l1.Serve(data)
-	fmt.Println(mo)
+	}
+}
+
+func TestTraining_PreProcess(t *testing.T) {
+	s, _ := New(os.TempDir())
+	tests := []struct {
+		name    string
+		baseDir string
+		expect  func(t *testing.T, i *base.DenseInstances, err error)
+	}{
+		{
+			name:    "new training module.",
+			baseDir: os.TempDir(),
+			expect: func(t *testing.T, i *base.DenseInstances, err error) {
+				assert := assert.New(t)
+				assert.NoError(err)
+				assert.Equal(reflect.TypeOf(s).Elem().Name(), "training")
+				assert.Equal(s.(*training).maxRecordLine, DefaultMaxRecordLine)
+				assert.Equal(s.(*training).maxBufferLine, DefaultMaxBufferLine)
+				_, length := i.Size()
+				assert.Equal(length, 64)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			instance, err := s.PreProcess()
+			tc.expect(t, instance, err)
+		})
+	}
 }

@@ -17,340 +17,157 @@
 package training
 
 import (
-	"d7y.io/dragonfly/v2/scheduler/storage"
+	"bufio"
 	"github.com/sjwhitworth/golearn/base"
-	"github.com/sjwhitworth/golearn/linear_models"
+	"io"
 	"math"
-	"strconv"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
-	// TIMEBUCKETGAP length of gap in time bucket.
-	TIMEBUCKETGAP = 7200
+	// NormalizedFieldNum field which needs normalization lies at the end of record.
+	NormalizedFieldNum = 7
 
-	// INTFIELDNUM number of int field.
-	INTFIELDNUM = 14
+	// DefaultMaxBufferLine capacity of lines which read from record file.
+	DefaultMaxBufferLine = 64
 
-	// FLOATFIELDNUM number of float field.
-	FLOATFIELDNUM = 2
-
-	// STRFIELDNUM number of string field.
-	STRFIELDNUM = 2
-
-	// TARGETFIELDNUM number of target field.
-	TARGETFIELDNUM = 1
-
-	// TESTPERCENT percent of test data.
-	TESTPERCENT = 0.2
-
-	// MSETHRESHOLD threshold of MSE.
-	MSETHRESHOLD = 100
+	// DefaultMaxRecordLine capacity of lines which local memory obtains.
+	DefaultMaxRecordLine = 100000
 )
 
-type TempData struct {
-	// id is the signal of peer.
-	id string
+const (
+	// DefaultFileName filename which stores records.
+	DefaultFileName = "record.csv"
+)
 
-	// ip is 0 if peer ip equals parent ip else 1
-	ip uint64
-
-	// bizTag is 0 if peer bizTag equals parent bizTag else 1
-	bizTag uint64
-
-	// hostName is 0 if peer hostName equals parent hostName else 1
-	hostName uint64
-
-	// securityDomain is 0 if peer securityDomain equals parent securityDomain else 1
-	securityDomain uint64
-
-	// hostType uint64
-	hostType uint64
-
-	// idc is 0 if peer idc equals parent idc else 1
-	idc uint64
-
-	// netTopology is 0 if peer netTopology equals parent netTopology else 1
-	netTopology uint64
-
-	// location is 0 if peer location equals parent location else 1
-	location uint64
-
-	// parentId is the signal of parent
-	parentId string
-
-	// state uint64
-	state uint64
-
-	// rate：contentLength / cost
-	rate float64
-
-	// parentPiece：totalPieceCount / parentPieceCount
-	parentPiece float64
-
-	// parentHostType uint64
-	parentHostType uint64
-
-	// uploadRate：freeUploadLoad / parentFreeUploadLoad
-	uploadRate float64
-
-	// createAt peer create time parsed by TimeBucket
-	createAt uint64
-
-	// updateAt peer update time parsed by TimeBucket
-	updateAt uint64
-
-	// parentCreateAt parent create time parsed by TimeBucket
-	parentCreateAt uint64
-
-	// parentUpdateAt parent update time parsed by TimeBucket
-	parentUpdateAt uint64
+// Training is the interface used for train models.
+type Training interface {
+	// PreProcess load and clean data before training.
+	PreProcess() (*base.DenseInstances, error)
 }
 
-type Data struct {
-	intArray []uint64
+// training provides training functions.
+type training struct {
+	baseDir  string
+	fileName string
+	buffer   string
 
-	floatArray []float64
+	// maxBufferLine capacity of lines which reads from record once.
+	maxBufferLine int
 
-	stringArray []string
+	// currentRecordLine capacity of lines which training has.
+	currentRecordLine int
 
-	targetArray []float64
+	// maxRecordLine capacity of lines which local memory obtains.
+	maxRecordLine int
 }
 
-// NewData construct of Data
-func NewData(temp *TempData) *Data {
-	var data Data
-	data.intArray = make([]uint64, INTFIELDNUM)
-	data.intArray[0] = temp.ip
-	data.intArray[1] = temp.bizTag
-	data.intArray[2] = temp.hostName
-	data.intArray[3] = temp.securityDomain
-	data.intArray[4] = temp.hostType
-	data.intArray[5] = temp.idc
-	data.intArray[6] = temp.netTopology
-	data.intArray[7] = temp.location
-	data.intArray[8] = temp.state
-	data.intArray[9] = temp.parentHostType
-	data.intArray[10] = temp.createAt
-	data.intArray[11] = temp.updateAt
-	data.intArray[12] = temp.parentCreateAt
-	data.intArray[13] = temp.parentUpdateAt
-	data.floatArray = make([]float64, FLOATFIELDNUM)
-	data.floatArray[0] = temp.uploadRate
-	data.floatArray[1] = temp.parentPiece
-	data.stringArray = make([]string, STRFIELDNUM)
-	data.stringArray[0] = temp.id
-	data.stringArray[1] = temp.parentId
-	data.targetArray = make([]float64, TARGETFIELDNUM)
-	data.targetArray[0] = temp.rate
-	return &data
-}
+// New return a Training instance.
+func New(baseDir string) (Training, error) {
+	t := &training{
+		baseDir:       baseDir,
+		fileName:      filepath.Join(baseDir, DefaultFileName),
+		maxBufferLine: DefaultMaxBufferLine,
+		maxRecordLine: DefaultMaxRecordLine,
+	}
 
-// StringRecordCompare return 1 if str1 == str2, else 0.
-func StringRecordCompare(str1 string, str2 string) uint64 {
-	if str1 == str2 {
-		return 0
-	}
-	return 1
-}
-
-// TimeBucket divide timestamp with TIMEBUCKETGAP.
-func TimeBucket(time int64) uint64 {
-	return uint64(time / TIMEBUCKETGAP)
-}
-
-// RecordTransData preprocess of machine learning, record to data struct.
-func RecordTransData(record *storage.Record) *Data {
-	data := &TempData{
-		id:             record.ID,
-		ip:             StringRecordCompare(record.IP, record.ParentIP),
-		bizTag:         StringRecordCompare(record.BizTag, record.ParentBizTag),
-		hostName:       StringRecordCompare(record.Hostname, record.ParentHostname),
-		securityDomain: StringRecordCompare(record.SecurityDomain, record.ParentSecurityDomain),
-		hostType:       uint64(record.HostType),
-		idc:            StringRecordCompare(record.IDC, record.ParentIDC),
-		netTopology:    StringRecordCompare(record.NetTopology, record.ParentNetTopology),
-		location:       StringRecordCompare(record.Location, record.ParentLocation),
-		parentId:       record.ParentID,
-		state:          uint64(record.State),
-		rate:           float64(record.ContentLength) / float64(record.Cost),
-		// TODO pieceCount redundancy
-		parentPiece:    float64(record.TotalPieceCount) / float64(record.ParentPieceCount),
-		parentHostType: uint64(record.ParentHostType),
-		uploadRate:     float64(record.FreeUploadLoad) / float64(record.ParentFreeUploadLoad),
-		createAt:       TimeBucket(record.CreateAt),
-		updateAt:       TimeBucket(record.UpdateAt),
-		parentCreateAt: TimeBucket(record.ParentCreateAt),
-		parentUpdateAt: TimeBucket(record.ParentUpdateAt),
-	}
-	return NewData(data)
-}
-
-// RecordsTransData batch process, records to data.
-func RecordsTransData(records []*storage.Record) []*Data {
-	data := make([]*Data, len(records))
-	for i, each := range records {
-		data[i] = RecordTransData(each)
-	}
-	return data
-}
-
-// GetInstanceHeaders return an instance with headers and its attr list.
-func GetInstanceHeaders() (*base.DenseInstances, []base.AttributeSpec, error) {
-	instance := base.NewDenseInstances()
-
-	attrList := make([]base.AttributeSpec, INTFIELDNUM+FLOATFIELDNUM+TARGETFIELDNUM)
-	for i := 0; i < INTFIELDNUM; i++ {
-		attrList[i] = instance.AddAttribute(base.NewFloatAttribute("int" + strconv.Itoa(i)))
-	}
-	for i := INTFIELDNUM; i < INTFIELDNUM+FLOATFIELDNUM; i++ {
-		attrList[i] = instance.AddAttribute(base.NewFloatAttribute("float" + strconv.Itoa(i)))
-	}
-	for i := INTFIELDNUM + FLOATFIELDNUM; i < INTFIELDNUM+FLOATFIELDNUM+TARGETFIELDNUM; i++ {
-		attr := base.NewFloatAttribute("target" + strconv.Itoa(i))
-		attrList[i] = instance.AddAttribute(attr)
-		err := instance.AddClassAttribute(attr)
-		if err != nil {
-			return nil, nil, err
-		}
-	}
-	return instance, attrList, nil
-}
-
-// SplitByParentID split data by parentID
-func SplitByParentID(data []*Data) map[string][]*Data {
-	result := make(map[string][]*Data, 0)
-	for _, each := range data {
-		if _, ok := result[each.stringArray[1]]; !ok {
-			result[each.stringArray[1]] = make([]*Data, 0)
-		} else {
-			result[each.stringArray[1]] = append(result[each.stringArray[1]], each)
-		}
-	}
-	return result
-}
-
-// MaxMinNormalize return data which contains the (max - min) value and min value of data.
-func MaxMinNormalize(data []*Data) (*Data, *Data) {
-	var maxData Data
-	var minData Data
-	maxData.floatArray = make([]float64, FLOATFIELDNUM)
-	maxData.targetArray = make([]float64, TARGETFIELDNUM)
-	minData.floatArray = make([]float64, FLOATFIELDNUM)
-	minData.targetArray = make([]float64, TARGETFIELDNUM)
-	for j := 0; j < FLOATFIELDNUM; j++ {
-		minData.floatArray[j] = math.MaxFloat64
-	}
-	for j := 0; j < TARGETFIELDNUM; j++ {
-		minData.targetArray[j] = math.MaxFloat64
-	}
-	for i := 0; i < len(data); i++ {
-		for j := 0; j < len(data[i].floatArray); j++ {
-			if data[i].floatArray[j] > maxData.floatArray[j] {
-				maxData.floatArray[j] = data[i].floatArray[j]
-			}
-			if data[i].floatArray[j] < minData.floatArray[j] {
-				minData.floatArray[j] = data[i].floatArray[j]
-			}
-		}
-		for j := 0; j < len(data[i].targetArray); j++ {
-			if data[i].targetArray[j] > maxData.targetArray[j] {
-				maxData.targetArray[j] = data[i].targetArray[j]
-			}
-			if data[i].targetArray[j] < minData.targetArray[j] {
-				minData.targetArray[j] = data[i].targetArray[j]
-			}
-		}
-	}
-	for j := 0; j < FLOATFIELDNUM; j++ {
-		maxData.floatArray[j] = maxData.floatArray[j] - minData.floatArray[j]
-	}
-	for j := 0; j < TARGETFIELDNUM; j++ {
-		maxData.targetArray[j] = maxData.targetArray[j] - minData.targetArray[j]
-	}
-	return &maxData, &minData
-}
-
-// DataToInstances preprocess of machine learning, data to instance.
-func DataToInstances(data []*Data) (*base.DenseInstances, error) {
-	instance, attrList, _ := GetInstanceHeaders()
-	err := instance.Extend(len(data))
+	file, err := os.Open(t.fileName)
 	if err != nil {
 		return nil, err
 	}
-	maxData, minData := MaxMinNormalize(data)
-	for i := 0; i < len(data); i++ {
-		for j := 0; j < INTFIELDNUM; j++ {
-			instance.Set(attrList[j], i, base.PackFloatToBytes(float64(data[i].intArray[j])))
+	file.Close()
+
+	return t, nil
+}
+
+// PreProcess load and clean data before training.
+func (strategy *training) PreProcess() (*base.DenseInstances, error) {
+	// TODO using pipeline, load -> missing -> normalize -> split
+	f, _ := os.Open(strategy.fileName)
+	instance, err := strategy.loadRecord(bufio.NewReader(f))
+	f.Close()
+	return instance, err
+}
+
+// loadRecord read record from file and transform it to instance.
+func (strategy *training) loadRecord(reader *bufio.Reader) (*base.DenseInstances, error) {
+	if strategy.currentRecordLine < strategy.maxRecordLine {
+		for i := 0; i < strategy.maxBufferLine; i++ {
+			readString, err := reader.ReadString('\n')
+			if err != nil && err != io.EOF {
+				return nil, err
+			}
+			if len(readString) == 0 {
+				break
+			}
+			strategy.buffer += readString
+			strategy.currentRecordLine += 1
 		}
-		for j := INTFIELDNUM; j < INTFIELDNUM+FLOATFIELDNUM; j++ {
-			x := (data[i].floatArray[j-INTFIELDNUM] - minData.floatArray[j-INTFIELDNUM]) / maxData.floatArray[j-INTFIELDNUM]
-			instance.Set(attrList[j], i, base.PackFloatToBytes(x))
-		}
-		for j := INTFIELDNUM + FLOATFIELDNUM; j < INTFIELDNUM+FLOATFIELDNUM+TARGETFIELDNUM; j++ {
-			x := (data[i].targetArray[j-INTFIELDNUM-FLOATFIELDNUM] - minData.targetArray[j-INTFIELDNUM-FLOATFIELDNUM]) / maxData.targetArray[j-INTFIELDNUM-FLOATFIELDNUM]
-			instance.Set(attrList[j], i, base.PackFloatToBytes(x))
-		}
-	}
-	return instance, nil
-}
-
-// train return a model of linearRegression trained by instance.
-func train(instance base.FixedDataGrid) (*linear_models.LinearRegression, error) {
-	lr := linear_models.NewLinearRegression()
-	err := lr.Fit(instance)
-	if err != nil {
-		return nil, err
-	}
-	return lr, nil
-}
-
-// evaluate return MSE and length of data.
-func evaluate(instance base.FixedDataGrid, lr *linear_models.LinearRegression) (float64, int, error) {
-	out, err := lr.Predict(instance)
-	if err != nil {
-		return -1, -1, err
-	}
-	_, length := out.Size()
-	attrSpec, err := out.GetAttribute(out.AllAttributes()[0])
-	if err != nil {
-		return -1, -1, err
-	}
-	sum := 0.0
-	for i := 0; i < length; i++ {
-		x := base.UnpackBytesToFloat(out.Get(attrSpec, i)) - base.UnpackBytesToFloat(instance.Get(attrSpec, i))
-		sum += math.Pow(x, 2)
-	}
-	return sum, length, nil
-}
-
-type Training struct {
-}
-
-// Serve return models map and MSE value of evaluation.
-func (strategy *Training) Serve(records []*storage.Record) (map[string]*linear_models.LinearRegression, float64, error) {
-	data := RecordsTransData(records)
-	parentIDMap := SplitByParentID(data)
-	resultMap := make(map[string]*linear_models.LinearRegression, 0)
-	mse_sum := 0.0
-	length_sum := 0
-	for key, value := range parentIDMap {
-		instance, err := DataToInstances(value)
+		strReader := strings.NewReader(strategy.buffer)
+		instance, err := base.ParseCSVToInstancesFromReader(strReader, false)
 		if err != nil {
-			return nil, -1, err
+			return nil, err
 		}
-		trainData, testData := base.InstancesTrainTestSplit(instance, TESTPERCENT)
-		lr, err := train(trainData)
-		if err != nil {
-			return nil, -1, err
+		return instance, nil
+	}
+	return nil, nil
+}
+
+// missingValue return effective rows in order to droping missing value.
+func (strategy *training) missingValue(instances *base.DenseInstances) ([]int, error) {
+	cal, row := instances.Size()
+	attributes := instances.AllAttributes()
+	effectiveRow := make([]int, 0)
+	for i := 0; i < row; i++ {
+		drop := false
+		for j := 0; j < cal; j++ {
+			attrSpec, _ := instances.GetAttribute(attributes[j])
+			if base.UnpackBytesToFloat(instances.Get(attrSpec, i)) == -1 {
+				drop = true
+				break
+			}
 		}
-		mse, length, err := evaluate(testData, lr)
-		mse_sum += mse
-		length_sum += length
-		if err != nil {
-			return nil, -1, err
+		if !drop {
+			effectiveRow = append(effectiveRow, i)
 		}
-		resultMap[key] = lr
+	}
+	return effectiveRow, nil
+}
+
+// normalize using max min normalization to normalize float64 filed.
+func (strategy *training) normalize(instance *base.DenseInstances, rows []int) error {
+	attributes := instance.AllAttributes()
+	maxValue := make([]float64, NormalizedFieldNum)
+	minValue := make([]float64, NormalizedFieldNum)
+	for i := 0; i < NormalizedFieldNum; i++ {
+		minValue[i] = math.MaxFloat64
+	}
+	for i := len(attributes) - NormalizedFieldNum; i < len(attributes); i++ {
+		attrSpec, _ := instance.GetAttribute(attributes[i])
+		for j := 0; j < len(rows); j++ {
+			x := base.UnpackBytesToFloat(instance.Get(attrSpec, rows[j]))
+			if x > maxValue[i+NormalizedFieldNum-len(attributes)] {
+				maxValue[i+NormalizedFieldNum-len(attributes)] = x
+			}
+			if x < minValue[i+NormalizedFieldNum-len(attributes)] {
+				minValue[i+NormalizedFieldNum-len(attributes)] = x
+			}
+		}
 	}
 
-	return resultMap, mse_sum / float64(length_sum), nil
+	for i := 0; i < NormalizedFieldNum; i++ {
+		maxValue[i] = maxValue[i] - minValue[i]
+	}
+
+	for i := len(attributes) - NormalizedFieldNum; i < len(attributes); i++ {
+		attrSpec, _ := instance.GetAttribute(attributes[i])
+		for j := 0; j < len(rows); j++ {
+			x := base.UnpackBytesToFloat(instance.Get(attrSpec, rows[j]))
+			bytes := base.PackFloatToBytes((x - minValue[i+NormalizedFieldNum-len(attributes)]) / maxValue[i+NormalizedFieldNum-len(attributes)])
+			instance.Set(attrSpec, rows[j], bytes)
+		}
+	}
+	return nil
 }

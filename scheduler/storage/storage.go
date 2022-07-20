@@ -82,6 +82,9 @@ type Record struct {
 	// ID is the signal of peer.
 	ID string `csv:"id"`
 
+	// ParentID is the signal of parent
+	ParentID string `csv:"parentID"`
+
 	// IP is 0 if peer ip equals parent ip else 1
 	IP int `csv:"ip"`
 
@@ -106,23 +109,11 @@ type Record struct {
 	// Location is 0 if peer location equals parent location else 1
 	Location int `csv:"location"`
 
-	// ParentID is the signal of parent
-	ParentID string `csv:"parentID"`
-
 	// State int
 	State int `csv:"State"`
 
-	// Rate：contentLength / cost
-	Rate float64 `csv:"rate"`
-
-	// ParentPiece：totalPieceCount / parentPieceCount
-	ParentPiece float64 `csv:"parentPiece"`
-
 	// ParentHostType int
 	ParentHostType int `csv:"parentHostType"`
-
-	// UploadRate：freeUploadLoad / parentFreeUploadLoad
-	UploadRate float64 `csv:"uploadRate"`
 
 	// CreateAt peer create time parsed by TimeBucket
 	CreateAt int64 `csv:"createAt"`
@@ -135,6 +126,15 @@ type Record struct {
 
 	// ParentUpdateAt parent update time parsed by TimeBucket
 	ParentUpdateAt int64 `csv:"parentUpdateAt"`
+
+	// ParentPiece：totalPieceCount / parentPieceCount
+	ParentPiece float64 `csv:"parentPiece"`
+
+	// UploadRate：freeUploadLoad / parentFreeUploadLoad
+	UploadRate float64 `csv:"uploadRate"`
+
+	// Rate：contentLength / cost
+	Rate float64 `csv:"rate"`
 }
 
 // Storage is the interface used for storage.
