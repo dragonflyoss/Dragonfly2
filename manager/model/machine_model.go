@@ -19,7 +19,7 @@ package model
 import "encoding/json"
 
 type MachineModel struct {
-	ID      uint               `json:"id" binding:"required"`      //模型对应的scheduler的id
+	ID      string             `json:"id" binding:"required"`      //模型对应的scheduler的id
 	Params  map[string]float64 `json:"params" binding:"required"`  //线形模型的参数
 	Version string             `json:"version" binding:"required"` //模型版本号
 }

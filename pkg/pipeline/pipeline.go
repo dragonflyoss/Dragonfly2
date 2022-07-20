@@ -54,13 +54,16 @@ func (p *Pipeline) Start() *Result {
 }
 
 //TODO key-vertx, key need to inform which builder to choose
-func NewPipeLine(name string, graph dag.DAG, kr keyResolver) *Pipeline {
+func NewPipeLine(name string, graph dag.DAG, kr keyResolver) (*Pipeline, error) {
 	pipeline := &Pipeline{Name: name}
 	id := 1
 	vertexQueue := queue.New()
-	start := graph.StartVertex()
-	graph.DeleteVertex(start)
-	vertexQueue.Enqueue(start)
+	start := graph.SourceVertices()
+	if len(start) > 1 || len(start) == 0 {
+		return nil, fmt.Errorf("wrong dag input, dag has %v len", len(start))
+	}
+	graph.DeleteVertex(start[0])
+	vertexQueue.Enqueue(start[0])
 
 	for vertexQueue.Len() > 0 {
 		concurrency := vertexQueue.Len() > 1
@@ -81,5 +84,5 @@ func NewPipeLine(name string, graph dag.DAG, kr keyResolver) *Pipeline {
 		id++
 		pipeline.AddStage(stage)
 	}
-	return pipeline
+	return pipeline, nil
 }

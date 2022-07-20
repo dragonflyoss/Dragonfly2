@@ -2,10 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
+
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"encoding/json"
 )
 
 func (s *service) GetModel(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) (*model.MachineModel, error) {
@@ -56,7 +57,7 @@ func (s *service) GetModels(ctx context.Context, params types.ModelParams, model
 
 func (s *service) UpdateModel(ctx context.Context, params types.ModelParams, modelInfo types.ModelInfos) error {
 	modelStored := model.MachineModel{
-		ID:      modelInfo.SchedulerClusterID,
+		ID:      params.ID,
 		Params:  modelInfo.Params,
 		Version: params.VersionID,
 	}
