@@ -862,8 +862,8 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		Rate:     figureFeatureTrans(float64(peer.Task.ContentLength.Load()), float64(req.Cost)),
 		State:    peerState,
 		HostType: int(peer.Host.Type),
-		CreateAt: peer.CreateAt.Load().UnixNano() / 7200,
-		UpdateAt: peer.UpdateAt.Load().UnixNano() / 7200,
+		CreateAt: peer.CreateAt.Load().Unix() / 7200,
+		UpdateAt: peer.UpdateAt.Load().Unix() / 7200,
 	}
 
 	if parent, ok := peer.LoadParent(); ok {
@@ -878,8 +878,8 @@ func (s *Service) createRecord(peer *resource.Peer, peerState int, req *rpcsched
 		record.Location = strFeatureTrans(peer.Host.Location, parent.Host.Location)
 		record.UploadRate = figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad()))
 		record.ParentHostType = int(parent.Host.Type)
-		record.ParentCreateAt = parent.CreateAt.Load().UnixNano() / 7200
-		record.ParentUpdateAt = parent.UpdateAt.Load().UnixNano() / 7200
+		record.ParentCreateAt = parent.CreateAt.Load().Unix() / 7200
+		record.ParentUpdateAt = parent.UpdateAt.Load().Unix() / 7200
 	}
 
 	if err := s.storage.Create(record); err != nil {

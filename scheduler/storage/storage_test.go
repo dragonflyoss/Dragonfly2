@@ -252,11 +252,11 @@ func TestStorage_List(t *testing.T) {
 				Location:       0,
 				UploadRate:     13,
 				State:          PeerStateSucceeded,
-				CreateAt:       time.Now().UnixNano(),
-				UpdateAt:       time.Now().UnixNano(),
+				CreateAt:       time.Now().Unix() / 7200,
+				UpdateAt:       time.Now().Unix() / 7200,
 				ParentID:       "2",
-				ParentCreateAt: time.Now().UnixNano(),
-				ParentUpdateAt: time.Now().UnixNano(),
+				ParentCreateAt: time.Now().Unix() / 7200,
+				ParentUpdateAt: time.Now().Unix() / 7200,
 			},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
 				if err := s.Create(record); err != nil {
