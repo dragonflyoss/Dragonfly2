@@ -79,98 +79,61 @@ const (
 
 // Record contains content for record.
 type Record struct {
-	// ID is peer id.
+	// ID is the signal of peer.
 	ID string `csv:"id"`
 
-	// IP is host ip.
-	IP string `csv:"ip"`
+	// IP is 0 if peer ip equals parent ip else 1
+	IP int `csv:"ip"`
 
-	// Hostname is host name.
-	Hostname string `csv:"hostname"`
+	// Tag is 0 if peer bizTag equals parent bizTag else 1
+	Tag int `csv:"tag"`
 
-	// Tag is peer tag.
-	Tag string `csv:"tag"`
+	// HostName is 0 if peer hostName equals parent hostName else 1
+	HostName int `csv:"hostname"`
 
-	// Cost is the task download time(millisecond).
-	Cost uint32 `csv:"cost"`
+	// SecurityDomain is 0 if peer securityDomain equals parent securityDomain else 1
+	SecurityDomain int `csv:"securityDomain"`
 
-	// PieceCount is total piece count.
-	PieceCount int32 `csv:"pieceCount"`
-
-	// TotalPieceCount is total piece count.
-	TotalPieceCount int32 `csv:"totalPieceCount"`
-
-	// ContentLength is task total content length.
-	ContentLength int64 `csv:"contentLength"`
-
-	// SecurityDomain is security domain of host.
-	SecurityDomain string `csv:"securityDomain"`
-
-	// IDC is internet data center of host.
-	IDC string `csv:"idc"`
-
-	// NetTopology is network topology of host.
-	// Example: switch|router|...
-	NetTopology string `csv:"netTopology"`
-
-	// Location is location of host.
-	// Example: country|province|...
-	Location string `csv:"location"`
-
-	// FreeUploadLoad is free upload load of host.
-	FreeUploadLoad int32 `csv:"freeUpoladLoad"`
-
-	// State is the download state of the peer.
-	State int `csv:"state"`
-
-	// HostType is peer host type.
+	// HostType int
 	HostType int `csv:"hostType"`
 
-	// CreateAt is peer create nanosecond time.
-	CreateAt int64 `csv:"createAt"`
+	// IDC is 0 if peer idc equals parent idc else 1
+	IDC int `csv:"idc"`
 
-	// UpdateAt is peer update nanosecond time.
-	UpdateAt int64 `csv:"updateAt"`
+	// NetTopology is 0 if peer netTopology equals parent netTopology else 1
+	NetTopology int `csv:"netTopology"`
 
-	// ParentID is parent peer id.
+	// Location is 0 if peer location equals parent location else 1
+	Location int `csv:"location"`
+
+	// ParentID is the signal of parent
 	ParentID string `csv:"parentID"`
 
-	// ParentIP is parent host ip.
-	ParentIP string `csv:"parentIP"`
+	// State int
+	State int `csv:"State"`
 
-	// ParentHostname is parent hostname.
-	ParentHostname string `csv:"parentHostname"`
+	// Rate：contentLength / cost
+	Rate float64 `csv:"rate"`
 
-	// ParentTag is parent peer tag.
-	ParentTag string `csv:"parentTag"`
+	// ParentPiece：totalPieceCount / parentPieceCount
+	ParentPiece float64 `csv:"parentPiece"`
 
-	// ParentPieceCount is parent total piece count.
-	ParentPieceCount int32 `csv:"parentPieceCount"`
-
-	// ParentSecurityDomain is parent security domain of host.
-	ParentSecurityDomain string `csv:"parentSecurityDomain"`
-
-	// ParentIDC is parent internet data center of host.
-	ParentIDC string `csv:"parentIDC"`
-
-	// ParentNetTopology is parent network topology of host.
-	// Example: switch|router|...
-	ParentNetTopology string `csv:"parentNetTopology"`
-
-	// ParentLocation is parent location of host.
-	// Example: country|province|...
-	ParentLocation string `csv:"parentLocation"`
-
-	// ParentFreeUploadLoad is parent free upload load of host.
-	ParentFreeUploadLoad int32 `csv:"parentFreeUploadLoad"`
-
-	// ParentHostType is parent host type.
+	// ParentHostType int
 	ParentHostType int `csv:"parentHostType"`
 
-	// ParentCreateAt is parent peer create nanosecond time.
+	// UploadRate：freeUploadLoad / parentFreeUploadLoad
+	UploadRate float64 `csv:"uploadRate"`
+
+	// CreateAt peer create time parsed by TimeBucket
+	CreateAt int64 `csv:"createAt"`
+
+	// UpdateAt peer update time parsed by TimeBucket
+	UpdateAt int64 `csv:"updateAt"`
+
+	// ParentCreateAt parent create time parsed by TimeBucket
 	ParentCreateAt int64 `csv:"parentCreateAt"`
 
-	// ParentUpdateAt is parent peer update nanosecond time.
+	// ParentUpdateAt parent update time parsed by TimeBucket
 	ParentUpdateAt int64 `csv:"parentUpdateAt"`
 }
 
