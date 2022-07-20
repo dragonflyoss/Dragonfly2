@@ -51,17 +51,20 @@ type DAG interface {
 	// GetVertex gets vertex from graph.
 	GetVertex(id string) (*Vertex, error)
 
+	// GetVertices returns map of vertices.
+	GetVertices() map[string]*Vertex
+
 	// VertexCount returns count of vertices.
 	VertexCount() int
-
-	// Vertices returns map of vertices.
-	Vertices() map[string]*Vertex
 
 	// AddEdge adds edge between two vertices.
 	AddEdge(fromVertexID, toVertexID string) error
 
 	// DeleteEdge deletes edge between two vertices.
 	DeleteEdge(fromVertexID, toVertexID string) error
+
+	// CanAddEdge finds whether there are circles through depth-first search.
+	CanAddEdge(fromVertexID, toVertexID string) bool
 }
 
 // dag provides directed acyclic graph function.
@@ -135,17 +138,53 @@ func (d *dag) GetVertex(id string) (*Vertex, error) {
 	return vertex, nil
 }
 
+// GetVertices returns map of vertices.
+func (d *dag) GetVertices() map[string]*Vertex {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	return d.vertices
+}
+
 // VertexCount returns count of vertices.
 func (d *dag) VertexCount() int {
 	return len(d.vertices)
 }
 
-// Vertices returns map of vertices.
-func (d *dag) Vertices() map[string]*Vertex {
+// CanAddEdge finds whether there are circles through depth-first search.
+func (d *dag) CanAddEdge(fromVertexID, toVertexID string) bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	return d.vertices
+	if fromVertexID == toVertexID {
+		return false
+	}
+
+	fromVertex, ok := d.vertices[fromVertexID]
+	if !ok {
+		return false
+	}
+
+	if _, ok := d.vertices[toVertexID]; !ok {
+		return false
+	}
+
+	for _, child := range fromVertex.Children.Values() {
+		vertex, ok := child.(*Vertex)
+		if !ok {
+			continue
+		}
+
+		if vertex.ID == toVertexID {
+			return false
+		}
+	}
+
+	if d.depthFirstSearch(toVertexID, fromVertexID) {
+		return false
+	}
+
+	return true
 }
 
 // AddEdge adds edge between two vertices.

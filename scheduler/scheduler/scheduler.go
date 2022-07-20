@@ -150,6 +150,12 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
+	// Delete inedges of vertex.
+	if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
+		peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+		return []*resource.Peer{}, false
+	}
+
 	// Find the candidate parent that can be scheduled.
 	candidateParents := s.filterCandidateParents(peer, blocklist)
 	if len(candidateParents) == 0 {
@@ -165,12 +171,6 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 			return s.evaluator.Evaluate(candidateParents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(candidateParents[j], peer, taskTotalPieceCount)
 		},
 	)
-
-	// Delete inedges of vertex.
-	if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
-		peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
-		return []*resource.Peer{}, false
-	}
 
 	// Add edges between candidate parent and peer.
 	var (
@@ -240,33 +240,18 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 	var (
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
-		n                  int
 	)
-	for _, vertex := range peer.Task.DAG.Vertices() {
-		if n > filterParentLimit {
-			break
-		}
-		n++
 
-		value := vertex.Value
-		if value == nil {
-			continue
-		}
-
-		candidateParent, ok := value.(*resource.Peer)
-		if !ok {
-			continue
-		}
-
+	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentLimit)) {
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is in blocklist", candidateParent.ID)
 			continue
 		}
 
-		// Candidate parent is itself.
-		if candidateParent.ID == peer.ID {
-			peer.Log.Debug("candidate parent is not selected because it is same")
+		// Candidate parent can add edge with peer.
+		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
+			peer.Log.Debugf("can not add edge with candidate parent %s", candidateParent.ID)
 			continue
 		}
 
@@ -277,7 +262,7 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		}
 
 		// Candidate parent can not find in dag.
-		vertex, err := candidateParent.Task.DAG.GetVertex(candidateParent.ID)
+		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
 		if err != nil {
 			peer.Log.Debugf("can not find candidate parent %s vertex in dag", candidateParent.ID)
 			continue
@@ -288,11 +273,10 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		// 2. parent has been back-to-source.
 		// 3. parent has been succeeded.
 		// 4. parent is seed peer.
-		inDegree := vertex.InDegree()
 		isBackToSource := candidateParent.IsBackToSource.Load()
 		if candidateParent.Host.Type == resource.HostTypeNormal && inDegree == 0 && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %d %t %s",
+			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %d %d %t %s",
 				candidateParent.ID, inDegree, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
 			continue
 		}

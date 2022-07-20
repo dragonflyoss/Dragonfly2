@@ -751,11 +751,6 @@ func (s *Service) handlePeerFail(ctx context.Context, peer *resource.Peer) {
 // handleLegacySeedPeer handles seed server's task has left,
 // but did not notify the schduler to leave the task.
 func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer) {
-	if err := peer.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
-		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
-		return
-	}
-
 	if err := peer.FSM.Event(resource.PeerEventLeave); err != nil {
 		peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 		return
@@ -766,6 +761,8 @@ func (s *Service) handleLegacySeedPeer(ctx context.Context, peer *resource.Peer)
 		child.Log.Infof("schedule parent because of parent peer %s is failed", peer.ID)
 		s.scheduler.ScheduleParent(ctx, child, child.BlockPeers)
 	}
+
+	s.resource.PeerManager().Delete(peer.ID)
 }
 
 // Conditions for the task to switch to the TaskStateSucceeded are:

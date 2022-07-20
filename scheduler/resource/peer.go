@@ -198,7 +198,10 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
 				PeerStateRunning, PeerStateBackToSource, PeerStateSucceeded,
 			}, Dst: PeerStateFailed},
-			{Name: PeerEventLeave, Src: []string{PeerStateFailed, PeerStateSucceeded}, Dst: PeerEventLeave},
+			{Name: PeerEventLeave, Src: []string{
+				PeerStatePending, PeerStateReceivedTiny, PeerStateReceivedSmall, PeerStateReceivedNormal,
+				PeerStateRunning, PeerStateBackToSource, PeerStateFailed, PeerStateSucceeded,
+			}, Dst: PeerStateLeave},
 		},
 		fsm.Callbacks{
 			PeerEventRegisterTiny: func(e *fsm.Event) {
@@ -220,7 +223,11 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.IsBackToSource.Store(true)
 				p.Task.BackToSourcePeers.Add(p)
-				p.Task.DeletePeerInEdges(p.ID)
+
+				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
+					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
+				}
+
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
@@ -230,8 +237,11 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
+				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
+					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
+				}
+
 				p.Task.PeerFailedCount.Store(0)
-				p.Task.DeletePeerInEdges(p.ID)
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
@@ -242,13 +252,19 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 					p.Task.BackToSourcePeers.Delete(p)
 				}
 
-				p.Task.DeletePeer(p.ID)
+				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
+					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
+				}
+
 				p.Host.DeletePeer(p.ID)
 				p.UpdateAt.Store(time.Now())
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
 			PeerEventLeave: func(e *fsm.Event) {
-				p.Task.DeletePeer(p.ID)
+				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
+					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
+				}
+
 				p.Host.DeletePeer(p.ID)
 				p.Log.Infof("peer state is %s", e.FSM.Current())
 			},
@@ -292,6 +308,68 @@ func (p *Peer) DeleteStream() {
 	p.Stream = &atomic.Value{}
 }
 
+// Parents returns parents of peer.
+func (p *Peer) Parents() []*Peer {
+	vertex, err := p.Task.DAG.GetVertex(p.ID)
+	if err != nil {
+		p.Log.Warn("can not find vertex in dag")
+		return nil
+	}
+
+	var parents []*Peer
+	for _, value := range vertex.Parents.Values() {
+		vertex, ok := value.(*dag.Vertex)
+		if !ok {
+			continue
+		}
+
+		vertexVal := vertex.Value
+		if vertexVal == nil {
+			continue
+		}
+
+		parent, ok := vertexVal.(*Peer)
+		if !ok {
+			continue
+		}
+
+		parents = append(parents, parent)
+	}
+
+	return parents
+}
+
+// Children returns children of peer.
+func (p *Peer) Children() []*Peer {
+	vertex, err := p.Task.DAG.GetVertex(p.ID)
+	if err != nil {
+		p.Log.Warn("can not find vertex in dag")
+		return nil
+	}
+
+	var children []*Peer
+	for _, value := range vertex.Children.Values() {
+		vertex, ok := value.(*dag.Vertex)
+		if !ok {
+			continue
+		}
+
+		vertexVal := vertex.Value
+		if vertexVal == nil {
+			continue
+		}
+
+		child, ok := vertexVal.(*Peer)
+		if !ok {
+			continue
+		}
+
+		children = append(children, child)
+	}
+
+	return children
+}
+
 // DownloadTinyFile downloads tiny file from peer.
 func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTinyFileContextTimeout)
@@ -327,35 +405,4 @@ func (p *Peer) DownloadTinyFile() ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
-}
-
-// Children returns children of peer.
-func (p *Peer) Children() []*Peer {
-	vertex, err := p.Task.DAG.GetVertex(p.ID)
-	if err != nil {
-		p.Log.Warn("can not find vertex in dag")
-		return nil
-	}
-
-	var children []*Peer
-	for _, value := range vertex.Children.Values() {
-		vertex, ok := value.(*dag.Vertex)
-		if !ok {
-			continue
-		}
-
-		vertexVal := vertex.Value
-		if vertexVal == nil {
-			continue
-		}
-
-		child, ok := vertexVal.(*Peer)
-		if !ok {
-			continue
-		}
-
-		children = append(children, child)
-	}
-
-	return children
 }

@@ -266,6 +266,94 @@ func TestPeer_DeleteStream(t *testing.T) {
 	}
 }
 
+func TestPeer_Parents(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+	}{
+		{
+			name: "peer has no parents",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Task.StorePeer(peer)
+				assert.Equal(len(peer.Parents()), 0)
+			},
+		},
+		{
+			name: "peer has parents",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(seedPeer, peer); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(len(peer.Parents()), 1)
+				assert.Equal(peer.Parents()[0].ID, mockSeedPeerID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
+
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			seedPeer := NewPeer(mockSeedPeerID, mockTask, mockHost)
+			tc.expect(t, peer, seedPeer, stream)
+		})
+	}
+}
+
+func TestPeer_Children(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+	}{
+		{
+			name: "peer has no children",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Task.StorePeer(peer)
+				assert.Equal(len(peer.Children()), 0)
+			},
+		},
+		{
+			name: "peer has children",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				if err := peer.Task.AddPeerEdge(peer, seedPeer); err != nil {
+					t.Fatal(err)
+				}
+
+				assert.Equal(len(peer.Children()), 1)
+				assert.Equal(peer.Children()[0].ID, mockSeedPeerID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
+
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			seedPeer := NewPeer(mockSeedPeerID, mockTask, mockHost)
+			tc.expect(t, peer, seedPeer, stream)
+		})
+	}
+}
+
 func TestPeer_DownloadTinyFile(t *testing.T) {
 	testData := []byte("./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
 		"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")

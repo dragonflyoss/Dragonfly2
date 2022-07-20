@@ -18,6 +18,8 @@ package resource
 
 import (
 	"errors"
+	"math/rand"
+	reflect "reflect"
 	"sort"
 	"sync"
 	"time"
@@ -195,6 +197,51 @@ func (t *Task) LoadPeer(key string) (*Peer, bool) {
 	return value.(*Peer), true
 }
 
+// LoadRandomPeers return random peers.
+func (t *Task) LoadRandomPeers(n uint) []*Peer {
+	var peers []*Peer
+	vertices := t.DAG.GetVertices()
+	keys := reflect.ValueOf(vertices).MapKeys()
+	if int(n) >= len(keys) {
+		for _, vertex := range vertices {
+			value := vertex.Value
+			if value == nil {
+				continue
+			}
+
+			peer, ok := value.(*Peer)
+			if !ok {
+				continue
+			}
+
+			peers = append(peers, peer)
+		}
+
+		return peers
+	}
+
+	rand.Seed(time.Now().Unix())
+	permutation := rand.Perm(len(keys))[:n]
+	for _, v := range permutation {
+		key := keys[v].String()
+
+		vertex := vertices[key]
+		value := vertex.Value
+		if value == nil {
+			continue
+		}
+
+		peer, ok := value.(*Peer)
+		if !ok {
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers
+}
+
 // StorePeer set peer.
 func (t *Task) StorePeer(peer *Peer) {
 	t.DAG.AddVertex(peer.ID, peer) // nolint: errcheck
@@ -213,6 +260,11 @@ func (t *Task) DeletePeer(key string) {
 	t.DAG.DeleteVertex(key)
 }
 
+// PeerCount returns count of peer.
+func (t *Task) PeerCount() int {
+	return t.DAG.VertexCount()
+}
+
 // AddPeerEdge adds inedges between two peers.
 func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
 	if err := t.DAG.AddEdge(fromPeer.ID, toPeer.ID); err != nil {
@@ -223,7 +275,7 @@ func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
 	return nil
 }
 
-// DeleteInEdges deletes inedges of peer.
+// DeletePeerInEdges deletes inedges of peer.
 func (t *Task) DeletePeerInEdges(key string) error {
 	vertex, err := t.DAG.GetVertex(key)
 	if err != nil {
@@ -275,15 +327,45 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 	return nil
 }
 
-// PeerCount returns count of peer.
-func (t *Task) PeerCount() int {
-	return t.DAG.VertexCount()
+// CanAddPeerEdge finds whether there are peer circles through depth-first search.
+func (t *Task) CanAddPeerEdge(fromPeerKey, toPeerKey string) bool {
+	return t.DAG.CanAddEdge(fromPeerKey, toPeerKey)
+}
+
+// PeerDegree returns the degree of peer.
+func (t *Task) PeerDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.Degree(), nil
+}
+
+// PeerInDegree returns the indegree of peer.
+func (t *Task) PeerInDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.InDegree(), nil
+}
+
+// PeerOutDegree returns the outdegree of peer.
+func (t *Task) PeerOutDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.OutDegree(), nil
 }
 
 // HasAvailablePeer returns whether there is an available peer.
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
-	for _, vertex := range t.DAG.Vertices() {
+	for _, vertex := range t.DAG.GetVertices() {
 		value := vertex.Value
 		if value == nil {
 			continue
@@ -306,7 +388,7 @@ func (t *Task) HasAvailablePeer() bool {
 // LoadSeedPeer return latest seed peer in peers sync map.
 func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
-	for _, vertex := range t.DAG.Vertices() {
+	for _, vertex := range t.DAG.GetVertices() {
 		value := vertex.Value
 		if value == nil {
 			continue
@@ -357,14 +439,6 @@ func (t *Task) StorePiece(piece *base.PieceInfo) {
 	t.Pieces.Store(piece.PieceNum, piece)
 }
 
-// LoadOrStorePiece returns piece the key if present.
-// Otherwise, it stores and returns the given piece.
-// The loaded result is true if the piece was loaded, false if stored.
-func (t *Task) LoadOrStorePiece(piece *base.PieceInfo) (*base.PieceInfo, bool) {
-	rawPiece, loaded := t.Pieces.LoadOrStore(piece.PieceNum, piece)
-	return rawPiece.(*base.PieceInfo), loaded
-}
-
 // DeletePiece deletes piece for a key.
 func (t *Task) DeletePiece(key int32) {
 	t.Pieces.Delete(key)
@@ -398,7 +472,7 @@ func (t *Task) CanBackToSource() bool {
 
 // NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
-	for _, vertex := range t.DAG.Vertices() {
+	for _, vertex := range t.DAG.GetVertices() {
 		value := vertex.Value
 		if value == nil {
 			continue
