@@ -18,9 +18,9 @@ package training
 
 import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
-	"fmt"
 	"github.com/sjwhitworth/golearn/base"
 	"github.com/sjwhitworth/golearn/linear_models"
+	"math"
 	"strconv"
 )
 
@@ -42,6 +42,9 @@ const (
 
 	// TESTPERCENT percent of test data.
 	TESTPERCENT = 0.2
+
+	// MSETHRESHOLD threshold of MSE.
+	MSETHRESHOLD = 100
 )
 
 type TempData struct {
@@ -213,33 +216,58 @@ func GetInstanceHeaders() (*base.DenseInstances, []base.AttributeSpec, error) {
 	return instance, attrList, nil
 }
 
-// BatchNormalize return data which contains the max value of data.
-func BatchNormalize(data []*Data) *Data {
-	var maxData Data
-	maxData.intArray = make([]uint64, INTFIELDNUM)
-	for j := 0; j < INTFIELDNUM; j++ {
-		maxData.intArray[j] = 1
+// SplitByParentID split data by parentID
+func SplitByParentID(data []*Data) map[string][]*Data {
+	result := make(map[string][]*Data, 0)
+	for _, each := range data {
+		if _, ok := result[each.stringArray[1]]; !ok {
+			result[each.stringArray[1]] = make([]*Data, 0)
+		} else {
+			result[each.stringArray[1]] = append(result[each.stringArray[1]], each)
+		}
 	}
+	return result
+}
+
+// MaxMinNormalize return data which contains the (max - min) value and min value of data.
+func MaxMinNormalize(data []*Data) (*Data, *Data) {
+	var maxData Data
+	var minData Data
 	maxData.floatArray = make([]float64, FLOATFIELDNUM)
 	maxData.targetArray = make([]float64, TARGETFIELDNUM)
+	minData.floatArray = make([]float64, FLOATFIELDNUM)
+	minData.targetArray = make([]float64, TARGETFIELDNUM)
+	for j := 0; j < FLOATFIELDNUM; j++ {
+		minData.floatArray[j] = math.MaxFloat64
+	}
+	for j := 0; j < TARGETFIELDNUM; j++ {
+		minData.targetArray[j] = math.MaxFloat64
+	}
 	for i := 0; i < len(data); i++ {
-		for j := 0; j < len(data[i].intArray); j++ {
-			if data[i].intArray[j] > maxData.intArray[j] {
-				maxData.intArray[j] = data[i].intArray[j]
-			}
-		}
 		for j := 0; j < len(data[i].floatArray); j++ {
 			if data[i].floatArray[j] > maxData.floatArray[j] {
 				maxData.floatArray[j] = data[i].floatArray[j]
+			}
+			if data[i].floatArray[j] < minData.floatArray[j] {
+				minData.floatArray[j] = data[i].floatArray[j]
 			}
 		}
 		for j := 0; j < len(data[i].targetArray); j++ {
 			if data[i].targetArray[j] > maxData.targetArray[j] {
 				maxData.targetArray[j] = data[i].targetArray[j]
 			}
+			if data[i].targetArray[j] < minData.targetArray[j] {
+				minData.targetArray[j] = data[i].targetArray[j]
+			}
 		}
 	}
-	return &maxData
+	for j := 0; j < FLOATFIELDNUM; j++ {
+		maxData.floatArray[j] = maxData.floatArray[j] - minData.floatArray[j]
+	}
+	for j := 0; j < TARGETFIELDNUM; j++ {
+		maxData.targetArray[j] = maxData.targetArray[j] - minData.targetArray[j]
+	}
+	return &maxData, &minData
 }
 
 // DataToInstances preprocess of machine learning, data to instance.
@@ -249,29 +277,80 @@ func DataToInstances(data []*Data) (*base.DenseInstances, error) {
 	if err != nil {
 		return nil, err
 	}
-	maxData := BatchNormalize(data)
+	maxData, minData := MaxMinNormalize(data)
 	for i := 0; i < len(data); i++ {
 		for j := 0; j < INTFIELDNUM; j++ {
-			instance.Set(attrList[j], i, base.PackFloatToBytes(float64(data[i].intArray[j]/maxData.intArray[j])))
+			instance.Set(attrList[j], i, base.PackFloatToBytes(float64(data[i].intArray[j])))
 		}
 		for j := INTFIELDNUM; j < INTFIELDNUM+FLOATFIELDNUM; j++ {
-			instance.Set(attrList[j], i, base.PackFloatToBytes(data[i].floatArray[j-INTFIELDNUM]/maxData.floatArray[j-INTFIELDNUM]))
+			x := (data[i].floatArray[j-INTFIELDNUM] - minData.floatArray[j-INTFIELDNUM]) / maxData.floatArray[j-INTFIELDNUM]
+			instance.Set(attrList[j], i, base.PackFloatToBytes(x))
 		}
 		for j := INTFIELDNUM + FLOATFIELDNUM; j < INTFIELDNUM+FLOATFIELDNUM+TARGETFIELDNUM; j++ {
-			instance.Set(attrList[j], i, base.PackFloatToBytes(data[i].targetArray[j-INTFIELDNUM-FLOATFIELDNUM]/maxData.targetArray[j-INTFIELDNUM-FLOATFIELDNUM]))
+			x := (data[i].targetArray[j-INTFIELDNUM-FLOATFIELDNUM] - minData.targetArray[j-INTFIELDNUM-FLOATFIELDNUM]) / maxData.targetArray[j-INTFIELDNUM-FLOATFIELDNUM]
+			instance.Set(attrList[j], i, base.PackFloatToBytes(x))
 		}
 	}
 	return instance, nil
 }
 
 // train return a model of linearRegression trained by instance.
-func train(instance *base.DenseInstances) (*linear_models.LinearRegression, error) {
-	train, test := base.InstancesTrainTestSplit(instance, TESTPERCENT)
+func train(instance base.FixedDataGrid) (*linear_models.LinearRegression, error) {
 	lr := linear_models.NewLinearRegression()
-	err := lr.Fit(train)
+	err := lr.Fit(instance)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(lr.Predict(test))
 	return lr, nil
+}
+
+// evaluate return MSE and length of data.
+func evaluate(instance base.FixedDataGrid, lr *linear_models.LinearRegression) (float64, int, error) {
+	out, err := lr.Predict(instance)
+	if err != nil {
+		return -1, -1, err
+	}
+	_, length := out.Size()
+	attrSpec, err := out.GetAttribute(out.AllAttributes()[0])
+	if err != nil {
+		return -1, -1, err
+	}
+	sum := 0.0
+	for i := 0; i < length; i++ {
+		x := base.UnpackBytesToFloat(out.Get(attrSpec, i)) - base.UnpackBytesToFloat(instance.Get(attrSpec, i))
+		sum += math.Pow(x, 2)
+	}
+	return sum, length, nil
+}
+
+type Training struct {
+}
+
+// Serve return models map and MSE value of evaluation.
+func (strategy *Training) Serve(records []*storage.Record) (map[string]*linear_models.LinearRegression, float64, error) {
+	data := RecordsTransData(records)
+	parentIDMap := SplitByParentID(data)
+	resultMap := make(map[string]*linear_models.LinearRegression, 0)
+	mse_sum := 0.0
+	length_sum := 0
+	for key, value := range parentIDMap {
+		instance, err := DataToInstances(value)
+		if err != nil {
+			return nil, -1, err
+		}
+		trainData, testData := base.InstancesTrainTestSplit(instance, TESTPERCENT)
+		lr, err := train(trainData)
+		if err != nil {
+			return nil, -1, err
+		}
+		mse, length, err := evaluate(testData, lr)
+		mse_sum += mse
+		length_sum += length
+		if err != nil {
+			return nil, -1, err
+		}
+		resultMap[key] = lr
+	}
+
+	return resultMap, mse_sum / float64(length_sum), nil
 }
