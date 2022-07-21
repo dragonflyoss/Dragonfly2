@@ -55,6 +55,15 @@ it supports container engine, wget and other downloading tools through proxy fun
 	SilenceUsage:       true,
 	FParseErrWhitelist: cobra.FParseErrWhitelist{UnknownFlags: true},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Convert config
+		if err := cfg.Convert(); err != nil {
+			return err
+		}
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
 		// Initialize daemon dfpath
 		d, err := initDaemonDfpath(cfg)
 		if err != nil {
@@ -66,16 +75,6 @@ it supports container engine, wget and other downloading tools through proxy fun
 			return fmt.Errorf("init client daemon logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "daemon"))
-
-		// Convert config
-		if err := cfg.Convert(); err != nil {
-			return err
-		}
-
-		// Validate config
-		if err := cfg.Validate(); err != nil {
-			return err
-		}
 
 		return runDaemon(d)
 	},
