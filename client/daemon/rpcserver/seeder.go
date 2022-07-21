@@ -249,7 +249,7 @@ func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) er
 			ps := s.compositePieceSeed(pp, p)
 			if p.PieceNum == pp.TotalPiece-1 {
 				ps.Done, ps.EndTime = true, uint64(time.Now().UnixNano())
-				s.Infof("seed tasks start time: %d, end time: %d, cost: %dms", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000)
+				s.Infof("seed tasks start time: %d, end time: %d, cost: %dms, piece number: %d", ps.BeginTime, ps.EndTime, (ps.EndTime-ps.BeginTime)/1000000, p.PieceNum)
 			}
 
 			err = s.seedsServer.Send(&ps)

@@ -92,4 +92,5 @@ const (
 	DefaultPeerStartPort          = 65000
 	DefaultUploadStartPort        = 65002
 	DefaultObjectStorageStartPort = 65004
+	DefaultHealthyStartPort       = 40901
 )
