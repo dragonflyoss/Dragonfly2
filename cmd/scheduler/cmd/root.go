@@ -47,6 +47,11 @@ generate and maintain a P2P network during the download process, and push suitab
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
@@ -61,11 +66,6 @@ generate and maintain a P2P network during the download process, and push suitab
 			return fmt.Errorf("init scheduler logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "scheduler"))
-
-		// Validate config
-		if err := cfg.Validate(); err != nil {
-			return err
-		}
 
 		return runScheduler(ctx, d)
 	},
