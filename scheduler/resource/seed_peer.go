@@ -118,20 +118,21 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 			continue
 		}
 
+		// Handle piece download successfully.
+		peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
+		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
+		peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
+		task.StorePiece(piece.PieceInfo)
+
 		// Handle end of piece.
 		if piece.Done {
-			peer.Log.Infof("receive end of from seed peer: %#v %#v", piece, piece.PieceInfo)
+			peer.Log.Infof("receive done piece")
 			return peer, &rpcscheduler.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
 			}, nil
 		}
 
-		// Handle piece download successfully.
-		peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
-		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
-		peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
-		task.StorePiece(piece.PieceInfo)
 	}
 }
 
