@@ -162,18 +162,6 @@ func (h *Host) StorePeer(peer *Peer) {
 	h.PeerCount.Inc()
 }
 
-// LoadOrStorePeer returns peer the key if present.
-// Otherwise, it stores and returns the given peer.
-// The loaded result is true if the peer was loaded, false if stored.
-func (h *Host) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
-	rawPeer, loaded := h.Peers.LoadOrStore(peer.ID, peer)
-	if !loaded {
-		h.PeerCount.Inc()
-	}
-
-	return rawPeer.(*Peer), loaded
-}
-
 // DeletePeer deletes peer for a key.
 func (h *Host) DeletePeer(key string) {
 	if _, loaded := h.Peers.LoadAndDelete(key); loaded {

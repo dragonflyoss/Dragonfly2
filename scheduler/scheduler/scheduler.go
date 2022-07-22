@@ -31,14 +31,6 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
 )
 
-const (
-	// Default tree available depth.
-	defaultAvailableDepth = 2
-
-	// Default tree depth limit.
-	defaultDepthLimit = 4
-)
-
 type Scheduler interface {
 	// ScheduleParent schedule a parent and candidates to a peer.
 	ScheduleParent(context.Context, *resource.Peer, set.SafeSet)
@@ -158,6 +150,12 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
+	// Delete inedges of vertex.
+	if err := peer.Task.DeletePeerInEdges(peer.ID); err != nil {
+		peer.Log.Errorf("peer deletes inedges failed: %s", err.Error())
+		return []*resource.Peer{}, false
+	}
+
 	// Find the candidate parent that can be scheduled.
 	candidateParents := s.filterCandidateParents(peer, blocklist)
 	if len(candidateParents) == 0 {
@@ -174,6 +172,25 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		},
 	)
 
+	// Add edges between candidate parent and peer.
+	var (
+		parents   []*resource.Peer
+		parentIDs []string
+	)
+	for _, candidateParent := range candidateParents {
+		if err := peer.Task.AddPeerEdge(candidateParent, peer); err != nil {
+			peer.Log.Debugf("peer adds edge failed: %s", err.Error())
+			continue
+		}
+		parents = append(parents, candidateParent)
+		parentIDs = append(parentIDs, candidateParent.ID)
+	}
+
+	if len(parents) <= 0 {
+		peer.Log.Info("can not add edges for vertex")
+		return []*resource.Peer{}, false
+	}
+
 	// Send scheduling success message.
 	stream, ok := peer.LoadStream()
 	if !ok {
@@ -181,22 +198,13 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, candidateParents[0], candidateParents[1:])); err != nil {
+	if err := stream.Send(constructSuccessPeerPacket(s.dynconfig, peer, parents[0], parents[1:])); err != nil {
 		peer.Log.Error(err)
 		return []*resource.Peer{}, false
 	}
 
-	// Add steal peers to current peer.
-	peer.StealPeers.Clear()
-	for _, candidateParent := range candidateParents[1:] {
-		peer.StealPeers.Add(candidateParent.ID)
-	}
-
-	// Replace peer's parent with scheduled parent.
-	peer.ReplaceParent(candidateParents[0])
-	peer.Log.Infof("schedule parent successful, replace parent to %s and steal peers is %v",
-		candidateParents[0].ID, peer.StealPeers.Values())
-	peer.Log.Debugf("peer ancestors is %v", peer.Ancestors())
+	peer.Log.Infof("schedule parent successful, replace parent to %s and steal parents is %v",
+		parentIDs[0], parentIDs[1:])
 	return candidateParents, true
 }
 
@@ -229,89 +237,60 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		filterParentLimit = int(config.FilterParentLimit)
 	}
 
-	var candidateParents []*resource.Peer
-	var candidateParentIDs []string
-	var n int
-	peer.Task.Peers.Range(func(_, value any) bool {
-		if n > filterParentLimit {
-			return false
-		}
-		n++
+	var (
+		candidateParents   []*resource.Peer
+		candidateParentIDs []string
+	)
 
-		candidateParent, ok := value.(*resource.Peer)
-		if !ok {
-			return true
-		}
-
+	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentLimit)) {
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is in blocklist", candidateParent.ID)
-			return true
+			continue
 		}
 
-		// Candidate parent is itself.
-		if candidateParent.ID == peer.ID {
-			peer.Log.Debug("candidate parent is not selected because it is same")
-			return true
+		// Candidate parent can add edge with peer.
+		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
+			peer.Log.Debugf("can not add edge with candidate parent %s", candidateParent.ID)
+			continue
 		}
 
 		// Candidate parent is bad node.
 		if s.evaluator.IsBadNode(candidateParent) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is bad node", candidateParent.ID)
-			return true
+			continue
+		}
+
+		// Candidate parent can not find in dag.
+		inDegree, err := peer.Task.PeerInDegree(candidateParent.ID)
+		if err != nil {
+			peer.Log.Debugf("can not find candidate parent %s vertex in dag", candidateParent.ID)
+			continue
 		}
 
 		// Conditions for candidate parent to be a parent:
-		// 1. candidate parent has parent.
-		// 2. candidate parent is seed peer.
-		// 3. candidate parent has been back-to-source.
-		// 4. candidate parent has been succeeded.
-		_, ok = candidateParent.LoadParent()
+		// 1. parent has parent.
+		// 2. parent has been back-to-source.
+		// 3. parent has been succeeded.
+		// 4. parent is seed peer.
 		isBackToSource := candidateParent.IsBackToSource.Load()
-		if !ok && candidateParent.Host.Type == resource.HostTypeNormal && !isBackToSource &&
+		if candidateParent.Host.Type == resource.HostTypeNormal && inDegree == 0 && !isBackToSource &&
 			!candidateParent.FSM.Is(resource.PeerStateSucceeded) {
-			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %t %d %t %s",
-				candidateParent.ID, ok, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
-			return true
-		}
-
-		// Candidate parent's depth exceeds available depth.
-		peerChildCount := peer.ChildCount.Load()
-		parentDepth := candidateParent.Depth()
-		if peerChildCount > 0 && parentDepth > defaultAvailableDepth {
-			peer.Log.Debugf("candidate peer has %d children and parent %s depth is %d", peerChildCount, candidateParent.ID, parentDepth)
-			return true
-		}
-
-		// Parent's depth exceeds limit depth.
-		if parentDepth > defaultDepthLimit {
-			peer.Log.Debugf("exceeds the %d depth limit of the tree, candidate parent %s is %d", defaultDepthLimit, candidateParent.ID, parentDepth)
-			return true
-		}
-
-		// Candidate parent is an descendant of peer.
-		if candidateParent.IsDescendant(peer) {
-			peer.Log.Debugf("candidate parent %s is not selected because it is descendant", candidateParent.ID)
-			return true
-		}
-
-		// Candidate parent is an ancestor of peer.
-		if candidateParent.IsAncestor(peer) {
-			peer.Log.Debugf("candidate parent %s is not selected because it is ancestor", candidateParent.ID)
-			return true
+			peer.Log.Debugf("candidate parent %s is not selected, because its download state is %d %d %t %s",
+				candidateParent.ID, inDegree, int(candidateParent.Host.Type), isBackToSource, candidateParent.FSM.Current())
+			continue
 		}
 
 		// Candidate parent's free upload is empty.
 		if candidateParent.Host.FreeUploadLoad() <= 0 {
 			peer.Log.Debugf("candidate parent %s is not selected because its free upload is empty, upload limit is %d, upload peer count is %d",
 				candidateParent.ID, candidateParent.Host.UploadLoadLimit.Load(), candidateParent.Host.UploadPeerCount.Load())
-			return true
+			continue
 		}
 
 		candidateParents = append(candidateParents, candidateParent)
 		candidateParentIDs = append(candidateParentIDs, candidateParent.ID)
-		return true
-	})
+	}
 
 	peer.Log.Infof("candidate parents include %#v", candidateParentIDs)
 	return candidateParents

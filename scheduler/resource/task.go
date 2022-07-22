@@ -18,6 +18,8 @@ package resource
 
 import (
 	"errors"
+	"math/rand"
+	reflect "reflect"
 	"sort"
 	"sync"
 	"time"
@@ -27,6 +29,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
+	"d7y.io/dragonfly/v2/pkg/dag"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -37,6 +40,9 @@ const (
 
 	// Peer failure limit in task.
 	FailedPeerCountLimit = 200
+
+	// Peer count limit for task.
+	PeerCountLimitForTask = 10 * 1000
 )
 
 const (
@@ -108,11 +114,8 @@ type Task struct {
 	// Piece sync map.
 	Pieces *sync.Map
 
-	// Peer sync map.
-	Peers *sync.Map
-
-	// PeerCount is peer count.
-	PeerCount *atomic.Int32
+	// DAG is directed acyclic graph of peers.
+	DAG dag.DAG
 
 	// PeerFailedCount is peer failed count,
 	// if one peer succeeds, the value is reset to zero.
@@ -140,8 +143,7 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 		BackToSourceLimit: atomic.NewInt32(0),
 		BackToSourcePeers: set.NewSafeSet(),
 		Pieces:            &sync.Map{},
-		Peers:             &sync.Map{},
-		PeerCount:         atomic.NewInt32(0),
+		DAG:               dag.NewDAG(),
 		PeerFailedCount:   atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
@@ -181,55 +183,204 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 
 // LoadPeer return peer for a key.
 func (t *Task) LoadPeer(key string) (*Peer, bool) {
-	rawPeer, ok := t.Peers.Load(key)
-	if !ok {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		t.Log.Error(err)
 		return nil, false
 	}
 
-	return rawPeer.(*Peer), ok
+	value := vertex.Value
+	if value == nil {
+		return nil, false
+	}
+
+	return value.(*Peer), true
+}
+
+// LoadRandomPeers return random peers.
+func (t *Task) LoadRandomPeers(n uint) []*Peer {
+	var peers []*Peer
+	vertices := t.DAG.GetVertices()
+	keys := reflect.ValueOf(vertices).MapKeys()
+	if int(n) >= len(keys) {
+		for _, vertex := range vertices {
+			value := vertex.Value
+			if value == nil {
+				continue
+			}
+
+			peer, ok := value.(*Peer)
+			if !ok {
+				continue
+			}
+
+			peers = append(peers, peer)
+		}
+
+		return peers
+	}
+
+	rand.Seed(time.Now().Unix())
+	permutation := rand.Perm(len(keys))[:n]
+	for _, v := range permutation {
+		key := keys[v].String()
+
+		vertex := vertices[key]
+		value := vertex.Value
+		if value == nil {
+			continue
+		}
+
+		peer, ok := value.(*Peer)
+		if !ok {
+			continue
+		}
+
+		peers = append(peers, peer)
+	}
+
+	return peers
 }
 
 // StorePeer set peer.
 func (t *Task) StorePeer(peer *Peer) {
-	t.Peers.Store(peer.ID, peer)
-	t.PeerCount.Inc()
-}
-
-// LoadOrStorePeer returns peer the key if present.
-// Otherwise, it stores and returns the given peer.
-// The loaded result is true if the peer was loaded, false if stored.
-func (t *Task) LoadOrStorePeer(peer *Peer) (*Peer, bool) {
-	rawPeer, loaded := t.Peers.LoadOrStore(peer.ID, peer)
-	if !loaded {
-		t.PeerCount.Inc()
-	}
-
-	return rawPeer.(*Peer), loaded
+	t.DAG.AddVertex(peer.ID, peer) // nolint: errcheck
 }
 
 // DeletePeer deletes peer for a key.
 func (t *Task) DeletePeer(key string) {
-	if _, loaded := t.Peers.LoadAndDelete(key); loaded {
-		t.PeerCount.Dec()
+	if err := t.DeletePeerInEdges(key); err != nil {
+		t.Log.Error(err)
 	}
+
+	if err := t.DeletePeerOutEdges(key); err != nil {
+		t.Log.Error(err)
+	}
+
+	t.DAG.DeleteVertex(key)
+}
+
+// PeerCount returns count of peer.
+func (t *Task) PeerCount() int {
+	return t.DAG.VertexCount()
+}
+
+// AddPeerEdge adds inedges between two peers.
+func (t *Task) AddPeerEdge(fromPeer *Peer, toPeer *Peer) error {
+	if err := t.DAG.AddEdge(fromPeer.ID, toPeer.ID); err != nil {
+		return err
+	}
+
+	fromPeer.Host.UploadPeerCount.Inc()
+	return nil
+}
+
+// DeletePeerInEdges deletes inedges of peer.
+func (t *Task) DeletePeerInEdges(key string) error {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return err
+	}
+
+	for _, value := range vertex.Parents.Values() {
+		vertex, ok := value.(*dag.Vertex)
+		if !ok {
+			continue
+		}
+
+		vertexVal := vertex.Value
+		if vertexVal == nil {
+			continue
+		}
+
+		parent, ok := vertexVal.(*Peer)
+		if !ok {
+			continue
+		}
+
+		parent.Host.UploadPeerCount.Dec()
+	}
+
+	vertex.DeleteInEdges()
+	return nil
+}
+
+// DeletePeerOutEdges deletes outedges of peer.
+func (t *Task) DeletePeerOutEdges(key string) error {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return err
+	}
+
+	value := vertex.Value
+	if value == nil {
+		return errors.New("vertex value is nil")
+	}
+
+	peer, ok := value.(*Peer)
+	if !ok {
+		return errors.New("vertex value is not peer")
+	}
+
+	peer.Host.UploadPeerCount.Sub(int32(vertex.Children.Len()))
+	vertex.DeleteOutEdges()
+	return nil
+}
+
+// CanAddPeerEdge finds whether there are peer circles through depth-first search.
+func (t *Task) CanAddPeerEdge(fromPeerKey, toPeerKey string) bool {
+	return t.DAG.CanAddEdge(fromPeerKey, toPeerKey)
+}
+
+// PeerDegree returns the degree of peer.
+func (t *Task) PeerDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.Degree(), nil
+}
+
+// PeerInDegree returns the indegree of peer.
+func (t *Task) PeerInDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.InDegree(), nil
+}
+
+// PeerOutDegree returns the outdegree of peer.
+func (t *Task) PeerOutDegree(key string) (int, error) {
+	vertex, err := t.DAG.GetVertex(key)
+	if err != nil {
+		return 0, err
+	}
+
+	return vertex.OutDegree(), nil
 }
 
 // HasAvailablePeer returns whether there is an available peer.
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
-	t.Peers.Range(func(_, v any) bool {
-		peer, ok := v.(*Peer)
+	for _, vertex := range t.DAG.GetVertices() {
+		value := vertex.Value
+		if value == nil {
+			continue
+		}
+
+		peer, ok := value.(*Peer)
 		if !ok {
-			return true
+			continue
 		}
 
 		if peer.FSM.Is(PeerStateSucceeded) {
 			hasAvailablePeer = true
-			return false
+			break
 		}
-
-		return true
-	})
+	}
 
 	return hasAvailablePeer
 }
@@ -237,18 +388,21 @@ func (t *Task) HasAvailablePeer() bool {
 // LoadSeedPeer return latest seed peer in peers sync map.
 func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
-	t.Peers.Range(func(_, v any) bool {
-		peer, ok := v.(*Peer)
+	for _, vertex := range t.DAG.GetVertices() {
+		value := vertex.Value
+		if value == nil {
+			continue
+		}
+
+		peer, ok := value.(*Peer)
 		if !ok {
-			return true
+			continue
 		}
 
 		if peer.Host.Type != HostTypeNormal {
 			peers = append(peers, peer)
 		}
-
-		return true
-	})
+	}
 
 	sort.Slice(
 		peers,
@@ -285,14 +439,6 @@ func (t *Task) StorePiece(piece *base.PieceInfo) {
 	t.Pieces.Store(piece.PieceNum, piece)
 }
 
-// LoadOrStorePiece returns piece the key if present.
-// Otherwise, it stores and returns the given piece.
-// The loaded result is true if the piece was loaded, false if stored.
-func (t *Task) LoadOrStorePiece(piece *base.PieceInfo) (*base.PieceInfo, bool) {
-	rawPiece, loaded := t.Pieces.LoadOrStore(piece.PieceNum, piece)
-	return rawPiece.(*base.PieceInfo), loaded
-}
-
 // DeletePiece deletes piece for a key.
 func (t *Task) DeletePiece(key int32) {
 	t.Pieces.Delete(key)
@@ -326,26 +472,29 @@ func (t *Task) CanBackToSource() bool {
 
 // NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
-	t.Peers.Range(func(_, value any) bool {
+	for _, vertex := range t.DAG.GetVertices() {
+		value := vertex.Value
+		if value == nil {
+			continue
+		}
+
 		peer := value.(*Peer)
 		if peer.FSM.Is(PeerStateRunning) {
 			stream, ok := peer.LoadStream()
 			if !ok {
-				return true
+				continue
 			}
 
 			if err := stream.Send(peerPacket); err != nil {
 				t.Log.Errorf("send packet to peer %s failed: %s", peer.ID, err.Error())
-				return true
+				continue
 			}
 			t.Log.Infof("task notify peer %s code %s", peer.ID, peerPacket.Code)
 
 			if err := peer.FSM.Event(event); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
-				return true
+				continue
 			}
 		}
-
-		return true
-	})
+	}
 }

@@ -73,6 +73,7 @@ var rootCmd = &cobra.Command{
 		if err := dfgetConfig.Convert(args); err != nil {
 			return err
 		}
+
 		// Validate config
 		if err := dfgetConfig.Validate(); err != nil {
 			return err

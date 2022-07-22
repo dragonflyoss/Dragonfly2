@@ -32,7 +32,7 @@ const (
 	DefaultClientParallelCount = 4
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
-	DefaultSchedulerFilterParentLimit = 3
+	DefaultSchedulerFilterParentLimit = 4
 )
 
 // DefaultServerListen is default listen for server.

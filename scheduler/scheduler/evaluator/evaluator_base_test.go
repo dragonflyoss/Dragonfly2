@@ -286,7 +286,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 		{
 			name: "host peers is not empty",
 			mock: func(host *resource.Host, mockPeer *resource.Peer) {
-				mockPeer.StoreParent(mockPeer)
+				mockPeer.Host.UploadPeerCount.Add(1)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)

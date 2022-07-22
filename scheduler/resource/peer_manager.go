@@ -19,6 +19,7 @@
 package resource
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -95,8 +96,8 @@ func (p *peerManager) Store(peer *Peer) {
 	defer p.mu.Unlock()
 
 	p.Map.Store(peer.ID, peer)
-	peer.Host.LoadOrStorePeer(peer)
-	peer.Task.LoadOrStorePeer(peer)
+	peer.Task.StorePeer(peer)
+	peer.Host.StorePeer(peer)
 }
 
 func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
@@ -105,8 +106,8 @@ func (p *peerManager) LoadOrStore(peer *Peer) (*Peer, bool) {
 
 	rawPeer, loaded := p.Map.LoadOrStore(peer.ID, peer)
 	if !loaded {
-		peer.Host.LoadOrStorePeer(peer)
-		peer.Task.LoadOrStorePeer(peer)
+		peer.Host.StorePeer(peer)
+		peer.Task.StorePeer(peer)
 	}
 
 	return rawPeer.(*Peer), loaded
@@ -118,8 +119,8 @@ func (p *peerManager) Delete(key string) {
 
 	if peer, ok := p.Load(key); ok {
 		p.Map.Delete(key)
-		peer.Host.DeletePeer(key)
 		peer.Task.DeletePeer(key)
+		peer.Host.DeletePeer(key)
 	}
 }
 
@@ -127,12 +128,14 @@ func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value any) bool {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
+		fmt.Println(elapsed, p.ttl)
 
-		if elapsed > p.ttl && peer.ChildCount.Load() == 0 {
+		// If the peer's elapsed exceeds the ttl,
+		// first set the peer state to PeerStateLeave and then delete peer.
+		if elapsed > p.ttl {
 			// If the status is PeerStateLeave,
 			// clear peer information.
 			if peer.FSM.Is(PeerStateLeave) {
-				peer.DeleteParent()
 				p.Delete(peer.ID)
 				peer.Log.Info("peer has been reclaimed")
 				return true
@@ -142,9 +145,29 @@ func (p *peerManager) RunGC() error {
 			// first change the state to PeerEventLeave.
 			if err := peer.FSM.Event(PeerEventLeave); err != nil {
 				peer.Log.Errorf("peer fsm event failed: %s", err.Error())
+				return true
 			}
 
 			peer.Log.Info("gc causes the peer to leave")
+			return true
+		}
+
+		// If no peer exists in the dag of the task,
+		// delete the peer.
+		degree, err := peer.Task.PeerDegree(peer.ID)
+		if err != nil {
+			p.Delete(peer.ID)
+			peer.Log.Info("peer has been reclaimed")
+			return true
+		}
+
+		// If the task dag size exceeds the limit,
+		// then delete peers which state is PeerStateSucceeded and PeerStateFailed,
+		// and degree is zero.
+		if peer.Task.PeerCount() > PeerCountLimitForTask &&
+			(peer.FSM.Is(PeerStateSucceeded) || peer.FSM.Is(PeerStateFailed)) && degree == 0 {
+			p.Delete(peer.ID)
+			peer.Log.Info("peer has been reclaimed")
 			return true
 		}
 
