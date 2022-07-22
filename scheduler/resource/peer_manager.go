@@ -19,7 +19,6 @@
 package resource
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -128,7 +127,6 @@ func (p *peerManager) RunGC() error {
 	p.Map.Range(func(_, value any) bool {
 		peer := value.(*Peer)
 		elapsed := time.Since(peer.UpdateAt.Load())
-		fmt.Println(elapsed, p.ttl)
 
 		// If the peer's elapsed exceeds the ttl,
 		// first set the peer state to PeerStateLeave and then delete peer.
