@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
@@ -309,16 +310,21 @@ func TestPeerManager_Delete(t *testing.T) {
 
 func TestPeerManager_RunGC(t *testing.T) {
 	tests := []struct {
-		name   string
-		mock   func(m *gc.MockGCMockRecorder)
-		expect func(t *testing.T, peerManager PeerManager, mockPeer *Peer)
+		name     string
+		gcConfig *config.GCConfig
+		mock     func(m *gc.MockGCMockRecorder)
+		expect   func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer)
 	}{
 		{
 			name: "peer leave",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Microsecond,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
 				mockPeer.FSM.SetState(PeerStateSucceeded)
@@ -332,10 +338,14 @@ func TestPeerManager_RunGC(t *testing.T) {
 		},
 		{
 			name: "peer reclaimed",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Microsecond,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
 				mockPeer.FSM.SetState(PeerStateSucceeded)
@@ -354,39 +364,50 @@ func TestPeerManager_RunGC(t *testing.T) {
 			},
 		},
 		{
-			name: "peer has children",
+			name: "peer gets degree failed",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Hour,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
 				mockPeer.FSM.SetState(PeerStateSucceeded)
-				mockPeer.StoreChild(mockPeer)
+				mockPeer.Task.DeletePeer(mockPeer.ID)
+
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(peer.FSM.Current(), PeerStateSucceeded)
+				_, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, false)
 			},
 		},
 		{
-			name: "peer state is PeerStatePending",
+			name: "peer reclaimed with PeerCountLimitForTask",
+			gcConfig: &config.GCConfig{
+				PeerGCInterval: 1 * time.Second,
+				PeerTTL:        1 * time.Hour,
+			},
 			mock: func(m *gc.MockGCMockRecorder) {
 				m.Add(gomock.Any()).Return(nil).Times(1)
 			},
-			expect: func(t *testing.T, peerManager PeerManager, mockPeer *Peer) {
+			expect: func(t *testing.T, peerManager PeerManager, mockHost *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				peerManager.Store(mockPeer)
-				mockPeer.FSM.SetState(PeerStatePending)
-				mockPeer.StoreChild(mockPeer)
+				mockPeer.FSM.SetState(PeerStateSucceeded)
+				for i := 0; i < PeerCountLimitForTask+1; i++ {
+					peer := NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
+					mockPeer.Task.StorePeer(peer)
+				}
+
 				err := peerManager.RunGC()
 				assert.NoError(err)
 
-				peer, ok := peerManager.Load(mockPeer.ID)
-				assert.Equal(ok, true)
-				assert.Equal(peer.FSM.Current(), PeerStatePending)
+				_, ok := peerManager.Load(mockPeer.ID)
+				assert.Equal(ok, false)
 			},
 		},
 	}
@@ -401,12 +422,12 @@ func TestPeerManager_RunGC(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, mockHost)
-			peerManager, err := newPeerManager(mockPeerGCConfig, gc)
+			peerManager, err := newPeerManager(tc.gcConfig, gc)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			tc.expect(t, peerManager, mockPeer)
+			tc.expect(t, peerManager, mockHost, mockTask, mockPeer)
 		})
 	}
 }
