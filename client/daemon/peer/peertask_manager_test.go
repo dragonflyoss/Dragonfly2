@@ -209,7 +209,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					RpcPort: port,
 					PeerId:  "peer-x",
 				},
-				StealPeers: nil,
+				CandidatePeers: nil,
 			}, nil
 		})
 	pps.EXPECT().CloseSend().AnyTimes()

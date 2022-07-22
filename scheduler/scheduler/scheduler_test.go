@@ -446,11 +446,11 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			},
 		},
 		{
-			name: "peer is in steal peers",
+			name: "peer is in candidate peers",
 			mock: func(peer *resource.Peer, mockPeer *resource.Peer, blocklist set.SafeSet, stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
-				peer.StealPeers.Add(mockPeer.ID)
+				peer.CandidatePeers.Add(mockPeer.ID)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -561,14 +561,14 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				mockHost := resource.NewHost(mockRawHost)
 				mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
-				stealPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
-				stealPeer.FSM.SetState(resource.PeerStateRunning)
+				CandidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
+				CandidatePeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(mockPeer)
-				peer.Task.StorePeer(stealPeer)
+				peer.Task.StorePeer(CandidatePeer)
 				peer.Task.BackToSourcePeers.Add(mockPeer)
-				peer.Task.BackToSourcePeers.Add(stealPeer)
+				peer.Task.BackToSourcePeers.Add(CandidatePeer)
 				mockPeer.IsBackToSource.Store(true)
-				stealPeer.IsBackToSource.Store(true)
+				CandidatePeer.IsBackToSource.Store(true)
 				mockPeer.Pieces.Set(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
@@ -582,7 +582,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(len(parents), 2)
-				assert.Equal(peer.StealPeers.Len(), uint(1))
+				assert.Equal(peer.CandidatePeers.Len(), uint(1))
 				assert.True(ok)
 			},
 		},
@@ -883,7 +883,7 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 						RpcPort: parent.Host.Port,
 						PeerId:  parent.ID,
 					},
-					StealPeers: []*rpcscheduler.PeerPacket_DestPeer{
+					CandidatePeers: []*rpcscheduler.PeerPacket_DestPeer{
 						{
 							Ip:      candidateParents[0].Host.IP,
 							RpcPort: candidateParents[0].Host.Port,
@@ -910,7 +910,7 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 						RpcPort: parent.Host.Port,
 						PeerId:  parent.ID,
 					},
-					StealPeers: []*rpcscheduler.PeerPacket_DestPeer{
+					CandidatePeers: []*rpcscheduler.PeerPacket_DestPeer{
 						{
 							Ip:      candidateParents[0].Host.IP,
 							RpcPort: candidateParents[0].Host.Port,

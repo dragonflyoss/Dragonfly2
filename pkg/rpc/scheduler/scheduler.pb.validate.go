@@ -675,13 +675,13 @@ func (m *PeerPacket) Validate() error {
 		}
 	}
 
-	for idx, item := range m.GetStealPeers() {
+	for idx, item := range m.GetCandidatePeers() {
 		_, _ = idx, item
 
 		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
 				return PeerPacketValidationError{
-					field:  fmt.Sprintf("StealPeers[%v]", idx),
+					field:  fmt.Sprintf("CandidatePeers[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
