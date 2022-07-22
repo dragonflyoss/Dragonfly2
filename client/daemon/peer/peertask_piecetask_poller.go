@@ -52,7 +52,7 @@ prepare:
 		return nil, fmt.Errorf("need back source")
 	}
 
-	for _, peer := range peerPacket.StealPeers {
+	for _, peer := range peerPacket.CandidatePeers {
 		if poller.peerTaskConductor.needBackSource.Load() {
 			return nil, fmt.Errorf("need back source")
 		}
@@ -183,9 +183,9 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 
 			// fast way 2 to exit retry
 			lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
-			if curPeerPacket.StealPeers[0].PeerId != lastPeerPacket.StealPeers[0].PeerId {
+			if curPeerPacket.CandidatePeers[0].PeerId != lastPeerPacket.CandidatePeers[0].PeerId {
 				ptc.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s", getError,
-					curPeerPacket.StealPeers[0].PeerId, lastPeerPacket.StealPeers[0].PeerId)
+					curPeerPacket.CandidatePeers[0].PeerId, lastPeerPacket.CandidatePeers[0].PeerId)
 				peerPacketChanged = true
 				return nil, true, nil
 			}
@@ -224,9 +224,9 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		}
 		// fast way to exit retry
 		lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
-		if curPeerPacket.StealPeers[0].PeerId != lastPeerPacket.StealPeers[0].PeerId {
+		if curPeerPacket.CandidatePeers[0].PeerId != lastPeerPacket.CandidatePeers[0].PeerId {
 			ptc.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
-				curPeerPacket.StealPeers[0].PeerId, lastPeerPacket.StealPeers[0].PeerId)
+				curPeerPacket.CandidatePeers[0].PeerId, lastPeerPacket.CandidatePeers[0].PeerId)
 			peerPacketChanged = true
 			return nil, true, nil
 		}

@@ -203,7 +203,7 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 		return []*resource.Peer{}, false
 	}
 
-	peer.Log.Infof("schedule parent successful, replace parent to %s and steal parents is %v",
+	peer.Log.Infof("schedule parent successful, replace parent to %s and candidate parents is %v",
 		parentIDs[0], parentIDs[1:])
 	return candidateParents, true
 }
@@ -303,9 +303,9 @@ func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resou
 		parallelCount = int(config.ParallelCount)
 	}
 
-	var stealPeers []*rpcscheduler.PeerPacket_DestPeer
+	var CandidatePeers []*rpcscheduler.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
-		stealPeers = append(stealPeers, &rpcscheduler.PeerPacket_DestPeer{
+		CandidatePeers = append(CandidatePeers, &rpcscheduler.PeerPacket_DestPeer{
 			Ip:      candidateParent.Host.IP,
 			RpcPort: candidateParent.Host.Port,
 			PeerId:  candidateParent.ID,
@@ -321,7 +321,7 @@ func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resou
 			RpcPort: parent.Host.Port,
 			PeerId:  parent.ID,
 		},
-		StealPeers: stealPeers,
-		Code:       base.Code_Success,
+		CandidatePeers: CandidatePeers,
+		Code:           base.Code_Success,
 	}
 }

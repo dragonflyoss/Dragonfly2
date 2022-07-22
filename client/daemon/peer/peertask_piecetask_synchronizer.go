@@ -85,12 +85,12 @@ func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, desiredPiece int32
 			errs = append(errs, err)
 		}
 	}
-	for _, p := range pp.StealPeers {
+	for _, p := range pp.CandidatePeers {
 		peers[p.PeerId] = true
 		if _, ok := s.workers[p.PeerId]; !ok {
 			err := s.newPieceTaskSynchronizer(s.ctx, p, desiredPiece)
 			if err != nil {
-				s.peerTaskConductor.Errorf("steal peer SyncPieceTasks error: %s", err)
+				s.peerTaskConductor.Errorf("candidate peer SyncPieceTasks error: %s", err)
 				errs = append(errs, err)
 			}
 		}
