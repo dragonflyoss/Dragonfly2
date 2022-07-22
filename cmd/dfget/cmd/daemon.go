@@ -59,6 +59,7 @@ it supports container engine, wget and other downloading tools through proxy fun
 		if err := cfg.Convert(); err != nil {
 			return err
 		}
+
 		// Validate config
 		if err := cfg.Validate(); err != nil {
 			return err

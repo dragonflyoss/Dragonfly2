@@ -50,3 +50,31 @@ func (v *Vertex) InDegree() int {
 func (v *Vertex) OutDegree() int {
 	return int(v.Children.Len())
 }
+
+// DeleteInEdges deletes inedges of vertex.
+func (v *Vertex) DeleteInEdges() {
+	for _, value := range v.Parents.Values() {
+		vertex, ok := value.(*Vertex)
+		if !ok {
+			continue
+		}
+
+		vertex.Children.Delete(v)
+	}
+
+	v.Parents = set.NewSafeSet()
+}
+
+// DeleteOutEdges deletes outedges of vertex.
+func (v *Vertex) DeleteOutEdges() {
+	for _, value := range v.Children.Values() {
+		vertex, ok := value.(*Vertex)
+		if !ok {
+			continue
+		}
+
+		vertex.Parents.Delete(v)
+	}
+
+	v.Children = set.NewSafeSet()
+}

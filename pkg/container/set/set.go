@@ -24,7 +24,6 @@ type Set interface {
 	Delete(any)
 	Contains(...any) bool
 	Len() uint
-	Range(func(any) bool)
 	Clear()
 }
 
@@ -36,10 +35,9 @@ func New() Set {
 
 func (s *set) Values() []any {
 	var result []any
-	s.Range(func(v any) bool {
-		result = append(result, v)
-		return true
-	})
+	for k := range *s {
+		result = append(result, k)
+	}
 
 	return result
 }
@@ -70,14 +68,6 @@ func (s *set) Contains(vals ...any) bool {
 
 func (s *set) Len() uint {
 	return uint(len(*s))
-}
-
-func (s *set) Range(fn func(any) bool) {
-	for v := range *s {
-		if !fn(v) {
-			break
-		}
-	}
 }
 
 func (s *set) Clear() {
