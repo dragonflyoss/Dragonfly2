@@ -116,6 +116,7 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 	if err := dfcacheConfig.Convert(cmdName, args); err != nil {
 		return err
 	}
+
 	// Validate config
 	if err := dfcacheConfig.Validate(cmdName); err != nil {
 		return err
