@@ -157,7 +157,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 					RpcPort: port,
 					PeerId:  "peer-x",
 				},
-				StealPeers: nil,
+				CandidatePeers: nil,
 			}, nil
 		})
 	pps.EXPECT().CloseSend().AnyTimes()
