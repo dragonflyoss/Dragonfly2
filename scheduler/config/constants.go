@@ -76,6 +76,12 @@ const (
 
 	// DefaultSchedulerHostTTL is default ttl for host.
 	DefaultSchedulerHostTTL = 48 * time.Hour
+
+	// DefaultCPU is default cpu usage
+	DefaultCpu = 1
+
+	// DefaultRefreshModelInterval is model refresh interval
+	DefaultRefreshModelInterval = 168 * time.Hour
 )
 
 const (
