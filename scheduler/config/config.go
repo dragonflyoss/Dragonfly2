@@ -81,6 +81,9 @@ func New() *Config {
 				HostGCInterval: DefaultSchedulerHostGCInterval,
 				HostTTL:        DefaultSchedulerHostTTL,
 			},
+			Cpu:                  DefaultCpu,
+			RefreshMode:          false,
+			RefreshModelInterval: DefaultRefreshModelInterval,
 		},
 		DynConfig: &DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,
@@ -170,6 +173,14 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Scheduler.GC.TaskTTL <= 0 {
 		return errors.New("scheduler requires parameter taskTTL")
+	}
+
+	if cfg.Scheduler.Cpu <= 0 {
+		return errors.New("scheduler requires parameter cpu")
+	}
+
+	if cfg.Scheduler.RefreshMode && cfg.Scheduler.RefreshModelInterval <= 0 {
+		return errors.New("scheduler requires parameter RefreshModelInterval")
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {
@@ -284,6 +295,15 @@ type SchedulerConfig struct {
 
 	// Task and peer gc configuration.
 	GC *GCConfig `yaml:"gc" mapstructure:"gc"`
+
+	// Cpu Limit
+	Cpu int `yaml:"cpu" mapstructure:"cpu"`
+
+	// Enable refresh mode
+	RefreshMode bool `yaml:"refreshMode" mapstructure:"refreshMode"`
+
+	// Update model interval
+	RefreshModelInterval time.Duration `yaml:"refreshModelInterval" mapstructure:"refreshModelInterval"`
 }
 
 type GCConfig struct {
