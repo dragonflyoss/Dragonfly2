@@ -63,12 +63,6 @@ type DAG interface {
 
 	// DeleteEdge deletes edge between two vertices.
 	DeleteEdge(fromVertexID, toVertexID string) error
-
-	// SourceVertices find all source points of dag
-	SourceVertices() []string
-
-	// SinkVertices find all end points of dag
-	SinkVertices() []string
 }
 
 // dag provides directed acyclic graph function.
@@ -224,29 +218,6 @@ func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
 	fromVertex.Children.Delete(toVertex)
 	toVertex.Parents.Delete(fromVertex)
 	return nil
-}
-
-// SourceVertex finds all source of dag
-func (d *dag) SourceVertices() []string {
-	source := make([]string, 0)
-	d.RangeVertex(func(key string, value *Vertex) bool {
-		if value.InDegree() == 0 {
-			source = append(source, key)
-		}
-		return false
-	})
-	return source
-}
-
-func (d *dag) SinkVertices() []string {
-	sink := make([]string, 0)
-	d.RangeVertex(func(key string, value *Vertex) bool {
-		if value.OutDegree() == 0 {
-			sink = append(sink, key)
-		}
-		return false
-	})
-	return sink
 }
 
 // depthFirstSearch is a depth-first search of the directed acyclic graph.

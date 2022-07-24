@@ -107,11 +107,11 @@ func MakeBucketsCacheKey(name string) string {
 	return MakeCacheKey(BucketsNamespace, name)
 }
 
-func MakeModelKey(clusterID uint, hostname, ip, id, version string) string {
-	return fmt.Sprintf("%s:%s", MakeVersionKey(clusterID, hostname, ip, id), version)
+func MakeModelVersionKey(clusterID uint, hostname, ip, id, version string) string {
+	return fmt.Sprintf("%s:%s", MakeModelKey(clusterID, hostname, ip, id), version)
 }
 
-func MakeVersionKey(clusterID uint, hostname, ip, id string) string {
+func MakeModelKey(clusterID uint, hostname, ip, id string) string {
 	return fmt.Sprintf("%s:%s", MakePrefixKey(clusterID, hostname, ip), id)
 }
 

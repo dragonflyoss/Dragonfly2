@@ -138,15 +138,15 @@ type Service interface {
 	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
 	DeleteSeedPeerClusterToApplication(context.Context, uint, uint) error
 
-	GetModel(context.Context, types.ModelParams, types.ModelInfos) (*model.MachineModel, error)
-	GetModels(context.Context, types.ModelParams, types.ModelInfos) ([]*model.MachineModel, error)
-	UpdateModel(context.Context, types.ModelParams, types.ModelInfos) error
-	DeleteModel(context.Context, types.ModelParams, types.ModelInfos) error
+	GetModel(context.Context, types.ModelParams, types.Model) (*types.StorageModel, error)
+	GetModels(context.Context, types.ModelParams, types.Model) ([]*types.StorageModel, error)
+	UpdateModel(context.Context, types.ModelParams, types.Model) error
+	DeleteModel(context.Context, types.ModelParams, types.Model) error
 
-	GetVersion(context.Context, types.ModelParams, types.ModelInfos) (*model.Version, error)
-	GetVersions(context.Context, types.ModelInfos) ([]*model.Version, error)
-	UpdateVersion(context.Context, types.ModelParams, types.ModelInfos) error
-	DeleteVersion(context.Context, types.ModelParams, types.ModelInfos) error
+	GetVersion(context.Context, types.ModelParams, types.Model) (*types.Version, error)
+	GetVersions(context.Context, types.Model) ([]*types.Version, error)
+	UpdateVersion(context.Context, types.ModelParams, types.Model) (*types.Version, error)
+	DeleteVersion(context.Context, types.ModelParams, types.Model) error
 }
 
 type service struct {
