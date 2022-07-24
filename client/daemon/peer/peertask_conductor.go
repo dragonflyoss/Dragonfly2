@@ -468,7 +468,7 @@ func (pt *peerTaskConductor) markBackSource() {
 		SrcPid:        pt.peerID,
 		ParallelCount: 1,
 		MainPeer:      nil,
-		StealPeers: []*scheduler.PeerPacket_DestPeer{
+		CandidatePeers: []*scheduler.PeerPacket_DestPeer{
 			{
 				Ip:      pt.host.Ip,
 				RpcPort: pt.host.RpcPort,
@@ -693,7 +693,7 @@ loop:
 			continue
 		}
 
-		if peerPacket.MainPeer == nil && peerPacket.StealPeers == nil {
+		if peerPacket.MainPeer == nil && peerPacket.CandidatePeers == nil {
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
@@ -707,18 +707,18 @@ loop:
 			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			firstPeerSpan.End()
 		}
-		// updateSynchronizer will update legacy peers to peerPacket.StealPeers only
+		// updateSynchronizer will update legacy peers to peerPacket.CandidatePeers only
 		lastNotReadyPiece = pt.updateSynchronizer(lastNotReadyPiece, peerPacket)
 		if !firstPacketReceived {
 			// trigger legacy get piece once to avoid first schedule timeout
 			firstPacketReceived = true
-		} else if len(peerPacket.StealPeers) == 0 {
+		} else if len(peerPacket.CandidatePeers) == 0 {
 			pt.Debugf("no legacy peers, skip to send peerPacketReady")
 			pt.legacyPeerCount.Store(0)
 			continue
 		}
 
-		legacyPeerCount := int64(len(peerPacket.StealPeers))
+		legacyPeerCount := int64(len(peerPacket.CandidatePeers))
 		pt.Debugf("connect to %d legacy peers", legacyPeerCount)
 		pt.legacyPeerCount.Store(legacyPeerCount)
 
@@ -743,16 +743,16 @@ func (pt *peerTaskConductor) updateSynchronizer(lastNum int32, p *scheduler.Peer
 	if !ok {
 		pt.Infof("all pieces is ready, peer task completed, skip to synchronize")
 		p.MainPeer = nil
-		p.StealPeers = nil
+		p.CandidatePeers = nil
 		return desiredPiece
 	}
 	var peers = []*scheduler.PeerPacket_DestPeer{p.MainPeer}
-	peers = append(peers, p.StealPeers...)
+	peers = append(peers, p.CandidatePeers...)
 
 	legacyPeers := pt.pieceTaskSyncManager.newMultiPieceTaskSynchronizer(peers, desiredPiece)
 
 	p.MainPeer = nil
-	p.StealPeers = legacyPeers
+	p.CandidatePeers = legacyPeers
 	return desiredPiece
 }
 
@@ -878,7 +878,7 @@ func (pt *peerTaskConductor) pullPiecesFromPeers(pieceRequestCh chan *DownloadPi
 
 	// ensure first peer packet is not nil
 	peerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
-	if len(peerPacket.StealPeers) == 0 {
+	if len(peerPacket.CandidatePeers) == 0 {
 		num, ok = pt.waitAvailablePeerPacket()
 		if !ok {
 			return
@@ -1003,7 +1003,7 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
 			pt.Infof("new peer client ready, scheduler time cost: %dus, peer count: %d",
-				time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
+				time.Since(pt.startTime).Microseconds(), len(pt.peerPacket.Load().(*scheduler.PeerPacket).CandidatePeers))
 			return true, false
 		}
 		// when scheduler says base.Code_SchedNeedBackSource, receivePeerPacket will close pt.peerPacketReady
@@ -1038,7 +1038,7 @@ func (pt *peerTaskConductor) waitAvailablePeerPacket() (int32, bool) {
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
-			pt.Infof("new peer client ready, peer count: %d", len(pt.peerPacket.Load().(*scheduler.PeerPacket).StealPeers))
+			pt.Infof("new peer client ready, peer count: %d", len(pt.peerPacket.Load().(*scheduler.PeerPacket).CandidatePeers))
 			// research from piece 0
 			return 0, true
 		}

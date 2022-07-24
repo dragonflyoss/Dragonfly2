@@ -46,6 +46,11 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 	DisableAutoGenTag: true,
 	SilenceUsage:      true,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Validate config
+		if err := cfg.Validate(); err != nil {
+			return err
+		}
+
 		// Initialize dfpath
 		d, err := initDfpath(cfg.Server)
 		if err != nil {
@@ -57,11 +62,6 @@ for managing schedulers and seed peers, offering http apis and portal, etc.`,
 			return fmt.Errorf("init manager logger: %w", err)
 		}
 		logger.RedirectStdoutAndStderr(cfg.Console, path.Join(d.LogDir(), "manager"))
-
-		// Validate config
-		if err := cfg.Validate(); err != nil {
-			return err
-		}
 
 		return runManager(d)
 	},

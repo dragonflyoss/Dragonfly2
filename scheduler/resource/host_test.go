@@ -231,53 +231,6 @@ func TestHost_StorePeer(t *testing.T) {
 	}
 }
 
-func TestHost_LoadOrStorePeer(t *testing.T) {
-	tests := []struct {
-		name    string
-		rawHost *scheduler.PeerHost
-		peerID  string
-		options []HostOption
-		expect  func(t *testing.T, host *Host, mockPeer *Peer)
-	}{
-		{
-			name:    "load peer exist",
-			rawHost: mockRawHost,
-			peerID:  mockPeerID,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				peer, ok := host.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, true)
-				assert.Equal(peer.ID, mockPeerID)
-			},
-		},
-		{
-			name:    "load peer does not exist",
-			rawHost: mockRawHost,
-			peerID:  mockPeerID,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
-				assert := assert.New(t)
-				mockPeer.ID = idgen.PeerID("0.0.0.0")
-				peer, ok := host.LoadOrStorePeer(mockPeer)
-
-				assert.Equal(ok, false)
-				assert.Equal(peer.ID, mockPeer.ID)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
-			mockPeer := NewPeer(mockPeerID, mockTask, host)
-
-			host.StorePeer(mockPeer)
-			tc.expect(t, host, mockPeer)
-		})
-	}
-}
-
 func TestHost_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -375,25 +328,34 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 		name    string
 		rawHost *scheduler.PeerHost
 		options []HostOption
-		expect  func(t *testing.T, host *Host, mockPeer *Peer)
+		expect  func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer)
 	}{
 		{
 			name:    "get free upload load",
 			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+			expect: func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
-				mockPeer.StoreParent(mockPeer)
+				mockSeedPeer := NewPeer(mockSeedPeerID, mockTask, host)
+				mockPeer.Task.StorePeer(mockSeedPeer)
+				mockPeer.Task.StorePeer(mockPeer)
+				err := mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
+				assert.NoError(err)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
-				mockPeer.StoreParent(mockPeer)
+				err = mockTask.DeletePeerInEdges(mockPeer.ID)
+				assert.NoError(err)
+				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
+				err = mockPeer.Task.AddPeerEdge(mockSeedPeer, mockPeer)
+				assert.NoError(err)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit-1))
-				mockPeer.DeleteParent()
+				err = mockTask.DeletePeerOutEdges(mockSeedPeer.ID)
+				assert.NoError(err)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
 		},
 		{
 			name:    "upload peer does not exist",
 			rawHost: mockRawHost,
-			expect: func(t *testing.T, host *Host, mockPeer *Peer) {
+			expect: func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer) {
 				assert := assert.New(t)
 				assert.Equal(host.FreeUploadLoad(), int32(config.DefaultClientLoadLimit))
 			},
@@ -406,7 +368,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
-			tc.expect(t, host, mockPeer)
+			tc.expect(t, host, mockTask, mockPeer)
 		})
 	}
 }

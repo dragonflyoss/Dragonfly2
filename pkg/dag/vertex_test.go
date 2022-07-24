@@ -95,3 +95,33 @@ func TestVertexOutDegree(t *testing.T) {
 	v.Children.Delete(mockVertexID)
 	assert.Equal(v.OutDegree(), 0)
 }
+
+func TestVertexDeleteInEdges(t *testing.T) {
+	va := NewVertex(mockVertexID, mockVertexValue)
+	vb := NewVertex(mockVertexID, mockVertexValue)
+	assert := assert.New(t)
+
+	va.Parents.Add(vb)
+	vb.Children.Add(va)
+	assert.Equal(va.Parents.Len(), uint(1))
+	assert.Equal(vb.Children.Len(), uint(1))
+
+	va.DeleteInEdges()
+	assert.Equal(va.Parents.Len(), uint(0))
+	assert.Equal(vb.Children.Len(), uint(0))
+}
+
+func TestVertexDeleteOutEdges(t *testing.T) {
+	va := NewVertex(mockVertexID, mockVertexValue)
+	vb := NewVertex(mockVertexID, mockVertexValue)
+	assert := assert.New(t)
+
+	va.Parents.Add(vb)
+	vb.Children.Add(va)
+	assert.Equal(va.Parents.Len(), uint(1))
+	assert.Equal(vb.Children.Len(), uint(1))
+
+	vb.DeleteOutEdges()
+	assert.Equal(va.Parents.Len(), uint(0))
+	assert.Equal(vb.Children.Len(), uint(0))
+}
