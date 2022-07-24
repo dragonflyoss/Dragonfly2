@@ -3,7 +3,7 @@ package training
 import "d7y.io/dragonfly/v2/scheduler/pipeline"
 
 type Strategy interface {
-	Serve()
+	Serve(req *pipeline.Request)
 }
 
 type trainingStep struct {
@@ -12,7 +12,7 @@ type trainingStep struct {
 }
 
 func (ts *trainingStep) Exec(req *pipeline.Request) *pipeline.Result {
-	ts.Stest.Serve()
+	ts.Stest.Serve(req)
 	return nil
 }
 

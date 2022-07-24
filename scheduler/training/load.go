@@ -26,23 +26,18 @@ import (
 type LoadSource func(map[float64]*LinearModel) ([]byte, error)
 
 type Loading struct {
-	data   []byte
-	source LoadSource
-	name   string
+	data []byte
+	name string
 }
 
 // 实际方法
-func (load *Loading) GetSource() (map[float64]*LinearModel, error) {
-	//TODO save方法改造
-	source, err := load.source(map[float64]*LinearModel{})
-	if err != nil {
-		return nil, err
-	}
+func (load *Loading) GetSource(req *pipeline.Request) (map[float64]*LinearModel, error) {
+	source := req.Data.([]byte)
 	load.data = source
 
 	var result map[float64]*LinearModel
 	dec := gob.NewDecoder(bytes.NewBuffer(load.data)) // 创建一个对象 把需要转化的对象放入
-	err = dec.Decode(&result)                         // 进行流转化
+	err := dec.Decode(&result)                        // 进行流转化
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +45,8 @@ func (load *Loading) GetSource() (map[float64]*LinearModel, error) {
 }
 
 // 封装的serve接口
-func (load *Loading) Serve() {
-	_, err := load.GetSource()
+func (load *Loading) Serve(req *pipeline.Request) {
+	_, err := load.GetSource(req)
 	if err != nil {
 		return
 	}
@@ -59,8 +54,7 @@ func (load *Loading) Serve() {
 
 func NewLoad() *Loading {
 	return &Loading{
-		source: RegisterSaving,
-		name:   "loading",
+		name: "loading",
 	}
 }
 
