@@ -65,6 +65,12 @@ type DAG interface {
 
 	// CanAddEdge finds whether there are circles through depth-first search.
 	CanAddEdge(fromVertexID, toVertexID string) bool
+
+	// SourceVertices find all source points of dag
+	SourceVertices() []string
+
+	// SinkVertices find all end points of dag
+	SinkVertices() []string
 }
 
 // dag provides directed acyclic graph function.
@@ -258,6 +264,34 @@ func (d *dag) depthFirstSearch(fromVertexID, toVertexID string) bool {
 	d.search(fromVertexID, successors)
 	_, ok := successors[toVertexID]
 	return ok
+}
+
+// SourceVertices find all sources of dag
+func (d *dag) SourceVertices() []string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	source := make([]string, 0)
+	for k, v := range d.vertices {
+		if v.InDegree() == 0 {
+			source = append(source, k)
+		}
+	}
+	return source
+}
+
+// SinkVertices find all end points of dag
+func (d *dag) SinkVertices() []string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	sink := make([]string, 0)
+	for k, v := range d.vertices {
+		if v.OutDegree() == 0 {
+			sink = append(sink, k)
+		}
+	}
+	return sink
 }
 
 // depthFirstSearch finds successors of vertex.
