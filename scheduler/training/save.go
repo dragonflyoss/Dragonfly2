@@ -25,7 +25,13 @@ import (
 type Saving struct {
 }
 
-func (strategy *Saving) Serve(modelMap map[float64]*LinearModel) ([]byte, error) {
+var RegisterSaving LoadSource
+
+func init() {
+	RegisterSaving = Serve
+}
+
+func Serve(modelMap map[float64]*LinearModel) ([]byte, error) {
 	buf := new(bytes.Buffer)    // 创建一个buffer区
 	enc := gob.NewEncoder(buf)  // 创建新的需要转化二进制区域对象
 	err := enc.Encode(modelMap) // 将数据转化为二进制流

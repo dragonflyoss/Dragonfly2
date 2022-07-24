@@ -19,17 +19,58 @@ package training
 import (
 	"bytes"
 	"encoding/gob"
+
+	"d7y.io/dragonfly/v2/scheduler/pipeline"
 )
 
+type LoadSource func(map[float64]*LinearModel) ([]byte, error)
+
 type Loading struct {
+	data   []byte
+	source LoadSource
+	name   string
 }
 
-func (strategy *Loading) Serve(data []byte) (map[float64]*LinearModel, error) {
+// 实际方法
+func (load *Loading) GetSource() (map[float64]*LinearModel, error) {
+	//TODO save方法改造
+	source, err := load.source(map[float64]*LinearModel{})
+	if err != nil {
+		return nil, err
+	}
+	load.data = source
+
 	var result map[float64]*LinearModel
-	dec := gob.NewDecoder(bytes.NewBuffer(data)) // 创建一个对象 把需要转化的对象放入
-	err := dec.Decode(&result)                   // 进行流转化
+	dec := gob.NewDecoder(bytes.NewBuffer(load.data)) // 创建一个对象 把需要转化的对象放入
+	err = dec.Decode(&result)                         // 进行流转化
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
+}
+
+// 封装的serve接口
+func (load *Loading) Serve() {
+	_, err := load.GetSource()
+	if err != nil {
+		return
+	}
+}
+
+func NewLoad() *Loading {
+	return &Loading{
+		source: RegisterSaving,
+		name:   "loading",
+	}
+}
+
+func NewLoadStep() pipeline.Step {
+	return &trainingStep{
+		Stest: NewLoad(),
+	}
+}
+
+func init() {
+	// TODO index待确定
+	pipeline.BuildMap[0] = NewLoadStep
 }
