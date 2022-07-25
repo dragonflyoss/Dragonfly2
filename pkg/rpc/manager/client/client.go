@@ -177,7 +177,7 @@ retry:
 	stream, err := c.ManagerClient.KeepAlive(ctx)
 	if err != nil {
 		if status.Code(err) == codes.Canceled {
-			logger.Infof("hostname %s cluster id %d stop keepalive", keepalive.HostName, keepalive.ClusterId)
+			logger.Infof("hostname %s ip %s cluster id %d stop keepalive", keepalive.HostName, keepalive.Ip, keepalive.ClusterId)
 			cancel()
 			return
 		}
@@ -192,12 +192,13 @@ retry:
 		select {
 		case <-tick.C:
 			if err := stream.Send(&manager.KeepAliveRequest{
-				HostName:   keepalive.HostName,
 				SourceType: keepalive.SourceType,
+				HostName:   keepalive.HostName,
+				Ip:         keepalive.Ip,
 				ClusterId:  keepalive.ClusterId,
 			}); err != nil {
 				if _, err := stream.CloseAndRecv(); err != nil {
-					logger.Errorf("hostname %s cluster id %d close and recv stream failed: %v", keepalive.HostName, keepalive.ClusterId, err)
+					logger.Errorf("hostname %s ip %s cluster id %d close and recv stream failed: %v", keepalive.HostName, keepalive.Ip, keepalive.ClusterId, err)
 				}
 
 				cancel()
