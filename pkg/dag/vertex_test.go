@@ -24,7 +24,7 @@ import (
 
 const (
 	mockVertexID    = "foo"
-	mockVertexValue = "var"
+	mockVertexValue = "bar"
 )
 
 func TestNewVertex(t *testing.T) {
