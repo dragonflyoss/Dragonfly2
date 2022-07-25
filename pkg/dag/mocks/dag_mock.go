@@ -102,6 +102,34 @@ func (mr *MockDAGMockRecorder) DeleteVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG)(nil).DeleteVertex), id)
 }
 
+// GetSinkVertices mocks base method.
+func (m *MockDAG) GetSinkVertices() map[string]*dag.Vertex {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSinkVertices")
+	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	return ret0
+}
+
+// GetSinkVertices indicates an expected call of GetSinkVertices.
+func (mr *MockDAGMockRecorder) GetSinkVertices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSinkVertices", reflect.TypeOf((*MockDAG)(nil).GetSinkVertices))
+}
+
+// GetSourceVertices mocks base method.
+func (m *MockDAG) GetSourceVertices() map[string]*dag.Vertex {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSourceVertices")
+	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	return ret0
+}
+
+// GetSourceVertices indicates an expected call of GetSourceVertices.
+func (mr *MockDAGMockRecorder) GetSourceVertices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceVertices", reflect.TypeOf((*MockDAG)(nil).GetSourceVertices))
+}
+
 // GetVertex mocks base method.
 func (m *MockDAG) GetVertex(id string) (*dag.Vertex, error) {
 	m.ctrl.T.Helper()
