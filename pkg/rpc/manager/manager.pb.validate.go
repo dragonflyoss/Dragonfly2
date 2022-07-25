@@ -336,11 +336,15 @@ func (m *GetSeedPeerRequest) Validate() error {
 		}
 	}
 
-	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return GetSeedPeerRequestValidationError{
-			field:  "Ip",
-			reason: "value must be a valid IP address",
+	if m.GetIp() != "" {
+
+		if ip := net.ParseIP(m.GetIp()); ip == nil {
+			return GetSeedPeerRequestValidationError{
+				field:  "Ip",
+				reason: "value must be a valid IP address",
+			}
 		}
+
 	}
 
 	return nil
@@ -857,11 +861,15 @@ func (m *GetSchedulerRequest) Validate() error {
 		}
 	}
 
-	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return GetSchedulerRequestValidationError{
-			field:  "Ip",
-			reason: "value must be a valid IP address",
+	if m.GetIp() != "" {
+
+		if ip := net.ParseIP(m.GetIp()); ip == nil {
+			return GetSchedulerRequestValidationError{
+				field:  "Ip",
+				reason: "value must be a valid IP address",
+			}
 		}
+
 	}
 
 	return nil
@@ -1883,11 +1891,15 @@ func (m *KeepAliveRequest) Validate() error {
 		}
 	}
 
-	if ip := net.ParseIP(m.GetIp()); ip == nil {
-		return KeepAliveRequestValidationError{
-			field:  "Ip",
-			reason: "value must be a valid IP address",
+	if m.GetIp() != "" {
+
+		if ip := net.ParseIP(m.GetIp()); ip == nil {
+			return KeepAliveRequestValidationError{
+				field:  "Ip",
+				reason: "value must be a valid IP address",
+			}
 		}
+
 	}
 
 	return nil
