@@ -336,6 +336,13 @@ func (m *GetSeedPeerRequest) Validate() error {
 		}
 	}
 
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return GetSeedPeerRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
+		}
+	}
+
 	return nil
 }
 
@@ -847,6 +854,13 @@ func (m *GetSchedulerRequest) Validate() error {
 		return GetSchedulerRequestValidationError{
 			field:  "SchedulerClusterId",
 			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return GetSchedulerRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
 		}
 	}
 
@@ -1866,6 +1880,13 @@ func (m *KeepAliveRequest) Validate() error {
 		return KeepAliveRequestValidationError{
 			field:  "ClusterId",
 			reason: "value must be greater than or equal to 1",
+		}
+	}
+
+	if ip := net.ParseIP(m.GetIp()); ip == nil {
+		return KeepAliveRequestValidationError{
+			field:  "Ip",
+			reason: "value must be a valid IP address",
 		}
 	}
 
