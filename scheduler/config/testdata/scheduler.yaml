@@ -20,6 +20,11 @@ scheduler:
     taskTTL: 600000000000
     hostGCInterval: 60000000000
     hostTTL: 600000000000
+  training:
+    enable: true
+    enableAutoRefresh: true
+    refreshModelInterval: 1000000000
+    cpu: 2
 
 dynconfig:
   refreshInterval: 300000000000
