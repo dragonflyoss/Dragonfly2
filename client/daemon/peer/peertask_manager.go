@@ -234,7 +234,14 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ptm.conductorLock.Unlock()
 	metrics.PeerTaskCount.Add(1)
 	logger.Debugf("peer task created: %s/%s", ptc.taskID, ptc.peerID)
-	return ptc, true, ptc.initStorage(desiredLocation)
+
+	err := ptc.initStorage(desiredLocation)
+	if err != nil {
+		ptc.Errorf("init storage error: %s", err)
+		ptc.cancel(base.Code_ClientError, err.Error())
+		return nil, false, err
+	}
+	return ptc, true, nil
 }
 
 func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
