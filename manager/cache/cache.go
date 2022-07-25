@@ -28,16 +28,13 @@ import (
 
 const (
 	// Seed Peer prefix of cache key.
-	SeedPeerNamespace = "seed-peer"
+	SeedPeerNamespace = "seed-peers"
 
 	// Peer prefix of cache key.
-	PeerNamespace = "peer"
+	PeerNamespace = "peers"
 
 	// Scheduler prefix of cache key.
-	SchedulerNamespace = "scheduler"
-
-	// Schedulers prefix of cache key.
-	SchedulersNamespace = "schedulers"
+	SchedulerNamespace = "schedulers"
 
 	// Buckets prefix of cache key.
 	BucketsNamespace = "buckets"
@@ -83,8 +80,13 @@ func MakeCacheKey(namespace string, id string) string {
 }
 
 // Make cache key for seed peer.
-func MakeSeedPeerCacheKey(hostname string, clusterID uint) string {
-	return MakeCacheKey(SeedPeerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
+func MakeSeedPeerCacheKey(clusterID uint, hostname, ip string) string {
+	return MakeCacheKey(SeedPeerNamespace, fmt.Sprintf("%d-%s-%s", clusterID, hostname, ip))
+}
+
+// Make cache key for scheduler.
+func MakeSchedulerCacheKey(clusterID uint, hostname, ip string) string {
+	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%d-%s-%s", clusterID, hostname, ip))
 }
 
 // Make cache key for peer.
@@ -92,14 +94,9 @@ func MakePeerCacheKey(hostname, ip string) string {
 	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s", hostname, ip))
 }
 
-// Make cache key for scheduler.
-func MakeSchedulerCacheKey(hostname string, clusterID uint) string {
-	return MakeCacheKey(SchedulerNamespace, fmt.Sprintf("%s-%d", hostname, clusterID))
-}
-
-// Make cache key for schedulers.
-func MakeSchedulersCacheKey(hostname, ip string) string {
-	return MakeCacheKey(SchedulersNamespace, fmt.Sprintf("%s-%s", hostname, ip))
+// Make schedulers cache key for peer.
+func MakeSchedulersCacheKeyForPeer(hostname, ip string) string {
+	return MakeCacheKey(PeerNamespace, fmt.Sprintf("%s-%s:schedulers", hostname, ip))
 }
 
 // Make cache key for buckets.

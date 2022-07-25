@@ -116,7 +116,7 @@ func New(
 // Get SeedPeer and SeedPeer cluster configuration.
 func (s *Server) GetSeedPeer(ctx context.Context, req *manager.GetSeedPeerRequest) (*manager.SeedPeer, error) {
 	var pbSeedPeer manager.SeedPeer
-	cacheKey := cache.MakeSeedPeerCacheKey(req.HostName, uint(req.SeedPeerClusterId))
+	cacheKey := cache.MakeSeedPeerCacheKey(uint(req.SeedPeerClusterId), req.HostName, req.Ip)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbSeedPeer); err == nil {
@@ -224,7 +224,7 @@ func (s *Server) UpdateSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSeedPeerCacheKey(seedPeer.HostName, seedPeer.SeedPeerClusterID),
+		cache.MakeSeedPeerCacheKey(seedPeer.SeedPeerClusterID, seedPeer.HostName, seedPeer.IP),
 	); err != nil {
 		logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", seedPeer.HostName, seedPeer.SeedPeerClusterID)
 	}
@@ -283,7 +283,7 @@ func (s *Server) createSeedPeer(ctx context.Context, req *manager.UpdateSeedPeer
 // Get Scheduler and Scheduler cluster configuration.
 func (s *Server) GetScheduler(ctx context.Context, req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	var pbScheduler manager.Scheduler
-	cacheKey := cache.MakeSchedulerCacheKey(req.HostName, uint(req.SchedulerClusterId))
+	cacheKey := cache.MakeSchedulerCacheKey(uint(req.SchedulerClusterId), req.HostName, req.Ip)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbScheduler); err == nil {
@@ -407,7 +407,7 @@ func (s *Server) UpdateScheduler(ctx context.Context, req *manager.UpdateSchedul
 
 	if err := s.cache.Delete(
 		ctx,
-		cache.MakeSchedulerCacheKey(scheduler.HostName, scheduler.SchedulerClusterID),
+		cache.MakeSchedulerCacheKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP),
 	); err != nil {
 		logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", scheduler.HostName, scheduler.SchedulerClusterID)
 	}
@@ -469,7 +469,7 @@ func (s *Server) ListSchedulers(ctx context.Context, req *manager.ListSchedulers
 	}
 
 	var pbListSchedulersResponse manager.ListSchedulersResponse
-	cacheKey := cache.MakeSchedulersCacheKey(req.HostName, req.Ip)
+	cacheKey := cache.MakeSchedulersCacheKeyForPeer(req.HostName, req.Ip)
 
 	// Cache hit.
 	if err := s.cache.Get(ctx, cacheKey, &pbListSchedulersResponse); err == nil {
@@ -643,6 +643,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 		return status.Error(codes.Unknown, err.Error())
 	}
 	hostName := req.HostName
+	ip := req.Ip
 	sourceType := req.SourceType
 	clusterID := uint(req.ClusterId)
 	logger.Infof("%s keepalive successfully for the first time in cluster %d", hostName, clusterID)
@@ -661,7 +662,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSchedulerCacheKey(hostName, clusterID),
+			cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 		); err != nil {
 			logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", hostName, clusterID)
 		}
@@ -681,7 +682,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 
 		if err := s.cache.Delete(
 			context.TODO(),
-			cache.MakeSeedPeerCacheKey(hostName, clusterID),
+			cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 		); err != nil {
 			logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
 		}
@@ -704,7 +705,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSchedulerCacheKey(hostName, clusterID),
+					cache.MakeSchedulerCacheKey(clusterID, hostName, ip),
 				); err != nil {
 					logger.Warnf("%s refresh keepalive status failed in scheduler cluster %d", hostName, clusterID)
 				}
@@ -724,7 +725,7 @@ func (s *Server) KeepAlive(stream manager.Manager_KeepAliveServer) error {
 
 				if err := s.cache.Delete(
 					context.TODO(),
-					cache.MakeSeedPeerCacheKey(hostName, clusterID),
+					cache.MakeSeedPeerCacheKey(clusterID, hostName, ip),
 				); err != nil {
 					logger.Warnf("%s refresh keepalive status failed in seed peer cluster %d", hostName, clusterID)
 				}
