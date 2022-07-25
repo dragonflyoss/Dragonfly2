@@ -54,6 +54,12 @@ type DAG interface {
 	// GetVertices returns map of vertices.
 	GetVertices() map[string]*Vertex
 
+	// GetSourceVertices returns source vertices.
+	GetSourceVertices() map[string]*Vertex
+
+	// GetSinkVertices returns sink vertices.
+	GetSinkVertices() map[string]*Vertex
+
 	// VertexCount returns count of vertices.
 	VertexCount() int
 
@@ -65,12 +71,6 @@ type DAG interface {
 
 	// CanAddEdge finds whether there are circles through depth-first search.
 	CanAddEdge(fromVertexID, toVertexID string) bool
-
-	// SourceVertices find all source points of dag
-	SourceVertices() []string
-
-	// SinkVertices find all end points of dag
-	SinkVertices() []string
 }
 
 // dag provides directed acyclic graph function.
@@ -258,32 +258,34 @@ func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
 	return nil
 }
 
-// SourceVertices find all sources of dag
-func (d *dag) SourceVertices() []string {
+// GetSourceVertices returns source vertices.
+func (d *dag) GetSourceVertices() map[string]*Vertex {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	source := make([]string, 0)
+	sourceVertices := make(map[string]*Vertex)
 	for k, v := range d.vertices {
 		if v.InDegree() == 0 {
-			source = append(source, k)
+			sourceVertices[k] = v
 		}
 	}
-	return source
+
+	return sourceVertices
 }
 
-// SinkVertices find all end points of dag
-func (d *dag) SinkVertices() []string {
+// GetSinkVertices returns sink vertices.
+func (d *dag) GetSinkVertices() map[string]*Vertex {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	sink := make([]string, 0)
+	sinkVertices := make(map[string]*Vertex)
 	for k, v := range d.vertices {
 		if v.OutDegree() == 0 {
-			sink = append(sink, k)
+			sinkVertices[k] = v
 		}
 	}
-	return sink
+
+	return sinkVertices
 }
 
 // depthFirstSearch is a depth-first search of the directed acyclic graph.

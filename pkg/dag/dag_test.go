@@ -635,15 +635,26 @@ func TestDAGSourceVertices(t *testing.T) {
 				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
 					assert.NoError(err)
 				}
+
 				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
 					assert.NoError(err)
 				}
+
 				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
 					assert.NoError(err)
 				}
-				source := d.SourceVertices()
-				assert.Equal(len(source), 1)
-				assert.Equal(source[0], mockVertexEID)
+
+				sourceVertices := d.GetSourceVertices()
+				assert.Equal(len(sourceVertices), 1)
+				assert.Equal(sourceVertices[mockVertexEID].Value, mockVertexValue)
+			},
+		},
+		{
+			name: "source vertices not found",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+				sourceVertices := d.GetSourceVertices()
+				assert.Equal(len(sourceVertices), 0)
 			},
 		},
 	}
@@ -661,7 +672,7 @@ func TestDAGSinkVertices(t *testing.T) {
 		expect func(t *testing.T, d DAG)
 	}{
 		{
-			name: "get source vertices",
+			name: "get sink vertices",
 			expect: func(t *testing.T, d DAG) {
 				assert := assert.New(t)
 				var (
@@ -671,15 +682,26 @@ func TestDAGSinkVertices(t *testing.T) {
 				if err := d.AddVertex(mockVertexEID, mockVertexValue); err != nil {
 					assert.NoError(err)
 				}
+
 				if err := d.AddVertex(mockVertexFID, mockVertexValue); err != nil {
 					assert.NoError(err)
 				}
+
 				if err := d.AddEdge(mockVertexEID, mockVertexFID); err != nil {
 					assert.NoError(err)
 				}
-				sink := d.SinkVertices()
-				assert.Equal(len(sink), 1)
-				assert.Equal(sink[0], mockVertexFID)
+
+				sinkVertices := d.GetSinkVertices()
+				assert.Equal(len(sinkVertices), 1)
+				assert.Equal(sinkVertices[mockVertexFID].Value, mockVertexValue)
+			},
+		},
+		{
+			name: "sink vertices not found",
+			expect: func(t *testing.T, d DAG) {
+				assert := assert.New(t)
+				sinkVertices := d.GetSinkVertices()
+				assert.Equal(len(sinkVertices), 0)
 			},
 		},
 	}
