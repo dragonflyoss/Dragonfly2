@@ -23,48 +23,46 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/pipeline"
 )
 
-type LoadSource func(map[float64]*LinearModel) ([]byte, error)
-
 type Loading struct {
-	data []byte
-	name string
 }
 
 // 实际方法
-func (load *Loading) GetSource(req *pipeline.Request) (map[float64]*LinearModel, error) {
+func (load *Loading) GetSource(req *pipeline.Request) *pipeline.Result {
 	source := req.Data.([]byte)
-	load.data = source
 
 	var result map[float64]*LinearModel
-	dec := gob.NewDecoder(bytes.NewBuffer(load.data)) // 创建一个对象 把需要转化的对象放入
-	err := dec.Decode(&result)                        // 进行流转化
+	dec := gob.NewDecoder(bytes.NewBuffer(source)) // 创建一个对象 把需要转化的对象放入
+	err := dec.Decode(&result)
 	if err != nil {
-		return nil, err
+		return &pipeline.Result{
+			Error: err,
+		}
 	}
-	return result, nil
+
+	return &pipeline.Result{
+		Error:  nil,
+		Data:   result,
+		KeyVal: req.KeyVal,
+	}
 }
 
 // 封装的serve接口
-func (load *Loading) Serve(req *pipeline.Request) {
-	_, err := load.GetSource(req)
-	if err != nil {
-		return
-	}
-}
-
-func NewLoad() *Loading {
-	return &Loading{
-		name: "loading",
-	}
+func (load *Loading) Serve(req *pipeline.Request) *pipeline.Result {
+	return load.GetSource(req)
 }
 
 func NewLoadStep() pipeline.Step {
 	return &trainingStep{
-		Stest: NewLoad(),
+		TrainingStrategy: &Loading{},
+		Name:             "loading",
 	}
 }
 
+// for its sequential step, no need to stop
+func (load *Loading) Stop() error {
+	return nil
+}
+
 func init() {
-	// TODO index待确定
-	pipeline.BuildMap[0] = NewLoadStep
+	pipeline.BuildMap["loading"] = NewLoadStep
 }
