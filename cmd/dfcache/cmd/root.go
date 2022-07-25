@@ -112,6 +112,16 @@ func initDfcacheDfpath(cfg *config.CacheOption) (dfpath.Dfpath, error) {
 
 // runDfcache does some init operations and starts to download.
 func runDfcacheSubcmd(cmdName string, args []string) error {
+	// Convert config
+	if err := dfcacheConfig.Convert(cmdName, args); err != nil {
+		return err
+	}
+
+	// Validate config
+	if err := dfcacheConfig.Validate(cmdName); err != nil {
+		return err
+	}
+
 	var (
 		daemonClient client.DaemonClient
 		err          error
@@ -128,16 +138,6 @@ func runDfcacheSubcmd(cmdName string, args []string) error {
 		return fmt.Errorf("init client dfcache logger: %w", err)
 	}
 	logger.Infof("Version:\n%s", version.Version())
-
-	// Convert config
-	if err := dfcacheConfig.Convert(cmdName, args); err != nil {
-		return err
-	}
-
-	// Validate config
-	if err := dfcacheConfig.Validate(cmdName); err != nil {
-		return err
-	}
 
 	// Dfcache config values
 	s, _ := yaml.Marshal(dfcacheConfig)

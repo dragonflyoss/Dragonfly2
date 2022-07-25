@@ -62,6 +62,20 @@ func (mr *MockDAGMockRecorder) AddVertex(id, value interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVertex", reflect.TypeOf((*MockDAG)(nil).AddVertex), id, value)
 }
 
+// CanAddEdge mocks base method.
+func (m *MockDAG) CanAddEdge(fromVertexID, toVertexID string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanAddEdge", fromVertexID, toVertexID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CanAddEdge indicates an expected call of CanAddEdge.
+func (mr *MockDAGMockRecorder) CanAddEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAddEdge", reflect.TypeOf((*MockDAG)(nil).CanAddEdge), fromVertexID, toVertexID)
+}
+
 // DeleteEdge mocks base method.
 func (m *MockDAG) DeleteEdge(fromVertexID, toVertexID string) error {
 	m.ctrl.T.Helper()
@@ -88,6 +102,34 @@ func (mr *MockDAGMockRecorder) DeleteVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG)(nil).DeleteVertex), id)
 }
 
+// GetSinkVertices mocks base method.
+func (m *MockDAG) GetSinkVertices() map[string]*dag.Vertex {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSinkVertices")
+	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	return ret0
+}
+
+// GetSinkVertices indicates an expected call of GetSinkVertices.
+func (mr *MockDAGMockRecorder) GetSinkVertices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSinkVertices", reflect.TypeOf((*MockDAG)(nil).GetSinkVertices))
+}
+
+// GetSourceVertices mocks base method.
+func (m *MockDAG) GetSourceVertices() map[string]*dag.Vertex {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSourceVertices")
+	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	return ret0
+}
+
+// GetSourceVertices indicates an expected call of GetSourceVertices.
+func (mr *MockDAGMockRecorder) GetSourceVertices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceVertices", reflect.TypeOf((*MockDAG)(nil).GetSourceVertices))
+}
+
 // GetVertex mocks base method.
 func (m *MockDAG) GetVertex(id string) (*dag.Vertex, error) {
 	m.ctrl.T.Helper()
@@ -103,28 +145,30 @@ func (mr *MockDAGMockRecorder) GetVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertex", reflect.TypeOf((*MockDAG)(nil).GetVertex), id)
 }
 
-// LenVertex mocks base method.
-func (m *MockDAG) LenVertex() int {
+// GetVertices mocks base method.
+func (m *MockDAG) GetVertices() map[string]*dag.Vertex {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LenVertex")
+	ret := m.ctrl.Call(m, "GetVertices")
+	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	return ret0
+}
+
+// GetVertices indicates an expected call of GetVertices.
+func (mr *MockDAGMockRecorder) GetVertices() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertices", reflect.TypeOf((*MockDAG)(nil).GetVertices))
+}
+
+// VertexCount mocks base method.
+func (m *MockDAG) VertexCount() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VertexCount")
 	ret0, _ := ret[0].(int)
 	return ret0
 }
 
-// LenVertex indicates an expected call of LenVertex.
-func (mr *MockDAGMockRecorder) LenVertex() *gomock.Call {
+// VertexCount indicates an expected call of VertexCount.
+func (mr *MockDAGMockRecorder) VertexCount() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LenVertex", reflect.TypeOf((*MockDAG)(nil).LenVertex))
-}
-
-// RangeVertex mocks base method.
-func (m *MockDAG) RangeVertex(fn func(string, *dag.Vertex) bool) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RangeVertex", fn)
-}
-
-// RangeVertex indicates an expected call of RangeVertex.
-func (mr *MockDAGMockRecorder) RangeVertex(fn interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RangeVertex", reflect.TypeOf((*MockDAG)(nil).RangeVertex), fn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VertexCount", reflect.TypeOf((*MockDAG)(nil).VertexCount))
 }

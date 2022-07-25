@@ -156,6 +156,22 @@ var peerHostConfig = func() *DaemonOption {
 			Multiplex:              false,
 			DiskGCThresholdPercent: 95,
 		},
+		Health: &HealthOption{
+			ListenOption: ListenOption{
+				Security: SecurityOption{
+					Insecure:  true,
+					TLSVerify: false,
+				},
+				TCPListen: &TCPListenOption{
+					Listen: net.IPv4zero.String(),
+					PortRange: TCPListenPortRange{
+						Start: DefaultHealthyStartPort,
+						End:   DefaultEndPort,
+					},
+				},
+			},
+			Path: "/server/ping",
+		},
 		Reload: ReloadOption{
 			Interval: util.Duration{
 				Duration: time.Minute,

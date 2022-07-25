@@ -48,6 +48,12 @@ func TestConfig_Load(t *testing.T) {
 				HostGCInterval: 1 * time.Minute,
 				HostTTL:        10 * time.Minute,
 			},
+			Training: &TrainingConfig{
+				Enable:               true,
+				EnableAutoRefresh:    true,
+				RefreshModelInterval: 1 * time.Second,
+				CPU:                  2,
+			},
 		},
 		Server: &ServerConfig{
 			IP:       "127.0.0.1",
@@ -139,6 +145,12 @@ func TestConfig_New(t *testing.T) {
 				TaskTTL:        24 * time.Hour,
 				HostGCInterval: 30 * time.Minute,
 				HostTTL:        48 * time.Hour,
+			},
+			Training: &TrainingConfig{
+				Enable:               false,
+				EnableAutoRefresh:    false,
+				RefreshModelInterval: 168 * time.Hour,
+				CPU:                  1,
 			},
 		},
 		DynConfig: &DynConfig{

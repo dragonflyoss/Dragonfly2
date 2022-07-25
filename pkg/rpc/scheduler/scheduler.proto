@@ -143,8 +143,8 @@ message PeerPacket{
   int32 parallel_count = 4 [(validate.rules).int32.gte = 1];
   // Main peer.
   DestPeer main_peer = 5;
-  // Steal peers.
-  repeated DestPeer steal_peers = 6;
+  // Candidate peers.
+  repeated DestPeer candidate_peers = 6;
   // Result code.
   base.Code code = 7;
   // Error detail.

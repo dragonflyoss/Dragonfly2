@@ -51,18 +51,26 @@ type DAG interface {
 	// GetVertex gets vertex from graph.
 	GetVertex(id string) (*Vertex, error)
 
-	// LenVertex returns length of vertices.
-	LenVertex() int
+	// GetVertices returns map of vertices.
+	GetVertices() map[string]*Vertex
 
-	// RangeVertex calls f sequentially for each key and value present in the vertices.
-	// If f returns false, range stops the iteration.
-	RangeVertex(fn func(key string, value *Vertex) bool)
+	// GetSourceVertices returns source vertices.
+	GetSourceVertices() map[string]*Vertex
+
+	// GetSinkVertices returns sink vertices.
+	GetSinkVertices() map[string]*Vertex
+
+	// VertexCount returns count of vertices.
+	VertexCount() int
 
 	// AddEdge adds edge between two vertices.
 	AddEdge(fromVertexID, toVertexID string) error
 
 	// DeleteEdge deletes edge between two vertices.
 	DeleteEdge(fromVertexID, toVertexID string) error
+
+	// CanAddEdge finds whether there are circles through depth-first search.
+	CanAddEdge(fromVertexID, toVertexID string) bool
 }
 
 // dag provides directed acyclic graph function.
@@ -101,25 +109,24 @@ func (d *dag) DeleteVertex(id string) {
 		return
 	}
 
-	vertex.Parents.Range(func(item any) bool {
-		parent, ok := item.(*Vertex)
+	for _, value := range vertex.Parents.Values() {
+		parent, ok := value.(*Vertex)
 		if !ok {
-			return true
+			continue
 		}
 
 		parent.Children.Delete(vertex)
-		return true
-	})
+	}
 
-	vertex.Children.Range(func(item any) bool {
-		child, ok := item.(*Vertex)
+	for _, value := range vertex.Children.Values() {
+		child, ok := value.(*Vertex)
 		if !ok {
-			return true
+			continue
 		}
 
 		child.Parents.Delete(vertex)
-		return true
-	})
+		continue
+	}
 
 	delete(d.vertices, id)
 }
@@ -137,22 +144,53 @@ func (d *dag) GetVertex(id string) (*Vertex, error) {
 	return vertex, nil
 }
 
-// LenVertex returns length of vertices.
-func (d *dag) LenVertex() int {
-	return len(d.vertices)
-}
-
-// RangeVertex calls f sequentially for each key and value present in the vertices.
-// If f returns false, range stops the iteration.
-func (d *dag) RangeVertex(fn func(key string, value *Vertex) bool) {
+// GetVertices returns map of vertices.
+func (d *dag) GetVertices() map[string]*Vertex {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	for k, v := range d.vertices {
-		if !fn(k, v) {
-			break
+	return d.vertices
+}
+
+// VertexCount returns count of vertices.
+func (d *dag) VertexCount() int {
+	return len(d.vertices)
+}
+
+// CanAddEdge finds whether there are circles through depth-first search.
+func (d *dag) CanAddEdge(fromVertexID, toVertexID string) bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	if fromVertexID == toVertexID {
+		return false
+	}
+
+	fromVertex, ok := d.vertices[fromVertexID]
+	if !ok {
+		return false
+	}
+
+	if _, ok := d.vertices[toVertexID]; !ok {
+		return false
+	}
+
+	for _, child := range fromVertex.Children.Values() {
+		vertex, ok := child.(*Vertex)
+		if !ok {
+			continue
+		}
+
+		if vertex.ID == toVertexID {
+			return false
 		}
 	}
+
+	if d.depthFirstSearch(toVertexID, fromVertexID) {
+		return false
+	}
+
+	return true
 }
 
 // AddEdge adds edge between two vertices.
@@ -218,6 +256,36 @@ func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
 	fromVertex.Children.Delete(toVertex)
 	toVertex.Parents.Delete(fromVertex)
 	return nil
+}
+
+// GetSourceVertices returns source vertices.
+func (d *dag) GetSourceVertices() map[string]*Vertex {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	sourceVertices := make(map[string]*Vertex)
+	for k, v := range d.vertices {
+		if v.InDegree() == 0 {
+			sourceVertices[k] = v
+		}
+	}
+
+	return sourceVertices
+}
+
+// GetSinkVertices returns sink vertices.
+func (d *dag) GetSinkVertices() map[string]*Vertex {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	sinkVertices := make(map[string]*Vertex)
+	for k, v := range d.vertices {
+		if v.OutDegree() == 0 {
+			sinkVertices[k] = v
+		}
+	}
+
+	return sinkVertices
 }
 
 // depthFirstSearch is a depth-first search of the directed acyclic graph.

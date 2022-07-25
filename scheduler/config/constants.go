@@ -32,7 +32,7 @@ const (
 	DefaultClientParallelCount = 4
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
-	DefaultSchedulerFilterParentLimit = 3
+	DefaultSchedulerFilterParentLimit = 4
 )
 
 // DefaultServerListen is default listen for server.
@@ -76,6 +76,12 @@ const (
 
 	// DefaultSchedulerHostTTL is default ttl for host.
 	DefaultSchedulerHostTTL = 48 * time.Hour
+
+	// DefaultRefreshModelInterval is model refresh interval.
+	DefaultRefreshModelInterval = 168 * time.Hour
+
+	// DefaultCPU is default cpu usage.
+	DefaultCPU = 1
 )
 
 const (
