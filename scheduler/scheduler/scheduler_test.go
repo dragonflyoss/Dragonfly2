@@ -773,12 +773,11 @@ func TestScheduler_FindParent(t *testing.T) {
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
 				peer.Task.StorePeer(mockPeers[2])
-				peer.Task.StorePeer(mockPeers[3])
-				if err := peer.Task.AddPeerEdge(mockPeers[3], mockPeers[0]); err != nil {
+				if err := peer.Task.AddPeerEdge(mockPeers[2], mockPeers[0]); err != nil {
 					t.Fatal(err)
 				}
 
-				if err := peer.Task.AddPeerEdge(mockPeers[3], mockPeers[1]); err != nil {
+				if err := peer.Task.AddPeerEdge(mockPeers[2], mockPeers[1]); err != nil {
 					t.Fatal(err)
 				}
 
