@@ -104,7 +104,7 @@ message GetSeedPeerRequest {
   // ID of the cluster to which the seed peer belongs.
   uint64 seed_peer_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
   // Seed peer ip.
-  string ip = 4 [(validate.rules).string = {ip: true}];
+  string ip = 4 [(validate.rules).string = {ip: true, ignore_empty: true}];
 }
 
 // UpdateSeedPeerRequest represents request of UpdateSeedPeer.
@@ -190,7 +190,7 @@ message GetSchedulerRequest {
   // ID of the cluster to which the scheduler belongs.
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
   // Scheduler ip.
-  string ip = 4 [(validate.rules).string = {ip: true}];
+  string ip = 4 [(validate.rules).string = {ip: true, ignore_empty: true}];
 }
 
 // UpdateSchedulerRequest represents request of UpdateScheduler.
@@ -290,7 +290,7 @@ message KeepAliveRequest {
   // ID of the cluster to which the source service belongs.
   uint64 cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
   // Source service ip.
-  string ip = 4 [(validate.rules).string = {ip: true}];
+  string ip = 4 [(validate.rules).string = {ip: true, ignore_empty: true}];
 }
 
 // Manager RPC Service.
