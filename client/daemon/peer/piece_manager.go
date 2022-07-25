@@ -805,7 +805,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 
 	// check error
 	if downloadError.Load() != nil {
-		return downloadError.Load().(*pieceDownloadError).err
+		return downloadError.Load().(*backSourceError).err
 	}
 
 	return nil
