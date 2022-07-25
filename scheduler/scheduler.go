@@ -198,8 +198,9 @@ func (s *Server) Serve() error {
 		go func() {
 			logger.Info("start keepalive to manager")
 			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &rpcmanager.KeepAliveRequest{
-				HostName:   s.config.Server.Host,
 				SourceType: rpcmanager.SourceType_SCHEDULER_SOURCE,
+				HostName:   s.config.Server.Host,
+				Ip:         s.config.Server.IP,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),
 			})
 		}()

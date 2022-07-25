@@ -256,8 +256,9 @@ func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient
 
 func (mc *managerClient) Get() (any, error) {
 	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
-		HostName:           mc.config.Server.Host,
 		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+		HostName:           mc.config.Server.Host,
+		Ip:                 mc.config.Server.IP,
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),
 	})
 	if err != nil {

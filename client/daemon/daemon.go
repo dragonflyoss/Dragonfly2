@@ -528,6 +528,7 @@ func (cd *clientDaemon) Serve() error {
 			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &manager.KeepAliveRequest{
 				SourceType: manager.SourceType_SEED_PEER_SOURCE,
 				HostName:   cd.Option.Host.Hostname,
+				Ip:         cd.Option.Host.AdvertiseIP,
 				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
 			})
 			return err

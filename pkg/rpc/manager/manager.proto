@@ -99,10 +99,12 @@ message SeedPeer {
 message GetSeedPeerRequest {
   // Request source type.
   SourceType source_type = 1 [(validate.rules).enum.defined_only = true];
-  // Seed peer host_name.
+  // Seed peer hostname.
   string host_name = 2 [(validate.rules).string.hostname = true];
   // ID of the cluster to which the seed peer belongs.
   uint64 seed_peer_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+  // Seed peer ip.
+  string ip = 4 [(validate.rules).string = {ip: true}];
 }
 
 // UpdateSeedPeerRequest represents request of UpdateSeedPeer.
@@ -187,6 +189,8 @@ message GetSchedulerRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
   // ID of the cluster to which the scheduler belongs.
   uint64 scheduler_cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+  // Scheduler ip.
+  string ip = 4 [(validate.rules).string = {ip: true}];
 }
 
 // UpdateSchedulerRequest represents request of UpdateScheduler.
@@ -285,24 +289,33 @@ message KeepAliveRequest {
   string host_name = 2 [(validate.rules).string.hostname = true];
   // ID of the cluster to which the source service belongs.
   uint64 cluster_id = 3 [(validate.rules).uint64 = {gte: 1}];
+  // Source service ip.
+  string ip = 4 [(validate.rules).string = {ip: true}];
 }
 
 // Manager RPC Service.
 service Manager {
   // Get SeedPeer and SeedPeer cluster configuration.
   rpc GetSeedPeer(GetSeedPeerRequest) returns(SeedPeer);
+
   // Update SeedPeer configuration.
   rpc UpdateSeedPeer(UpdateSeedPeerRequest) returns(SeedPeer);
+
   // Get Scheduler and Scheduler cluster configuration.
   rpc GetScheduler(GetSchedulerRequest)returns(Scheduler);
+
   // Update scheduler configuration.
   rpc UpdateScheduler(UpdateSchedulerRequest) returns(Scheduler);
+
   // List acitve schedulers configuration.
   rpc ListSchedulers(ListSchedulersRequest)returns(ListSchedulersResponse);
+
   // Get ObjectStorage configuration.
   rpc GetObjectStorage(GetObjectStorageRequest) returns(ObjectStorage);
+
   // List buckets configuration.
   rpc ListBuckets(ListBucketsRequest)returns(ListBucketsResponse);
+
   // KeepAlive with manager.
   rpc KeepAlive(stream KeepAliveRequest)returns(google.protobuf.Empty);
 }
