@@ -81,9 +81,12 @@ func New() *Config {
 				HostGCInterval: DefaultSchedulerHostGCInterval,
 				HostTTL:        DefaultSchedulerHostTTL,
 			},
-			Cpu:                  DefaultCpu,
-			RefreshMode:          false,
-			RefreshModelInterval: DefaultRefreshModelInterval,
+			Training: &TrainingConfig{
+				Enable:               false,
+				EnableAutoRefresh:    false,
+				RefreshModelInterval: DefaultRefreshModelInterval,
+				CPU:                  DefaultCPU,
+			},
 		},
 		DynConfig: &DynConfig{
 			RefreshInterval: DefaultDynConfigRefreshInterval,
@@ -175,12 +178,14 @@ func (cfg *Config) Validate() error {
 		return errors.New("scheduler requires parameter taskTTL")
 	}
 
-	if cfg.Scheduler.Cpu <= 0 {
-		return errors.New("scheduler requires parameter cpu")
-	}
+	if cfg.Scheduler.Training != nil && cfg.Scheduler.Training.Enable {
+		if cfg.Scheduler.Training.CPU <= 0 {
+			return errors.New("training requires parameter cpu")
+		}
 
-	if cfg.Scheduler.RefreshMode && cfg.Scheduler.RefreshModelInterval <= 0 {
-		return errors.New("scheduler requires parameter RefreshModelInterval")
+		if cfg.Scheduler.Training.EnableAutoRefresh && cfg.Scheduler.Training.RefreshModelInterval <= 0 {
+			return errors.New("training requires parameter refreshModelInterval")
+		}
 	}
 
 	if cfg.DynConfig.RefreshInterval <= 0 {
@@ -296,14 +301,22 @@ type SchedulerConfig struct {
 	// Task and peer gc configuration.
 	GC *GCConfig `yaml:"gc" mapstructure:"gc"`
 
-	// Cpu Limit
-	Cpu int `yaml:"cpu" mapstructure:"cpu"`
+	// Training configuration.
+	Training *TrainingConfig `yaml:"training" mapstructure:"training"`
+}
 
-	// Enable refresh mode
-	RefreshMode bool `yaml:"refreshMode" mapstructure:"refreshMode"`
+type TrainingConfig struct {
+	// Enable training.
+	Enable bool `yaml:"enable" mapstructure:"enable"`
 
-	// Update model interval
+	// Enable auto refresh model.
+	EnableAutoRefresh bool `yaml:"enableAutoRefresh" mapstructure:"enableAutoRefresh"`
+
+	// RefreshModelInterval is refresh interval for refreshing model.
 	RefreshModelInterval time.Duration `yaml:"refreshModelInterval" mapstructure:"refreshModelInterval"`
+
+	// CPU limit while training.
+	CPU int `yaml:"cpu" mapstructure:"cpu"`
 }
 
 type GCConfig struct {
