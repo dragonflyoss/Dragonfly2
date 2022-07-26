@@ -31,7 +31,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/dag"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -135,7 +134,7 @@ type Peer struct {
 	Host *Host
 
 	// BlockPeers is bad peer ids.
-	BlockPeers set.SafeSet
+	BlockPeers set.SafeSet[string]
 
 	// NeedBackToSource needs downloaded from source.
 	//
@@ -171,7 +170,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 		Stream:           &atomic.Value{},
 		Task:             task,
 		Host:             host,
-		BlockPeers:       set.NewSafeSet(),
+		BlockPeers:       set.NewSafeSet[string](),
 		NeedBackToSource: atomic.NewBool(false),
 		IsBackToSource:   atomic.NewBool(false),
 		CreateAt:         atomic.NewTime(time.Now()),
@@ -222,7 +221,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			},
 			PeerEventDownloadFromBackToSource: func(e *fsm.Event) {
 				p.IsBackToSource.Store(true)
-				p.Task.BackToSourcePeers.Add(p)
+				p.Task.BackToSourcePeers.Add(p.ID)
 
 				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
 					p.Log.Errorf("delete peer inedges failed: %s", err.Error())
@@ -234,7 +233,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			},
 			PeerEventDownloadSucceeded: func(e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
-					p.Task.BackToSourcePeers.Delete(p)
+					p.Task.BackToSourcePeers.Delete(p.ID)
 				}
 
 				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
@@ -249,7 +248,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 			PeerEventDownloadFailed: func(e *fsm.Event) {
 				if e.Src == PeerStateBackToSource {
 					p.Task.PeerFailedCount.Inc()
-					p.Task.BackToSourcePeers.Delete(p)
+					p.Task.BackToSourcePeers.Delete(p.ID)
 				}
 
 				if err := p.Task.DeletePeerInEdges(p.ID); err != nil {
@@ -317,23 +316,12 @@ func (p *Peer) Parents() []*Peer {
 	}
 
 	var parents []*Peer
-	for _, value := range vertex.Parents.Values() {
-		vertex, ok := value.(*dag.Vertex)
-		if !ok {
+	for _, parent := range vertex.Parents.Values() {
+		if parent.Value == nil {
 			continue
 		}
 
-		vertexVal := vertex.Value
-		if vertexVal == nil {
-			continue
-		}
-
-		parent, ok := vertexVal.(*Peer)
-		if !ok {
-			continue
-		}
-
-		parents = append(parents, parent)
+		parents = append(parents, parent.Value)
 	}
 
 	return parents
@@ -348,23 +336,12 @@ func (p *Peer) Children() []*Peer {
 	}
 
 	var children []*Peer
-	for _, value := range vertex.Children.Values() {
-		vertex, ok := value.(*dag.Vertex)
-		if !ok {
+	for _, child := range vertex.Children.Values() {
+		if child.Value == nil {
 			continue
 		}
 
-		vertexVal := vertex.Value
-		if vertexVal == nil {
-			continue
-		}
-
-		child, ok := vertexVal.(*Peer)
-		if !ok {
-			continue
-		}
-
-		children = append(children, child)
+		children = append(children, child.Value)
 	}
 
 	return children

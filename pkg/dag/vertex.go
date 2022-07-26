@@ -19,62 +19,52 @@ package dag
 import "d7y.io/dragonfly/v2/pkg/container/set"
 
 // Vertex is a vertex of the directed acyclic graph.
-type Vertex struct {
+type Vertex[T comparable] struct {
 	ID       string
-	Value    any
-	Parents  set.SafeSet
-	Children set.SafeSet
+	Value    T
+	Parents  set.SafeSet[*Vertex[T]]
+	Children set.SafeSet[*Vertex[T]]
 }
 
 // New returns a new Vertex instance.
-func NewVertex(id string, value any) *Vertex {
-	return &Vertex{
+func NewVertex[T comparable](id string, value T) *Vertex[T] {
+	return &Vertex[T]{
 		ID:       id,
 		Value:    value,
-		Parents:  set.NewSafeSet(),
-		Children: set.NewSafeSet(),
+		Parents:  set.NewSafeSet[*Vertex[T]](),
+		Children: set.NewSafeSet[*Vertex[T]](),
 	}
 }
 
 // Degree returns the degree of vertex.
-func (v *Vertex) Degree() int {
+func (v *Vertex[T]) Degree() int {
 	return int(v.Parents.Len() + v.Children.Len())
 }
 
 // InDegree returns the indegree of vertex.
-func (v *Vertex) InDegree() int {
+func (v *Vertex[T]) InDegree() int {
 	return int(v.Parents.Len())
 }
 
 // OutDegree returns the outdegree of vertex.
-func (v *Vertex) OutDegree() int {
+func (v *Vertex[T]) OutDegree() int {
 	return int(v.Children.Len())
 }
 
 // DeleteInEdges deletes inedges of vertex.
-func (v *Vertex) DeleteInEdges() {
-	for _, value := range v.Parents.Values() {
-		vertex, ok := value.(*Vertex)
-		if !ok {
-			continue
-		}
-
-		vertex.Children.Delete(v)
+func (v *Vertex[T]) DeleteInEdges() {
+	for _, parent := range v.Parents.Values() {
+		parent.Children.Delete(v)
 	}
 
-	v.Parents = set.NewSafeSet()
+	v.Parents = set.NewSafeSet[*Vertex[T]]()
 }
 
 // DeleteOutEdges deletes outedges of vertex.
-func (v *Vertex) DeleteOutEdges() {
-	for _, value := range v.Children.Values() {
-		vertex, ok := value.(*Vertex)
-		if !ok {
-			continue
-		}
-
-		vertex.Parents.Delete(v)
+func (v *Vertex[T]) DeleteOutEdges() {
+	for _, child := range v.Children.Values() {
+		child.Parents.Delete(v)
 	}
 
-	v.Children = set.NewSafeSet()
+	v.Children = set.NewSafeSet[*Vertex[T]]()
 }
