@@ -18,23 +18,23 @@
 
 package set
 
-type Set interface {
-	Values() []any
-	Add(any) bool
-	Delete(any)
-	Contains(...any) bool
+type Set[T comparable] interface {
+	Values() []T
+	Add(T) bool
+	Delete(T)
+	Contains(...T) bool
 	Len() uint
 	Clear()
 }
 
-type set map[any]struct{}
+type set[T comparable] map[T]struct{}
 
-func New() Set {
-	return &set{}
+func New[T comparable]() Set[T] {
+	return &set[T]{}
 }
 
-func (s *set) Values() []any {
-	var result []any
+func (s *set[T]) Values() []T {
+	var result []T
 	for k := range *s {
 		result = append(result, k)
 	}
@@ -42,7 +42,7 @@ func (s *set) Values() []any {
 	return result
 }
 
-func (s *set) Add(v any) bool {
+func (s *set[T]) Add(v T) bool {
 	_, found := (*s)[v]
 	if found {
 		return false
@@ -52,11 +52,11 @@ func (s *set) Add(v any) bool {
 	return true
 }
 
-func (s *set) Delete(v any) {
+func (s *set[T]) Delete(v T) {
 	delete(*s, v)
 }
 
-func (s *set) Contains(vals ...any) bool {
+func (s *set[T]) Contains(vals ...T) bool {
 	for _, v := range vals {
 		if _, ok := (*s)[v]; !ok {
 			return false
@@ -66,10 +66,10 @@ func (s *set) Contains(vals ...any) bool {
 	return true
 }
 
-func (s *set) Len() uint {
+func (s *set[T]) Len() uint {
 	return uint(len(*s))
 }
 
-func (s *set) Clear() {
-	*s = set{}
+func (s *set[T]) Clear() {
+	*s = set[T]{}
 }

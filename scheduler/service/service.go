@@ -123,7 +123,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 		case base.SizeScope_SMALL:
 			peer.Log.Info("task size scope is small")
 			// There is no need to build a tree, just find the parent and return.
-			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet())
+			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
 			if !ok {
 				peer.Log.Warn("task size scope is small and it can not select parent")
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
@@ -626,7 +626,7 @@ func (s *Service) handleBeginOfPiece(ctx context.Context, peer *resource.Peer) {
 		}
 
 		peer.Log.Infof("schedule parent because of peer receive begin of piece")
-		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet())
+		s.scheduler.ScheduleParent(ctx, peer, set.NewSafeSet[string]())
 	default:
 		peer.Log.Warnf("peer state is %s when receive the begin of piece", peer.FSM.Current())
 	}

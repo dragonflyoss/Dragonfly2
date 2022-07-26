@@ -22,32 +22,32 @@ import (
 	"sync"
 )
 
-type SafeSet interface {
-	Values() []any
-	Add(any) bool
-	Delete(any)
-	Contains(...any) bool
+type SafeSet[T comparable] interface {
+	Values() []T
+	Add(T) bool
+	Delete(T)
+	Contains(...T) bool
 	Len() uint
 	Clear()
 }
 
-type safeSet struct {
+type safeSet[T comparable] struct {
 	mu   *sync.RWMutex
-	data map[any]struct{}
+	data map[T]struct{}
 }
 
-func NewSafeSet() SafeSet {
-	return &safeSet{
+func NewSafeSet[T comparable]() SafeSet[T] {
+	return &safeSet[T]{
 		mu:   &sync.RWMutex{},
-		data: make(map[any]struct{}),
+		data: make(map[T]struct{}),
 	}
 }
 
-func (s *safeSet) Values() []any {
+func (s *safeSet[T]) Values() []T {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	var result []any
+	var result []T
 	for k := range s.data {
 		result = append(result, k)
 	}
@@ -55,7 +55,7 @@ func (s *safeSet) Values() []any {
 	return result
 }
 
-func (s *safeSet) Add(v any) bool {
+func (s *safeSet[T]) Add(v T) bool {
 	s.mu.RLock()
 	_, found := s.data[v]
 	if found {
@@ -70,13 +70,13 @@ func (s *safeSet) Add(v any) bool {
 	return true
 }
 
-func (s *safeSet) Delete(v any) {
+func (s *safeSet[T]) Delete(v T) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.data, v)
 }
 
-func (s *safeSet) Contains(vals ...any) bool {
+func (s *safeSet[T]) Contains(vals ...T) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, v := range vals {
@@ -88,14 +88,14 @@ func (s *safeSet) Contains(vals ...any) bool {
 	return true
 }
 
-func (s *safeSet) Len() uint {
+func (s *safeSet[T]) Len() uint {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return uint(len(s.data))
 }
 
-func (s *safeSet) Clear() {
+func (s *safeSet[T]) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.data = make(map[any]struct{})
+	s.data = make(map[T]struct{})
 }

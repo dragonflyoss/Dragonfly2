@@ -12,30 +12,30 @@ import (
 )
 
 // MockDAG is a mock of DAG interface.
-type MockDAG struct {
+type MockDAG[T comparable] struct {
 	ctrl     *gomock.Controller
-	recorder *MockDAGMockRecorder
+	recorder *MockDAGMockRecorder[T]
 }
 
 // MockDAGMockRecorder is the mock recorder for MockDAG.
-type MockDAGMockRecorder struct {
-	mock *MockDAG
+type MockDAGMockRecorder[T comparable] struct {
+	mock *MockDAG[T]
 }
 
 // NewMockDAG creates a new mock instance.
-func NewMockDAG(ctrl *gomock.Controller) *MockDAG {
-	mock := &MockDAG{ctrl: ctrl}
-	mock.recorder = &MockDAGMockRecorder{mock}
+func NewMockDAG[T comparable](ctrl *gomock.Controller) *MockDAG[T] {
+	mock := &MockDAG[T]{ctrl: ctrl}
+	mock.recorder = &MockDAGMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockDAG) EXPECT() *MockDAGMockRecorder {
+func (m *MockDAG[T]) EXPECT() *MockDAGMockRecorder[T] {
 	return m.recorder
 }
 
 // AddEdge mocks base method.
-func (m *MockDAG) AddEdge(fromVertexID, toVertexID string) error {
+func (m *MockDAG[T]) AddEdge(fromVertexID, toVertexID string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddEdge", fromVertexID, toVertexID)
 	ret0, _ := ret[0].(error)
@@ -43,13 +43,13 @@ func (m *MockDAG) AddEdge(fromVertexID, toVertexID string) error {
 }
 
 // AddEdge indicates an expected call of AddEdge.
-func (mr *MockDAGMockRecorder) AddEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) AddEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEdge", reflect.TypeOf((*MockDAG)(nil).AddEdge), fromVertexID, toVertexID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEdge", reflect.TypeOf((*MockDAG[T])(nil).AddEdge), fromVertexID, toVertexID)
 }
 
 // AddVertex mocks base method.
-func (m *MockDAG) AddVertex(id string, value any) error {
+func (m *MockDAG[T]) AddVertex(id string, value T) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddVertex", id, value)
 	ret0, _ := ret[0].(error)
@@ -57,13 +57,13 @@ func (m *MockDAG) AddVertex(id string, value any) error {
 }
 
 // AddVertex indicates an expected call of AddVertex.
-func (mr *MockDAGMockRecorder) AddVertex(id, value interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) AddVertex(id, value interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVertex", reflect.TypeOf((*MockDAG)(nil).AddVertex), id, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVertex", reflect.TypeOf((*MockDAG[T])(nil).AddVertex), id, value)
 }
 
 // CanAddEdge mocks base method.
-func (m *MockDAG) CanAddEdge(fromVertexID, toVertexID string) bool {
+func (m *MockDAG[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CanAddEdge", fromVertexID, toVertexID)
 	ret0, _ := ret[0].(bool)
@@ -71,13 +71,13 @@ func (m *MockDAG) CanAddEdge(fromVertexID, toVertexID string) bool {
 }
 
 // CanAddEdge indicates an expected call of CanAddEdge.
-func (mr *MockDAGMockRecorder) CanAddEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) CanAddEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAddEdge", reflect.TypeOf((*MockDAG)(nil).CanAddEdge), fromVertexID, toVertexID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAddEdge", reflect.TypeOf((*MockDAG[T])(nil).CanAddEdge), fromVertexID, toVertexID)
 }
 
 // DeleteEdge mocks base method.
-func (m *MockDAG) DeleteEdge(fromVertexID, toVertexID string) error {
+func (m *MockDAG[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteEdge", fromVertexID, toVertexID)
 	ret0, _ := ret[0].(error)
@@ -85,82 +85,110 @@ func (m *MockDAG) DeleteEdge(fromVertexID, toVertexID string) error {
 }
 
 // DeleteEdge indicates an expected call of DeleteEdge.
-func (mr *MockDAGMockRecorder) DeleteEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) DeleteEdge(fromVertexID, toVertexID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEdge", reflect.TypeOf((*MockDAG)(nil).DeleteEdge), fromVertexID, toVertexID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEdge", reflect.TypeOf((*MockDAG[T])(nil).DeleteEdge), fromVertexID, toVertexID)
 }
 
 // DeleteVertex mocks base method.
-func (m *MockDAG) DeleteVertex(id string) {
+func (m *MockDAG[T]) DeleteVertex(id string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "DeleteVertex", id)
 }
 
 // DeleteVertex indicates an expected call of DeleteVertex.
-func (mr *MockDAGMockRecorder) DeleteVertex(id interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) DeleteVertex(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG)(nil).DeleteVertex), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG[T])(nil).DeleteVertex), id)
+}
+
+// GetRandomVertices mocks base method.
+func (m *MockDAG[T]) GetRandomVertices(n uint) map[string]*dag.Vertex[T] {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRandomVertices", n)
+	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
+	return ret0
+}
+
+// GetRandomVertices indicates an expected call of GetRandomVertices.
+func (mr *MockDAGMockRecorder[T]) GetRandomVertices(n interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRandomVertices", reflect.TypeOf((*MockDAG[T])(nil).GetRandomVertices), n)
 }
 
 // GetSinkVertices mocks base method.
-func (m *MockDAG) GetSinkVertices() map[string]*dag.Vertex {
+func (m *MockDAG[T]) GetSinkVertices() map[string]*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSinkVertices")
-	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
 	return ret0
 }
 
 // GetSinkVertices indicates an expected call of GetSinkVertices.
-func (mr *MockDAGMockRecorder) GetSinkVertices() *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) GetSinkVertices() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSinkVertices", reflect.TypeOf((*MockDAG)(nil).GetSinkVertices))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSinkVertices", reflect.TypeOf((*MockDAG[T])(nil).GetSinkVertices))
 }
 
 // GetSourceVertices mocks base method.
-func (m *MockDAG) GetSourceVertices() map[string]*dag.Vertex {
+func (m *MockDAG[T]) GetSourceVertices() map[string]*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSourceVertices")
-	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
 	return ret0
 }
 
 // GetSourceVertices indicates an expected call of GetSourceVertices.
-func (mr *MockDAGMockRecorder) GetSourceVertices() *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) GetSourceVertices() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceVertices", reflect.TypeOf((*MockDAG)(nil).GetSourceVertices))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceVertices", reflect.TypeOf((*MockDAG[T])(nil).GetSourceVertices))
 }
 
 // GetVertex mocks base method.
-func (m *MockDAG) GetVertex(id string) (*dag.Vertex, error) {
+func (m *MockDAG[T]) GetVertex(id string) (*dag.Vertex[T], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVertex", id)
-	ret0, _ := ret[0].(*dag.Vertex)
+	ret0, _ := ret[0].(*dag.Vertex[T])
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetVertex indicates an expected call of GetVertex.
-func (mr *MockDAGMockRecorder) GetVertex(id interface{}) *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) GetVertex(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertex", reflect.TypeOf((*MockDAG)(nil).GetVertex), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertex", reflect.TypeOf((*MockDAG[T])(nil).GetVertex), id)
+}
+
+// GetVertexKeys mocks base method.
+func (m *MockDAG[T]) GetVertexKeys() []string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetVertexKeys")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetVertexKeys indicates an expected call of GetVertexKeys.
+func (mr *MockDAGMockRecorder[T]) GetVertexKeys() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertexKeys", reflect.TypeOf((*MockDAG[T])(nil).GetVertexKeys))
 }
 
 // GetVertices mocks base method.
-func (m *MockDAG) GetVertices() map[string]*dag.Vertex {
+func (m *MockDAG[T]) GetVertices() map[string]*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVertices")
-	ret0, _ := ret[0].(map[string]*dag.Vertex)
+	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
 	return ret0
 }
 
 // GetVertices indicates an expected call of GetVertices.
-func (mr *MockDAGMockRecorder) GetVertices() *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) GetVertices() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertices", reflect.TypeOf((*MockDAG)(nil).GetVertices))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertices", reflect.TypeOf((*MockDAG[T])(nil).GetVertices))
 }
 
 // VertexCount mocks base method.
-func (m *MockDAG) VertexCount() int {
+func (m *MockDAG[T]) VertexCount() int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VertexCount")
 	ret0, _ := ret[0].(int)
@@ -168,7 +196,7 @@ func (m *MockDAG) VertexCount() int {
 }
 
 // VertexCount indicates an expected call of VertexCount.
-func (mr *MockDAGMockRecorder) VertexCount() *gomock.Call {
+func (mr *MockDAGMockRecorder[T]) VertexCount() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VertexCount", reflect.TypeOf((*MockDAG)(nil).VertexCount))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VertexCount", reflect.TypeOf((*MockDAG[T])(nil).VertexCount))
 }
