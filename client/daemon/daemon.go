@@ -369,8 +369,9 @@ func (cd *clientDaemon) Serve() error {
 		return errors.New("download grpc unix listen option is empty")
 	}
 
+	cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
 	if cd.Option.Download.DownloadGRPC.UnixListen.Socket == "" {
-		cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
+		return errors.New("download grpc unix listen socket is empty")
 	}
 
 	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
