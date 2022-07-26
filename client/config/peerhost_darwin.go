@@ -83,9 +83,7 @@ var peerHostConfig = func() *DaemonOption {
 					Insecure:  true,
 					TLSVerify: true,
 				},
-				UnixListen: &UnixListenOption{
-					Socket: "/tmp/dfdaemon.sock",
-				},
+				UnixListen: &UnixListenOption{},
 			},
 			PeerGRPC: ListenOption{
 				Security: SecurityOption{

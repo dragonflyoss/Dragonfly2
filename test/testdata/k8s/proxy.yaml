@@ -33,8 +33,6 @@ data:
       downloadGRPC:
         security:
           insecure: true
-        unixListen:
-          socket: /tmp/dfdamon.sock
       peerGRPC:
         security:
           insecure: true
