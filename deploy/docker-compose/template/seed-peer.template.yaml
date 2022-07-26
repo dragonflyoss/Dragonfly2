@@ -125,7 +125,7 @@ download:
     unixListen:
       # in linux, default value is /var/run/dfdaemon.sock
       # in macos(just for testing), default value is /tmp/dfdaemon.sock
-      socket: /var/run/dfdaemon.sock
+      socket: ""
   # peer grpc option
   # peer grpc service send pieces info to other peers
   peerGRPC:
