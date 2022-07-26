@@ -30,33 +30,33 @@ const N = 1000
 func TestSafeSetAdd(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  any
-		expect func(t *testing.T, ok bool, s SafeSet, value any)
+		value  string
+		expect func(t *testing.T, ok bool, s SafeSet[string], value string)
 	}{
 		{
 			name:  "add value",
 			value: "foo",
-			expect: func(t *testing.T, ok bool, s SafeSet, value any) {
+			expect: func(t *testing.T, ok bool, s SafeSet[string], value string) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
-				assert.Equal(s.Values(), []any{value})
+				assert.Equal(s.Values(), []string{value})
 			},
 		},
 		{
 			name:  "add value failed",
 			value: "foo",
-			expect: func(t *testing.T, _ bool, s SafeSet, value any) {
+			expect: func(t *testing.T, _ bool, s SafeSet[string], value string) {
 				assert := assert.New(t)
 				ok := s.Add("foo")
 				assert.Equal(ok, false)
-				assert.Equal(s.Values(), []any{value})
+				assert.Equal(s.Values(), []string{value})
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			tc.expect(t, s.Add(tc.value), s, tc.value)
 		})
 	}
@@ -65,7 +65,7 @@ func TestSafeSetAdd(t *testing.T) {
 func TestSafeSetAdd_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 	nums := rand.Perm(N)
 
 	var wg sync.WaitGroup
@@ -88,13 +88,13 @@ func TestSafeSetAdd_Concurrent(t *testing.T) {
 func TestSafeSetDelete(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  any
-		expect func(t *testing.T, s SafeSet, value any)
+		value  string
+		expect func(t *testing.T, s SafeSet[string], value string)
 	}{
 		{
 			name:  "delete value",
 			value: "foo",
-			expect: func(t *testing.T, s SafeSet, value any) {
+			expect: func(t *testing.T, s SafeSet[string], value string) {
 				assert := assert.New(t)
 				s.Delete(value)
 				assert.Equal(s.Len(), uint(0))
@@ -103,7 +103,7 @@ func TestSafeSetDelete(t *testing.T) {
 		{
 			name:  "delete value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s SafeSet, _ any) {
+			expect: func(t *testing.T, s SafeSet[string], _ string) {
 				assert := assert.New(t)
 				s.Delete("bar")
 				assert.Equal(s.Len(), uint(1))
@@ -113,7 +113,7 @@ func TestSafeSetDelete(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			s.Add(tc.value)
 			tc.expect(t, s, tc.value)
 		})
@@ -123,7 +123,7 @@ func TestSafeSetDelete(t *testing.T) {
 func TestSafeSetDelete_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 	nums := rand.Perm(N)
 	for _, v := range nums {
 		s.Add(v)
@@ -147,21 +147,21 @@ func TestSafeSetDelete_Concurrent(t *testing.T) {
 func TestSafeSetContains(t *testing.T) {
 	tests := []struct {
 		name   string
-		value  any
-		expect func(t *testing.T, s SafeSet, value any)
+		value  string
+		expect func(t *testing.T, s SafeSet[string], value string)
 	}{
 		{
 			name:  "contains value",
 			value: "foo",
-			expect: func(t *testing.T, s SafeSet, value any) {
+			expect: func(t *testing.T, s SafeSet[string], value string) {
 				assert := assert.New(t)
-				assert.Equal(s.Contains(value), true)
+				assert.Equal(s.Contains(string(value)), true)
 			},
 		},
 		{
 			name:  "contains value does not exist",
 			value: "foo",
-			expect: func(t *testing.T, s SafeSet, _ any) {
+			expect: func(t *testing.T, s SafeSet[string], _ string) {
 				assert := assert.New(t)
 				assert.Equal(s.Contains("bar"), false)
 			},
@@ -170,7 +170,7 @@ func TestSafeSetContains(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			s.Add(tc.value)
 			tc.expect(t, s, tc.value)
 		})
@@ -180,9 +180,9 @@ func TestSafeSetContains(t *testing.T) {
 func TestSafeSetContains_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 	nums := rand.Perm(N)
-	interfaces := make([]any, 0)
+	interfaces := make([]int, 0)
 	for _, v := range nums {
 		s.Add(v)
 		interfaces = append(interfaces, v)
@@ -202,11 +202,11 @@ func TestSafeSetContains_Concurrent(t *testing.T) {
 func TestSetSafeLen(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s SafeSet)
+		expect func(t *testing.T, s SafeSet[string])
 	}{
 		{
 			name: "get length",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				s.Add("foo")
 				assert.Equal(s.Len(), uint(1))
@@ -214,7 +214,7 @@ func TestSetSafeLen(t *testing.T) {
 		},
 		{
 			name: "get empty set length",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				assert.Equal(s.Len(), uint(0))
 			},
@@ -223,7 +223,7 @@ func TestSetSafeLen(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			tc.expect(t, s)
 		})
 	}
@@ -232,7 +232,7 @@ func TestSetSafeLen(t *testing.T) {
 func TestSafeSetLen_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -256,26 +256,26 @@ func TestSafeSetLen_Concurrent(t *testing.T) {
 func TestSafeSetValues(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s SafeSet)
+		expect func(t *testing.T, s SafeSet[string])
 	}{
 		{
 			name: "get values",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				s.Add("foo")
-				assert.Equal(s.Values(), []any{"foo"})
+				assert.Equal(s.Values(), []string{"foo"})
 			},
 		},
 		{
 			name: "get empty values",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
-				assert.Equal(s.Values(), []any(nil))
+				assert.Equal(s.Values(), []string(nil))
 			},
 		},
 		{
 			name: "get multi values",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				s.Add("foo")
 				s.Add("bar")
@@ -287,7 +287,7 @@ func TestSafeSetValues(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			tc.expect(t, s)
 		})
 	}
@@ -296,7 +296,7 @@ func TestSafeSetValues(t *testing.T) {
 func TestSafeSetValues_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -312,7 +312,7 @@ func TestSafeSetValues_Concurrent(t *testing.T) {
 	}()
 
 	for i := 0; i < N; i++ {
-		s.Add(rand.Int())
+		s.Add(i)
 	}
 	wg.Wait()
 }
@@ -320,32 +320,32 @@ func TestSafeSetValues_Concurrent(t *testing.T) {
 func TestSafeSetClear(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, s SafeSet)
+		expect func(t *testing.T, s SafeSet[string])
 	}{
 		{
 			name: "clear empty set",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				s.Clear()
-				assert.Equal(s.Values(), []any(nil))
+				assert.Equal(s.Values(), []string(nil))
 			},
 		},
 		{
 			name: "clear set",
-			expect: func(t *testing.T, s SafeSet) {
+			expect: func(t *testing.T, s SafeSet[string]) {
 				assert := assert.New(t)
 				assert.Equal(s.Add("foo"), true)
 				s.Clear()
-				assert.Equal(s.Values(), []any(nil))
+				assert.Equal(s.Values(), []string(nil))
 				assert.Equal(s.Add("foo"), true)
-				assert.Equal(s.Values(), []any{"foo"})
+				assert.Equal(s.Values(), []string{"foo"})
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := NewSafeSet()
+			s := NewSafeSet[string]()
 			tc.expect(t, s)
 		})
 	}
@@ -354,7 +354,7 @@ func TestSafeSetClear(t *testing.T) {
 func TestSafeSetClear_Concurrent(t *testing.T) {
 	runtime.GOMAXPROCS(2)
 
-	s := NewSafeSet()
+	s := NewSafeSet[int]()
 	nums := rand.Perm(N)
 
 	var wg sync.WaitGroup

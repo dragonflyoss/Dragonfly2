@@ -18,8 +18,6 @@ package resource
 
 import (
 	"errors"
-	"math/rand"
-	reflect "reflect"
 	"sort"
 	"sync"
 	"time"
@@ -106,7 +104,7 @@ type Task struct {
 	BackToSourceLimit *atomic.Int32
 
 	// BackToSourcePeers is back-to-source sync map.
-	BackToSourcePeers set.SafeSet
+	BackToSourcePeers set.SafeSet[string]
 
 	// Task state machine.
 	FSM *fsm.FSM
@@ -115,7 +113,7 @@ type Task struct {
 	Pieces *sync.Map
 
 	// DAG is directed acyclic graph of peers.
-	DAG dag.DAG
+	DAG dag.DAG[*Peer]
 
 	// PeerFailedCount is peer failed count,
 	// if one peer succeeds, the value is reset to zero.
@@ -141,9 +139,9 @@ func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options
 		ContentLength:     atomic.NewInt64(0),
 		TotalPieceCount:   atomic.NewInt32(0),
 		BackToSourceLimit: atomic.NewInt32(0),
-		BackToSourcePeers: set.NewSafeSet(),
+		BackToSourcePeers: set.NewSafeSet[string](),
 		Pieces:            &sync.Map{},
-		DAG:               dag.NewDAG(),
+		DAG:               dag.NewDAG[*Peer](),
 		PeerFailedCount:   atomic.NewInt32(0),
 		CreateAt:          atomic.NewTime(time.Now()),
 		UpdateAt:          atomic.NewTime(time.Now()),
@@ -189,54 +187,14 @@ func (t *Task) LoadPeer(key string) (*Peer, bool) {
 		return nil, false
 	}
 
-	value := vertex.Value
-	if value == nil {
-		return nil, false
-	}
-
-	return value.(*Peer), true
+	return vertex.Value, true
 }
 
 // LoadRandomPeers return random peers.
 func (t *Task) LoadRandomPeers(n uint) []*Peer {
 	var peers []*Peer
-	vertices := t.DAG.GetVertices()
-	keys := reflect.ValueOf(vertices).MapKeys()
-	if int(n) >= len(keys) {
-		for _, vertex := range vertices {
-			value := vertex.Value
-			if value == nil {
-				continue
-			}
-
-			peer, ok := value.(*Peer)
-			if !ok {
-				continue
-			}
-
-			peers = append(peers, peer)
-		}
-
-		return peers
-	}
-
-	rand.Seed(time.Now().Unix())
-	permutation := rand.Perm(len(keys))[:n]
-	for _, v := range permutation {
-		key := keys[v].String()
-
-		vertex := vertices[key]
-		value := vertex.Value
-		if value == nil {
-			continue
-		}
-
-		peer, ok := value.(*Peer)
-		if !ok {
-			continue
-		}
-
-		peers = append(peers, peer)
+	for _, vertex := range t.DAG.GetRandomVertices(n) {
+		peers = append(peers, vertex.Value)
 	}
 
 	return peers
@@ -282,23 +240,12 @@ func (t *Task) DeletePeerInEdges(key string) error {
 		return err
 	}
 
-	for _, value := range vertex.Parents.Values() {
-		vertex, ok := value.(*dag.Vertex)
-		if !ok {
+	for _, parent := range vertex.Parents.Values() {
+		if parent.Value == nil {
 			continue
 		}
 
-		vertexVal := vertex.Value
-		if vertexVal == nil {
-			continue
-		}
-
-		parent, ok := vertexVal.(*Peer)
-		if !ok {
-			continue
-		}
-
-		parent.Host.UploadPeerCount.Dec()
+		parent.Value.Host.UploadPeerCount.Dec()
 	}
 
 	vertex.DeleteInEdges()
@@ -312,14 +259,9 @@ func (t *Task) DeletePeerOutEdges(key string) error {
 		return err
 	}
 
-	value := vertex.Value
-	if value == nil {
+	peer := vertex.Value
+	if peer == nil {
 		return errors.New("vertex value is nil")
-	}
-
-	peer, ok := value.(*Peer)
-	if !ok {
-		return errors.New("vertex value is not peer")
 	}
 
 	peer.Host.UploadPeerCount.Sub(int32(vertex.Children.Len()))
@@ -366,13 +308,8 @@ func (t *Task) PeerOutDegree(key string) (int, error) {
 func (t *Task) HasAvailablePeer() bool {
 	var hasAvailablePeer bool
 	for _, vertex := range t.DAG.GetVertices() {
-		value := vertex.Value
-		if value == nil {
-			continue
-		}
-
-		peer, ok := value.(*Peer)
-		if !ok {
+		peer := vertex.Value
+		if peer == nil {
 			continue
 		}
 
@@ -389,13 +326,8 @@ func (t *Task) HasAvailablePeer() bool {
 func (t *Task) LoadSeedPeer() (*Peer, bool) {
 	var peers []*Peer
 	for _, vertex := range t.DAG.GetVertices() {
-		value := vertex.Value
-		if value == nil {
-			continue
-		}
-
-		peer, ok := value.(*Peer)
-		if !ok {
+		peer := vertex.Value
+		if peer == nil {
 			continue
 		}
 
@@ -473,12 +405,11 @@ func (t *Task) CanBackToSource() bool {
 // NotifyPeers notify all peers in the task with the state code.
 func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
 	for _, vertex := range t.DAG.GetVertices() {
-		value := vertex.Value
-		if value == nil {
+		peer := vertex.Value
+		if peer == nil {
 			continue
 		}
 
-		peer := value.(*Peer)
 		if peer.FSM.Is(PeerStateRunning) {
 			stream, ok := peer.LoadStream()
 			if !ok {
