@@ -261,11 +261,11 @@ func (osc *ossSourceClient) List(request *source.Request) (urls []source.URLEntr
 
 func (osc *ossSourceClient) isDirectory(bucket *oss.Bucket, request *source.Request) (bool, error) {
 	uPath := addTrailingSlash(request.URL.Path)
-	lsRes, err := bucket.ListObjects(oss.Prefix(uPath), oss.Marker(""), oss.Delimiter("/"), oss.MaxKeys(1))
+	lsRes, err := bucket.ListObjects(oss.Prefix(uPath), oss.Marker(""), oss.MaxKeys(1))
 	if err != nil {
 		return false, fmt.Errorf("list oss object %s/%s: %w", request.URL.Host, uPath, err)
 	}
-	if len(lsRes.Objects) > 0 && lsRes.Objects[0].Key == uPath && lsRes.Objects[0].Size == 0 {
+	if len(lsRes.Objects)+len(lsRes.CommonPrefixes) > 0 {
 		return true, nil
 	}
 	return false, nil
