@@ -11,30 +11,30 @@ import (
 )
 
 // MockSafeSet is a mock of SafeSet interface.
-type MockSafeSet struct {
+type MockSafeSet[T comparable] struct {
 	ctrl     *gomock.Controller
-	recorder *MockSafeSetMockRecorder
+	recorder *MockSafeSetMockRecorder[T]
 }
 
 // MockSafeSetMockRecorder is the mock recorder for MockSafeSet.
-type MockSafeSetMockRecorder struct {
-	mock *MockSafeSet
+type MockSafeSetMockRecorder[T comparable] struct {
+	mock *MockSafeSet[T]
 }
 
 // NewMockSafeSet creates a new mock instance.
-func NewMockSafeSet(ctrl *gomock.Controller) *MockSafeSet {
-	mock := &MockSafeSet{ctrl: ctrl}
-	mock.recorder = &MockSafeSetMockRecorder{mock}
+func NewMockSafeSet[T comparable](ctrl *gomock.Controller) *MockSafeSet[T] {
+	mock := &MockSafeSet[T]{ctrl: ctrl}
+	mock.recorder = &MockSafeSetMockRecorder[T]{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockSafeSet) EXPECT() *MockSafeSetMockRecorder {
+func (m *MockSafeSet[T]) EXPECT() *MockSafeSetMockRecorder[T] {
 	return m.recorder
 }
 
 // Add mocks base method.
-func (m *MockSafeSet) Add(arg0 any) bool {
+func (m *MockSafeSet[T]) Add(arg0 T) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
 	ret0, _ := ret[0].(bool)
@@ -42,25 +42,25 @@ func (m *MockSafeSet) Add(arg0 any) bool {
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockSafeSetMockRecorder) Add(arg0 interface{}) *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Add(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockSafeSet)(nil).Add), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockSafeSet[T])(nil).Add), arg0)
 }
 
 // Clear mocks base method.
-func (m *MockSafeSet) Clear() {
+func (m *MockSafeSet[T]) Clear() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Clear")
 }
 
 // Clear indicates an expected call of Clear.
-func (mr *MockSafeSetMockRecorder) Clear() *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Clear() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockSafeSet)(nil).Clear))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockSafeSet[T])(nil).Clear))
 }
 
 // Contains mocks base method.
-func (m *MockSafeSet) Contains(arg0 ...any) bool {
+func (m *MockSafeSet[T]) Contains(arg0 ...T) bool {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
@@ -72,25 +72,25 @@ func (m *MockSafeSet) Contains(arg0 ...any) bool {
 }
 
 // Contains indicates an expected call of Contains.
-func (mr *MockSafeSetMockRecorder) Contains(arg0 ...interface{}) *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Contains(arg0 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Contains", reflect.TypeOf((*MockSafeSet)(nil).Contains), arg0...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Contains", reflect.TypeOf((*MockSafeSet[T])(nil).Contains), arg0...)
 }
 
 // Delete mocks base method.
-func (m *MockSafeSet) Delete(arg0 any) {
+func (m *MockSafeSet[T]) Delete(arg0 T) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Delete", arg0)
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockSafeSetMockRecorder) Delete(arg0 interface{}) *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Delete(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSafeSet)(nil).Delete), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSafeSet[T])(nil).Delete), arg0)
 }
 
 // Len mocks base method.
-func (m *MockSafeSet) Len() uint {
+func (m *MockSafeSet[T]) Len() uint {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Len")
 	ret0, _ := ret[0].(uint)
@@ -98,21 +98,21 @@ func (m *MockSafeSet) Len() uint {
 }
 
 // Len indicates an expected call of Len.
-func (mr *MockSafeSetMockRecorder) Len() *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Len() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockSafeSet)(nil).Len))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockSafeSet[T])(nil).Len))
 }
 
 // Values mocks base method.
-func (m *MockSafeSet) Values() []any {
+func (m *MockSafeSet[T]) Values() []T {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Values")
-	ret0, _ := ret[0].([]any)
+	ret0, _ := ret[0].([]T)
 	return ret0
 }
 
 // Values indicates an expected call of Values.
-func (mr *MockSafeSetMockRecorder) Values() *gomock.Call {
+func (mr *MockSafeSetMockRecorder[T]) Values() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Values", reflect.TypeOf((*MockSafeSet)(nil).Values))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Values", reflect.TypeOf((*MockSafeSet[T])(nil).Values))
 }

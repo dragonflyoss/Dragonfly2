@@ -20,7 +20,11 @@ package dag
 
 import (
 	"errors"
+	"math/rand"
 	"sync"
+	"time"
+
+	cmap "github.com/orcaman/concurrent-map/v2"
 )
 
 var (
@@ -41,24 +45,30 @@ var (
 )
 
 // DAG is the interface used for directed acyclic graph.
-type DAG interface {
+type DAG[T comparable] interface {
 	// AddVertex adds vertex to graph.
-	AddVertex(id string, value any) error
+	AddVertex(id string, value T) error
 
 	// DeleteVertex deletes vertex graph.
 	DeleteVertex(id string)
 
 	// GetVertex gets vertex from graph.
-	GetVertex(id string) (*Vertex, error)
+	GetVertex(id string) (*Vertex[T], error)
 
 	// GetVertices returns map of vertices.
-	GetVertices() map[string]*Vertex
+	GetVertices() map[string]*Vertex[T]
+
+	// GetRandomVertices returns random map of vertices.
+	GetRandomVertices(n uint) map[string]*Vertex[T]
+
+	// GetVertexKeys returns keys of vertices.
+	GetVertexKeys() []string
 
 	// GetSourceVertices returns source vertices.
-	GetSourceVertices() map[string]*Vertex
+	GetSourceVertices() map[string]*Vertex[T]
 
 	// GetSinkVertices returns sink vertices.
-	GetSinkVertices() map[string]*Vertex
+	GetSinkVertices() map[string]*Vertex[T]
 
 	// VertexCount returns count of vertices.
 	VertexCount() int
@@ -74,69 +84,56 @@ type DAG interface {
 }
 
 // dag provides directed acyclic graph function.
-type dag struct {
+type dag[T comparable] struct {
 	mu       sync.RWMutex
-	vertices map[string]*Vertex
+	vertices cmap.ConcurrentMap[*Vertex[T]]
 }
 
 // New returns a new DAG interface.
-func NewDAG() DAG {
-	return &dag{
-		vertices: make(map[string]*Vertex),
+func NewDAG[T comparable]() DAG[T] {
+	return &dag[T]{
+		vertices: cmap.New[*Vertex[T]](),
 	}
 }
 
 // AddVertex adds vertex to graph.
-func (d *dag) AddVertex(id string, value any) error {
+func (d *dag[T]) AddVertex(id string, value T) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if _, ok := d.vertices[id]; ok {
+	if _, ok := d.vertices.Get(id); ok {
 		return ErrVertexAlreadyExists
 	}
 
-	d.vertices[id] = NewVertex(id, value)
+	d.vertices.Set(id, NewVertex(id, value))
 	return nil
 }
 
 // DeleteVertex deletes vertex graph.
-func (d *dag) DeleteVertex(id string) {
+func (d *dag[T]) DeleteVertex(id string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	vertex, ok := d.vertices[id]
+	vertex, ok := d.vertices.Get(id)
 	if !ok {
 		return
 	}
 
-	for _, value := range vertex.Parents.Values() {
-		parent, ok := value.(*Vertex)
-		if !ok {
-			continue
-		}
-
+	for _, parent := range vertex.Parents.Values() {
 		parent.Children.Delete(vertex)
 	}
 
-	for _, value := range vertex.Children.Values() {
-		child, ok := value.(*Vertex)
-		if !ok {
-			continue
-		}
-
+	for _, child := range vertex.Children.Values() {
 		child.Parents.Delete(vertex)
 		continue
 	}
 
-	delete(d.vertices, id)
+	d.vertices.Remove(id)
 }
 
 // GetVertex gets vertex from graph.
-func (d *dag) GetVertex(id string) (*Vertex, error) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	vertex, ok := d.vertices[id]
+func (d *dag[T]) GetVertex(id string) (*Vertex[T], error) {
+	vertex, ok := d.vertices.Get(id)
 	if !ok {
 		return nil, ErrVertexNotFound
 	}
@@ -145,20 +142,44 @@ func (d *dag) GetVertex(id string) (*Vertex, error) {
 }
 
 // GetVertices returns map of vertices.
-func (d *dag) GetVertices() map[string]*Vertex {
+func (d *dag[T]) GetVertices() map[string]*Vertex[T] {
+	return d.vertices.Items()
+}
+
+// GetRandomVertices returns random map of vertices.
+func (d *dag[T]) GetRandomVertices(n uint) map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	return d.vertices
+	keys := d.GetVertexKeys()
+	vertices := d.GetVertices()
+	if int(n) >= len(keys) {
+		return vertices
+	}
+
+	rand.Seed(time.Now().Unix())
+	permutation := rand.Perm(len(keys))[:n]
+	randomVertices := make(map[string]*Vertex[T])
+	for _, v := range permutation {
+		key := keys[v]
+		randomVertices[key] = vertices[key]
+	}
+
+	return randomVertices
+}
+
+// GetVertexKeys returns keys of vertices.
+func (d *dag[T]) GetVertexKeys() []string {
+	return d.vertices.Keys()
 }
 
 // VertexCount returns count of vertices.
-func (d *dag) VertexCount() int {
-	return len(d.vertices)
+func (d *dag[T]) VertexCount() int {
+	return d.vertices.Count()
 }
 
 // CanAddEdge finds whether there are circles through depth-first search.
-func (d *dag) CanAddEdge(fromVertexID, toVertexID string) bool {
+func (d *dag[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -166,22 +187,17 @@ func (d *dag) CanAddEdge(fromVertexID, toVertexID string) bool {
 		return false
 	}
 
-	fromVertex, ok := d.vertices[fromVertexID]
+	fromVertex, ok := d.vertices.Get(fromVertexID)
 	if !ok {
 		return false
 	}
 
-	if _, ok := d.vertices[toVertexID]; !ok {
+	if _, ok := d.vertices.Get(toVertexID); !ok {
 		return false
 	}
 
 	for _, child := range fromVertex.Children.Values() {
-		vertex, ok := child.(*Vertex)
-		if !ok {
-			continue
-		}
-
-		if vertex.ID == toVertexID {
+		if child.ID == toVertexID {
 			return false
 		}
 	}
@@ -194,7 +210,7 @@ func (d *dag) CanAddEdge(fromVertexID, toVertexID string) bool {
 }
 
 // AddEdge adds edge between two vertices.
-func (d *dag) AddEdge(fromVertexID, toVertexID string) error {
+func (d *dag[T]) AddEdge(fromVertexID, toVertexID string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -202,23 +218,18 @@ func (d *dag) AddEdge(fromVertexID, toVertexID string) error {
 		return ErrCycleBetweenVertices
 	}
 
-	fromVertex, ok := d.vertices[fromVertexID]
+	fromVertex, ok := d.vertices.Get(fromVertexID)
 	if !ok {
 		return ErrVertexNotFound
 	}
 
-	toVertex, ok := d.vertices[toVertexID]
+	toVertex, ok := d.vertices.Get(toVertexID)
 	if !ok {
 		return ErrVertexNotFound
 	}
 
 	for _, child := range fromVertex.Children.Values() {
-		vertex, ok := child.(*Vertex)
-		if !ok {
-			continue
-		}
-
-		if vertex.ID == toVertexID {
+		if child.ID == toVertexID {
 			return ErrCycleBetweenVertices
 		}
 	}
@@ -239,16 +250,16 @@ func (d *dag) AddEdge(fromVertexID, toVertexID string) error {
 }
 
 // DeleteEdge deletes edge between two vertices.
-func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
+func (d *dag[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	fromVertex, ok := d.vertices[fromVertexID]
+	fromVertex, ok := d.vertices.Get(fromVertexID)
 	if !ok {
 		return ErrVertexNotFound
 	}
 
-	toVertex, ok := d.vertices[toVertexID]
+	toVertex, ok := d.vertices.Get(toVertexID)
 	if !ok {
 		return ErrVertexNotFound
 	}
@@ -259,12 +270,12 @@ func (d *dag) DeleteEdge(fromVertexID, toVertexID string) error {
 }
 
 // GetSourceVertices returns source vertices.
-func (d *dag) GetSourceVertices() map[string]*Vertex {
+func (d *dag[T]) GetSourceVertices() map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	sourceVertices := make(map[string]*Vertex)
-	for k, v := range d.vertices {
+	sourceVertices := make(map[string]*Vertex[T])
+	for k, v := range d.vertices.Items() {
 		if v.InDegree() == 0 {
 			sourceVertices[k] = v
 		}
@@ -274,12 +285,12 @@ func (d *dag) GetSourceVertices() map[string]*Vertex {
 }
 
 // GetSinkVertices returns sink vertices.
-func (d *dag) GetSinkVertices() map[string]*Vertex {
+func (d *dag[T]) GetSinkVertices() map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	sinkVertices := make(map[string]*Vertex)
-	for k, v := range d.vertices {
+	sinkVertices := make(map[string]*Vertex[T])
+	for k, v := range d.vertices.Items() {
 		if v.OutDegree() == 0 {
 			sinkVertices[k] = v
 		}
@@ -289,7 +300,7 @@ func (d *dag) GetSinkVertices() map[string]*Vertex {
 }
 
 // depthFirstSearch is a depth-first search of the directed acyclic graph.
-func (d *dag) depthFirstSearch(fromVertexID, toVertexID string) bool {
+func (d *dag[T]) depthFirstSearch(fromVertexID, toVertexID string) bool {
 	successors := make(map[string]struct{})
 	d.search(fromVertexID, successors)
 	_, ok := successors[toVertexID]
@@ -297,21 +308,16 @@ func (d *dag) depthFirstSearch(fromVertexID, toVertexID string) bool {
 }
 
 // depthFirstSearch finds successors of vertex.
-func (d *dag) search(vertexID string, successors map[string]struct{}) {
-	vertex, ok := d.vertices[vertexID]
+func (d *dag[T]) search(vertexID string, successors map[string]struct{}) {
+	vertex, ok := d.vertices.Get(vertexID)
 	if !ok {
 		return
 	}
 
 	for _, child := range vertex.Children.Values() {
-		vertex, ok := child.(*Vertex)
-		if !ok {
-			continue
-		}
-
-		if _, ok := successors[vertex.ID]; !ok {
-			successors[vertex.ID] = struct{}{}
-			d.search(vertex.ID, successors)
+		if _, ok := successors[child.ID]; !ok {
+			successors[child.ID] = struct{}{}
+			d.search(child.ID, successors)
 		}
 	}
 }

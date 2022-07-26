@@ -45,6 +45,7 @@ require (
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
+	github.com/orcaman/concurrent-map/v2 v2.0.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.12.2
 	github.com/schollz/progressbar/v3 v3.8.6
@@ -77,6 +78,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.3.4
+	gorm.io/driver/postgres v1.3.7
 	gorm.io/gorm v1.23.6
 	gorm.io/plugin/soft_delete v1.1.0
 	k8s.io/apimachinery v0.24.2
@@ -201,7 +203,6 @@ require (
 	google.golang.org/genproto v0.0.0-20220628213854-d9e0b6570c03 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gorm.io/driver/postgres v1.3.7 // indirect
 	gorm.io/driver/sqlserver v1.3.2 // indirect
 	gorm.io/plugin/dbresolver v1.2.1 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect

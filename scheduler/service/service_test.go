@@ -1656,7 +1656,7 @@ func TestService_LeaveTask(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(peer, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
 				)
@@ -1674,7 +1674,7 @@ func TestService_LeaveTask(t *testing.T) {
 				peer.Task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateSucceeded)
 
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(peer.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -1704,7 +1704,7 @@ func TestService_LeaveTask(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Any()).Return(peer, true).Times(1),
-					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1),
+					ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1),
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Delete(gomock.Eq(peer.ID)).Return().Times(1),
 				)
@@ -1722,7 +1722,7 @@ func TestService_LeaveTask(t *testing.T) {
 				peer.Task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateFailed)
 
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(peer.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2310,7 +2310,7 @@ func TestService_handleBeginOfPiece(t *testing.T) {
 			name: "peer state is PeerStateReceivedNormal",
 			mock: func(peer *resource.Peer, scheduler *mocks.MockSchedulerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
-				scheduler.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet())).Return().Times(1)
+				scheduler.ScheduleParent(gomock.Any(), gomock.Eq(peer), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -2537,7 +2537,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			parent: resource.NewPeer(mockSeedPeerID, mockTask, mockHost),
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(mockSeedPeerID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2566,7 +2566,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(parent.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2596,7 +2596,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Host.Type = resource.HostTypeNormal
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(parent.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2625,7 +2625,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(parent.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2655,7 +2655,7 @@ func TestService_handlePieceFail(t *testing.T) {
 			run: func(t *testing.T, svc *Service, peer *resource.Peer, parent *resource.Peer, piece *rpcscheduler.PieceResult, peerManager resource.PeerManager, seedPeer resource.SeedPeer, ms *mocks.MockSchedulerMockRecorder, mr *resource.MockResourceMockRecorder, mp *resource.MockPeerManagerMockRecorder, mc *resource.MockSeedPeerMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				parent.FSM.SetState(resource.PeerStateRunning)
-				blocklist := set.NewSafeSet()
+				blocklist := set.NewSafeSet[string]()
 				blocklist.Add(parent.ID)
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
@@ -2844,7 +2844,7 @@ func TestService_handlePeerFail(t *testing.T) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				child.FSM.SetState(resource.PeerStateRunning)
 
-				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet())).Return().Times(1)
+				ms.ScheduleParent(gomock.Any(), gomock.Eq(child), gomock.Eq(set.NewSafeSet[string]())).Return().Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, child *resource.Peer) {
 				assert := assert.New(t)

@@ -43,16 +43,16 @@ func TestVertexDegree(t *testing.T) {
 	assert.Equal(v.Value, mockVertexValue)
 	assert.Equal(v.Degree(), 0)
 
-	v.Parents.Add(mockVertexID)
+	v.Parents.Add(v)
 	assert.Equal(v.Degree(), 1)
 
-	v.Children.Add(mockVertexID)
+	v.Children.Add(v)
 	assert.Equal(v.Degree(), 2)
 
-	v.Parents.Delete(mockVertexID)
+	v.Parents.Delete(v)
 	assert.Equal(v.Degree(), 1)
 
-	v.Children.Delete(mockVertexID)
+	v.Children.Delete(v)
 	assert.Equal(v.Degree(), 0)
 }
 
@@ -63,16 +63,16 @@ func TestVertexInDegree(t *testing.T) {
 	assert.Equal(v.Value, mockVertexValue)
 	assert.Equal(v.InDegree(), 0)
 
-	v.Parents.Add(mockVertexID)
+	v.Parents.Add(v)
 	assert.Equal(v.InDegree(), 1)
 
-	v.Children.Add(mockVertexID)
+	v.Children.Add(v)
 	assert.Equal(v.InDegree(), 1)
 
-	v.Parents.Delete(mockVertexID)
+	v.Parents.Delete(v)
 	assert.Equal(v.InDegree(), 0)
 
-	v.Children.Delete(mockVertexID)
+	v.Children.Delete(v)
 	assert.Equal(v.InDegree(), 0)
 }
 
@@ -83,16 +83,16 @@ func TestVertexOutDegree(t *testing.T) {
 	assert.Equal(v.Value, mockVertexValue)
 	assert.Equal(v.OutDegree(), 0)
 
-	v.Parents.Add(mockVertexID)
+	v.Parents.Add(v)
 	assert.Equal(v.OutDegree(), 0)
 
-	v.Children.Add(mockVertexID)
+	v.Children.Add(v)
 	assert.Equal(v.OutDegree(), 1)
 
-	v.Parents.Delete(mockVertexID)
+	v.Parents.Delete(v)
 	assert.Equal(v.OutDegree(), 1)
 
-	v.Children.Delete(mockVertexID)
+	v.Children.Delete(v)
 	assert.Equal(v.OutDegree(), 0)
 }
 
