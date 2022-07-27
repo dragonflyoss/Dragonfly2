@@ -272,6 +272,9 @@ type ServerConfig struct {
 	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`
 
+	// Server work directory.
+	WorkHome string `yaml:"workHome" mapstructure:"workHome"`
+
 	// Server dynamic config cache directory.
 	CacheDir string `yaml:"cacheDir" mapstructure:"cacheDir"`
 
