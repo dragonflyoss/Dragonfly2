@@ -254,6 +254,8 @@ type TransportOption struct {
 type ConcurrentOption struct {
 	// ThresholdSize indicates the threshold to download pieces concurrently
 	ThresholdSize util.Size `mapstructure:"thresholdSize" yaml:"thresholdSize"`
+	// ThresholdSpeed indicates the threshold download speed to download pieces concurrently
+	ThresholdSpeed unit.Bytes `mapstructure:"thresholdSpeed" yaml:"thresholdSpeed"`
 	// GoroutineCount indicates the concurrent goroutine count for every task
 	GoroutineCount int `mapstructure:"goroutineCount" yaml:"goroutineCount"`
 	// InitBackoff second for every piece failed, default: 0.5
