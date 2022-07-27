@@ -45,7 +45,7 @@ In the process of object storage, P2P Cache is effectively used for fast read an
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:                "dfcache <command> [flags]",
+	Use:                "dfstore <command> [flags]",
 	Short:              "object storage client of dragonfly.",
 	Long:               dfstoreDescription,
 	Args:               cobra.MaximumNArgs(1),
