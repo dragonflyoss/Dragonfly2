@@ -60,6 +60,7 @@ func TestConfig_Load(t *testing.T) {
 			Host:     "foo",
 			Listen:   "0.0.0.0",
 			Port:     8002,
+			WorkHome: "home",
 			CacheDir: "foo",
 			LogDir:   "bar",
 			DataDir:  "baz",
