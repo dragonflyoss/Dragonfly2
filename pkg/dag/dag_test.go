@@ -744,7 +744,7 @@ func TestDAGSourceVertices(t *testing.T) {
 
 				sourceVertices := d.GetSourceVertices()
 				assert.Equal(len(sourceVertices), 1)
-				assert.Equal(sourceVertices[mockVertexEID].Value, mockVertexValue)
+				assert.Equal(sourceVertices[0].Value, mockVertexValue)
 			},
 		},
 		{
@@ -791,7 +791,7 @@ func TestDAGSinkVertices(t *testing.T) {
 
 				sinkVertices := d.GetSinkVertices()
 				assert.Equal(len(sinkVertices), 1)
-				assert.Equal(sinkVertices[mockVertexFID].Value, mockVertexValue)
+				assert.Equal(sinkVertices[0].Value, mockVertexValue)
 			},
 		},
 		{
