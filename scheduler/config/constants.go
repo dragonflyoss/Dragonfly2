@@ -33,6 +33,9 @@ const (
 
 	// DefaultSchedulerFilterParentLimit is default limit the number for filter traversals.
 	DefaultSchedulerFilterParentLimit = 4
+
+	// DefaultSchedulerFilterParentRangeLimit is default limit the range for filter traversals.
+	DefaultSchedulerFilterParentRangeLimit = 40
 )
 
 // DefaultServerListen is default listen for server.
