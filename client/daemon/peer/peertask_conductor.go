@@ -1004,7 +1004,10 @@ func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) 
 	// wait first available peer
 	select {
 	case <-pt.successCh:
-		pt.Infof("peer task succeed too fast, no need to wait first peer")
+		pt.Infof("peer task succeed, no need to wait first peer")
+		return true, false
+	case <-pt.failCh:
+		pt.Warnf("peer task failed, no need to wait first peer")
 		return true, false
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
