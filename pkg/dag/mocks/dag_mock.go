@@ -103,10 +103,10 @@ func (mr *MockDAGMockRecorder[T]) DeleteVertex(id interface{}) *gomock.Call {
 }
 
 // GetRandomVertices mocks base method.
-func (m *MockDAG[T]) GetRandomVertices(n uint) map[string]*dag.Vertex[T] {
+func (m *MockDAG[T]) GetRandomVertices(n uint) []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRandomVertices", n)
-	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
+	ret0, _ := ret[0].([]*dag.Vertex[T])
 	return ret0
 }
 
@@ -117,10 +117,10 @@ func (mr *MockDAGMockRecorder[T]) GetRandomVertices(n interface{}) *gomock.Call 
 }
 
 // GetSinkVertices mocks base method.
-func (m *MockDAG[T]) GetSinkVertices() map[string]*dag.Vertex[T] {
+func (m *MockDAG[T]) GetSinkVertices() []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSinkVertices")
-	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
+	ret0, _ := ret[0].([]*dag.Vertex[T])
 	return ret0
 }
 
@@ -131,10 +131,10 @@ func (mr *MockDAGMockRecorder[T]) GetSinkVertices() *gomock.Call {
 }
 
 // GetSourceVertices mocks base method.
-func (m *MockDAG[T]) GetSourceVertices() map[string]*dag.Vertex[T] {
+func (m *MockDAG[T]) GetSourceVertices() []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSourceVertices")
-	ret0, _ := ret[0].(map[string]*dag.Vertex[T])
+	ret0, _ := ret[0].([]*dag.Vertex[T])
 	return ret0
 }
 
