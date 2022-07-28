@@ -248,9 +248,9 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
-	for i, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
+	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
 		// Parent length limit after filtering.
-		if i > filterParentLimit {
+		if len(candidateParents) >= filterParentLimit {
 			break
 		}
 

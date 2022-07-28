@@ -3754,7 +3754,9 @@
         },
         "model.JSONMap": {
             "type": "object",
-            "additionalProperties": true
+            "additionalProperties": {
+                "type": "any"
+            }
         },
         "model.Job": {
             "type": "object",
@@ -4230,14 +4232,18 @@
             "properties": {
                 "args": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {
+                        "type": "any"
+                    }
                 },
                 "bio": {
                     "type": "string"
                 },
                 "result": {
                     "type": "object",
-                    "additionalProperties": true
+                    "additionalProperties": {
+                        "type": "any"
+                    }
                 },
                 "scheduler_cluster_ids": {
                     "type": "array",
@@ -4591,6 +4597,11 @@
                 "filter_parent_limit": {
                     "type": "integer",
                     "maximum": 100,
+                    "minimum": 1
+                },
+                "filter_parent_range_limit": {
+                    "type": "integer",
+                    "maximum": 1000,
                     "minimum": 1
                 }
             }

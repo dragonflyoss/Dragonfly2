@@ -49,7 +49,8 @@ definitions:
         type: string
     type: object
   model.JSONMap:
-    additionalProperties: true
+    additionalProperties:
+      type: any
     type: object
   model.Job:
     properties:
@@ -363,12 +364,14 @@ definitions:
   types.CreateJobRequest:
     properties:
       args:
-        additionalProperties: true
+        additionalProperties:
+          type: any
         type: object
       bio:
         type: string
       result:
-        additionalProperties: true
+        additionalProperties:
+          type: any
         type: object
       scheduler_cluster_ids:
         items:
@@ -612,6 +615,10 @@ definitions:
     properties:
       filter_parent_limit:
         maximum: 100
+        minimum: 1
+        type: integer
+      filter_parent_range_limit:
+        maximum: 1000
         minimum: 1
         type: integer
     type: object
