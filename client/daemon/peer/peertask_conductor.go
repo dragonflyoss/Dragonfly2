@@ -877,7 +877,11 @@ func (pt *peerTaskConductor) pullPiecesFromPeers(pieceRequestCh chan *DownloadPi
 	)
 
 	// ensure first peer packet is not nil
-	peerPacket := pt.peerPacket.Load().(*scheduler.PeerPacket)
+	peerPacket, ok := pt.peerPacket.Load().(*scheduler.PeerPacket)
+	if !ok {
+		pt.Warn("pull pieces canceled")
+		return
+	}
 	if len(peerPacket.CandidatePeers) == 0 {
 		num, ok = pt.waitAvailablePeerPacket()
 		if !ok {
@@ -999,6 +1003,9 @@ func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestC
 func (pt *peerTaskConductor) waitFirstPeerPacket() (done bool, backSource bool) {
 	// wait first available peer
 	select {
+	case <-pt.successCh:
+		pt.Infof("peer task succeed too fast, no need to wait first peer")
+		return true, false
 	case _, ok := <-pt.peerPacketReady:
 		if ok {
 			// preparePieceTasksByPeer func already send piece result with error
