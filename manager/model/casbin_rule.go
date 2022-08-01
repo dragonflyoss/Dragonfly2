@@ -25,4 +25,6 @@ type CasbinRule struct {
 	V3    string `gorm:"type:varchar(100);default:NULL;uniqueIndex:uk_casbin_rule;comment:v3"`
 	V4    string `gorm:"type:varchar(100);default:NULL;uniqueIndex:uk_casbin_rule;comment:v4"`
 	V5    string `gorm:"type:varchar(100);default:NULL;uniqueIndex:uk_casbin_rule;comment:v5"`
+	V6    string `gorm:"type:varchar(100);default:NULL;uniqueIndex:uk_casbin_rule;comment:v6"`
+	V7    string `gorm:"type:varchar(100);default:NULL;uniqueIndex:uk_casbin_rule;comment:v7"`
 }
