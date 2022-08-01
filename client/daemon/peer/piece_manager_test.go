@@ -34,12 +34,14 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
+	"golang.org/x/time/rate"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
-	"d7y.io/dragonfly/v2/client/util"
+	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -67,7 +69,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 		config.SimpleLocalTaskStoreStrategy,
 		&config.StorageOption{
 			DataPath: t.TempDir(),
-			TaskExpireTime: util.Duration{
+			TaskExpireTime: clientutil.Duration{
 				Duration: -1 * time.Second,
 			},
 		}, func(request storage.CommonTaskRequest) {})
@@ -77,11 +79,13 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 	digest := hex.EncodeToString(hash.Sum(nil)[:16])
 
 	testCases := []struct {
-		name              string
-		pieceSize         uint32
-		withContentLength bool
-		checkDigest       bool
-		concurrentOption  *config.ConcurrentOption
+		name               string
+		pieceSize          uint32
+		withContentLength  bool
+		checkDigest        bool
+		recordDownloadTime bool
+		bandwidth          clientutil.Size
+		concurrentOption   *config.ConcurrentOption
 	}{
 		{
 			name:              "multiple pieces with content length, check digest",
@@ -90,21 +94,199 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			withContentLength: true,
 		},
 		{
-			name:              "multiple pieces with content length",
-			pieceSize:         1024,
-			checkDigest:       false,
-			withContentLength: true,
+			name:               "multiple pieces with content length",
+			pieceSize:          1024,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
 		},
 		{
-			name:              "multiple pieces with content length, concurrent download",
-			pieceSize:         2048,
-			checkDigest:       false,
-			withContentLength: true,
+			name:               "multiple pieces with content length, concurrent download with 2 goroutines",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
 			concurrentOption: &config.ConcurrentOption{
-				GoroutineCount: 4,
-				ThresholdSize: util.Size{
+				GoroutineCount: 2,
+				ThresholdSize: clientutil.Size{
 					Limit: 1024,
 				},
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 4 goroutines",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024,
+				},
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 8 goroutines",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 8,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024,
+				},
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 16 goroutines",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 16,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024,
+				},
+			},
+		},
+		{
+			name:               "multiple pieces with content length, single-thread download with download bandwidth 2KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 2048},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 2 goroutines, download bandwidth 2KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 2048},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 2,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 4 goroutines, download bandwidth 2KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 2048},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 8 goroutines, download bandwidth 2KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 2048},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 8,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with 16 goroutines, download bandwidth 2KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 2048},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 16,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, single-thread download with download bandwidth 4KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 4096},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with download bandwidth 4KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 4096},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, single-thread download with download bandwidth 8KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 8192},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with download bandwidth 8KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 8192},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
+			},
+		},
+		{
+			name:               "multiple pieces with content length, single-thread download with download bandwidth 16KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 16384},
+		},
+		{
+			name:               "multiple pieces with content length, concurrent download with download bandwidth 16KB/s",
+			pieceSize:          2048,
+			checkDigest:        false,
+			withContentLength:  true,
+			recordDownloadTime: true,
+			bandwidth:          clientutil.Size{Limit: 16384},
+			concurrentOption: &config.ConcurrentOption{
+				GoroutineCount: 4,
+				ThresholdSize: clientutil.Size{
+					Limit: 1024 * 1024,
+				},
+				ThresholdSpeed: 8192,
 			},
 		},
 		{
@@ -214,7 +396,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 					buf = bytes.NewBuffer(testBytes)
 					l = len(testBytes)
 				} else {
-					parsedRange, err := util.ParseRange(rg, int64(len(testBytes)))
+					parsedRange, err := clientutil.ParseRange(rg, int64(len(testBytes)))
 					assert.Nil(err)
 					w.Header().Set(headers.ContentRange,
 						fmt.Sprintf("bytes %d-%d/%d",
@@ -226,9 +408,32 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 					buf = bytes.NewBuffer(testBytes[parsedRange[0].Start : parsedRange[0].Start+parsedRange[0].Length])
 					l = int(parsedRange[0].Length)
 				}
-				n, err := io.Copy(w, buf)
-				assert.Nil(err)
-				assert.Equal(int64(l), n)
+				if tc.bandwidth.Limit > 0 {
+					ctx := context.Background()
+					limiter := rate.NewLimiter(tc.bandwidth.Limit, int(tc.bandwidth.Limit))
+					limiter.AllowN(time.Now(), int(tc.bandwidth.Limit))
+					maxPieceNum := util.ComputePieceCount(int64(l), uint32(tc.bandwidth.Limit))
+					for pieceNum := int32(0); pieceNum < maxPieceNum; pieceNum++ {
+						size := int(tc.bandwidth.Limit)
+						offset := uint64(pieceNum) * uint64(size)
+						// calculate piece size for last piece
+						if int64(offset)+int64(size) > int64(l) {
+							size = int(int64(l) - int64(offset))
+						}
+						err := limiter.WaitN(ctx, size)
+						assert.Nil(err)
+						n, err := io.CopyN(w, buf, int64(size))
+						if err != nil {
+							// broken pipe due to auto switch to concurrent download, which will close conn
+							return
+						}
+						assert.Equal(int64(size), n)
+					}
+				} else {
+					n, err := io.Copy(w, buf)
+					assert.Nil(err)
+					assert.Equal(int64(l), n)
+				}
 			}))
 			defer ts.Close()
 
@@ -249,9 +454,17 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 			if tc.checkDigest {
 				request.UrlMeta.Digest = digest
 			}
-
+			var start time.Time
+			if tc.recordDownloadTime {
+				start = time.Now()
+			}
 			err = pm.DownloadSource(context.Background(), mockPeerTask, request, nil)
 			assert.Nil(err)
+			if tc.recordDownloadTime {
+				elapsed := time.Since(start)
+				log := mockPeerTask.Log()
+				log.Infof("download took %s", elapsed)
+			}
 
 			err = storageManager.Store(context.Background(),
 				&storage.StoreRequest{
