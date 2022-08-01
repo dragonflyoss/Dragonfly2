@@ -89,6 +89,7 @@ host:
 download:
   concurrent:
     thresholdSize: 10M
+    thresholdSpeed: 2M
     goroutineCount: 4
   # calculate digest when transfer files, set false to save memory
   calculateDigest: true

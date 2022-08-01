@@ -337,6 +337,7 @@ func TestPeerHostOption_Load(t *testing.T) {
 				ThresholdSize: util.Size{
 					Limit: 1,
 				},
+				ThresholdSpeed: unit.Bytes(1),
 				GoroutineCount: 1,
 				InitBackoff:    1,
 				MaxBackoff:     1,
