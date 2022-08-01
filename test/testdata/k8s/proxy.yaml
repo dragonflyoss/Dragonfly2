@@ -43,6 +43,7 @@ data:
       totalRateLimit: 200Mi
       concurrent:
         thresholdSize: 10M
+        thresholdSpeed: 2M
         goroutineCount: 4
     upload:
       rateLimit: 100Mi
