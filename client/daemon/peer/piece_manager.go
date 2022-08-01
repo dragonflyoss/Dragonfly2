@@ -469,8 +469,9 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
 		if supportConcurrent {
-			speed := int64(pieceSize) / (result.FinishTime - result.BeginTime)
-			if speed < int64(pm.concurrentOption.ThresholdSpeed) {
+			// the time unit of FinishTime and BeginTime is ns
+			speed := float64(pieceSize) / float64((result.FinishTime-result.BeginTime)/1000000)
+			if speed < float64(pm.concurrentOption.ThresholdSpeed) {
 				err = pt.GetStorage().UpdateTask(ctx,
 					&storage.UpdateTaskRequest{
 						PeerTaskMetadata: storage.PeerTaskMetadata{
@@ -768,7 +769,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	wg := sync.WaitGroup{}
 	wg.Add(int(pieceCount - startPieceNum))
 
-	downloadedPieceCount := atomic.NewInt32(0)
+	downloadedPieceCount := atomic.NewInt32(startPieceNum)
 
 	for i := 0; i < con; i++ {
 		go func(i int) {
