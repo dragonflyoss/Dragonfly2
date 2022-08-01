@@ -79,6 +79,7 @@ download:
   watchdogTimeout: 1s
   concurrent:
     thresholdSize: 1
+    thresholdSpeed: 1
     goroutineCount: 1
     initBackoff: 1
     maxBackoff: 1

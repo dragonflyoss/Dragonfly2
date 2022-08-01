@@ -78,6 +78,7 @@ dfdaemon:
       prefetch: true
       concurrent:
         thresholdSize: 10M
+        thresholdSpeed: 2M
         goroutineCount: 4
     scheduler:
       disableAutoBackSource: true
