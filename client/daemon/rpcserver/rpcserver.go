@@ -28,10 +28,13 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gammazero/deque"
+	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -43,6 +46,7 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/source"
 
 	"d7y.io/dragonfly/v2/client/config"
@@ -321,6 +325,13 @@ func (s *server) Download(ctx context.Context,
 
 func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 	results chan<- *dfdaemonv1.DownResult) error {
+
+	if stat, err := os.Stat(req.Output); err != nil {
+		return err
+	} else if !stat.IsDir() {
+		return fmt.Errorf("target output %s must be directory", req.Output)
+	}
+
 	var queue deque.Deque[*dfdaemonv1.DownRequest]
 	queue.PushBack(req)
 	downloadMap := map[url.URL]struct{}{}
@@ -367,6 +378,11 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 				return err
 			}
 
+			if err = checkOutput(childReq.Output); err != nil {
+				logger.Errorf("check output %#v failed: %s", childReq, err)
+				return err
+			}
+
 			if err = s.doDownload(ctx, childReq, results, ""); err != nil {
 				return err
 			}
@@ -377,7 +393,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 
 func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
 	return &dfdaemonv1.DownRequest{
-		Uuid:               "",
+		Uuid:               uuid.New().String(),
 		Url:                req.Url,
 		Output:             req.Output,
 		Timeout:            req.Timeout,
@@ -441,6 +457,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
+			Output:          req.Output,
 		}
 		log.Infof("tiny file, wrote to output")
 		if req.Uid != 0 && req.Gid != 0 {
@@ -469,6 +486,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
+				Output:          req.Output,
 			}
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
@@ -487,6 +505,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 			results <- &dfdaemonv1.DownResult{
 				CompletedLength: 0,
 				Done:            true,
+				Output:          req.Output,
 			}
 			log.Infof("context done due to %s", ctx.Err())
 			return status.Error(codes.Canceled, ctx.Err().Error())
@@ -725,6 +744,26 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 		msg := fmt.Sprintf("failed to UnregisterTask: %s", err)
 		log.Errorf(msg)
 		return errors.New(msg)
+	}
+	return nil
+}
+
+func checkOutput(output string) error {
+	if !filepath.IsAbs(output) {
+		return fmt.Errorf("path[%s] is not absolute path", output)
+	}
+	outputDir, _ := path.Split(output)
+	if err := config.MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
+		return err
+	}
+
+	// check permission
+	for dir := output; dir != ""; dir = filepath.Dir(dir) {
+		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
+			break
+		} else if os.IsPermission(err) || dir == "/" {
+			return fmt.Errorf("user[%s] path[%s] %v", basic.Username, output, err)
+		}
 	}
 	return nil
 }
