@@ -146,6 +146,12 @@ func WithHostnameAndIP(hostname, ip string) *SugaredLoggerOnWith {
 	}
 }
 
+func WithTaskAndJobID(taskID, jobID string) *SugaredLoggerOnWith {
+	return &SugaredLoggerOnWith{
+		withArgs: []any{"taskID", taskID, "jobID", jobID},
+	}
+}
+
 func (log *SugaredLoggerOnWith) With(args ...any) *SugaredLoggerOnWith {
 	args = append(args, log.withArgs...)
 	return &SugaredLoggerOnWith{
