@@ -23,7 +23,7 @@ package cdnsystem
 
 import (
 	context "context"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -298,22 +298,22 @@ var file_pkg_rpc_cdnsystem_cdnsystem_proto_msgTypes = make([]protoimpl.MessageIn
 var file_pkg_rpc_cdnsystem_cdnsystem_proto_goTypes = []interface{}{
 	(*SeedRequest)(nil),           // 0: cdnsystem.SeedRequest
 	(*PieceSeed)(nil),             // 1: cdnsystem.PieceSeed
-	(*base.UrlMeta)(nil),          // 2: base.UrlMeta
-	(*base.PieceInfo)(nil),        // 3: base.PieceInfo
-	(*base.ExtendAttribute)(nil),  // 4: base.ExtendAttribute
-	(*base.PieceTaskRequest)(nil), // 5: base.PieceTaskRequest
-	(*base.PiecePacket)(nil),      // 6: base.PiecePacket
+	(*base.UrlMeta)(nil),          // 2: commonv1.UrlMeta
+	(*base.PieceInfo)(nil),        // 3: commonv1.PieceInfo
+	(*base.ExtendAttribute)(nil),  // 4: commonv1.ExtendAttribute
+	(*base.PieceTaskRequest)(nil), // 5: commonv1.PieceTaskRequest
+	(*base.PiecePacket)(nil),      // 6: commonv1.PiecePacket
 }
 var file_pkg_rpc_cdnsystem_cdnsystem_proto_depIdxs = []int32{
-	2, // 0: cdnsystem.SeedRequest.url_meta:type_name -> base.UrlMeta
-	3, // 1: cdnsystem.PieceSeed.piece_info:type_name -> base.PieceInfo
-	4, // 2: cdnsystem.PieceSeed.extend_attribute:type_name -> base.ExtendAttribute
+	2, // 0: cdnsystem.SeedRequest.url_meta:type_name -> commonv1.UrlMeta
+	3, // 1: cdnsystem.PieceSeed.piece_info:type_name -> commonv1.PieceInfo
+	4, // 2: cdnsystem.PieceSeed.extend_attribute:type_name -> commonv1.ExtendAttribute
 	0, // 3: cdnsystem.Seeder.ObtainSeeds:input_type -> cdnsystem.SeedRequest
-	5, // 4: cdnsystem.Seeder.GetPieceTasks:input_type -> base.PieceTaskRequest
-	5, // 5: cdnsystem.Seeder.SyncPieceTasks:input_type -> base.PieceTaskRequest
+	5, // 4: cdnsystem.Seeder.GetPieceTasks:input_type -> commonv1.PieceTaskRequest
+	5, // 5: cdnsystem.Seeder.SyncPieceTasks:input_type -> commonv1.PieceTaskRequest
 	1, // 6: cdnsystem.Seeder.ObtainSeeds:output_type -> cdnsystem.PieceSeed
-	6, // 7: cdnsystem.Seeder.GetPieceTasks:output_type -> base.PiecePacket
-	6, // 8: cdnsystem.Seeder.SyncPieceTasks:output_type -> base.PiecePacket
+	6, // 7: cdnsystem.Seeder.GetPieceTasks:output_type -> commonv1.PiecePacket
+	6, // 8: cdnsystem.Seeder.SyncPieceTasks:output_type -> commonv1.PiecePacket
 	6, // [6:9] is the sub-list for method output_type
 	3, // [3:6] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name

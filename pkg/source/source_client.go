@@ -131,7 +131,7 @@ type URLEntry struct {
 
 	// Name returns the name of the file (or subdirectory) described by the entry.
 	// Name will be used in recursive downloading as file name or subdirectory name
-	// This name is only the final element of the path (the base name), not the entire path.
+	// This name is only the final element of the path (the commonv1 name), not the entire path.
 	// For example, Name would return "hello.go" not "home/gopher/hello.go".
 	Name string
 	// IsDir reports whether the entry describes a directory.

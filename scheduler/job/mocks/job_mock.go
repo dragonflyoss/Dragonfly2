@@ -33,7 +33,7 @@ func (m *MockJob) EXPECT() *MockJobMockRecorder {
 	return m.recorder
 }
 
-// Serve mocks base method.
+// Serve mocks commonv1 method.
 func (m *MockJob) Serve() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Serve")
@@ -45,7 +45,7 @@ func (mr *MockJobMockRecorder) Serve() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockJob)(nil).Serve))
 }
 
-// Stop mocks base method.
+// Stop mocks commonv1 method.
 func (m *MockJob) Stop() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Stop")

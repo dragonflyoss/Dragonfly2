@@ -37,7 +37,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// AnnounceTask mocks base method.
+// AnnounceTask mocks commonv1 method.
 func (m *MockClient) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -56,7 +56,7 @@ func (mr *MockClientMockRecorder) AnnounceTask(arg0, arg1 interface{}, arg2 ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockClient)(nil).AnnounceTask), varargs...)
 }
 
-// Close mocks base method.
+// Close mocks commonv1 method.
 func (m *MockClient) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -70,7 +70,7 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
-// GetState mocks base method.
+// GetState mocks commonv1 method.
 func (m *MockClient) GetState() []dfnet.NetAddr {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetState")
@@ -84,7 +84,7 @@ func (mr *MockClientMockRecorder) GetState() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockClient)(nil).GetState))
 }
 
-// LeaveTask mocks base method.
+// LeaveTask mocks commonv1 method.
 func (m *MockClient) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -103,7 +103,7 @@ func (mr *MockClientMockRecorder) LeaveTask(arg0, arg1 interface{}, arg2 ...inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockClient)(nil).LeaveTask), varargs...)
 }
 
-// RegisterPeerTask mocks base method.
+// RegisterPeerTask mocks commonv1 method.
 func (m *MockClient) RegisterPeerTask(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -123,7 +123,7 @@ func (mr *MockClientMockRecorder) RegisterPeerTask(arg0, arg1 interface{}, arg2 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterPeerTask", reflect.TypeOf((*MockClient)(nil).RegisterPeerTask), varargs...)
 }
 
-// ReportPeerResult mocks base method.
+// ReportPeerResult mocks commonv1 method.
 func (m *MockClient) ReportPeerResult(arg0 context.Context, arg1 *scheduler.PeerResult, arg2 ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -142,7 +142,7 @@ func (mr *MockClientMockRecorder) ReportPeerResult(arg0, arg1 interface{}, arg2 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPeerResult", reflect.TypeOf((*MockClient)(nil).ReportPeerResult), varargs...)
 }
 
-// ReportPieceResult mocks base method.
+// ReportPieceResult mocks commonv1 method.
 func (m *MockClient) ReportPieceResult(arg0 context.Context, arg1 *scheduler.PeerTaskRequest, arg2 ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -162,7 +162,7 @@ func (mr *MockClientMockRecorder) ReportPieceResult(arg0, arg1 interface{}, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockClient)(nil).ReportPieceResult), varargs...)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockClient) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest, arg2 ...grpc.CallOption) (*scheduler.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -182,7 +182,7 @@ func (mr *MockClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockClient)(nil).StatTask), varargs...)
 }
 
-// UpdateState mocks base method.
+// UpdateState mocks commonv1 method.
 func (m *MockClient) UpdateState(arg0 []dfnet.NetAddr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateState", arg0)

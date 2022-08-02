@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	cdnsystem "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	client "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	gomock "github.com/golang/mock/gomock"
@@ -39,7 +39,7 @@ func (m *MockCdnClient) EXPECT() *MockCdnClientMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
+// Close mocks commonv1 method.
 func (m *MockCdnClient) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -53,7 +53,7 @@ func (mr *MockCdnClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockCdnClient)(nil).Close))
 }
 
-// GetPieceTasks mocks base method.
+// GetPieceTasks mocks commonv1 method.
 func (m *MockCdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, req}
@@ -73,7 +73,7 @@ func (mr *MockCdnClientMockRecorder) GetPieceTasks(ctx, addr, req interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockCdnClient)(nil).GetPieceTasks), varargs...)
 }
 
-// ObtainSeeds mocks base method.
+// ObtainSeeds mocks commonv1 method.
 func (m *MockCdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*client.PieceSeedStream, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, sr}
@@ -93,7 +93,7 @@ func (mr *MockCdnClientMockRecorder) ObtainSeeds(ctx, sr interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainSeeds", reflect.TypeOf((*MockCdnClient)(nil).ObtainSeeds), varargs...)
 }
 
-// SyncPieceTasks mocks base method.
+// SyncPieceTasks mocks commonv1 method.
 func (m *MockCdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, ptr}
@@ -113,7 +113,7 @@ func (mr *MockCdnClientMockRecorder) SyncPieceTasks(ctx, addr, ptr interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockCdnClient)(nil).SyncPieceTasks), varargs...)
 }
 
-// UpdateState mocks base method.
+// UpdateState mocks commonv1 method.
 func (m *MockCdnClient) UpdateState(addrs []dfnet.NetAddr) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UpdateState", addrs)

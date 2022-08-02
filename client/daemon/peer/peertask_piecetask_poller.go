@@ -28,7 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -39,7 +39,7 @@ type pieceTaskPoller struct {
 	getPiecesMaxRetry int
 }
 
-func (poller *pieceTaskPoller) preparePieceTasks(request *base.PieceTaskRequest) (pp *base.PiecePacket, err error) {
+func (poller *pieceTaskPoller) preparePieceTasks(request *commonv1.PieceTaskRequest) (pp *commonv1.PiecePacket, err error) {
 	ptc := poller.peerTaskConductor
 	defer ptc.recoverFromPanic()
 	var retryCount int
@@ -75,7 +75,7 @@ prepare:
 
 func (poller *pieceTaskPoller) preparePieceTasksByPeer(
 	curPeerPacket *scheduler.PeerPacket,
-	peer *scheduler.PeerPacket_DestPeer, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	peer *scheduler.PeerPacket_DestPeer, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	ptc := poller.peerTaskConductor
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
@@ -89,7 +89,7 @@ func (poller *pieceTaskPoller) preparePieceTasksByPeer(
 	defer span.End()
 
 	var maxRetries = 60
-	// when cdn returns base.Code_CDNTaskNotFound, report it to scheduler and wait cdn download it.
+	// when cdn returns commonv1.Code_CDNTaskNotFound, report it to scheduler and wait cdn download it.
 retry:
 	ptc.Debugf("try get piece task from peer %s, piece num: %d, limit: %d\"", peer.PeerId, request.StartNum, request.Limit)
 	p, err := poller.getPieceTasksByPeer(span, curPeerPacket, peer, request)
@@ -115,7 +115,7 @@ retry:
 			return nil, err
 		}
 	}
-	code := base.Code_ClientPieceRequestFail
+	code := commonv1.Code_ClientPieceRequestFail
 	// not grpc error
 	if de, ok := err.(*dferrors.DfError); ok && uint32(de.Code) > uint32(codes.Unauthenticated) {
 		ptc.Debugf("get piece task from peer %s with df error, code: %d", peer.PeerId, de.Code)
@@ -126,7 +126,7 @@ retry:
 		TaskId:        ptc.taskID,
 		SrcPid:        ptc.peerID,
 		DstPid:        peer.PeerId,
-		PieceInfo:     &base.PieceInfo{},
+		PieceInfo:     &commonv1.PieceInfo{},
 		Success:       false,
 		Code:          code,
 		HostLoad:      nil,
@@ -134,14 +134,14 @@ retry:
 	})
 	// error code should be sent to scheduler and the scheduler can schedule a new peer
 	if sendError != nil {
-		ptc.cancel(base.Code_SchedError, sendError.Error())
+		ptc.cancel(commonv1.Code_SchedError, sendError.Error())
 		span.RecordError(sendError)
 		ptc.Errorf("send piece result error: %s, code to send: %d", sendError, code)
 		return nil, sendError
 	}
 
 	// currently, before cdn gc tasks, it did not notify scheduler, when cdn complains Code_CDNTaskNotFound, retry
-	if maxRetries > 0 && code == base.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*scheduler.PeerPacket) {
+	if maxRetries > 0 && code == commonv1.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*scheduler.PeerPacket) {
 		span.AddEvent("retry for CdnTaskNotFound")
 		time.Sleep(time.Second)
 		maxRetries--
@@ -154,7 +154,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 	span trace.Span,
 	curPeerPacket *scheduler.PeerPacket,
 	peer *scheduler.PeerPacket_DestPeer,
-	request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	var (
 		peerPacketChanged bool
 		count             int
@@ -174,7 +174,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			if de, ok := getError.(*dferrors.DfError); ok {
 				ptc.Debugf("get piece task with grpc error, code: %d", de.Code)
 				// bad request, like invalid piece num, just exit
-				if de.Code == base.Code_BadRequest {
+				if de.Code == commonv1.Code_BadRequest {
 					span.AddEvent("bad request")
 					ptc.Warnf("get piece task from peer %s canceled: %s", peer.PeerId, getError)
 					return nil, true, getError
@@ -210,16 +210,16 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			TaskId:        ptc.taskID,
 			SrcPid:        ptc.peerID,
 			DstPid:        peer.PeerId,
-			PieceInfo:     &base.PieceInfo{},
+			PieceInfo:     &commonv1.PieceInfo{},
 			Success:       false,
-			Code:          base.Code_ClientWaitPieceReady,
+			Code:          commonv1.Code_ClientWaitPieceReady,
 			HostLoad:      nil,
 			FinishedCount: ptc.readyPieces.Settled(),
 		})
 		if sendError != nil {
-			ptc.cancel(base.Code_ClientPieceRequestFail, sendError.Error())
+			ptc.cancel(commonv1.Code_ClientPieceRequestFail, sendError.Error())
 			span.RecordError(sendError)
-			ptc.Errorf("send piece result with base.Code_ClientWaitPieceReady error: %s", sendError)
+			ptc.Errorf("send piece result with commonv1.Code_ClientWaitPieceReady error: %s", sendError)
 			return nil, true, sendError
 		}
 		// fast way to exit retry
@@ -241,7 +241,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 	}
 
 	if err == nil {
-		return p.(*base.PiecePacket), nil
+		return p.(*commonv1.PiecePacket), nil
 	}
 	return nil, err
 }

@@ -23,7 +23,7 @@ package dfdaemon
 
 import (
 	context "context"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -343,7 +343,7 @@ type ImportTaskRequest struct {
 	// File to be imported.
 	Path string `protobuf:"bytes,3,opt,name=path,proto3" json:"path,omitempty"`
 	// Task type.
-	Type base.TaskType `protobuf:"varint,4,opt,name=type,proto3,enum=base.TaskType" json:"type,omitempty"`
+	Type base.TaskType `protobuf:"varint,4,opt,name=type,proto3,enum=commonv1.TaskType" json:"type,omitempty"`
 }
 
 func (x *ImportTaskRequest) Reset() {
@@ -731,31 +731,31 @@ var file_pkg_rpc_dfdaemon_dfdaemon_proto_goTypes = []interface{}{
 	(*ImportTaskRequest)(nil),     // 3: dfdaemon.ImportTaskRequest
 	(*ExportTaskRequest)(nil),     // 4: dfdaemon.ExportTaskRequest
 	(*DeleteTaskRequest)(nil),     // 5: dfdaemon.DeleteTaskRequest
-	(*base.UrlMeta)(nil),          // 6: base.UrlMeta
-	(base.TaskType)(0),            // 7: base.TaskType
-	(*base.PieceTaskRequest)(nil), // 8: base.PieceTaskRequest
+	(*base.UrlMeta)(nil),          // 6: commonv1.UrlMeta
+	(base.TaskType)(0),            // 7: commonv1.TaskType
+	(*base.PieceTaskRequest)(nil), // 8: commonv1.PieceTaskRequest
 	(*emptypb.Empty)(nil),         // 9: google.protobuf.Empty
-	(*base.PiecePacket)(nil),      // 10: base.PiecePacket
+	(*base.PiecePacket)(nil),      // 10: commonv1.PiecePacket
 }
 var file_pkg_rpc_dfdaemon_dfdaemon_proto_depIdxs = []int32{
-	6,  // 0: dfdaemon.DownRequest.url_meta:type_name -> base.UrlMeta
-	6,  // 1: dfdaemon.StatTaskRequest.url_meta:type_name -> base.UrlMeta
-	6,  // 2: dfdaemon.ImportTaskRequest.url_meta:type_name -> base.UrlMeta
-	7,  // 3: dfdaemon.ImportTaskRequest.type:type_name -> base.TaskType
-	6,  // 4: dfdaemon.ExportTaskRequest.url_meta:type_name -> base.UrlMeta
-	6,  // 5: dfdaemon.DeleteTaskRequest.url_meta:type_name -> base.UrlMeta
+	6,  // 0: dfdaemon.DownRequest.url_meta:type_name -> commonv1.UrlMeta
+	6,  // 1: dfdaemon.StatTaskRequest.url_meta:type_name -> commonv1.UrlMeta
+	6,  // 2: dfdaemon.ImportTaskRequest.url_meta:type_name -> commonv1.UrlMeta
+	7,  // 3: dfdaemon.ImportTaskRequest.type:type_name -> commonv1.TaskType
+	6,  // 4: dfdaemon.ExportTaskRequest.url_meta:type_name -> commonv1.UrlMeta
+	6,  // 5: dfdaemon.DeleteTaskRequest.url_meta:type_name -> commonv1.UrlMeta
 	0,  // 6: dfdaemon.Daemon.Download:input_type -> dfdaemon.DownRequest
-	8,  // 7: dfdaemon.Daemon.GetPieceTasks:input_type -> base.PieceTaskRequest
+	8,  // 7: dfdaemon.Daemon.GetPieceTasks:input_type -> commonv1.PieceTaskRequest
 	9,  // 8: dfdaemon.Daemon.CheckHealth:input_type -> google.protobuf.Empty
-	8,  // 9: dfdaemon.Daemon.SyncPieceTasks:input_type -> base.PieceTaskRequest
+	8,  // 9: dfdaemon.Daemon.SyncPieceTasks:input_type -> commonv1.PieceTaskRequest
 	2,  // 10: dfdaemon.Daemon.StatTask:input_type -> dfdaemon.StatTaskRequest
 	3,  // 11: dfdaemon.Daemon.ImportTask:input_type -> dfdaemon.ImportTaskRequest
 	4,  // 12: dfdaemon.Daemon.ExportTask:input_type -> dfdaemon.ExportTaskRequest
 	5,  // 13: dfdaemon.Daemon.DeleteTask:input_type -> dfdaemon.DeleteTaskRequest
 	1,  // 14: dfdaemon.Daemon.Download:output_type -> dfdaemon.DownResult
-	10, // 15: dfdaemon.Daemon.GetPieceTasks:output_type -> base.PiecePacket
+	10, // 15: dfdaemon.Daemon.GetPieceTasks:output_type -> commonv1.PiecePacket
 	9,  // 16: dfdaemon.Daemon.CheckHealth:output_type -> google.protobuf.Empty
-	10, // 17: dfdaemon.Daemon.SyncPieceTasks:output_type -> base.PiecePacket
+	10, // 17: dfdaemon.Daemon.SyncPieceTasks:output_type -> commonv1.PiecePacket
 	9,  // 18: dfdaemon.Daemon.StatTask:output_type -> google.protobuf.Empty
 	9,  // 19: dfdaemon.Daemon.ImportTask:output_type -> google.protobuf.Empty
 	9,  // 20: dfdaemon.Daemon.ExportTask:output_type -> google.protobuf.Empty

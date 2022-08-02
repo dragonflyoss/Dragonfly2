@@ -44,7 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
@@ -100,7 +100,7 @@ type Proxy struct {
 	defaultTag string
 
 	// defaultFilter is used for registering steam task
-	defaultPattern base.Pattern
+	defaultPattern commonv1.Pattern
 
 	// tracer is used for telemetry
 	tracer trace.Tracer
@@ -226,7 +226,7 @@ func WithDefaultTag(t string) Option {
 }
 
 // WithDefaultPattern sets default pattern for downloading
-func WithDefaultPattern(pattern base.Pattern) Option {
+func WithDefaultPattern(pattern commonv1.Pattern) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultPattern = pattern
 		return p

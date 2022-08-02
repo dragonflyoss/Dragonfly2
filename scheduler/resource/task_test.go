@@ -25,13 +25,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	rpcschedulermocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
 
 var (
-	mockTaskURLMeta = &base.UrlMeta{
+	mockTaskURLMeta = &commonv1.UrlMeta{
 		Digest: "digest",
 		Tag:    "tag",
 		Range:  "range",
@@ -43,7 +43,7 @@ var (
 	mockTaskBackToSourceLimit int32 = 200
 	mockTaskURL                     = "http://example.com/foo"
 	mockTaskID                      = idgen.TaskID(mockTaskURL, mockTaskURLMeta)
-	mockPieceInfo                   = &base.PieceInfo{
+	mockPieceInfo                   = &commonv1.PieceInfo{
 		PieceNum:    1,
 		RangeStart:  0,
 		RangeSize:   100,
@@ -56,7 +56,7 @@ func TestTask_NewTask(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task)
@@ -89,7 +89,7 @@ func TestTask_NewTask(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit)))
+			tc.expect(t, NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit)))
 		})
 	}
 }
@@ -98,7 +98,7 @@ func TestTask_LoadPeer(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		peerID            string
@@ -146,7 +146,7 @@ func TestTask_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -213,7 +213,7 @@ func TestTask_LoadRandomPeers(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, task, host)
 		})
@@ -224,7 +224,7 @@ func TestTask_StorePeer(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		peerID            string
@@ -261,7 +261,7 @@ func TestTask_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -275,7 +275,7 @@ func TestTask_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		peerID            string
@@ -313,7 +313,7 @@ func TestTask_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			task.StorePeer(mockPeer)
@@ -350,7 +350,7 @@ func TestTask_PeerCount(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, mockPeer, task)
@@ -440,7 +440,7 @@ func TestTask_AddPeerEdge(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -536,7 +536,7 @@ func TestTask_DeletePeerInEdges(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -630,7 +630,7 @@ func TestTask_DeletePeerOutEdges(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -711,7 +711,7 @@ func TestTask_CanAddPeerEdge(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -770,7 +770,7 @@ func TestTask_PeerDegree(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -829,7 +829,7 @@ func TestTask_PeerInDegree(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -888,7 +888,7 @@ func TestTask_PeerOutDegree(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta)
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta)
 
 			tc.expect(t, mockHost, task)
 		})
@@ -899,7 +899,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task, mockPeer *Peer)
@@ -935,7 +935,7 @@ func TestTask_HasAvailablePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 
 			tc.expect(t, task, mockPeer)
@@ -998,7 +998,7 @@ func TestTask_LoadSeedPeer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
@@ -1061,7 +1061,7 @@ func TestTask_IsSeedPeerFailed(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
 			mockSeedHost := NewHost(mockRawSeedHost, WithHostType(HostTypeSuperSeed))
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			mockSeedPeer := NewPeer(mockSeedPeerID, task, mockSeedHost)
 
@@ -1074,12 +1074,12 @@ func TestTask_LoadPiece(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
-		pieceInfo         *base.PieceInfo
+		pieceInfo         *commonv1.PieceInfo
 		pieceNum          int32
-		expect            func(t *testing.T, piece *base.PieceInfo, ok bool)
+		expect            func(t *testing.T, piece *commonv1.PieceInfo, ok bool)
 	}{
 		{
 			name:              "load piece",
@@ -1089,7 +1089,7 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *base.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
 				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
@@ -1103,7 +1103,7 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          2,
-			expect: func(t *testing.T, piece *base.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(ok, false)
 			},
@@ -1116,7 +1116,7 @@ func TestTask_LoadPiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          0,
-			expect: func(t *testing.T, piece *base.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(ok, false)
 			},
@@ -1125,7 +1125,7 @@ func TestTask_LoadPiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			piece, ok := task.LoadPiece(tc.pieceNum)
@@ -1138,12 +1138,12 @@ func TestTask_StorePiece(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
-		pieceInfo         *base.PieceInfo
+		pieceInfo         *commonv1.PieceInfo
 		pieceNum          int32
-		expect            func(t *testing.T, piece *base.PieceInfo, ok bool)
+		expect            func(t *testing.T, piece *commonv1.PieceInfo, ok bool)
 	}{
 		{
 			name:              "store piece",
@@ -1153,7 +1153,7 @@ func TestTask_StorePiece(t *testing.T) {
 			backToSourceLimit: mockTaskBackToSourceLimit,
 			pieceInfo:         mockPieceInfo,
 			pieceNum:          mockPieceInfo.PieceNum,
-			expect: func(t *testing.T, piece *base.PieceInfo, ok bool) {
+			expect: func(t *testing.T, piece *commonv1.PieceInfo, ok bool) {
 				assert := assert.New(t)
 				assert.Equal(ok, true)
 				assert.Equal(piece.PieceNum, mockPieceInfo.PieceNum)
@@ -1163,7 +1163,7 @@ func TestTask_StorePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			piece, ok := task.LoadPiece(tc.pieceNum)
@@ -1176,10 +1176,10 @@ func TestTask_DeletePiece(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
-		pieceInfo         *base.PieceInfo
+		pieceInfo         *commonv1.PieceInfo
 		pieceNum          int32
 		expect            func(t *testing.T, task *Task)
 	}{
@@ -1216,7 +1216,7 @@ func TestTask_DeletePiece(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 
 			task.StorePiece(tc.pieceInfo)
 			task.DeletePiece(tc.pieceNum)
@@ -1229,7 +1229,7 @@ func TestTask_SizeScope(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		contentLength     int64
@@ -1248,7 +1248,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, base.SizeScope_TINY)
+				assert.Equal(sizeScope, commonv1.SizeScope_TINY)
 			},
 		},
 		{
@@ -1263,7 +1263,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, base.SizeScope_SMALL)
+				assert.Equal(sizeScope, commonv1.SizeScope_SMALL)
 			},
 		},
 		{
@@ -1278,7 +1278,7 @@ func TestTask_SizeScope(t *testing.T) {
 				assert := assert.New(t)
 				sizeScope, err := task.SizeScope()
 				assert.NoError(err)
-				assert.Equal(sizeScope, base.SizeScope_NORMAL)
+				assert.Equal(sizeScope, commonv1.SizeScope_NORMAL)
 			},
 		},
 		{
@@ -1313,7 +1313,7 @@ func TestTask_SizeScope(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			task.ContentLength.Store(tc.contentLength)
 			task.TotalPieceCount.Store(tc.totalPieceCount)
 			tc.expect(t, task)
@@ -1325,7 +1325,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 	tests := []struct {
 		name              string
 		id                string
-		urlMeta           *base.UrlMeta
+		urlMeta           *commonv1.UrlMeta
 		url               string
 		backToSourceLimit int32
 		expect            func(t *testing.T, task *Task)
@@ -1342,7 +1342,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 			},
 		},
 		{
-			name:              "task can not base-to-source",
+			name:              "task can not commonv1-to-source",
 			id:                mockTaskID,
 			urlMeta:           mockTaskURLMeta,
 			url:               mockTaskURL,
@@ -1360,7 +1360,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 			backToSourceLimit: 1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				task.Type = base.TaskType_DfStore
+				task.Type = commonv1.TaskType_DfStore
 				assert.Equal(task.CanBackToSource(), true)
 			},
 		},
@@ -1372,7 +1372,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 			backToSourceLimit: 1,
 			expect: func(t *testing.T, task *Task) {
 				assert := assert.New(t)
-				task.Type = base.TaskType_DfCache
+				task.Type = commonv1.TaskType_DfCache
 				assert.Equal(task.CanBackToSource(), false)
 			},
 		},
@@ -1380,7 +1380,7 @@ func TestTask_CanBackToSource(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			task := NewTask(tc.id, tc.url, base.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
+			task := NewTask(tc.id, tc.url, commonv1.TaskType_Normal, tc.urlMeta, WithBackToSourceLimit(tc.backToSourceLimit))
 			tc.expect(t, task)
 		})
 	}
@@ -1395,7 +1395,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStatePending",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStatePending)
-				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStatePending))
@@ -1405,7 +1405,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			name: "peer state is PeerStateRunning and stream is empty",
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
-				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -1416,9 +1416,9 @@ func TestTask_NotifyPeers(t *testing.T) {
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
 				mockPeer.StoreStream(stream)
-				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
-				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -1429,9 +1429,9 @@ func TestTask_NotifyPeers(t *testing.T) {
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
 				mockPeer.StoreStream(stream)
-				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1)
 
-				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateRunning))
@@ -1442,9 +1442,9 @@ func TestTask_NotifyPeers(t *testing.T) {
 			run: func(t *testing.T, task *Task, mockPeer *Peer, stream rpcscheduler.Scheduler_ReportPieceResultServer, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder) {
 				mockPeer.FSM.SetState(PeerStateRunning)
 				mockPeer.StoreStream(stream)
-				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError})).Return(nil).Times(1)
+				ms.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(nil).Times(1)
 
-				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
+				task.NotifyPeers(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}, PeerEventDownloadFailed)
 
 				assert := assert.New(t)
 				assert.True(mockPeer.FSM.Is(PeerStateFailed))
@@ -1459,7 +1459,7 @@ func TestTask_NotifyPeers(t *testing.T) {
 			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			task := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			task := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, task, mockHost)
 			task.StorePeer(mockPeer)
 			tc.run(t, task, mockPeer, stream, stream.EXPECT())

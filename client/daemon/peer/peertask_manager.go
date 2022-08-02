@@ -38,7 +38,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
@@ -57,7 +57,7 @@ type TaskManager interface {
 	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
 		seedTaskResult *SeedTaskResponse, reuse bool, err error)
 
-	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
+	Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool)
 
 	IsPeerTaskRunning(taskID string) (Task, bool)
 
@@ -65,7 +65,7 @@ type TaskManager interface {
 	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
 
 	// AnnouncePeerTask announces peer task info to P2P network
-	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error
+	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error
 
 	GetPieceManager() PieceManager
 
@@ -238,7 +238,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	err := ptc.initStorage(desiredLocation)
 	if err != nil {
 		ptc.Errorf("init storage error: %s", err)
-		ptc.cancel(base.Code_ClientError, err.Error())
+		ptc.cancel(commonv1.Code_ClientError, err.Error())
 		return nil, false, err
 	}
 	return ptc, true, nil
@@ -256,7 +256,7 @@ func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskReques
 		HostLoad:    request.HostLoad,
 		IsMigrating: request.IsMigrating,
 		Pattern:     request.Pattern,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Digest: request.UrlMeta.Digest,
 			Tag:    request.UrlMeta.Tag,
 			Filter: request.UrlMeta.Filter,
@@ -379,7 +379,7 @@ type SubscribeResponse struct {
 	FailReason       func() error
 }
 
-func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
+func (ptm *peerTaskManager) Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool) {
 	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
 	if !ok {
 		return nil, false
@@ -425,7 +425,7 @@ func (ptm *peerTaskManager) GetPieceManager() PieceManager {
 	return ptm.pieceManager
 }
 
-func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
+func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error {
 	// Check if the given task is completed in local storageManager.
 	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
 		return errors.New("task not found in local storage")
@@ -437,7 +437,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 		return err
 	}
 
-	piecePacket, err := ptm.storageManager.GetPieces(ctx, &base.PieceTaskRequest{
+	piecePacket, err := ptm.storageManager.GetPieces(ctx, &commonv1.PieceTaskRequest{
 		TaskId:   meta.TaskID,
 		DstPid:   meta.PeerID,
 		StartNum: 0,

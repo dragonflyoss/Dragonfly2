@@ -35,7 +35,7 @@ func (m *MockPieceDownloader) EXPECT() *MockPieceDownloaderMockRecorder {
 	return m.recorder
 }
 
-// DownloadPiece mocks base method.
+// DownloadPiece mocks commonv1 method.
 func (m *MockPieceDownloader) DownloadPiece(arg0 context.Context, arg1 *DownloadPieceRequest) (io.Reader, io.Closer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadPiece", arg0, arg1)

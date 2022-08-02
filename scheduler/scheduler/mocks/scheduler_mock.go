@@ -36,7 +36,7 @@ func (m *MockScheduler) EXPECT() *MockSchedulerMockRecorder {
 	return m.recorder
 }
 
-// FindParent mocks base method.
+// FindParent mocks commonv1 method.
 func (m *MockScheduler) FindParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) (*resource.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindParent", arg0, arg1, arg2)
@@ -51,7 +51,7 @@ func (mr *MockSchedulerMockRecorder) FindParent(arg0, arg1, arg2 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindParent", reflect.TypeOf((*MockScheduler)(nil).FindParent), arg0, arg1, arg2)
 }
 
-// NotifyAndFindParent mocks base method.
+// NotifyAndFindParent mocks commonv1 method.
 func (m *MockScheduler) NotifyAndFindParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) ([]*resource.Peer, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NotifyAndFindParent", arg0, arg1, arg2)
@@ -66,7 +66,7 @@ func (mr *MockSchedulerMockRecorder) NotifyAndFindParent(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyAndFindParent", reflect.TypeOf((*MockScheduler)(nil).NotifyAndFindParent), arg0, arg1, arg2)
 }
 
-// ScheduleParent mocks base method.
+// ScheduleParent mocks commonv1 method.
 func (m *MockScheduler) ScheduleParent(arg0 context.Context, arg1 *resource.Peer, arg2 set.SafeSet[string]) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ScheduleParent", arg0, arg1, arg2)

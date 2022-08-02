@@ -12,7 +12,7 @@ import (
 
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	util "d7y.io/dragonfly/v2/client/util"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -39,7 +39,7 @@ func (m *MockTaskStorageDriver) EXPECT() *MockTaskStorageDriverMockRecorder {
 	return m.recorder
 }
 
-// GetExtendAttribute mocks base method.
+// GetExtendAttribute mocks commonv1 method.
 func (m *MockTaskStorageDriver) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
@@ -54,7 +54,7 @@ func (mr *MockTaskStorageDriverMockRecorder) GetExtendAttribute(ctx, req interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetExtendAttribute), ctx, req)
 }
 
-// GetPieces mocks base method.
+// GetPieces mocks commonv1 method.
 func (m *MockTaskStorageDriver) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
@@ -69,7 +69,7 @@ func (mr *MockTaskStorageDriverMockRecorder) GetPieces(ctx, req interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetPieces), ctx, req)
 }
 
-// GetTotalPieces mocks base method.
+// GetTotalPieces mocks commonv1 method.
 func (m *MockTaskStorageDriver) GetTotalPieces(ctx context.Context, req *storage.PeerTaskMetadata) (int32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTotalPieces", ctx, req)
@@ -84,7 +84,7 @@ func (mr *MockTaskStorageDriverMockRecorder) GetTotalPieces(ctx, req interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).GetTotalPieces), ctx, req)
 }
 
-// IsInvalid mocks base method.
+// IsInvalid mocks commonv1 method.
 func (m *MockTaskStorageDriver) IsInvalid(req *storage.PeerTaskMetadata) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsInvalid", req)
@@ -99,7 +99,7 @@ func (mr *MockTaskStorageDriverMockRecorder) IsInvalid(req interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsInvalid", reflect.TypeOf((*MockTaskStorageDriver)(nil).IsInvalid), req)
 }
 
-// ReadAllPieces mocks base method.
+// ReadAllPieces mocks commonv1 method.
 func (m *MockTaskStorageDriver) ReadAllPieces(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadAllPieces", ctx, req)
@@ -114,7 +114,7 @@ func (mr *MockTaskStorageDriverMockRecorder) ReadAllPieces(ctx, req interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllPieces", reflect.TypeOf((*MockTaskStorageDriver)(nil).ReadAllPieces), ctx, req)
 }
 
-// ReadPiece mocks base method.
+// ReadPiece mocks commonv1 method.
 func (m *MockTaskStorageDriver) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadPiece", ctx, req)
@@ -130,7 +130,7 @@ func (mr *MockTaskStorageDriverMockRecorder) ReadPiece(ctx, req interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadPiece", reflect.TypeOf((*MockTaskStorageDriver)(nil).ReadPiece), ctx, req)
 }
 
-// Store mocks base method.
+// Store mocks commonv1 method.
 func (m *MockTaskStorageDriver) Store(ctx context.Context, req *storage.StoreRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", ctx, req)
@@ -144,7 +144,7 @@ func (mr *MockTaskStorageDriverMockRecorder) Store(ctx, req interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockTaskStorageDriver)(nil).Store), ctx, req)
 }
 
-// UpdateTask mocks base method.
+// UpdateTask mocks commonv1 method.
 func (m *MockTaskStorageDriver) UpdateTask(ctx context.Context, req *storage.UpdateTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateTask", ctx, req)
@@ -158,7 +158,7 @@ func (mr *MockTaskStorageDriverMockRecorder) UpdateTask(ctx, req interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTask", reflect.TypeOf((*MockTaskStorageDriver)(nil).UpdateTask), ctx, req)
 }
 
-// ValidateDigest mocks base method.
+// ValidateDigest mocks commonv1 method.
 func (m *MockTaskStorageDriver) ValidateDigest(req *storage.PeerTaskMetadata) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateDigest", req)
@@ -172,7 +172,7 @@ func (mr *MockTaskStorageDriverMockRecorder) ValidateDigest(req interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateDigest", reflect.TypeOf((*MockTaskStorageDriver)(nil).ValidateDigest), req)
 }
 
-// WritePiece mocks base method.
+// WritePiece mocks commonv1 method.
 func (m *MockTaskStorageDriver) WritePiece(ctx context.Context, req *storage.WritePieceRequest) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WritePiece", ctx, req)
@@ -210,7 +210,7 @@ func (m *MockReclaimer) EXPECT() *MockReclaimerMockRecorder {
 	return m.recorder
 }
 
-// CanReclaim mocks base method.
+// CanReclaim mocks commonv1 method.
 func (m *MockReclaimer) CanReclaim() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CanReclaim")
@@ -224,7 +224,7 @@ func (mr *MockReclaimerMockRecorder) CanReclaim() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanReclaim", reflect.TypeOf((*MockReclaimer)(nil).CanReclaim))
 }
 
-// MarkReclaim mocks base method.
+// MarkReclaim mocks commonv1 method.
 func (m *MockReclaimer) MarkReclaim() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "MarkReclaim")
@@ -236,7 +236,7 @@ func (mr *MockReclaimerMockRecorder) MarkReclaim() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarkReclaim", reflect.TypeOf((*MockReclaimer)(nil).MarkReclaim))
 }
 
-// Reclaim mocks base method.
+// Reclaim mocks commonv1 method.
 func (m *MockReclaimer) Reclaim() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Reclaim")
@@ -273,7 +273,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// Alive mocks base method.
+// Alive mocks commonv1 method.
 func (m *MockManager) Alive(alive time.Duration) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Alive", alive)
@@ -287,7 +287,7 @@ func (mr *MockManagerMockRecorder) Alive(alive interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockManager)(nil).Alive), alive)
 }
 
-// CleanUp mocks base method.
+// CleanUp mocks commonv1 method.
 func (m *MockManager) CleanUp() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "CleanUp")
@@ -299,7 +299,7 @@ func (mr *MockManagerMockRecorder) CleanUp() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanUp", reflect.TypeOf((*MockManager)(nil).CleanUp))
 }
 
-// FindCompletedSubTask mocks base method.
+// FindCompletedSubTask mocks commonv1 method.
 func (m *MockManager) FindCompletedSubTask(taskID string) *storage.ReusePeerTask {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindCompletedSubTask", taskID)
@@ -313,7 +313,7 @@ func (mr *MockManagerMockRecorder) FindCompletedSubTask(taskID interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedSubTask", reflect.TypeOf((*MockManager)(nil).FindCompletedSubTask), taskID)
 }
 
-// FindCompletedTask mocks base method.
+// FindCompletedTask mocks commonv1 method.
 func (m *MockManager) FindCompletedTask(taskID string) *storage.ReusePeerTask {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindCompletedTask", taskID)
@@ -327,7 +327,7 @@ func (mr *MockManagerMockRecorder) FindCompletedTask(taskID interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindCompletedTask", reflect.TypeOf((*MockManager)(nil).FindCompletedTask), taskID)
 }
 
-// FindPartialCompletedTask mocks base method.
+// FindPartialCompletedTask mocks commonv1 method.
 func (m *MockManager) FindPartialCompletedTask(taskID string, rg *util.Range) *storage.ReusePeerTask {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindPartialCompletedTask", taskID, rg)
@@ -341,7 +341,7 @@ func (mr *MockManagerMockRecorder) FindPartialCompletedTask(taskID, rg interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPartialCompletedTask", reflect.TypeOf((*MockManager)(nil).FindPartialCompletedTask), taskID, rg)
 }
 
-// GetExtendAttribute mocks base method.
+// GetExtendAttribute mocks commonv1 method.
 func (m *MockManager) GetExtendAttribute(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetExtendAttribute", ctx, req)
@@ -356,7 +356,7 @@ func (mr *MockManagerMockRecorder) GetExtendAttribute(ctx, req interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExtendAttribute", reflect.TypeOf((*MockManager)(nil).GetExtendAttribute), ctx, req)
 }
 
-// GetPieces mocks base method.
+// GetPieces mocks commonv1 method.
 func (m *MockManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieces", ctx, req)
@@ -371,7 +371,7 @@ func (mr *MockManagerMockRecorder) GetPieces(ctx, req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieces", reflect.TypeOf((*MockManager)(nil).GetPieces), ctx, req)
 }
 
-// GetTotalPieces mocks base method.
+// GetTotalPieces mocks commonv1 method.
 func (m *MockManager) GetTotalPieces(ctx context.Context, req *storage.PeerTaskMetadata) (int32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTotalPieces", ctx, req)
@@ -386,7 +386,7 @@ func (mr *MockManagerMockRecorder) GetTotalPieces(ctx, req interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTotalPieces", reflect.TypeOf((*MockManager)(nil).GetTotalPieces), ctx, req)
 }
 
-// IsInvalid mocks base method.
+// IsInvalid mocks commonv1 method.
 func (m *MockManager) IsInvalid(req *storage.PeerTaskMetadata) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsInvalid", req)
@@ -401,7 +401,7 @@ func (mr *MockManagerMockRecorder) IsInvalid(req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsInvalid", reflect.TypeOf((*MockManager)(nil).IsInvalid), req)
 }
 
-// Keep mocks base method.
+// Keep mocks commonv1 method.
 func (m *MockManager) Keep() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Keep")
@@ -413,7 +413,7 @@ func (mr *MockManagerMockRecorder) Keep() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockManager)(nil).Keep))
 }
 
-// ReadAllPieces mocks base method.
+// ReadAllPieces mocks commonv1 method.
 func (m *MockManager) ReadAllPieces(ctx context.Context, req *storage.ReadAllPiecesRequest) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadAllPieces", ctx, req)
@@ -428,7 +428,7 @@ func (mr *MockManagerMockRecorder) ReadAllPieces(ctx, req interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadAllPieces", reflect.TypeOf((*MockManager)(nil).ReadAllPieces), ctx, req)
 }
 
-// ReadPiece mocks base method.
+// ReadPiece mocks commonv1 method.
 func (m *MockManager) ReadPiece(ctx context.Context, req *storage.ReadPieceRequest) (io.Reader, io.Closer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadPiece", ctx, req)
@@ -444,7 +444,7 @@ func (mr *MockManagerMockRecorder) ReadPiece(ctx, req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadPiece", reflect.TypeOf((*MockManager)(nil).ReadPiece), ctx, req)
 }
 
-// RegisterSubTask mocks base method.
+// RegisterSubTask mocks commonv1 method.
 func (m *MockManager) RegisterSubTask(ctx context.Context, req *storage.RegisterSubTaskRequest) (storage.TaskStorageDriver, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterSubTask", ctx, req)
@@ -459,7 +459,7 @@ func (mr *MockManagerMockRecorder) RegisterSubTask(ctx, req interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSubTask", reflect.TypeOf((*MockManager)(nil).RegisterSubTask), ctx, req)
 }
 
-// RegisterTask mocks base method.
+// RegisterTask mocks commonv1 method.
 func (m *MockManager) RegisterTask(ctx context.Context, req *storage.RegisterTaskRequest) (storage.TaskStorageDriver, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterTask", ctx, req)
@@ -474,7 +474,7 @@ func (mr *MockManagerMockRecorder) RegisterTask(ctx, req interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterTask", reflect.TypeOf((*MockManager)(nil).RegisterTask), ctx, req)
 }
 
-// Store mocks base method.
+// Store mocks commonv1 method.
 func (m *MockManager) Store(ctx context.Context, req *storage.StoreRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", ctx, req)
@@ -488,7 +488,7 @@ func (mr *MockManagerMockRecorder) Store(ctx, req interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockManager)(nil).Store), ctx, req)
 }
 
-// UnregisterTask mocks base method.
+// UnregisterTask mocks commonv1 method.
 func (m *MockManager) UnregisterTask(ctx context.Context, req storage.CommonTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UnregisterTask", ctx, req)
@@ -502,7 +502,7 @@ func (mr *MockManagerMockRecorder) UnregisterTask(ctx, req interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnregisterTask", reflect.TypeOf((*MockManager)(nil).UnregisterTask), ctx, req)
 }
 
-// UpdateTask mocks base method.
+// UpdateTask mocks commonv1 method.
 func (m *MockManager) UpdateTask(ctx context.Context, req *storage.UpdateTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateTask", ctx, req)
@@ -516,7 +516,7 @@ func (mr *MockManagerMockRecorder) UpdateTask(ctx, req interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTask", reflect.TypeOf((*MockManager)(nil).UpdateTask), ctx, req)
 }
 
-// ValidateDigest mocks base method.
+// ValidateDigest mocks commonv1 method.
 func (m *MockManager) ValidateDigest(req *storage.PeerTaskMetadata) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateDigest", req)
@@ -530,7 +530,7 @@ func (mr *MockManagerMockRecorder) ValidateDigest(req interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateDigest", reflect.TypeOf((*MockManager)(nil).ValidateDigest), req)
 }
 
-// WritePiece mocks base method.
+// WritePiece mocks commonv1 method.
 func (m *MockManager) WritePiece(ctx context.Context, req *storage.WritePieceRequest) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WritePiece", ctx, req)

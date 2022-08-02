@@ -42,7 +42,7 @@ import (
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -445,7 +445,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 
 			request := &scheduler.PeerTaskRequest{
 				Url: ts.URL,
-				UrlMeta: &base.UrlMeta{
+				UrlMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Range:  "",
 					Header: nil,

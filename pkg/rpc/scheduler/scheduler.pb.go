@@ -23,7 +23,7 @@ package scheduler
 
 import (
 	context "context"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	errordetails "d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	grpc "google.golang.org/grpc"
@@ -62,7 +62,7 @@ type PeerTaskRequest struct {
 	// Whether this request is caused by migration.
 	IsMigrating bool `protobuf:"varint,6,opt,name=is_migrating,json=isMigrating,proto3" json:"is_migrating,omitempty"`
 	// Pattern includes p2p, seed-peer and source.
-	Pattern base.Pattern `protobuf:"varint,7,opt,name=pattern,proto3,enum=base.Pattern" json:"pattern,omitempty"`
+	Pattern base.Pattern `protobuf:"varint,7,opt,name=pattern,proto3,enum=commonv1.Pattern" json:"pattern,omitempty"`
 	// Task id.
 	TaskId string `protobuf:"bytes,8,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 }
@@ -162,11 +162,11 @@ type RegisterResult struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Task type.
-	TaskType base.TaskType `protobuf:"varint,1,opt,name=task_type,json=taskType,proto3,enum=base.TaskType" json:"task_type,omitempty"`
+	TaskType base.TaskType `protobuf:"varint,1,opt,name=task_type,json=taskType,proto3,enum=commonv1.TaskType" json:"task_type,omitempty"`
 	// Task id
 	TaskId string `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	// File size scope.
-	SizeScope base.SizeScope `protobuf:"varint,3,opt,name=size_scope,json=sizeScope,proto3,enum=base.SizeScope" json:"size_scope,omitempty"`
+	SizeScope base.SizeScope `protobuf:"varint,3,opt,name=size_scope,json=sizeScope,proto3,enum=commonv1.SizeScope" json:"size_scope,omitempty"`
 	// Download the only piece directly for small or tiny file.
 	//
 	// Types that are assignable to DirectPiece:
@@ -486,7 +486,7 @@ type PieceResult struct {
 	// Whether the piece downloading is successfully.
 	Success bool `protobuf:"varint,7,opt,name=success,proto3" json:"success,omitempty"`
 	// Result code.
-	Code base.Code `protobuf:"varint,8,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	Code base.Code `protobuf:"varint,8,opt,name=code,proto3,enum=commonv1.Code" json:"code,omitempty"`
 	// Peer host load.
 	HostLoad *base.HostLoad `protobuf:"bytes,9,opt,name=host_load,json=hostLoad,proto3" json:"host_load,omitempty"`
 	// Finished count.
@@ -622,7 +622,7 @@ type PeerPacket struct {
 	// Candidate peers.
 	CandidatePeers []*PeerPacket_DestPeer `protobuf:"bytes,6,rep,name=candidate_peers,json=candidatePeers,proto3" json:"candidate_peers,omitempty"`
 	// Result code.
-	Code base.Code `protobuf:"varint,7,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	Code base.Code `protobuf:"varint,7,opt,name=code,proto3,enum=commonv1.Code" json:"code,omitempty"`
 	// Error detail.
 	//
 	// Types that are assignable to ErrorDetail:
@@ -756,7 +756,7 @@ type PeerResult struct {
 	// Whether peer downloading file is successfully.
 	Success bool `protobuf:"varint,10,opt,name=success,proto3" json:"success,omitempty"`
 	// Result code.
-	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	Code base.Code `protobuf:"varint,11,opt,name=code,proto3,enum=commonv1.Code" json:"code,omitempty"`
 	// Task total piece count.
 	TotalPieceCount int32 `protobuf:"varint,12,opt,name=total_piece_count,json=totalPieceCount,proto3" json:"total_piece_count,omitempty"`
 	// Error detail.
@@ -1023,7 +1023,7 @@ type Task struct {
 	// Task id.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Task type.
-	Type base.TaskType `protobuf:"varint,2,opt,name=type,proto3,enum=base.TaskType" json:"type,omitempty"`
+	Type base.TaskType `protobuf:"varint,2,opt,name=type,proto3,enum=commonv1.TaskType" json:"type,omitempty"`
 	// Task content length.
 	ContentLength int64 `protobuf:"varint,3,opt,name=content_length,json=contentLength,proto3" json:"content_length,omitempty"`
 	// Task total piece count.
@@ -1134,7 +1134,7 @@ type AnnounceTaskRequest struct {
 	// Task piece info.
 	PiecePacket *base.PiecePacket `protobuf:"bytes,5,opt,name=piece_packet,json=piecePacket,proto3" json:"piece_packet,omitempty"`
 	// Task type.
-	TaskType base.TaskType `protobuf:"varint,6,opt,name=task_type,json=taskType,proto3,enum=base.TaskType" json:"task_type,omitempty"`
+	TaskType base.TaskType `protobuf:"varint,6,opt,name=task_type,json=taskType,proto3,enum=commonv1.TaskType" json:"task_type,omitempty"`
 }
 
 func (x *AnnounceTaskRequest) Reset() {
@@ -1551,43 +1551,43 @@ var file_pkg_rpc_scheduler_scheduler_proto_goTypes = []interface{}{
 	(*Task)(nil),                     // 9: scheduler.Task
 	(*AnnounceTaskRequest)(nil),      // 10: scheduler.AnnounceTaskRequest
 	(*PeerPacket_DestPeer)(nil),      // 11: scheduler.PeerPacket.DestPeer
-	(*base.UrlMeta)(nil),             // 12: base.UrlMeta
-	(*base.HostLoad)(nil),            // 13: base.HostLoad
-	(base.Pattern)(0),                // 14: base.Pattern
-	(base.TaskType)(0),               // 15: base.TaskType
-	(base.SizeScope)(0),              // 16: base.SizeScope
-	(*base.ExtendAttribute)(nil),     // 17: base.ExtendAttribute
-	(*base.PieceInfo)(nil),           // 18: base.PieceInfo
-	(base.Code)(0),                   // 19: base.Code
+	(*base.UrlMeta)(nil),             // 12: commonv1.UrlMeta
+	(*base.HostLoad)(nil),            // 13: commonv1.HostLoad
+	(base.Pattern)(0),                // 14: commonv1.Pattern
+	(base.TaskType)(0),               // 15: commonv1.TaskType
+	(base.SizeScope)(0),              // 16: commonv1.SizeScope
+	(*base.ExtendAttribute)(nil),     // 17: commonv1.ExtendAttribute
+	(*base.PieceInfo)(nil),           // 18: commonv1.PieceInfo
+	(base.Code)(0),                   // 19: commonv1.Code
 	(*errordetails.SourceError)(nil), // 20: errordetails.SourceError
-	(*base.PiecePacket)(nil),         // 21: base.PiecePacket
+	(*base.PiecePacket)(nil),         // 21: commonv1.PiecePacket
 	(*emptypb.Empty)(nil),            // 22: google.protobuf.Empty
 }
 var file_pkg_rpc_scheduler_scheduler_proto_depIdxs = []int32{
-	12, // 0: scheduler.PeerTaskRequest.url_meta:type_name -> base.UrlMeta
+	12, // 0: scheduler.PeerTaskRequest.url_meta:type_name -> commonv1.UrlMeta
 	3,  // 1: scheduler.PeerTaskRequest.peer_host:type_name -> scheduler.PeerHost
-	13, // 2: scheduler.PeerTaskRequest.host_load:type_name -> base.HostLoad
-	14, // 3: scheduler.PeerTaskRequest.pattern:type_name -> base.Pattern
-	15, // 4: scheduler.RegisterResult.task_type:type_name -> base.TaskType
-	16, // 5: scheduler.RegisterResult.size_scope:type_name -> base.SizeScope
+	13, // 2: scheduler.PeerTaskRequest.host_load:type_name -> commonv1.HostLoad
+	14, // 3: scheduler.PeerTaskRequest.pattern:type_name -> commonv1.Pattern
+	15, // 4: scheduler.RegisterResult.task_type:type_name -> commonv1.TaskType
+	16, // 5: scheduler.RegisterResult.size_scope:type_name -> commonv1.SizeScope
 	2,  // 6: scheduler.RegisterResult.single_piece:type_name -> scheduler.SinglePiece
-	17, // 7: scheduler.RegisterResult.extend_attribute:type_name -> base.ExtendAttribute
-	18, // 8: scheduler.SinglePiece.piece_info:type_name -> base.PieceInfo
-	18, // 9: scheduler.PieceResult.piece_info:type_name -> base.PieceInfo
-	19, // 10: scheduler.PieceResult.code:type_name -> base.Code
-	13, // 11: scheduler.PieceResult.host_load:type_name -> base.HostLoad
-	17, // 12: scheduler.PieceResult.extend_attribute:type_name -> base.ExtendAttribute
+	17, // 7: scheduler.RegisterResult.extend_attribute:type_name -> commonv1.ExtendAttribute
+	18, // 8: scheduler.SinglePiece.piece_info:type_name -> commonv1.PieceInfo
+	18, // 9: scheduler.PieceResult.piece_info:type_name -> commonv1.PieceInfo
+	19, // 10: scheduler.PieceResult.code:type_name -> commonv1.Code
+	13, // 11: scheduler.PieceResult.host_load:type_name -> commonv1.HostLoad
+	17, // 12: scheduler.PieceResult.extend_attribute:type_name -> commonv1.ExtendAttribute
 	11, // 13: scheduler.PeerPacket.main_peer:type_name -> scheduler.PeerPacket.DestPeer
 	11, // 14: scheduler.PeerPacket.candidate_peers:type_name -> scheduler.PeerPacket.DestPeer
-	19, // 15: scheduler.PeerPacket.code:type_name -> base.Code
+	19, // 15: scheduler.PeerPacket.code:type_name -> commonv1.Code
 	20, // 16: scheduler.PeerPacket.source_error:type_name -> errordetails.SourceError
-	19, // 17: scheduler.PeerResult.code:type_name -> base.Code
+	19, // 17: scheduler.PeerResult.code:type_name -> commonv1.Code
 	20, // 18: scheduler.PeerResult.source_error:type_name -> errordetails.SourceError
-	15, // 19: scheduler.Task.type:type_name -> base.TaskType
-	12, // 20: scheduler.AnnounceTaskRequest.url_meta:type_name -> base.UrlMeta
+	15, // 19: scheduler.Task.type:type_name -> commonv1.TaskType
+	12, // 20: scheduler.AnnounceTaskRequest.url_meta:type_name -> commonv1.UrlMeta
 	3,  // 21: scheduler.AnnounceTaskRequest.peer_host:type_name -> scheduler.PeerHost
-	21, // 22: scheduler.AnnounceTaskRequest.piece_packet:type_name -> base.PiecePacket
-	15, // 23: scheduler.AnnounceTaskRequest.task_type:type_name -> base.TaskType
+	21, // 22: scheduler.AnnounceTaskRequest.piece_packet:type_name -> commonv1.PiecePacket
+	15, // 23: scheduler.AnnounceTaskRequest.task_type:type_name -> commonv1.TaskType
 	0,  // 24: scheduler.Scheduler.RegisterPeerTask:input_type -> scheduler.PeerTaskRequest
 	4,  // 25: scheduler.Scheduler.ReportPieceResult:input_type -> scheduler.PieceResult
 	6,  // 26: scheduler.Scheduler.ReportPeerResult:input_type -> scheduler.PeerResult

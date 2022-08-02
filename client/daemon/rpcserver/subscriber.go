@@ -28,7 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 )
 
@@ -37,7 +37,7 @@ type subscriber struct {
 	*logger.SugaredLoggerOnWith
 	*peer.SubscribeResponse
 	sync           dfdaemon.Daemon_SyncPieceTasksServer
-	request        *base.PieceTaskRequest
+	request        *commonv1.PieceTaskRequest
 	skipPieceCount uint32
 	totalPieces    int32
 	sentMap        map[int32]struct{}
@@ -46,7 +46,7 @@ type subscriber struct {
 	attributeSent  *atomic.Bool
 }
 
-func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *subscriber) getPieces(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	p, err := s.Storage.GetPieces(ctx, request)
 	if err != nil {
 		return nil, err
@@ -67,15 +67,15 @@ func (s *subscriber) getPieces(ctx context.Context, request *base.PieceTaskReque
 func sendExistPieces(
 	ctx context.Context,
 	log *logger.SugaredLoggerOnWith,
-	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
-	request *base.PieceTaskRequest,
+	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
+	request *commonv1.PieceTaskRequest,
 	sync dfdaemon.Daemon_SyncPieceTasksServer,
 	sentMap map[int32]struct{},
 	skipSendZeroPiece bool) (total int32, err error) {
 	if request.Limit <= 0 {
 		request.Limit = 16
 	}
-	var pp *base.PiecePacket
+	var pp *commonv1.PiecePacket
 	for {
 		pp, err = get(ctx, request)
 		if err != nil {
@@ -225,7 +225,7 @@ loop:
 				s.Unlock()
 				msg := "peer task success, but can not send all pieces"
 				s.Errorf(msg)
-				return dferrors.Newf(base.Code_ClientError, msg)
+				return dferrors.Newf(commonv1.Code_ClientError, msg)
 			}
 			s.Unlock()
 			break loop

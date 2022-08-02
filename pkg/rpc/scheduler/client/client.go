@@ -28,7 +28,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -38,7 +38,7 @@ func NewBeginOfPiece(taskID, peerID string) *scheduler.PieceResult {
 	return &scheduler.PieceResult{
 		TaskId: taskID,
 		SrcPid: peerID,
-		PieceInfo: &base.PieceInfo{
+		PieceInfo: &commonv1.PieceInfo{
 			PieceNum: common.BeginOfPiece,
 		},
 	}
@@ -50,7 +50,7 @@ func NewEndOfPiece(taskID, peerID string, finishedCount int32) *scheduler.PieceR
 		TaskId:        taskID,
 		SrcPid:        peerID,
 		FinishedCount: finishedCount,
-		PieceInfo: &base.PieceInfo{
+		PieceInfo: &commonv1.PieceInfo{
 			PieceNum: common.EndOfPiece,
 		},
 	}

@@ -33,7 +33,7 @@ func (m *Mockstrategy) EXPECT() *MockstrategyMockRecorder {
 	return m.recorder
 }
 
-// Unmarshal mocks base method.
+// Unmarshal mocks commonv1 method.
 func (m *Mockstrategy) Unmarshal(rawVal any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unmarshal", rawVal)

@@ -34,7 +34,7 @@ func (m *MockResourceClient) EXPECT() *MockResourceClientMockRecorder {
 	return m.recorder
 }
 
-// Download mocks base method.
+// Download mocks commonv1 method.
 func (m *MockResourceClient) Download(request *source.Request) (*source.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Download", request)
@@ -49,7 +49,7 @@ func (mr *MockResourceClientMockRecorder) Download(request interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockResourceClient)(nil).Download), request)
 }
 
-// GetContentLength mocks base method.
+// GetContentLength mocks commonv1 method.
 func (m *MockResourceClient) GetContentLength(request *source.Request) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContentLength", request)
@@ -64,7 +64,7 @@ func (mr *MockResourceClientMockRecorder) GetContentLength(request interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContentLength", reflect.TypeOf((*MockResourceClient)(nil).GetContentLength), request)
 }
 
-// GetLastModified mocks base method.
+// GetLastModified mocks commonv1 method.
 func (m *MockResourceClient) GetLastModified(request *source.Request) (int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLastModified", request)
@@ -79,7 +79,7 @@ func (mr *MockResourceClientMockRecorder) GetLastModified(request interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastModified", reflect.TypeOf((*MockResourceClient)(nil).GetLastModified), request)
 }
 
-// IsExpired mocks base method.
+// IsExpired mocks commonv1 method.
 func (m *MockResourceClient) IsExpired(request *source.Request, info *source.ExpireInfo) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsExpired", request, info)
@@ -94,7 +94,7 @@ func (mr *MockResourceClientMockRecorder) IsExpired(request, info interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsExpired", reflect.TypeOf((*MockResourceClient)(nil).IsExpired), request, info)
 }
 
-// IsSupportRange mocks base method.
+// IsSupportRange mocks commonv1 method.
 func (m *MockResourceClient) IsSupportRange(request *source.Request) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsSupportRange", request)
@@ -132,7 +132,7 @@ func (m *MockResourceMetadataGetter) EXPECT() *MockResourceMetadataGetterMockRec
 	return m.recorder
 }
 
-// GetMetadata mocks base method.
+// GetMetadata mocks commonv1 method.
 func (m *MockResourceMetadataGetter) GetMetadata(request *source.Request) (*source.Metadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMetadata", request)
@@ -170,7 +170,7 @@ func (m *MockResourceLister) EXPECT() *MockResourceListerMockRecorder {
 	return m.recorder
 }
 
-// List mocks base method.
+// List mocks commonv1 method.
 func (m *MockResourceLister) List(request *source.Request) ([]source.URLEntry, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", request)
@@ -208,7 +208,7 @@ func (m *MockClientManager) EXPECT() *MockClientManagerMockRecorder {
 	return m.recorder
 }
 
-// GetClient mocks base method.
+// GetClient mocks commonv1 method.
 func (m *MockClientManager) GetClient(scheme string, options ...source.Option) (source.ResourceClient, bool) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{scheme}
@@ -228,7 +228,7 @@ func (mr *MockClientManagerMockRecorder) GetClient(scheme interface{}, options .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*MockClientManager)(nil).GetClient), varargs...)
 }
 
-// ListClients mocks base method.
+// ListClients mocks commonv1 method.
 func (m *MockClientManager) ListClients() []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListClients")
@@ -242,7 +242,7 @@ func (mr *MockClientManagerMockRecorder) ListClients() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListClients", reflect.TypeOf((*MockClientManager)(nil).ListClients))
 }
 
-// Register mocks base method.
+// Register mocks commonv1 method.
 func (m *MockClientManager) Register(scheme string, resourceClient source.ResourceClient, adapter source.RequestAdapter, hook ...source.Hook) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{scheme, resourceClient, adapter}
@@ -261,7 +261,7 @@ func (mr *MockClientManagerMockRecorder) Register(scheme, resourceClient, adapte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockClientManager)(nil).Register), varargs...)
 }
 
-// UnRegister mocks base method.
+// UnRegister mocks commonv1 method.
 func (m *MockClientManager) UnRegister(scheme string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "UnRegister", scheme)
@@ -296,7 +296,7 @@ func (m *MockHook) EXPECT() *MockHookMockRecorder {
 	return m.recorder
 }
 
-// AfterResponse mocks base method.
+// AfterResponse mocks commonv1 method.
 func (m *MockHook) AfterResponse(response *source.Response) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AfterResponse", response)
@@ -310,7 +310,7 @@ func (mr *MockHookMockRecorder) AfterResponse(response interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AfterResponse", reflect.TypeOf((*MockHook)(nil).AfterResponse), response)
 }
 
-// BeforeRequest mocks base method.
+// BeforeRequest mocks commonv1 method.
 func (m *MockHook) BeforeRequest(request *source.Request) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BeforeRequest", request)

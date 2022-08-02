@@ -27,7 +27,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 // TODO need refactor with localTaskStore, currently, localSubTaskStore code copies from localTaskStore
@@ -204,7 +204,7 @@ func (t *localSubTaskStore) ReadAllPieces(ctx context.Context, req *ReadAllPiece
 	}, nil
 }
 
-func (t *localSubTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (t *localSubTaskStore) GetPieces(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get pieces")
 		return nil, ErrInvalidDigest
@@ -213,7 +213,7 @@ func (t *localSubTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRe
 	t.RLock()
 	defer t.RUnlock()
 	t.parent.touch()
-	piecePacket := &base.PiecePacket{
+	piecePacket := &commonv1.PiecePacket{
 		TaskId:        req.TaskId,
 		DstPid:        t.PeerID,
 		TotalPiece:    t.TotalPieces,
@@ -227,7 +227,7 @@ func (t *localSubTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRe
 
 	for i := int32(0); i < int32(req.Limit); i++ {
 		if piece, ok := t.Pieces[int32(req.StartNum)+i]; ok {
-			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &base.PieceInfo{
+			piecePacket.PieceInfos = append(piecePacket.PieceInfos, &commonv1.PieceInfo{
 				PieceNum:    piece.Num,
 				RangeStart:  uint64(piece.Range.Start),
 				RangeSize:   uint32(piece.Range.Length),
@@ -396,7 +396,7 @@ func (t *localSubTaskStore) Reclaim() error {
 	return nil
 }
 
-func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get total pieces")
 		return nil, ErrInvalidDigest
@@ -410,5 +410,5 @@ func (t *localSubTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTas
 			hdr[k] = t.Header.Get(k)
 		}
 	}
-	return &base.ExtendAttribute{Header: hdr}, nil
+	return &commonv1.ExtendAttribute{Header: hdr}, nil
 }

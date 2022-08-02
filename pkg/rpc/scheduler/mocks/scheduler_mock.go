@@ -38,7 +38,7 @@ func (m *MockisRegisterResult_DirectPiece) EXPECT() *MockisRegisterResult_Direct
 	return m.recorder
 }
 
-// isRegisterResult_DirectPiece mocks base method.
+// isRegisterResult_DirectPiece mocks commonv1 method.
 func (m *MockisRegisterResult_DirectPiece) isRegisterResult_DirectPiece() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "isRegisterResult_DirectPiece")
@@ -73,7 +73,7 @@ func (m *MockisPeerPacket_ErrorDetail) EXPECT() *MockisPeerPacket_ErrorDetailMoc
 	return m.recorder
 }
 
-// isPeerPacket_ErrorDetail mocks base method.
+// isPeerPacket_ErrorDetail mocks commonv1 method.
 func (m *MockisPeerPacket_ErrorDetail) isPeerPacket_ErrorDetail() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "isPeerPacket_ErrorDetail")
@@ -108,7 +108,7 @@ func (m *MockisPeerResult_ErrorDetail) EXPECT() *MockisPeerResult_ErrorDetailMoc
 	return m.recorder
 }
 
-// isPeerResult_ErrorDetail mocks base method.
+// isPeerResult_ErrorDetail mocks commonv1 method.
 func (m *MockisPeerResult_ErrorDetail) isPeerResult_ErrorDetail() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "isPeerResult_ErrorDetail")
@@ -143,7 +143,7 @@ func (m *MockSchedulerClient) EXPECT() *MockSchedulerClientMockRecorder {
 	return m.recorder
 }
 
-// AnnounceTask mocks base method.
+// AnnounceTask mocks commonv1 method.
 func (m *MockSchedulerClient) AnnounceTask(ctx context.Context, in *scheduler.AnnounceTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -163,7 +163,7 @@ func (mr *MockSchedulerClientMockRecorder) AnnounceTask(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerClient)(nil).AnnounceTask), varargs...)
 }
 
-// LeaveTask mocks base method.
+// LeaveTask mocks commonv1 method.
 func (m *MockSchedulerClient) LeaveTask(ctx context.Context, in *scheduler.PeerTarget, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -183,7 +183,7 @@ func (mr *MockSchedulerClientMockRecorder) LeaveTask(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockSchedulerClient)(nil).LeaveTask), varargs...)
 }
 
-// RegisterPeerTask mocks base method.
+// RegisterPeerTask mocks commonv1 method.
 func (m *MockSchedulerClient) RegisterPeerTask(ctx context.Context, in *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -203,7 +203,7 @@ func (mr *MockSchedulerClientMockRecorder) RegisterPeerTask(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterPeerTask", reflect.TypeOf((*MockSchedulerClient)(nil).RegisterPeerTask), varargs...)
 }
 
-// ReportPeerResult mocks base method.
+// ReportPeerResult mocks commonv1 method.
 func (m *MockSchedulerClient) ReportPeerResult(ctx context.Context, in *scheduler.PeerResult, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -223,7 +223,7 @@ func (mr *MockSchedulerClientMockRecorder) ReportPeerResult(ctx, in interface{},
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPeerResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPeerResult), varargs...)
 }
 
-// ReportPieceResult mocks base method.
+// ReportPieceResult mocks commonv1 method.
 func (m *MockSchedulerClient) ReportPieceResult(ctx context.Context, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
@@ -243,7 +243,7 @@ func (mr *MockSchedulerClientMockRecorder) ReportPieceResult(ctx interface{}, op
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerClient)(nil).ReportPieceResult), varargs...)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockSchedulerClient) StatTask(ctx context.Context, in *scheduler.StatTaskRequest, opts ...grpc.CallOption) (*scheduler.Task, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -286,7 +286,7 @@ func (m *MockScheduler_ReportPieceResultClient) EXPECT() *MockScheduler_ReportPi
 	return m.recorder
 }
 
-// CloseSend mocks base method.
+// CloseSend mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) CloseSend() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseSend")
@@ -300,7 +300,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) CloseSend() *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).CloseSend))
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -314,7 +314,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) Context() *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).Context))
 }
 
-// Header mocks base method.
+// Header mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) Header() (metadata.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Header")
@@ -329,7 +329,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) Header() *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).Header))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) Recv() (*scheduler.PeerPacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -344,7 +344,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) Recv() *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockScheduler_ReportPieceResultClient) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -358,7 +358,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) RecvMsg(m interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) Send(arg0 *scheduler.PieceResult) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -372,7 +372,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) Send(arg0 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).Send), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockScheduler_ReportPieceResultClient) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -386,7 +386,7 @@ func (mr *MockScheduler_ReportPieceResultClientMockRecorder) SendMsg(m interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockScheduler_ReportPieceResultClient)(nil).SendMsg), m)
 }
 
-// Trailer mocks base method.
+// Trailer mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultClient) Trailer() metadata.MD {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Trailer")
@@ -423,7 +423,7 @@ func (m *MockSchedulerServer) EXPECT() *MockSchedulerServerMockRecorder {
 	return m.recorder
 }
 
-// AnnounceTask mocks base method.
+// AnnounceTask mocks commonv1 method.
 func (m *MockSchedulerServer) AnnounceTask(arg0 context.Context, arg1 *scheduler.AnnounceTaskRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AnnounceTask", arg0, arg1)
@@ -438,7 +438,7 @@ func (mr *MockSchedulerServerMockRecorder) AnnounceTask(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AnnounceTask", reflect.TypeOf((*MockSchedulerServer)(nil).AnnounceTask), arg0, arg1)
 }
 
-// LeaveTask mocks base method.
+// LeaveTask mocks commonv1 method.
 func (m *MockSchedulerServer) LeaveTask(arg0 context.Context, arg1 *scheduler.PeerTarget) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LeaveTask", arg0, arg1)
@@ -453,7 +453,7 @@ func (mr *MockSchedulerServerMockRecorder) LeaveTask(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveTask", reflect.TypeOf((*MockSchedulerServer)(nil).LeaveTask), arg0, arg1)
 }
 
-// RegisterPeerTask mocks base method.
+// RegisterPeerTask mocks commonv1 method.
 func (m *MockSchedulerServer) RegisterPeerTask(arg0 context.Context, arg1 *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterPeerTask", arg0, arg1)
@@ -468,7 +468,7 @@ func (mr *MockSchedulerServerMockRecorder) RegisterPeerTask(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterPeerTask", reflect.TypeOf((*MockSchedulerServer)(nil).RegisterPeerTask), arg0, arg1)
 }
 
-// ReportPeerResult mocks base method.
+// ReportPeerResult mocks commonv1 method.
 func (m *MockSchedulerServer) ReportPeerResult(arg0 context.Context, arg1 *scheduler.PeerResult) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportPeerResult", arg0, arg1)
@@ -483,7 +483,7 @@ func (mr *MockSchedulerServerMockRecorder) ReportPeerResult(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPeerResult", reflect.TypeOf((*MockSchedulerServer)(nil).ReportPeerResult), arg0, arg1)
 }
 
-// ReportPieceResult mocks base method.
+// ReportPieceResult mocks commonv1 method.
 func (m *MockSchedulerServer) ReportPieceResult(arg0 scheduler.Scheduler_ReportPieceResultServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReportPieceResult", arg0)
@@ -497,7 +497,7 @@ func (mr *MockSchedulerServerMockRecorder) ReportPieceResult(arg0 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReportPieceResult", reflect.TypeOf((*MockSchedulerServer)(nil).ReportPieceResult), arg0)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockSchedulerServer) StatTask(arg0 context.Context, arg1 *scheduler.StatTaskRequest) (*scheduler.Task, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StatTask", arg0, arg1)
@@ -535,7 +535,7 @@ func (m *MockScheduler_ReportPieceResultServer) EXPECT() *MockScheduler_ReportPi
 	return m.recorder
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -549,7 +549,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) Context() *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).Context))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) Recv() (*scheduler.PieceResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -564,7 +564,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) Recv() *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockScheduler_ReportPieceResultServer) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -578,7 +578,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) RecvMsg(m interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) Send(arg0 *scheduler.PeerPacket) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -592,7 +592,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) Send(arg0 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).Send), arg0)
 }
 
-// SendHeader mocks base method.
+// SendHeader mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) SendHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
@@ -606,7 +606,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) SendHeader(arg0 int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).SendHeader), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockScheduler_ReportPieceResultServer) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -620,7 +620,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) SendMsg(m interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).SendMsg), m)
 }
 
-// SetHeader mocks base method.
+// SetHeader mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) SetHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
@@ -634,7 +634,7 @@ func (mr *MockScheduler_ReportPieceResultServerMockRecorder) SetHeader(arg0 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockScheduler_ReportPieceResultServer)(nil).SetHeader), arg0)
 }
 
-// SetTrailer mocks base method.
+// SetTrailer mocks commonv1 method.
 func (m *MockScheduler_ReportPieceResultServer) SetTrailer(arg0 metadata.MD) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)

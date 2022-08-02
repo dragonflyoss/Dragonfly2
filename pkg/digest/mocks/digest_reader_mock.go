@@ -33,7 +33,7 @@ func (m *MockReader) EXPECT() *MockReaderMockRecorder {
 	return m.recorder
 }
 
-// Encoded mocks base method.
+// Encoded mocks commonv1 method.
 func (m *MockReader) Encoded() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Encoded")
@@ -47,7 +47,7 @@ func (mr *MockReaderMockRecorder) Encoded() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Encoded", reflect.TypeOf((*MockReader)(nil).Encoded))
 }
 
-// Read mocks base method.
+// Read mocks commonv1 method.
 func (m *MockReader) Read(p []byte) (int, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Read", p)

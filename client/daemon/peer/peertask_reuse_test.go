@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/util"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -59,7 +59,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -103,7 +103,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -140,7 +140,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -184,7 +184,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -217,7 +217,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -266,7 +266,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 				PeerTaskRequest: scheduler.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -344,7 +344,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed task found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -376,8 +376,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -397,7 +397,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed task not found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -432,7 +432,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed subtask found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -464,8 +464,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -484,7 +484,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed subtask not found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -515,7 +515,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -551,8 +551,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -571,7 +571,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found - 2",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -607,8 +607,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -631,7 +631,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found - out of range",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -667,8 +667,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},

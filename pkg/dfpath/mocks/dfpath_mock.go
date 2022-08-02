@@ -33,7 +33,7 @@ func (m *MockDfpath) EXPECT() *MockDfpathMockRecorder {
 	return m.recorder
 }
 
-// CacheDir mocks base method.
+// CacheDir mocks commonv1 method.
 func (m *MockDfpath) CacheDir() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CacheDir")
@@ -47,7 +47,7 @@ func (mr *MockDfpathMockRecorder) CacheDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CacheDir", reflect.TypeOf((*MockDfpath)(nil).CacheDir))
 }
 
-// DaemonLockPath mocks base method.
+// DaemonLockPath mocks commonv1 method.
 func (m *MockDfpath) DaemonLockPath() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DaemonLockPath")
@@ -61,7 +61,7 @@ func (mr *MockDfpathMockRecorder) DaemonLockPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DaemonLockPath", reflect.TypeOf((*MockDfpath)(nil).DaemonLockPath))
 }
 
-// DaemonSockPath mocks base method.
+// DaemonSockPath mocks commonv1 method.
 func (m *MockDfpath) DaemonSockPath() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DaemonSockPath")
@@ -75,7 +75,7 @@ func (mr *MockDfpathMockRecorder) DaemonSockPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DaemonSockPath", reflect.TypeOf((*MockDfpath)(nil).DaemonSockPath))
 }
 
-// DataDir mocks base method.
+// DataDir mocks commonv1 method.
 func (m *MockDfpath) DataDir() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DataDir")
@@ -89,7 +89,7 @@ func (mr *MockDfpathMockRecorder) DataDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataDir", reflect.TypeOf((*MockDfpath)(nil).DataDir))
 }
 
-// DfgetLockPath mocks base method.
+// DfgetLockPath mocks commonv1 method.
 func (m *MockDfpath) DfgetLockPath() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DfgetLockPath")
@@ -103,7 +103,7 @@ func (mr *MockDfpathMockRecorder) DfgetLockPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DfgetLockPath", reflect.TypeOf((*MockDfpath)(nil).DfgetLockPath))
 }
 
-// LogDir mocks base method.
+// LogDir mocks commonv1 method.
 func (m *MockDfpath) LogDir() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LogDir")
@@ -117,7 +117,7 @@ func (mr *MockDfpathMockRecorder) LogDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogDir", reflect.TypeOf((*MockDfpath)(nil).LogDir))
 }
 
-// PluginDir mocks base method.
+// PluginDir mocks commonv1 method.
 func (m *MockDfpath) PluginDir() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PluginDir")
@@ -131,7 +131,7 @@ func (mr *MockDfpathMockRecorder) PluginDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PluginDir", reflect.TypeOf((*MockDfpath)(nil).PluginDir))
 }
 
-// WorkHome mocks base method.
+// WorkHome mocks commonv1 method.
 func (m *MockDfpath) WorkHome() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WorkHome")

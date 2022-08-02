@@ -42,7 +42,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 type TaskStorageDriver interface {
@@ -56,11 +56,11 @@ type TaskStorageDriver interface {
 
 	ReadAllPieces(ctx context.Context, req *ReadAllPiecesRequest) (io.ReadCloser, error)
 
-	GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error)
+	GetPieces(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error)
 
 	GetTotalPieces(ctx context.Context, req *PeerTaskMetadata) (int32, error)
 
-	GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error)
+	GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*commonv1.ExtendAttribute, error)
 
 	UpdateTask(ctx context.Context, req *UpdateTaskRequest) error
 
@@ -316,7 +316,7 @@ func (s *storageManager) Store(ctx context.Context, req *StoreRequest) error {
 	return t.Store(ctx, req)
 }
 
-func (s *storageManager) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *storageManager) GetPieces(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	t, ok := s.LoadTask(
 		PeerTaskMetadata{
 			TaskID: req.TaskId,
@@ -340,7 +340,7 @@ func (s *storageManager) GetTotalPieces(ctx context.Context, req *PeerTaskMetada
 	return t.(TaskStorageDriver).GetTotalPieces(ctx, req)
 }
 
-func (s *storageManager) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+func (s *storageManager) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
 	t, ok := s.LoadTask(
 		PeerTaskMetadata{
 			TaskID: req.TaskID,

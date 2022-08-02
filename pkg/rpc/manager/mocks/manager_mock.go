@@ -38,7 +38,7 @@ func (m *MockManagerClient) EXPECT() *MockManagerClientMockRecorder {
 	return m.recorder
 }
 
-// GetObjectStorage mocks base method.
+// GetObjectStorage mocks commonv1 method.
 func (m *MockManagerClient) GetObjectStorage(ctx context.Context, in *manager.GetObjectStorageRequest, opts ...grpc.CallOption) (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -58,7 +58,7 @@ func (mr *MockManagerClientMockRecorder) GetObjectStorage(ctx, in interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockManagerClient)(nil).GetObjectStorage), varargs...)
 }
 
-// GetScheduler mocks base method.
+// GetScheduler mocks commonv1 method.
 func (m *MockManagerClient) GetScheduler(ctx context.Context, in *manager.GetSchedulerRequest, opts ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -78,7 +78,7 @@ func (mr *MockManagerClientMockRecorder) GetScheduler(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerClient)(nil).GetScheduler), varargs...)
 }
 
-// GetSeedPeer mocks base method.
+// GetSeedPeer mocks commonv1 method.
 func (m *MockManagerClient) GetSeedPeer(ctx context.Context, in *manager.GetSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -98,7 +98,7 @@ func (mr *MockManagerClientMockRecorder) GetSeedPeer(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerClient)(nil).GetSeedPeer), varargs...)
 }
 
-// KeepAlive mocks base method.
+// KeepAlive mocks commonv1 method.
 func (m *MockManagerClient) KeepAlive(ctx context.Context, opts ...grpc.CallOption) (manager.Manager_KeepAliveClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
@@ -118,7 +118,7 @@ func (mr *MockManagerClientMockRecorder) KeepAlive(ctx interface{}, opts ...inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockManagerClient)(nil).KeepAlive), varargs...)
 }
 
-// ListBuckets mocks base method.
+// ListBuckets mocks commonv1 method.
 func (m *MockManagerClient) ListBuckets(ctx context.Context, in *manager.ListBucketsRequest, opts ...grpc.CallOption) (*manager.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -138,7 +138,7 @@ func (mr *MockManagerClientMockRecorder) ListBuckets(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockManagerClient)(nil).ListBuckets), varargs...)
 }
 
-// ListSchedulers mocks base method.
+// ListSchedulers mocks commonv1 method.
 func (m *MockManagerClient) ListSchedulers(ctx context.Context, in *manager.ListSchedulersRequest, opts ...grpc.CallOption) (*manager.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -158,7 +158,7 @@ func (mr *MockManagerClientMockRecorder) ListSchedulers(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockManagerClient)(nil).ListSchedulers), varargs...)
 }
 
-// UpdateScheduler mocks base method.
+// UpdateScheduler mocks commonv1 method.
 func (m *MockManagerClient) UpdateScheduler(ctx context.Context, in *manager.UpdateSchedulerRequest, opts ...grpc.CallOption) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -178,7 +178,7 @@ func (mr *MockManagerClientMockRecorder) UpdateScheduler(ctx, in interface{}, op
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerClient)(nil).UpdateScheduler), varargs...)
 }
 
-// UpdateSeedPeer mocks base method.
+// UpdateSeedPeer mocks commonv1 method.
 func (m *MockManagerClient) UpdateSeedPeer(ctx context.Context, in *manager.UpdateSeedPeerRequest, opts ...grpc.CallOption) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -221,7 +221,7 @@ func (m *MockManager_KeepAliveClient) EXPECT() *MockManager_KeepAliveClientMockR
 	return m.recorder
 }
 
-// CloseAndRecv mocks base method.
+// CloseAndRecv mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) CloseAndRecv() (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseAndRecv")
@@ -236,7 +236,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) CloseAndRecv() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseAndRecv", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).CloseAndRecv))
 }
 
-// CloseSend mocks base method.
+// CloseSend mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) CloseSend() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseSend")
@@ -250,7 +250,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) CloseSend() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).CloseSend))
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -264,7 +264,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).Context))
 }
 
-// Header mocks base method.
+// Header mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) Header() (metadata.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Header")
@@ -279,7 +279,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) Header() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).Header))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockManager_KeepAliveClient) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -293,7 +293,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) RecvMsg(m interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) Send(arg0 *manager.KeepAliveRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -307,7 +307,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) Send(arg0 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).Send), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockManager_KeepAliveClient) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -321,7 +321,7 @@ func (mr *MockManager_KeepAliveClientMockRecorder) SendMsg(m interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockManager_KeepAliveClient)(nil).SendMsg), m)
 }
 
-// Trailer mocks base method.
+// Trailer mocks commonv1 method.
 func (m *MockManager_KeepAliveClient) Trailer() metadata.MD {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Trailer")
@@ -358,7 +358,7 @@ func (m *MockManagerServer) EXPECT() *MockManagerServerMockRecorder {
 	return m.recorder
 }
 
-// GetObjectStorage mocks base method.
+// GetObjectStorage mocks commonv1 method.
 func (m *MockManagerServer) GetObjectStorage(arg0 context.Context, arg1 *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectStorage", arg0, arg1)
@@ -373,7 +373,7 @@ func (mr *MockManagerServerMockRecorder) GetObjectStorage(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockManagerServer)(nil).GetObjectStorage), arg0, arg1)
 }
 
-// GetScheduler mocks base method.
+// GetScheduler mocks commonv1 method.
 func (m *MockManagerServer) GetScheduler(arg0 context.Context, arg1 *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler", arg0, arg1)
@@ -388,7 +388,7 @@ func (mr *MockManagerServerMockRecorder) GetScheduler(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockManagerServer)(nil).GetScheduler), arg0, arg1)
 }
 
-// GetSeedPeer mocks base method.
+// GetSeedPeer mocks commonv1 method.
 func (m *MockManagerServer) GetSeedPeer(arg0 context.Context, arg1 *manager.GetSeedPeerRequest) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeer", arg0, arg1)
@@ -403,7 +403,7 @@ func (mr *MockManagerServerMockRecorder) GetSeedPeer(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockManagerServer)(nil).GetSeedPeer), arg0, arg1)
 }
 
-// KeepAlive mocks base method.
+// KeepAlive mocks commonv1 method.
 func (m *MockManagerServer) KeepAlive(arg0 manager.Manager_KeepAliveServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "KeepAlive", arg0)
@@ -417,7 +417,7 @@ func (mr *MockManagerServerMockRecorder) KeepAlive(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockManagerServer)(nil).KeepAlive), arg0)
 }
 
-// ListBuckets mocks base method.
+// ListBuckets mocks commonv1 method.
 func (m *MockManagerServer) ListBuckets(arg0 context.Context, arg1 *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBuckets", arg0, arg1)
@@ -432,7 +432,7 @@ func (mr *MockManagerServerMockRecorder) ListBuckets(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockManagerServer)(nil).ListBuckets), arg0, arg1)
 }
 
-// ListSchedulers mocks base method.
+// ListSchedulers mocks commonv1 method.
 func (m *MockManagerServer) ListSchedulers(arg0 context.Context, arg1 *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSchedulers", arg0, arg1)
@@ -447,7 +447,7 @@ func (mr *MockManagerServerMockRecorder) ListSchedulers(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockManagerServer)(nil).ListSchedulers), arg0, arg1)
 }
 
-// UpdateScheduler mocks base method.
+// UpdateScheduler mocks commonv1 method.
 func (m *MockManagerServer) UpdateScheduler(arg0 context.Context, arg1 *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScheduler", arg0, arg1)
@@ -462,7 +462,7 @@ func (mr *MockManagerServerMockRecorder) UpdateScheduler(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockManagerServer)(nil).UpdateScheduler), arg0, arg1)
 }
 
-// UpdateSeedPeer mocks base method.
+// UpdateSeedPeer mocks commonv1 method.
 func (m *MockManagerServer) UpdateSeedPeer(arg0 context.Context, arg1 *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1)
@@ -500,7 +500,7 @@ func (m *MockManager_KeepAliveServer) EXPECT() *MockManager_KeepAliveServerMockR
 	return m.recorder
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -514,7 +514,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).Context))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) Recv() (*manager.KeepAliveRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -529,7 +529,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) Recv() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockManager_KeepAliveServer) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -543,7 +543,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) RecvMsg(m interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).RecvMsg), m)
 }
 
-// SendAndClose mocks base method.
+// SendAndClose mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) SendAndClose(arg0 *emptypb.Empty) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendAndClose", arg0)
@@ -557,7 +557,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) SendAndClose(arg0 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendAndClose", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).SendAndClose), arg0)
 }
 
-// SendHeader mocks base method.
+// SendHeader mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) SendHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
@@ -571,7 +571,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) SendHeader(arg0 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).SendHeader), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockManager_KeepAliveServer) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -585,7 +585,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) SendMsg(m interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).SendMsg), m)
 }
 
-// SetHeader mocks base method.
+// SetHeader mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) SetHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
@@ -599,7 +599,7 @@ func (mr *MockManager_KeepAliveServerMockRecorder) SetHeader(arg0 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockManager_KeepAliveServer)(nil).SetHeader), arg0)
 }
 
-// SetTrailer mocks base method.
+// SetTrailer mocks commonv1 method.
 func (m *MockManager_KeepAliveServer) SetTrailer(arg0 metadata.MD) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)

@@ -32,7 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -42,7 +42,7 @@ type seeder struct {
 	server *server
 }
 
-func (s *seeder) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *seeder) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	return s.server.GetPieceTasks(ctx, request)
 }
 
@@ -57,7 +57,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 
 	s.server.Keep()
 	if seedRequest.UrlMeta == nil {
-		seedRequest.UrlMeta = &base.UrlMeta{}
+		seedRequest.UrlMeta = &commonv1.UrlMeta{}
 	}
 
 	req := peer.SeedTaskRequest{
@@ -117,7 +117,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 		&cdnsystem.PieceSeed{
 			PeerId: resp.PeerID,
 			HostId: req.PeerHost.Id,
-			PieceInfo: &base.PieceInfo{
+			PieceInfo: &commonv1.PieceInfo{
 				PieceNum: common.BeginOfPiece,
 			},
 			Done: false,
@@ -210,7 +210,7 @@ func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) error {
 	for {
 		pp, err := s.Storage.GetPieces(s.Context,
-			&base.PieceTaskRequest{
+			&commonv1.PieceTaskRequest{
 				TaskId:   s.TaskID,
 				StartNum: uint32(desired),
 				Limit:    16,
@@ -274,7 +274,7 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 	var contentLength int64 = -1
 	for ; cur <= orderedNum; cur++ {
 		pp, err := s.Storage.GetPieces(s.Context,
-			&base.PieceTaskRequest{
+			&commonv1.PieceTaskRequest{
 				TaskId:   s.TaskID,
 				StartNum: uint32(cur),
 				Limit:    1,
@@ -314,7 +314,7 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 	return contentLength, cur, nil
 }
 
-func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
+func (s *seedSynchronizer) compositePieceSeed(pp *commonv1.PiecePacket, piece *commonv1.PieceInfo) cdnsystem.PieceSeed {
 	return cdnsystem.PieceSeed{
 		PeerId:          s.seedTaskRequest.PeerId,
 		HostId:          s.seedTaskRequest.PeerHost.Id,

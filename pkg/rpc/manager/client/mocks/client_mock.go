@@ -35,7 +35,7 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
+// Close mocks commonv1 method.
 func (m *MockClient) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -49,7 +49,7 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
-// GetObjectStorage mocks base method.
+// GetObjectStorage mocks commonv1 method.
 func (m *MockClient) GetObjectStorage(arg0 *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectStorage", arg0)
@@ -64,7 +64,7 @@ func (mr *MockClientMockRecorder) GetObjectStorage(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), arg0)
 }
 
-// GetScheduler mocks base method.
+// GetScheduler mocks commonv1 method.
 func (m *MockClient) GetScheduler(arg0 *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler", arg0)
@@ -79,7 +79,7 @@ func (mr *MockClientMockRecorder) GetScheduler(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), arg0)
 }
 
-// KeepAlive mocks base method.
+// KeepAlive mocks commonv1 method.
 func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *manager.KeepAliveRequest) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "KeepAlive", arg0, arg1)
@@ -91,7 +91,7 @@ func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeepAlive", reflect.TypeOf((*MockClient)(nil).KeepAlive), arg0, arg1)
 }
 
-// ListBuckets mocks base method.
+// ListBuckets mocks commonv1 method.
 func (m *MockClient) ListBuckets(arg0 *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBuckets", arg0)
@@ -106,7 +106,7 @@ func (mr *MockClientMockRecorder) ListBuckets(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0)
 }
 
-// ListSchedulers mocks base method.
+// ListSchedulers mocks commonv1 method.
 func (m *MockClient) ListSchedulers(arg0 *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSchedulers", arg0)
@@ -121,7 +121,7 @@ func (mr *MockClientMockRecorder) ListSchedulers(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0)
 }
 
-// UpdateScheduler mocks base method.
+// UpdateScheduler mocks commonv1 method.
 func (m *MockClient) UpdateScheduler(arg0 *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScheduler", arg0)
@@ -136,7 +136,7 @@ func (mr *MockClientMockRecorder) UpdateScheduler(arg0 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockClient)(nil).UpdateScheduler), arg0)
 }
 
-// UpdateSeedPeer mocks base method.
+// UpdateSeedPeer mocks commonv1 method.
 func (m *MockClient) UpdateSeedPeer(arg0 *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0)

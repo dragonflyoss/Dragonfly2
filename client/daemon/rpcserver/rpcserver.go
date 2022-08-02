@@ -43,7 +43,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
@@ -64,7 +64,7 @@ type server struct {
 	peerHost        *scheduler.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
-	defaultPattern  base.Pattern
+	defaultPattern  commonv1.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
@@ -72,7 +72,7 @@ type server struct {
 }
 
 func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern base.Pattern,
+	storageManager storage.Manager, defaultPattern commonv1.Pattern,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
@@ -110,13 +110,13 @@ func (s *server) Stop() {
 	s.downloadServer.GracefulStop()
 }
 
-func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	s.Keep()
 	p, err := s.storageManager.GetPieces(ctx, request)
 	if err != nil {
-		code := base.Code_UnknownError
+		code := commonv1.Code_UnknownError
 		if err == dferrors.ErrInvalidArgument {
-			code = base.Code_BadRequest
+			code = commonv1.Code_BadRequest
 		}
 		if err != storage.ErrTaskNotFound {
 			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
@@ -126,7 +126,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		// dst peer is not running
 		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId)
 		if !ok {
-			code = base.Code_PeerTaskNotFound
+			code = commonv1.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: target peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
@@ -134,7 +134,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 
 		if task.GetPeerID() != request.GetDstPid() {
 			// there is only one running task in same time, redirect request to running peer task
-			r := base.PieceTaskRequest{
+			r := commonv1.PieceTaskRequest{
 				TaskId:   request.TaskId,
 				SrcPid:   request.SrcPid,
 				DstPid:   task.GetPeerID(), // replace to running task peer id
@@ -148,7 +148,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 				p.DstAddr = s.uploadAddr
 				return p, nil
 			}
-			code = base.Code_PeerTaskNotFound
+			code = commonv1.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: target peer task and replaced peer task storage not found wit error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
@@ -160,7 +160,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 			"task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 			request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 		// dst peer is running, send empty result, src peer will retry later
-		return &base.PiecePacket{
+		return &commonv1.PiecePacket{
 			TaskId:        request.TaskId,
 			DstPid:        request.DstPid,
 			DstAddr:       s.uploadAddr,
@@ -180,9 +180,9 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 // sendExistPieces will send as much as possible pieces
 func (s *server) sendExistPieces(
 	log *logger.SugaredLoggerOnWith,
-	request *base.PieceTaskRequest,
+	request *commonv1.PieceTaskRequest,
 	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
-	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, true)
 }
@@ -190,9 +190,9 @@ func (s *server) sendExistPieces(
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
 func (s *server) sendFirstPieceTasks(
 	log *logger.SugaredLoggerOnWith,
-	request *base.PieceTaskRequest,
+	request *commonv1.PieceTaskRequest,
 	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
-	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, false)
 }
@@ -212,7 +212,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		attributeSent bool
 	)
 
-	getPieces := func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	getPieces := func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 		p, e := s.GetPieceTasks(ctx, request)
 		if e != nil {
 			return nil, e
@@ -313,7 +313,7 @@ func (s *server) Download(ctx context.Context,
 func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 	results chan<- *dfdaemongrpc.DownResult, peerID string) error {
 	if req.UrlMeta == nil {
-		req.UrlMeta = &base.UrlMeta{}
+		req.UrlMeta = &commonv1.UrlMeta{}
 	}
 
 	// init peer task request, peer uses different peer id to generate every request
@@ -350,7 +350,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 
 	peerTaskProgress, tiny, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
-		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
+		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
 		results <- &dfdaemongrpc.DownResult{
@@ -375,7 +375,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				log.Errorf(err.Error())
-				return dferrors.New(base.Code_UnknownError, err.Error())
+				return dferrors.New(commonv1.Code_UnknownError, err.Error())
 			}
 			if !p.State.Success {
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
@@ -426,7 +426,7 @@ func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest
 	if req.LocalOnly {
 		msg := "task not found in local cache"
 		log.Info(msg)
-		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+		return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	// Check scheduler if other peers hold the task
@@ -440,7 +440,7 @@ func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest
 	}
 	msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
 	log.Info(msg)
-	return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 }
 
 func (s *server) isTaskCompleted(taskID string) bool {
@@ -521,7 +521,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskReq
 		if req.LocalOnly {
 			msg := fmt.Sprintf("task not found in local storage")
 			log.Info(msg)
-			return dferrors.New(base.Code_PeerTaskNotFound, msg)
+			return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 		}
 		log.Info("task not found, try from peers")
 		return s.exportFromPeers(ctx, log, req)
@@ -551,7 +551,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 
 	task, err := s.peerTaskManager.StatTask(ctx, taskID)
 	if err != nil {
-		if dferrors.CheckError(err, base.Code_PeerTaskNotFound) {
+		if dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound) {
 			log.Info("task not found in P2P network")
 		} else {
 			msg := fmt.Sprintf("failed to StatTask from peers: %s", err)
@@ -562,7 +562,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	if task.State != resource.TaskStateSucceeded || !task.HasAvailablePeer {
 		msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
 		log.Info(msg)
-		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+		return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	// Task exists in peers

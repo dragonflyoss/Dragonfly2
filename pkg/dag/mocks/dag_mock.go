@@ -34,7 +34,7 @@ func (m *MockDAG[T]) EXPECT() *MockDAGMockRecorder[T] {
 	return m.recorder
 }
 
-// AddEdge mocks base method.
+// AddEdge mocks commonv1 method.
 func (m *MockDAG[T]) AddEdge(fromVertexID, toVertexID string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddEdge", fromVertexID, toVertexID)
@@ -48,7 +48,7 @@ func (mr *MockDAGMockRecorder[T]) AddEdge(fromVertexID, toVertexID interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEdge", reflect.TypeOf((*MockDAG[T])(nil).AddEdge), fromVertexID, toVertexID)
 }
 
-// AddVertex mocks base method.
+// AddVertex mocks commonv1 method.
 func (m *MockDAG[T]) AddVertex(id string, value T) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddVertex", id, value)
@@ -62,7 +62,7 @@ func (mr *MockDAGMockRecorder[T]) AddVertex(id, value interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddVertex", reflect.TypeOf((*MockDAG[T])(nil).AddVertex), id, value)
 }
 
-// CanAddEdge mocks base method.
+// CanAddEdge mocks commonv1 method.
 func (m *MockDAG[T]) CanAddEdge(fromVertexID, toVertexID string) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CanAddEdge", fromVertexID, toVertexID)
@@ -76,7 +76,7 @@ func (mr *MockDAGMockRecorder[T]) CanAddEdge(fromVertexID, toVertexID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanAddEdge", reflect.TypeOf((*MockDAG[T])(nil).CanAddEdge), fromVertexID, toVertexID)
 }
 
-// DeleteEdge mocks base method.
+// DeleteEdge mocks commonv1 method.
 func (m *MockDAG[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteEdge", fromVertexID, toVertexID)
@@ -90,7 +90,7 @@ func (mr *MockDAGMockRecorder[T]) DeleteEdge(fromVertexID, toVertexID interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEdge", reflect.TypeOf((*MockDAG[T])(nil).DeleteEdge), fromVertexID, toVertexID)
 }
 
-// DeleteVertex mocks base method.
+// DeleteVertex mocks commonv1 method.
 func (m *MockDAG[T]) DeleteVertex(id string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "DeleteVertex", id)
@@ -102,7 +102,7 @@ func (mr *MockDAGMockRecorder[T]) DeleteVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteVertex", reflect.TypeOf((*MockDAG[T])(nil).DeleteVertex), id)
 }
 
-// GetRandomVertices mocks base method.
+// GetRandomVertices mocks commonv1 method.
 func (m *MockDAG[T]) GetRandomVertices(n uint) []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRandomVertices", n)
@@ -116,7 +116,7 @@ func (mr *MockDAGMockRecorder[T]) GetRandomVertices(n interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRandomVertices", reflect.TypeOf((*MockDAG[T])(nil).GetRandomVertices), n)
 }
 
-// GetSinkVertices mocks base method.
+// GetSinkVertices mocks commonv1 method.
 func (m *MockDAG[T]) GetSinkVertices() []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSinkVertices")
@@ -130,7 +130,7 @@ func (mr *MockDAGMockRecorder[T]) GetSinkVertices() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSinkVertices", reflect.TypeOf((*MockDAG[T])(nil).GetSinkVertices))
 }
 
-// GetSourceVertices mocks base method.
+// GetSourceVertices mocks commonv1 method.
 func (m *MockDAG[T]) GetSourceVertices() []*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSourceVertices")
@@ -144,7 +144,7 @@ func (mr *MockDAGMockRecorder[T]) GetSourceVertices() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSourceVertices", reflect.TypeOf((*MockDAG[T])(nil).GetSourceVertices))
 }
 
-// GetVertex mocks base method.
+// GetVertex mocks commonv1 method.
 func (m *MockDAG[T]) GetVertex(id string) (*dag.Vertex[T], error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVertex", id)
@@ -159,7 +159,7 @@ func (mr *MockDAGMockRecorder[T]) GetVertex(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertex", reflect.TypeOf((*MockDAG[T])(nil).GetVertex), id)
 }
 
-// GetVertexKeys mocks base method.
+// GetVertexKeys mocks commonv1 method.
 func (m *MockDAG[T]) GetVertexKeys() []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVertexKeys")
@@ -173,7 +173,7 @@ func (mr *MockDAGMockRecorder[T]) GetVertexKeys() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertexKeys", reflect.TypeOf((*MockDAG[T])(nil).GetVertexKeys))
 }
 
-// GetVertices mocks base method.
+// GetVertices mocks commonv1 method.
 func (m *MockDAG[T]) GetVertices() map[string]*dag.Vertex[T] {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVertices")
@@ -187,7 +187,7 @@ func (mr *MockDAGMockRecorder[T]) GetVertices() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVertices", reflect.TypeOf((*MockDAG[T])(nil).GetVertices))
 }
 
-// VertexCount mocks base method.
+// VertexCount mocks commonv1 method.
 func (m *MockDAG[T]) VertexCount() int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VertexCount")

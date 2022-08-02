@@ -33,7 +33,7 @@ func (m *MockSafeSet[T]) EXPECT() *MockSafeSetMockRecorder[T] {
 	return m.recorder
 }
 
-// Add mocks base method.
+// Add mocks commonv1 method.
 func (m *MockSafeSet[T]) Add(arg0 T) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
@@ -47,7 +47,7 @@ func (mr *MockSafeSetMockRecorder[T]) Add(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockSafeSet[T])(nil).Add), arg0)
 }
 
-// Clear mocks base method.
+// Clear mocks commonv1 method.
 func (m *MockSafeSet[T]) Clear() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Clear")
@@ -59,7 +59,7 @@ func (mr *MockSafeSetMockRecorder[T]) Clear() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockSafeSet[T])(nil).Clear))
 }
 
-// Contains mocks base method.
+// Contains mocks commonv1 method.
 func (m *MockSafeSet[T]) Contains(arg0 ...T) bool {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
@@ -77,7 +77,7 @@ func (mr *MockSafeSetMockRecorder[T]) Contains(arg0 ...interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Contains", reflect.TypeOf((*MockSafeSet[T])(nil).Contains), arg0...)
 }
 
-// Delete mocks base method.
+// Delete mocks commonv1 method.
 func (m *MockSafeSet[T]) Delete(arg0 T) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Delete", arg0)
@@ -89,7 +89,7 @@ func (mr *MockSafeSetMockRecorder[T]) Delete(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSafeSet[T])(nil).Delete), arg0)
 }
 
-// Len mocks base method.
+// Len mocks commonv1 method.
 func (m *MockSafeSet[T]) Len() uint {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Len")
@@ -103,7 +103,7 @@ func (mr *MockSafeSetMockRecorder[T]) Len() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockSafeSet[T])(nil).Len))
 }
 
-// Values mocks base method.
+// Values mocks commonv1 method.
 func (m *MockSafeSet[T]) Values() []T {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Values")

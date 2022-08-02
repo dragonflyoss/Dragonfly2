@@ -35,7 +35,7 @@ func (m *MockSeedPeer) EXPECT() *MockSeedPeerMockRecorder {
 	return m.recorder
 }
 
-// Client mocks base method.
+// Client mocks commonv1 method.
 func (m *MockSeedPeer) Client() SeedPeerClient {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Client")
@@ -49,7 +49,7 @@ func (mr *MockSeedPeerMockRecorder) Client() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockSeedPeer)(nil).Client))
 }
 
-// TriggerTask mocks base method.
+// TriggerTask mocks commonv1 method.
 func (m *MockSeedPeer) TriggerTask(arg0 context.Context, arg1 *Task) (*Peer, *scheduler.PeerResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TriggerTask", arg0, arg1)

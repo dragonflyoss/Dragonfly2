@@ -34,7 +34,7 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// Clear mocks base method.
+// Clear mocks commonv1 method.
 func (m *MockStorage) Clear() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Clear")
@@ -48,7 +48,7 @@ func (mr *MockStorageMockRecorder) Clear() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockStorage)(nil).Clear))
 }
 
-// Create mocks base method.
+// Create mocks commonv1 method.
 func (m *MockStorage) Create(arg0 storage.Record) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Create", arg0)
@@ -62,7 +62,7 @@ func (mr *MockStorageMockRecorder) Create(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockStorage)(nil).Create), arg0)
 }
 
-// List mocks base method.
+// List mocks commonv1 method.
 func (m *MockStorage) List() ([]storage.Record, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List")

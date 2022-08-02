@@ -37,7 +37,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 )
 
@@ -195,7 +195,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 							Start:  int64(p.start),
 							Length: int64(p.end - p.start),
 						},
-						Style: base.PieceStyle_PLAIN,
+						Style: commonv1.PieceStyle_PLAIN,
 					},
 					Reader: bytes.NewBuffer(testBytes[p.start:p.end]),
 				})
@@ -225,7 +225,7 @@ func TestLocalTaskStore_PutAndGetPiece(t *testing.T) {
 							Start:  int64(p.start),
 							Length: int64(p.end - p.start),
 						},
-						Style: base.PieceStyle_PLAIN,
+						Style: commonv1.PieceStyle_PLAIN,
 					},
 				})
 				assert.Nil(err, "get piece reader should be ok")

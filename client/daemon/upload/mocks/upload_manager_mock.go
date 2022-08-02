@@ -34,7 +34,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// Serve mocks base method.
+// Serve mocks commonv1 method.
 func (m *MockManager) Serve(lis net.Listener) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Serve", lis)
@@ -48,7 +48,7 @@ func (mr *MockManagerMockRecorder) Serve(lis interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockManager)(nil).Serve), lis)
 }
 
-// Stop mocks base method.
+// Stop mocks commonv1 method.
 func (m *MockManager) Stop() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Stop")

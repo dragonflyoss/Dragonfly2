@@ -33,7 +33,7 @@ func (m *MockReachable) EXPECT() *MockReachableMockRecorder {
 	return m.recorder
 }
 
-// Check mocks base method.
+// Check mocks commonv1 method.
 func (m *MockReachable) Check() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Check")

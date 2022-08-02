@@ -33,7 +33,7 @@ func (m *MockGC) EXPECT() *MockGCMockRecorder {
 	return m.recorder
 }
 
-// Add mocks base method.
+// Add mocks commonv1 method.
 func (m *MockGC) Add(arg0 Task) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
@@ -47,7 +47,7 @@ func (mr *MockGCMockRecorder) Add(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockGC)(nil).Add), arg0)
 }
 
-// Run mocks base method.
+// Run mocks commonv1 method.
 func (m *MockGC) Run(arg0 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Run", arg0)
@@ -61,7 +61,7 @@ func (mr *MockGCMockRecorder) Run(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockGC)(nil).Run), arg0)
 }
 
-// RunAll mocks base method.
+// RunAll mocks commonv1 method.
 func (m *MockGC) RunAll() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "RunAll")
@@ -73,7 +73,7 @@ func (mr *MockGCMockRecorder) RunAll() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunAll", reflect.TypeOf((*MockGC)(nil).RunAll))
 }
 
-// Serve mocks base method.
+// Serve mocks commonv1 method.
 func (m *MockGC) Serve() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Serve")
@@ -85,7 +85,7 @@ func (mr *MockGCMockRecorder) Serve() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockGC)(nil).Serve))
 }
 
-// Stop mocks base method.
+// Stop mocks commonv1 method.
 func (m *MockGC) Stop() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Stop")

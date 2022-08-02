@@ -23,7 +23,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
@@ -71,8 +71,8 @@ type dummyPeerPacketStream struct {
 }
 
 func (d *dummyPeerPacketStream) Recv() (*scheduler.PeerPacket, error) {
-	// TODO set base.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
-	return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
+	// TODO set commonv1.Code_SchedNeedBackSource in *scheduler.PeerPacket instead of error
+	return nil, dferrors.New(commonv1.Code_SchedNeedBackSource, "")
 }
 
 func (d *dummyPeerPacketStream) Send(pr *scheduler.PieceResult) error {

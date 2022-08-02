@@ -48,7 +48,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
@@ -251,7 +251,7 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 	)
 
 	// Initialize filter field.
-	urlMeta := &base.UrlMeta{Filter: o.config.ObjectStorage.Filter}
+	urlMeta := &commonv1.UrlMeta{Filter: o.config.ObjectStorage.Filter}
 	if filter != "" {
 		urlMeta.Filter = filter
 	}
@@ -387,7 +387,7 @@ func (o *objectStorage) putObject(ctx *gin.Context) {
 	}
 
 	// Initialize url meta.
-	urlMeta := &base.UrlMeta{Filter: o.config.ObjectStorage.Filter}
+	urlMeta := &commonv1.UrlMeta{Filter: o.config.ObjectStorage.Filter}
 	dgst := o.md5FromFileHeader(fileHeader)
 	urlMeta.Digest = dgst.String()
 	if filter != "" {
@@ -419,7 +419,7 @@ func (o *objectStorage) putObject(ctx *gin.Context) {
 	if err := o.peerTaskManager.AnnouncePeerTask(ctx, storage.PeerTaskMetadata{
 		TaskID: taskID,
 		PeerID: peerID,
-	}, signURL, base.TaskType_DfStore, urlMeta); err != nil {
+	}, signURL, commonv1.TaskType_DfStore, urlMeta); err != nil {
 		log.Error(err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return

@@ -7,8 +7,7 @@ package mocks
 import (
 	context "context"
 	reflect "reflect"
-
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -39,7 +38,7 @@ func (m *MockDaemonClient) EXPECT() *MockDaemonClientMockRecorder {
 	return m.recorder
 }
 
-// CheckHealth mocks base method.
+// CheckHealth mocks commonv1 method.
 func (m *MockDaemonClient) CheckHealth(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -59,7 +58,7 @@ func (mr *MockDaemonClientMockRecorder) CheckHealth(ctx, in interface{}, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockDaemonClient)(nil).CheckHealth), varargs...)
 }
 
-// DeleteTask mocks base method.
+// DeleteTask mocks commonv1 method.
 func (m *MockDaemonClient) DeleteTask(ctx context.Context, in *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -79,7 +78,7 @@ func (mr *MockDaemonClientMockRecorder) DeleteTask(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockDaemonClient)(nil).DeleteTask), varargs...)
 }
 
-// Download mocks base method.
+// Download mocks commonv1 method.
 func (m *MockDaemonClient) Download(ctx context.Context, in *dfdaemon.DownRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_DownloadClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -99,7 +98,7 @@ func (mr *MockDaemonClientMockRecorder) Download(ctx, in interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonClient)(nil).Download), varargs...)
 }
 
-// ExportTask mocks base method.
+// ExportTask mocks commonv1 method.
 func (m *MockDaemonClient) ExportTask(ctx context.Context, in *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -119,7 +118,7 @@ func (mr *MockDaemonClientMockRecorder) ExportTask(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonClient)(nil).ExportTask), varargs...)
 }
 
-// GetPieceTasks mocks base method.
+// GetPieceTasks mocks commonv1 method.
 func (m *MockDaemonClient) GetPieceTasks(ctx context.Context, in *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -139,7 +138,7 @@ func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).GetPieceTasks), varargs...)
 }
 
-// ImportTask mocks base method.
+// ImportTask mocks commonv1 method.
 func (m *MockDaemonClient) ImportTask(ctx context.Context, in *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -159,7 +158,7 @@ func (mr *MockDaemonClientMockRecorder) ImportTask(ctx, in interface{}, opts ...
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonClient)(nil).ImportTask), varargs...)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockDaemonClient) StatTask(ctx context.Context, in *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
@@ -179,7 +178,7 @@ func (mr *MockDaemonClientMockRecorder) StatTask(ctx, in interface{}, opts ...in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonClient)(nil).StatTask), varargs...)
 }
 
-// SyncPieceTasks mocks base method.
+// SyncPieceTasks mocks commonv1 method.
 func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx}
@@ -222,7 +221,7 @@ func (m *MockDaemon_DownloadClient) EXPECT() *MockDaemon_DownloadClientMockRecor
 	return m.recorder
 }
 
-// CloseSend mocks base method.
+// CloseSend mocks commonv1 method.
 func (m *MockDaemon_DownloadClient) CloseSend() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseSend")
@@ -236,7 +235,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) CloseSend() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).CloseSend))
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockDaemon_DownloadClient) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -250,7 +249,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).Context))
 }
 
-// Header mocks base method.
+// Header mocks commonv1 method.
 func (m *MockDaemon_DownloadClient) Header() (metadata.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Header")
@@ -265,7 +264,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) Header() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).Header))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockDaemon_DownloadClient) Recv() (*dfdaemon.DownResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -280,7 +279,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) Recv() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockDaemon_DownloadClient) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -294,7 +293,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) RecvMsg(m interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).RecvMsg), m)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockDaemon_DownloadClient) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -308,7 +307,7 @@ func (mr *MockDaemon_DownloadClientMockRecorder) SendMsg(m interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDaemon_DownloadClient)(nil).SendMsg), m)
 }
 
-// Trailer mocks base method.
+// Trailer mocks commonv1 method.
 func (m *MockDaemon_DownloadClient) Trailer() metadata.MD {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Trailer")
@@ -345,7 +344,7 @@ func (m *MockDaemon_SyncPieceTasksClient) EXPECT() *MockDaemon_SyncPieceTasksCli
 	return m.recorder
 }
 
-// CloseSend mocks base method.
+// CloseSend mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) CloseSend() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseSend")
@@ -359,7 +358,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) CloseSend() *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).CloseSend))
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -373,7 +372,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).Context))
 }
 
-// Header mocks base method.
+// Header mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) Header() (metadata.MD, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Header")
@@ -388,7 +387,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) Header() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).Header))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) Recv() (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -403,7 +402,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) Recv() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockDaemon_SyncPieceTasksClient) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -417,7 +416,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) RecvMsg(m interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) Send(arg0 *base.PieceTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -431,7 +430,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) Send(arg0 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).Send), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockDaemon_SyncPieceTasksClient) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -445,7 +444,7 @@ func (mr *MockDaemon_SyncPieceTasksClientMockRecorder) SendMsg(m interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDaemon_SyncPieceTasksClient)(nil).SendMsg), m)
 }
 
-// Trailer mocks base method.
+// Trailer mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksClient) Trailer() metadata.MD {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Trailer")
@@ -482,7 +481,7 @@ func (m *MockDaemonServer) EXPECT() *MockDaemonServerMockRecorder {
 	return m.recorder
 }
 
-// CheckHealth mocks base method.
+// CheckHealth mocks commonv1 method.
 func (m *MockDaemonServer) CheckHealth(arg0 context.Context, arg1 *emptypb.Empty) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckHealth", arg0, arg1)
@@ -497,7 +496,7 @@ func (mr *MockDaemonServerMockRecorder) CheckHealth(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockDaemonServer)(nil).CheckHealth), arg0, arg1)
 }
 
-// DeleteTask mocks base method.
+// DeleteTask mocks commonv1 method.
 func (m *MockDaemonServer) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTask", arg0, arg1)
@@ -512,7 +511,7 @@ func (mr *MockDaemonServerMockRecorder) DeleteTask(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockDaemonServer)(nil).DeleteTask), arg0, arg1)
 }
 
-// Download mocks base method.
+// Download mocks commonv1 method.
 func (m *MockDaemonServer) Download(arg0 *dfdaemon.DownRequest, arg1 dfdaemon.Daemon_DownloadServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Download", arg0, arg1)
@@ -526,7 +525,7 @@ func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1)
 }
 
-// ExportTask mocks base method.
+// ExportTask mocks commonv1 method.
 func (m *MockDaemonServer) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportTask", arg0, arg1)
@@ -541,7 +540,7 @@ func (mr *MockDaemonServerMockRecorder) ExportTask(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonServer)(nil).ExportTask), arg0, arg1)
 }
 
-// GetPieceTasks mocks base method.
+// GetPieceTasks mocks commonv1 method.
 func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *base.PieceTaskRequest) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieceTasks", arg0, arg1)
@@ -556,7 +555,7 @@ func (mr *MockDaemonServerMockRecorder) GetPieceTasks(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonServer)(nil).GetPieceTasks), arg0, arg1)
 }
 
-// ImportTask mocks base method.
+// ImportTask mocks commonv1 method.
 func (m *MockDaemonServer) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ImportTask", arg0, arg1)
@@ -571,7 +570,7 @@ func (mr *MockDaemonServerMockRecorder) ImportTask(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonServer)(nil).ImportTask), arg0, arg1)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockDaemonServer) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest) (*emptypb.Empty, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StatTask", arg0, arg1)
@@ -586,7 +585,7 @@ func (mr *MockDaemonServerMockRecorder) StatTask(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonServer)(nil).StatTask), arg0, arg1)
 }
 
-// SyncPieceTasks mocks base method.
+// SyncPieceTasks mocks commonv1 method.
 func (m *MockDaemonServer) SyncPieceTasks(arg0 dfdaemon.Daemon_SyncPieceTasksServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SyncPieceTasks", arg0)
@@ -623,7 +622,7 @@ func (m *MockDaemon_DownloadServer) EXPECT() *MockDaemon_DownloadServerMockRecor
 	return m.recorder
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockDaemon_DownloadServer) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -637,7 +636,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).Context))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockDaemon_DownloadServer) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -651,7 +650,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) RecvMsg(m interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockDaemon_DownloadServer) Send(arg0 *dfdaemon.DownResult) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -665,7 +664,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) Send(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).Send), arg0)
 }
 
-// SendHeader mocks base method.
+// SendHeader mocks commonv1 method.
 func (m *MockDaemon_DownloadServer) SendHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
@@ -679,7 +678,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) SendHeader(arg0 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).SendHeader), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockDaemon_DownloadServer) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -693,7 +692,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) SendMsg(m interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).SendMsg), m)
 }
 
-// SetHeader mocks base method.
+// SetHeader mocks commonv1 method.
 func (m *MockDaemon_DownloadServer) SetHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
@@ -707,7 +706,7 @@ func (mr *MockDaemon_DownloadServerMockRecorder) SetHeader(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockDaemon_DownloadServer)(nil).SetHeader), arg0)
 }
 
-// SetTrailer mocks base method.
+// SetTrailer mocks commonv1 method.
 func (m *MockDaemon_DownloadServer) SetTrailer(arg0 metadata.MD) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)
@@ -742,7 +741,7 @@ func (m *MockDaemon_SyncPieceTasksServer) EXPECT() *MockDaemon_SyncPieceTasksSer
 	return m.recorder
 }
 
-// Context mocks base method.
+// Context mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) Context() context.Context {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
@@ -756,7 +755,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) Context() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).Context))
 }
 
-// Recv mocks base method.
+// Recv mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) Recv() (*base.PieceTaskRequest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
@@ -771,7 +770,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) Recv() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).Recv))
 }
 
-// RecvMsg mocks base method.
+// RecvMsg mocks commonv1 method.
 func (m_2 *MockDaemon_SyncPieceTasksServer) RecvMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
@@ -785,7 +784,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) RecvMsg(m interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).RecvMsg), m)
 }
 
-// Send mocks base method.
+// Send mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) Send(arg0 *base.PiecePacket) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
@@ -799,7 +798,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) Send(arg0 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).Send), arg0)
 }
 
-// SendHeader mocks base method.
+// SendHeader mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) SendHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
@@ -813,7 +812,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) SendHeader(arg0 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).SendHeader), arg0)
 }
 
-// SendMsg mocks base method.
+// SendMsg mocks commonv1 method.
 func (m_2 *MockDaemon_SyncPieceTasksServer) SendMsg(m interface{}) error {
 	m_2.ctrl.T.Helper()
 	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
@@ -827,7 +826,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) SendMsg(m interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).SendMsg), m)
 }
 
-// SetHeader mocks base method.
+// SetHeader mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) SetHeader(arg0 metadata.MD) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
@@ -841,7 +840,7 @@ func (mr *MockDaemon_SyncPieceTasksServerMockRecorder) SetHeader(arg0 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockDaemon_SyncPieceTasksServer)(nil).SetHeader), arg0)
 }
 
-// SetTrailer mocks base method.
+// SetTrailer mocks commonv1 method.
 func (m *MockDaemon_SyncPieceTasksServer) SetTrailer(arg0 metadata.MD) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)

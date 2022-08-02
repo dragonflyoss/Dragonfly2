@@ -22,7 +22,7 @@
 package errordetails
 
 import (
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -127,10 +127,10 @@ func file_pkg_rpc_errordetails_error_details_proto_rawDescGZIP() []byte {
 var file_pkg_rpc_errordetails_error_details_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_pkg_rpc_errordetails_error_details_proto_goTypes = []interface{}{
 	(*SourceError)(nil),          // 0: errordetails.SourceError
-	(*base.ExtendAttribute)(nil), // 1: base.ExtendAttribute
+	(*base.ExtendAttribute)(nil), // 1: commonv1.ExtendAttribute
 }
 var file_pkg_rpc_errordetails_error_details_proto_depIdxs = []int32{
-	1, // 0: errordetails.SourceError.metadata:type_name -> base.ExtendAttribute
+	1, // 0: errordetails.SourceError.metadata:type_name -> commonv1.ExtendAttribute
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

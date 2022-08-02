@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination base/mocks/base_mock.go -source base/base.pb.go -package mocks
+//go:generate mockgen -destination commonv1/mocks/base_mock.go -source commonv1/commonv1.pb.go -package mocks
 //go:generate mockgen -destination cdnsystem/mocks/cdnsystem_mock.go -source cdnsystem/cdnsystem.pb.go -package mocks
 //go:generate mockgen -destination dfdaemon/mocks/dfdaemon_mock.go -source dfdaemon/dfdaemon.pb.go -package mocks
 //go:generate mockgen -destination manager/mocks/manager_mock.go -source manager/manager.pb.go -package mocks
@@ -37,7 +37,7 @@ import (
 
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
@@ -88,7 +88,7 @@ func unaryServerInterceptor(ctx context.Context, req any, info *grpc.UnaryServer
 
 func convertServerError(err error) error {
 	if status.Code(err) == codes.InvalidArgument {
-		err = dferrors.New(base.Code_BadRequest, err.Error())
+		err = dferrors.New(commonv1.Code_BadRequest, err.Error())
 	}
 	if v, ok := err.(*dferrors.DfError); ok {
 		logger.GrpcLogger.Errorf(v.Message)

@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	client "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	gomock "github.com/golang/mock/gomock"
@@ -39,7 +39,7 @@ func (m *MockDaemonClient) EXPECT() *MockDaemonClientMockRecorder {
 	return m.recorder
 }
 
-// CheckHealth mocks base method.
+// CheckHealth mocks commonv1 method.
 func (m *MockDaemonClient) CheckHealth(ctx context.Context, target dfnet.NetAddr, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, target}
@@ -58,7 +58,7 @@ func (mr *MockDaemonClientMockRecorder) CheckHealth(ctx, target interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckHealth", reflect.TypeOf((*MockDaemonClient)(nil).CheckHealth), varargs...)
 }
 
-// Close mocks base method.
+// Close mocks commonv1 method.
 func (m *MockDaemonClient) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -72,7 +72,7 @@ func (mr *MockDaemonClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDaemonClient)(nil).Close))
 }
 
-// DeleteTask mocks base method.
+// DeleteTask mocks commonv1 method.
 func (m *MockDaemonClient) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
@@ -91,7 +91,7 @@ func (mr *MockDaemonClientMockRecorder) DeleteTask(ctx, req interface{}, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTask", reflect.TypeOf((*MockDaemonClient)(nil).DeleteTask), varargs...)
 }
 
-// Download mocks base method.
+// Download mocks commonv1 method.
 func (m *MockDaemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*client.DownResultStream, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
@@ -111,7 +111,7 @@ func (mr *MockDaemonClientMockRecorder) Download(ctx, req interface{}, opts ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonClient)(nil).Download), varargs...)
 }
 
-// ExportTask mocks base method.
+// ExportTask mocks commonv1 method.
 func (m *MockDaemonClient) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
@@ -130,7 +130,7 @@ func (mr *MockDaemonClientMockRecorder) ExportTask(ctx, req interface{}, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportTask", reflect.TypeOf((*MockDaemonClient)(nil).ExportTask), varargs...)
 }
 
-// GetPieceTasks mocks base method.
+// GetPieceTasks mocks commonv1 method.
 func (m *MockDaemonClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, ptr}
@@ -150,7 +150,7 @@ func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, addr, ptr interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockDaemonClient)(nil).GetPieceTasks), varargs...)
 }
 
-// ImportTask mocks base method.
+// ImportTask mocks commonv1 method.
 func (m *MockDaemonClient) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
@@ -169,7 +169,7 @@ func (mr *MockDaemonClientMockRecorder) ImportTask(ctx, req interface{}, opts ..
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportTask", reflect.TypeOf((*MockDaemonClient)(nil).ImportTask), varargs...)
 }
 
-// StatTask mocks base method.
+// StatTask mocks commonv1 method.
 func (m *MockDaemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
@@ -188,7 +188,7 @@ func (mr *MockDaemonClientMockRecorder) StatTask(ctx, req interface{}, opts ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockDaemonClient)(nil).StatTask), varargs...)
 }
 
-// SyncPieceTasks mocks base method.
+// SyncPieceTasks mocks commonv1 method.
 func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, ptr}

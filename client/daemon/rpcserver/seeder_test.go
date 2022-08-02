@@ -36,7 +36,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
@@ -196,11 +196,11 @@ func Test_ObtainSeeds(t *testing.T) {
 				}
 
 				var (
-					totalPieces []*base.PieceInfo
+					totalPieces []*commonv1.PieceInfo
 					lock        sync.Mutex
 				)
 
-				var addedPieces = make(map[uint32]*base.PieceInfo)
+				var addedPieces = make(map[uint32]*commonv1.PieceInfo)
 				for _, p := range tc.existPieces {
 					if p.end == 0 {
 						p.end = p.start
@@ -209,12 +209,12 @@ func Test_ObtainSeeds(t *testing.T) {
 						if _, ok := addedPieces[uint32(i)]; ok {
 							continue
 						}
-						piece := &base.PieceInfo{
+						piece := &commonv1.PieceInfo{
 							PieceNum:    int32(i),
 							RangeStart:  uint64(i) * uint64(pieceSize),
 							RangeSize:   pieceSize,
 							PieceOffset: uint64(i) * uint64(pieceSize),
-							PieceStyle:  base.PieceStyle_PLAIN,
+							PieceStyle:  commonv1.PieceStyle_PLAIN,
 						}
 						totalPieces = append(totalPieces, piece)
 						addedPieces[uint32(i)] = piece
@@ -223,8 +223,8 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				mockStorageManger.EXPECT().GetPieces(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-						var pieces []*base.PieceInfo
+					func(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
+						var pieces []*commonv1.PieceInfo
 						lock.Lock()
 						for i := req.StartNum; i < tc.totalPieces; i++ {
 							if piece, ok := addedPieces[i]; ok {
@@ -234,7 +234,7 @@ func Test_ObtainSeeds(t *testing.T) {
 							}
 						}
 						lock.Unlock()
-						return &base.PiecePacket{
+						return &commonv1.PiecePacket{
 							TaskId:        req.TaskId,
 							DstPid:        req.DstPid,
 							DstAddr:       "",
@@ -246,8 +246,8 @@ func Test_ObtainSeeds(t *testing.T) {
 					})
 				mockStorageManger.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -270,12 +270,12 @@ func Test_ObtainSeeds(t *testing.T) {
 									if _, ok := addedPieces[uint32(j)]; ok {
 										continue
 									}
-									piece := &base.PieceInfo{
+									piece := &commonv1.PieceInfo{
 										PieceNum:    int32(j),
 										RangeStart:  uint64(j) * uint64(pieceSize),
 										RangeSize:   pieceSize,
 										PieceOffset: uint64(j) * uint64(pieceSize),
-										PieceStyle:  base.PieceStyle_PLAIN,
+										PieceStyle:  commonv1.PieceStyle_PLAIN,
 									}
 									totalPieces = append(totalPieces, piece)
 									addedPieces[uint32(j)] = piece

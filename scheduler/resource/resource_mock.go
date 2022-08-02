@@ -33,7 +33,7 @@ func (m *MockResource) EXPECT() *MockResourceMockRecorder {
 	return m.recorder
 }
 
-// HostManager mocks base method.
+// HostManager mocks commonv1 method.
 func (m *MockResource) HostManager() HostManager {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "HostManager")
@@ -47,7 +47,7 @@ func (mr *MockResourceMockRecorder) HostManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HostManager", reflect.TypeOf((*MockResource)(nil).HostManager))
 }
 
-// PeerManager mocks base method.
+// PeerManager mocks commonv1 method.
 func (m *MockResource) PeerManager() PeerManager {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PeerManager")
@@ -61,7 +61,7 @@ func (mr *MockResourceMockRecorder) PeerManager() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PeerManager", reflect.TypeOf((*MockResource)(nil).PeerManager))
 }
 
-// SeedPeer mocks base method.
+// SeedPeer mocks commonv1 method.
 func (m *MockResource) SeedPeer() SeedPeer {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SeedPeer")
@@ -75,7 +75,7 @@ func (mr *MockResourceMockRecorder) SeedPeer() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SeedPeer", reflect.TypeOf((*MockResource)(nil).SeedPeer))
 }
 
-// TaskManager mocks base method.
+// TaskManager mocks commonv1 method.
 func (m *MockResource) TaskManager() TaskManager {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TaskManager")

@@ -29,7 +29,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -149,7 +149,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 		return err
 	}
 
-	urlMeta := &base.UrlMeta{
+	urlMeta := &commonv1.UrlMeta{
 		Header: request.Headers,
 		Tag:    request.Tag,
 		Filter: request.Filter,

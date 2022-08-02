@@ -33,7 +33,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 const (
@@ -371,7 +371,7 @@ func (conn *Connection) TryMigrate(key string, cause error, exclusiveNodes []str
 	}
 	// TODO recover findCandidateClientConn error
 	if e, ok := cause.(*dferrors.DfError); ok {
-		if e.Code != base.Code_ResourceLacked {
+		if e.Code != commonv1.Code_ResourceLacked {
 			return "", cause
 		}
 	}

@@ -31,7 +31,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 const (
@@ -195,7 +195,7 @@ func convertClientError(err error) error {
 	s := status.Convert(err)
 	for _, d := range s.Details() {
 		switch internal := d.(type) {
-		case *base.GrpcDfError:
+		case *commonv1.GrpcDfError:
 			return &dferrors.DfError{
 				Code:    internal.Code,
 				Message: internal.Message,

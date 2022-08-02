@@ -23,15 +23,15 @@ import (
 	"google.golang.org/grpc"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func GetPieceTasks(ctx context.Context,
 	dstPeer *scheduler.PeerPacket_DestPeer,
-	ptr *base.PieceTaskRequest,
-	opts ...grpc.CallOption) (*base.PiecePacket, error) {
+	ptr *commonv1.PieceTaskRequest,
+	opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,
 		Addr: fmt.Sprintf("%s:%d", dstPeer.Ip, dstPeer.RpcPort),
@@ -47,7 +47,7 @@ func GetPieceTasks(ctx context.Context,
 
 func SyncPieceTasks(ctx context.Context,
 	destPeer *scheduler.PeerPacket_DestPeer,
-	ptr *base.PieceTaskRequest,
+	ptr *commonv1.PieceTaskRequest,
 	opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
 	netAddr := dfnet.NetAddr{
 		Type: dfnet.TCP,

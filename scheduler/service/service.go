@@ -28,7 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -82,7 +82,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	if err != nil {
 		msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 		logger.Error(msg)
-		return nil, dferrors.New(base.Code_SchedTaskStatusError, msg)
+		return nil, dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
 	}
 	host := s.registerHost(ctx, req.PeerHost)
 	peer := s.registerPeer(ctx, req.PeerId, task, host, req.UrlMeta.Tag)
@@ -97,30 +97,30 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	if task.FSM.Is(resource.TaskStateSucceeded) && err == nil {
 		peer.Log.Info("task can be reused")
 		switch sizeScope {
-		case base.SizeScope_TINY:
+		case commonv1.SizeScope_TINY:
 			peer.Log.Info("task size scope is tiny and return piece content directly")
 			if len(task.DirectPiece) > 0 && int64(len(task.DirectPiece)) == task.ContentLength.Load() {
 				if err := peer.FSM.Event(resource.PeerEventRegisterTiny); err != nil {
 					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 					peer.Log.Error(msg)
-					return nil, dferrors.New(base.Code_SchedError, msg)
+					return nil, dferrors.New(commonv1.Code_SchedError, msg)
 				}
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
 					TaskType:  task.Type,
-					SizeScope: base.SizeScope_TINY,
+					SizeScope: commonv1.SizeScope_TINY,
 					DirectPiece: &rpcscheduler.RegisterResult_PieceContent{
 						PieceContent: task.DirectPiece,
 					},
 				}, nil
 			}
 
-			// Fallback to base.SizeScope_SMALL.
+			// Fallback to commonv1.SizeScope_SMALL.
 			peer.Log.Warnf("task size scope is tiny, length of direct piece is %d and content length is %d. fall through to size scope small",
 				len(task.DirectPiece), task.ContentLength.Load())
 			fallthrough
-		case base.SizeScope_SMALL:
+		case commonv1.SizeScope_SMALL:
 			peer.Log.Info("task size scope is small")
 			// There is no need to build a tree, just find the parent and return.
 			parent, ok := s.scheduler.FindParent(ctx, peer, set.NewSafeSet[string]())
@@ -129,13 +129,13 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 					peer.Log.Error(msg)
-					return nil, dferrors.New(base.Code_SchedError, msg)
+					return nil, dferrors.New(commonv1.Code_SchedError, msg)
 				}
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
 					TaskType:  task.Type,
-					SizeScope: base.SizeScope_NORMAL,
+					SizeScope: commonv1.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -146,13 +146,13 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 					peer.Log.Error(msg)
-					return nil, dferrors.New(base.Code_SchedError, msg)
+					return nil, dferrors.New(commonv1.Code_SchedError, msg)
 				}
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
 					TaskType:  task.Type,
-					SizeScope: base.SizeScope_NORMAL,
+					SizeScope: commonv1.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -162,13 +162,13 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 					peer.Log.Error(msg)
-					return nil, dferrors.New(base.Code_SchedError, msg)
+					return nil, dferrors.New(commonv1.Code_SchedError, msg)
 				}
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
 					TaskType:  task.Type,
-					SizeScope: base.SizeScope_NORMAL,
+					SizeScope: commonv1.SizeScope_NORMAL,
 				}, nil
 			}
 
@@ -176,7 +176,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			if err := task.DeletePeerInEdges(peer.ID); err != nil {
 				msg := fmt.Sprintf("peer deletes inedges failed: %s", err.Error())
 				peer.Log.Error(msg)
-				return nil, dferrors.New(base.Code_SchedError, msg)
+				return nil, dferrors.New(commonv1.Code_SchedError, msg)
 			}
 
 			// Add edges between parent and peer.
@@ -185,27 +185,27 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 				if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 					msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 					peer.Log.Error(msg)
-					return nil, dferrors.New(base.Code_SchedError, msg)
+					return nil, dferrors.New(commonv1.Code_SchedError, msg)
 				}
 
 				return &rpcscheduler.RegisterResult{
 					TaskId:    task.ID,
 					TaskType:  task.Type,
-					SizeScope: base.SizeScope_NORMAL,
+					SizeScope: commonv1.SizeScope_NORMAL,
 				}, nil
 			}
 
 			if err := peer.FSM.Event(resource.PeerEventRegisterSmall); err != nil {
 				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 				peer.Log.Error(msg)
-				return nil, dferrors.New(base.Code_SchedError, msg)
+				return nil, dferrors.New(commonv1.Code_SchedError, msg)
 			}
 
 			peer.Log.Infof("schedule parent successful, replace parent to %s ", parent.ID)
 			singlePiece := &rpcscheduler.SinglePiece{
 				DstPid:  parent.ID,
 				DstAddr: fmt.Sprintf("%s:%d", parent.Host.IP, parent.Host.DownloadPort),
-				PieceInfo: &base.PieceInfo{
+				PieceInfo: &commonv1.PieceInfo{
 					PieceNum:    firstPiece.PieceNum,
 					RangeStart:  firstPiece.RangeStart,
 					RangeSize:   firstPiece.RangeSize,
@@ -219,7 +219,7 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
 				TaskType:  task.Type,
-				SizeScope: base.SizeScope_SMALL,
+				SizeScope: commonv1.SizeScope_SMALL,
 				DirectPiece: &rpcscheduler.RegisterResult_SinglePiece{
 					SinglePiece: singlePiece,
 				},
@@ -229,13 +229,13 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 				peer.Log.Error(msg)
-				return nil, dferrors.New(base.Code_SchedError, msg)
+				return nil, dferrors.New(commonv1.Code_SchedError, msg)
 			}
 
 			return &rpcscheduler.RegisterResult{
 				TaskId:    task.ID,
 				TaskType:  task.Type,
-				SizeScope: base.SizeScope_NORMAL,
+				SizeScope: commonv1.SizeScope_NORMAL,
 			}, nil
 		}
 	}
@@ -245,13 +245,13 @@ func (s *Service) RegisterPeerTask(ctx context.Context, req *rpcscheduler.PeerTa
 	if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 		msg := fmt.Sprintf("peer %s register is failed: %s", req.PeerId, err.Error())
 		peer.Log.Error(msg)
-		return nil, dferrors.New(base.Code_SchedError, msg)
+		return nil, dferrors.New(commonv1.Code_SchedError, msg)
 	}
 
 	return &rpcscheduler.RegisterResult{
 		TaskId:    task.ID,
 		TaskType:  task.Type,
-		SizeScope: base.SizeScope_NORMAL,
+		SizeScope: commonv1.SizeScope_NORMAL,
 	}, nil
 }
 
@@ -289,7 +289,7 @@ func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 			if !ok {
 				msg := fmt.Sprintf("peer %s not found", piece.SrcPid)
 				logger.Error(msg)
-				return dferrors.New(base.Code_SchedPeerNotFound, msg)
+				return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 			}
 
 			// Peer setting stream.
@@ -338,8 +338,8 @@ func (s *Service) ReportPieceResult(stream rpcscheduler.Scheduler_ReportPieceRes
 		}
 
 		// Handle piece download code.
-		if piece.Code != base.Code_Success {
-			if piece.Code == base.Code_ClientWaitPieceReady {
+		if piece.Code != commonv1.Code_Success {
+			if piece.Code == commonv1.Code_ClientWaitPieceReady {
 				peer.Log.Debugf("receive piece code %d and wait for dfdaemon piece ready", piece.Code)
 				continue
 			}
@@ -360,7 +360,7 @@ func (s *Service) ReportPeerResult(ctx context.Context, req *rpcscheduler.PeerRe
 	if !ok {
 		msg := fmt.Sprintf("report peer result and peer %s is not exists", req.PeerId)
 		logger.Error(msg)
-		return dferrors.New(base.Code_SchedPeerNotFound, msg)
+		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
 	metrics.DownloadCount.WithLabelValues(peer.Tag).Inc()
 
@@ -402,7 +402,7 @@ func (s *Service) StatTask(ctx context.Context, req *rpcscheduler.StatTaskReques
 	if !loaded {
 		msg := fmt.Sprintf("task %s not found", req.TaskId)
 		logger.Info(msg)
-		return nil, dferrors.New(base.Code_PeerTaskNotFound, msg)
+		return nil, dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	task.Log.Debug("task has been found")
@@ -435,7 +435,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			if err := task.FSM.Event(resource.TaskEventDownload); err != nil {
 				msg := fmt.Sprintf("task fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
-				return dferrors.New(base.Code_SchedError, msg)
+				return dferrors.New(commonv1.Code_SchedError, msg)
 			}
 		}
 
@@ -459,7 +459,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			if err := peer.FSM.Event(resource.PeerEventRegisterNormal); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
-				return dferrors.New(base.Code_SchedError, msg)
+				return dferrors.New(commonv1.Code_SchedError, msg)
 			}
 		}
 
@@ -469,7 +469,7 @@ func (s *Service) AnnounceTask(ctx context.Context, req *rpcscheduler.AnnounceTa
 			if err := peer.FSM.Event(resource.PeerEventDownload); err != nil {
 				msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 				peer.Log.Error(msg)
-				return dferrors.New(base.Code_SchedError, msg)
+				return dferrors.New(commonv1.Code_SchedError, msg)
 			}
 
 			s.handlePeerSuccess(ctx, peer)
@@ -485,7 +485,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 	if !ok {
 		msg := fmt.Sprintf("leave task and peer %s is not exists", req.PeerId)
 		logger.Error(msg)
-		return dferrors.New(base.Code_SchedPeerNotFound, msg)
+		return dferrors.New(commonv1.Code_SchedPeerNotFound, msg)
 	}
 	metrics.LeaveTaskCount.WithLabelValues(peer.Tag).Inc()
 
@@ -495,7 +495,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 
 		msg := fmt.Sprintf("peer fsm event failed: %s", err.Error())
 		peer.Log.Error(msg)
-		return dferrors.New(base.Code_SchedTaskStatusError, msg)
+		return dferrors.New(commonv1.Code_SchedTaskStatusError, msg)
 	}
 
 	// Reschedule a new parent to children of peer to exclude the current leave peer.
@@ -510,7 +510,7 @@ func (s *Service) LeaveTask(ctx context.Context, req *rpcscheduler.PeerTarget) e
 
 // registerTask creates a new task or reuses a previous task.
 func (s *Service) registerTask(ctx context.Context, req *rpcscheduler.PeerTaskRequest) (*resource.Task, bool, error) {
-	task := resource.NewTask(req.TaskId, req.Url, base.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
+	task := resource.NewTask(req.TaskId, req.Url, commonv1.TaskType_Normal, req.UrlMeta, resource.WithBackToSourceLimit(int32(s.config.Scheduler.BackSourceCount)))
 	task, loaded := s.resource.TaskManager().LoadOrStore(task)
 	if loaded && !task.FSM.Is(resource.TaskStateFailed) {
 		task.Log.Infof("task state is %s", task.FSM.Current())
@@ -667,12 +667,12 @@ func (s *Service) handlePieceFail(ctx context.Context, peer *resource.Peer, piec
 	// It’s not a case of back-to-source downloading failed,
 	// to help peer to reschedule the parent node.
 	switch piece.Code {
-	case base.Code_PeerTaskNotFound:
+	case commonv1.Code_PeerTaskNotFound:
 		if err := parent.FSM.Event(resource.PeerEventDownloadFailed); err != nil {
 			peer.Log.Errorf("peer fsm event failed: %s", err.Error())
 			break
 		}
-	case base.Code_ClientPieceNotFound:
+	case commonv1.Code_ClientPieceNotFound:
 		// Dfdaemon downloading piece data from parent returns http error code 404.
 		// If the parent is not a seed peer, reschedule parent for peer.
 		// If the parent is a seed peer, scheduler need to trigger seed peer to download again.
@@ -717,7 +717,7 @@ func (s *Service) handlePeerSuccess(ctx context.Context, peer *resource.Peer) {
 
 	// If the peer type is tiny and back-to-source,
 	// it need to directly download the tiny file and store the data in task DirectPiece.
-	if sizeScope == base.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
+	if sizeScope == commonv1.SizeScope_TINY && len(peer.Task.DirectPiece) == 0 {
 		data, err := peer.DownloadTinyFile()
 		if err != nil {
 			peer.Log.Errorf("download tiny task failed: %s", err.Error())
@@ -794,7 +794,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 	if backToSourceErr != nil {
 		if !backToSourceErr.Temporary {
 			task.NotifyPeers(&rpcscheduler.PeerPacket{
-				Code: base.Code_BackToSourceAborted,
+				Code: commonv1.Code_BackToSourceAborted,
 				ErrorDetail: &rpcscheduler.PeerPacket_SourceError{
 					SourceError: backToSourceErr,
 				},
@@ -811,7 +811,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 				case *errordetails.SourceError:
 					if !d.Temporary {
 						task.NotifyPeers(&rpcscheduler.PeerPacket{
-							Code: base.Code_BackToSourceAborted,
+							Code: commonv1.Code_BackToSourceAborted,
 							ErrorDetail: &rpcscheduler.PeerPacket_SourceError{
 								SourceError: d,
 							},
@@ -825,7 +825,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 		// If the number of failed peers in the task is greater than FailedPeerCountLimit,
 		// then scheduler notifies running peers of failure.
 		task.NotifyPeers(&rpcscheduler.PeerPacket{
-			Code: base.Code_SchedTaskStatusError,
+			Code: commonv1.Code_SchedTaskStatusError,
 		}, resource.PeerEventDownloadFailed)
 		task.PeerFailedCount.Store(0)
 	}

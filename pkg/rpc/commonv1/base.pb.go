@@ -17,9 +17,9 @@
 // versions:
 // 	protoc-gen-go v1.28.0
 // 	protoc        v3.19.4
-// source: pkg/rpc/base/base.proto
+// source: pkg/rpc/commonv1/commonv1.proto
 
-package base
+package commonv1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
@@ -380,7 +380,7 @@ type GrpcDfError struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Code    Code   `protobuf:"varint,1,opt,name=code,proto3,enum=base.Code" json:"code,omitempty"`
+	Code    Code   `protobuf:"varint,1,opt,name=code,proto3,enum=commonv1.Code" json:"code,omitempty"`
 	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
 }
 
@@ -673,7 +673,7 @@ type PieceInfo struct {
 	RangeSize   uint32     `protobuf:"varint,3,opt,name=range_size,json=rangeSize,proto3" json:"range_size,omitempty"`
 	PieceMd5    string     `protobuf:"bytes,4,opt,name=piece_md5,json=pieceMd5,proto3" json:"piece_md5,omitempty"`
 	PieceOffset uint64     `protobuf:"varint,5,opt,name=piece_offset,json=pieceOffset,proto3" json:"piece_offset,omitempty"`
-	PieceStyle  PieceStyle `protobuf:"varint,6,opt,name=piece_style,json=pieceStyle,proto3,enum=base.PieceStyle" json:"piece_style,omitempty"`
+	PieceStyle  PieceStyle `protobuf:"varint,6,opt,name=piece_style,json=pieceStyle,proto3,enum=commonv1.PieceStyle" json:"piece_style,omitempty"`
 	// total time(millisecond) consumed
 	DownloadCost uint64 `protobuf:"varint,7,opt,name=download_cost,json=downloadCost,proto3" json:"download_cost,omitempty"`
 }
@@ -1113,28 +1113,28 @@ func file_pkg_rpc_base_base_proto_rawDescGZIP() []byte {
 var file_pkg_rpc_base_base_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_pkg_rpc_base_base_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_pkg_rpc_base_base_proto_goTypes = []interface{}{
-	(Code)(0),                // 0: base.Code
-	(PieceStyle)(0),          // 1: base.PieceStyle
-	(SizeScope)(0),           // 2: base.SizeScope
-	(Pattern)(0),             // 3: base.Pattern
-	(TaskType)(0),            // 4: base.TaskType
-	(*GrpcDfError)(nil),      // 5: base.GrpcDfError
-	(*UrlMeta)(nil),          // 6: base.UrlMeta
-	(*HostLoad)(nil),         // 7: base.HostLoad
-	(*PieceTaskRequest)(nil), // 8: base.PieceTaskRequest
-	(*PieceInfo)(nil),        // 9: base.PieceInfo
-	(*ExtendAttribute)(nil),  // 10: base.ExtendAttribute
-	(*PiecePacket)(nil),      // 11: base.PiecePacket
-	nil,                      // 12: base.UrlMeta.HeaderEntry
-	nil,                      // 13: base.ExtendAttribute.HeaderEntry
+	(Code)(0),                // 0: commonv1.Code
+	(PieceStyle)(0),          // 1: commonv1.PieceStyle
+	(SizeScope)(0),           // 2: commonv1.SizeScope
+	(Pattern)(0),             // 3: commonv1.Pattern
+	(TaskType)(0),            // 4: commonv1.TaskType
+	(*GrpcDfError)(nil),      // 5: commonv1.GrpcDfError
+	(*UrlMeta)(nil),          // 6: commonv1.UrlMeta
+	(*HostLoad)(nil),         // 7: commonv1.HostLoad
+	(*PieceTaskRequest)(nil), // 8: commonv1.PieceTaskRequest
+	(*PieceInfo)(nil),        // 9: commonv1.PieceInfo
+	(*ExtendAttribute)(nil),  // 10: commonv1.ExtendAttribute
+	(*PiecePacket)(nil),      // 11: commonv1.PiecePacket
+	nil,                      // 12: commonv1.UrlMeta.HeaderEntry
+	nil,                      // 13: commonv1.ExtendAttribute.HeaderEntry
 }
 var file_pkg_rpc_base_base_proto_depIdxs = []int32{
-	0,  // 0: base.GrpcDfError.code:type_name -> base.Code
-	12, // 1: base.UrlMeta.header:type_name -> base.UrlMeta.HeaderEntry
-	1,  // 2: base.PieceInfo.piece_style:type_name -> base.PieceStyle
-	13, // 3: base.ExtendAttribute.header:type_name -> base.ExtendAttribute.HeaderEntry
-	9,  // 4: base.PiecePacket.piece_infos:type_name -> base.PieceInfo
-	10, // 5: base.PiecePacket.extend_attribute:type_name -> base.ExtendAttribute
+	0,  // 0: commonv1.GrpcDfError.code:type_name -> commonv1.Code
+	12, // 1: commonv1.UrlMeta.header:type_name -> commonv1.UrlMeta.HeaderEntry
+	1,  // 2: commonv1.PieceInfo.piece_style:type_name -> commonv1.PieceStyle
+	13, // 3: commonv1.ExtendAttribute.header:type_name -> commonv1.ExtendAttribute.HeaderEntry
+	9,  // 4: commonv1.PiecePacket.piece_infos:type_name -> commonv1.PieceInfo
+	10, // 5: commonv1.PiecePacket.extend_attribute:type_name -> commonv1.ExtendAttribute
 	6,  // [6:6] is the sub-list for method output_type
 	6,  // [6:6] is the sub-list for method input_type
 	6,  // [6:6] is the sub-list for extension type_name

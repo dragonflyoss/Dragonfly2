@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -87,7 +87,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				n, needBackToSource)
 
 			// Notify peer back-to-source.
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
@@ -118,11 +118,11 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			}
 
 			// Notify peer schedule failed.
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
+			if err := stream.Send(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
-			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
+			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, commonv1.Code_SchedTaskStatusError)
 			return
 		}
 
@@ -333,6 +333,6 @@ func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resou
 			PeerId:  parent.ID,
 		},
 		CandidatePeers: CandidatePeers,
-		Code:           base.Code_Success,
+		Code:           commonv1.Code_Success,
 	}
 }

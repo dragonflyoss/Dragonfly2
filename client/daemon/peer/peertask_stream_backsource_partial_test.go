@@ -46,7 +46,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
@@ -74,12 +74,12 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			piecesMd5 = append(piecesMd5, digest.MD5FromBytes(testBytes[int(i)*int(opt.pieceSize):int(i+1)*int(opt.pieceSize)]))
 		}
 	}
-	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
-		var tasks []*base.PieceInfo
+	daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
+		var tasks []*commonv1.PieceInfo
 		// only return first piece
 		if request.StartNum == 0 {
 			tasks = append(tasks,
-				&base.PieceInfo{
+				&commonv1.PieceInfo{
 					PieceNum:    int32(request.StartNum),
 					RangeStart:  uint64(0),
 					RangeSize:   opt.pieceSize,
@@ -88,7 +88,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 					PieceStyle:  0,
 				})
 		}
-		return &base.PiecePacket{
+		return &commonv1.PiecePacket{
 			PieceMd5Sign:  digest.SHA256FromStrings(piecesMd5...),
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
@@ -144,11 +144,11 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			if schedPeerPacket {
 				// send back source after piece 0 is done
 				wg.Wait()
-				return nil, dferrors.New(base.Code_SchedNeedBackSource, "")
+				return nil, dferrors.New(commonv1.Code_SchedNeedBackSource, "")
 			}
 			schedPeerPacket = true
 			return &scheduler.PeerPacket{
-				Code:          base.Code_Success,
+				Code:          commonv1.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,
@@ -166,7 +166,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
 			return &scheduler.RegisterResult{
 				TaskId:      opt.taskID,
-				SizeScope:   base.SizeScope_NORMAL,
+				SizeScope:   commonv1.SizeScope_NORMAL,
 				DirectPiece: nil,
 			}, nil
 		})
@@ -264,7 +264,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	}
 	req := &scheduler.PeerTaskRequest{
 		Url: url,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: "d7y-test",
 		},
 		PeerId:   peerID,

@@ -41,7 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -273,7 +273,7 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 
 func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskRequest *scheduler.PeerTaskRequest, parsedRange *clientutil.Range) error {
 	if peerTaskRequest.UrlMeta == nil {
-		peerTaskRequest.UrlMeta = &base.UrlMeta{
+		peerTaskRequest.UrlMeta = &commonv1.UrlMeta{
 			Header: map[string]string{},
 		}
 	} else if peerTaskRequest.UrlMeta.Header == nil {
@@ -364,7 +364,7 @@ singleDownload:
 		}
 		srcErr := &errordetails.SourceError{
 			Temporary: response.Temporary != nil && response.Temporary(),
-			Metadata: &base.ExtendAttribute{
+			Metadata: &commonv1.ExtendAttribute{
 				Header:     hdr,
 				StatusCode: int32(response.StatusCode),
 				Status:     response.Status,
@@ -445,7 +445,7 @@ func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, 
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
-			piece: &base.PieceInfo{
+			piece: &commonv1.PieceInfo{
 				PieceNum:    pieceNum,
 				RangeStart:  offset,
 				RangeSize:   uint32(result.Size),
@@ -525,7 +525,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(pt Task, pieceSize uint32, r
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
-			piece: &base.PieceInfo{
+			piece: &commonv1.PieceInfo{
 				PieceNum:    pieceNum,
 				RangeStart:  offset,
 				RangeSize:   uint32(result.Size),
@@ -881,7 +881,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 	request := &DownloadPieceRequest{
 		TaskID: pt.GetTaskID(),
 		PeerID: pt.GetPeerID(),
-		piece: &base.PieceInfo{
+		piece: &commonv1.PieceInfo{
 			PieceNum:    num,
 			RangeStart:  offset,
 			RangeSize:   uint32(result.Size),

@@ -33,7 +33,7 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 	return m.recorder
 }
 
-// RunGC mocks base method.
+// RunGC mocks commonv1 method.
 func (m *MockRunner) RunGC() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RunGC")

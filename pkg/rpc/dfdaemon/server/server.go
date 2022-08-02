@@ -29,7 +29,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
 )
@@ -39,7 +39,7 @@ type DaemonServer interface {
 	// Download triggers client to download file
 	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
 	// GetPieceTasks get piece tasks from other peers
-	GetPieceTasks(context.Context, *base.PieceTaskRequest) (*base.PiecePacket, error)
+	GetPieceTasks(context.Context, *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error)
 	// SyncPieceTasks sync piece tasks info with other peers
 	SyncPieceTasks(dfdaemon.Daemon_SyncPieceTasksServer) error
 	// CheckHealth check daemon health
@@ -97,7 +97,7 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	return
 }
 
-func (p *proxy) GetPieceTasks(ctx context.Context, ptr *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (p *proxy) GetPieceTasks(ctx context.Context, ptr *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
