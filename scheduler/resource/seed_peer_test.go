@@ -22,10 +22,11 @@ import (
 	"reflect"
 	"testing"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func TestSeedPeer_newSeedPeer(t *testing.T) {

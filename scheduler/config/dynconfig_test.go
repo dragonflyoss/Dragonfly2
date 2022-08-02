@@ -23,9 +23,10 @@ import (
 	"testing"
 	"time"
 
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )

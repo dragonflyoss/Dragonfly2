@@ -19,8 +19,9 @@ package idgen
 import (
 	"testing"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"github.com/stretchr/testify/assert"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 func TestTaskID(t *testing.T) {

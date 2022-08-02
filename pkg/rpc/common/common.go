@@ -19,9 +19,10 @@ package common
 import (
 	"reflect"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 var EndOfPiece = int32(1) << 30
