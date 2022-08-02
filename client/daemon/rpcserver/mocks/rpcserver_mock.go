@@ -35,7 +35,7 @@ func (m *MockServer) EXPECT() *MockServerMockRecorder {
 	return m.recorder
 }
 
-// Alive mocks commonv1 method.
+// Alive mocks base method.
 func (m *MockServer) Alive(alive time.Duration) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Alive", alive)
@@ -49,7 +49,7 @@ func (mr *MockServerMockRecorder) Alive(alive interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockServer)(nil).Alive), alive)
 }
 
-// Keep mocks commonv1 method.
+// Keep mocks base method.
 func (m *MockServer) Keep() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Keep")
@@ -61,7 +61,7 @@ func (mr *MockServerMockRecorder) Keep() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keep", reflect.TypeOf((*MockServer)(nil).Keep))
 }
 
-// ServeDownload mocks commonv1 method.
+// ServeDownload mocks base method.
 func (m *MockServer) ServeDownload(listener net.Listener) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServeDownload", listener)
@@ -75,7 +75,7 @@ func (mr *MockServerMockRecorder) ServeDownload(listener interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServeDownload", reflect.TypeOf((*MockServer)(nil).ServeDownload), listener)
 }
 
-// ServePeer mocks commonv1 method.
+// ServePeer mocks base method.
 func (m *MockServer) ServePeer(listener net.Listener) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServePeer", listener)
@@ -89,7 +89,7 @@ func (mr *MockServerMockRecorder) ServePeer(listener interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServePeer", reflect.TypeOf((*MockServer)(nil).ServePeer), listener)
 }
 
-// Stop mocks commonv1 method.
+// Stop mocks base method.
 func (m *MockServer) Stop() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Stop")

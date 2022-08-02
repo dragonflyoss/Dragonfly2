@@ -44,7 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
@@ -92,7 +92,7 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
 	s.peerServer = dfdaemonserver.New(s, peerOpts...)
 	healthpb.RegisterHealthServer(s.peerServer, health.NewServer())
 
-	cdnsystem.RegisterSeederServer(s.peerServer, sd)
+	cdnsystemv1.RegisterSeederServer(s.peerServer, sd)
 	return s, nil
 }
 

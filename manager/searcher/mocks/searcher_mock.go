@@ -36,7 +36,7 @@ func (m *MockSearcher) EXPECT() *MockSearcherMockRecorder {
 	return m.recorder
 }
 
-// FindSchedulerClusters mocks commonv1 method.
+// FindSchedulerClusters mocks base method.
 func (m *MockSearcher) FindSchedulerClusters(arg0 context.Context, arg1 []model.SchedulerCluster, arg2 *manager.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindSchedulerClusters", arg0, arg1, arg2)

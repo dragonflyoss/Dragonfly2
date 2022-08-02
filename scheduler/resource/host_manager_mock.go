@@ -33,7 +33,7 @@ func (m *MockHostManager) EXPECT() *MockHostManagerMockRecorder {
 	return m.recorder
 }
 
-// Delete mocks commonv1 method.
+// Delete mocks base method.
 func (m *MockHostManager) Delete(arg0 string) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Delete", arg0)
@@ -45,7 +45,7 @@ func (mr *MockHostManagerMockRecorder) Delete(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockHostManager)(nil).Delete), arg0)
 }
 
-// Load mocks commonv1 method.
+// Load mocks base method.
 func (m *MockHostManager) Load(arg0 string) (*Host, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Load", arg0)
@@ -60,7 +60,7 @@ func (mr *MockHostManagerMockRecorder) Load(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Load", reflect.TypeOf((*MockHostManager)(nil).Load), arg0)
 }
 
-// LoadOrStore mocks commonv1 method.
+// LoadOrStore mocks base method.
 func (m *MockHostManager) LoadOrStore(arg0 *Host) (*Host, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadOrStore", arg0)
@@ -75,7 +75,7 @@ func (mr *MockHostManagerMockRecorder) LoadOrStore(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrStore", reflect.TypeOf((*MockHostManager)(nil).LoadOrStore), arg0)
 }
 
-// RunGC mocks commonv1 method.
+// RunGC mocks base method.
 func (m *MockHostManager) RunGC() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RunGC")
@@ -89,7 +89,7 @@ func (mr *MockHostManagerMockRecorder) RunGC() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunGC", reflect.TypeOf((*MockHostManager)(nil).RunGC))
 }
 
-// Store mocks commonv1 method.
+// Store mocks base method.
 func (m *MockHostManager) Store(arg0 *Host) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Store", arg0)

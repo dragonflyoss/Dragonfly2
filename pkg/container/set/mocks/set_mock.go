@@ -33,7 +33,7 @@ func (m *MockSet[T]) EXPECT() *MockSetMockRecorder[T] {
 	return m.recorder
 }
 
-// Add mocks commonv1 method.
+// Add mocks base method.
 func (m *MockSet[T]) Add(arg0 T) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0)
@@ -47,7 +47,7 @@ func (mr *MockSetMockRecorder[T]) Add(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockSet[T])(nil).Add), arg0)
 }
 
-// Clear mocks commonv1 method.
+// Clear mocks base method.
 func (m *MockSet[T]) Clear() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Clear")
@@ -59,7 +59,7 @@ func (mr *MockSetMockRecorder[T]) Clear() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockSet[T])(nil).Clear))
 }
 
-// Contains mocks commonv1 method.
+// Contains mocks base method.
 func (m *MockSet[T]) Contains(arg0 ...T) bool {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{}
@@ -77,7 +77,7 @@ func (mr *MockSetMockRecorder[T]) Contains(arg0 ...interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Contains", reflect.TypeOf((*MockSet[T])(nil).Contains), arg0...)
 }
 
-// Delete mocks commonv1 method.
+// Delete mocks base method.
 func (m *MockSet[T]) Delete(arg0 T) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Delete", arg0)
@@ -89,7 +89,7 @@ func (mr *MockSetMockRecorder[T]) Delete(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockSet[T])(nil).Delete), arg0)
 }
 
-// Len mocks commonv1 method.
+// Len mocks base method.
 func (m *MockSet[T]) Len() uint {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Len")
@@ -103,7 +103,7 @@ func (mr *MockSetMockRecorder[T]) Len() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockSet[T])(nil).Len))
 }
 
-// Values mocks commonv1 method.
+// Values mocks base method.
 func (m *MockSet[T]) Values() []T {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Values")

@@ -37,7 +37,7 @@ func (m *MockObjectStorage) EXPECT() *MockObjectStorageMockRecorder {
 	return m.recorder
 }
 
-// CreateBucket mocks commonv1 method.
+// CreateBucket mocks base method.
 func (m *MockObjectStorage) CreateBucket(ctx context.Context, bucketName string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateBucket", ctx, bucketName)
@@ -51,7 +51,7 @@ func (mr *MockObjectStorageMockRecorder) CreateBucket(ctx, bucketName interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockObjectStorage)(nil).CreateBucket), ctx, bucketName)
 }
 
-// DeleteBucket mocks commonv1 method.
+// DeleteBucket mocks base method.
 func (m *MockObjectStorage) DeleteBucket(ctx context.Context, bucketName string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteBucket", ctx, bucketName)
@@ -65,7 +65,7 @@ func (mr *MockObjectStorageMockRecorder) DeleteBucket(ctx, bucketName interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBucket", reflect.TypeOf((*MockObjectStorage)(nil).DeleteBucket), ctx, bucketName)
 }
 
-// DeleteObject mocks commonv1 method.
+// DeleteObject mocks base method.
 func (m *MockObjectStorage) DeleteObject(ctx context.Context, bucketName, objectKey string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteObject", ctx, bucketName, objectKey)
@@ -79,7 +79,7 @@ func (mr *MockObjectStorageMockRecorder) DeleteObject(ctx, bucketName, objectKey
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockObjectStorage)(nil).DeleteObject), ctx, bucketName, objectKey)
 }
 
-// GetBucketMetadata mocks commonv1 method.
+// GetBucketMetadata mocks base method.
 func (m *MockObjectStorage) GetBucketMetadata(ctx context.Context, bucketName string) (*objectstorage.BucketMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBucketMetadata", ctx, bucketName)
@@ -94,7 +94,7 @@ func (mr *MockObjectStorageMockRecorder) GetBucketMetadata(ctx, bucketName inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucketMetadata", reflect.TypeOf((*MockObjectStorage)(nil).GetBucketMetadata), ctx, bucketName)
 }
 
-// GetObjectMetadata mocks commonv1 method.
+// GetObjectMetadata mocks base method.
 func (m *MockObjectStorage) GetObjectMetadata(ctx context.Context, bucketName, objectKey string) (*objectstorage.ObjectMetadata, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadata", ctx, bucketName, objectKey)
@@ -110,7 +110,7 @@ func (mr *MockObjectStorageMockRecorder) GetObjectMetadata(ctx, bucketName, obje
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadata", reflect.TypeOf((*MockObjectStorage)(nil).GetObjectMetadata), ctx, bucketName, objectKey)
 }
 
-// GetOject mocks commonv1 method.
+// GetOject mocks base method.
 func (m *MockObjectStorage) GetOject(ctx context.Context, bucketName, objectKey string) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOject", ctx, bucketName, objectKey)
@@ -125,7 +125,7 @@ func (mr *MockObjectStorageMockRecorder) GetOject(ctx, bucketName, objectKey int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOject", reflect.TypeOf((*MockObjectStorage)(nil).GetOject), ctx, bucketName, objectKey)
 }
 
-// GetSignURL mocks commonv1 method.
+// GetSignURL mocks base method.
 func (m *MockObjectStorage) GetSignURL(ctx context.Context, bucketName, objectKey string, method objectstorage.Method, expire time.Duration) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSignURL", ctx, bucketName, objectKey, method, expire)
@@ -140,7 +140,7 @@ func (mr *MockObjectStorageMockRecorder) GetSignURL(ctx, bucketName, objectKey, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignURL", reflect.TypeOf((*MockObjectStorage)(nil).GetSignURL), ctx, bucketName, objectKey, method, expire)
 }
 
-// IsObjectExist mocks commonv1 method.
+// IsObjectExist mocks base method.
 func (m *MockObjectStorage) IsObjectExist(ctx context.Context, bucketName, objectKey string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsObjectExist", ctx, bucketName, objectKey)
@@ -155,7 +155,7 @@ func (mr *MockObjectStorageMockRecorder) IsObjectExist(ctx, bucketName, objectKe
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsObjectExist", reflect.TypeOf((*MockObjectStorage)(nil).IsObjectExist), ctx, bucketName, objectKey)
 }
 
-// ListBucketMetadatas mocks commonv1 method.
+// ListBucketMetadatas mocks base method.
 func (m *MockObjectStorage) ListBucketMetadatas(ctx context.Context) ([]*objectstorage.BucketMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBucketMetadatas", ctx)
@@ -170,7 +170,7 @@ func (mr *MockObjectStorageMockRecorder) ListBucketMetadatas(ctx interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBucketMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).ListBucketMetadatas), ctx)
 }
 
-// ListObjectMetadatas mocks commonv1 method.
+// ListObjectMetadatas mocks base method.
 func (m *MockObjectStorage) ListObjectMetadatas(ctx context.Context, bucketName, prefix, marker string, limit int64) ([]*objectstorage.ObjectMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListObjectMetadatas", ctx, bucketName, prefix, marker, limit)
@@ -185,7 +185,7 @@ func (mr *MockObjectStorageMockRecorder) ListObjectMetadatas(ctx, bucketName, pr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListObjectMetadatas", reflect.TypeOf((*MockObjectStorage)(nil).ListObjectMetadatas), ctx, bucketName, prefix, marker, limit)
 }
 
-// PutObject mocks commonv1 method.
+// PutObject mocks base method.
 func (m *MockObjectStorage) PutObject(ctx context.Context, bucketName, objectKey, digest string, reader io.Reader) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObject", ctx, bucketName, objectKey, digest, reader)

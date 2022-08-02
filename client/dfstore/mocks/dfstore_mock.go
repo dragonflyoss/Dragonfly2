@@ -38,7 +38,7 @@ func (m *MockDfstore) EXPECT() *MockDfstoreMockRecorder {
 	return m.recorder
 }
 
-// DeleteObjectRequestWithContext mocks commonv1 method.
+// DeleteObjectRequestWithContext mocks base method.
 func (m *MockDfstore) DeleteObjectRequestWithContext(ctx context.Context, input *dfstore.DeleteObjectInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteObjectRequestWithContext", ctx, input)
@@ -53,7 +53,7 @@ func (mr *MockDfstoreMockRecorder) DeleteObjectRequestWithContext(ctx, input int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).DeleteObjectRequestWithContext), ctx, input)
 }
 
-// DeleteObjectWithContext mocks commonv1 method.
+// DeleteObjectWithContext mocks base method.
 func (m *MockDfstore) DeleteObjectWithContext(ctx context.Context, input *dfstore.DeleteObjectInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteObjectWithContext", ctx, input)
@@ -67,7 +67,7 @@ func (mr *MockDfstoreMockRecorder) DeleteObjectWithContext(ctx, input interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObjectWithContext", reflect.TypeOf((*MockDfstore)(nil).DeleteObjectWithContext), ctx, input)
 }
 
-// GetObjectMetadataRequestWithContext mocks commonv1 method.
+// GetObjectMetadataRequestWithContext mocks base method.
 func (m *MockDfstore) GetObjectMetadataRequestWithContext(ctx context.Context, input *dfstore.GetObjectMetadataInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadataRequestWithContext", ctx, input)
@@ -82,7 +82,7 @@ func (mr *MockDfstoreMockRecorder) GetObjectMetadataRequestWithContext(ctx, inpu
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadataRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectMetadataRequestWithContext), ctx, input)
 }
 
-// GetObjectMetadataWithContext mocks commonv1 method.
+// GetObjectMetadataWithContext mocks base method.
 func (m *MockDfstore) GetObjectMetadataWithContext(ctx context.Context, input *dfstore.GetObjectMetadataInput) (*objectstorage.ObjectMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectMetadataWithContext", ctx, input)
@@ -97,7 +97,7 @@ func (mr *MockDfstoreMockRecorder) GetObjectMetadataWithContext(ctx, input inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectMetadataWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectMetadataWithContext), ctx, input)
 }
 
-// GetObjectRequestWithContext mocks commonv1 method.
+// GetObjectRequestWithContext mocks base method.
 func (m *MockDfstore) GetObjectRequestWithContext(ctx context.Context, input *dfstore.GetObjectInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectRequestWithContext", ctx, input)
@@ -112,7 +112,7 @@ func (mr *MockDfstoreMockRecorder) GetObjectRequestWithContext(ctx, input interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectRequestWithContext), ctx, input)
 }
 
-// GetObjectWithContext mocks commonv1 method.
+// GetObjectWithContext mocks base method.
 func (m *MockDfstore) GetObjectWithContext(ctx context.Context, input *dfstore.GetObjectInput) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectWithContext", ctx, input)
@@ -127,7 +127,7 @@ func (mr *MockDfstoreMockRecorder) GetObjectWithContext(ctx, input interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectWithContext", reflect.TypeOf((*MockDfstore)(nil).GetObjectWithContext), ctx, input)
 }
 
-// IsObjectExistRequestWithContext mocks commonv1 method.
+// IsObjectExistRequestWithContext mocks base method.
 func (m *MockDfstore) IsObjectExistRequestWithContext(ctx context.Context, input *dfstore.IsObjectExistInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsObjectExistRequestWithContext", ctx, input)
@@ -142,7 +142,7 @@ func (mr *MockDfstoreMockRecorder) IsObjectExistRequestWithContext(ctx, input in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsObjectExistRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).IsObjectExistRequestWithContext), ctx, input)
 }
 
-// IsObjectExistWithContext mocks commonv1 method.
+// IsObjectExistWithContext mocks base method.
 func (m *MockDfstore) IsObjectExistWithContext(ctx context.Context, input *dfstore.IsObjectExistInput) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsObjectExistWithContext", ctx, input)
@@ -157,7 +157,7 @@ func (mr *MockDfstoreMockRecorder) IsObjectExistWithContext(ctx, input interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsObjectExistWithContext", reflect.TypeOf((*MockDfstore)(nil).IsObjectExistWithContext), ctx, input)
 }
 
-// PutObjectRequestWithContext mocks commonv1 method.
+// PutObjectRequestWithContext mocks base method.
 func (m *MockDfstore) PutObjectRequestWithContext(ctx context.Context, input *dfstore.PutOjectInput) (*http.Request, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObjectRequestWithContext", ctx, input)
@@ -172,7 +172,7 @@ func (mr *MockDfstoreMockRecorder) PutObjectRequestWithContext(ctx, input interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutObjectRequestWithContext", reflect.TypeOf((*MockDfstore)(nil).PutObjectRequestWithContext), ctx, input)
 }
 
-// PutObjectWithContext mocks commonv1 method.
+// PutObjectWithContext mocks base method.
 func (m *MockDfstore) PutObjectWithContext(ctx context.Context, input *dfstore.PutOjectInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "PutObjectWithContext", ctx, input)

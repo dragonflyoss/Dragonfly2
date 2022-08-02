@@ -30,7 +30,7 @@ import (
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -168,7 +168,7 @@ func (j *job) preheat(ctx context.Context, req string) error {
 	log := logger.WithTaskIDAndURL(taskID, request.URL)
 	log.Infof("preheat %s headers: %#v, tag: %s, range: %s, filter: %s, digest: %s",
 		request.URL, urlMeta.Header, urlMeta.Tag, urlMeta.Range, urlMeta.Filter, urlMeta.Digest)
-	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	stream, err := j.resource.SeedPeer().Client().ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  taskID,
 		Url:     request.URL,
 		UrlMeta: urlMeta,

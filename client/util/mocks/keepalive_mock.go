@@ -34,7 +34,7 @@ func (m *MockKeepAlive) EXPECT() *MockKeepAliveMockRecorder {
 	return m.recorder
 }
 
-// Alive mocks commonv1 method.
+// Alive mocks base method.
 func (m *MockKeepAlive) Alive(alive time.Duration) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Alive", alive)
@@ -48,7 +48,7 @@ func (mr *MockKeepAliveMockRecorder) Alive(alive interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Alive", reflect.TypeOf((*MockKeepAlive)(nil).Alive), alive)
 }
 
-// Keep mocks commonv1 method.
+// Keep mocks base method.
 func (m *MockKeepAlive) Keep() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Keep")

@@ -33,7 +33,7 @@ func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 	return m.recorder
 }
 
-// Errorf mocks commonv1 method.
+// Errorf mocks base method.
 func (m *MockLogger) Errorf(template string, args ...any) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{template}
@@ -50,7 +50,7 @@ func (mr *MockLoggerMockRecorder) Errorf(template interface{}, args ...interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Errorf", reflect.TypeOf((*MockLogger)(nil).Errorf), varargs...)
 }
 
-// Infof mocks commonv1 method.
+// Infof mocks base method.
 func (m *MockLogger) Infof(template string, args ...any) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{template}

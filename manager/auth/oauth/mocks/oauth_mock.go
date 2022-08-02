@@ -35,7 +35,7 @@ func (m *MockOauth) EXPECT() *MockOauthMockRecorder {
 	return m.recorder
 }
 
-// AuthCodeURL mocks commonv1 method.
+// AuthCodeURL mocks base method.
 func (m *MockOauth) AuthCodeURL() (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AuthCodeURL")
@@ -50,7 +50,7 @@ func (mr *MockOauthMockRecorder) AuthCodeURL() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthCodeURL", reflect.TypeOf((*MockOauth)(nil).AuthCodeURL))
 }
 
-// Exchange mocks commonv1 method.
+// Exchange mocks base method.
 func (m *MockOauth) Exchange(arg0 string) (*oauth2.Token, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Exchange", arg0)
@@ -65,7 +65,7 @@ func (mr *MockOauthMockRecorder) Exchange(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockOauth)(nil).Exchange), arg0)
 }
 
-// GetUser mocks commonv1 method.
+// GetUser mocks base method.
 func (m *MockOauth) GetUser(arg0 *oauth2.Token) (*oauth.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0)

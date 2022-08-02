@@ -35,7 +35,7 @@ func (m *MockDynconfigInterface) EXPECT() *MockDynconfigInterfaceMockRecorder {
 	return m.recorder
 }
 
-// Deregister mocks commonv1 method.
+// Deregister mocks base method.
 func (m *MockDynconfigInterface) Deregister(arg0 config.Observer) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Deregister", arg0)
@@ -47,7 +47,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Deregister(arg0 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockDynconfigInterface)(nil).Deregister), arg0)
 }
 
-// Get mocks commonv1 method.
+// Get mocks base method.
 func (m *MockDynconfigInterface) Get() (*config.DynconfigData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get")
@@ -62,7 +62,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfigInterface)(nil).Get))
 }
 
-// GetSchedulerClusterClientConfig mocks commonv1 method.
+// GetSchedulerClusterClientConfig mocks base method.
 func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusterClientConfig")
@@ -77,7 +77,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterClientConfig() 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusterClientConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSchedulerClusterClientConfig))
 }
 
-// GetSchedulerClusterConfig mocks commonv1 method.
+// GetSchedulerClusterConfig mocks base method.
 func (m *MockDynconfigInterface) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusterConfig")
@@ -92,7 +92,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterConfig() *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusterConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSchedulerClusterConfig))
 }
 
-// Notify mocks commonv1 method.
+// Notify mocks base method.
 func (m *MockDynconfigInterface) Notify() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Notify")
@@ -106,7 +106,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Notify() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockDynconfigInterface)(nil).Notify))
 }
 
-// Register mocks commonv1 method.
+// Register mocks base method.
 func (m *MockDynconfigInterface) Register(arg0 config.Observer) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Register", arg0)
@@ -118,7 +118,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Register(arg0 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockDynconfigInterface)(nil).Register), arg0)
 }
 
-// Serve mocks commonv1 method.
+// Serve mocks base method.
 func (m *MockDynconfigInterface) Serve() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Serve")
@@ -132,7 +132,7 @@ func (mr *MockDynconfigInterfaceMockRecorder) Serve() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockDynconfigInterface)(nil).Serve))
 }
 
-// Stop mocks commonv1 method.
+// Stop mocks base method.
 func (m *MockDynconfigInterface) Stop() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Stop")
@@ -169,7 +169,7 @@ func (m *MockObserver) EXPECT() *MockObserverMockRecorder {
 	return m.recorder
 }
 
-// OnNotify mocks commonv1 method.
+// OnNotify mocks base method.
 func (m *MockObserver) OnNotify(arg0 *config.DynconfigData) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "OnNotify", arg0)

@@ -33,7 +33,7 @@ func (m *MockManagerClient) EXPECT() *MockManagerClientMockRecorder {
 	return m.recorder
 }
 
-// Get mocks commonv1 method.
+// Get mocks base method.
 func (m *MockManagerClient) Get() (any, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get")

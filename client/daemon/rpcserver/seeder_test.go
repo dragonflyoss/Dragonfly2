@@ -30,16 +30,16 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
@@ -323,7 +323,7 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				pps, err := client.ObtainSeeds(
 					context.Background(),
-					&cdnsystem.SeedRequest{
+					&cdnsystemv1.SeedRequest{
 						TaskId:  "fake-task-id",
 						Url:     "http://localhost/path/to/file",
 						UrlMeta: nil,
@@ -361,9 +361,9 @@ func Test_ObtainSeeds(t *testing.T) {
 	}
 }
 
-func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, cdnclient.CdnClient) {
+func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, client.CdnClient) {
 	srv.peerServer = dfdaemonserver.New(srv)
-	cdnsystem.RegisterSeederServer(srv.peerServer, sd)
+	cdnsystemv1.RegisterSeederServer(srv.peerServer, sd)
 
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -378,7 +378,7 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 		}
 	}()
 
-	client := cdnclient.GetClientByAddr([]dfnet.NetAddr{
+	client := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),

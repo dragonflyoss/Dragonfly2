@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 )
@@ -70,7 +70,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	stream, err := s.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	stream, err := s.client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,
 		UrlMeta: task.URLMeta,
@@ -137,7 +137,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
 	peer, ok := s.peerManager.Load(ps.PeerId)
 	if ok {

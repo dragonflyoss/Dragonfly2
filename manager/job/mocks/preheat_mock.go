@@ -37,7 +37,7 @@ func (m *MockPreheat) EXPECT() *MockPreheatMockRecorder {
 	return m.recorder
 }
 
-// CreatePreheat mocks commonv1 method.
+// CreatePreheat mocks base method.
 func (m *MockPreheat) CreatePreheat(arg0 context.Context, arg1 []model.Scheduler, arg2 types.PreheatArgs) (*job.GroupJobState, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePreheat", arg0, arg1, arg2)

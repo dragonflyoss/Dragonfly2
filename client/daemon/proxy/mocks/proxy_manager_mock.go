@@ -35,7 +35,7 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
-// IsEnabled mocks commonv1 method.
+// IsEnabled mocks base method.
 func (m *MockManager) IsEnabled() bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsEnabled")
@@ -49,7 +49,7 @@ func (mr *MockManagerMockRecorder) IsEnabled() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsEnabled", reflect.TypeOf((*MockManager)(nil).IsEnabled))
 }
 
-// Serve mocks commonv1 method.
+// Serve mocks base method.
 func (m *MockManager) Serve(arg0 net.Listener) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Serve", arg0)
@@ -63,7 +63,7 @@ func (mr *MockManagerMockRecorder) Serve(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serve", reflect.TypeOf((*MockManager)(nil).Serve), arg0)
 }
 
-// ServeSNI mocks commonv1 method.
+// ServeSNI mocks base method.
 func (m *MockManager) ServeSNI(arg0 net.Listener) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ServeSNI", arg0)
@@ -77,7 +77,7 @@ func (mr *MockManagerMockRecorder) ServeSNI(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServeSNI", reflect.TypeOf((*MockManager)(nil).ServeSNI), arg0)
 }
 
-// Stop mocks commonv1 method.
+// Stop mocks base method.
 func (m *MockManager) Stop() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Stop")
@@ -91,7 +91,7 @@ func (mr *MockManagerMockRecorder) Stop() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockManager)(nil).Stop))
 }
 
-// Watch mocks commonv1 method.
+// Watch mocks base method.
 func (m *MockManager) Watch(arg0 *config.ProxyOption) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Watch", arg0)
@@ -126,7 +126,7 @@ func (m *MockConfigWatcher) EXPECT() *MockConfigWatcherMockRecorder {
 	return m.recorder
 }
 
-// Watch mocks commonv1 method.
+// Watch mocks base method.
 func (m *MockConfigWatcher) Watch(arg0 *config.ProxyOption) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Watch", arg0)

@@ -39,7 +39,7 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
-// AddPermissionForRole mocks commonv1 method.
+// AddPermissionForRole mocks base method.
 func (m *MockService) AddPermissionForRole(arg0 context.Context, arg1 string, arg2 types.AddPermissionForRoleRequest) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddPermissionForRole", arg0, arg1, arg2)
@@ -54,7 +54,7 @@ func (mr *MockServiceMockRecorder) AddPermissionForRole(arg0, arg1, arg2 interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPermissionForRole", reflect.TypeOf((*MockService)(nil).AddPermissionForRole), arg0, arg1, arg2)
 }
 
-// AddRoleForUser mocks commonv1 method.
+// AddRoleForUser mocks base method.
 func (m *MockService) AddRoleForUser(arg0 context.Context, arg1 types.AddRoleForUserParams) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddRoleForUser", arg0, arg1)
@@ -69,7 +69,7 @@ func (mr *MockServiceMockRecorder) AddRoleForUser(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddRoleForUser", reflect.TypeOf((*MockService)(nil).AddRoleForUser), arg0, arg1)
 }
 
-// AddSchedulerClusterToApplication mocks commonv1 method.
+// AddSchedulerClusterToApplication mocks base method.
 func (m *MockService) AddSchedulerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSchedulerClusterToApplication", arg0, arg1, arg2)
@@ -83,7 +83,7 @@ func (mr *MockServiceMockRecorder) AddSchedulerClusterToApplication(arg0, arg1, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToApplication", reflect.TypeOf((*MockService)(nil).AddSchedulerClusterToApplication), arg0, arg1, arg2)
 }
 
-// AddSchedulerClusterToSecurityGroup mocks commonv1 method.
+// AddSchedulerClusterToSecurityGroup mocks base method.
 func (m *MockService) AddSchedulerClusterToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSchedulerClusterToSecurityGroup", arg0, arg1, arg2)
@@ -97,7 +97,7 @@ func (mr *MockServiceMockRecorder) AddSchedulerClusterToSecurityGroup(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSchedulerClusterToSecurityGroup), arg0, arg1, arg2)
 }
 
-// AddSchedulerClusterToSeedPeerCluster mocks commonv1 method.
+// AddSchedulerClusterToSeedPeerCluster mocks base method.
 func (m *MockService) AddSchedulerClusterToSeedPeerCluster(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSchedulerClusterToSeedPeerCluster", arg0, arg1, arg2)
@@ -111,7 +111,7 @@ func (mr *MockServiceMockRecorder) AddSchedulerClusterToSeedPeerCluster(arg0, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerClusterToSeedPeerCluster", reflect.TypeOf((*MockService)(nil).AddSchedulerClusterToSeedPeerCluster), arg0, arg1, arg2)
 }
 
-// AddSchedulerToSchedulerCluster mocks commonv1 method.
+// AddSchedulerToSchedulerCluster mocks base method.
 func (m *MockService) AddSchedulerToSchedulerCluster(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSchedulerToSchedulerCluster", arg0, arg1, arg2)
@@ -125,7 +125,7 @@ func (mr *MockServiceMockRecorder) AddSchedulerToSchedulerCluster(arg0, arg1, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSchedulerToSchedulerCluster", reflect.TypeOf((*MockService)(nil).AddSchedulerToSchedulerCluster), arg0, arg1, arg2)
 }
 
-// AddSecurityRuleToSecurityGroup mocks commonv1 method.
+// AddSecurityRuleToSecurityGroup mocks base method.
 func (m *MockService) AddSecurityRuleToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSecurityRuleToSecurityGroup", arg0, arg1, arg2)
@@ -139,7 +139,7 @@ func (mr *MockServiceMockRecorder) AddSecurityRuleToSecurityGroup(arg0, arg1, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSecurityRuleToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSecurityRuleToSecurityGroup), arg0, arg1, arg2)
 }
 
-// AddSeedPeerClusterToApplication mocks commonv1 method.
+// AddSeedPeerClusterToApplication mocks base method.
 func (m *MockService) AddSeedPeerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSeedPeerClusterToApplication", arg0, arg1, arg2)
@@ -153,7 +153,7 @@ func (mr *MockServiceMockRecorder) AddSeedPeerClusterToApplication(arg0, arg1, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSeedPeerClusterToApplication", reflect.TypeOf((*MockService)(nil).AddSeedPeerClusterToApplication), arg0, arg1, arg2)
 }
 
-// AddSeedPeerClusterToSecurityGroup mocks commonv1 method.
+// AddSeedPeerClusterToSecurityGroup mocks base method.
 func (m *MockService) AddSeedPeerClusterToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSeedPeerClusterToSecurityGroup", arg0, arg1, arg2)
@@ -167,7 +167,7 @@ func (mr *MockServiceMockRecorder) AddSeedPeerClusterToSecurityGroup(arg0, arg1,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSeedPeerClusterToSecurityGroup", reflect.TypeOf((*MockService)(nil).AddSeedPeerClusterToSecurityGroup), arg0, arg1, arg2)
 }
 
-// AddSeedPeerToSeedPeerCluster mocks commonv1 method.
+// AddSeedPeerToSeedPeerCluster mocks base method.
 func (m *MockService) AddSeedPeerToSeedPeerCluster(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddSeedPeerToSeedPeerCluster", arg0, arg1, arg2)
@@ -181,7 +181,7 @@ func (mr *MockServiceMockRecorder) AddSeedPeerToSeedPeerCluster(arg0, arg1, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSeedPeerToSeedPeerCluster", reflect.TypeOf((*MockService)(nil).AddSeedPeerToSeedPeerCluster), arg0, arg1, arg2)
 }
 
-// CreateApplication mocks commonv1 method.
+// CreateApplication mocks base method.
 func (m *MockService) CreateApplication(arg0 context.Context, arg1 types.CreateApplicationRequest) (*model.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateApplication", arg0, arg1)
@@ -196,7 +196,7 @@ func (mr *MockServiceMockRecorder) CreateApplication(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockService)(nil).CreateApplication), arg0, arg1)
 }
 
-// CreateBucket mocks commonv1 method.
+// CreateBucket mocks base method.
 func (m *MockService) CreateBucket(arg0 context.Context, arg1 types.CreateBucketRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateBucket", arg0, arg1)
@@ -210,7 +210,7 @@ func (mr *MockServiceMockRecorder) CreateBucket(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockService)(nil).CreateBucket), arg0, arg1)
 }
 
-// CreateConfig mocks commonv1 method.
+// CreateConfig mocks base method.
 func (m *MockService) CreateConfig(arg0 context.Context, arg1 types.CreateConfigRequest) (*model.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateConfig", arg0, arg1)
@@ -225,7 +225,7 @@ func (mr *MockServiceMockRecorder) CreateConfig(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConfig", reflect.TypeOf((*MockService)(nil).CreateConfig), arg0, arg1)
 }
 
-// CreateOauth mocks commonv1 method.
+// CreateOauth mocks base method.
 func (m *MockService) CreateOauth(arg0 context.Context, arg1 types.CreateOauthRequest) (*model.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateOauth", arg0, arg1)
@@ -240,7 +240,7 @@ func (mr *MockServiceMockRecorder) CreateOauth(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOauth", reflect.TypeOf((*MockService)(nil).CreateOauth), arg0, arg1)
 }
 
-// CreatePreheatJob mocks commonv1 method.
+// CreatePreheatJob mocks base method.
 func (m *MockService) CreatePreheatJob(arg0 context.Context, arg1 types.CreatePreheatJobRequest) (*model.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePreheatJob", arg0, arg1)
@@ -255,7 +255,7 @@ func (mr *MockServiceMockRecorder) CreatePreheatJob(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePreheatJob", reflect.TypeOf((*MockService)(nil).CreatePreheatJob), arg0, arg1)
 }
 
-// CreateRole mocks commonv1 method.
+// CreateRole mocks base method.
 func (m *MockService) CreateRole(arg0 context.Context, arg1 types.CreateRoleRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRole", arg0, arg1)
@@ -269,7 +269,7 @@ func (mr *MockServiceMockRecorder) CreateRole(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRole", reflect.TypeOf((*MockService)(nil).CreateRole), arg0, arg1)
 }
 
-// CreateScheduler mocks commonv1 method.
+// CreateScheduler mocks base method.
 func (m *MockService) CreateScheduler(arg0 context.Context, arg1 types.CreateSchedulerRequest) (*model.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateScheduler", arg0, arg1)
@@ -284,7 +284,7 @@ func (mr *MockServiceMockRecorder) CreateScheduler(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateScheduler", reflect.TypeOf((*MockService)(nil).CreateScheduler), arg0, arg1)
 }
 
-// CreateSchedulerCluster mocks commonv1 method.
+// CreateSchedulerCluster mocks base method.
 func (m *MockService) CreateSchedulerCluster(arg0 context.Context, arg1 types.CreateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSchedulerCluster", arg0, arg1)
@@ -299,7 +299,7 @@ func (mr *MockServiceMockRecorder) CreateSchedulerCluster(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSchedulerCluster", reflect.TypeOf((*MockService)(nil).CreateSchedulerCluster), arg0, arg1)
 }
 
-// CreateSecurityGroup mocks commonv1 method.
+// CreateSecurityGroup mocks base method.
 func (m *MockService) CreateSecurityGroup(arg0 context.Context, arg1 types.CreateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityGroup", arg0, arg1)
@@ -314,7 +314,7 @@ func (mr *MockServiceMockRecorder) CreateSecurityGroup(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecurityGroup", reflect.TypeOf((*MockService)(nil).CreateSecurityGroup), arg0, arg1)
 }
 
-// CreateSecurityRule mocks commonv1 method.
+// CreateSecurityRule mocks base method.
 func (m *MockService) CreateSecurityRule(arg0 context.Context, arg1 types.CreateSecurityRuleRequest) (*model.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSecurityRule", arg0, arg1)
@@ -329,7 +329,7 @@ func (mr *MockServiceMockRecorder) CreateSecurityRule(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSecurityRule", reflect.TypeOf((*MockService)(nil).CreateSecurityRule), arg0, arg1)
 }
 
-// CreateSeedPeer mocks commonv1 method.
+// CreateSeedPeer mocks base method.
 func (m *MockService) CreateSeedPeer(arg0 context.Context, arg1 types.CreateSeedPeerRequest) (*model.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSeedPeer", arg0, arg1)
@@ -344,7 +344,7 @@ func (mr *MockServiceMockRecorder) CreateSeedPeer(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSeedPeer", reflect.TypeOf((*MockService)(nil).CreateSeedPeer), arg0, arg1)
 }
 
-// CreateSeedPeerCluster mocks commonv1 method.
+// CreateSeedPeerCluster mocks base method.
 func (m *MockService) CreateSeedPeerCluster(arg0 context.Context, arg1 types.CreateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateSeedPeerCluster", arg0, arg1)
@@ -359,7 +359,7 @@ func (mr *MockServiceMockRecorder) CreateSeedPeerCluster(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSeedPeerCluster", reflect.TypeOf((*MockService)(nil).CreateSeedPeerCluster), arg0, arg1)
 }
 
-// CreateV1Preheat mocks commonv1 method.
+// CreateV1Preheat mocks base method.
 func (m *MockService) CreateV1Preheat(arg0 context.Context, arg1 types.CreateV1PreheatRequest) (*types.CreateV1PreheatResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateV1Preheat", arg0, arg1)
@@ -374,7 +374,7 @@ func (mr *MockServiceMockRecorder) CreateV1Preheat(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateV1Preheat", reflect.TypeOf((*MockService)(nil).CreateV1Preheat), arg0, arg1)
 }
 
-// DeletePermissionForRole mocks commonv1 method.
+// DeletePermissionForRole mocks base method.
 func (m *MockService) DeletePermissionForRole(arg0 context.Context, arg1 string, arg2 types.DeletePermissionForRoleRequest) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeletePermissionForRole", arg0, arg1, arg2)
@@ -389,7 +389,7 @@ func (mr *MockServiceMockRecorder) DeletePermissionForRole(arg0, arg1, arg2 inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePermissionForRole", reflect.TypeOf((*MockService)(nil).DeletePermissionForRole), arg0, arg1, arg2)
 }
 
-// DeleteRoleForUser mocks commonv1 method.
+// DeleteRoleForUser mocks base method.
 func (m *MockService) DeleteRoleForUser(arg0 context.Context, arg1 types.DeleteRoleForUserParams) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteRoleForUser", arg0, arg1)
@@ -404,7 +404,7 @@ func (mr *MockServiceMockRecorder) DeleteRoleForUser(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteRoleForUser", reflect.TypeOf((*MockService)(nil).DeleteRoleForUser), arg0, arg1)
 }
 
-// DeleteSchedulerClusterToApplication mocks commonv1 method.
+// DeleteSchedulerClusterToApplication mocks base method.
 func (m *MockService) DeleteSchedulerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteSchedulerClusterToApplication", arg0, arg1, arg2)
@@ -418,7 +418,7 @@ func (mr *MockServiceMockRecorder) DeleteSchedulerClusterToApplication(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSchedulerClusterToApplication", reflect.TypeOf((*MockService)(nil).DeleteSchedulerClusterToApplication), arg0, arg1, arg2)
 }
 
-// DeleteSeedPeerClusterToApplication mocks commonv1 method.
+// DeleteSeedPeerClusterToApplication mocks base method.
 func (m *MockService) DeleteSeedPeerClusterToApplication(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteSeedPeerClusterToApplication", arg0, arg1, arg2)
@@ -432,7 +432,7 @@ func (mr *MockServiceMockRecorder) DeleteSeedPeerClusterToApplication(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSeedPeerClusterToApplication", reflect.TypeOf((*MockService)(nil).DeleteSeedPeerClusterToApplication), arg0, arg1, arg2)
 }
 
-// DestroyApplication mocks commonv1 method.
+// DestroyApplication mocks base method.
 func (m *MockService) DestroyApplication(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyApplication", arg0, arg1)
@@ -446,7 +446,7 @@ func (mr *MockServiceMockRecorder) DestroyApplication(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyApplication", reflect.TypeOf((*MockService)(nil).DestroyApplication), arg0, arg1)
 }
 
-// DestroyBucket mocks commonv1 method.
+// DestroyBucket mocks base method.
 func (m *MockService) DestroyBucket(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyBucket", arg0, arg1)
@@ -460,7 +460,7 @@ func (mr *MockServiceMockRecorder) DestroyBucket(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyBucket", reflect.TypeOf((*MockService)(nil).DestroyBucket), arg0, arg1)
 }
 
-// DestroyConfig mocks commonv1 method.
+// DestroyConfig mocks base method.
 func (m *MockService) DestroyConfig(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyConfig", arg0, arg1)
@@ -474,7 +474,7 @@ func (mr *MockServiceMockRecorder) DestroyConfig(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyConfig", reflect.TypeOf((*MockService)(nil).DestroyConfig), arg0, arg1)
 }
 
-// DestroyJob mocks commonv1 method.
+// DestroyJob mocks base method.
 func (m *MockService) DestroyJob(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyJob", arg0, arg1)
@@ -488,7 +488,7 @@ func (mr *MockServiceMockRecorder) DestroyJob(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyJob", reflect.TypeOf((*MockService)(nil).DestroyJob), arg0, arg1)
 }
 
-// DestroyOauth mocks commonv1 method.
+// DestroyOauth mocks base method.
 func (m *MockService) DestroyOauth(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyOauth", arg0, arg1)
@@ -502,7 +502,7 @@ func (mr *MockServiceMockRecorder) DestroyOauth(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyOauth", reflect.TypeOf((*MockService)(nil).DestroyOauth), arg0, arg1)
 }
 
-// DestroyRole mocks commonv1 method.
+// DestroyRole mocks base method.
 func (m *MockService) DestroyRole(arg0 context.Context, arg1 string) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyRole", arg0, arg1)
@@ -517,7 +517,7 @@ func (mr *MockServiceMockRecorder) DestroyRole(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyRole", reflect.TypeOf((*MockService)(nil).DestroyRole), arg0, arg1)
 }
 
-// DestroyScheduler mocks commonv1 method.
+// DestroyScheduler mocks base method.
 func (m *MockService) DestroyScheduler(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroyScheduler", arg0, arg1)
@@ -531,7 +531,7 @@ func (mr *MockServiceMockRecorder) DestroyScheduler(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyScheduler", reflect.TypeOf((*MockService)(nil).DestroyScheduler), arg0, arg1)
 }
 
-// DestroySchedulerCluster mocks commonv1 method.
+// DestroySchedulerCluster mocks base method.
 func (m *MockService) DestroySchedulerCluster(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySchedulerCluster", arg0, arg1)
@@ -545,7 +545,7 @@ func (mr *MockServiceMockRecorder) DestroySchedulerCluster(arg0, arg1 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySchedulerCluster", reflect.TypeOf((*MockService)(nil).DestroySchedulerCluster), arg0, arg1)
 }
 
-// DestroySecurityGroup mocks commonv1 method.
+// DestroySecurityGroup mocks base method.
 func (m *MockService) DestroySecurityGroup(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySecurityGroup", arg0, arg1)
@@ -559,7 +559,7 @@ func (mr *MockServiceMockRecorder) DestroySecurityGroup(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityGroup", reflect.TypeOf((*MockService)(nil).DestroySecurityGroup), arg0, arg1)
 }
 
-// DestroySecurityRule mocks commonv1 method.
+// DestroySecurityRule mocks base method.
 func (m *MockService) DestroySecurityRule(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySecurityRule", arg0, arg1)
@@ -573,7 +573,7 @@ func (mr *MockServiceMockRecorder) DestroySecurityRule(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityRule", reflect.TypeOf((*MockService)(nil).DestroySecurityRule), arg0, arg1)
 }
 
-// DestroySecurityRuleToSecurityGroup mocks commonv1 method.
+// DestroySecurityRuleToSecurityGroup mocks base method.
 func (m *MockService) DestroySecurityRuleToSecurityGroup(arg0 context.Context, arg1, arg2 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySecurityRuleToSecurityGroup", arg0, arg1, arg2)
@@ -587,7 +587,7 @@ func (mr *MockServiceMockRecorder) DestroySecurityRuleToSecurityGroup(arg0, arg1
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySecurityRuleToSecurityGroup", reflect.TypeOf((*MockService)(nil).DestroySecurityRuleToSecurityGroup), arg0, arg1, arg2)
 }
 
-// DestroySeedPeer mocks commonv1 method.
+// DestroySeedPeer mocks base method.
 func (m *MockService) DestroySeedPeer(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySeedPeer", arg0, arg1)
@@ -601,7 +601,7 @@ func (mr *MockServiceMockRecorder) DestroySeedPeer(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySeedPeer", reflect.TypeOf((*MockService)(nil).DestroySeedPeer), arg0, arg1)
 }
 
-// DestroySeedPeerCluster mocks commonv1 method.
+// DestroySeedPeerCluster mocks base method.
 func (m *MockService) DestroySeedPeerCluster(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DestroySeedPeerCluster", arg0, arg1)
@@ -615,7 +615,7 @@ func (mr *MockServiceMockRecorder) DestroySeedPeerCluster(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroySeedPeerCluster", reflect.TypeOf((*MockService)(nil).DestroySeedPeerCluster), arg0, arg1)
 }
 
-// GetApplication mocks commonv1 method.
+// GetApplication mocks base method.
 func (m *MockService) GetApplication(arg0 context.Context, arg1 uint) (*model.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplication", arg0, arg1)
@@ -630,7 +630,7 @@ func (mr *MockServiceMockRecorder) GetApplication(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplication", reflect.TypeOf((*MockService)(nil).GetApplication), arg0, arg1)
 }
 
-// GetApplications mocks commonv1 method.
+// GetApplications mocks base method.
 func (m *MockService) GetApplications(arg0 context.Context, arg1 types.GetApplicationsQuery) ([]model.Application, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetApplications", arg0, arg1)
@@ -646,7 +646,7 @@ func (mr *MockServiceMockRecorder) GetApplications(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApplications", reflect.TypeOf((*MockService)(nil).GetApplications), arg0, arg1)
 }
 
-// GetBucket mocks commonv1 method.
+// GetBucket mocks base method.
 func (m *MockService) GetBucket(arg0 context.Context, arg1 string) (*objectstorage.BucketMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBucket", arg0, arg1)
@@ -661,7 +661,7 @@ func (mr *MockServiceMockRecorder) GetBucket(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucket", reflect.TypeOf((*MockService)(nil).GetBucket), arg0, arg1)
 }
 
-// GetBuckets mocks commonv1 method.
+// GetBuckets mocks base method.
 func (m *MockService) GetBuckets(arg0 context.Context) ([]*objectstorage.BucketMetadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBuckets", arg0)
@@ -676,7 +676,7 @@ func (mr *MockServiceMockRecorder) GetBuckets(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockService)(nil).GetBuckets), arg0)
 }
 
-// GetConfig mocks commonv1 method.
+// GetConfig mocks base method.
 func (m *MockService) GetConfig(arg0 context.Context, arg1 uint) (*model.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfig", arg0, arg1)
@@ -691,7 +691,7 @@ func (mr *MockServiceMockRecorder) GetConfig(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfig", reflect.TypeOf((*MockService)(nil).GetConfig), arg0, arg1)
 }
 
-// GetConfigs mocks commonv1 method.
+// GetConfigs mocks base method.
 func (m *MockService) GetConfigs(arg0 context.Context, arg1 types.GetConfigsQuery) ([]model.Config, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfigs", arg0, arg1)
@@ -707,7 +707,7 @@ func (mr *MockServiceMockRecorder) GetConfigs(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigs", reflect.TypeOf((*MockService)(nil).GetConfigs), arg0, arg1)
 }
 
-// GetJob mocks commonv1 method.
+// GetJob mocks base method.
 func (m *MockService) GetJob(arg0 context.Context, arg1 uint) (*model.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetJob", arg0, arg1)
@@ -722,7 +722,7 @@ func (mr *MockServiceMockRecorder) GetJob(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJob", reflect.TypeOf((*MockService)(nil).GetJob), arg0, arg1)
 }
 
-// GetJobs mocks commonv1 method.
+// GetJobs mocks base method.
 func (m *MockService) GetJobs(arg0 context.Context, arg1 types.GetJobsQuery) ([]model.Job, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetJobs", arg0, arg1)
@@ -738,7 +738,7 @@ func (mr *MockServiceMockRecorder) GetJobs(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetJobs", reflect.TypeOf((*MockService)(nil).GetJobs), arg0, arg1)
 }
 
-// GetOauth mocks commonv1 method.
+// GetOauth mocks base method.
 func (m *MockService) GetOauth(arg0 context.Context, arg1 uint) (*model.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOauth", arg0, arg1)
@@ -753,7 +753,7 @@ func (mr *MockServiceMockRecorder) GetOauth(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOauth", reflect.TypeOf((*MockService)(nil).GetOauth), arg0, arg1)
 }
 
-// GetOauths mocks commonv1 method.
+// GetOauths mocks base method.
 func (m *MockService) GetOauths(arg0 context.Context, arg1 types.GetOauthsQuery) ([]model.Oauth, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetOauths", arg0, arg1)
@@ -769,7 +769,7 @@ func (mr *MockServiceMockRecorder) GetOauths(arg0, arg1 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOauths", reflect.TypeOf((*MockService)(nil).GetOauths), arg0, arg1)
 }
 
-// GetPeers mocks commonv1 method.
+// GetPeers mocks base method.
 func (m *MockService) GetPeers(arg0 context.Context) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPeers", arg0)
@@ -784,7 +784,7 @@ func (mr *MockServiceMockRecorder) GetPeers(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPeers", reflect.TypeOf((*MockService)(nil).GetPeers), arg0)
 }
 
-// GetPermissions mocks commonv1 method.
+// GetPermissions mocks base method.
 func (m *MockService) GetPermissions(arg0 context.Context, arg1 *gin.Engine) []rbac.Permission {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPermissions", arg0, arg1)
@@ -798,7 +798,7 @@ func (mr *MockServiceMockRecorder) GetPermissions(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPermissions", reflect.TypeOf((*MockService)(nil).GetPermissions), arg0, arg1)
 }
 
-// GetRole mocks commonv1 method.
+// GetRole mocks base method.
 func (m *MockService) GetRole(arg0 context.Context, arg1 string) [][]string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1)
@@ -812,7 +812,7 @@ func (mr *MockServiceMockRecorder) GetRole(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*MockService)(nil).GetRole), arg0, arg1)
 }
 
-// GetRoles mocks commonv1 method.
+// GetRoles mocks base method.
 func (m *MockService) GetRoles(arg0 context.Context) []string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoles", arg0)
@@ -826,7 +826,7 @@ func (mr *MockServiceMockRecorder) GetRoles(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*MockService)(nil).GetRoles), arg0)
 }
 
-// GetRolesForUser mocks commonv1 method.
+// GetRolesForUser mocks base method.
 func (m *MockService) GetRolesForUser(arg0 context.Context, arg1 uint) ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRolesForUser", arg0, arg1)
@@ -841,7 +841,7 @@ func (mr *MockServiceMockRecorder) GetRolesForUser(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesForUser", reflect.TypeOf((*MockService)(nil).GetRolesForUser), arg0, arg1)
 }
 
-// GetScheduler mocks commonv1 method.
+// GetScheduler mocks base method.
 func (m *MockService) GetScheduler(arg0 context.Context, arg1 uint) (*model.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler", arg0, arg1)
@@ -856,7 +856,7 @@ func (mr *MockServiceMockRecorder) GetScheduler(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockService)(nil).GetScheduler), arg0, arg1)
 }
 
-// GetSchedulerCluster mocks commonv1 method.
+// GetSchedulerCluster mocks base method.
 func (m *MockService) GetSchedulerCluster(arg0 context.Context, arg1 uint) (*model.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerCluster", arg0, arg1)
@@ -871,7 +871,7 @@ func (mr *MockServiceMockRecorder) GetSchedulerCluster(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerCluster", reflect.TypeOf((*MockService)(nil).GetSchedulerCluster), arg0, arg1)
 }
 
-// GetSchedulerClusters mocks commonv1 method.
+// GetSchedulerClusters mocks base method.
 func (m *MockService) GetSchedulerClusters(arg0 context.Context, arg1 types.GetSchedulerClustersQuery) ([]model.SchedulerCluster, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulerClusters", arg0, arg1)
@@ -887,7 +887,7 @@ func (mr *MockServiceMockRecorder) GetSchedulerClusters(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusters", reflect.TypeOf((*MockService)(nil).GetSchedulerClusters), arg0, arg1)
 }
 
-// GetSchedulers mocks commonv1 method.
+// GetSchedulers mocks base method.
 func (m *MockService) GetSchedulers(arg0 context.Context, arg1 types.GetSchedulersQuery) ([]model.Scheduler, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchedulers", arg0, arg1)
@@ -903,7 +903,7 @@ func (mr *MockServiceMockRecorder) GetSchedulers(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulers", reflect.TypeOf((*MockService)(nil).GetSchedulers), arg0, arg1)
 }
 
-// GetSecurityGroup mocks commonv1 method.
+// GetSecurityGroup mocks base method.
 func (m *MockService) GetSecurityGroup(arg0 context.Context, arg1 uint) (*model.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroup", arg0, arg1)
@@ -918,7 +918,7 @@ func (mr *MockServiceMockRecorder) GetSecurityGroup(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroup", reflect.TypeOf((*MockService)(nil).GetSecurityGroup), arg0, arg1)
 }
 
-// GetSecurityGroups mocks commonv1 method.
+// GetSecurityGroups mocks base method.
 func (m *MockService) GetSecurityGroups(arg0 context.Context, arg1 types.GetSecurityGroupsQuery) ([]model.SecurityGroup, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityGroups", arg0, arg1)
@@ -934,7 +934,7 @@ func (mr *MockServiceMockRecorder) GetSecurityGroups(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityGroups", reflect.TypeOf((*MockService)(nil).GetSecurityGroups), arg0, arg1)
 }
 
-// GetSecurityRule mocks commonv1 method.
+// GetSecurityRule mocks base method.
 func (m *MockService) GetSecurityRule(arg0 context.Context, arg1 uint) (*model.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityRule", arg0, arg1)
@@ -949,7 +949,7 @@ func (mr *MockServiceMockRecorder) GetSecurityRule(arg0, arg1 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityRule", reflect.TypeOf((*MockService)(nil).GetSecurityRule), arg0, arg1)
 }
 
-// GetSecurityRules mocks commonv1 method.
+// GetSecurityRules mocks base method.
 func (m *MockService) GetSecurityRules(arg0 context.Context, arg1 types.GetSecurityRulesQuery) ([]model.SecurityRule, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSecurityRules", arg0, arg1)
@@ -965,7 +965,7 @@ func (mr *MockServiceMockRecorder) GetSecurityRules(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSecurityRules", reflect.TypeOf((*MockService)(nil).GetSecurityRules), arg0, arg1)
 }
 
-// GetSeedPeer mocks commonv1 method.
+// GetSeedPeer mocks base method.
 func (m *MockService) GetSeedPeer(arg0 context.Context, arg1 uint) (*model.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeer", arg0, arg1)
@@ -980,7 +980,7 @@ func (mr *MockServiceMockRecorder) GetSeedPeer(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeer", reflect.TypeOf((*MockService)(nil).GetSeedPeer), arg0, arg1)
 }
 
-// GetSeedPeerCluster mocks commonv1 method.
+// GetSeedPeerCluster mocks base method.
 func (m *MockService) GetSeedPeerCluster(arg0 context.Context, arg1 uint) (*model.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeerCluster", arg0, arg1)
@@ -995,7 +995,7 @@ func (mr *MockServiceMockRecorder) GetSeedPeerCluster(arg0, arg1 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeerCluster", reflect.TypeOf((*MockService)(nil).GetSeedPeerCluster), arg0, arg1)
 }
 
-// GetSeedPeerClusters mocks commonv1 method.
+// GetSeedPeerClusters mocks base method.
 func (m *MockService) GetSeedPeerClusters(arg0 context.Context, arg1 types.GetSeedPeerClustersQuery) ([]model.SeedPeerCluster, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeerClusters", arg0, arg1)
@@ -1011,7 +1011,7 @@ func (mr *MockServiceMockRecorder) GetSeedPeerClusters(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeerClusters", reflect.TypeOf((*MockService)(nil).GetSeedPeerClusters), arg0, arg1)
 }
 
-// GetSeedPeers mocks commonv1 method.
+// GetSeedPeers mocks base method.
 func (m *MockService) GetSeedPeers(arg0 context.Context, arg1 types.GetSeedPeersQuery) ([]model.SeedPeer, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSeedPeers", arg0, arg1)
@@ -1027,7 +1027,7 @@ func (mr *MockServiceMockRecorder) GetSeedPeers(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeers", reflect.TypeOf((*MockService)(nil).GetSeedPeers), arg0, arg1)
 }
 
-// GetUser mocks commonv1 method.
+// GetUser mocks base method.
 func (m *MockService) GetUser(arg0 context.Context, arg1 uint) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
@@ -1042,7 +1042,7 @@ func (mr *MockServiceMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockService)(nil).GetUser), arg0, arg1)
 }
 
-// GetUsers mocks commonv1 method.
+// GetUsers mocks base method.
 func (m *MockService) GetUsers(arg0 context.Context, arg1 types.GetUsersQuery) ([]model.User, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUsers", arg0, arg1)
@@ -1058,7 +1058,7 @@ func (mr *MockServiceMockRecorder) GetUsers(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*MockService)(nil).GetUsers), arg0, arg1)
 }
 
-// GetV1Preheat mocks commonv1 method.
+// GetV1Preheat mocks base method.
 func (m *MockService) GetV1Preheat(arg0 context.Context, arg1 string) (*types.GetV1PreheatResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetV1Preheat", arg0, arg1)
@@ -1073,7 +1073,7 @@ func (mr *MockServiceMockRecorder) GetV1Preheat(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetV1Preheat", reflect.TypeOf((*MockService)(nil).GetV1Preheat), arg0, arg1)
 }
 
-// OauthSignin mocks commonv1 method.
+// OauthSignin mocks base method.
 func (m *MockService) OauthSignin(arg0 context.Context, arg1 string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OauthSignin", arg0, arg1)
@@ -1088,7 +1088,7 @@ func (mr *MockServiceMockRecorder) OauthSignin(arg0, arg1 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OauthSignin", reflect.TypeOf((*MockService)(nil).OauthSignin), arg0, arg1)
 }
 
-// OauthSigninCallback mocks commonv1 method.
+// OauthSigninCallback mocks base method.
 func (m *MockService) OauthSigninCallback(arg0 context.Context, arg1, arg2 string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OauthSigninCallback", arg0, arg1, arg2)
@@ -1103,7 +1103,7 @@ func (mr *MockServiceMockRecorder) OauthSigninCallback(arg0, arg1, arg2 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OauthSigninCallback", reflect.TypeOf((*MockService)(nil).OauthSigninCallback), arg0, arg1, arg2)
 }
 
-// ResetPassword mocks commonv1 method.
+// ResetPassword mocks base method.
 func (m *MockService) ResetPassword(arg0 context.Context, arg1 uint, arg2 types.ResetPasswordRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResetPassword", arg0, arg1, arg2)
@@ -1117,7 +1117,7 @@ func (mr *MockServiceMockRecorder) ResetPassword(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockService)(nil).ResetPassword), arg0, arg1, arg2)
 }
 
-// SignIn mocks commonv1 method.
+// SignIn mocks base method.
 func (m *MockService) SignIn(arg0 context.Context, arg1 types.SignInRequest) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SignIn", arg0, arg1)
@@ -1132,7 +1132,7 @@ func (mr *MockServiceMockRecorder) SignIn(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignIn", reflect.TypeOf((*MockService)(nil).SignIn), arg0, arg1)
 }
 
-// SignUp mocks commonv1 method.
+// SignUp mocks base method.
 func (m *MockService) SignUp(arg0 context.Context, arg1 types.SignUpRequest) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SignUp", arg0, arg1)
@@ -1147,7 +1147,7 @@ func (mr *MockServiceMockRecorder) SignUp(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignUp", reflect.TypeOf((*MockService)(nil).SignUp), arg0, arg1)
 }
 
-// UpdateApplication mocks commonv1 method.
+// UpdateApplication mocks base method.
 func (m *MockService) UpdateApplication(arg0 context.Context, arg1 uint, arg2 types.UpdateApplicationRequest) (*model.Application, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateApplication", arg0, arg1, arg2)
@@ -1162,7 +1162,7 @@ func (mr *MockServiceMockRecorder) UpdateApplication(arg0, arg1, arg2 interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateApplication", reflect.TypeOf((*MockService)(nil).UpdateApplication), arg0, arg1, arg2)
 }
 
-// UpdateConfig mocks commonv1 method.
+// UpdateConfig mocks base method.
 func (m *MockService) UpdateConfig(arg0 context.Context, arg1 uint, arg2 types.UpdateConfigRequest) (*model.Config, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateConfig", arg0, arg1, arg2)
@@ -1177,7 +1177,7 @@ func (mr *MockServiceMockRecorder) UpdateConfig(arg0, arg1, arg2 interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateConfig", reflect.TypeOf((*MockService)(nil).UpdateConfig), arg0, arg1, arg2)
 }
 
-// UpdateJob mocks commonv1 method.
+// UpdateJob mocks base method.
 func (m *MockService) UpdateJob(arg0 context.Context, arg1 uint, arg2 types.UpdateJobRequest) (*model.Job, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateJob", arg0, arg1, arg2)
@@ -1192,7 +1192,7 @@ func (mr *MockServiceMockRecorder) UpdateJob(arg0, arg1, arg2 interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJob", reflect.TypeOf((*MockService)(nil).UpdateJob), arg0, arg1, arg2)
 }
 
-// UpdateOauth mocks commonv1 method.
+// UpdateOauth mocks base method.
 func (m *MockService) UpdateOauth(arg0 context.Context, arg1 uint, arg2 types.UpdateOauthRequest) (*model.Oauth, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOauth", arg0, arg1, arg2)
@@ -1207,7 +1207,7 @@ func (mr *MockServiceMockRecorder) UpdateOauth(arg0, arg1, arg2 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOauth", reflect.TypeOf((*MockService)(nil).UpdateOauth), arg0, arg1, arg2)
 }
 
-// UpdateScheduler mocks commonv1 method.
+// UpdateScheduler mocks base method.
 func (m *MockService) UpdateScheduler(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerRequest) (*model.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScheduler", arg0, arg1, arg2)
@@ -1222,7 +1222,7 @@ func (mr *MockServiceMockRecorder) UpdateScheduler(arg0, arg1, arg2 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockService)(nil).UpdateScheduler), arg0, arg1, arg2)
 }
 
-// UpdateSchedulerCluster mocks commonv1 method.
+// UpdateSchedulerCluster mocks base method.
 func (m *MockService) UpdateSchedulerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSchedulerClusterRequest) (*model.SchedulerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSchedulerCluster", arg0, arg1, arg2)
@@ -1237,7 +1237,7 @@ func (mr *MockServiceMockRecorder) UpdateSchedulerCluster(arg0, arg1, arg2 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchedulerCluster", reflect.TypeOf((*MockService)(nil).UpdateSchedulerCluster), arg0, arg1, arg2)
 }
 
-// UpdateSecurityGroup mocks commonv1 method.
+// UpdateSecurityGroup mocks base method.
 func (m *MockService) UpdateSecurityGroup(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityGroupRequest) (*model.SecurityGroup, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecurityGroup", arg0, arg1, arg2)
@@ -1252,7 +1252,7 @@ func (mr *MockServiceMockRecorder) UpdateSecurityGroup(arg0, arg1, arg2 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecurityGroup", reflect.TypeOf((*MockService)(nil).UpdateSecurityGroup), arg0, arg1, arg2)
 }
 
-// UpdateSecurityRule mocks commonv1 method.
+// UpdateSecurityRule mocks base method.
 func (m *MockService) UpdateSecurityRule(arg0 context.Context, arg1 uint, arg2 types.UpdateSecurityRuleRequest) (*model.SecurityRule, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSecurityRule", arg0, arg1, arg2)
@@ -1267,7 +1267,7 @@ func (mr *MockServiceMockRecorder) UpdateSecurityRule(arg0, arg1, arg2 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSecurityRule", reflect.TypeOf((*MockService)(nil).UpdateSecurityRule), arg0, arg1, arg2)
 }
 
-// UpdateSeedPeer mocks commonv1 method.
+// UpdateSeedPeer mocks base method.
 func (m *MockService) UpdateSeedPeer(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerRequest) (*model.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1, arg2)
@@ -1282,7 +1282,7 @@ func (mr *MockServiceMockRecorder) UpdateSeedPeer(arg0, arg1, arg2 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockService)(nil).UpdateSeedPeer), arg0, arg1, arg2)
 }
 
-// UpdateSeedPeerCluster mocks commonv1 method.
+// UpdateSeedPeerCluster mocks base method.
 func (m *MockService) UpdateSeedPeerCluster(arg0 context.Context, arg1 uint, arg2 types.UpdateSeedPeerClusterRequest) (*model.SeedPeerCluster, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeerCluster", arg0, arg1, arg2)
@@ -1297,7 +1297,7 @@ func (mr *MockServiceMockRecorder) UpdateSeedPeerCluster(arg0, arg1, arg2 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeerCluster", reflect.TypeOf((*MockService)(nil).UpdateSeedPeerCluster), arg0, arg1, arg2)
 }
 
-// UpdateUser mocks commonv1 method.
+// UpdateUser mocks base method.
 func (m *MockService) UpdateUser(arg0 context.Context, arg1 uint, arg2 types.UpdateUserRequest) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2)

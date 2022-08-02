@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 )
 
 func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) CdnClient {
@@ -61,13 +61,13 @@ func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Cd
 	return elasticCdnClient, nil
 }
 
-// CdnClient see cdnsystem.CdnClient
+// CdnClient see cdnsystemv1.CdnClient
 type CdnClient interface {
-	ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
+	ObtainSeeds(ctx context.Context, sr *cdnsystemv1.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
 
 	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error)
 
-	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error)
+	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error)
 
 	UpdateState(addrs []dfnet.NetAddr)
 
@@ -80,23 +80,23 @@ type cdnClient struct {
 
 var _ CdnClient = (*cdnClient)(nil)
 
-func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystem.SeederClient, string, error) {
+func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystemv1.SeederClient, string, error) {
 	clientConn, err := cc.Connection.GetClientConn(key, stick)
 	if err != nil {
 		return nil, "", fmt.Errorf("get ClientConn for hashKey %s: %w", key, err)
 	}
-	return cdnsystem.NewSeederClient(clientConn), clientConn.Target(), nil
+	return cdnsystemv1.NewSeederClient(clientConn), clientConn.Target(), nil
 }
 
-func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystem.SeederClient, error) {
+func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystemv1.SeederClient, error) {
 	conn, err := cc.Connection.GetClientConnByTarget(target)
 	if err != nil {
 		return nil, err
 	}
-	return cdnsystem.NewSeederClient(conn), nil
+	return cdnsystemv1.NewSeederClient(conn), nil
 }
 
-func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
+func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystemv1.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
 	return newPieceSeedStream(ctx, cc, sr.TaskId, sr, opts)
 }
 
@@ -108,7 +108,7 @@ func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req 
 	return client.GetPieceTasks(ctx, req, opts...)
 }
 
-func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
+func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
 	client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
 	if err != nil {
 		return nil, err
