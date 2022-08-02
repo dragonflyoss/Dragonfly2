@@ -35,7 +35,7 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type seeder struct {
@@ -61,7 +61,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer c
 	}
 
 	req := peer.SeedTaskRequest{
-		PeerTaskRequest: scheduler.PeerTaskRequest{
+		PeerTaskRequest: schedulerv1.PeerTaskRequest{
 			Url:         seedRequest.Url,
 			UrlMeta:     seedRequest.UrlMeta,
 			PeerId:      idgen.SeedPeerID(s.server.peerHost.Ip), // when reuse peer task, peer id will be replaced.

@@ -30,11 +30,11 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type FileTaskRequest struct {
-	scheduler.PeerTaskRequest
+	schedulerv1.PeerTaskRequest
 	Output             string
 	Limit              float64
 	DisableBackSource  bool

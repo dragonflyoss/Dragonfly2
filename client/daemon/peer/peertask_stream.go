@@ -32,7 +32,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type StreamTaskRequest struct {
@@ -66,7 +66,7 @@ type streamTask struct {
 
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	rg *util.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf

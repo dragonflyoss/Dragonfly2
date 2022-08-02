@@ -32,14 +32,14 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
@@ -62,7 +62,7 @@ type TaskManager interface {
 	IsPeerTaskRunning(taskID string) (Task, bool)
 
 	// StatTask checks whether the given task exists in P2P network
-	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
+	StatTask(ctx context.Context, taskID string) (*schedulerv1.Task, error)
 
 	// AnnouncePeerTask announces peer task info to P2P network
 	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error
@@ -119,7 +119,7 @@ func init() {
 }
 
 type peerTaskManager struct {
-	host            *scheduler.PeerHost
+	host            *schedulerv1.PeerHost
 	schedulerClient schedulerclient.Client
 	schedulerOption config.SchedulerOption
 	pieceManager    PieceManager
@@ -143,7 +143,7 @@ type peerTaskManager struct {
 }
 
 func NewPeerTaskManager(
-	host *scheduler.PeerHost,
+	host *schedulerv1.PeerHost,
 	pieceManager PieceManager,
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.Client,
@@ -183,7 +183,7 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 
 func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	taskID string,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *util.Range,
@@ -206,7 +206,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ctx context.Context,
 	taskID string,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *util.Range,
@@ -248,8 +248,8 @@ func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
 	return ptm.enablePrefetch && rg != nil
 }
 
-func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
-	req := &scheduler.PeerTaskRequest{
+func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
+	req := &schedulerv1.PeerTaskRequest{
 		Url:         request.Url,
 		PeerId:      request.PeerId,
 		PeerHost:    ptm.host,
@@ -320,7 +320,7 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 }
 
 func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
-	peerTaskRequest := &scheduler.PeerTaskRequest{
+	peerTaskRequest := &schedulerv1.PeerTaskRequest{
 		Url:         req.URL,
 		UrlMeta:     req.URLMeta,
 		PeerId:      req.PeerID,
@@ -413,8 +413,8 @@ func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
 	return nil, ok
 }
 
-func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
-	req := &scheduler.StatTaskRequest{
+func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*schedulerv1.Task, error) {
+	req := &schedulerv1.StatTaskRequest{
 		TaskId: taskID,
 	}
 
@@ -449,7 +449,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
 
 	// Announce peer task to scheduler
-	if err := ptm.schedulerClient.AnnounceTask(ctx, &scheduler.AnnounceTaskRequest{
+	if err := ptm.schedulerClient.AnnounceTask(ctx, &schedulerv1.AnnounceTaskRequest{
 		TaskId:      meta.TaskID,
 		TaskType:    taskType,
 		Url:         url,

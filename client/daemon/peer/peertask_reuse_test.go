@@ -34,7 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/util"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func TestReuseFilePeerTask(t *testing.T) {
@@ -56,7 +56,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed task found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -100,7 +100,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed task not found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -137,7 +137,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed subtask found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -181,7 +181,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed subtask not found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -214,7 +214,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "partial task found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -263,7 +263,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "partial task found - out of range",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
 					UrlMeta: &commonv1.UrlMeta{
@@ -317,7 +317,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &scheduler.PeerHost{},
+				host:           &schedulerv1.PeerHost{},
 				enablePrefetch: tc.enablePrefetch,
 				storageManager: sm,
 			}
@@ -694,7 +694,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &scheduler.PeerHost{},
+				host:           &schedulerv1.PeerHost{},
 				enablePrefetch: tc.enablePrefetch,
 				storageManager: sm,
 			}

@@ -30,7 +30,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/retry"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type pieceTaskPoller struct {
@@ -46,7 +46,7 @@ func (poller *pieceTaskPoller) preparePieceTasks(request *commonv1.PieceTaskRequ
 prepare:
 	retryCount++
 	poller.peerTaskConductor.Debugf("prepare piece tasks, retry count: %d", retryCount)
-	peerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
+	peerPacket := ptc.peerPacket.Load().(*schedulerv1.PeerPacket)
 
 	if poller.peerTaskConductor.needBackSource.Load() {
 		return nil, fmt.Errorf("need back source")
@@ -74,8 +74,8 @@ prepare:
 }
 
 func (poller *pieceTaskPoller) preparePieceTasksByPeer(
-	curPeerPacket *scheduler.PeerPacket,
-	peer *scheduler.PeerPacket_DestPeer, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
+	curPeerPacket *schedulerv1.PeerPacket,
+	peer *schedulerv1.PeerPacket_DestPeer, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	ptc := poller.peerTaskConductor
 	if peer == nil {
 		return nil, fmt.Errorf("empty peer")
@@ -122,7 +122,7 @@ retry:
 		code = de.Code
 	}
 	ptc.Errorf("get piece task from peer %s error: %s, code: %d", peer.PeerId, err, code)
-	sendError := ptc.sendPieceResult(&scheduler.PieceResult{
+	sendError := ptc.sendPieceResult(&schedulerv1.PieceResult{
 		TaskId:        ptc.taskID,
 		SrcPid:        ptc.peerID,
 		DstPid:        peer.PeerId,
@@ -141,7 +141,7 @@ retry:
 	}
 
 	// currently, before cdn gc tasks, it did not notify scheduler, when cdn complains Code_CDNTaskNotFound, retry
-	if maxRetries > 0 && code == commonv1.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*scheduler.PeerPacket) {
+	if maxRetries > 0 && code == commonv1.Code_CDNTaskNotFound && curPeerPacket == ptc.peerPacket.Load().(*schedulerv1.PeerPacket) {
 		span.AddEvent("retry for CdnTaskNotFound")
 		time.Sleep(time.Second)
 		maxRetries--
@@ -152,8 +152,8 @@ retry:
 
 func (poller *pieceTaskPoller) getPieceTasksByPeer(
 	span trace.Span,
-	curPeerPacket *scheduler.PeerPacket,
-	peer *scheduler.PeerPacket_DestPeer,
+	curPeerPacket *schedulerv1.PeerPacket,
+	peer *schedulerv1.PeerPacket_DestPeer,
 	request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	var (
 		peerPacketChanged bool
@@ -182,7 +182,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			}
 
 			// fast way 2 to exit retry
-			lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
+			lastPeerPacket := ptc.peerPacket.Load().(*schedulerv1.PeerPacket)
 			if curPeerPacket.CandidatePeers[0].PeerId != lastPeerPacket.CandidatePeers[0].PeerId {
 				ptc.Warnf("get piece tasks with error: %s, but peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s", getError,
 					curPeerPacket.CandidatePeers[0].PeerId, lastPeerPacket.CandidatePeers[0].PeerId)
@@ -206,7 +206,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 		}
 
 		// by santong: when peer return empty, retry later
-		sendError := ptc.sendPieceResult(&scheduler.PieceResult{
+		sendError := ptc.sendPieceResult(&schedulerv1.PieceResult{
 			TaskId:        ptc.taskID,
 			SrcPid:        ptc.peerID,
 			DstPid:        peer.PeerId,
@@ -223,7 +223,7 @@ func (poller *pieceTaskPoller) getPieceTasksByPeer(
 			return nil, true, sendError
 		}
 		// fast way to exit retry
-		lastPeerPacket := ptc.peerPacket.Load().(*scheduler.PeerPacket)
+		lastPeerPacket := ptc.peerPacket.Load().(*schedulerv1.PeerPacket)
 		if curPeerPacket.CandidatePeers[0].PeerId != lastPeerPacket.CandidatePeers[0].PeerId {
 			ptc.Warnf("get empty pieces and peer packet changed, switch to new peer packet, current destPeer %s, new destPeer %s",
 				curPeerPacket.CandidatePeers[0].PeerId, lastPeerPacket.CandidatePeers[0].PeerId)

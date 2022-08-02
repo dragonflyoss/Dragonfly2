@@ -41,7 +41,7 @@ import (
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func TestMain(m *testing.M) {
@@ -77,7 +77,7 @@ func Test_ServeDownload(t *testing.T) {
 		})
 	m := &server{
 		KeepAlive:       util.NewKeepAlive("test"),
-		peerHost:        &scheduler.PeerHost{},
+		peerHost:        &schedulerv1.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
 	m.downloadServer = dfdaemonserver.New(m)
@@ -146,7 +146,7 @@ func Test_ServePeer(t *testing.T) {
 	})
 	s := &server{
 		KeepAlive:      util.NewKeepAlive("test"),
-		peerHost:       &scheduler.PeerHost{},
+		peerHost:       &schedulerv1.PeerHost{},
 		storageManager: mockStorageManger,
 	}
 	s.peerServer = dfdaemonserver.New(s)
@@ -483,7 +483,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 
 				s := &server{
 					KeepAlive:       util.NewKeepAlive("test"),
-					peerHost:        &scheduler.PeerHost{},
+					peerHost:        &schedulerv1.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,
 				}

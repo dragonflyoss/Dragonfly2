@@ -38,6 +38,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -46,14 +49,11 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	mock_scheduler_client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
-	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
+	clientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourcemocks "d7y.io/dragonfly/v2/pkg/source/mocks"
@@ -112,7 +112,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	pps := mock_scheduler.NewMockScheduler_ReportPieceResultClient(ctrl)
+	pps := schedulerv1mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 	var (
 		wg             = sync.WaitGroup{}
 		backSourceSent = atomic.Bool{}
@@ -120,7 +120,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	wg.Add(1)
 
 	pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(
-		func(pr *scheduler.PieceResult) error {
+		func(pr *schedulerv1.PieceResult) error {
 			if pr.PieceInfo.PieceNum == 0 && pr.Success {
 				if !backSourceSent.Load() {
 					wg.Done()
@@ -134,7 +134,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		schedPeerPacket bool
 	)
 	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
-		func() (*scheduler.PeerPacket, error) {
+		func() (*schedulerv1.PeerPacket, error) {
 			if len(opt.peerPacketDelay) > delayCount {
 				if delay := opt.peerPacketDelay[delayCount]; delay > 0 {
 					time.Sleep(delay)
@@ -147,12 +147,12 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 				return nil, dferrors.New(commonv1.Code_SchedNeedBackSource, "")
 			}
 			schedPeerPacket = true
-			return &scheduler.PeerPacket{
+			return &schedulerv1.PeerPacket{
 				Code:          commonv1.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,
-				MainPeer: &scheduler.PeerPacket_DestPeer{
+				MainPeer: &schedulerv1.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,
 					PeerId:  "peer-x",
@@ -161,21 +161,21 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 			}, nil
 		})
 	pps.EXPECT().CloseSend().AnyTimes()
-	sched := mock_scheduler_client.NewMockClient(ctrl)
+	sched := clientmocks.NewMockClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
-			return &scheduler.RegisterResult{
+		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+			return &schedulerv1.RegisterResult{
 				TaskId:      opt.taskID,
 				SizeScope:   commonv1.SizeScope_NORMAL,
 				DirectPiece: nil,
 			}, nil
 		})
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
+		func(ctx context.Context, pr *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
 	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
@@ -250,7 +250,7 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 	}
 	ptm := &peerTaskManager{
 		calculateDigest: true,
-		host: &scheduler.PeerHost{
+		host: &schedulerv1.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
@@ -262,13 +262,13 @@ func TestStreamPeerTask_BackSource_Partial_WithContentLength(t *testing.T) {
 			ScheduleTimeout: util.Duration{Duration: 10 * time.Minute},
 		},
 	}
-	req := &scheduler.PeerTaskRequest{
+	req := &schedulerv1.PeerTaskRequest{
 		Url: url,
 		UrlMeta: &commonv1.UrlMeta{
 			Tag: "d7y-test",
 		},
 		PeerId:   peerID,
-		PeerHost: &scheduler.PeerHost{},
+		PeerHost: &schedulerv1.PeerHost{},
 	}
 	ctx := context.Background()
 	pt, err := ptm.newStreamTask(ctx, req, nil)

@@ -39,6 +39,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -57,7 +58,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -68,15 +68,15 @@ type Daemon interface {
 
 	// ExportTaskManager returns the underlay peer.TaskManager for downloading when embed dragonfly in custom binary
 	ExportTaskManager() peer.TaskManager
-	// ExportPeerHost returns the underlay scheduler.PeerHost for scheduling
-	ExportPeerHost() *scheduler.PeerHost
+	// ExportPeerHost returns the underlay schedulerv1.PeerHost for scheduling
+	ExportPeerHost() *schedulerv1.PeerHost
 }
 
 type clientDaemon struct {
 	once *sync.Once
 	done chan bool
 
-	schedPeerHost *scheduler.PeerHost
+	schedPeerHost *schedulerv1.PeerHost
 
 	Option config.DaemonOption
 
@@ -101,7 +101,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
-	host := &scheduler.PeerHost{
+	host := &schedulerv1.PeerHost{
 		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
@@ -162,7 +162,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
 	gcCallback := func(request storage.CommonTaskRequest) {
-		er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+		er := sched.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
 		})
@@ -775,6 +775,6 @@ func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {
 	return cd.PeerTaskManager
 }
 
-func (cd *clientDaemon) ExportPeerHost() *scheduler.PeerHost {
+func (cd *clientDaemon) ExportPeerHost() *schedulerv1.PeerHost {
 	return cd.schedPeerHost
 }

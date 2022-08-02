@@ -29,11 +29,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
 
 var (
@@ -168,11 +168,11 @@ func TestPeer_PieceCosts(t *testing.T) {
 func TestPeer_LoadStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "load stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				newStream, ok := peer.LoadStream()
@@ -182,7 +182,7 @@ func TestPeer_LoadStream(t *testing.T) {
 		},
 		{
 			name: "stream does not exist",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				_, ok := peer.LoadStream()
 				assert.Equal(ok, false)
@@ -207,11 +207,11 @@ func TestPeer_LoadStream(t *testing.T) {
 func TestPeer_StoreStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "store stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				newStream, ok := peer.LoadStream()
@@ -238,11 +238,11 @@ func TestPeer_StoreStream(t *testing.T) {
 func TestPeer_DeleteStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "delete stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				peer.DeleteStream()
@@ -269,11 +269,11 @@ func TestPeer_DeleteStream(t *testing.T) {
 func TestPeer_Parents(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "peer has no parents",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				assert.Equal(len(peer.Parents()), 0)
@@ -281,7 +281,7 @@ func TestPeer_Parents(t *testing.T) {
 		},
 		{
 			name: "peer has parents",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(seedPeer)
@@ -313,11 +313,11 @@ func TestPeer_Parents(t *testing.T) {
 func TestPeer_Children(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "peer has no children",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				assert.Equal(len(peer.Children()), 0)
@@ -325,7 +325,7 @@ func TestPeer_Children(t *testing.T) {
 		},
 		{
 			name: "peer has children",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(seedPeer)

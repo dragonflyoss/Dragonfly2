@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 )
 
@@ -41,7 +41,7 @@ const (
 
 type SeedPeer interface {
 	// TriggerTask triggers the seed peer to download the task.
-	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
+	TriggerTask(context.Context, *Task) (*Peer, *schedulerv1.PeerResult, error)
 
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
@@ -66,7 +66,7 @@ func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager Hos
 }
 
 // TriggerTask start to trigger seed peer task.
-func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
+func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -127,7 +127,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 		// Handle end of piece.
 		if piece.Done {
 			peer.Log.Infof("receive done piece")
-			return peer, &rpcscheduler.PeerResult{
+			return peer, &schedulerv1.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
 			}, nil

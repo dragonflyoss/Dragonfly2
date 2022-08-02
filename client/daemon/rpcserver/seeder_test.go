@@ -41,7 +41,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func Test_ObtainSeeds(t *testing.T) {
@@ -313,7 +313,7 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				s := &server{
 					KeepAlive:       util.NewKeepAlive("test"),
-					peerHost:        &scheduler.PeerHost{},
+					peerHost:        &schedulerv1.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,
 				}

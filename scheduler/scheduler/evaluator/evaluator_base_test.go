@@ -24,12 +24,12 @@ import (
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
-	mockRawHost = &scheduler.PeerHost{
+	mockRawHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,

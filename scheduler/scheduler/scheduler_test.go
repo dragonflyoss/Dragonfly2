@@ -27,12 +27,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	rpcschedulermocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -48,7 +48,7 @@ var (
 		BackSourceCount:      int(mockTaskBackToSourceLimit),
 		Algorithm:            evaluator.DefaultAlgorithm,
 	}
-	mockRawHost = &rpcscheduler.PeerHost{
+	mockRawHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
@@ -60,7 +60,7 @@ var (
 		NetTopology:    "net_topology",
 	}
 
-	mockRawSeedHost = &rpcscheduler.PeerHost{
+	mockRawSeedHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
@@ -127,12 +127,12 @@ func TestScheduler_New(t *testing.T) {
 func TestScheduler_ScheduleParent(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
+		mock   func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, peer *resource.Peer)
 	}{
 		{
 			name: "context was done",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				cancel()
 			},
@@ -143,7 +143,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "peer needs back-to-source and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
@@ -156,14 +156,14 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "peer needs back-to-source and send Code_SchedNeedBackSource code failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.StoreStream(stream)
 
-				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(errors.New("foo")).Times(1)
+				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -173,14 +173,14 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "peer needs back-to-source and send Code_SchedNeedBackSource code success",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.StoreStream(stream)
 
-				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
+				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -191,7 +191,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "peer needs back-to-source and task state is TaskStateFailed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.NeedBackToSource.Store(true)
@@ -199,7 +199,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 				task.FSM.SetState(resource.TaskStateFailed)
 				peer.StoreStream(stream)
 
-				mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
+				mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource})).Return(nil).Times(1)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
@@ -210,7 +210,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "schedule exceeds RetryBackSourceLimit and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -223,7 +223,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "schedule exceeds RetryLimit and peer stream load failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -238,7 +238,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "schedule exceeds RetryLimit and send Code_SchedTaskStatusError code failed",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -247,7 +247,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(2),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1),
+					mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
@@ -258,7 +258,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "schedule exceeds RetryLimit and send Code_SchedTaskStatusError code success",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -267,7 +267,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(2),
-					mr.Send(gomock.Eq(&rpcscheduler.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(nil).Times(1),
+					mr.Send(gomock.Eq(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError})).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
@@ -278,7 +278,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		},
 		{
 			name: "schedule succeeded",
-			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, mr *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(cancel context.CancelFunc, peer *resource.Peer, seedPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, mr *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				task := peer.Task
 				task.StorePeer(peer)
 				task.StorePeer(seedPeer)
@@ -305,7 +305,7 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
+			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			ctx, cancel := context.WithCancel(context.Background())
 			mockHost := resource.NewHost(mockRawHost)
@@ -326,12 +326,12 @@ func TestScheduler_ScheduleParent(t *testing.T) {
 func TestScheduler_NotifyAndFindParent(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
+		mock   func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder)
 		expect func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool)
 	}{
 		{
 			name: "peer state is PeerStatePending",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStatePending)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -341,7 +341,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedSmall",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedSmall)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -351,7 +351,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateReceivedNormal",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateReceivedNormal)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -361,7 +361,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateBackToSource",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateBackToSource)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -371,7 +371,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateSucceeded",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateSucceeded)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -381,7 +381,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateFailed",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateFailed)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -391,7 +391,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer state is PeerStateLeave",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateLeave)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, parents []*resource.Peer, ok bool) {
@@ -401,7 +401,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "task peers is empty",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
@@ -413,7 +413,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "task contains only one peer and peer is itself",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 
@@ -426,7 +426,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer is in blocklist",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
@@ -441,7 +441,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer is bad node",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				peer.FSM.SetState(resource.PeerStateFailed)
 				peer.Task.StorePeer(mockPeer)
@@ -453,7 +453,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "parent is peer's descendant",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
@@ -471,7 +471,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "parent is peer's ancestor",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
@@ -489,7 +489,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "parent free upload load is zero",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
@@ -505,7 +505,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer stream is empty",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
@@ -521,7 +521,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "peer stream send failed",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.BackToSourcePeers.Add(mockPeer.ID)
@@ -545,7 +545,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		},
 		{
 			name: "schedule parent",
-			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
+			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream schedulerv1.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *mocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				candidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
@@ -579,7 +579,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ctl := gomock.NewController(t)
 			defer ctl.Finish()
-			stream := rpcschedulermocks.NewMockScheduler_ReportPieceResultServer(ctl)
+			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 			dynconfig := configmocks.NewMockDynconfigInterface(ctl)
 			mockHost := resource.NewHost(mockRawHost)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
@@ -852,7 +852,7 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(md *configmocks.MockDynconfigInterfaceMockRecorder)
-		expect func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
+		expect func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer)
 	}{
 		{
 			name: "get parallelCount from dynconfig",
@@ -861,18 +861,18 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 					ParallelCount: 1,
 				}, true).Times(1)
 			},
-			expect: func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
 				assert := assert.New(t)
-				assert.EqualValues(packet, &rpcscheduler.PeerPacket{
+				assert.EqualValues(packet, &schedulerv1.PeerPacket{
 					TaskId:        mockTaskID,
 					SrcPid:        mockPeerID,
 					ParallelCount: 1,
-					MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+					MainPeer: &schedulerv1.PeerPacket_DestPeer{
 						Ip:      parent.Host.IP,
 						RpcPort: parent.Host.Port,
 						PeerId:  parent.ID,
 					},
-					CandidatePeers: []*rpcscheduler.PeerPacket_DestPeer{
+					CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
 						{
 							Ip:      candidateParents[0].Host.IP,
 							RpcPort: candidateParents[0].Host.Port,
@@ -888,18 +888,18 @@ func TestScheduler_constructSuccessPeerPacket(t *testing.T) {
 			mock: func(md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				md.GetSchedulerClusterClientConfig().Return(types.SchedulerClusterClientConfig{}, false).Times(1)
 			},
-			expect: func(t *testing.T, packet *rpcscheduler.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
+			expect: func(t *testing.T, packet *schedulerv1.PeerPacket, parent *resource.Peer, candidateParents []*resource.Peer) {
 				assert := assert.New(t)
-				assert.EqualValues(packet, &rpcscheduler.PeerPacket{
+				assert.EqualValues(packet, &schedulerv1.PeerPacket{
 					TaskId:        mockTaskID,
 					SrcPid:        mockPeerID,
 					ParallelCount: 4,
-					MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+					MainPeer: &schedulerv1.PeerPacket_DestPeer{
 						Ip:      parent.Host.IP,
 						RpcPort: parent.Host.Port,
 						PeerId:  parent.ID,
 					},
-					CandidatePeers: []*rpcscheduler.PeerPacket_DestPeer{
+					CandidatePeers: []*schedulerv1.PeerPacket_DestPeer{
 						{
 							Ip:      candidateParents[0].Host.IP,
 							RpcPort: candidateParents[0].Host.Port,

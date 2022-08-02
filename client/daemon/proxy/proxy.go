@@ -45,7 +45,7 @@ import (
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
@@ -85,7 +85,7 @@ type Proxy struct {
 	peerTaskManager peer.TaskManager
 
 	// peerHost is the peer host info
-	peerHost *scheduler.PeerHost
+	peerHost *schedulerv1.PeerHost
 
 	// whiteList is the proxy white list
 	whiteList []*config.WhiteList
@@ -116,8 +116,8 @@ type Proxy struct {
 // Option is a functional option for configuring the proxy
 type Option func(p *Proxy) *Proxy
 
-// WithPeerHost sets the *scheduler.PeerHost
-func WithPeerHost(peerHost *scheduler.PeerHost) Option {
+// WithPeerHost sets the *schedulerv1.PeerHost
+func WithPeerHost(peerHost *schedulerv1.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
 		return p

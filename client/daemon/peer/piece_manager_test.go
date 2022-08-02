@@ -44,7 +44,7 @@ import (
 	"d7y.io/dragonfly/v2/internal/util"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
@@ -443,7 +443,7 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				return tc.pieceSize
 			}
 
-			request := &scheduler.PeerTaskRequest{
+			request := &schedulerv1.PeerTaskRequest{
 				Url: ts.URL,
 				UrlMeta: &commonv1.UrlMeta{
 					Digest: "",

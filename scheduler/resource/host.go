@@ -23,7 +23,7 @@ import (
 	"go.uber.org/atomic"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -118,7 +118,7 @@ type Host struct {
 }
 
 // New host instance.
-func NewHost(rawHost *scheduler.PeerHost, options ...HostOption) *Host {
+func NewHost(rawHost *schedulerv1.PeerHost, options ...HostOption) *Host {
 	h := &Host{
 		ID:              rawHost.Id,
 		Type:            HostTypeNormal,

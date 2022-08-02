@@ -25,11 +25,11 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/dag"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 const (
@@ -403,7 +403,7 @@ func (t *Task) CanBackToSource() bool {
 }
 
 // NotifyPeers notify all peers in the task with the state code.
-func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
+func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 	for _, vertex := range t.DAG.GetVertices() {
 		peer := vertex.Value
 		if peer == nil {

@@ -47,7 +47,7 @@ import (
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -61,7 +61,7 @@ type Server interface {
 
 type server struct {
 	util.KeepAlive
-	peerHost        *scheduler.PeerHost
+	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
 	defaultPattern  commonv1.Pattern
@@ -71,7 +71,7 @@ type server struct {
 	uploadAddr     string
 }
 
-func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
+func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
 	storageManager storage.Manager, defaultPattern commonv1.Pattern,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
@@ -322,7 +322,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 		peerID = idgen.PeerID(s.peerHost.Ip)
 	}
 	peerTask := &peer.FileTaskRequest{
-		PeerTaskRequest: scheduler.PeerTaskRequest{
+		PeerTaskRequest: schedulerv1.PeerTaskRequest{
 			Url:      req.Url,
 			UrlMeta:  req.UrlMeta,
 			PeerId:   peerID,
