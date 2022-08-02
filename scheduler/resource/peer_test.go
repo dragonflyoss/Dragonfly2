@@ -29,11 +29,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/api/pkg/apis/scheduler/v1/mocks"
+
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
 )
 
 var (
@@ -89,7 +90,7 @@ func TestPeer_NewPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			tc.expect(t, NewPeer(tc.id, mockTask, mockHost, tc.options...), mockTask, mockHost)
 		})
 	}
@@ -122,7 +123,7 @@ func TestPeer_AppendPieceCost(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -157,7 +158,7 @@ func TestPeer_PieceCosts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.expect(t, peer)
@@ -168,11 +169,11 @@ func TestPeer_PieceCosts(t *testing.T) {
 func TestPeer_LoadStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "load stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				newStream, ok := peer.LoadStream()
@@ -182,7 +183,7 @@ func TestPeer_LoadStream(t *testing.T) {
 		},
 		{
 			name: "stream does not exist",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				_, ok := peer.LoadStream()
 				assert.Equal(ok, false)
@@ -197,7 +198,7 @@ func TestPeer_LoadStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -207,11 +208,11 @@ func TestPeer_LoadStream(t *testing.T) {
 func TestPeer_StoreStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "store stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				newStream, ok := peer.LoadStream()
@@ -228,7 +229,7 @@ func TestPeer_StoreStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -238,11 +239,11 @@ func TestPeer_StoreStream(t *testing.T) {
 func TestPeer_DeleteStream(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "delete stream",
-			expect: func(t *testing.T, peer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.StoreStream(stream)
 				peer.DeleteStream()
@@ -259,7 +260,7 @@ func TestPeer_DeleteStream(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer, stream)
 		})
@@ -269,11 +270,11 @@ func TestPeer_DeleteStream(t *testing.T) {
 func TestPeer_Parents(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "peer has no parents",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				assert.Equal(len(peer.Parents()), 0)
@@ -281,7 +282,7 @@ func TestPeer_Parents(t *testing.T) {
 		},
 		{
 			name: "peer has parents",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(seedPeer)
@@ -302,7 +303,7 @@ func TestPeer_Parents(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			seedPeer := NewPeer(mockSeedPeerID, mockTask, mockHost)
 			tc.expect(t, peer, seedPeer, stream)
@@ -313,11 +314,11 @@ func TestPeer_Parents(t *testing.T) {
 func TestPeer_Children(t *testing.T) {
 	tests := []struct {
 		name   string
-		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer)
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
 	}{
 		{
 			name: "peer has no children",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				assert.Equal(len(peer.Children()), 0)
@@ -325,7 +326,7 @@ func TestPeer_Children(t *testing.T) {
 		},
 		{
 			name: "peer has children",
-			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream scheduler.Scheduler_ReportPieceResultServer) {
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
 				assert := assert.New(t)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(seedPeer)
@@ -346,7 +347,7 @@ func TestPeer_Children(t *testing.T) {
 			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
 
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := NewPeer(mockPeerID, mockTask, mockHost)
 			seedPeer := NewPeer(mockSeedPeerID, mockTask, mockHost)
 			tc.expect(t, peer, seedPeer, stream)
@@ -445,7 +446,7 @@ func TestPeer_DownloadTinyFile(t *testing.T) {
 			mockRawHost.Ip = ip
 			mockRawHost.DownPort = int32(port)
 			mockHost := NewHost(mockRawHost)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer = NewPeer(mockPeerID, mockTask, mockHost)
 			tc.expect(t, peer)
 		})

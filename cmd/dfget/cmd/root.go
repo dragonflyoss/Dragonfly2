@@ -57,7 +57,7 @@ peers to download pieces from it if it owns them. In addition, dfget has the
 abilities to provide more advanced functionality, such as network bandwidth
 limit, transmission encryption and so on.`
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:                "dfget url -O path",
 	Short:              "the P2P client of dragonfly",

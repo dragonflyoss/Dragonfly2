@@ -32,10 +32,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 )
 
 const (
@@ -49,25 +50,25 @@ const (
 // Client is the interface for grpc client.
 type Client interface {
 	// Update Seed peer configuration.
-	UpdateSeedPeer(*manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error)
+	UpdateSeedPeer(*managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error)
 
 	// Get Scheduler and Scheduler cluster configuration.
-	GetScheduler(*manager.GetSchedulerRequest) (*manager.Scheduler, error)
+	GetScheduler(*managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error)
 
 	// Update scheduler configuration.
-	UpdateScheduler(*manager.UpdateSchedulerRequest) (*manager.Scheduler, error)
+	UpdateScheduler(*managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error)
 
 	// List acitve schedulers configuration.
-	ListSchedulers(*manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error)
+	ListSchedulers(*managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error)
 
 	// Get object storage configuration.
-	GetObjectStorage(*manager.GetObjectStorageRequest) (*manager.ObjectStorage, error)
+	GetObjectStorage(*managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error)
 
 	// List buckets configuration.
-	ListBuckets(*manager.ListBucketsRequest) (*manager.ListBucketsResponse, error)
+	ListBuckets(*managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error)
 
 	// KeepAlive with manager.
-	KeepAlive(time.Duration, *manager.KeepAliveRequest)
+	KeepAlive(time.Duration, *managerv1.KeepAliveRequest)
 
 	// Close client connect.
 	Close() error
@@ -75,7 +76,7 @@ type Client interface {
 
 // client provides manager grpc function.
 type client struct {
-	manager.ManagerClient
+	managerv1.ManagerClient
 	conn *grpc.ClientConn
 }
 
@@ -103,7 +104,7 @@ func New(target string) (Client, error) {
 	}
 
 	return &client{
-		ManagerClient: manager.NewManagerClient(conn),
+		ManagerClient: managerv1.NewManagerClient(conn),
 		conn:          conn,
 	}, nil
 }
@@ -123,7 +124,7 @@ func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
 }
 
 // Update SeedPeer configuration.
-func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+func (c *client) UpdateSeedPeer(req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -131,7 +132,7 @@ func (c *client) UpdateSeedPeer(req *manager.UpdateSeedPeerRequest) (*manager.Se
 }
 
 // Get Scheduler and Scheduler cluster configuration.
-func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (c *client) GetScheduler(req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -139,7 +140,7 @@ func (c *client) GetScheduler(req *manager.GetSchedulerRequest) (*manager.Schedu
 }
 
 // Update scheduler configuration.
-func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+func (c *client) UpdateScheduler(req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -147,7 +148,7 @@ func (c *client) UpdateScheduler(req *manager.UpdateSchedulerRequest) (*manager.
 }
 
 // List acitve schedulers configuration.
-func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+func (c *client) ListSchedulers(req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -155,7 +156,7 @@ func (c *client) ListSchedulers(req *manager.ListSchedulersRequest) (*manager.Li
 }
 
 // Get object storage configuration.
-func (c *client) GetObjectStorage(req *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
+func (c *client) GetObjectStorage(req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -163,7 +164,7 @@ func (c *client) GetObjectStorage(req *manager.GetObjectStorageRequest) (*manage
 }
 
 // List buckets configuration.
-func (c *client) ListBuckets(req *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
+func (c *client) ListBuckets(req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
 	defer cancel()
 
@@ -171,7 +172,7 @@ func (c *client) ListBuckets(req *manager.ListBucketsRequest) (*manager.ListBuck
 }
 
 // List acitve schedulers configuration.
-func (c *client) KeepAlive(interval time.Duration, keepalive *manager.KeepAliveRequest) {
+func (c *client) KeepAlive(interval time.Duration, keepalive *managerv1.KeepAliveRequest) {
 retry:
 	ctx, cancel := context.WithCancel(context.Background())
 	stream, err := c.ManagerClient.KeepAlive(ctx)
@@ -191,7 +192,7 @@ retry:
 	for {
 		select {
 		case <-tick.C:
-			if err := stream.Send(&manager.KeepAliveRequest{
+			if err := stream.Send(&managerv1.KeepAliveRequest{
 				SourceType: keepalive.SourceType,
 				HostName:   keepalive.HostName,
 				Ip:         keepalive.Ip,

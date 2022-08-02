@@ -21,14 +21,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
 var (
-	mockRawHost = &scheduler.PeerHost{
+	mockRawHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
@@ -40,7 +41,7 @@ var (
 		NetTopology:    "net_topology",
 	}
 
-	mockRawSeedHost = &scheduler.PeerHost{
+	mockRawSeedHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname_seed", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
@@ -56,7 +57,7 @@ var (
 func TestHost_NewHost(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		options []HostOption
 		expect  func(t *testing.T, host *Host)
 	}{
@@ -140,7 +141,7 @@ func TestHost_NewHost(t *testing.T) {
 func TestHost_LoadPeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, peer *Peer, ok bool)
@@ -178,7 +179,7 @@ func TestHost_LoadPeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -191,7 +192,7 @@ func TestHost_LoadPeer(t *testing.T) {
 func TestHost_StorePeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, peer *Peer, ok bool)
@@ -221,7 +222,7 @@ func TestHost_StorePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(tc.peerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -234,7 +235,7 @@ func TestHost_StorePeer(t *testing.T) {
 func TestHost_DeletePeer(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		peerID  string
 		options []HostOption
 		expect  func(t *testing.T, host *Host)
@@ -265,7 +266,7 @@ func TestHost_DeletePeer(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			host.StorePeer(mockPeer)
@@ -278,7 +279,7 @@ func TestHost_DeletePeer(t *testing.T) {
 func TestHost_LeavePeers(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		options []HostOption
 		expect  func(t *testing.T, host *Host, mockPeer *Peer)
 	}{
@@ -315,7 +316,7 @@ func TestHost_LeavePeers(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockPeer)
@@ -326,7 +327,7 @@ func TestHost_LeavePeers(t *testing.T) {
 func TestHost_FreeUploadLoad(t *testing.T) {
 	tests := []struct {
 		name    string
-		rawHost *scheduler.PeerHost
+		rawHost *schedulerv1.PeerHost
 		options []HostOption
 		expect  func(t *testing.T, host *Host, mockTask *Task, mockPeer *Peer)
 	}{
@@ -365,7 +366,7 @@ func TestHost_FreeUploadLoad(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := NewHost(tc.rawHost, tc.options...)
-			mockTask := NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := NewPeer(mockPeerID, mockTask, host)
 
 			tc.expect(t, host, mockTask, mockPeer)

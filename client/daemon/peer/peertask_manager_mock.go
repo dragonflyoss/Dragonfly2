@@ -9,10 +9,10 @@ import (
 	io "io"
 	reflect "reflect"
 
+	v1 "d7y.io/api/pkg/apis/common/v1"
+	v10 "d7y.io/api/pkg/apis/scheduler/v1"
 	storage "d7y.io/dragonfly/v2/client/daemon/storage"
 	dflog "d7y.io/dragonfly/v2/internal/dflog"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	gomock "github.com/golang/mock/gomock"
 	status "google.golang.org/grpc/status"
 )
@@ -41,7 +41,7 @@ func (m *MockTaskManager) EXPECT() *MockTaskManagerMockRecorder {
 }
 
 // AnnouncePeerTask mocks base method.
-func (m *MockTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
+func (m *MockTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType v1.TaskType, urlMeta *v1.UrlMeta) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AnnouncePeerTask", ctx, meta, url, taskType, urlMeta)
 	ret0, _ := ret[0].(error)
@@ -132,10 +132,10 @@ func (mr *MockTaskManagerMockRecorder) StartStreamTask(ctx, req interface{}) *go
 }
 
 // StatTask mocks base method.
-func (m *MockTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
+func (m *MockTaskManager) StatTask(ctx context.Context, taskID string) (*v10.Task, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StatTask", ctx, taskID)
-	ret0, _ := ret[0].(*scheduler.Task)
+	ret0, _ := ret[0].(*v10.Task)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -161,7 +161,7 @@ func (mr *MockTaskManagerMockRecorder) Stop(ctx interface{}) *gomock.Call {
 }
 
 // Subscribe mocks base method.
-func (m *MockTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
+func (m *MockTaskManager) Subscribe(request *v1.PieceTaskRequest) (*SubscribeResponse, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", request)
 	ret0, _ := ret[0].(*SubscribeResponse)

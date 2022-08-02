@@ -33,12 +33,13 @@ import (
 	"github.com/go-http-utils/headers"
 	"github.com/schollz/progressbar/v3"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
@@ -91,7 +92,7 @@ func singleDownload(ctx context.Context, client daemonclient.DaemonClient, cfg *
 	var (
 		start     = time.Now()
 		stream    *daemonclient.DownResultStream
-		result    *dfdaemon.DownResult
+		result    *dfdaemonv1.DownResult
 		pb        *progressbar.ProgressBar
 		request   = newDownRequest(cfg, hdr)
 		downError error
@@ -220,20 +221,20 @@ func parseHeader(s []string) map[string]string {
 	return hdr
 }
 
-func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemon.DownRequest {
+func newDownRequest(cfg *config.DfgetConfig, hdr map[string]string) *dfdaemonv1.DownRequest {
 	var rg string
 	if r, ok := hdr[headers.Range]; ok {
 		rg = strings.TrimLeft(r, "bytes=")
 	} else {
 		rg = cfg.Range
 	}
-	return &dfdaemon.DownRequest{
+	return &dfdaemonv1.DownRequest{
 		Url:               cfg.URL,
 		Output:            cfg.Output,
 		Timeout:           uint64(cfg.Timeout),
 		Limit:             float64(cfg.RateLimit.Limit),
 		DisableBackSource: cfg.DisableBackSource,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Digest: cfg.Digest,
 			Tag:    cfg.Tag,
 			Range:  rg,

@@ -30,18 +30,19 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	cdnclient "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func Test_ObtainSeeds(t *testing.T) {
@@ -196,11 +197,11 @@ func Test_ObtainSeeds(t *testing.T) {
 				}
 
 				var (
-					totalPieces []*base.PieceInfo
+					totalPieces []*commonv1.PieceInfo
 					lock        sync.Mutex
 				)
 
-				var addedPieces = make(map[uint32]*base.PieceInfo)
+				var addedPieces = make(map[uint32]*commonv1.PieceInfo)
 				for _, p := range tc.existPieces {
 					if p.end == 0 {
 						p.end = p.start
@@ -209,12 +210,12 @@ func Test_ObtainSeeds(t *testing.T) {
 						if _, ok := addedPieces[uint32(i)]; ok {
 							continue
 						}
-						piece := &base.PieceInfo{
+						piece := &commonv1.PieceInfo{
 							PieceNum:    int32(i),
 							RangeStart:  uint64(i) * uint64(pieceSize),
 							RangeSize:   pieceSize,
 							PieceOffset: uint64(i) * uint64(pieceSize),
-							PieceStyle:  base.PieceStyle_PLAIN,
+							PieceStyle:  commonv1.PieceStyle_PLAIN,
 						}
 						totalPieces = append(totalPieces, piece)
 						addedPieces[uint32(i)] = piece
@@ -223,8 +224,8 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				mockStorageManger.EXPECT().GetPieces(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-						var pieces []*base.PieceInfo
+					func(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
+						var pieces []*commonv1.PieceInfo
 						lock.Lock()
 						for i := req.StartNum; i < tc.totalPieces; i++ {
 							if piece, ok := addedPieces[i]; ok {
@@ -234,7 +235,7 @@ func Test_ObtainSeeds(t *testing.T) {
 							}
 						}
 						lock.Unlock()
-						return &base.PiecePacket{
+						return &commonv1.PiecePacket{
 							TaskId:        req.TaskId,
 							DstPid:        req.DstPid,
 							DstAddr:       "",
@@ -246,8 +247,8 @@ func Test_ObtainSeeds(t *testing.T) {
 					})
 				mockStorageManger.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -270,12 +271,12 @@ func Test_ObtainSeeds(t *testing.T) {
 									if _, ok := addedPieces[uint32(j)]; ok {
 										continue
 									}
-									piece := &base.PieceInfo{
+									piece := &commonv1.PieceInfo{
 										PieceNum:    int32(j),
 										RangeStart:  uint64(j) * uint64(pieceSize),
 										RangeSize:   pieceSize,
 										PieceOffset: uint64(j) * uint64(pieceSize),
-										PieceStyle:  base.PieceStyle_PLAIN,
+										PieceStyle:  commonv1.PieceStyle_PLAIN,
 									}
 									totalPieces = append(totalPieces, piece)
 									addedPieces[uint32(j)] = piece
@@ -313,7 +314,7 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				s := &server{
 					KeepAlive:       util.NewKeepAlive("test"),
-					peerHost:        &scheduler.PeerHost{},
+					peerHost:        &schedulerv1.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,
 				}
@@ -323,7 +324,7 @@ func Test_ObtainSeeds(t *testing.T) {
 
 				pps, err := client.ObtainSeeds(
 					context.Background(),
-					&cdnsystem.SeedRequest{
+					&cdnsystemv1.SeedRequest{
 						TaskId:  "fake-task-id",
 						Url:     "http://localhost/path/to/file",
 						UrlMeta: nil,
@@ -361,9 +362,9 @@ func Test_ObtainSeeds(t *testing.T) {
 	}
 }
 
-func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, cdnclient.CdnClient) {
+func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, client.CdnClient) {
 	srv.peerServer = dfdaemonserver.New(srv)
-	cdnsystem.RegisterSeederServer(srv.peerServer, sd)
+	cdnsystemv1.RegisterSeederServer(srv.peerServer, sd)
 
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -378,7 +379,7 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 		}
 	}()
 
-	client := cdnclient.GetClientByAddr([]dfnet.NetAddr{
+	client := client.GetClientByAddr([]dfnet.NetAddr{
 		{
 			Type: dfnet.TCP,
 			Addr: fmt.Sprintf(":%d", port),
