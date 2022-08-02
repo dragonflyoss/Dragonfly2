@@ -32,14 +32,15 @@ import (
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 )
 
@@ -57,15 +58,15 @@ type TaskManager interface {
 	StartSeedTask(ctx context.Context, req *SeedTaskRequest) (
 		seedTaskResult *SeedTaskResponse, reuse bool, err error)
 
-	Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool)
+	Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool)
 
 	IsPeerTaskRunning(taskID string) (Task, bool)
 
 	// StatTask checks whether the given task exists in P2P network
-	StatTask(ctx context.Context, taskID string) (*scheduler.Task, error)
+	StatTask(ctx context.Context, taskID string) (*schedulerv1.Task, error)
 
 	// AnnouncePeerTask announces peer task info to P2P network
-	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error
+	AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error
 
 	GetPieceManager() PieceManager
 
@@ -119,7 +120,7 @@ func init() {
 }
 
 type peerTaskManager struct {
-	host            *scheduler.PeerHost
+	host            *schedulerv1.PeerHost
 	schedulerClient schedulerclient.Client
 	schedulerOption config.SchedulerOption
 	pieceManager    PieceManager
@@ -143,7 +144,7 @@ type peerTaskManager struct {
 }
 
 func NewPeerTaskManager(
-	host *scheduler.PeerHost,
+	host *schedulerv1.PeerHost,
 	pieceManager PieceManager,
 	storageManager storage.Manager,
 	schedulerClient schedulerclient.Client,
@@ -183,7 +184,7 @@ func (ptm *peerTaskManager) findPeerTaskConductor(taskID string) (*peerTaskCondu
 
 func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 	taskID string,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *util.Range,
@@ -206,7 +207,7 @@ func (ptm *peerTaskManager) getPeerTaskConductor(ctx context.Context,
 func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	ctx context.Context,
 	taskID string,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	limit rate.Limit,
 	parent *peerTaskConductor,
 	rg *util.Range,
@@ -238,7 +239,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	err := ptc.initStorage(desiredLocation)
 	if err != nil {
 		ptc.Errorf("init storage error: %s", err)
-		ptc.cancel(base.Code_ClientError, err.Error())
+		ptc.cancel(commonv1.Code_ClientError, err.Error())
 		return nil, false, err
 	}
 	return ptc, true, nil
@@ -248,15 +249,15 @@ func (ptm *peerTaskManager) enabledPrefetch(rg *util.Range) bool {
 	return ptm.enablePrefetch && rg != nil
 }
 
-func (ptm *peerTaskManager) prefetchParentTask(request *scheduler.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
-	req := &scheduler.PeerTaskRequest{
+func (ptm *peerTaskManager) prefetchParentTask(request *schedulerv1.PeerTaskRequest, desiredLocation string) *peerTaskConductor {
+	req := &schedulerv1.PeerTaskRequest{
 		Url:         request.Url,
 		PeerId:      request.PeerId,
 		PeerHost:    ptm.host,
 		HostLoad:    request.HostLoad,
 		IsMigrating: request.IsMigrating,
 		Pattern:     request.Pattern,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Digest: request.UrlMeta.Digest,
 			Tag:    request.UrlMeta.Tag,
 			Filter: request.UrlMeta.Filter,
@@ -320,7 +321,7 @@ func (ptm *peerTaskManager) StartFileTask(ctx context.Context, req *FileTaskRequ
 }
 
 func (ptm *peerTaskManager) StartStreamTask(ctx context.Context, req *StreamTaskRequest) (io.ReadCloser, map[string]string, error) {
-	peerTaskRequest := &scheduler.PeerTaskRequest{
+	peerTaskRequest := &schedulerv1.PeerTaskRequest{
 		Url:         req.URL,
 		UrlMeta:     req.URLMeta,
 		PeerId:      req.PeerID,
@@ -379,7 +380,7 @@ type SubscribeResponse struct {
 	FailReason       func() error
 }
 
-func (ptm *peerTaskManager) Subscribe(request *base.PieceTaskRequest) (*SubscribeResponse, bool) {
+func (ptm *peerTaskManager) Subscribe(request *commonv1.PieceTaskRequest) (*SubscribeResponse, bool) {
 	ptc, ok := ptm.findPeerTaskConductor(request.TaskId)
 	if !ok {
 		return nil, false
@@ -413,8 +414,8 @@ func (ptm *peerTaskManager) IsPeerTaskRunning(taskID string) (Task, bool) {
 	return nil, ok
 }
 
-func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*scheduler.Task, error) {
-	req := &scheduler.StatTaskRequest{
+func (ptm *peerTaskManager) StatTask(ctx context.Context, taskID string) (*schedulerv1.Task, error) {
+	req := &schedulerv1.StatTaskRequest{
 		TaskId: taskID,
 	}
 
@@ -425,7 +426,7 @@ func (ptm *peerTaskManager) GetPieceManager() PieceManager {
 	return ptm.pieceManager
 }
 
-func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType base.TaskType, urlMeta *base.UrlMeta) error {
+func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.PeerTaskMetadata, url string, taskType commonv1.TaskType, urlMeta *commonv1.UrlMeta) error {
 	// Check if the given task is completed in local storageManager.
 	if ptm.storageManager.FindCompletedTask(meta.TaskID) == nil {
 		return errors.New("task not found in local storage")
@@ -437,7 +438,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 		return err
 	}
 
-	piecePacket, err := ptm.storageManager.GetPieces(ctx, &base.PieceTaskRequest{
+	piecePacket, err := ptm.storageManager.GetPieces(ctx, &commonv1.PieceTaskRequest{
 		TaskId:   meta.TaskID,
 		DstPid:   meta.PeerID,
 		StartNum: 0,
@@ -449,7 +450,7 @@ func (ptm *peerTaskManager) AnnouncePeerTask(ctx context.Context, meta storage.P
 	piecePacket.DstAddr = fmt.Sprintf("%s:%d", ptm.host.Ip, ptm.host.DownPort)
 
 	// Announce peer task to scheduler
-	if err := ptm.schedulerClient.AnnounceTask(ctx, &scheduler.AnnounceTaskRequest{
+	if err := ptm.schedulerClient.AnnounceTask(ctx, &schedulerv1.AnnounceTaskRequest{
 		TaskId:      meta.TaskID,
 		TaskType:    taskType,
 		Url:         url,

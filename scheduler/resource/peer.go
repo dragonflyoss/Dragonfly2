@@ -29,9 +29,10 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 const (
@@ -288,17 +289,17 @@ func (p *Peer) PieceCosts() []int64 {
 }
 
 // LoadStream return grpc stream.
-func (p *Peer) LoadStream() (scheduler.Scheduler_ReportPieceResultServer, bool) {
+func (p *Peer) LoadStream() (schedulerv1.Scheduler_ReportPieceResultServer, bool) {
 	rawStream := p.Stream.Load()
 	if rawStream == nil {
 		return nil, false
 	}
 
-	return rawStream.(scheduler.Scheduler_ReportPieceResultServer), true
+	return rawStream.(schedulerv1.Scheduler_ReportPieceResultServer), true
 }
 
 // StoreStream set grpc stream.
-func (p *Peer) StoreStream(stream scheduler.Scheduler_ReportPieceResultServer) {
+func (p *Peer) StoreStream(stream schedulerv1.Scheduler_ReportPieceResultServer) {
 	p.Stream.Store(stream)
 }
 

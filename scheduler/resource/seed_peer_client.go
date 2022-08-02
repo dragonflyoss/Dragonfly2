@@ -24,12 +24,13 @@ import (
 
 	"google.golang.org/grpc"
 
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	client "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
@@ -119,7 +120,7 @@ func seedPeersToHosts(seedPeers []*config.SeedPeer) map[string]*Host {
 		}
 
 		id := idgen.HostID(seedPeer.Hostname, seedPeer.Port)
-		hosts[id] = NewHost(&rpcscheduler.PeerHost{
+		hosts[id] = NewHost(&schedulerv1.PeerHost{
 			Id:          id,
 			Ip:          seedPeer.IP,
 			RpcPort:     seedPeer.Port,

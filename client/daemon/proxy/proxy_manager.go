@@ -32,11 +32,12 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type Manager interface {
@@ -59,7 +60,7 @@ type proxyManager struct {
 
 var _ Manager = (*proxyManager)(nil)
 
-func NewProxyManager(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager, defaultPattern base.Pattern, proxyOption *config.ProxyOption) (Manager, error) {
+func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager, defaultPattern commonv1.Pattern, proxyOption *config.ProxyOption) (Manager, error) {
 	// proxy is option, when nil, just disable it
 	if proxyOption == nil {
 		logger.Infof("proxy config is empty, disabled")

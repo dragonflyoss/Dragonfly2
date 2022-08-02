@@ -42,6 +42,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
@@ -52,14 +57,10 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
-	mock_scheduler_client "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
-	mock_scheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
+	schedulerclientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 	sourcemocks "d7y.io/dragonfly/v2/pkg/source/mocks"
@@ -79,7 +80,7 @@ type componentsOption struct {
 	sourceClient       source.ResourceClient
 	peerPacketDelay    []time.Duration
 	backSource         bool
-	scope              base.SizeScope
+	scope              commonv1.SizeScope
 	content            []byte
 	getPieceTasks      bool
 }
@@ -97,8 +98,8 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		pieces[i] = digest.MD5FromReader(io.LimitReader(r, int64(opt.pieceSize)))
 	}
 	totalDigests := digest.SHA256FromStrings(pieces...)
-	genPiecePacket := func(request *base.PieceTaskRequest) *base.PiecePacket {
-		var tasks []*base.PieceInfo
+	genPiecePacket := func(request *commonv1.PieceTaskRequest) *commonv1.PiecePacket {
+		var tasks []*commonv1.PieceInfo
 		for i := uint32(0); i < request.Limit; i++ {
 			start := opt.pieceSize * (request.StartNum + i)
 			if int64(start)+1 > opt.contentLength {
@@ -109,7 +110,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 				size = uint32(opt.contentLength) - start
 			}
 			tasks = append(tasks,
-				&base.PieceInfo{
+				&commonv1.PieceInfo{
 					PieceNum:    int32(request.StartNum + i),
 					RangeStart:  uint64(start),
 					RangeSize:   size,
@@ -118,7 +119,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					PieceStyle:  0,
 				})
 		}
-		return &base.PiecePacket{
+		return &commonv1.PiecePacket{
 			TaskId:        request.TaskId,
 			DstPid:        "peer-x",
 			PieceInfos:    tasks,
@@ -129,18 +130,18 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	}
 	if opt.getPieceTasks {
 		daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
-			DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+			DoAndReturn(func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 				return genPiecePacket(request), nil
 			})
-		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemon.Daemon_SyncPieceTasksServer) error {
+		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(arg0 dfdaemonv1.Daemon_SyncPieceTasksServer) error {
 			return status.Error(codes.Unimplemented, "TODO")
 		})
 	} else {
 		daemon.EXPECT().GetPieceTasks(gomock.Any(), gomock.Any()).AnyTimes().
-			DoAndReturn(func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+			DoAndReturn(func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 				return nil, status.Error(codes.Unimplemented, "TODO")
 			})
-		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(s dfdaemon.Daemon_SyncPieceTasksServer) error {
+		daemon.EXPECT().SyncPieceTasks(gomock.Any()).AnyTimes().DoAndReturn(func(s dfdaemonv1.Daemon_SyncPieceTasksServer) error {
 			request, err := s.Recv()
 			if err != nil {
 				return err
@@ -177,9 +178,9 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	time.Sleep(100 * time.Millisecond)
 
 	// 2. setup a scheduler
-	pps := mock_scheduler.NewMockScheduler_ReportPieceResultClient(ctrl)
+	pps := schedulerv1mocks.NewMockScheduler_ReportPieceResultClient(ctrl)
 	pps.EXPECT().Send(gomock.Any()).AnyTimes().DoAndReturn(
-		func(pr *scheduler.PieceResult) error {
+		func(pr *schedulerv1.PieceResult) error {
 			return nil
 		})
 	var (
@@ -188,7 +189,7 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 	)
 	sent <- struct{}{}
 	pps.EXPECT().Recv().AnyTimes().DoAndReturn(
-		func() (*scheduler.PeerPacket, error) {
+		func() (*schedulerv1.PeerPacket, error) {
 			if len(opt.peerPacketDelay) > delayCount {
 				if delay := opt.peerPacketDelay[delayCount]; delay > 0 {
 					time.Sleep(delay)
@@ -197,14 +198,14 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 			}
 			<-sent
 			if opt.backSource {
-				return nil, dferrors.Newf(base.Code_SchedNeedBackSource, "fake back source error")
+				return nil, dferrors.Newf(commonv1.Code_SchedNeedBackSource, "fake back source error")
 			}
-			return &scheduler.PeerPacket{
-				Code:          base.Code_Success,
+			return &schedulerv1.PeerPacket{
+				Code:          commonv1.Code_Success,
 				TaskId:        opt.taskID,
 				SrcPid:        "127.0.0.1",
 				ParallelCount: opt.pieceParallelCount,
-				MainPeer: &scheduler.PeerPacket_DestPeer{
+				MainPeer: &schedulerv1.PeerPacket_DestPeer{
 					Ip:      "127.0.0.1",
 					RpcPort: port,
 					PeerId:  "peer-x",
@@ -214,27 +215,27 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 		})
 	pps.EXPECT().CloseSend().AnyTimes()
 
-	sched := mock_scheduler_client.NewMockClient(ctrl)
+	sched := schedulerclientmocks.NewMockClient(ctrl)
 	sched.EXPECT().RegisterPeerTask(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 			switch opt.scope {
-			case base.SizeScope_TINY:
-				return &scheduler.RegisterResult{
+			case commonv1.SizeScope_TINY:
+				return &schedulerv1.RegisterResult{
 					TaskId:    opt.taskID,
-					SizeScope: base.SizeScope_TINY,
-					DirectPiece: &scheduler.RegisterResult_PieceContent{
+					SizeScope: commonv1.SizeScope_TINY,
+					DirectPiece: &schedulerv1.RegisterResult_PieceContent{
 						PieceContent: opt.content,
 					},
 				}, nil
-			case base.SizeScope_SMALL:
-				return &scheduler.RegisterResult{
+			case commonv1.SizeScope_SMALL:
+				return &schedulerv1.RegisterResult{
 					TaskId:    opt.taskID,
-					SizeScope: base.SizeScope_SMALL,
-					DirectPiece: &scheduler.RegisterResult_SinglePiece{
-						SinglePiece: &scheduler.SinglePiece{
+					SizeScope: commonv1.SizeScope_SMALL,
+					DirectPiece: &schedulerv1.RegisterResult_SinglePiece{
+						SinglePiece: &schedulerv1.SinglePiece{
 							DstPid:  "fake-pid",
 							DstAddr: "fake-addr",
-							PieceInfo: &base.PieceInfo{
+							PieceInfo: &commonv1.PieceInfo{
 								PieceNum:    0,
 								RangeStart:  0,
 								RangeSize:   uint32(opt.contentLength),
@@ -246,19 +247,19 @@ func setupPeerTaskManagerComponents(ctrl *gomock.Controller, opt componentsOptio
 					},
 				}, nil
 			}
-			return &scheduler.RegisterResult{
+			return &schedulerv1.RegisterResult{
 				TaskId:      opt.taskID,
-				SizeScope:   base.SizeScope_NORMAL,
+				SizeScope:   commonv1.SizeScope_NORMAL,
 				DirectPiece: nil,
 			}, nil
 		})
 	sched.EXPECT().ReportPieceResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, ptr *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (
-			scheduler.Scheduler_ReportPieceResultClient, error) {
+		func(ctx context.Context, ptr *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (
+			schedulerv1.Scheduler_ReportPieceResultClient, error) {
 			return pps, nil
 		})
 	sched.EXPECT().ReportPeerResult(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(
-		func(ctx context.Context, pr *scheduler.PeerResult, opts ...grpc.CallOption) error {
+		func(ctx context.Context, pr *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
 			return nil
 		})
 	tempDir, _ := os.MkdirTemp("", "d7y-test-*")
@@ -295,7 +296,7 @@ func setupMockManager(ctrl *gomock.Controller, ts *testSpec, opt componentsOptio
 	}
 	ptm := &peerTaskManager{
 		calculateDigest: true,
-		host: &scheduler.PeerHost{
+		host: &schedulerv1.PeerHost{
 			Ip: "127.0.0.1",
 		},
 		conductorLock:    &sync.Mutex{},
@@ -336,7 +337,7 @@ type testSpec struct {
 	httpRange          *util.Range // only used in back source cases
 	pieceParallelCount int32
 	pieceSize          int
-	sizeScope          base.SizeScope
+	sizeScope          commonv1.SizeScope
 	peerID             string
 	url                string
 	legacyFeature      bool
@@ -386,7 +387,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			pieceSize:            1024,
 			peerID:               "normal-size-peer",
 			url:                  "http://localhost/test/data",
-			sizeScope:            base.SizeScope_NORMAL,
+			sizeScope:            commonv1.SizeScope_NORMAL,
 			mockPieceDownloader:  commonPieceDownloader,
 			mockHTTPSourceClient: nil,
 		},
@@ -397,7 +398,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			pieceSize:            16384,
 			peerID:               "small-size-peer",
 			url:                  "http://localhost/test/data",
-			sizeScope:            base.SizeScope_SMALL,
+			sizeScope:            commonv1.SizeScope_SMALL,
 			mockPieceDownloader:  commonPieceDownloader,
 			mockHTTPSourceClient: nil,
 		},
@@ -408,7 +409,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			pieceSize:            1024,
 			peerID:               "tiny-size-peer",
 			url:                  "http://localhost/test/data",
-			sizeScope:            base.SizeScope_TINY,
+			sizeScope:            commonv1.SizeScope_TINY,
 			mockPieceDownloader:  nil,
 			mockHTTPSourceClient: nil,
 		},
@@ -421,7 +422,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			peerID:              "normal-size-peer-back-source",
 			backSource:          true,
 			url:                 "http://localhost/test/data",
-			sizeScope:           base.SizeScope_NORMAL,
+			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
@@ -445,7 +446,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			peerID:             "normal-size-peer-range-back-source",
 			backSource:         true,
 			url:                "http://localhost/test/data",
-			sizeScope:          base.SizeScope_NORMAL,
+			sizeScope:          commonv1.SizeScope_NORMAL,
 			httpRange: &util.Range{
 				Start:  0,
 				Length: 4096,
@@ -487,7 +488,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			peerID:              "normal-size-peer-back-source-no-length",
 			backSource:          true,
 			url:                 "http://localhost/test/data",
-			sizeScope:           base.SizeScope_NORMAL,
+			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
@@ -511,7 +512,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 			peerID:              "normal-size-peer-back-source-aligning-no-length",
 			backSource:          true,
 			url:                 "http://localhost/test/data",
-			sizeScope:           base.SizeScope_NORMAL,
+			sizeScope:           commonv1.SizeScope_NORMAL,
 			mockPieceDownloader: nil,
 			mockHTTPSourceClient: func(t *testing.T, ctrl *gomock.Controller, rg *util.Range, taskData []byte, url string) source.ResourceClient {
 				sourceClient := sourcemocks.NewMockResourceClient(ctrl)
@@ -546,7 +547,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 				})
 				return server.URL
 			},
-			sizeScope:            base.SizeScope_NORMAL,
+			sizeScope:            commonv1.SizeScope_NORMAL,
 			mockPieceDownloader:  nil,
 			mockHTTPSourceClient: nil,
 		},
@@ -573,7 +574,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 						defer ctrl.Finish()
 						mockContentLength := len(tc.taskData)
 
-						urlMeta := &base.UrlMeta{
+						urlMeta := &commonv1.UrlMeta{
 							Tag: "d7y-test",
 						}
 
@@ -636,7 +637,7 @@ func TestPeerTaskManager_TaskSuite(t *testing.T) {
 	}
 }
 
-func (ts *testSpec) run(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+func (ts *testSpec) run(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
 	switch ts.taskType {
 	case taskTypeFile:
 		ts.runFileTaskTest(assert, require, mm, urlMeta)
@@ -651,7 +652,7 @@ func (ts *testSpec) run(assert *testifyassert.Assertions, require *testifyrequir
 	}
 }
 
-func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
 	var output = "../test/testdata/test.output"
 	defer func() {
 		assert.Nil(os.Remove(output))
@@ -659,11 +660,11 @@ func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *t
 	progress, _, err := mm.peerTaskManager.StartFileTask(
 		context.Background(),
 		&FileTaskRequest{
-			PeerTaskRequest: scheduler.PeerTaskRequest{
+			PeerTaskRequest: schedulerv1.PeerTaskRequest{
 				Url:      ts.url,
 				UrlMeta:  urlMeta,
 				PeerId:   ts.peerID,
-				PeerHost: &scheduler.PeerHost{},
+				PeerHost: &schedulerv1.PeerHost{},
 			},
 			Output: output,
 		})
@@ -685,7 +686,7 @@ func (ts *testSpec) runFileTaskTest(assert *testifyassert.Assertions, require *t
 	require.Equal(ts.taskData, outputBytes, "output and desired output must match")
 }
 
-func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
 	r, _, err := mm.peerTaskManager.StartStreamTask(
 		context.Background(),
 		&StreamTaskRequest{
@@ -700,15 +701,15 @@ func (ts *testSpec) runStreamTaskTest(_ *testifyassert.Assertions, require *test
 	require.Equal(ts.taskData, outputBytes, "output and desired output must match")
 }
 
-func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+func (ts *testSpec) runSeedTaskTest(_ *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
 	r, _, err := mm.peerTaskManager.StartSeedTask(
 		context.Background(),
 		&SeedTaskRequest{
-			PeerTaskRequest: scheduler.PeerTaskRequest{
+			PeerTaskRequest: schedulerv1.PeerTaskRequest{
 				Url:         ts.url,
 				UrlMeta:     urlMeta,
 				PeerId:      ts.peerID,
-				PeerHost:    &scheduler.PeerHost{},
+				PeerHost:    &schedulerv1.PeerHost{},
 				HostLoad:    nil,
 				IsMigrating: false,
 			},
@@ -746,7 +747,7 @@ loop:
 	require.True(success, "seed task should success")
 }
 
-func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *base.UrlMeta) {
+func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *testifyrequire.Assertions, mm *mockManager, urlMeta *commonv1.UrlMeta) {
 	var (
 		ptm       = mm.peerTaskManager
 		pieceSize = ts.pieceSize
@@ -757,11 +758,11 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 		assert.Nil(os.Remove(output))
 	}()
 
-	peerTaskRequest := &scheduler.PeerTaskRequest{
+	peerTaskRequest := &schedulerv1.PeerTaskRequest{
 		Url:      ts.url,
 		UrlMeta:  urlMeta,
 		PeerId:   ts.peerID,
-		PeerHost: &scheduler.PeerHost{},
+		PeerHost: &schedulerv1.PeerHost{},
 	}
 
 	ptc, created, err := ptm.getOrCreatePeerTaskConductor(
@@ -803,11 +804,11 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	}
 
 	for i := 0; i < ptcCount; i++ {
-		request := &scheduler.PeerTaskRequest{
+		request := &schedulerv1.PeerTaskRequest{
 			Url:      ts.url,
 			UrlMeta:  urlMeta,
 			PeerId:   fmt.Sprintf("should-not-use-peer-%d", i),
-			PeerHost: &scheduler.PeerHost{},
+			PeerHost: &schedulerv1.PeerHost{},
 		}
 		p, created, err := ptm.getOrCreatePeerTaskConductor(
 			context.Background(), taskID, request, rate.Limit(pieceSize*3), nil, nil, "", false)
@@ -820,9 +821,9 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	require.Nil(ptc.start(), "peerTaskConductor start should be ok")
 
 	switch ts.sizeScope {
-	case base.SizeScope_TINY:
+	case commonv1.SizeScope_TINY:
 		require.NotNil(ptc.tinyData)
-	case base.SizeScope_SMALL:
+	case commonv1.SizeScope_SMALL:
 		require.NotNil(ptc.singlePiece)
 	}
 
@@ -880,11 +881,11 @@ func (ts *testSpec) runConductorTest(assert *testifyassert.Assertions, require *
 	progress, ok := ptm.tryReuseFilePeerTask(
 		context.Background(),
 		&FileTaskRequest{
-			PeerTaskRequest: scheduler.PeerTaskRequest{
+			PeerTaskRequest: schedulerv1.PeerTaskRequest{
 				Url:      ts.url,
 				UrlMeta:  urlMeta,
 				PeerId:   ts.peerID,
-				PeerHost: &scheduler.PeerHost{},
+				PeerHost: &schedulerv1.PeerHost{},
 			},
 			Output: output,
 		})

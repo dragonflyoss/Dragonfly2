@@ -30,6 +30,10 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
@@ -37,11 +41,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestMain(m *testing.M) {
@@ -77,17 +78,17 @@ func Test_ServeDownload(t *testing.T) {
 		})
 	m := &server{
 		KeepAlive:       util.NewKeepAlive("test"),
-		peerHost:        &scheduler.PeerHost{},
+		peerHost:        &schedulerv1.PeerHost{},
 		peerTaskManager: mockPeerTaskManager,
 	}
 	m.downloadServer = dfdaemonserver.New(m)
 	_, client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
-	request := &dfdaemongrpc.DownRequest{
+	request := &dfdaemonv1.DownRequest{
 		Uuid:              uuid.Generate().String(),
 		Url:               "http://localhost/test",
 		Output:            "./testdata/file1",
 		DisableBackSource: false,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: "unit test",
 		},
 		Pattern:    "p2p",
@@ -97,8 +98,8 @@ func Test_ServeDownload(t *testing.T) {
 	assert.Nil(err, "client download grpc call should be ok")
 
 	var (
-		lastResult *dfdaemongrpc.DownResult
-		curResult  *dfdaemongrpc.DownResult
+		lastResult *dfdaemonv1.DownResult
+		curResult  *dfdaemonv1.DownResult
 	)
 	for {
 		curResult, err = down.Recv()
@@ -119,22 +120,22 @@ func Test_ServePeer(t *testing.T) {
 
 	var maxPieceNum uint32 = 10
 	mockStorageManger := mocks.NewMockManager(ctrl)
-	mockStorageManger.EXPECT().GetPieces(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	mockStorageManger.EXPECT().GetPieces(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(func(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 		var (
-			pieces    []*base.PieceInfo
+			pieces    []*commonv1.PieceInfo
 			pieceSize = uint32(1024)
 		)
 		for i := req.StartNum; i < req.Limit+req.StartNum && i < maxPieceNum; i++ {
-			pieces = append(pieces, &base.PieceInfo{
+			pieces = append(pieces, &commonv1.PieceInfo{
 				PieceNum:    int32(i),
 				RangeStart:  uint64(i * pieceSize),
 				RangeSize:   pieceSize,
 				PieceMd5:    "",
 				PieceOffset: uint64(i * pieceSize),
-				PieceStyle:  base.PieceStyle_PLAIN,
+				PieceStyle:  commonv1.PieceStyle_PLAIN,
 			})
 		}
-		return &base.PiecePacket{
+		return &commonv1.PiecePacket{
 			TaskId:        "",
 			DstPid:        "",
 			DstAddr:       "",
@@ -146,7 +147,7 @@ func Test_ServePeer(t *testing.T) {
 	})
 	s := &server{
 		KeepAlive:      util.NewKeepAlive("test"),
-		peerHost:       &scheduler.PeerHost{},
+		peerHost:       &schedulerv1.PeerHost{},
 		storageManager: mockStorageManger,
 	}
 	s.peerServer = dfdaemonserver.New(s)
@@ -154,12 +155,12 @@ func Test_ServePeer(t *testing.T) {
 	defer s.peerServer.GracefulStop()
 
 	var tests = []struct {
-		request           *base.PieceTaskRequest
+		request           *commonv1.PieceTaskRequest
 		responsePieceSize int
 	}{
 		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+			request: &commonv1.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
 				SrcPid:   idgen.PeerID(ip.IPv4),
 				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 0,
@@ -169,8 +170,8 @@ func Test_ServePeer(t *testing.T) {
 			responsePieceSize: 1,
 		},
 		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+			request: &commonv1.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
 				SrcPid:   idgen.PeerID(ip.IPv4),
 				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 0,
@@ -180,8 +181,8 @@ func Test_ServePeer(t *testing.T) {
 			responsePieceSize: 4,
 		},
 		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+			request: &commonv1.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
 				SrcPid:   idgen.PeerID(ip.IPv4),
 				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 8,
@@ -191,8 +192,8 @@ func Test_ServePeer(t *testing.T) {
 			responsePieceSize: 1,
 		},
 		{
-			request: &base.PieceTaskRequest{
-				TaskId:   idgen.TaskID("http://www.test.com", &base.UrlMeta{}),
+			request: &commonv1.PieceTaskRequest{
+				TaskId:   idgen.TaskID("http://www.test.com", &commonv1.UrlMeta{}),
 				SrcPid:   idgen.PeerID(ip.IPv4),
 				DstPid:   idgen.PeerID(ip.IPv4),
 				StartNum: 8,
@@ -373,11 +374,11 @@ func Test_SyncPieceTasks(t *testing.T) {
 				}
 
 				var (
-					totalPieces []*base.PieceInfo
+					totalPieces []*commonv1.PieceInfo
 					lock        sync.Mutex
 				)
 
-				var addedPieces = make(map[uint32]*base.PieceInfo)
+				var addedPieces = make(map[uint32]*commonv1.PieceInfo)
 				for _, p := range tc.existPieces {
 					if p.end == 0 {
 						p.end = p.start
@@ -386,12 +387,12 @@ func Test_SyncPieceTasks(t *testing.T) {
 						if _, ok := addedPieces[uint32(i)]; ok {
 							continue
 						}
-						piece := &base.PieceInfo{
+						piece := &commonv1.PieceInfo{
 							PieceNum:    int32(i),
 							RangeStart:  uint64(i) * uint64(pieceSize),
 							RangeSize:   pieceSize,
 							PieceOffset: uint64(i) * uint64(pieceSize),
-							PieceStyle:  base.PieceStyle_PLAIN,
+							PieceStyle:  commonv1.PieceStyle_PLAIN,
 						}
 						totalPieces = append(totalPieces, piece)
 						addedPieces[uint32(i)] = piece
@@ -400,8 +401,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 
 				mockStorageManger.EXPECT().GetPieces(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
-						var pieces []*base.PieceInfo
+					func(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
+						var pieces []*commonv1.PieceInfo
 						lock.Lock()
 						for i := req.StartNum; i < tc.totalPieces; i++ {
 							if piece, ok := addedPieces[i]; ok {
@@ -411,7 +412,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 							}
 						}
 						lock.Unlock()
-						return &base.PiecePacket{
+						return &commonv1.PiecePacket{
 							TaskId:        req.TaskId,
 							DstPid:        req.DstPid,
 							DstAddr:       "",
@@ -423,8 +424,8 @@ func Test_SyncPieceTasks(t *testing.T) {
 					})
 				mockStorageManger.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -432,7 +433,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 					})
 				mockTaskManager := peer.NewMockTaskManager(ctrl)
 				mockTaskManager.EXPECT().Subscribe(gomock.Any()).AnyTimes().DoAndReturn(
-					func(request *base.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
+					func(request *commonv1.PieceTaskRequest) (*peer.SubscribeResponse, bool) {
 						ch := make(chan *peer.PieceInfo)
 						success := make(chan struct{})
 						fail := make(chan struct{})
@@ -447,12 +448,12 @@ func Test_SyncPieceTasks(t *testing.T) {
 									if _, ok := addedPieces[uint32(j)]; ok {
 										continue
 									}
-									piece := &base.PieceInfo{
+									piece := &commonv1.PieceInfo{
 										PieceNum:    int32(j),
 										RangeStart:  uint64(j) * uint64(pieceSize),
 										RangeSize:   pieceSize,
 										PieceOffset: uint64(j) * uint64(pieceSize),
-										PieceStyle:  base.PieceStyle_PLAIN,
+										PieceStyle:  commonv1.PieceStyle_PLAIN,
 									}
 									totalPieces = append(totalPieces, piece)
 									addedPieces[uint32(j)] = piece
@@ -483,7 +484,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 
 				s := &server{
 					KeepAlive:       util.NewKeepAlive("test"),
-					peerHost:        &scheduler.PeerHost{},
+					peerHost:        &schedulerv1.PeerHost{},
 					storageManager:  mockStorageManger,
 					peerTaskManager: mockTaskManager,
 				}
@@ -496,7 +497,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 						Type: dfnet.TCP,
 						Addr: fmt.Sprintf("127.0.0.1:%d", port),
 					},
-					&base.PieceTaskRequest{
+					&commonv1.PieceTaskRequest{
 						TaskId:   tc.name,
 						SrcPid:   idgen.PeerID(ip.IPv4),
 						DstPid:   idgen.PeerID(ip.IPv4),
@@ -515,7 +516,7 @@ func Test_SyncPieceTasks(t *testing.T) {
 				} else {
 					go func() {
 						for _, n := range tc.requestPieces {
-							request := &base.PieceTaskRequest{
+							request := &commonv1.PieceTaskRequest{
 								TaskId:   tc.name,
 								SrcPid:   idgen.PeerID(ip.IPv4),
 								DstPid:   idgen.PeerID(ip.IPv4),

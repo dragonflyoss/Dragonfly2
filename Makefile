@@ -375,11 +375,6 @@ generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
-# Generate grpc protos
-protoc:
-	@./hack/protoc.sh
-.PHONY: protoc
-
 # Generate swagger files
 swag:
 	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
@@ -441,7 +436,6 @@ help:
 	@echo "make lint                           run code lint"
 	@echo "make markdownlint                   run markdown lint"
 	@echo "make generate                       run go generate"
-	@echo "make protoc                         generate grpc protos"
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make clean                          clean"

@@ -26,10 +26,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
@@ -42,16 +43,16 @@ var (
 )
 
 type DynconfigData struct {
-	Schedulers    []*manager.Scheduler
-	ObjectStorage *manager.ObjectStorage
+	Schedulers    []*managerv1.Scheduler
+	ObjectStorage *managerv1.ObjectStorage
 }
 
 type Dynconfig interface {
 	// Get the dynamic schedulers config from manager.
-	GetSchedulers() ([]*manager.Scheduler, error)
+	GetSchedulers() ([]*managerv1.Scheduler, error)
 
 	// Get the dynamic object storage config from manager.
-	GetObjectStorage() (*manager.ObjectStorage, error)
+	GetObjectStorage() (*managerv1.ObjectStorage, error)
 
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
@@ -104,7 +105,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOp
 	}, nil
 }
 
-func (d *dynconfig) GetSchedulers() ([]*manager.Scheduler, error) {
+func (d *dynconfig) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
@@ -113,7 +114,7 @@ func (d *dynconfig) GetSchedulers() ([]*manager.Scheduler, error) {
 	return data.Schedulers, nil
 }
 
-func (d *dynconfig) GetObjectStorage() (*manager.ObjectStorage, error) {
+func (d *dynconfig) GetObjectStorage() (*managerv1.ObjectStorage, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
@@ -200,8 +201,8 @@ func newManagerClient(client managerclient.Client, hostOption HostOption) intern
 }
 
 func (mc *managerClient) Get() (any, error) {
-	listSchedulersResp, err := mc.ListSchedulers(&manager.ListSchedulersRequest{
-		SourceType: manager.SourceType_PEER_SOURCE,
+	listSchedulersResp, err := mc.ListSchedulers(&managerv1.ListSchedulersRequest{
+		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
 		HostInfo: map[string]string{
@@ -215,8 +216,8 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
-	getObjectStorageResp, err := mc.GetObjectStorage(&manager.GetObjectStorageRequest{
-		SourceType: manager.SourceType_PEER_SOURCE,
+	getObjectStorageResp, err := mc.GetObjectStorage(&managerv1.GetObjectStorageRequest{
+		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
 	})

@@ -27,12 +27,13 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 	"go.opentelemetry.io/otel/trace"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -141,7 +142,7 @@ func (ptm *peerTaskManager) tryReuseFilePeerTask(ctx context.Context,
 	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: true,
-			Code:    base.Code_Success,
+			Code:    commonv1.Code_Success,
 			Msg:     "Success",
 		},
 		TaskID:          taskID,
