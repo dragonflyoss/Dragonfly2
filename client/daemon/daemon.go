@@ -37,6 +37,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -54,8 +56,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -92,7 +92,7 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	schedulers      []*manager.Scheduler
+	schedulers      []*managerv1.Scheduler
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
 }
@@ -115,7 +115,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	var (
 		addrs          []dfnet.NetAddr
-		schedulers     []*manager.Scheduler
+		schedulers     []*managerv1.Scheduler
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
@@ -524,8 +524,8 @@ func (cd *clientDaemon) Serve() error {
 
 		g.Go(func() error {
 			logger.Info("keepalive to manager")
-			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &manager.KeepAliveRequest{
-				SourceType: manager.SourceType_SEED_PEER_SOURCE,
+			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
+				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
 				HostName:   cd.Option.Host.Hostname,
 				Ip:         cd.Option.Host.AdvertiseIP,
 				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
@@ -697,7 +697,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 }
 
 // getSchedulerIPs gets ips by schedulers.
-func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
+func getSchedulerIPs(schedulers []*managerv1.Scheduler) []string {
 	ips := []string{}
 	for _, scheduler := range schedulers {
 		ips = append(ips, scheduler.Ip)
@@ -706,8 +706,8 @@ func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 	return ips
 }
 
-// schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
-func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+// schedulersToAvailableNetAddrs coverts []*managerv1.Scheduler to available []dfnet.NetAddr.
+func schedulersToAvailableNetAddrs(schedulers []*managerv1.Scheduler) []dfnet.NetAddr {
 	var schedulerClusterID uint64
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
@@ -752,8 +752,8 @@ func (cd *clientDaemon) announceSeedPeer() error {
 		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
 	}
 
-	if _, err := cd.managerClient.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
-		SourceType:        manager.SourceType_SEED_PEER_SOURCE,
+	if _, err := cd.managerClient.UpdateSeedPeer(&managerv1.UpdateSeedPeerRequest{
+		SourceType:        managerv1.SourceType_SEED_PEER_SOURCE,
 		HostName:          cd.Option.Host.Hostname,
 		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
 		Idc:               cd.Option.Host.IDC,

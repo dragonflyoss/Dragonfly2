@@ -20,12 +20,12 @@ import (
 	"context"
 
 	"d7y.io/dragonfly/v2/manager/model"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 type searcher struct{}
 
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *managerv1.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
 	return []model.SchedulerCluster{{Name: "foo"}}, nil
 }
 

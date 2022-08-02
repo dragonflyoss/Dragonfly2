@@ -30,7 +30,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/pkg/math"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 const (
@@ -83,7 +83,7 @@ type Scopes struct {
 
 type Searcher interface {
 	// FindSchedulerClusters finds scheduler clusters that best matches the evaluation
-	FindSchedulerClusters(context.Context, []model.SchedulerCluster, *manager.ListSchedulersRequest) ([]model.SchedulerCluster, error)
+	FindSchedulerClusters(context.Context, []model.SchedulerCluster, *managerv1.ListSchedulersRequest) ([]model.SchedulerCluster, error)
 }
 
 type searcher struct{}
@@ -100,7 +100,7 @@ func New(pluginDir string) Searcher {
 }
 
 // FindSchedulerClusters finds scheduler clusters that best matches the evaluation
-func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *manager.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
+func (s *searcher) FindSchedulerClusters(ctx context.Context, schedulerClusters []model.SchedulerCluster, client *managerv1.ListSchedulersRequest) ([]model.SchedulerCluster, error) {
 	conditions := client.HostInfo
 	if len(conditions) <= 0 {
 		return nil, errors.New("empty conditions")

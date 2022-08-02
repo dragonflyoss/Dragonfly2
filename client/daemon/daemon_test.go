@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
@@ -35,12 +35,12 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		schedulers []*manager.Scheduler
+		schedulers []*managerv1.Scheduler
 		expect     func(t *testing.T, addrs []dfnet.NetAddr)
 	}{
 		{
 			name: "available ip",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "127.0.0.1",
 					Port:               int32(3000),
@@ -59,7 +59,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "available host",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "foo",
 					HostName:           "localhost",
@@ -80,7 +80,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "available ip and host",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "foo",
 					HostName:           "localhost",
@@ -122,7 +122,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "unreachable",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "foo",
 					HostName:           "localhost",
@@ -143,7 +143,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name:       "empty schedulers",
-			schedulers: []*manager.Scheduler{},
+			schedulers: []*managerv1.Scheduler{},
 			expect: func(t *testing.T, addrs []dfnet.NetAddr) {
 				assert := assert.New(t)
 				assert.EqualValues(addrs, []dfnet.NetAddr{})
@@ -151,7 +151,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "available ip with different scheduler cluster",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "127.0.0.1",
 					HostName:           "foo",
@@ -181,7 +181,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "available host with different scheduler cluster",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "127.0.0.1",
 					HostName:           "foo",
@@ -211,7 +211,7 @@ func TestDaemonSchedulersToAvailableNetAddrs(t *testing.T) {
 		},
 		{
 			name: "available host and ip with different scheduler cluster",
-			schedulers: []*manager.Scheduler{
+			schedulers: []*managerv1.Scheduler{
 				{
 					Ip:                 "foo",
 					HostName:           "localhost",
