@@ -26,46 +26,47 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
-// DaemonServer refer to dfdaemon.DaemonServer
+// DaemonServer refer to dfdaemonv1.DaemonServer
 type DaemonServer interface {
 	// Download triggers client to download file
-	Download(context.Context, *dfdaemon.DownRequest, chan<- *dfdaemon.DownResult) error
+	Download(context.Context, *dfdaemonv1.DownRequest, chan<- *dfdaemonv1.DownResult) error
 	// GetPieceTasks get piece tasks from other peers
 	GetPieceTasks(context.Context, *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error)
 	// SyncPieceTasks sync piece tasks info with other peers
-	SyncPieceTasks(dfdaemon.Daemon_SyncPieceTasksServer) error
+	SyncPieceTasks(dfdaemonv1.Daemon_SyncPieceTasksServer) error
 	// CheckHealth check daemon health
 	CheckHealth(context.Context) error
 	// Check if the given task exists in P2P cache system
-	StatTask(context.Context, *dfdaemon.StatTaskRequest) error
+	StatTask(context.Context, *dfdaemonv1.StatTaskRequest) error
 	// Import the given file into P2P cache system
-	ImportTask(context.Context, *dfdaemon.ImportTaskRequest) error
+	ImportTask(context.Context, *dfdaemonv1.ImportTaskRequest) error
 	// Export or download file from P2P cache system
-	ExportTask(context.Context, *dfdaemon.ExportTaskRequest) error
+	ExportTask(context.Context, *dfdaemonv1.ExportTaskRequest) error
 	// Delete file from P2P cache system
-	DeleteTask(context.Context, *dfdaemon.DeleteTaskRequest) error
+	DeleteTask(context.Context, *dfdaemonv1.DeleteTaskRequest) error
 }
 
 type proxy struct {
 	server DaemonServer
-	dfdaemon.UnimplementedDaemonServer
+	dfdaemonv1.UnimplementedDaemonServer
 }
 
 func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
-	dfdaemon.RegisterDaemonServer(grpcServer, &proxy{server: daemonServer})
+	dfdaemonv1.RegisterDaemonServer(grpcServer, &proxy{server: daemonServer})
 	return grpcServer
 }
 
-func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_DownloadServer) (err error) {
+func (p *proxy) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) (err error) {
 	ctx, cancel := context.WithCancel(stream.Context())
 	defer cancel()
 
@@ -76,7 +77,7 @@ func (p *proxy) Download(req *dfdaemon.DownRequest, stream dfdaemon.Daemon_Downl
 	logger.Infof("trigger download for url: %s, from: %s, uuid: %s", req.Url, peerAddr, req.Uuid)
 
 	errChan := make(chan error, 10)
-	drc := make(chan *dfdaemon.DownResult, 4)
+	drc := make(chan *dfdaemonv1.DownResult, 4)
 
 	once := new(sync.Once)
 	closeDrc := func() {
@@ -101,7 +102,7 @@ func (p *proxy) GetPieceTasks(ctx context.Context, ptr *commonv1.PieceTaskReques
 	return p.server.GetPieceTasks(ctx, ptr)
 }
 
-func (p *proxy) SyncPieceTasks(sync dfdaemon.Daemon_SyncPieceTasksServer) error {
+func (p *proxy) SyncPieceTasks(sync dfdaemonv1.Daemon_SyncPieceTasksServer) error {
 	return p.server.SyncPieceTasks(sync)
 }
 
@@ -109,23 +110,23 @@ func (p *proxy) CheckHealth(ctx context.Context, req *emptypb.Empty) (*emptypb.E
 	return new(emptypb.Empty), p.server.CheckHealth(ctx)
 }
 
-func (p *proxy) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest) (*emptypb.Empty, error) {
+func (p *proxy) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.StatTask(ctx, req)
 }
 
-func (p *proxy) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest) (*emptypb.Empty, error) {
+func (p *proxy) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.ImportTask(ctx, req)
 }
 
-func (p *proxy) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest) (*emptypb.Empty, error) {
+func (p *proxy) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.ExportTask(ctx, req)
 }
 
-func (p *proxy) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest) (*emptypb.Empty, error) {
+func (p *proxy) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.DeleteTask(ctx, req)
 }
 
-func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon_DownloadServer, errChan chan error) {
+func send(drc chan *dfdaemonv1.DownResult, closeDrc func(), stream dfdaemonv1.Daemon_DownloadServer, errChan chan error) {
 	err := safe.Call(func() {
 		defer closeDrc()
 
@@ -148,7 +149,7 @@ func send(drc chan *dfdaemon.DownResult, closeDrc func(), stream dfdaemon.Daemon
 	}
 }
 
-func call(ctx context.Context, drc chan *dfdaemon.DownResult, p *proxy, req *dfdaemon.DownRequest, errChan chan error) {
+func call(ctx context.Context, drc chan *dfdaemonv1.DownResult, p *proxy, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := p.server.Download(ctx, req, drc); err != nil {
 			errChan <- err

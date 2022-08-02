@@ -29,12 +29,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type pieceTaskSyncManager struct {
@@ -50,7 +50,7 @@ type pieceTaskSyncManager struct {
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
 	span              trace.Span
-	client            dfdaemon.Daemon_SyncPieceTasksClient
+	client            dfdaemonv1.Daemon_SyncPieceTasksClient
 	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
 	peerTaskConductor *peerTaskConductor

@@ -34,6 +34,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -43,7 +44,6 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -1598,7 +1598,7 @@ func (pt *peerTaskConductor) fail() {
 		Code:            pt.failedCode,
 	}
 	if sourceError != nil {
-		peerResult.ErrorDetail = &schedulerv1.PeerResult_SourceError{
+		peerResult.Errordetails = &schedulerv1.PeerResult_SourceError{
 			SourceError: sourceError,
 		}
 	}

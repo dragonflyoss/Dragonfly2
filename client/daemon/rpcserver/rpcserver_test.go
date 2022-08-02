@@ -30,6 +30,9 @@ import (
 	"github.com/phayes/freeport"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
@@ -37,11 +40,8 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/ip"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 func TestMain(m *testing.M) {
@@ -82,7 +82,7 @@ func Test_ServeDownload(t *testing.T) {
 	}
 	m.downloadServer = dfdaemonserver.New(m)
 	_, client := setupPeerServerAndClient(t, m, assert, m.ServeDownload)
-	request := &dfdaemongrpc.DownRequest{
+	request := &dfdaemonv1.DownRequest{
 		Uuid:              uuid.Generate().String(),
 		Url:               "http://localhost/test",
 		Output:            "./testdata/file1",
@@ -97,8 +97,8 @@ func Test_ServeDownload(t *testing.T) {
 	assert.Nil(err, "client download grpc call should be ok")
 
 	var (
-		lastResult *dfdaemongrpc.DownResult
-		curResult  *dfdaemongrpc.DownResult
+		lastResult *dfdaemonv1.DownResult
+		curResult  *dfdaemonv1.DownResult
 	)
 	for {
 		curResult, err = down.Recv()

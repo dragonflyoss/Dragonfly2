@@ -25,25 +25,25 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 )
 
 type DownResultStream struct {
 	dc      *daemonClient
 	ctx     context.Context
 	hashKey string
-	req     *dfdaemon.DownRequest
+	req     *dfdaemonv1.DownRequest
 	opts    []grpc.CallOption
 	// stream for one client
-	stream        dfdaemon.Daemon_DownloadClient
+	stream        dfdaemonv1.Daemon_DownloadClient
 	failedServers []string
 	rpc.RetryMeta
 }
 
-func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, req *dfdaemon.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
+func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, req *dfdaemonv1.DownRequest, opts []grpc.CallOption) (*DownResultStream, error) {
 	drs := &DownResultStream{
 		dc:      dc,
 		ctx:     ctx,
@@ -67,7 +67,7 @@ func newDownResultStream(ctx context.Context, dc *daemonClient, hashKey string, 
 func (drs *DownResultStream) initStream() error {
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client dfdaemon.DaemonClient
+		var client dfdaemonv1.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, false)
 		if err != nil {
@@ -82,12 +82,12 @@ func (drs *DownResultStream) initStream() error {
 		logger.WithTaskID(drs.hashKey).Infof("initStream: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(err)
 	}
-	drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+	drs.stream = stream.(dfdaemonv1.Daemon_DownloadClient)
 	drs.StreamTimes = 1
 	return nil
 }
 
-func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
+func (drs *DownResultStream) Recv() (dr *dfdaemonv1.DownResult, err error) {
 	defer func() {
 		if dr != nil {
 			if dr.TaskId != drs.hashKey {
@@ -101,7 +101,7 @@ func (drs *DownResultStream) Recv() (dr *dfdaemon.DownResult, err error) {
 	return drs.stream.Recv()
 }
 
-func (drs *DownResultStream) retryRecv(cause error) (*dfdaemon.DownResult, error) {
+func (drs *DownResultStream) retryRecv(cause error) (*dfdaemonv1.DownResult, error) {
 	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
@@ -120,7 +120,7 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 	}
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client dfdaemon.DaemonClient
+		var client dfdaemonv1.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)
 		if err != nil {
@@ -132,7 +132,7 @@ func (drs *DownResultStream) replaceStream(cause error) error {
 		logger.WithTaskID(drs.hashKey).Infof("replaceStream: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(cause)
 	}
-	drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+	drs.stream = stream.(dfdaemonv1.Daemon_DownloadClient)
 	drs.StreamTimes++
 	return nil
 }
@@ -147,7 +147,7 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client dfdaemon.DaemonClient
+		var client dfdaemonv1.DaemonClient
 		var err error
 		client, target, err = drs.dc.getDaemonClient(drs.hashKey, true)
 		if err != nil {
@@ -159,7 +159,7 @@ func (drs *DownResultStream) replaceClient(cause error) error {
 		logger.WithTaskID(drs.hashKey).Infof("replaceClient: invoke daemon node %s Download failed: %v", target, err)
 		return drs.replaceClient(cause)
 	}
-	drs.stream = stream.(dfdaemon.Daemon_DownloadClient)
+	drs.stream = stream.(dfdaemonv1.Daemon_DownloadClient)
 	drs.StreamTimes = 1
 	return nil
 }

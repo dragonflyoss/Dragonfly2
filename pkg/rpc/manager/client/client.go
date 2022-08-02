@@ -32,10 +32,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/reachable"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 const (

@@ -25,18 +25,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 )
 
 type subscriber struct {
 	sync.Mutex // lock for sent map and grpc Send
 	*logger.SugaredLoggerOnWith
 	*peer.SubscribeResponse
-	sync           dfdaemon.Daemon_SyncPieceTasksServer
+	sync           dfdaemonv1.Daemon_SyncPieceTasksServer
 	request        *commonv1.PieceTaskRequest
 	skipPieceCount uint32
 	totalPieces    int32
@@ -69,7 +69,7 @@ func sendExistPieces(
 	log *logger.SugaredLoggerOnWith,
 	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	request *commonv1.PieceTaskRequest,
-	sync dfdaemon.Daemon_SyncPieceTasksServer,
+	sync dfdaemonv1.Daemon_SyncPieceTasksServer,
 	sentMap map[int32]struct{},
 	skipSendZeroPiece bool) (total int32, err error) {
 	if request.Limit <= 0 {

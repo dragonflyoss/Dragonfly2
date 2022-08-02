@@ -25,12 +25,13 @@ import (
 
 	"google.golang.org/grpc"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 // NewBeginOfPiece creates begin of piece.

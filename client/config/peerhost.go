@@ -33,12 +33,12 @@ import (
 
 	"gopkg.in/yaml.v3"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency/base"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	netip "d7y.io/dragonfly/v2/pkg/net/ip"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/unit"
 )
 
@@ -156,18 +156,18 @@ func (p *DaemonOption) Validate() error {
 	return nil
 }
 
-func ConvertPattern(p string, defaultPattern rpcbase.Pattern) rpcbase.Pattern {
+func ConvertPattern(p string, defaultPattern commonv1.Pattern) commonv1.Pattern {
 	switch p {
 	case PatternP2P:
-		return rpcbase.Pattern_P2P
+		return commonv1.Pattern_P2P
 	case PatternSeedPeer:
-		return rpcbase.Pattern_SEED_PEER
+		return commonv1.Pattern_SEED_PEER
 	case PatternSource:
-		return rpcbase.Pattern_SOURCE
+		return commonv1.Pattern_SOURCE
 	case "":
 		return defaultPattern
 	}
-	logger.Warnf("unknown pattern, use default pattern: %s", rpcbase.Pattern_name[int32(defaultPattern)])
+	logger.Warnf("unknown pattern, use default pattern: %s", commonv1.Pattern_name[int32(defaultPattern)])
 	return defaultPattern
 }
 

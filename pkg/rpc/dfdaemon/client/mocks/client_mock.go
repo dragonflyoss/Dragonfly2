@@ -9,8 +9,8 @@ import (
 	reflect "reflect"
 
 	v1 "d7y.io/api/pkg/apis/common/v1"
+	v10 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	client "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -73,7 +73,7 @@ func (mr *MockDaemonClientMockRecorder) Close() *gomock.Call {
 }
 
 // DeleteTask mocks base method.
-func (m *MockDaemonClient) DeleteTask(ctx context.Context, req *dfdaemon.DeleteTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockDaemonClient) DeleteTask(ctx context.Context, req *v10.DeleteTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
 	for _, a := range opts {
@@ -92,7 +92,7 @@ func (mr *MockDaemonClientMockRecorder) DeleteTask(ctx, req interface{}, opts ..
 }
 
 // Download mocks base method.
-func (m *MockDaemonClient) Download(ctx context.Context, req *dfdaemon.DownRequest, opts ...grpc.CallOption) (*client.DownResultStream, error) {
+func (m *MockDaemonClient) Download(ctx context.Context, req *v10.DownRequest, opts ...grpc.CallOption) (*client.DownResultStream, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
 	for _, a := range opts {
@@ -112,7 +112,7 @@ func (mr *MockDaemonClientMockRecorder) Download(ctx, req interface{}, opts ...i
 }
 
 // ExportTask mocks base method.
-func (m *MockDaemonClient) ExportTask(ctx context.Context, req *dfdaemon.ExportTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockDaemonClient) ExportTask(ctx context.Context, req *v10.ExportTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
 	for _, a := range opts {
@@ -151,7 +151,7 @@ func (mr *MockDaemonClientMockRecorder) GetPieceTasks(ctx, addr, ptr interface{}
 }
 
 // ImportTask mocks base method.
-func (m *MockDaemonClient) ImportTask(ctx context.Context, req *dfdaemon.ImportTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockDaemonClient) ImportTask(ctx context.Context, req *v10.ImportTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
 	for _, a := range opts {
@@ -170,7 +170,7 @@ func (mr *MockDaemonClientMockRecorder) ImportTask(ctx, req interface{}, opts ..
 }
 
 // StatTask mocks base method.
-func (m *MockDaemonClient) StatTask(ctx context.Context, req *dfdaemon.StatTaskRequest, opts ...grpc.CallOption) error {
+func (m *MockDaemonClient) StatTask(ctx context.Context, req *v10.StatTaskRequest, opts ...grpc.CallOption) error {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, req}
 	for _, a := range opts {
@@ -189,14 +189,14 @@ func (mr *MockDaemonClientMockRecorder) StatTask(ctx, req interface{}, opts ...i
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v1.PieceTaskRequest, opts ...grpc.CallOption) (dfdaemon.Daemon_SyncPieceTasksClient, error) {
+func (m *MockDaemonClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v1.PieceTaskRequest, opts ...grpc.CallOption) (v10.Daemon_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, ptr}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
-	ret0, _ := ret[0].(dfdaemon.Daemon_SyncPieceTasksClient)
+	ret0, _ := ret[0].(v10.Daemon_SyncPieceTasksClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

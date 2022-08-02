@@ -9,6 +9,7 @@ linters-settings:
     sections:
       - standard
       - default
+      - prefix(d7y.io/api)
       - prefix(d7y.io/dragonfly/v2)
 
 issues:

@@ -35,6 +35,10 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -43,11 +47,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -181,7 +181,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskR
 func (s *server) sendExistPieces(
 	log *logger.SugaredLoggerOnWith,
 	request *commonv1.PieceTaskRequest,
-	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
+	sync dfdaemonv1.Daemon_SyncPieceTasksServer,
 	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, true)
@@ -191,13 +191,13 @@ func (s *server) sendExistPieces(
 func (s *server) sendFirstPieceTasks(
 	log *logger.SugaredLoggerOnWith,
 	request *commonv1.PieceTaskRequest,
-	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
+	sync dfdaemonv1.Daemon_SyncPieceTasksServer,
 	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, false)
 }
 
-func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
+func (s *server) SyncPieceTasks(sync dfdaemonv1.Daemon_SyncPieceTasksServer) error {
 	request, err := sync.Recv()
 	if err != nil {
 		logger.Errorf("receive first sync piece tasks request error: %s", err.Error())
@@ -305,13 +305,13 @@ func (s *server) CheckHealth(context.Context) error {
 }
 
 func (s *server) Download(ctx context.Context,
-	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	req *dfdaemonv1.DownRequest, results chan<- *dfdaemonv1.DownResult) error {
 	s.Keep()
 	return s.doDownload(ctx, req, results, "")
 }
 
-func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
-	results chan<- *dfdaemongrpc.DownResult, peerID string) error {
+func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
+	results chan<- *dfdaemonv1.DownResult, peerID string) error {
 	if req.UrlMeta == nil {
 		req.UrlMeta = &commonv1.UrlMeta{}
 	}
@@ -353,7 +353,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
-		results <- &dfdaemongrpc.DownResult{
+		results <- &dfdaemonv1.DownResult{
 			TaskId:          tiny.TaskID,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
@@ -381,7 +381,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
-			results <- &dfdaemongrpc.DownResult{
+			results <- &dfdaemonv1.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
@@ -401,7 +401,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 				return nil
 			}
 		case <-ctx.Done():
-			results <- &dfdaemongrpc.DownResult{
+			results <- &dfdaemonv1.DownResult{
 				CompletedLength: 0,
 				Done:            true,
 			}
@@ -411,7 +411,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 	}
 }
 
-func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "StatTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
@@ -447,7 +447,7 @@ func (s *server) isTaskCompleted(taskID string) bool {
 	return s.storageManager.FindCompletedTask(taskID) != nil
 }
 
-func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) error {
+func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) error {
 	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
@@ -509,7 +509,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 	return nil
 }
 
-func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest) error {
+func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
@@ -534,7 +534,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskReq
 	return nil
 }
 
-func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest, peerID string) error {
+func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, peerID string) error {
 	return s.storageManager.Store(ctx, &storage.StoreRequest{
 		CommonTaskRequest: storage.CommonTaskRequest{
 			PeerID:      peerID,
@@ -545,7 +545,7 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTa
 	})
 }
 
-func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemongrpc.ExportTaskRequest) error {
+func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemonv1.ExportTaskRequest) error {
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 
@@ -568,12 +568,12 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	// Task exists in peers
 	var (
 		start     = time.Now()
-		drc       = make(chan *dfdaemongrpc.DownResult, 1)
+		drc       = make(chan *dfdaemonv1.DownResult, 1)
 		errChan   = make(chan error, 3)
-		result    *dfdaemongrpc.DownResult
+		result    *dfdaemonv1.DownResult
 		downError error
 	)
-	downRequest := &dfdaemongrpc.DownRequest{
+	downRequest := &dfdaemonv1.DownRequest{
 		Url:               req.Url,
 		Output:            req.Output,
 		Timeout:           req.Timeout,
@@ -609,7 +609,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	return nil
 }
 
-func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult, s *server, req *dfdaemongrpc.DownRequest, errChan chan error) {
+func call(ctx context.Context, peerID string, drc chan *dfdaemonv1.DownResult, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := s.doDownload(ctx, req, drc, peerID); err != nil {
 			errChan <- err
@@ -621,7 +621,7 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 	}
 }
 
-func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
+func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID)

@@ -19,9 +19,9 @@ package idgen
 import (
 	"strings"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	neturl "d7y.io/dragonfly/v2/pkg/net/url"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 

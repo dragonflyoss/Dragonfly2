@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/manager/model"
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	"d7y.io/dragonfly/v2/manager/model"
 )
 
 func TestSchedulerCluster(t *testing.T) {

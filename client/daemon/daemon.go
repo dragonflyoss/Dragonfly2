@@ -564,7 +564,7 @@ func (cd *clientDaemon) Serve() error {
 	}
 
 	// serve dynconfig service
-	if cd.dynconfig != nil {
+	if cd.Option.Scheduler.Manager.Enable {
 		// dynconfig register client daemon
 		cd.dynconfig.Register(cd)
 
@@ -662,7 +662,7 @@ func (cd *clientDaemon) Stop() {
 			cd.StorageManager.CleanUp()
 		}
 
-		if cd.dynconfig != nil {
+		if cd.Option.Scheduler.Manager.Enable {
 			if err := cd.dynconfig.Stop(); err != nil {
 				logger.Errorf("dynconfig client closed failed %s", err)
 			}
