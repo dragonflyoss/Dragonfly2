@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"

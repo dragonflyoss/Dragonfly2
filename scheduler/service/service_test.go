@@ -40,7 +40,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	rpcschedulermocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/mocks"
