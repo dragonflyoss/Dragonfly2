@@ -25,9 +25,13 @@ import (
 	"io"
 	"math"
 	"net"
+	"net/url"
 	"os"
+	"path"
+	"strings"
 	"time"
 
+	"github.com/gammazero/deque"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -39,6 +43,7 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+	"d7y.io/dragonfly/v2/pkg/source"
 
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -308,7 +313,84 @@ func (s *server) CheckHealth(context.Context) error {
 func (s *server) Download(ctx context.Context,
 	req *dfdaemonv1.DownRequest, results chan<- *dfdaemonv1.DownResult) error {
 	s.Keep()
+	if req.Recursive {
+		return s.doRecursiveDownload(ctx, req, results)
+	}
 	return s.doDownload(ctx, req, results, "")
+}
+
+func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
+	results chan<- *dfdaemonv1.DownResult) error {
+	var queue deque.Deque[*dfdaemonv1.DownRequest]
+	queue.PushBack(req)
+	downloadMap := map[url.URL]struct{}{}
+	for {
+		if queue.Len() == 0 {
+			break
+		}
+
+		parentReq := queue.PopFront()
+		request, err := source.NewRequestWithContext(ctx, parentReq.Url, parentReq.UrlMeta.Header)
+		if err != nil {
+			return err
+		}
+
+		// prevent loop downloading
+		if _, exist := downloadMap[*request.URL]; exist {
+			continue
+		}
+		downloadMap[*request.URL] = struct{}{}
+
+		urlEntries, err := source.List(request)
+		if err != nil {
+			logger.Errorf("url [%v] source lister error: %v", request.URL, err)
+			return err
+		}
+
+		for _, urlEntry := range urlEntries {
+			childReq := copyDownRequest(parentReq) //create new req
+			childReq.Output = path.Join(parentReq.Output, urlEntry.Name)
+			logger.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
+
+			u := urlEntry.URL
+			childReq.Url = u.String()
+			logger.Infof("download %s to %s", childReq.Url, childReq.Output)
+
+			if urlEntry.IsDir {
+				queue.PushBack(childReq)
+				continue
+			}
+
+			// validate new request
+			if err = childReq.Validate(); err != nil {
+				logger.Errorf("validate %#v failed: %s", childReq, err)
+				return err
+			}
+
+			if err = s.doDownload(ctx, childReq, results, ""); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
+	return &dfdaemonv1.DownRequest{
+		Uuid:               "",
+		Url:                req.Url,
+		Output:             req.Output,
+		Timeout:            req.Timeout,
+		Limit:              req.Limit,
+		DisableBackSource:  req.DisableBackSource,
+		UrlMeta:            req.UrlMeta,
+		Pattern:            req.Pattern,
+		Callsystem:         req.Callsystem,
+		Uid:                req.Uid,
+		Gid:                req.Gid,
+		KeepOriginalOffset: req.KeepOriginalOffset,
+		Recursive:          false, // not used anymore
+	}
 }
 
 func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
