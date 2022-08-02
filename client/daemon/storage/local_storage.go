@@ -30,11 +30,12 @@ import (
 
 	"go.uber.org/atomic"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 type localTaskStore struct {

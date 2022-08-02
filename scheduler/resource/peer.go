@@ -29,9 +29,10 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 const (

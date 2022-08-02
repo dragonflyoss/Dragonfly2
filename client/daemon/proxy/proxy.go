@@ -39,13 +39,14 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 

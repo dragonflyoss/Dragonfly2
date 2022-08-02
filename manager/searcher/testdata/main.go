@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"os"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/searcher"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 func main() {

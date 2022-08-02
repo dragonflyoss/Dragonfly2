@@ -35,6 +35,8 @@ import (
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/config"
@@ -44,7 +46,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/searcher"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 )
 
 // Default middlewares for stream.

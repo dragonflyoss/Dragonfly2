@@ -25,12 +25,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 )
 
 type pieceTaskPoller struct {

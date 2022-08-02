@@ -24,10 +24,11 @@ import (
 
 	"go.uber.org/atomic"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 // TODO need refactor with localTaskStore, currently, localSubTaskStore code copies from localTaskStore

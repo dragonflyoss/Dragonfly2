@@ -21,10 +21,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
+	"d7y.io/dragonfly/v2/internal/dferrors"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 )
 
 // when scheduler is not available, use dummySchedulerClient to back source

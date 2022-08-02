@@ -24,11 +24,12 @@ import (
 	"time"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
 func TestDynconfigNewDynconfig(t *testing.T) {

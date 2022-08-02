@@ -35,14 +35,15 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation

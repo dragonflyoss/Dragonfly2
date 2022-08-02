@@ -40,6 +40,8 @@ import (
 	ginprometheus "github.com/mcuadros/go-gin-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -48,7 +50,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/objectstorage"
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 

@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	"d7y.io/dragonfly/v2/manager/model"
 )
 
