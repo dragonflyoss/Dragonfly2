@@ -43,7 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -2951,20 +2951,20 @@ func TestService_handleTaskSuccess(t *testing.T) {
 
 func TestService_handleTaskFail(t *testing.T) {
 	rst := status.Newf(codes.Aborted, "response is not valid")
-	st, err := rst.WithDetails(&errordetails.SourceError{Temporary: false})
+	st, err := rst.WithDetails(&errordetailsv1.SourceError{Temporary: false})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	rtst := status.Newf(codes.Aborted, "response is not valid")
-	tst, err := rtst.WithDetails(&errordetails.SourceError{Temporary: true})
+	tst, err := rtst.WithDetails(&errordetailsv1.SourceError{Temporary: true})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	tests := []struct {
 		name            string
-		backToSourceErr *errordetails.SourceError
+		backToSourceErr *errordetailsv1.SourceError
 		seedPeerErr     error
 		mock            func(task *resource.Task)
 		expect          func(t *testing.T, task *resource.Task)
@@ -3011,7 +3011,7 @@ func TestService_handleTaskFail(t *testing.T) {
 		},
 		{
 			name:            "peer back-to-source fails due to an unrecoverable error",
-			backToSourceErr: &errordetails.SourceError{Temporary: false},
+			backToSourceErr: &errordetailsv1.SourceError{Temporary: false},
 			mock: func(task *resource.Task) {
 				task.FSM.SetState(resource.TaskStateRunning)
 			},
@@ -3023,7 +3023,7 @@ func TestService_handleTaskFail(t *testing.T) {
 		},
 		{
 			name:            "peer back-to-source fails due to an temporary error",
-			backToSourceErr: &errordetails.SourceError{Temporary: true},
+			backToSourceErr: &errordetailsv1.SourceError{Temporary: true},
 			mock: func(task *resource.Task) {
 				task.FSM.SetState(resource.TaskStateRunning)
 			},

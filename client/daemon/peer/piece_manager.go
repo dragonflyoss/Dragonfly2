@@ -43,7 +43,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/retry"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -362,7 +362,7 @@ singleDownload:
 				hdr[k] = response.Header.Get(k)
 			}
 		}
-		srcErr := &errordetails.SourceError{
+		srcErr := &errordetailsv1.SourceError{
 			Temporary: response.Temporary != nil && response.Temporary(),
 			Metadata: &commonv1.ExtendAttribute{
 				Header:     hdr,

@@ -42,7 +42,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -261,7 +261,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		if st, ok := status.FromError(err); ok {
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
-				case *errordetails.SourceError:
+				case *errordetailsv1.SourceError:
 					hdr := nethttp.MapToHeader(attr)
 					for k, v := range d.Metadata.Header {
 						hdr.Set(k, v)

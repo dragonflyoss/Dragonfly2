@@ -43,7 +43,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -1574,11 +1574,11 @@ func (pt *peerTaskConductor) fail() {
 	peerResultCtx, peerResultSpan := tracer.Start(ctx, config.SpanReportPeerResult)
 	defer peerResultSpan.End()
 
-	var sourceError *errordetails.SourceError
+	var sourceError *errordetailsv1.SourceError
 	if pt.sourceErrorStatus != nil {
 		for _, detail := range pt.sourceErrorStatus.Details() {
 			switch d := detail.(type) {
-			case *errordetails.SourceError:
+			case *errordetailsv1.SourceError:
 				sourceError = d
 			}
 		}

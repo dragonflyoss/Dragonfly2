@@ -26,12 +26,12 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -787,7 +787,7 @@ func (s *Service) handleTaskSuccess(ctx context.Context, task *resource.Task, re
 // Conditions for the task to switch to the TaskStateSucceeded are:
 // 1. Seed peer downloads the resource falied.
 // 2. Dfdaemon back-to-source to download failed.
-func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backToSourceErr *errordetails.SourceError, seedPeerErr error) {
+func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backToSourceErr *errordetailsv1.SourceError, seedPeerErr error) {
 	// If peer back-to-source fails due to an unrecoverable error,
 	// notify other peers of the failure,
 	// and return the source metadata to peer.
@@ -795,7 +795,7 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 		if !backToSourceErr.Temporary {
 			task.NotifyPeers(&schedulerv1.PeerPacket{
 				Code: commonv1.Code_BackToSourceAborted,
-				ErrorDetail: &schedulerv1.PeerPacket_SourceError{
+				Errordetails: &schedulerv1.PeerPacket_SourceError{
 					SourceError: backToSourceErr,
 				},
 			}, resource.PeerEventDownloadFailed)
@@ -808,11 +808,11 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 		if st, ok := status.FromError(seedPeerErr); ok {
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
-				case *errordetails.SourceError:
+				case *errordetailsv1.SourceError:
 					if !d.Temporary {
 						task.NotifyPeers(&schedulerv1.PeerPacket{
 							Code: commonv1.Code_BackToSourceAborted,
-							ErrorDetail: &schedulerv1.PeerPacket_SourceError{
+							Errordetails: &schedulerv1.PeerPacket_SourceError{
 								SourceError: d,
 							},
 						}, resource.PeerEventDownloadFailed)

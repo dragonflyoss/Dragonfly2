@@ -19,7 +19,7 @@
 // 	protoc        v3.19.4
 // source: pkg/rpc/errordetails/error_details.proto
 
-package errordetails
+package errordetailsv1
 
 import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
