@@ -35,14 +35,15 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
 )
 
 var _ *logger.SugaredLoggerOnWith // pin this package for no log code generation
@@ -70,7 +71,7 @@ type transport struct {
 	defaultFilter string
 
 	// defaultFilter is used for registering steam task
-	defaultPattern base.Pattern
+	defaultPattern commonv1.Pattern
 
 	// defaultTag is used when http request without X-Dragonfly-Tag Header
 	defaultTag string
@@ -125,7 +126,7 @@ func WithDefaultFilter(f string) Option {
 }
 
 // WithDefaultPattern sets default pattern
-func WithDefaultPattern(pattern base.Pattern) Option {
+func WithDefaultPattern(pattern commonv1.Pattern) Option {
 	return func(rt *transport) *transport {
 		rt.defaultPattern = pattern
 		return rt
@@ -215,7 +216,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	log.Infof("start download with url: %s", url)
 
 	// Init meta value
-	meta := &base.UrlMeta{Header: map[string]string{}}
+	meta := &commonv1.UrlMeta{Header: map[string]string{}}
 	var rg *util.Range
 
 	// Set meta range's value
@@ -261,7 +262,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 		if st, ok := status.FromError(err); ok {
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
-				case *errordetails.SourceError:
+				case *errordetailsv1.SourceError:
 					hdr := nethttp.MapToHeader(attr)
 					for k, v := range d.Metadata.Header {
 						hdr.Set(k, v)

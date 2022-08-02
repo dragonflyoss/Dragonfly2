@@ -27,8 +27,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type ErrorResponse struct {
@@ -58,7 +59,7 @@ func Error() gin.HandlerFunc {
 		var dferr *dferrors.DfError
 		if errors.As(err.Err, &dferr) {
 			switch dferr.Code {
-			case base.Code_InvalidResourceType:
+			case commonv1.Code_InvalidResourceType:
 				c.JSON(http.StatusBadRequest, ErrorResponse{
 					Message: http.StatusText(http.StatusBadRequest),
 				})

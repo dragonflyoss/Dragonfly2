@@ -43,7 +43,7 @@ Rely on S3 or OSS as the backend to ensure storage reliability.
 In the process of object storage, P2P Cache is effectively used for fast read and write storage.
 `
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:                "dfstore <command> [flags]",
 	Short:              "object storage client of dragonfly.",

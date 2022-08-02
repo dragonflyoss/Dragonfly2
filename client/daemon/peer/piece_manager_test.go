@@ -36,15 +36,16 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/time/rate"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	_ "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
@@ -443,9 +444,9 @@ func TestPieceManager_DownloadSource(t *testing.T) {
 				return tc.pieceSize
 			}
 
-			request := &scheduler.PeerTaskRequest{
+			request := &schedulerv1.PeerTaskRequest{
 				Url: ts.URL,
-				UrlMeta: &base.UrlMeta{
+				UrlMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Range:  "",
 					Header: nil,

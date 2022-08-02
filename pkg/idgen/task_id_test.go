@@ -21,14 +21,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 func TestTaskID(t *testing.T) {
 	tests := []struct {
 		name        string
 		url         string
-		meta        *base.UrlMeta
+		meta        *commonv1.UrlMeta
 		ignoreRange bool
 		expect      func(t *testing.T, d any)
 	}{
@@ -44,7 +44,7 @@ func TestTaskID(t *testing.T) {
 		{
 			name: "generate taskID with meta",
 			url:  "https://example.com",
-			meta: &base.UrlMeta{
+			meta: &commonv1.UrlMeta{
 				Range:  "foo",
 				Digest: "bar",
 				Tag:    "",
@@ -57,7 +57,7 @@ func TestTaskID(t *testing.T) {
 		{
 			name: "generate taskID with meta",
 			url:  "https://example.com",
-			meta: &base.UrlMeta{
+			meta: &commonv1.UrlMeta{
 				Range:  "foo",
 				Digest: "bar",
 				Tag:    "",
@@ -71,7 +71,7 @@ func TestTaskID(t *testing.T) {
 		{
 			name: "generate taskID with filter",
 			url:  "https://example.com?foo=foo&bar=bar",
-			meta: &base.UrlMeta{
+			meta: &commonv1.UrlMeta{
 				Tag:    "foo",
 				Filter: "foo&bar",
 			},
@@ -83,7 +83,7 @@ func TestTaskID(t *testing.T) {
 		{
 			name: "generate taskID with tag",
 			url:  "https://example.com",
-			meta: &base.UrlMeta{
+			meta: &commonv1.UrlMeta{
 				Tag: "foo",
 			},
 			expect: func(t *testing.T, d any) {

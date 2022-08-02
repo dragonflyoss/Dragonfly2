@@ -50,7 +50,7 @@ file that has been imported or added into P2P network by other peer, it's the us
 responsibility to go back to source and add file into P2P network.
 `
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:                "dfcache <command> [flags]",
 	Short:              "the P2P cache client of dragonfly",

@@ -26,10 +26,11 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
-	rpcmanager "d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -81,8 +82,8 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.managerClient = managerClient
 
 	// Register to manager.
-	if _, err := s.managerClient.UpdateScheduler(&rpcmanager.UpdateSchedulerRequest{
-		SourceType:         rpcmanager.SourceType_SCHEDULER_SOURCE,
+	if _, err := s.managerClient.UpdateScheduler(&managerv1.UpdateSchedulerRequest{
+		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           s.config.Server.Host,
 		Ip:                 s.config.Server.IP,
 		Port:               int32(s.config.Server.Port),
@@ -197,8 +198,8 @@ func (s *Server) Serve() error {
 		// scheduler keepalive with manager.
 		go func() {
 			logger.Info("start keepalive to manager")
-			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &rpcmanager.KeepAliveRequest{
-				SourceType: rpcmanager.SourceType_SCHEDULER_SOURCE,
+			s.managerClient.KeepAlive(s.config.Manager.KeepAlive.Interval, &managerv1.KeepAliveRequest{
+				SourceType: managerv1.SourceType_SCHEDULER_SOURCE,
 				HostName:   s.config.Server.Host,
 				Ip:         s.config.Server.IP,
 				ClusterId:  uint64(s.config.Manager.SchedulerClusterID),

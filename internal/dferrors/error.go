@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 // common and framework errors
@@ -39,7 +39,7 @@ func IsEndOfStream(err error) bool {
 }
 
 type DfError struct {
-	Code    base.Code
+	Code    commonv1.Code
 	Message string
 }
 
@@ -47,21 +47,21 @@ func (s *DfError) Error() string {
 	return fmt.Sprintf("[%d]%s", s.Code, s.Message)
 }
 
-func New(code base.Code, msg string) *DfError {
+func New(code commonv1.Code, msg string) *DfError {
 	return &DfError{
 		Code:    code,
 		Message: msg,
 	}
 }
 
-func Newf(code base.Code, format string, a ...any) *DfError {
+func Newf(code commonv1.Code, format string, a ...any) *DfError {
 	return &DfError{
 		Code:    code,
 		Message: fmt.Sprintf(format, a...),
 	}
 }
 
-func CheckError(err error, code base.Code) bool {
+func CheckError(err error, code commonv1.Code) bool {
 	if err == nil {
 		return false
 	}

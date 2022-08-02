@@ -25,27 +25,28 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type StreamTaskRequest struct {
 	// universal resource locator for different kind of storage
 	URL string
 	// url meta info
-	URLMeta *base.UrlMeta
+	URLMeta *commonv1.UrlMeta
 	// http range
 	Range *util.Range
 	// peer's id and must be global uniqueness
 	PeerID string
 	// Pattern to register to scheduler
-	Pattern base.Pattern
+	Pattern commonv1.Pattern
 }
 
 // StreamTask represents a peer task with stream io for reading directly without once more disk io
@@ -66,7 +67,7 @@ type streamTask struct {
 
 func (ptm *peerTaskManager) newStreamTask(
 	ctx context.Context,
-	request *scheduler.PeerTaskRequest,
+	request *schedulerv1.PeerTaskRequest,
 	rg *util.Range) (*streamTask, error) {
 	metrics.StreamTaskCount.Add(1)
 	var limit = rate.Inf

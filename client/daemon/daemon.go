@@ -37,6 +37,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/gc"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
@@ -54,10 +58,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
@@ -68,15 +69,15 @@ type Daemon interface {
 
 	// ExportTaskManager returns the underlay peer.TaskManager for downloading when embed dragonfly in custom binary
 	ExportTaskManager() peer.TaskManager
-	// ExportPeerHost returns the underlay scheduler.PeerHost for scheduling
-	ExportPeerHost() *scheduler.PeerHost
+	// ExportPeerHost returns the underlay schedulerv1.PeerHost for scheduling
+	ExportPeerHost() *schedulerv1.PeerHost
 }
 
 type clientDaemon struct {
 	once *sync.Once
 	done chan bool
 
-	schedPeerHost *scheduler.PeerHost
+	schedPeerHost *schedulerv1.PeerHost
 
 	Option config.DaemonOption
 
@@ -92,7 +93,7 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	schedulers      []*manager.Scheduler
+	schedulers      []*managerv1.Scheduler
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
 }
@@ -101,7 +102,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// update plugin directory
 	source.UpdatePluginDir(d.PluginDir())
 
-	host := &scheduler.PeerHost{
+	host := &schedulerv1.PeerHost{
 		Id:             idgen.HostID(opt.Host.Hostname, int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start)),
 		Ip:             opt.Host.AdvertiseIP,
 		RpcPort:        int32(opt.Download.PeerGRPC.TCPListen.PortRange.Start),
@@ -115,10 +116,10 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	var (
 		addrs          []dfnet.NetAddr
-		schedulers     []*manager.Scheduler
+		schedulers     []*managerv1.Scheduler
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
-		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, base.Pattern_P2P)
+		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
 	)
 
 	if opt.Scheduler.Manager.Enable {
@@ -162,7 +163,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	// Storage.Option.DataPath is same with Daemon DataDir
 	opt.Storage.DataPath = d.DataDir()
 	gcCallback := func(request storage.CommonTaskRequest) {
-		er := sched.LeaveTask(context.Background(), &scheduler.PeerTarget{
+		er := sched.LeaveTask(context.Background(), &schedulerv1.PeerTarget{
 			TaskId: request.TaskID,
 			PeerId: request.PeerID,
 		})
@@ -524,8 +525,8 @@ func (cd *clientDaemon) Serve() error {
 
 		g.Go(func() error {
 			logger.Info("keepalive to manager")
-			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &manager.KeepAliveRequest{
-				SourceType: manager.SourceType_SEED_PEER_SOURCE,
+			cd.managerClient.KeepAlive(cd.Option.Scheduler.Manager.SeedPeer.KeepAlive.Interval, &managerv1.KeepAliveRequest{
+				SourceType: managerv1.SourceType_SEED_PEER_SOURCE,
 				HostName:   cd.Option.Host.Hostname,
 				Ip:         cd.Option.Host.AdvertiseIP,
 				ClusterId:  uint64(cd.Option.Scheduler.Manager.SeedPeer.ClusterID),
@@ -564,7 +565,7 @@ func (cd *clientDaemon) Serve() error {
 	}
 
 	// serve dynconfig service
-	if cd.dynconfig != nil {
+	if cd.Option.Scheduler.Manager.Enable {
 		// dynconfig register client daemon
 		cd.dynconfig.Register(cd)
 
@@ -662,7 +663,7 @@ func (cd *clientDaemon) Stop() {
 			cd.StorageManager.CleanUp()
 		}
 
-		if cd.dynconfig != nil {
+		if cd.Option.Scheduler.Manager.Enable {
 			if err := cd.dynconfig.Stop(); err != nil {
 				logger.Errorf("dynconfig client closed failed %s", err)
 			}
@@ -697,7 +698,7 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 }
 
 // getSchedulerIPs gets ips by schedulers.
-func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
+func getSchedulerIPs(schedulers []*managerv1.Scheduler) []string {
 	ips := []string{}
 	for _, scheduler := range schedulers {
 		ips = append(ips, scheduler.Ip)
@@ -706,8 +707,8 @@ func getSchedulerIPs(schedulers []*manager.Scheduler) []string {
 	return ips
 }
 
-// schedulersToAvailableNetAddrs coverts []*manager.Scheduler to available []dfnet.NetAddr.
-func schedulersToAvailableNetAddrs(schedulers []*manager.Scheduler) []dfnet.NetAddr {
+// schedulersToAvailableNetAddrs coverts []*managerv1.Scheduler to available []dfnet.NetAddr.
+func schedulersToAvailableNetAddrs(schedulers []*managerv1.Scheduler) []dfnet.NetAddr {
 	var schedulerClusterID uint64
 	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
 	for _, scheduler := range schedulers {
@@ -752,8 +753,8 @@ func (cd *clientDaemon) announceSeedPeer() error {
 		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
 	}
 
-	if _, err := cd.managerClient.UpdateSeedPeer(&manager.UpdateSeedPeerRequest{
-		SourceType:        manager.SourceType_SEED_PEER_SOURCE,
+	if _, err := cd.managerClient.UpdateSeedPeer(&managerv1.UpdateSeedPeerRequest{
+		SourceType:        managerv1.SourceType_SEED_PEER_SOURCE,
 		HostName:          cd.Option.Host.Hostname,
 		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
 		Idc:               cd.Option.Host.IDC,
@@ -775,6 +776,6 @@ func (cd *clientDaemon) ExportTaskManager() peer.TaskManager {
 	return cd.PeerTaskManager
 }
 
-func (cd *clientDaemon) ExportPeerHost() *scheduler.PeerHost {
+func (cd *clientDaemon) ExportPeerHost() *schedulerv1.PeerHost {
 	return cd.schedPeerHost
 }

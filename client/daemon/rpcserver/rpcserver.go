@@ -35,6 +35,11 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
@@ -43,11 +48,7 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	dfdaemongrpc "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/safe"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
@@ -61,18 +62,18 @@ type Server interface {
 
 type server struct {
 	util.KeepAlive
-	peerHost        *scheduler.PeerHost
+	peerHost        *schedulerv1.PeerHost
 	peerTaskManager peer.TaskManager
 	storageManager  storage.Manager
-	defaultPattern  base.Pattern
+	defaultPattern  commonv1.Pattern
 
 	downloadServer *grpc.Server
 	peerServer     *grpc.Server
 	uploadAddr     string
 }
 
-func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
-	storageManager storage.Manager, defaultPattern base.Pattern,
+func New(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskManager,
+	storageManager storage.Manager, defaultPattern commonv1.Pattern,
 	downloadOpts []grpc.ServerOption, peerOpts []grpc.ServerOption) (Server, error) {
 	s := &server{
 		KeepAlive:       util.NewKeepAlive("rpc server"),
@@ -92,7 +93,7 @@ func New(peerHost *scheduler.PeerHost, peerTaskManager peer.TaskManager,
 	s.peerServer = dfdaemonserver.New(s, peerOpts...)
 	healthpb.RegisterHealthServer(s.peerServer, health.NewServer())
 
-	cdnsystem.RegisterSeederServer(s.peerServer, sd)
+	cdnsystemv1.RegisterSeederServer(s.peerServer, sd)
 	return s, nil
 }
 
@@ -110,13 +111,13 @@ func (s *server) Stop() {
 	s.downloadServer.GracefulStop()
 }
 
-func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	s.Keep()
 	p, err := s.storageManager.GetPieces(ctx, request)
 	if err != nil {
-		code := base.Code_UnknownError
+		code := commonv1.Code_UnknownError
 		if err == dferrors.ErrInvalidArgument {
-			code = base.Code_BadRequest
+			code = commonv1.Code_BadRequest
 		}
 		if err != storage.ErrTaskNotFound {
 			logger.Errorf("get piece tasks error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
@@ -126,7 +127,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 		// dst peer is not running
 		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId)
 		if !ok {
-			code = base.Code_PeerTaskNotFound
+			code = commonv1.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: target peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
@@ -134,7 +135,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 
 		if task.GetPeerID() != request.GetDstPid() {
 			// there is only one running task in same time, redirect request to running peer task
-			r := base.PieceTaskRequest{
+			r := commonv1.PieceTaskRequest{
 				TaskId:   request.TaskId,
 				SrcPid:   request.SrcPid,
 				DstPid:   task.GetPeerID(), // replace to running task peer id
@@ -148,7 +149,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 				p.DstAddr = s.uploadAddr
 				return p, nil
 			}
-			code = base.Code_PeerTaskNotFound
+			code = commonv1.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: target peer task and replaced peer task storage not found wit error: %s, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
@@ -160,7 +161,7 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 			"task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 			request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 		// dst peer is running, send empty result, src peer will retry later
-		return &base.PiecePacket{
+		return &commonv1.PiecePacket{
 			TaskId:        request.TaskId,
 			DstPid:        request.DstPid,
 			DstAddr:       s.uploadAddr,
@@ -180,9 +181,9 @@ func (s *server) GetPieceTasks(ctx context.Context, request *base.PieceTaskReque
 // sendExistPieces will send as much as possible pieces
 func (s *server) sendExistPieces(
 	log *logger.SugaredLoggerOnWith,
-	request *base.PieceTaskRequest,
-	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
-	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	request *commonv1.PieceTaskRequest,
+	sync dfdaemonv1.Daemon_SyncPieceTasksServer,
+	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, true)
 }
@@ -190,14 +191,14 @@ func (s *server) sendExistPieces(
 // sendFirstPieceTasks will send as much as possible pieces, even if no available pieces
 func (s *server) sendFirstPieceTasks(
 	log *logger.SugaredLoggerOnWith,
-	request *base.PieceTaskRequest,
-	sync dfdaemongrpc.Daemon_SyncPieceTasksServer,
-	get func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error),
+	request *commonv1.PieceTaskRequest,
+	sync dfdaemonv1.Daemon_SyncPieceTasksServer,
+	get func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error),
 	sentMap map[int32]struct{}) (total int32, err error) {
 	return sendExistPieces(sync.Context(), log, get, request, sync, sentMap, false)
 }
 
-func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) error {
+func (s *server) SyncPieceTasks(sync dfdaemonv1.Daemon_SyncPieceTasksServer) error {
 	request, err := sync.Recv()
 	if err != nil {
 		logger.Errorf("receive first sync piece tasks request error: %s", err.Error())
@@ -212,7 +213,7 @@ func (s *server) SyncPieceTasks(sync dfdaemongrpc.Daemon_SyncPieceTasksServer) e
 		attributeSent bool
 	)
 
-	getPieces := func(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+	getPieces := func(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 		p, e := s.GetPieceTasks(ctx, request)
 		if e != nil {
 			return nil, e
@@ -305,15 +306,15 @@ func (s *server) CheckHealth(context.Context) error {
 }
 
 func (s *server) Download(ctx context.Context,
-	req *dfdaemongrpc.DownRequest, results chan<- *dfdaemongrpc.DownResult) error {
+	req *dfdaemonv1.DownRequest, results chan<- *dfdaemonv1.DownResult) error {
 	s.Keep()
 	return s.doDownload(ctx, req, results, "")
 }
 
-func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
-	results chan<- *dfdaemongrpc.DownResult, peerID string) error {
+func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
+	results chan<- *dfdaemonv1.DownResult, peerID string) error {
 	if req.UrlMeta == nil {
-		req.UrlMeta = &base.UrlMeta{}
+		req.UrlMeta = &commonv1.UrlMeta{}
 	}
 
 	// init peer task request, peer uses different peer id to generate every request
@@ -322,7 +323,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 		peerID = idgen.PeerID(s.peerHost.Ip)
 	}
 	peerTask := &peer.FileTaskRequest{
-		PeerTaskRequest: scheduler.PeerTaskRequest{
+		PeerTaskRequest: schedulerv1.PeerTaskRequest{
 			Url:      req.Url,
 			UrlMeta:  req.UrlMeta,
 			PeerId:   peerID,
@@ -350,10 +351,10 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 
 	peerTaskProgress, tiny, err := s.peerTaskManager.StartFileTask(ctx, peerTask)
 	if err != nil {
-		return dferrors.New(base.Code_UnknownError, fmt.Sprintf("%s", err))
+		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
-		results <- &dfdaemongrpc.DownResult{
+		results <- &dfdaemonv1.DownResult{
 			TaskId:          tiny.TaskID,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
@@ -375,13 +376,13 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 			if !ok {
 				err = errors.New("progress closed unexpected")
 				log.Errorf(err.Error())
-				return dferrors.New(base.Code_UnknownError, err.Error())
+				return dferrors.New(commonv1.Code_UnknownError, err.Error())
 			}
 			if !p.State.Success {
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
-			results <- &dfdaemongrpc.DownResult{
+			results <- &dfdaemonv1.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
@@ -401,7 +402,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 				return nil
 			}
 		case <-ctx.Done():
-			results <- &dfdaemongrpc.DownResult{
+			results <- &dfdaemonv1.DownResult{
 				CompletedLength: 0,
 				Done:            true,
 			}
@@ -411,7 +412,7 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemongrpc.DownRequest,
 	}
 }
 
-func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest) error {
+func (s *server) StatTask(ctx context.Context, req *dfdaemonv1.StatTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "StatTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "LocalOnly", req.LocalOnly)
@@ -426,7 +427,7 @@ func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest
 	if req.LocalOnly {
 		msg := "task not found in local cache"
 		log.Info(msg)
-		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+		return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	// Check scheduler if other peers hold the task
@@ -440,14 +441,14 @@ func (s *server) StatTask(ctx context.Context, req *dfdaemongrpc.StatTaskRequest
 	}
 	msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
 	log.Info(msg)
-	return dferrors.New(base.Code_PeerTaskNotFound, msg)
+	return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 }
 
 func (s *server) isTaskCompleted(taskID string) bool {
 	return s.storageManager.FindCompletedTask(taskID) != nil
 }
 
-func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskRequest) error {
+func (s *server) ImportTask(ctx context.Context, req *dfdaemonv1.ImportTaskRequest) error {
 	s.Keep()
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
@@ -509,7 +510,7 @@ func (s *server) ImportTask(ctx context.Context, req *dfdaemongrpc.ImportTaskReq
 	return nil
 }
 
-func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest) error {
+func (s *server) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "ExportTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID, "destination", req.Output)
@@ -521,7 +522,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskReq
 		if req.LocalOnly {
 			msg := fmt.Sprintf("task not found in local storage")
 			log.Info(msg)
-			return dferrors.New(base.Code_PeerTaskNotFound, msg)
+			return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 		}
 		log.Info("task not found, try from peers")
 		return s.exportFromPeers(ctx, log, req)
@@ -534,7 +535,7 @@ func (s *server) ExportTask(ctx context.Context, req *dfdaemongrpc.ExportTaskReq
 	return nil
 }
 
-func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTaskRequest, peerID string) error {
+func (s *server) exportFromLocal(ctx context.Context, req *dfdaemonv1.ExportTaskRequest, peerID string) error {
 	return s.storageManager.Store(ctx, &storage.StoreRequest{
 		CommonTaskRequest: storage.CommonTaskRequest{
 			PeerID:      peerID,
@@ -545,13 +546,13 @@ func (s *server) exportFromLocal(ctx context.Context, req *dfdaemongrpc.ExportTa
 	})
 }
 
-func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemongrpc.ExportTaskRequest) error {
+func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerOnWith, req *dfdaemonv1.ExportTaskRequest) error {
 	peerID := idgen.PeerID(s.peerHost.Ip)
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 
 	task, err := s.peerTaskManager.StatTask(ctx, taskID)
 	if err != nil {
-		if dferrors.CheckError(err, base.Code_PeerTaskNotFound) {
+		if dferrors.CheckError(err, commonv1.Code_PeerTaskNotFound) {
 			log.Info("task not found in P2P network")
 		} else {
 			msg := fmt.Sprintf("failed to StatTask from peers: %s", err)
@@ -562,18 +563,18 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	if task.State != resource.TaskStateSucceeded || !task.HasAvailablePeer {
 		msg := fmt.Sprintf("task found but not available for download, state %s, has available peer %t", task.State, task.HasAvailablePeer)
 		log.Info(msg)
-		return dferrors.New(base.Code_PeerTaskNotFound, msg)
+		return dferrors.New(commonv1.Code_PeerTaskNotFound, msg)
 	}
 
 	// Task exists in peers
 	var (
 		start     = time.Now()
-		drc       = make(chan *dfdaemongrpc.DownResult, 1)
+		drc       = make(chan *dfdaemonv1.DownResult, 1)
 		errChan   = make(chan error, 3)
-		result    *dfdaemongrpc.DownResult
+		result    *dfdaemonv1.DownResult
 		downError error
 	)
-	downRequest := &dfdaemongrpc.DownRequest{
+	downRequest := &dfdaemonv1.DownRequest{
 		Url:               req.Url,
 		Output:            req.Output,
 		Timeout:           req.Timeout,
@@ -609,7 +610,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	return nil
 }
 
-func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult, s *server, req *dfdaemongrpc.DownRequest, errChan chan error) {
+func call(ctx context.Context, peerID string, drc chan *dfdaemonv1.DownResult, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
 		if err := s.doDownload(ctx, req, drc, peerID); err != nil {
 			errChan <- err
@@ -621,7 +622,7 @@ func call(ctx context.Context, peerID string, drc chan *dfdaemongrpc.DownResult,
 	}
 }
 
-func (s *server) DeleteTask(ctx context.Context, req *dfdaemongrpc.DeleteTaskRequest) error {
+func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) error {
 	s.Keep()
 	taskID := idgen.TaskID(req.Url, req.UrlMeta)
 	log := logger.With("function", "DeleteTask", "URL", req.Url, "Tag", req.UrlMeta.Tag, "taskID", taskID)

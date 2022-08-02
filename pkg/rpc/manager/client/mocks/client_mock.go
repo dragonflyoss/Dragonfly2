@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 	time "time"
 
-	manager "d7y.io/dragonfly/v2/pkg/rpc/manager"
+	v1 "d7y.io/api/pkg/apis/manager/v1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -50,10 +50,10 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 }
 
 // GetObjectStorage mocks base method.
-func (m *MockClient) GetObjectStorage(arg0 *manager.GetObjectStorageRequest) (*manager.ObjectStorage, error) {
+func (m *MockClient) GetObjectStorage(arg0 *v1.GetObjectStorageRequest) (*v1.ObjectStorage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetObjectStorage", arg0)
-	ret0, _ := ret[0].(*manager.ObjectStorage)
+	ret0, _ := ret[0].(*v1.ObjectStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,10 +65,10 @@ func (mr *MockClientMockRecorder) GetObjectStorage(arg0 interface{}) *gomock.Cal
 }
 
 // GetScheduler mocks base method.
-func (m *MockClient) GetScheduler(arg0 *manager.GetSchedulerRequest) (*manager.Scheduler, error) {
+func (m *MockClient) GetScheduler(arg0 *v1.GetSchedulerRequest) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScheduler", arg0)
-	ret0, _ := ret[0].(*manager.Scheduler)
+	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,7 +80,7 @@ func (mr *MockClientMockRecorder) GetScheduler(arg0 interface{}) *gomock.Call {
 }
 
 // KeepAlive mocks base method.
-func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *manager.KeepAliveRequest) {
+func (m *MockClient) KeepAlive(arg0 time.Duration, arg1 *v1.KeepAliveRequest) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "KeepAlive", arg0, arg1)
 }
@@ -92,10 +92,10 @@ func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call
 }
 
 // ListBuckets mocks base method.
-func (m *MockClient) ListBuckets(arg0 *manager.ListBucketsRequest) (*manager.ListBucketsResponse, error) {
+func (m *MockClient) ListBuckets(arg0 *v1.ListBucketsRequest) (*v1.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListBuckets", arg0)
-	ret0, _ := ret[0].(*manager.ListBucketsResponse)
+	ret0, _ := ret[0].(*v1.ListBucketsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -107,10 +107,10 @@ func (mr *MockClientMockRecorder) ListBuckets(arg0 interface{}) *gomock.Call {
 }
 
 // ListSchedulers mocks base method.
-func (m *MockClient) ListSchedulers(arg0 *manager.ListSchedulersRequest) (*manager.ListSchedulersResponse, error) {
+func (m *MockClient) ListSchedulers(arg0 *v1.ListSchedulersRequest) (*v1.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListSchedulers", arg0)
-	ret0, _ := ret[0].(*manager.ListSchedulersResponse)
+	ret0, _ := ret[0].(*v1.ListSchedulersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -122,10 +122,10 @@ func (mr *MockClientMockRecorder) ListSchedulers(arg0 interface{}) *gomock.Call 
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockClient) UpdateScheduler(arg0 *manager.UpdateSchedulerRequest) (*manager.Scheduler, error) {
+func (m *MockClient) UpdateScheduler(arg0 *v1.UpdateSchedulerRequest) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateScheduler", arg0)
-	ret0, _ := ret[0].(*manager.Scheduler)
+	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -137,10 +137,10 @@ func (mr *MockClientMockRecorder) UpdateScheduler(arg0 interface{}) *gomock.Call
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockClient) UpdateSeedPeer(arg0 *manager.UpdateSeedPeerRequest) (*manager.SeedPeer, error) {
+func (m *MockClient) UpdateSeedPeer(arg0 *v1.UpdateSeedPeerRequest) (*v1.SeedPeer, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0)
-	ret0, _ := ret[0].(*manager.SeedPeer)
+	ret0, _ := ret[0].(*v1.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

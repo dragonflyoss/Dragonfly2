@@ -23,9 +23,10 @@ import (
 	"fmt"
 	"time"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 	pkgtime "d7y.io/dragonfly/v2/pkg/time"
 )
 
@@ -41,7 +42,7 @@ const (
 
 type SeedPeer interface {
 	// TriggerTask triggers the seed peer to download the task.
-	TriggerTask(context.Context, *Task) (*Peer, *rpcscheduler.PeerResult, error)
+	TriggerTask(context.Context, *Task) (*Peer, *schedulerv1.PeerResult, error)
 
 	// Client returns grpc client of seed peer.
 	Client() SeedPeerClient
@@ -66,11 +67,11 @@ func newSeedPeer(client SeedPeerClient, peerManager PeerManager, hostManager Hos
 }
 
 // TriggerTask start to trigger seed peer task.
-func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcscheduler.PeerResult, error) {
+func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedulerv1.PeerResult, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	stream, err := s.client.ObtainSeeds(ctx, &cdnsystem.SeedRequest{
+	stream, err := s.client.ObtainSeeds(ctx, &cdnsystemv1.SeedRequest{
 		TaskId:  task.ID,
 		Url:     task.URL,
 		UrlMeta: task.URLMeta,
@@ -127,7 +128,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 		// Handle end of piece.
 		if piece.Done {
 			peer.Log.Infof("receive done piece")
-			return peer, &rpcscheduler.PeerResult{
+			return peer, &schedulerv1.PeerResult{
 				TotalPieceCount: piece.TotalPieceCount,
 				ContentLength:   piece.ContentLength,
 			}, nil
@@ -137,7 +138,7 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *rpcsche
 }
 
 // Initialize seed peer.
-func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystem.PieceSeed) (*Peer, error) {
+func (s *seedPeer) initSeedPeer(task *Task, ps *cdnsystemv1.PieceSeed) (*Peer, error) {
 	// Load peer from manager.
 	peer, ok := s.peerManager.Load(ps.PeerId)
 	if ok {

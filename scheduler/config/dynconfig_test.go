@@ -26,7 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
@@ -61,8 +62,8 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			sleep: func() {},
 			mock: func(m *mocks.MockClientMockRecorder) {
-				m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
-					SeedPeers: []*manager.SeedPeer{
+				m.GetScheduler(gomock.Any()).Return(&managerv1.Scheduler{
+					SeedPeers: []*managerv1.SeedPeer{
 						{
 							HostName:     "bar",
 							Ip:           "127.0.0.1",
@@ -93,8 +94,8 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.GetScheduler(gomock.Any()).Return(&manager.Scheduler{
-						SeedPeers: []*manager.SeedPeer{
+					m.GetScheduler(gomock.Any()).Return(&managerv1.Scheduler{
+						SeedPeers: []*managerv1.SeedPeer{
 							{
 								HostName:     "bar",
 								Ip:           "127.0.0.1",

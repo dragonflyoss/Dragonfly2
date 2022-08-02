@@ -28,11 +28,12 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint
 	. "github.com/onsi/gomega"    //nolint
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	internaljob "d7y.io/dragonfly/v2/internal/job"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/structure"
 	"d7y.io/dragonfly/v2/test/e2e/e2eutil"
 )
@@ -79,7 +80,7 @@ var _ = Describe("Preheat with manager", func() {
 				Expect(done).Should(BeTrue())
 
 				// generate task_id, also the filename
-				seedPeerTaskID := idgen.TaskID(url, &base.UrlMeta{})
+				seedPeerTaskID := idgen.TaskID(url, &commonv1.UrlMeta{})
 				fmt.Println(seedPeerTaskID)
 
 				sha256sum, err := checkPreheatResult(seedPeerPods, seedPeerTaskID)

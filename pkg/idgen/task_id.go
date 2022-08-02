@@ -19,9 +19,10 @@ package idgen
 import (
 	"strings"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/pkg/digest"
 	neturl "d7y.io/dragonfly/v2/pkg/net/url"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
@@ -31,19 +32,19 @@ const (
 
 // TaskID generates a task id.
 // filter is separated by & character.
-func TaskID(url string, meta *base.UrlMeta) string {
+func TaskID(url string, meta *commonv1.UrlMeta) string {
 	return taskID(url, meta, false)
 }
 
 // ParentTaskID generates a task id like TaskID, but without range.
 // this func is used to check the parent tasks for ranged requests
-func ParentTaskID(url string, meta *base.UrlMeta) string {
+func ParentTaskID(url string, meta *commonv1.UrlMeta) string {
 	return taskID(url, meta, true)
 }
 
 // taskID generates a task id.
 // filter is separated by & character.
-func taskID(url string, meta *base.UrlMeta, ignoreRange bool) string {
+func taskID(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 	if meta == nil {
 		return digest.SHA256FromStrings(url)
 	}

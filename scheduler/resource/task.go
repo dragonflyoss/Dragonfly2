@@ -25,11 +25,12 @@ import (
 	"github.com/looplab/fsm"
 	"go.uber.org/atomic"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/pkg/dag"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 const (
@@ -86,10 +87,10 @@ type Task struct {
 	URL string
 
 	// Type is task type.
-	Type base.TaskType
+	Type commonv1.TaskType
 
 	// URLMeta is task download url meta.
-	URLMeta *base.UrlMeta
+	URLMeta *commonv1.UrlMeta
 
 	// DirectPiece is tiny piece data.
 	DirectPiece []byte
@@ -130,7 +131,7 @@ type Task struct {
 }
 
 // New task instance.
-func NewTask(id, url string, taskType base.TaskType, meta *base.UrlMeta, options ...Option) *Task {
+func NewTask(id, url string, taskType commonv1.TaskType, meta *commonv1.UrlMeta, options ...Option) *Task {
 	t := &Task{
 		ID:                id,
 		URL:               url,
@@ -357,17 +358,17 @@ func (t *Task) IsSeedPeerFailed() bool {
 }
 
 // LoadPiece return piece for a key.
-func (t *Task) LoadPiece(key int32) (*base.PieceInfo, bool) {
+func (t *Task) LoadPiece(key int32) (*commonv1.PieceInfo, bool) {
 	rawPiece, ok := t.Pieces.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rawPiece.(*base.PieceInfo), ok
+	return rawPiece.(*commonv1.PieceInfo), ok
 }
 
 // StorePiece set piece.
-func (t *Task) StorePiece(piece *base.PieceInfo) {
+func (t *Task) StorePiece(piece *commonv1.PieceInfo) {
 	t.Pieces.Store(piece.PieceNum, piece)
 }
 
@@ -377,7 +378,7 @@ func (t *Task) DeletePiece(key int32) {
 }
 
 // SizeScope return task size scope type.
-func (t *Task) SizeScope() (base.SizeScope, error) {
+func (t *Task) SizeScope() (commonv1.SizeScope, error) {
 	if t.ContentLength.Load() < 0 {
 		return -1, errors.New("invalid content length")
 	}
@@ -387,23 +388,23 @@ func (t *Task) SizeScope() (base.SizeScope, error) {
 	}
 
 	if t.ContentLength.Load() <= TinyFileSize {
-		return base.SizeScope_TINY, nil
+		return commonv1.SizeScope_TINY, nil
 	}
 
 	if t.TotalPieceCount.Load() == 1 {
-		return base.SizeScope_SMALL, nil
+		return commonv1.SizeScope_SMALL, nil
 	}
 
-	return base.SizeScope_NORMAL, nil
+	return commonv1.SizeScope_NORMAL, nil
 }
 
 // CanBackToSource represents whether peer can back-to-source.
 func (t *Task) CanBackToSource() bool {
-	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && (t.Type == base.TaskType_Normal || t.Type == base.TaskType_DfStore)
+	return int32(t.BackToSourcePeers.Len()) < t.BackToSourceLimit.Load() && (t.Type == commonv1.TaskType_Normal || t.Type == commonv1.TaskType_DfStore)
 }
 
 // NotifyPeers notify all peers in the task with the state code.
-func (t *Task) NotifyPeers(peerPacket *rpcscheduler.PeerPacket, event string) {
+func (t *Task) NotifyPeers(peerPacket *schedulerv1.PeerPacket, event string) {
 	for _, vertex := range t.DAG.GetVertices() {
 		peer := vertex.Value
 		if peer == nil {
