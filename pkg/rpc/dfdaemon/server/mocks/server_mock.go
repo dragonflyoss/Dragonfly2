@@ -65,17 +65,17 @@ func (mr *MockDaemonServerMockRecorder) DeleteTask(arg0, arg1 interface{}) *gomo
 }
 
 // Download mocks base method.
-func (m *MockDaemonServer) Download(arg0 context.Context, arg1 *v10.DownRequest, arg2 chan<- *v10.DownResult) error {
+func (m *MockDaemonServer) Download(arg0 *v10.DownRequest, arg1 v10.Daemon_DownloadServer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Download", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Download", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1)
 }
 
 // ExportTask mocks base method.
