@@ -108,6 +108,10 @@ func initDaemonDfpath(cfg *config.DaemonOption) (dfpath.Dfpath, error) {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}
 
+	if cfg.Download.DownloadGRPC.UnixListen.Socket != "" {
+		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.Download.DownloadGRPC.UnixListen.Socket))
+	}
+
 	cacheDir := dfpath.DefaultCacheDir
 	if cfg.CacheDir != "" {
 		cacheDir = cfg.CacheDir
