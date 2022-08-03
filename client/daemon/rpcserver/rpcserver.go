@@ -314,18 +314,16 @@ func (s *server) CheckHealth(context.Context) error {
 	return nil
 }
 
-func (s *server) Download(ctx context.Context,
-	req *dfdaemonv1.DownRequest, results chan<- *dfdaemonv1.DownResult) error {
+func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
 	s.Keep()
+	ctx := stream.Context()
 	if req.Recursive {
-		return s.doRecursiveDownload(ctx, req, results)
+		return s.doRecursiveDownload(ctx, req, stream)
 	}
-	return s.doDownload(ctx, req, results, "")
+	return s.doDownload(ctx, req, stream, "")
 }
 
-func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
-	results chan<- *dfdaemonv1.DownResult) error {
-
+func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
 	if stat, err := os.Stat(req.Output); err != nil {
 		return err
 	} else if !stat.IsDir() {
@@ -383,7 +381,7 @@ func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRe
 				return err
 			}
 
-			if err = s.doDownload(ctx, childReq, results, ""); err != nil {
+			if err = s.doDownload(ctx, childReq, stream, ""); err != nil {
 				return err
 			}
 		}
@@ -409,8 +407,11 @@ func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
 	}
 }
 
-func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
-	results chan<- *dfdaemonv1.DownResult, peerID string) error {
+type ResultSender interface {
+	Send(*dfdaemonv1.DownResult) error
+}
+
+func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream ResultSender, peerID string) error {
 	if req.UrlMeta == nil {
 		req.UrlMeta = &commonv1.UrlMeta{}
 	}
@@ -452,12 +453,16 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
-		results <- &dfdaemonv1.DownResult{
+		err = stream.Send(&dfdaemonv1.DownResult{
 			TaskId:          tiny.TaskID,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
 			Output:          req.Output,
+		})
+		if err != nil {
+			log.Infof("send download result error: %s", err.Error())
+			return err
 		}
 		log.Infof("tiny file, wrote to output")
 		if req.Uid != 0 && req.Gid != 0 {
@@ -481,12 +486,16 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
-			results <- &dfdaemonv1.DownResult{
+			err = stream.Send(&dfdaemonv1.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
 				Output:          req.Output,
+			})
+			if err != nil {
+				log.Infof("send download result error: %s", err.Error())
+				return err
 			}
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
@@ -502,10 +511,14 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 				return nil
 			}
 		case <-ctx.Done():
-			results <- &dfdaemonv1.DownResult{
+			err = stream.Send(&dfdaemonv1.DownResult{
 				CompletedLength: 0,
 				Done:            true,
 				Output:          req.Output,
+			})
+			if err != nil {
+				log.Infof("send download result error: %s", err.Error())
+				return err
 			}
 			log.Infof("context done due to %s", ctx.Err())
 			return status.Error(codes.Canceled, ctx.Err().Error())
@@ -688,7 +701,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 		Gid:               req.Gid,
 	}
 
-	go call(ctx, peerID, drc, s, downRequest, errChan)
+	go call(ctx, peerID, &simpleResultSender{drc}, s, downRequest, errChan)
 	go func() {
 		for result = range drc {
 			if result.Done {
@@ -711,9 +724,19 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	return nil
 }
 
-func call(ctx context.Context, peerID string, drc chan *dfdaemonv1.DownResult, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
+// TODO remove this wrapper in exportFromPeers
+type simpleResultSender struct {
+	drc chan *dfdaemonv1.DownResult
+}
+
+func (s *simpleResultSender) Send(result *dfdaemonv1.DownResult) error {
+	s.drc <- result
+	return nil
+}
+
+func call(ctx context.Context, peerID string, sender ResultSender, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
-		if err := s.doDownload(ctx, req, drc, peerID); err != nil {
+		if err := s.doDownload(ctx, req, sender, peerID); err != nil {
 			errChan <- err
 		}
 	})
