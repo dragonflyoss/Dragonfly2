@@ -1,5 +1,17 @@
 ARG BASE_IMAGE=alpine:3.16
 
+FROM node:12-alpine as console-builder
+
+WORKDIR /build
+
+COPY ./manager/console/package.json /build
+
+RUN npm install --loglevel warn --progress false
+
+COPY ./manager/console /build
+
+RUN npm run build
+
 FROM golang:1.18.3-alpine3.16 as server-builder
 
 ARG GOPROXY
@@ -12,7 +24,9 @@ RUN apk --no-cache add bash make gcc libc-dev git
 
 COPY . /go/src/d7y.io/dragonfly/v2
 
-RUN make build-manager && make install-manager
+COPY --from=console-builder /build/dist /go/src/d7y.io/dragonfly/v2/manager/dist
+
+RUN make build-manager-server && make install-manager
 
 FROM ${BASE_IMAGE} as health
 

@@ -134,12 +134,18 @@ build-scheduler: build-dirs
 # Build manager
 build-manager: build-dirs build-manager-console
 	@echo "Begin to build manager."
+	make build-manager-server
+.PHONY: build-manager
+
+# Build manager server
+build-manager-server: build-dirs
+	@echo "Begin to build manager server."
 	./hack/build.sh manager
 .PHONY: build-manager
 
 # Build manager console
 build-manager-console: build-dirs
-	@echo "Begin to build manager."
+	@echo "Begin to build manager console."
 	./hack/build.sh manager-console
 .PHONY: build-manager-console
 
@@ -409,6 +415,7 @@ help:
 	@echo "make build-linux-dfstore            build linux dfstore"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
+	@echo "make build-manager-server           build manager server"
 	@echo "make build-manager-console          build manager console"
 	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make install-dfget                  install dfget"

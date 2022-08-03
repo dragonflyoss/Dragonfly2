@@ -117,11 +117,11 @@ build-manager-console() {
     CONSOLE_DIR=$(echo $CUR_DIR | sed 's#hack#manager/console#')
     MANAGER_DIR=$(echo $CUR_DIR | sed 's#hack#manager#')
     CONSOLE_ASSETS_DIR=$CONSOLE_DIR/dist/
-    MANAGER_ASSETS_DIR=$MANAGER_DIR
+    MANAGER_ASSETS_DIR=$MANAGER_DIR/dist/
     docker run --workdir=/build \
         --rm -v ${CONSOLE_DIR}:/build node:12-alpine \
         sh -c "npm install --loglevel warn --progress false && npm run build"
-    mv $CONSOLE_ASSETS_DIR $MANAGER_ASSETS_DIR
+    cp -r $CONSOLE_ASSETS_DIR $MANAGER_ASSETS_DIR
 }
 
 main() {
