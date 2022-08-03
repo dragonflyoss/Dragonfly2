@@ -164,6 +164,8 @@ func init() {
 
 	flagSet.String("callsystem", dfgetConfig.CallSystem, "The caller name which is mainly used for statistics and access control")
 
+	flagSet.String("daemon-sock", dfgetConfig.DaemonSock, "Download socket path of daemon. In linux, default value is /var/run/dfdaemon.sock, in macos(just for testing), default value is /tmp/dfdaemon.sock")
+
 	flagSet.String("workhome", dfgetConfig.WorkHome, "Dfget working directory")
 
 	flagSet.String("logdir", dfgetConfig.LogDir, "Dfget log directory")
@@ -203,6 +205,10 @@ func initDfgetDfpath(cfg *config.ClientOption) (dfpath.Dfpath, error) {
 
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
+	}
+
+	if cfg.DaemonSock != "" {
+		options = append(options, dfpath.WithDownloadUnixSocketPath(cfg.DaemonSock))
 	}
 
 	return dfpath.New(options...)
