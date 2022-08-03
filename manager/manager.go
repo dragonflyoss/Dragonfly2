@@ -18,9 +18,12 @@ package manager
 
 import (
 	"context"
+	"embed"
+	"io/fs"
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/static"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
@@ -45,6 +48,32 @@ const (
 	// grpc server to complete a graceful shutdown
 	gracefulStopTimeout = 10 * time.Second
 )
+
+//go:embed dist/*
+var assets embed.FS
+
+type embedFileSystem struct {
+	http.FileSystem
+}
+
+func (e embedFileSystem) Exists(prefix string, path string) bool {
+	_, err := e.Open(path)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
+	fsys, err := fs.Sub(fsEmbed, targetPath)
+	if err != nil {
+		panic(err)
+	}
+
+	return embedFileSystem{
+		FileSystem: http.FS(fsys),
+	}
+}
 
 type Server struct {
 	// Server configuration
@@ -107,7 +136,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.New(db, cache, job, enforcer, objectStorage)
-	router, err := router.Init(cfg, d.LogDir(), restService, enforcer)
+	router, err := router.Init(cfg, d.LogDir(), restService, enforcer, EmbedFolder(assets, "."))
 	if err != nil {
 		return nil, err
 	}

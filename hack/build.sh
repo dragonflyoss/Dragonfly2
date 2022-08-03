@@ -26,8 +26,8 @@ GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gotags=${GOTAGS:-none}\
 GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.GoVersion=$(go version | grep -o 'go[^ ].*')\""
 GOLDFLAGS="${GOLDFLAGS} -X \"d7y.io/dragonfly/v2/version.Gogcflags=${GOGCFLAGS:-none}\""
 
-curDir=$(cd "$(dirname "$0")" && pwd)
-cd "${curDir}" || return
+CUR_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "${CUR_DIR}" || return
 BUILD_SOURCE_HOME=$(cd ".." && pwd)
 
 . ./env.sh
@@ -114,10 +114,14 @@ build-manager-docker() {
 
 build-manager-console() {
     set -x
-    consoleDir=$(echo $curDir | sed 's#hack#manager/console#')
+    CONSOLE_DIR=$(echo $CUR_DIR | sed 's#hack#manager/console#')
+    MANAGER_DIR=$(echo $CUR_DIR | sed 's#hack#manager#')
+    CONSOLE_ASSETS_DIR=$CONSOLE_DIR/dist/
+    MANAGER_ASSETS_DIR=$MANAGER_DIR
     docker run --workdir=/build \
-        --rm -v ${consoleDir}:/build node:12-alpine \
+        --rm -v ${CONSOLE_DIR}:/build node:12-alpine \
         sh -c "npm install --loglevel warn --progress false && npm run build"
+    mv $CONSOLE_ASSETS_DIR $MANAGER_ASSETS_DIR
 }
 
 main() {

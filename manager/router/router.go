@@ -43,13 +43,13 @@ const (
 
 var GinLogFileName = "gin.log"
 
-func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer) (*gin.Engine, error) {
-	// Set mode
+func Init(cfg *config.Config, logDir string, service service.Service, enforcer *casbin.Enforcer, assets static.ServeFileSystem) (*gin.Engine, error) {
+	// Set mode.
 	if !cfg.Verbose {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// Logging to a file
+	// Logging to a file.
 	if !cfg.Console {
 		gin.DisableConsoleColor()
 		logDir := filepath.Join(logDir, "manager")
@@ -60,7 +60,7 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	r := gin.New()
 	h := handlers.New(service)
 
-	// Prometheus metrics
+	// Prometheus metrics.
 	p := ginprometheus.NewPrometheus(PrometheusSubsystemName)
 	// URL removes query string.
 	// Prometheus metrics need to reduce label,
@@ -91,11 +91,14 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 		return nil, err
 	}
 
-	// Manager View
-	r.Use(static.Serve("/", static.LocalFile(cfg.Server.PublicPath, true)))
-
 	// Router
 	apiv1 := r.Group("/api/v1")
+
+	staticServer := static.Serve("/", assets)
+	r.Use(staticServer)
+	r.NoRoute(func(c *gin.Context) {
+		c.FileFromFS("index.html", assets)
+	})
 
 	// User
 	u := apiv1.Group("/users")
@@ -237,10 +240,17 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	apiSeagger := ginSwagger.URL("/swagger/doc.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
-	// Fallback To Manager View
-	r.NoRoute(func(c *gin.Context) {
-		c.File(filepath.Join(cfg.Server.PublicPath, "index.html"))
-	})
+	// Fallback to manager view.
+	// r.NoRoute(func(c *gin.Context) {
+	// c.FileFromFS(path.Join("/", c.Request.URL.Path), http.FS(assets))
+	// })
+
+	// Frontend assets.
+	// r.Use(static.Serve("/", assets))
+
+	// r.NoRoute(func(c *gin.Context) {
+	// c.Redirect(http.StatusMovedPermanently, "/")
+	// })
 
 	return r, nil
 }

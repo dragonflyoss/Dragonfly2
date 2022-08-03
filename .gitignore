@@ -20,6 +20,7 @@ vendor/
 *.DS_Store
 target/
 scheduler/test/misc
+manager/dist
 .chglog
 
 # mysql
