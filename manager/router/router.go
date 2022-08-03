@@ -18,6 +18,7 @@ package router
 
 import (
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -91,14 +92,11 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 		return nil, err
 	}
 
+	// Manager view.
+	r.Use(static.Serve("/", assets))
+
 	// Router
 	apiv1 := r.Group("/api/v1")
-
-	staticServer := static.Serve("/", assets)
-	r.Use(staticServer)
-	r.NoRoute(func(c *gin.Context) {
-		c.FileFromFS("index.html", assets)
-	})
 
 	// User
 	u := apiv1.Group("/users")
@@ -241,16 +239,9 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, apiSeagger))
 
 	// Fallback to manager view.
-	// r.NoRoute(func(c *gin.Context) {
-	// c.FileFromFS(path.Join("/", c.Request.URL.Path), http.FS(assets))
-	// })
-
-	// Frontend assets.
-	// r.Use(static.Serve("/", assets))
-
-	// r.NoRoute(func(c *gin.Context) {
-	// c.Redirect(http.StatusMovedPermanently, "/")
-	// })
+	r.NoRoute(func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/")
+	})
 
 	return r, nil
 }

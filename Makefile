@@ -132,7 +132,7 @@ build-scheduler: build-dirs
 .PHONY: build-scheduler
 
 # Build manager
-build-manager: build-dirs
+build-manager: build-dirs build-manager-console
 	@echo "Begin to build manager."
 	./hack/build.sh manager
 .PHONY: build-manager
@@ -396,8 +396,10 @@ help:
 	@echo "make docker-push                    push dragonfly image"
 	@echo "make docker-build-dfdaemon          build dfdaemon image"
 	@echo "make docker-build-scheduler         build scheduler image"
+	@echo "make docker-build-manager           build manager image"
 	@echo "make docker-push-dfdaemon           push dfdaemon image"
 	@echo "make docker-push-scheduler          push scheduler image"
+	@echo "make docker-push-manager            push manager image"
 	@echo "make build                          build dragonfly"
 	@echo "make build-dfget                    build dfget"
 	@echo "make build-linux-dfget              build linux dfget"

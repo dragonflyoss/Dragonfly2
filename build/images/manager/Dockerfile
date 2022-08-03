@@ -14,18 +14,6 @@ COPY . /go/src/d7y.io/dragonfly/v2
 
 RUN make build-manager && make install-manager
 
-FROM node:12-alpine as console-builder
-
-WORKDIR /build
-
-COPY ./manager/console/package.json /build
-
-RUN npm install --loglevel warn --progress false
-
-COPY ./manager/console /build
-
-RUN npm run build
-
 FROM ${BASE_IMAGE} as health
 
 ENV GRPC_HEALTH_PROBE_VERSION v0.4.11
@@ -43,7 +31,6 @@ RUN mkdir -p /opt/dragonfly/bin/manager/console \
     && echo "hosts: files dns" > /etc/nsswitch.conf
 
 COPY --from=server-builder /opt/dragonfly/bin/manager /opt/dragonfly/bin/server
-COPY --from=console-builder /build/dist /opt/dragonfly/manager/console/dist
 COPY --from=health /bin/grpc_health_probe /bin/grpc_health_probe
 
 EXPOSE 8080 65003

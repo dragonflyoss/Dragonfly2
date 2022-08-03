@@ -45,8 +45,11 @@ import (
 
 const (
 	// gracefulStopTimeout specifies a time limit for
-	// grpc server to complete a graceful shutdown
+	// grpc server to complete a graceful shutdown.
 	gracefulStopTimeout = 10 * time.Second
+
+	// assetsTargetPath is target path of embed assets.
+	assetsTargetPath = "dist"
 )
 
 //go:embed dist/*
@@ -136,7 +139,7 @@ func New(cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
 
 	// Initialize REST server
 	restService := service.New(db, cache, job, enforcer, objectStorage)
-	router, err := router.Init(cfg, d.LogDir(), restService, enforcer, EmbedFolder(assets, "."))
+	router, err := router.Init(cfg, d.LogDir(), restService, enforcer, EmbedFolder(assets, assetsTargetPath))
 	if err != nil {
 		return nil, err
 	}
