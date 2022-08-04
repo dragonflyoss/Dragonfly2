@@ -54,9 +54,6 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
-	// Console resource path.
-	PublicPath string `yaml:"publicPath" mapstructure:"publicPath"`
-
 	// GRPC server configuration.
 	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 
@@ -249,8 +246,7 @@ type ObjectStorageConfig struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			Name:       DefaultServerName,
-			PublicPath: DefaultPublicPath,
+			Name: DefaultServerName,
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
