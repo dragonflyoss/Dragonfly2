@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
 	"d7y.io/dragonfly/v2/manager/types"
@@ -548,7 +549,17 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mock: func(peer *resource.Peer, mockHost *resource.Host, mockTask *resource.Task, mockPeer *resource.Peer, blocklist set.SafeSet[string], stream rpcscheduler.Scheduler_ReportPieceResultServer, dynconfig config.DynconfigInterface, ms *rpcschedulermocks.MockScheduler_ReportPieceResultServerMockRecorder, md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
-				candidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
+				candidatePeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(&rpcscheduler.PeerHost{
+					Id:             idgen.HostID(uuid.New().String(), 8003),
+					Ip:             "127.0.0.1",
+					RpcPort:        8003,
+					DownPort:       8001,
+					HostName:       "hostname",
+					SecurityDomain: "security_domain",
+					Location:       "location",
+					Idc:            "idc",
+					NetTopology:    "net_topology",
+				}))
 				candidatePeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
@@ -584,7 +595,17 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
 			mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
-			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost)
+			mockPeer := resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, resource.NewHost(&rpcscheduler.PeerHost{
+				Id:             idgen.HostID(uuid.New().String(), 8003),
+				Ip:             "127.0.0.1",
+				RpcPort:        8003,
+				DownPort:       8001,
+				HostName:       "hostname",
+				SecurityDomain: "security_domain",
+				Location:       "location",
+				Idc:            "idc",
+				NetTopology:    "net_topology",
+			}))
 			blocklist := set.NewSafeSet[string]()
 
 			tc.mock(peer, mockHost, mockTask, mockPeer, blocklist, stream, dynconfig, stream.EXPECT(), dynconfig.EXPECT())
@@ -795,6 +816,25 @@ func TestScheduler_FindParent(t *testing.T) {
 			},
 		},
 		{
+			name: "find parent with same host",
+			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
+				peer.FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[1].FSM.SetState(resource.PeerStateRunning)
+				mockPeers[0].IsBackToSource.Store(true)
+				mockPeers[1].Host = peer.Host
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(mockPeers[0])
+				peer.Task.StorePeer(mockPeers[1])
+				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
+			},
+			expect: func(t *testing.T, peer *resource.Peer, mockPeers []*resource.Peer, parent *resource.Peer, ok bool) {
+				assert := assert.New(t)
+				assert.True(ok)
+				assert.Equal(mockPeers[0].ID, parent.ID)
+			},
+		},
+		{
 			name: "find parent and fetch filterParentLimit from manager dynconfig",
 			mock: func(peer *resource.Peer, mockPeers []*resource.Peer, blocklist set.SafeSet[string], md *configmocks.MockDynconfigInterfaceMockRecorder) {
 				peer.FSM.SetState(resource.PeerStateRunning)
@@ -835,6 +875,17 @@ func TestScheduler_FindParent(t *testing.T) {
 
 			var mockPeers []*resource.Peer
 			for i := 0; i < 11; i++ {
+				mockHost := resource.NewHost(&rpcscheduler.PeerHost{
+					Id:             idgen.HostID(uuid.New().String(), 8003),
+					Ip:             "127.0.0.1",
+					RpcPort:        8003,
+					DownPort:       8001,
+					HostName:       "hostname",
+					SecurityDomain: "security_domain",
+					Location:       "location",
+					Idc:            "idc",
+					NetTopology:    "net_topology",
+				})
 				peer := resource.NewPeer(idgen.PeerID(fmt.Sprintf("127.0.0.%d", i)), mockTask, mockHost)
 				mockPeers = append(mockPeers, peer)
 			}
