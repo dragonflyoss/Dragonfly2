@@ -124,11 +124,20 @@ func (s *server) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskR
 				err, request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
 		}
-		// dst peer is not running
+
+		// check whether dst peer is not running
 		task, ok := s.peerTaskManager.IsPeerTaskRunning(request.TaskId)
 		if !ok {
+			// 1. no running task
 			code = commonv1.Code_PeerTaskNotFound
 			logger.Errorf("get piece tasks error: target peer task not found, task id: %s, src peer: %s, dst peer: %s, piece num: %d, limit: %d",
+				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
+			return nil, dferrors.New(code, err.Error())
+		} else if task.GetPeerID() == request.GetSrcPid() {
+			// 2. scheduler schedules same peer host, and the running peer is the source peer (schedulers misses the old peer leaved event)
+			code = commonv1.Code_PeerTaskNotFound
+			logger.Errorf("get piece tasks error: target peer task not found, task id: %s, the src peer is same with running peer,"+
+				" src peer: %s, dst peer: %s, piece num: %d, limit: %d",
 				request.TaskId, request.SrcPid, request.DstPid, request.StartNum, request.Limit)
 			return nil, dferrors.New(code, err.Error())
 		}
