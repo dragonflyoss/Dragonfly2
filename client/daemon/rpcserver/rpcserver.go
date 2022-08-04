@@ -25,9 +25,16 @@ import (
 	"io"
 	"math"
 	"net"
+	"net/url"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"syscall"
 	"time"
 
+	"github.com/gammazero/deque"
+	"github.com/google/uuid"
 	"go.uber.org/atomic"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -46,10 +53,12 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/basic"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
 	dfdaemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
 	"d7y.io/dragonfly/v2/pkg/safe"
+	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -314,14 +323,104 @@ func (s *server) CheckHealth(context.Context) error {
 	return nil
 }
 
-func (s *server) Download(ctx context.Context,
-	req *dfdaemonv1.DownRequest, results chan<- *dfdaemonv1.DownResult) error {
+func (s *server) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
 	s.Keep()
-	return s.doDownload(ctx, req, results, "")
+	ctx := stream.Context()
+	if req.Recursive {
+		return s.doRecursiveDownload(ctx, req, stream)
+	}
+	return s.doDownload(ctx, req, stream, "")
 }
 
-func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
-	results chan<- *dfdaemonv1.DownResult, peerID string) error {
+func (s *server) doRecursiveDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) error {
+	if stat, err := os.Stat(req.Output); err != nil {
+		return err
+	} else if !stat.IsDir() {
+		return fmt.Errorf("target output %s must be directory", req.Output)
+	}
+
+	var queue deque.Deque[*dfdaemonv1.DownRequest]
+	queue.PushBack(req)
+	downloadMap := map[url.URL]struct{}{}
+	for {
+		if queue.Len() == 0 {
+			break
+		}
+
+		parentReq := queue.PopFront()
+		request, err := source.NewRequestWithContext(ctx, parentReq.Url, parentReq.UrlMeta.Header)
+		if err != nil {
+			return err
+		}
+
+		// prevent loop downloading
+		if _, exist := downloadMap[*request.URL]; exist {
+			continue
+		}
+		downloadMap[*request.URL] = struct{}{}
+
+		urlEntries, err := source.List(request)
+		if err != nil {
+			logger.Errorf("url [%v] source lister error: %v", request.URL, err)
+			return err
+		}
+
+		for _, urlEntry := range urlEntries {
+			childReq := copyDownRequest(parentReq) //create new req
+			childReq.Output = path.Join(parentReq.Output, urlEntry.Name)
+			logger.Infof("target output: %s", strings.TrimPrefix(childReq.Output, req.Output))
+
+			u := urlEntry.URL
+			childReq.Url = u.String()
+			logger.Infof("download %s to %s", childReq.Url, childReq.Output)
+
+			if urlEntry.IsDir {
+				queue.PushBack(childReq)
+				continue
+			}
+
+			// validate new request
+			if err = childReq.Validate(); err != nil {
+				logger.Errorf("validate %#v failed: %s", childReq, err)
+				return err
+			}
+
+			if err = checkOutput(childReq.Output); err != nil {
+				logger.Errorf("check output %#v failed: %s", childReq, err)
+				return err
+			}
+
+			if err = s.doDownload(ctx, childReq, stream, ""); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func copyDownRequest(req *dfdaemonv1.DownRequest) *dfdaemonv1.DownRequest {
+	return &dfdaemonv1.DownRequest{
+		Uuid:               uuid.New().String(),
+		Url:                req.Url,
+		Output:             req.Output,
+		Timeout:            req.Timeout,
+		Limit:              req.Limit,
+		DisableBackSource:  req.DisableBackSource,
+		UrlMeta:            req.UrlMeta,
+		Pattern:            req.Pattern,
+		Callsystem:         req.Callsystem,
+		Uid:                req.Uid,
+		Gid:                req.Gid,
+		KeepOriginalOffset: req.KeepOriginalOffset,
+		Recursive:          false, // not used anymore
+	}
+}
+
+type ResultSender interface {
+	Send(*dfdaemonv1.DownResult) error
+}
+
+func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest, stream ResultSender, peerID string) error {
 	if req.UrlMeta == nil {
 		req.UrlMeta = &commonv1.UrlMeta{}
 	}
@@ -363,11 +462,16 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 		return dferrors.New(commonv1.Code_UnknownError, fmt.Sprintf("%s", err))
 	}
 	if tiny != nil {
-		results <- &dfdaemonv1.DownResult{
+		err = stream.Send(&dfdaemonv1.DownResult{
 			TaskId:          tiny.TaskID,
 			PeerId:          tiny.PeerID,
 			CompletedLength: uint64(len(tiny.Content)),
 			Done:            true,
+			Output:          req.Output,
+		})
+		if err != nil {
+			log.Infof("send download result error: %s", err.Error())
+			return err
 		}
 		log.Infof("tiny file, wrote to output")
 		if req.Uid != 0 && req.Gid != 0 {
@@ -391,11 +495,16 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 				log.Errorf("task %s/%s failed: %d/%s", p.PeerID, p.TaskID, p.State.Code, p.State.Msg)
 				return dferrors.New(p.State.Code, p.State.Msg)
 			}
-			results <- &dfdaemonv1.DownResult{
+			err = stream.Send(&dfdaemonv1.DownResult{
 				TaskId:          p.TaskID,
 				PeerId:          p.PeerID,
 				CompletedLength: uint64(p.CompletedLength),
 				Done:            p.PeerTaskDone,
+				Output:          req.Output,
+			})
+			if err != nil {
+				log.Infof("send download result error: %s", err.Error())
+				return err
 			}
 			// peer task sets PeerTaskDone to true only once
 			if p.PeerTaskDone {
@@ -411,9 +520,14 @@ func (s *server) doDownload(ctx context.Context, req *dfdaemonv1.DownRequest,
 				return nil
 			}
 		case <-ctx.Done():
-			results <- &dfdaemonv1.DownResult{
+			err = stream.Send(&dfdaemonv1.DownResult{
 				CompletedLength: 0,
 				Done:            true,
+				Output:          req.Output,
+			})
+			if err != nil {
+				log.Infof("send download result error: %s", err.Error())
+				return err
 			}
 			log.Infof("context done due to %s", ctx.Err())
 			return status.Error(codes.Canceled, ctx.Err().Error())
@@ -596,7 +710,7 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 		Gid:               req.Gid,
 	}
 
-	go call(ctx, peerID, drc, s, downRequest, errChan)
+	go call(ctx, peerID, &simpleResultSender{drc}, s, downRequest, errChan)
 	go func() {
 		for result = range drc {
 			if result.Done {
@@ -619,9 +733,19 @@ func (s *server) exportFromPeers(ctx context.Context, log *logger.SugaredLoggerO
 	return nil
 }
 
-func call(ctx context.Context, peerID string, drc chan *dfdaemonv1.DownResult, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
+// TODO remove this wrapper in exportFromPeers
+type simpleResultSender struct {
+	drc chan *dfdaemonv1.DownResult
+}
+
+func (s *simpleResultSender) Send(result *dfdaemonv1.DownResult) error {
+	s.drc <- result
+	return nil
+}
+
+func call(ctx context.Context, peerID string, sender ResultSender, s *server, req *dfdaemonv1.DownRequest, errChan chan error) {
 	err := safe.Call(func() {
-		if err := s.doDownload(ctx, req, drc, peerID); err != nil {
+		if err := s.doDownload(ctx, req, sender, peerID); err != nil {
 			errChan <- err
 		}
 	})
@@ -652,6 +776,26 @@ func (s *server) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskReque
 		msg := fmt.Sprintf("failed to UnregisterTask: %s", err)
 		log.Errorf(msg)
 		return errors.New(msg)
+	}
+	return nil
+}
+
+func checkOutput(output string) error {
+	if !filepath.IsAbs(output) {
+		return fmt.Errorf("path[%s] is not absolute path", output)
+	}
+	outputDir, _ := path.Split(output)
+	if err := config.MkdirAll(outputDir, 0777, basic.UserID, basic.UserGroup); err != nil {
+		return err
+	}
+
+	// check permission
+	for dir := output; dir != ""; dir = filepath.Dir(dir) {
+		if err := syscall.Access(dir, syscall.O_RDWR); err == nil {
+			break
+		} else if os.IsPermission(err) || dir == "/" {
+			return fmt.Errorf("user[%s] path[%s] %v", basic.Username, output, err)
+		}
 	}
 	return nil
 }
