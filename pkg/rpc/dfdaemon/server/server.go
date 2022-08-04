@@ -20,7 +20,6 @@ package server
 
 import (
 	"context"
-	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
@@ -29,16 +28,14 @@ import (
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 
-	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/safe"
 )
 
 // DaemonServer refer to dfdaemonv1.DaemonServer
 type DaemonServer interface {
 	// Download triggers client to download file
-	Download(context.Context, *dfdaemonv1.DownRequest, chan<- *dfdaemonv1.DownResult) error
+	Download(*dfdaemonv1.DownRequest, dfdaemonv1.Daemon_DownloadServer) error
 	// GetPieceTasks get piece tasks from other peers
 	GetPieceTasks(context.Context, *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error)
 	// SyncPieceTasks sync piece tasks info with other peers
@@ -67,35 +64,12 @@ func New(daemonServer DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 }
 
 func (p *proxy) Download(req *dfdaemonv1.DownRequest, stream dfdaemonv1.Daemon_DownloadServer) (err error) {
-	ctx, cancel := context.WithCancel(stream.Context())
-	defer cancel()
-
 	peerAddr := "unknown"
-	if pe, ok := peer.FromContext(ctx); ok {
+	if pe, ok := peer.FromContext(stream.Context()); ok {
 		peerAddr = pe.Addr.String()
 	}
 	logger.Infof("trigger download for url: %s, from: %s, uuid: %s", req.Url, peerAddr, req.Uuid)
-
-	errChan := make(chan error, 10)
-	drc := make(chan *dfdaemonv1.DownResult, 4)
-
-	once := new(sync.Once)
-	closeDrc := func() {
-		once.Do(func() {
-			close(drc)
-		})
-	}
-	defer closeDrc()
-
-	go call(ctx, drc, p, req, errChan)
-
-	go send(drc, closeDrc, stream, errChan)
-
-	if err = <-errChan; dferrors.IsEndOfStream(err) {
-		err = nil
-	}
-
-	return
+	return p.server.Download(req, stream)
 }
 
 func (p *proxy) GetPieceTasks(ctx context.Context, ptr *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
@@ -124,39 +98,4 @@ func (p *proxy) ExportTask(ctx context.Context, req *dfdaemonv1.ExportTaskReques
 
 func (p *proxy) DeleteTask(ctx context.Context, req *dfdaemonv1.DeleteTaskRequest) (*emptypb.Empty, error) {
 	return new(emptypb.Empty), p.server.DeleteTask(ctx, req)
-}
-
-func send(drc chan *dfdaemonv1.DownResult, closeDrc func(), stream dfdaemonv1.Daemon_DownloadServer, errChan chan error) {
-	err := safe.Call(func() {
-		defer closeDrc()
-
-		for v := range drc {
-			if err := stream.Send(v); err != nil {
-				errChan <- err
-				return
-			}
-
-			if v.Done {
-				break
-			}
-		}
-
-		errChan <- dferrors.ErrEndOfStream
-	})
-
-	if err != nil {
-		errChan <- err
-	}
-}
-
-func call(ctx context.Context, drc chan *dfdaemonv1.DownResult, p *proxy, req *dfdaemonv1.DownRequest, errChan chan error) {
-	err := safe.Call(func() {
-		if err := p.server.Download(ctx, req, drc); err != nil {
-			errChan <- err
-		}
-	})
-
-	if err != nil {
-		errChan <- err
-	}
 }
