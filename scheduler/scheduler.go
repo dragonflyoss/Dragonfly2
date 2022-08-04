@@ -23,6 +23,11 @@ import (
 	"net/http"
 	"time"
 
+	"d7y.io/dragonfly/v2/internal/constants"
+	"d7y.io/dragonfly/v2/pkg/net/netutil"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 
@@ -214,9 +219,12 @@ func (s *Server) Serve() error {
 	}
 	defer listener.Close()
 
+	limitListener := netutil.NewLimitListener(listener, s.config.Server.ListenLimit)
+	addListerMetrics(limitListener)
+
 	// Started GRPC server.
 	logger.Infof("started grpc server at %s://%s", listener.Addr().Network(), listener.Addr().String())
-	if err := s.grpcServer.Serve(listener); err != nil {
+	if err := s.grpcServer.Serve(limitListener); err != nil {
 		logger.Errorf("stoped grpc server: %s", err.Error())
 		return err
 	}
@@ -266,4 +274,15 @@ func (s *Server) Stop() {
 	case <-stopped:
 		t.Stop()
 	}
+}
+
+func addListerMetrics(l *netutil.LimitListener) {
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: constants.MetricsNamespace,
+		Subsystem: constants.SchedulerMetricsName,
+		Name:      "server_active_connection_total",
+		Help:      "Counter of the number of the active connection to scheduler server",
+	}, func() float64 {
+		return float64(l.Stats().Active.Load())
+	})
 }

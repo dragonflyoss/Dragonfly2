@@ -62,10 +62,11 @@ type Config struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			IP:     ip.IPv4,
-			Host:   fqdn.FQDNHostname,
-			Listen: DefaultServerListen,
-			Port:   DefaultServerPort,
+			IP:          ip.IPv4,
+			Host:        fqdn.FQDNHostname,
+			Listen:      DefaultServerListen,
+			Port:        DefaultServerPort,
+			ListenLimit: DefaultSchedulerListenLimit,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            DefaultSchedulerAlgorithm,
@@ -144,6 +145,10 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Server.Listen == "" {
 		return errors.New("server requires parameter listen")
+	}
+
+	if cfg.Server.ListenLimit <= 0 {
+		return errors.New("server requires parameter listenLimit")
 	}
 
 	if cfg.Scheduler.Algorithm == "" {
@@ -268,6 +273,9 @@ type ServerConfig struct {
 
 	// Listen stands listen interface, like: 0.0.0.0, 192.168.0.1.
 	Listen string `yaml:"listen" mapstructure:"listen"`
+
+	// Limit the number of rpc server listener
+	ListenLimit int `yaml:"listenLimit" mapstructure:"listenLimit"`
 
 	// Server port.
 	Port int `yaml:"port" mapstructure:"port"`

@@ -83,6 +83,9 @@ const (
 	// DefaultRefreshModelInterval is model refresh interval.
 	DefaultRefreshModelInterval = 168 * time.Hour
 
+	// DefaultSchedulerListenLimit is the default limit of server listener
+	DefaultSchedulerListenLimit = 10000
+
 	// DefaultCPU is default cpu usage.
 	DefaultCPU = 1
 )
