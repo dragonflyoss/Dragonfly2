@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create SecurityGroup
-// @Description create by json config
+// @Description Create by json config
 // @Tags SecurityGroup
 // @Accept json
 // @Produce json

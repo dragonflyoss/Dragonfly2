@@ -19,79 +19,32 @@ package handlers
 import (
 	"net/http"
 
+	_ "d7y.io/dragonfly/v2/manager/model" // nolint
 	"d7y.io/dragonfly/v2/manager/types"
 
 	"github.com/gin-gonic/gin"
 )
 
-func (h *Handlers) GetModel(ctx *gin.Context) {
-	var params types.ModelParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	models, err := h.service.GetVersion(ctx.Request.Context(), params, json)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	ctx.JSON(http.StatusOK, models)
-}
-
-func (h *Handlers) GetModels(ctx *gin.Context) {
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	models, err := h.service.GetVersions(ctx.Request.Context(), json)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	ctx.JSON(http.StatusOK, models)
-}
-
-func (h *Handlers) UpdateModel(ctx *gin.Context) {
-	var params types.ModelParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-
-	version, err := h.service.UpdateVersion(ctx.Request.Context(), params, json)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-	ctx.JSON(http.StatusOK, version)
-}
-
+// @Summary Destroy Model
+// @Description Destroy by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param id path string true "id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{id} [delete]
 func (h *Handlers) DestoryModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	err := h.service.DeleteVersion(ctx.Request.Context(), params, json)
-	if err != nil {
+
+	if err := h.service.DestroyModel(ctx.Request.Context(), params); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
@@ -99,19 +52,88 @@ func (h *Handlers) DestoryModel(ctx *gin.Context) {
 	ctx.Status(http.StatusOK)
 }
 
-func (h *Handlers) GetModelVersion(ctx *gin.Context) {
+// @Summary Update Model
+// @Description Update by json config
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param id path string true "id"
+// @Param Model body types.UpdateModelRequest true "Model"
+// @Success 200 {object} model.Model
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{id} [patch]
+func (h *Handlers) UpdateModel(ctx *gin.Context) {
 	var params types.ModelParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	var json types.Model
+
+	var json types.UpdateModelRequest
 	if err := ctx.ShouldBindJSON(&json); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
 
-	models, err := h.service.GetModel(ctx.Request.Context(), params, json)
+	model, err := h.service.UpdateModel(ctx.Request.Context(), params, json)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model)
+}
+
+// @Summary Get Model
+// @Description Get Model by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param id path string true "id"
+// @Success 200 {object} model.Model
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{id} [get]
+func (h *Handlers) GetModel(ctx *gin.Context) {
+	var params types.ModelParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	model, err := h.service.GetModel(ctx.Request.Context(), params)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model)
+}
+
+// @Summary Get Models
+// @Description Get Models
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Success 200 {object} []model.Model
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models [get]
+func (h *Handlers) GetModels(ctx *gin.Context) {
+	var params types.GetModelsParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	models, err := h.service.GetModels(ctx.Request.Context(), params)
 	if err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
@@ -120,42 +142,87 @@ func (h *Handlers) GetModelVersion(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, models)
 }
 
-func (h *Handlers) GetModelVersions(ctx *gin.Context) {
-	var params types.ModelParams
-	if err := ctx.ShouldBindUri(&params); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	versions, err := h.service.GetModels(ctx.Request.Context(), params, json)
-	if err != nil {
-		ctx.Error(err) // nolint: errcheck
-		return
-	}
-
-	ctx.JSON(http.StatusOK, versions)
-}
-
+// @Summary Destroy Model Version
+// @Description Destroy by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param model_id path string true "model_id"
+// @Param id path string true "id"
+// @Success 200
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{model_id}/versions/{id} [delete]
 func (h *Handlers) DestoryModelVersion(ctx *gin.Context) {
-	var params types.ModelParams
+	var params types.ModelVersionParams
 	if err := ctx.ShouldBindUri(&params); err != nil {
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
 		return
 	}
-	var json types.Model
-	if err := ctx.ShouldBindJSON(&json); err != nil {
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
-		return
-	}
-	err := h.service.DeleteModel(ctx.Request.Context(), params, json)
-	if err != nil {
+
+	if err := h.service.DestroyModelVersion(ctx.Request.Context(), params); err != nil {
 		ctx.Error(err) // nolint: errcheck
 		return
 	}
 
 	ctx.Status(http.StatusOK)
+}
+
+// @Summary Get Model Version
+// @Description Get Model Version by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param model_id path string true "model_id"
+// @Param id path string true "id"
+// @Success 200 {object} model.Model
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{model_id}/versions/{id} [get]
+func (h *Handlers) GetModelVersion(ctx *gin.Context) {
+	var params types.ModelVersionParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	model, err := h.service.GetModelVersion(ctx.Request.Context(), params)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, model)
+}
+
+// @Summary Get Model Versions
+// @Description Get Model Versions by id
+// @Tags Model
+// @Accept json
+// @Produce json
+// @Param scheduler_id path string true "scheduler_id"
+// @Param model_id path string true "model_id"
+// @Success 200 {object} []model.Model
+// @Failure 400
+// @Failure 404
+// @Failure 500
+// @Router /schedulers/{scheduler_id}/models/{model_id}/versions [get]
+func (h *Handlers) GetModelVersions(ctx *gin.Context) {
+	var params types.GetModelVersionsParams
+	if err := ctx.ShouldBindUri(&params); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"errors": err.Error()})
+		return
+	}
+
+	modelVersions, err := h.service.GetModelVersions(ctx.Request.Context(), params)
+	if err != nil {
+		ctx.Error(err) // nolint: errcheck
+		return
+	}
+
+	ctx.JSON(http.StatusOK, modelVersions)
 }

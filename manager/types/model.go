@@ -17,24 +17,39 @@
 package types
 
 type ModelParams struct {
-	SchedulerClusterID string `uri:"scheduler_cluster_id" binding:"required"`
-	SchedulerID        string `uri:"scheduler_id" binding:"required"`
-	ID                 string `uri:"id" binding:"required"`
+	SchedulerID string `uri:"scheduler_id" binding:"required"`
+	ID          string `uri:"id" binding:"required"`
 }
 
-type Model struct {
-	ID        string `json:"id" binding:"required"`
+type GetModelsParams struct {
+	SchedulerID string `uri:"scheduler_id" binding:"required"`
+}
+
+type UpdateModelRequest struct {
 	VersionID string `json:"versionID" binding:"required"`
 }
 
-type ModelVersionParams struct {
-	SchedulerClusterID string `uri:"scheduler_cluster_id" binding:"required"`
-	SchedulerID        string `uri:"scheduler_id" binding:"required"`
-	ModelID            string `uri:"model_id" binding:"required"`
-	ID                 string `uri:"id" binding:"required"`
+type Model struct {
+	ID          string `json:"id" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	VersionID   string `json:"versionID" binding:"required"`
+	SchedulerID string `json:"scheduler_id" binding:"required"`
+	Hostname    string `json:"hostname" binding:"required"`
+	IP          string `json:"ip" binding:"required"`
 }
 
-type Version struct {
+type ModelVersionParams struct {
+	SchedulerID string `uri:"scheduler_id" binding:"required"`
+	ModelID     string `uri:"model_id" binding:"required"`
+	ID          string `uri:"id" binding:"required"`
+}
+
+type GetModelVersionsParams struct {
+	SchedulerID string `uri:"scheduler_id" binding:"required"`
+	ModelID     string `uri:"model_id" binding:"required"`
+}
+
+type ModelVersion struct {
 	ID        string  `json:"id" binding:"required"`
 	Precision float64 `json:"precision" binding:"required"`
 	Recall    float64 `json:"recall" binding:"required"`

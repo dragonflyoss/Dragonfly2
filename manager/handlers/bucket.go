@@ -30,7 +30,7 @@ import (
 )
 
 // @Summary Create Bucket
-// @Description create by json bucket
+// @Description Create by json bucket
 // @Tags Bucket
 // @Accept json
 // @Produce json
