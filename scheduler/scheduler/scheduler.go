@@ -267,6 +267,14 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 			continue
 		}
 
+		// Candidate parent host is not allowed to be the same as the peer host,
+		// because dfdaemon cannot handle the situation
+		// where two tasks are downloading and downloading each other.
+		if peer.Host.ID == candidateParent.Host.ID {
+			peer.Log.Debugf("candidate parent %s host %s is the same as peer host", candidateParent.ID, candidateParent.Host.ID)
+			continue
+		}
+
 		// Candidate parent is bad node.
 		if s.evaluator.IsBadNode(candidateParent) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is bad node", candidateParent.ID)
