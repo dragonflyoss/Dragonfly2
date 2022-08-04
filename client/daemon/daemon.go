@@ -167,9 +167,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			PeerId: request.PeerID,
 		})
 		if er != nil {
-			logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+			logger.Errorf("step 4: leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
 		} else {
-			logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
+			logger.Infof("step 4: leave task %s/%s state ok", request.TaskID, request.PeerID)
 		}
 	}
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
