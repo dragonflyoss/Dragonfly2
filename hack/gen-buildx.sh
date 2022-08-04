@@ -1,6 +1,6 @@
 #!/bin/bash
 
-components="scheduler manager"
+components="scheduler manager-server"
 
 set -x
 
