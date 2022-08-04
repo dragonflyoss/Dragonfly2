@@ -21,6 +21,7 @@ package config
 import (
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -33,15 +34,13 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
+	"d7y.io/dragonfly/v2/pkg/consistent"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
 var (
 	// Daemon cache file name
 	cacheFileName = "daemon_dynconfig"
-
-	// Watch dynconfig interval
-	watchInterval = 10 * time.Second
 )
 
 type DynconfigData struct {
@@ -63,16 +62,19 @@ type Dynconfig interface {
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
 
+	// Convert is used by resolver, convert dynconfigData to addresses according to host
+	Convert(host string, data *DynconfigData) []string
+
 	// Register allows an instance to register itself to listen/observe events.
-	Register(Observer)
+	Register(consistent.Observer[*DynconfigData])
 
 	// Deregister allows an instance to remove itself from the collection of observers/listeners.
-	Deregister(Observer)
+	Deregister(consistent.Observer[*DynconfigData])
 
 	// Notify publishes new events to listeners.
 	Notify() error
 
-	// Reload will refresh cache
+	// Reload will refresh cache,and Notify
 	Reload() error
 
 	// Serve the dynconfig listening service.
@@ -82,16 +84,12 @@ type Dynconfig interface {
 	Stop() error
 }
 
-type Observer interface {
-	// OnNotify allows an event to be "published" to interface implementations.
-	OnNotify(*DynconfigData)
-}
-
 type dynconfig struct {
 	*internaldynconfig.Dynconfig
-	observers map[Observer]struct{}
-	done      chan bool
-	cachePath string
+	watchInterval time.Duration
+	observers     map[consistent.Observer[*DynconfigData]]struct{}
+	done          chan bool
+	cachePath     string
 }
 
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
@@ -107,10 +105,11 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOp
 	}
 
 	return &dynconfig{
-		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
-		cachePath: cachePath,
-		Dynconfig: client,
+		watchInterval: expire,
+		observers:     map[consistent.Observer[*DynconfigData]]struct{}{},
+		done:          make(chan bool),
+		cachePath:     cachePath,
+		Dynconfig:     client,
 	}, nil
 }
 
@@ -121,6 +120,21 @@ func (d *dynconfig) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	}
 
 	return data.Schedulers, nil
+}
+
+func (d *dynconfig) Convert(host string, data *DynconfigData) []string {
+	if data == nil {
+		return nil
+	}
+	if host != consistent.DragonflyHostScheduler {
+		return nil
+	}
+	//dfAddrs := SchedulersToAvailableNetAddrs(data.Schedulers)
+	var addrs []string
+	for _, scheduler := range data.Schedulers {
+		addrs = append(addrs, fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort()))
+	}
+	return addrs
 }
 
 func (d *dynconfig) GetObjectStorage() (*managerv1.ObjectStorage, error) {
@@ -142,14 +156,19 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 }
 
 func (d *dynconfig) Reload() error {
-	return d.Dynconfig.Reload()
+	//TODO: reload until success with backoff strategy
+	if err := d.Dynconfig.Reload(); err != nil {
+		return err
+	}
+	_ = d.Notify()
+	return nil
 }
 
-func (d *dynconfig) Register(l Observer) {
+func (d *dynconfig) Register(l consistent.Observer[*DynconfigData]) {
 	d.observers[l] = struct{}{}
 }
 
-func (d *dynconfig) Deregister(l Observer) {
+func (d *dynconfig) Deregister(l consistent.Observer[*DynconfigData]) {
 	delete(d.observers, l)
 }
 
@@ -177,7 +196,7 @@ func (d *dynconfig) Serve() error {
 }
 
 func (d *dynconfig) watch() {
-	tick := time.NewTicker(watchInterval)
+	tick := time.NewTicker(d.watchInterval)
 
 	for {
 		select {

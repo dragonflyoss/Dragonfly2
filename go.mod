@@ -44,7 +44,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/montanaflynn/stats v0.6.6
 	github.com/onsi/ginkgo/v2 v2.1.4
-	github.com/onsi/gomega v1.19.0
+	github.com/onsi/gomega v1.20.0
 	github.com/orcaman/concurrent-map/v2 v2.0.0
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.12.2
@@ -69,8 +69,8 @@ require (
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d
 	golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d
 	golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
-	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
+	golang.org/x/sys v0.0.0-20220803195053-6e608f9ce704
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858
 	google.golang.org/api v0.90.0
 	google.golang.org/grpc v1.48.0
@@ -94,14 +94,20 @@ require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
+	github.com/alecthomas/kingpin v2.2.6+incompatible // indirect
+	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/dave/jennifer v1.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.12.2 // indirect
+	github.com/derision-test/go-mockgen v1.3.3 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -161,6 +167,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mdlayher/socket v0.2.3 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
+	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
@@ -196,10 +203,11 @@ require (
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220728211354-c7608f3a8462 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/net v0.0.0-20220802222814-0bcc04d9c69b // indirect
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.1.11 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220728213248-dd149ef739b9 // indirect
 	gopkg.in/ini.v1 v1.66.6 // indirect

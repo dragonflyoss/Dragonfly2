@@ -17,9 +17,10 @@
 package netutil
 
 import (
-	"go.uber.org/atomic"
 	"net"
 	"sync"
+
+	"go.uber.org/atomic"
 )
 
 // NewLimitListener returns a Listener that accepts at most n simultaneous

@@ -35,6 +35,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -53,6 +54,7 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/consistent"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
@@ -155,7 +157,12 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
-	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
+
+	// register resolver and balancer
+	consistent.RegisterResolver[*config.DynconfigData](dynconfig)
+	balancer.Register(consistent.NewConsistentHashRingBuilder(config.DefaultSchedulerGrpcGcInterval, true, dynconfig))
+
+	sched, err := schedulerclient.GetClient(addrs, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -683,18 +690,13 @@ func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
 	ips := getSchedulerIPs(data.Schedulers)
 	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
 		logger.Debugf("scheduler addresses deep equal: %v, used: %#v",
-			ips, cd.schedulerClient.GetState())
+			ips, cd.schedulers)
 		return
 	}
 
-	// Get the available scheduler addresses and use ip first
-	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
-
-	// Update scheduler client addresses
-	cd.schedulerClient.UpdateState(addrs)
 	cd.schedulers = data.Schedulers
 
-	logger.Infof("scheduler addresses have been updated: %#v", addrs)
+	logger.Infof("scheduler addresses have been updated: %#v", cd.schedulers)
 }
 
 // getSchedulerIPs gets ips by schedulers.

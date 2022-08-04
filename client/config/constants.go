@@ -64,6 +64,8 @@ const (
 	DefaultScheduleTimeout = 5 * time.Minute
 	DefaultDownloadTimeout = 5 * time.Minute
 
+	DefaultSchedulerGrpcGcInterval = time.Second * 5
+
 	DefaultSchedulerSchema = "http"
 	DefaultSchedulerIP     = "127.0.0.1"
 	DefaultSchedulerPort   = 8002

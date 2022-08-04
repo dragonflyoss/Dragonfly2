@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	v1 "d7y.io/api/pkg/apis/scheduler/v1"
-	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 )
@@ -68,20 +67,6 @@ func (m *MockClient) Close() error {
 func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
-}
-
-// GetState mocks base method.
-func (m *MockClient) GetState() []dfnet.NetAddr {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetState")
-	ret0, _ := ret[0].([]dfnet.NetAddr)
-	return ret0
-}
-
-// GetState indicates an expected call of GetState.
-func (mr *MockClientMockRecorder) GetState() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockClient)(nil).GetState))
 }
 
 // LeaveTask mocks base method.
@@ -180,16 +165,4 @@ func (mr *MockClientMockRecorder) StatTask(arg0, arg1 interface{}, arg2 ...inter
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StatTask", reflect.TypeOf((*MockClient)(nil).StatTask), varargs...)
-}
-
-// UpdateState mocks base method.
-func (m *MockClient) UpdateState(arg0 []dfnet.NetAddr) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateState", arg0)
-}
-
-// UpdateState indicates an expected call of UpdateState.
-func (mr *MockClientMockRecorder) UpdateState(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockClient)(nil).UpdateState), arg0)
 }
