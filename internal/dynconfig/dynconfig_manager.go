@@ -95,3 +95,8 @@ func (d *dynconfigManager) load() error {
 	}
 	return nil
 }
+
+// Reload ignore cache
+func (d *dynconfigManager) Reload() error {
+	return d.load()
+}

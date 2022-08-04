@@ -45,3 +45,7 @@ func (d *dynconfigLocal) Unmarshal(rawVal any) error {
 
 	return yaml.Unmarshal(b, rawVal)
 }
+
+func (d *dynconfigLocal) Reload() error {
+	return nil
+}

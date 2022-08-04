@@ -19,6 +19,8 @@
 package config
 
 import (
+	"encoding/gob"
+	"errors"
 	"os"
 	"path/filepath"
 	"time"
@@ -47,6 +49,10 @@ type DynconfigData struct {
 	ObjectStorage *managerv1.ObjectStorage
 }
 
+func init() {
+	gob.Register(DynconfigData{})
+}
+
 type Dynconfig interface {
 	// Get the dynamic schedulers config from manager.
 	GetSchedulers() ([]*managerv1.Scheduler, error)
@@ -65,6 +71,9 @@ type Dynconfig interface {
 
 	// Notify publishes new events to listeners.
 	Notify() error
+
+	// Reload will refresh cache
+	Reload() error
 
 	// Serve the dynconfig listening service.
 	Serve() error
@@ -130,6 +139,10 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 	}
 
 	return &data, nil
+}
+
+func (d *dynconfig) Reload() error {
+	return d.Dynconfig.Reload()
 }
 
 func (d *dynconfig) Register(l Observer) {
@@ -201,6 +214,9 @@ func newManagerClient(client managerclient.Client, hostOption HostOption) intern
 }
 
 func (mc *managerClient) Get() (any, error) {
+	if mc.Client == nil {
+		return nil, errors.New("empty manager client")
+	}
 	listSchedulersResp, err := mc.ListSchedulers(&managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,

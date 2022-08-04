@@ -41,6 +41,9 @@ const (
 
 type strategy interface {
 	Unmarshal(rawVal any) error
+
+	// Reload refresh cache
+	Reload() error
 }
 
 type Dynconfig struct {
@@ -156,6 +159,11 @@ func (d *Dynconfig) validate() error {
 // on the fields of the structure are properly set.
 func (d *Dynconfig) Unmarshal(rawVal any) error {
 	return d.strategy.Unmarshal(rawVal)
+}
+
+// Reload refresh cache
+func (d *Dynconfig) Reload() error {
+	return d.strategy.Reload()
 }
 
 // A DecoderConfigOption can be passed to dynconfig Unmarshal to configure
