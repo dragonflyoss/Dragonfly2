@@ -137,6 +137,15 @@ type Service interface {
 	DeleteSchedulerClusterToApplication(context.Context, uint, uint) error
 	AddSeedPeerClusterToApplication(context.Context, uint, uint) error
 	DeleteSeedPeerClusterToApplication(context.Context, uint, uint) error
+
+	GetModel(context.Context, types.ModelParams, types.Model) (*types.StorageModel, error)
+	GetModels(context.Context, types.ModelParams, types.Model) ([]*types.StorageModel, error)
+	UpdateModel(context.Context, types.ModelParams, types.Model) (*types.StorageModel, error)
+	DeleteModel(context.Context, types.ModelParams, types.Model) error
+
+	GetModelVersion(context.Context, types.ModelParams, types.Model) (*types.Version, error)
+	GetModelVersions(context.Context, types.Model) ([]*types.Version, error)
+	DeleteModelVersion(context.Context, types.ModelParams, types.Model) error
 }
 
 type service struct {

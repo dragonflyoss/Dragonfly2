@@ -144,6 +144,17 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	sc.GET("", h.GetSchedulerClusters)
 	sc.PUT(":id/schedulers/:scheduler_id", h.AddSchedulerToSchedulerCluster)
 
+	// Model
+	sc.DELETE(":scheduler_cluster_id/schedulers/:scheduler_id/models/:id", h.DestoryModel)
+	sc.PATCH(":scheduler_cluster_id/schedulers/:scheduler_id/models/:id", h.UpdateModel)
+	sc.GET(":scheduler_cluster_id/schedulers/:scheduler_id/models/:id", h.GetModel)
+	sc.GET(":scheduler_cluster_id/schedulers/:scheduler_id/models", h.GetModels)
+
+	// Model Version
+	sc.DELETE(":scheduler_cluster_id/schedulers/:scheduler_id/models/:model_id/versions/:id", h.DestoryModelVersion)
+	sc.GET(":scheduler_cluster_id/schedulers/:scheduler_id/models/:model_id/versions/:id", h.GetModelVersion)
+	sc.GET(":scheduler_cluster_id/schedulers/:scheduler_id/models/:model_id/versions", h.GetModelVersions)
+
 	// Scheduler
 	s := apiv1.Group("/schedulers", jwt.MiddlewareFunc(), rbac)
 	s.POST("", h.CreateScheduler)
