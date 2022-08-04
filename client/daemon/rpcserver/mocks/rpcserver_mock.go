@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 	time "time"
 
+	v1 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -99,4 +100,41 @@ func (m *MockServer) Stop() {
 func (mr *MockServerMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockServer)(nil).Stop))
+}
+
+// MockResultSender is a mock of ResultSender interface.
+type MockResultSender struct {
+	ctrl     *gomock.Controller
+	recorder *MockResultSenderMockRecorder
+}
+
+// MockResultSenderMockRecorder is the mock recorder for MockResultSender.
+type MockResultSenderMockRecorder struct {
+	mock *MockResultSender
+}
+
+// NewMockResultSender creates a new mock instance.
+func NewMockResultSender(ctrl *gomock.Controller) *MockResultSender {
+	mock := &MockResultSender{ctrl: ctrl}
+	mock.recorder = &MockResultSenderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockResultSender) EXPECT() *MockResultSenderMockRecorder {
+	return m.recorder
+}
+
+// Send mocks base method.
+func (m *MockResultSender) Send(arg0 *v1.DownResult) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockResultSenderMockRecorder) Send(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockResultSender)(nil).Send), arg0)
 }

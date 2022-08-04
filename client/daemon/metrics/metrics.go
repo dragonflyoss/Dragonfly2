@@ -33,6 +33,9 @@ const (
 	// Failed download task type is source
 	FailTypeBackSource = "source"
 
+	// Failed download task type is init, indecates not yet register to scheduler
+	FailTypeInit = "init"
+
 	// SeedPeerDownload type is p2p
 	SeedPeerDownloadTypeP2P = "p2p"
 

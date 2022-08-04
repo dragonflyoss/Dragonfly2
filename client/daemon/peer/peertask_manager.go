@@ -239,7 +239,7 @@ func (ptm *peerTaskManager) getOrCreatePeerTaskConductor(
 	err := ptc.initStorage(desiredLocation)
 	if err != nil {
 		ptc.Errorf("init storage error: %s", err)
-		ptc.cancel(commonv1.Code_ClientError, err.Error())
+		ptc.cancelNotRegisterred(commonv1.Code_ClientError, err.Error())
 		return nil, false, err
 	}
 	return ptc, true, nil
