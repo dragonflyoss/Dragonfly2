@@ -369,7 +369,7 @@ func (cd *clientDaemon) Serve() error {
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
 	}
-	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
+	_ = os.Remove(cd.dfpath.DaemonSockPath())
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
 		Type: dfnet.UNIX,
 		Addr: cd.dfpath.DaemonSockPath(),
