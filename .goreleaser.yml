@@ -1,6 +1,7 @@
 before:
   hooks:
     - hack/update-version-gorelease.sh
+    - make build-manager-console
     - go mod download
 
 builds:
@@ -12,6 +13,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
       - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
@@ -29,6 +31,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
       - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
@@ -46,6 +49,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
       - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
@@ -63,6 +67,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
       - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}
@@ -80,6 +85,7 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm64
     ldflags:
       - -X d7y.io/dragonfly/v2/version.Major={{ .Major }}
       - -X d7y.io/dragonfly/v2/version.Minor={{ .Minor }}

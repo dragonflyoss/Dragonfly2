@@ -17,6 +17,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build manager console assets
+        run: |-
+          make build-manager-console
 
       - name: Golangci lint
         uses: golangci/golangci-lint-action@v2

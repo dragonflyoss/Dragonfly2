@@ -26,6 +26,12 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build manager console assets
+        run: |-
+          make build-manager-console
 
       - name: Run Unit tests
         run: |-
@@ -55,6 +61,12 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Build manager console assets
+        run: |-
+          make build-manager-console
 
       - name: Build
         run: make build

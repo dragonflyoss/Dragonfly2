@@ -1,7 +1,6 @@
 server:
   name: foo
   logDir: foo
-  publicPath: foo
   grpc:
     listen: 127.0.0.1
     port:

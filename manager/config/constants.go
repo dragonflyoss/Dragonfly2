@@ -33,9 +33,6 @@ const (
 	// DefaultServerName is default server name.
 	DefaultServerName = "d7y/manager"
 
-	// DefaultPublicPath is default path for frontend assets.
-	DefaultPublicPath = "manager/console/dist"
-
 	// DefaultGRPCPort is default port for grpc server.
 	DefaultGRPCPort = 65003
 
