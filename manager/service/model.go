@@ -18,14 +18,43 @@ package service
 
 import (
 	"context"
-	"encoding/json"
+	"time"
 
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
+	"github.com/google/uuid"
 )
 
+func (s *service) CreateModel(ctx context.Context, params types.CreateModelParams, json types.CreateModelRequest) (*types.Model, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return nil, err
+	}
+
+	model := types.Model{
+		ID:          json.ID,
+		Name:        json.Name,
+		VersionID:   json.VersionID,
+		SchedulerID: json.SchedulerID,
+		Hostname:    json.Hostname,
+		IP:          json.IP,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, model.ID), &model, 0).Result(); err != nil {
+		return nil, err
+	}
+
+	return &model, nil
+}
+
 func (s *service) DestroyModel(ctx context.Context, params types.ModelParams) error {
+	if _, err := s.GetModel(ctx, params); err != nil {
+		return err
+	}
+
 	scheduler := model.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
 		return err
@@ -49,6 +78,7 @@ func (s *service) UpdateModel(ctx context.Context, params types.ModelParams, jso
 		return nil, err
 	}
 	model.VersionID = json.VersionID
+	model.UpdatedAt = time.Now()
 
 	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ID), model, 0).Result(); err != nil {
 		return nil, err
@@ -63,13 +93,8 @@ func (s *service) GetModel(ctx context.Context, params types.ModelParams) (*type
 		return nil, err
 	}
 
-	b, err := s.rdb.Get(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ID)).Bytes()
-	if err != nil {
-		return nil, err
-	}
-
 	var model types.Model
-	if err = json.Unmarshal(b, &model); err != nil {
+	if err := s.rdb.Get(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ID)).Scan(&model); err != nil {
 		return nil, err
 	}
 
@@ -82,16 +107,11 @@ func (s *service) GetModels(ctx context.Context, params types.GetModelsParams) (
 		return nil, err
 	}
 
-	var models []*types.Model
+	models := []*types.Model{}
 	iter := s.rdb.Scan(ctx, 0, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, "*"), 0).Iterator()
 	for iter.Next(ctx) {
-		b, err := s.rdb.Get(ctx, iter.Val()).Bytes()
-		if err != nil {
-			return nil, err
-		}
-
 		var model types.Model
-		if err = json.Unmarshal(b, &model); err != nil {
+		if err := s.rdb.Get(ctx, iter.Val()).Scan(&model); err != nil {
 			return nil, err
 		}
 
@@ -99,4 +119,100 @@ func (s *service) GetModels(ctx context.Context, params types.GetModelsParams) (
 	}
 
 	return models, nil
+}
+
+func (s *service) CreateModelVersion(ctx context.Context, params types.CreateModelVersionParams, json types.CreateModelVersionRequest) (*types.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return nil, err
+	}
+
+	modelVersion := types.ModelVersion{
+		ID:        uuid.New().String(),
+		Precision: json.Precision,
+		Recall:    json.Recall,
+		Data:      json.Data,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, modelVersion.ID), &modelVersion, 0).Result(); err != nil {
+		return nil, err
+	}
+
+	return &modelVersion, nil
+}
+
+func (s *service) DestroyModelVersion(ctx context.Context, params types.ModelVersionParams) error {
+	if _, err := s.GetModelVersion(ctx, params); err != nil {
+		return err
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return err
+	}
+
+	if _, err := s.rdb.Del(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, params.ID)).Result(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) UpdateModelVersion(ctx context.Context, params types.ModelVersionParams, json types.UpdateModelVersionRequest) (*types.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return nil, err
+	}
+
+	modelVersion, err := s.GetModelVersion(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	modelVersion.Precision = json.Precision
+	modelVersion.Recall = json.Recall
+	modelVersion.Data = json.Data
+	modelVersion.UpdatedAt = time.Now()
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, modelVersion.ID), modelVersion, 0).Result(); err != nil {
+		return nil, err
+	}
+
+	return modelVersion, nil
+}
+
+func (s *service) GetModelVersion(ctx context.Context, params types.ModelVersionParams) (*types.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return nil, err
+	}
+
+	var modelVersion types.ModelVersion
+	if err := s.rdb.Get(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, params.ID)).Scan(&modelVersion); err != nil {
+		return nil, err
+	}
+
+	return &modelVersion, nil
+}
+
+func (s *service) GetModelVersions(ctx context.Context, params types.GetModelVersionsParams) ([]*types.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, params.SchedulerID).Error; err != nil {
+		return nil, err
+	}
+
+	modelVersions := []*types.ModelVersion{}
+	iter := s.rdb.Scan(ctx, 0, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, "*"), 0).Iterator()
+	for iter.Next(ctx) {
+		var modelVersion types.ModelVersion
+		if err := s.rdb.Get(ctx, iter.Val()).Scan(&modelVersion); err != nil {
+			return nil, err
+		}
+
+		modelVersions = append(modelVersions, &modelVersion)
+	}
+
+	return modelVersions, nil
 }
