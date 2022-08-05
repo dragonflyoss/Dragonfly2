@@ -76,7 +76,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -453,7 +453,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json bucket",
+                "description": "Create by json bucket",
                 "consumes": [
                     "application/json"
                 ],
@@ -623,7 +623,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -873,7 +873,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -1094,7 +1094,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -1326,7 +1326,7 @@ const docTemplate = `{
         },
         "/preheats": {
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -1678,7 +1678,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -1944,7 +1944,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -2110,6 +2110,521 @@ const docTemplate = `{
                 }
             }
         },
+        "/schedulers/{id}/models": {
+            "get": {
+                "description": "Get Models",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Get Models",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.Model"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "Create by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Create Model",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Model",
+                        "name": "Model",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateModelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Model"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/schedulers/{id}/models/{model_id}": {
+            "get": {
+                "description": "Get Model by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Get Model",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Model"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Destroy Model",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/schedulers/{id}/models/{model_id}/versions": {
+            "get": {
+                "description": "Get Model Versions by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Get Model Versions",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/types.ModelVersion"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "description": "Create by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Create Model Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ModelVersion",
+                        "name": "ModelVersion",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.CreateModelVersionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ModelVersion"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/schedulers/{id}/models/{model_id}/versions/{version_id}": {
+            "get": {
+                "description": "Get Model Version by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Get Model Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version_id",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ModelVersion"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "description": "Destroy by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Destroy Model Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version_id",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/schedulers/{scheduler_id}/models/{model_id}": {
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Update Model",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Model",
+                        "name": "Model",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateModelRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.Model"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/schedulers/{scheduler_id}/models/{model_id}/versions/{version_id}": {
+            "patch": {
+                "description": "Update by json config",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Model"
+                ],
+                "summary": "Update Model Version",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "model_id",
+                        "name": "model_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "version_id",
+                        "name": "version_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "ModelVersion",
+                        "name": "ModelVersion",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.UpdateModelVersionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/types.ModelVersion"
+                        }
+                    },
+                    "400": {
+                        "description": ""
+                    },
+                    "404": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/security-groups": {
             "get": {
                 "description": "Get SecurityGroups",
@@ -2165,7 +2680,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -2528,7 +3043,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -2789,7 +3304,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -3100,7 +3615,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "create by json config",
+                "description": "Create by json config",
                 "consumes": [
                     "application/json"
                 ],
@@ -3692,13 +4207,7 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "download_rate_limit": {
-                    "type": "integer"
-                },
-                "id": {
                     "type": "integer"
                 },
                 "name": {
@@ -3719,9 +4228,6 @@ const docTemplate = `{
                 "state": {
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string"
-                },
                 "url": {
                     "type": "string"
                 },
@@ -3733,22 +4239,58 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Assertion": {
+            "type": "object",
+            "properties": {
+                "fieldIndexMap": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "key": {
+                    "type": "string"
+                },
+                "policy": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "policyMap": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "integer"
+                    }
+                },
+                "rm": {},
+                "tokens": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "value": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.AssertionMap": {
+            "type": "object",
+            "additionalProperties": {
+                "$ref": "#/definitions/model.Assertion"
+            }
+        },
         "model.Config": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -3774,12 +4316,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "result": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
@@ -3804,9 +4340,6 @@ const docTemplate = `{
                 "type": {
                     "type": "string"
                 },
-                "updated_at": {
-                    "type": "string"
-                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -3824,19 +4357,10 @@ const docTemplate = `{
                 "client_secret": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -3844,14 +4368,8 @@ const docTemplate = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -3873,9 +4391,6 @@ const docTemplate = `{
                 },
                 "state": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3893,12 +4408,6 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -3923,9 +4432,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SeedPeerCluster"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3935,12 +4441,6 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
                 "name": {
                     "type": "string"
                 },
@@ -3949,9 +4449,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityRule"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -3961,14 +4458,8 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "domain": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -3981,26 +4472,17 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
         "model.SeedPeer": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "type": "string"
-                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -4028,9 +4510,6 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -4045,12 +4524,6 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4075,9 +4548,6 @@ const docTemplate = `{
                 },
                 "security_group_id": {
                     "type": "integer"
-                },
-                "updated_at": {
-                    "type": "string"
                 }
             }
         },
@@ -4090,14 +4560,8 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "email": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -4109,9 +4573,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "state": {
-                    "type": "string"
-                },
-                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4269,6 +4730,62 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.CreateModelRequest": {
+            "type": "object",
+            "required": [
+                "hostname",
+                "id",
+                "ip",
+                "name",
+                "scheduler_id",
+                "version_id"
+            ],
+            "properties": {
+                "hostname": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "enum": [
+                        "evaluator"
+                    ]
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scheduler_id": {
+                    "type": "integer"
+                },
+                "version_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.CreateModelVersionRequest": {
+            "type": "object",
+            "required": [
+                "data",
+                "precision",
+                "recall"
+            ],
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "precision": {
+                    "type": "number"
+                },
+                "recall": {
+                    "type": "number"
                 }
             }
         },
@@ -4564,6 +5081,79 @@ const docTemplate = `{
                 }
             }
         },
+        "types.Model": {
+            "type": "object",
+            "required": [
+                "create_at",
+                "hostname",
+                "id",
+                "ip",
+                "name",
+                "scheduler_id",
+                "updated_at",
+                "version_id"
+            ],
+            "properties": {
+                "create_at": {
+                    "type": "string"
+                },
+                "hostname": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "scheduler_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.ModelVersion": {
+            "type": "object",
+            "required": [
+                "create_at",
+                "data",
+                "id",
+                "precision",
+                "recall",
+                "updated_at"
+            ],
+            "properties": {
+                "create_at": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "precision": {
+                    "type": "number"
+                },
+                "recall": {
+                    "type": "number"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
         "types.ResetPasswordRequest": {
             "type": "object",
             "required": [
@@ -4741,6 +5331,31 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "types.UpdateModelRequest": {
+            "type": "object",
+            "properties": {
+                "version_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "types.UpdateModelVersionRequest": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "precision": {
+                    "type": "number"
+                },
+                "recall": {
+                    "type": "number"
                 }
             }
         },

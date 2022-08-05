@@ -41,8 +41,8 @@ const (
 )
 
 const (
-	// DefaultRedisCacheDB is default db for redis cache.
-	DefaultRedisCacheDB = 0
+	// DefaultRedisDB is default db for redis.
+	DefaultRedisDB = 0
 
 	// DefaultRedisBrokerDB is default db for redis broker.
 	DefaultRedisBrokerDB = 1
