@@ -37,7 +37,7 @@ database:
     password: bar
     host: bar
     port: 6379
-    cacheDB: 0
+    db: 0
     brokerDB: 1
     backendDB: 2
 

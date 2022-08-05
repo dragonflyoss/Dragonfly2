@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create SecurityRule
-// @Description create by json config
+// @Description Create by json config
 // @Tags SecurityRule
 // @Accept json
 // @Produce json

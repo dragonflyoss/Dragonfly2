@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create SeedPeer
-// @Description create by json config
+// @Description Create by json config
 // @Tags SeedPeer
 // @Accept json
 // @Produce json

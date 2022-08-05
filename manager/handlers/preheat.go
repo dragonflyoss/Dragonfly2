@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create V1 Preheat
-// @Description create by json config
+// @Description Create by json config
 // @Tags Preheat
 // @Accept json
 // @Produce json

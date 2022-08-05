@@ -152,6 +152,20 @@ func Init(cfg *config.Config, logDir string, service service.Service, enforcer *
 	s.GET(":id", h.GetScheduler)
 	s.GET("", h.GetSchedulers)
 
+	// Model
+	s.POST(":id/models", h.CreateModel)
+	s.DELETE(":id/models/:model_id", h.DestroyModel)
+	s.PATCH(":id/models/:model_id", h.UpdateModel)
+	s.GET(":id/models/:model_id", h.GetModel)
+	s.GET(":id/models", h.GetModels)
+
+	// Model Version
+	s.POST(":id/models/:model_id/versions", h.CreateModelVersion)
+	s.DELETE(":id/models/:model_id/versions/:version_id", h.DestroyModelVersion)
+	s.PATCH(":id/models/:model_id/versions/:version_id", h.UpdateModelVersion)
+	s.GET(":id/models/:model_id/versions/:version_id", h.GetModelVersion)
+	s.GET(":id/models/:model_id/versions", h.GetModelVersions)
+
 	// Application
 	cs := apiv1.Group("/applications", jwt.MiddlewareFunc(), rbac)
 	cs.POST("", h.CreateApplication)

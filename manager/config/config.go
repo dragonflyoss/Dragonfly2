@@ -163,7 +163,7 @@ type RedisConfig struct {
 	Password string `yaml:"password" mapstructure:"password"`
 
 	// Server cache DB name.
-	CacheDB int `yaml:"cacheDB" mapstructure:"cacheDB"`
+	DB int `yaml:"db" mapstructure:"db"`
 
 	// Server broker DB name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
@@ -272,7 +272,7 @@ func New() *Config {
 				Migrate:  true,
 			},
 			Redis: &RedisConfig{
-				CacheDB:   DefaultRedisCacheDB,
+				DB:        DefaultRedisDB,
 				BrokerDB:  DefaultRedisBrokerDB,
 				BackendDB: DefaultRedisBackendDB,
 			},
@@ -408,8 +408,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter port")
 	}
 
-	if cfg.Database.Redis.CacheDB < 0 {
-		return errors.New("redis requires parameter cacheDB")
+	if cfg.Database.Redis.DB < 0 {
+		return errors.New("redis requires parameter db")
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {
