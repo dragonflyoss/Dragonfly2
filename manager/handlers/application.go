@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create Application
-// @Description create by json config
+// @Description Create by json config
 // @Tags Application
 // @Accept json
 // @Produce json

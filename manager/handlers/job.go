@@ -12,7 +12,7 @@ import (
 )
 
 // @Summary Create Job
-// @Description create by json config
+// @Description Create by json config
 // @Tags Job
 // @Accept json
 // @Produce json

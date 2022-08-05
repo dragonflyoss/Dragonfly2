@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create SchedulerCluster
-// @Description create by json config
+// @Description Create by json config
 // @Tags SchedulerCluster
 // @Accept json
 // @Produce json

@@ -76,7 +76,7 @@ func TestManagerConfig_Load(t *testing.T) {
 				Host:      "bar",
 				Password:  "bar",
 				Port:      6379,
-				CacheDB:   0,
+				DB:        0,
 				BrokerDB:  1,
 				BackendDB: 2,
 			},
