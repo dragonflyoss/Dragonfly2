@@ -20,10 +20,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
+
 	"d7y.io/dragonfly/v2/manager/cache"
 	"d7y.io/dragonfly/v2/manager/model"
 	"d7y.io/dragonfly/v2/manager/types"
-	"github.com/google/uuid"
 )
 
 func (s *service) CreateModel(ctx context.Context, params types.CreateModelParams, json types.CreateModelRequest) (*types.Model, error) {
