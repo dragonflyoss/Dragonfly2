@@ -95,10 +95,6 @@ definitions:
       user_id:
         type: integer
     type: object
-  model.Model:
-    additionalProperties:
-      $ref: '#/definitions/model.AssertionMap'
-    type: object
   model.Oauth:
     properties:
       bio:
@@ -356,6 +352,45 @@ definitions:
     required:
     - type
     type: object
+  types.CreateModelRequest:
+    properties:
+      hostname:
+        type: string
+      id:
+        enum:
+        - evaluator
+        type: string
+      ip:
+        type: string
+      name:
+        type: string
+      scheduler_id:
+        type: integer
+      version_id:
+        type: string
+    required:
+    - hostname
+    - id
+    - ip
+    - name
+    - scheduler_id
+    - version_id
+    type: object
+  types.CreateModelVersionRequest:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      precision:
+        type: number
+      recall:
+        type: number
+    required:
+    - data
+    - precision
+    - recall
+    type: object
   types.CreateOauthRequest:
     properties:
       bio:
@@ -554,6 +589,58 @@ definitions:
       status:
         type: string
     type: object
+  types.Model:
+    properties:
+      create_at:
+        type: string
+      hostname:
+        type: string
+      id:
+        type: string
+      ip:
+        type: string
+      name:
+        type: string
+      scheduler_id:
+        type: integer
+      updated_at:
+        type: string
+      version_id:
+        type: string
+    required:
+    - create_at
+    - hostname
+    - id
+    - ip
+    - name
+    - scheduler_id
+    - updated_at
+    - version_id
+    type: object
+  types.ModelVersion:
+    properties:
+      create_at:
+        type: string
+      data:
+        items:
+          type: integer
+        type: array
+      id:
+        type: string
+      precision:
+        type: number
+      recall:
+        type: number
+      updated_at:
+        type: string
+    required:
+    - create_at
+    - data
+    - id
+    - precision
+    - recall
+    - updated_at
+    type: object
   types.ResetPasswordRequest:
     properties:
       new_password:
@@ -682,8 +769,17 @@ definitions:
     properties:
       version_id:
         type: string
-    required:
-    - version_id
+    type: object
+  types.UpdateModelVersionRequest:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      precision:
+        type: number
+      recall:
+        type: number
     type: object
   types.UpdateOauthRequest:
     properties:
@@ -2209,15 +2305,15 @@ paths:
       summary: Update Scheduler
       tags:
       - Scheduler
-  /schedulers/{scheduler_id}/models:
+  /schedulers/{id}/models:
     get:
       consumes:
       - application/json
       description: Get Models
       parameters:
-      - description: scheduler_id
+      - description: id
         in: path
-        name: scheduler_id
+        name: id
         required: true
         type: string
       produces:
@@ -2227,7 +2323,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Model'
+              $ref: '#/definitions/types.Model'
             type: array
         "400":
           description: ""
@@ -2238,20 +2334,52 @@ paths:
       summary: Get Models
       tags:
       - Model
-  /schedulers/{scheduler_id}/models/{id}:
+    post:
+      consumes:
+      - application/json
+      description: Create by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Model'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Model
+      tags:
+      - Model
+  /schedulers/{id}/models/{model_id}:
     delete:
       consumes:
       - application/json
       description: Destroy by id
       parameters:
-      - description: scheduler_id
-        in: path
-        name: scheduler_id
-        required: true
-        type: string
       - description: id
         in: path
         name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
         required: true
         type: string
       produces:
@@ -2273,14 +2401,14 @@ paths:
       - application/json
       description: Get Model by id
       parameters:
-      - description: scheduler_id
-        in: path
-        name: scheduler_id
-        required: true
-        type: string
       - description: id
         in: path
         name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
         required: true
         type: string
       produces:
@@ -2289,7 +2417,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Model'
+            $ref: '#/definitions/types.Model'
         "400":
           description: ""
         "404":
@@ -2299,52 +2427,15 @@ paths:
       summary: Get Model
       tags:
       - Model
-    patch:
-      consumes:
-      - application/json
-      description: Update by json config
-      parameters:
-      - description: scheduler_id
-        in: path
-        name: scheduler_id
-        required: true
-        type: string
-      - description: id
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Model
-        in: body
-        name: Model
-        required: true
-        schema:
-          $ref: '#/definitions/types.UpdateModelRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Model'
-        "400":
-          description: ""
-        "404":
-          description: ""
-        "500":
-          description: ""
-      summary: Update Model
-      tags:
-      - Model
-  /schedulers/{scheduler_id}/models/{model_id}/versions:
+  /schedulers/{id}/models/{model_id}/versions:
     get:
       consumes:
       - application/json
       description: Get Model Versions by id
       parameters:
-      - description: scheduler_id
+      - description: id
         in: path
-        name: scheduler_id
+        name: id
         required: true
         type: string
       - description: model_id
@@ -2359,7 +2450,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.Model'
+              $ref: '#/definitions/types.ModelVersion'
             type: array
         "400":
           description: ""
@@ -2370,15 +2461,14 @@ paths:
       summary: Get Model Versions
       tags:
       - Model
-  /schedulers/{scheduler_id}/models/{model_id}/versions/{id}:
-    delete:
+    post:
       consumes:
       - application/json
-      description: Destroy by id
+      description: Create by id
       parameters:
-      - description: scheduler_id
+      - description: id
         in: path
-        name: scheduler_id
+        name: id
         required: true
         type: string
       - description: model_id
@@ -2386,9 +2476,47 @@ paths:
         name: model_id
         required: true
         type: string
+      - description: ModelVersion
+        in: body
+        name: ModelVersion
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateModelVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ModelVersion'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Model Version
+      tags:
+      - Model
+  /schedulers/{id}/models/{model_id}/versions/{version_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
       - description: id
         in: path
         name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: version_id
+        in: path
+        name: version_id
         required: true
         type: string
       produces:
@@ -2410,9 +2538,9 @@ paths:
       - application/json
       description: Get Model Version by id
       parameters:
-      - description: scheduler_id
+      - description: id
         in: path
-        name: scheduler_id
+        name: id
         required: true
         type: string
       - description: model_id
@@ -2420,9 +2548,9 @@ paths:
         name: model_id
         required: true
         type: string
-      - description: id
+      - description: version_id
         in: path
-        name: id
+        name: version_id
         required: true
         type: string
       produces:
@@ -2431,7 +2559,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Model'
+            $ref: '#/definitions/types.ModelVersion'
         "400":
           description: ""
         "404":
@@ -2439,6 +2567,87 @@ paths:
         "500":
           description: ""
       summary: Get Model Version
+      tags:
+      - Model
+  /schedulers/{scheduler_id}/models/{model_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Model'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Model
+      tags:
+      - Model
+  /schedulers/{scheduler_id}/models/{model_id}/versions/{version_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: version_id
+        in: path
+        name: version_id
+        required: true
+        type: string
+      - description: ModelVersion
+        in: body
+        name: ModelVersion
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateModelVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ModelVersion'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Model Version
       tags:
       - Model
   /security-groups:

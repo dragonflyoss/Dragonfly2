@@ -32,7 +32,7 @@ import (
 // @Produce json
 // @Param id path string true "id"
 // @Param Model body types.CreateModelRequest true "Model"
-// @Success 200 {object} model.Model
+// @Success 200 {object} types.Model
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -94,7 +94,7 @@ func (h *Handlers) DestroyModel(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param model_id path string true "model_id"
 // @Param Model body types.UpdateModelRequest true "Model"
-// @Success 200 {object} model.Model
+// @Success 200 {object} types.Model
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -128,7 +128,7 @@ func (h *Handlers) UpdateModel(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Param model_id path string true "model_id"
-// @Success 200 {object} model.Model
+// @Success 200 {object} types.Model
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -155,7 +155,7 @@ func (h *Handlers) GetModel(ctx *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id path string true "id"
-// @Success 200 {object} []model.Model
+// @Success 200 {object} []types.Model
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -184,7 +184,7 @@ func (h *Handlers) GetModels(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param model_id path string true "model_id"
 // @Param ModelVersion body types.CreateModelVersionRequest true "ModelVersion"
-// @Success 200 {object} model.ModelVersion
+// @Success 200 {object} types.ModelVersion
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -248,7 +248,7 @@ func (h *Handlers) DestroyModelVersion(ctx *gin.Context) {
 // @Param model_id path string true "model_id"
 // @Param version_id path string true "version_id"
 // @Param ModelVersion body types.UpdateModelVersionRequest true "ModelVersion"
-// @Success 200 {object} model.ModelVersion
+// @Success 200 {object} types.ModelVersion
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -283,7 +283,7 @@ func (h *Handlers) UpdateModelVersion(ctx *gin.Context) {
 // @Param id path string true "id"
 // @Param model_id path string true "model_id"
 // @Param version_id path string true "version_id"
-// @Success 200 {object} model.Model
+// @Success 200 {object} types.ModelVersion
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -311,7 +311,7 @@ func (h *Handlers) GetModelVersion(ctx *gin.Context) {
 // @Produce json
 // @Param id path string true "id"
 // @Param model_id path string true "model_id"
-// @Success 200 {object} []model.Model
+// @Success 200 {object} []types.ModelVersion
 // @Failure 400
 // @Failure 404
 // @Failure 500
