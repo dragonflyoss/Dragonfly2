@@ -45,7 +45,7 @@ var (
 )
 
 // DAG is the interface used for directed acyclic graph.
-type DAG[T comparable] interface {
+type DAG[T any] interface {
 	// AddVertex adds vertex to graph.
 	AddVertex(id string, value T) error
 
@@ -59,16 +59,16 @@ type DAG[T comparable] interface {
 	GetVertices() map[string]*Vertex[T]
 
 	// GetRandomVertices returns random map of vertices.
-	GetRandomVertices(n uint) []*Vertex[T]
+	GetRandomVertices(n uint) map[string]*Vertex[T]
 
 	// GetVertexKeys returns keys of vertices.
 	GetVertexKeys() []string
 
 	// GetSourceVertices returns source vertices.
-	GetSourceVertices() []*Vertex[T]
+	GetSourceVertices() map[string]*Vertex[T]
 
 	// GetSinkVertices returns sink vertices.
-	GetSinkVertices() []*Vertex[T]
+	GetSinkVertices() map[string]*Vertex[T]
 
 	// VertexCount returns count of vertices.
 	VertexCount() int
@@ -84,13 +84,13 @@ type DAG[T comparable] interface {
 }
 
 // dag provides directed acyclic graph function.
-type dag[T comparable] struct {
+type dag[T any] struct {
 	mu       sync.RWMutex
 	vertices cmap.ConcurrentMap[*Vertex[T]]
 }
 
 // New returns a new DAG interface.
-func NewDAG[T comparable]() DAG[T] {
+func NewDAG[T any]() DAG[T] {
 	return &dag[T]{
 		vertices: cmap.New[*Vertex[T]](),
 	}
@@ -147,23 +147,22 @@ func (d *dag[T]) GetVertices() map[string]*Vertex[T] {
 }
 
 // GetRandomVertices returns random map of vertices.
-func (d *dag[T]) GetRandomVertices(n uint) []*Vertex[T] {
+func (d *dag[T]) GetRandomVertices(n uint) map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	keys := d.GetVertexKeys()
+	vertices := d.GetVertices()
 	if int(n) >= len(keys) {
-		n = uint(len(keys))
+		return vertices
 	}
 
 	rand.Seed(time.Now().Unix())
 	permutation := rand.Perm(len(keys))[:n]
-	randomVertices := make([]*Vertex[T], 0, n)
+	randomVertices := make(map[string]*Vertex[T])
 	for _, v := range permutation {
 		key := keys[v]
-		if vertex, err := d.GetVertex(key); err == nil {
-			randomVertices = append(randomVertices, vertex)
-		}
+		randomVertices[key] = vertices[key]
 	}
 
 	return randomVertices
@@ -271,14 +270,14 @@ func (d *dag[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 }
 
 // GetSourceVertices returns source vertices.
-func (d *dag[T]) GetSourceVertices() []*Vertex[T] {
+func (d *dag[T]) GetSourceVertices() map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	var sourceVertices []*Vertex[T]
-	for _, vertex := range d.vertices.Items() {
-		if vertex.InDegree() == 0 {
-			sourceVertices = append(sourceVertices, vertex)
+	sourceVertices := make(map[string]*Vertex[T])
+	for k, v := range d.vertices.Items() {
+		if v.InDegree() == 0 {
+			sourceVertices[k] = v
 		}
 	}
 
@@ -286,14 +285,14 @@ func (d *dag[T]) GetSourceVertices() []*Vertex[T] {
 }
 
 // GetSinkVertices returns sink vertices.
-func (d *dag[T]) GetSinkVertices() []*Vertex[T] {
+func (d *dag[T]) GetSinkVertices() map[string]*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	var sinkVertices []*Vertex[T]
-	for _, vertex := range d.vertices.Items() {
-		if vertex.OutDegree() == 0 {
-			sinkVertices = append(sinkVertices, vertex)
+	sinkVertices := make(map[string]*Vertex[T])
+	for k, v := range d.vertices.Items() {
+		if v.OutDegree() == 0 {
+			sinkVertices[k] = v
 		}
 	}
 

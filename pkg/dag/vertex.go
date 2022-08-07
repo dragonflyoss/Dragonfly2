@@ -19,7 +19,7 @@ package dag
 import "d7y.io/dragonfly/v2/pkg/container/set"
 
 // Vertex is a vertex of the directed acyclic graph.
-type Vertex[T comparable] struct {
+type Vertex[T any] struct {
 	ID       string
 	Value    T
 	Parents  set.SafeSet[*Vertex[T]]
@@ -27,7 +27,7 @@ type Vertex[T comparable] struct {
 }
 
 // New returns a new Vertex instance.
-func NewVertex[T comparable](id string, value T) *Vertex[T] {
+func NewVertex[T any](id string, value T) *Vertex[T] {
 	return &Vertex[T]{
 		ID:       id,
 		Value:    value,

@@ -2,12 +2,12 @@ package models
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 
 	"github.com/sjwhitworth/golearn/base"
 )
 
+// LinearRegression linear regression model struct.
 type LinearRegression struct {
 	fitted                 bool
 	Disturbance            float64
@@ -16,22 +16,21 @@ type LinearRegression struct {
 	cls                    base.Attribute
 }
 
+// NewLinearRegression return an instance of linear regression model.
 func NewLinearRegression() *LinearRegression {
 	return &LinearRegression{fitted: false}
 }
 
+// Fit train parameters of model to fit the data provided.
 func (lr *LinearRegression) Fit(inst base.FixedDataGrid, learningRate float64) error {
-	// Retrieve row size
 	_, rows := inst.Size()
 
-	// Validate class Attribute count
 	classAttrs := inst.AllClassAttributes()
 	if len(classAttrs) != 1 {
-		return fmt.Errorf("Only 1 class variable is permitted")
+		return errors.New("only 1 class variable is permitted")
 	}
 	classAttrSpecs := base.ResolveAttributes(inst, classAttrs)
 
-	// Retrieve relevant Attributes
 	allAttrs := base.NonClassAttributes(inst)
 	attrs := make([]base.Attribute, 0)
 	for _, a := range allAttrs {
@@ -39,7 +38,6 @@ func (lr *LinearRegression) Fit(inst base.FixedDataGrid, learningRate float64) e
 			attrs = append(attrs, a)
 		}
 	}
-	// Retrieve relevant Attribute specifications
 	attrSpecs := base.ResolveAttributes(inst, attrs)
 
 	cols := len(attrs) + 1
@@ -66,6 +64,7 @@ func (lr *LinearRegression) Fit(inst base.FixedDataGrid, learningRate float64) e
 	return nil
 }
 
+// Predict use parameters of model to predict the data provided.
 func (lr *LinearRegression) Predict(X base.FixedDataGrid) (base.FixedDataGrid, error) {
 	if !lr.fitted {
 		return nil, errors.New("no fitted model")
@@ -79,7 +78,7 @@ func (lr *LinearRegression) Predict(X base.FixedDataGrid) (base.FixedDataGrid, e
 	}
 
 	err = X.MapOverRows(attrSpecs, func(row [][]byte, i int) (bool, error) {
-		var prediction float64 = lr.Disturbance
+		var prediction = lr.Disturbance
 		for j, r := range row {
 			prediction += base.UnpackBytesToFloat(r) * lr.RegressionCoefficients[j]
 		}

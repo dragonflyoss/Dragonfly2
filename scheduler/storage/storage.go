@@ -221,7 +221,6 @@ func (s *storage) Create(record Record) error {
 		if err := s.create(s.buffer...); err != nil {
 			return err
 		}
-
 		// Keep allocated memory.
 		s.buffer = s.buffer[:0]
 	}
