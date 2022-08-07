@@ -23,18 +23,19 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/time/rate"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type FileTaskRequest struct {
-	scheduler.PeerTaskRequest
+	schedulerv1.PeerTaskRequest
 	Output             string
 	Limit              float64
 	DisableBackSource  bool
@@ -68,7 +69,7 @@ type fileTask struct {
 
 type ProgressState struct {
 	Success bool
-	Code    base.Code
+	Code    commonv1.Code
 	Msg     string
 }
 
@@ -142,7 +143,7 @@ func (f *fileTask) syncProgress() {
 			pg := &FileTaskProgress{
 				State: &ProgressState{
 					Success: true,
-					Code:    base.Code_Success,
+					Code:    commonv1.Code_Success,
 					Msg:     "downloading",
 				},
 				TaskID:          f.peerTaskConductor.GetTaskID(),
@@ -178,7 +179,7 @@ func (f *fileTask) storeToOutput() {
 			OriginalOffset: f.request.KeepOriginalOffset,
 		})
 	if err != nil {
-		f.sendFailProgress(base.Code_ClientError, err.Error())
+		f.sendFailProgress(commonv1.Code_ClientError, err.Error())
 		return
 	}
 	f.sendSuccessProgress()
@@ -189,7 +190,7 @@ func (f *fileTask) sendSuccessProgress() {
 	pg := &FileTaskProgress{
 		State: &ProgressState{
 			Success: true,
-			Code:    base.Code_Success,
+			Code:    commonv1.Code_Success,
 			Msg:     "done",
 		},
 		TaskID:          f.peerTaskConductor.GetTaskID(),
@@ -223,7 +224,7 @@ func (f *fileTask) sendSuccessProgress() {
 	}
 }
 
-func (f *fileTask) sendFailProgress(code base.Code, msg string) {
+func (f *fileTask) sendFailProgress(code commonv1.Code, msg string) {
 	var progressDone bool
 	pg := &FileTaskProgress{
 		State: &ProgressState{

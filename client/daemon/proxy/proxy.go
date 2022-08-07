@@ -39,13 +39,14 @@ import (
 	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
 	"d7y.io/dragonfly/v2/client/daemon/transport"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
@@ -85,7 +86,7 @@ type Proxy struct {
 	peerTaskManager peer.TaskManager
 
 	// peerHost is the peer host info
-	peerHost *scheduler.PeerHost
+	peerHost *schedulerv1.PeerHost
 
 	// whiteList is the proxy white list
 	whiteList []*config.WhiteList
@@ -100,7 +101,7 @@ type Proxy struct {
 	defaultTag string
 
 	// defaultFilter is used for registering steam task
-	defaultPattern base.Pattern
+	defaultPattern commonv1.Pattern
 
 	// tracer is used for telemetry
 	tracer trace.Tracer
@@ -116,8 +117,8 @@ type Proxy struct {
 // Option is a functional option for configuring the proxy
 type Option func(p *Proxy) *Proxy
 
-// WithPeerHost sets the *scheduler.PeerHost
-func WithPeerHost(peerHost *scheduler.PeerHost) Option {
+// WithPeerHost sets the *schedulerv1.PeerHost
+func WithPeerHost(peerHost *schedulerv1.PeerHost) Option {
 	return func(p *Proxy) *Proxy {
 		p.peerHost = peerHost
 		return p
@@ -226,7 +227,7 @@ func WithDefaultTag(t string) Option {
 }
 
 // WithDefaultPattern sets default pattern for downloading
-func WithDefaultPattern(pattern base.Pattern) Option {
+func WithDefaultPattern(pattern commonv1.Pattern) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultPattern = pattern
 		return p

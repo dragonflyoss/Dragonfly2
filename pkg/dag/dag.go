@@ -59,16 +59,16 @@ type DAG[T comparable] interface {
 	GetVertices() map[string]*Vertex[T]
 
 	// GetRandomVertices returns random map of vertices.
-	GetRandomVertices(n uint) map[string]*Vertex[T]
+	GetRandomVertices(n uint) []*Vertex[T]
 
 	// GetVertexKeys returns keys of vertices.
 	GetVertexKeys() []string
 
 	// GetSourceVertices returns source vertices.
-	GetSourceVertices() map[string]*Vertex[T]
+	GetSourceVertices() []*Vertex[T]
 
 	// GetSinkVertices returns sink vertices.
-	GetSinkVertices() map[string]*Vertex[T]
+	GetSinkVertices() []*Vertex[T]
 
 	// VertexCount returns count of vertices.
 	VertexCount() int
@@ -147,22 +147,23 @@ func (d *dag[T]) GetVertices() map[string]*Vertex[T] {
 }
 
 // GetRandomVertices returns random map of vertices.
-func (d *dag[T]) GetRandomVertices(n uint) map[string]*Vertex[T] {
+func (d *dag[T]) GetRandomVertices(n uint) []*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
 	keys := d.GetVertexKeys()
-	vertices := d.GetVertices()
 	if int(n) >= len(keys) {
-		return vertices
+		n = uint(len(keys))
 	}
 
 	rand.Seed(time.Now().Unix())
 	permutation := rand.Perm(len(keys))[:n]
-	randomVertices := make(map[string]*Vertex[T])
+	randomVertices := make([]*Vertex[T], 0, n)
 	for _, v := range permutation {
 		key := keys[v]
-		randomVertices[key] = vertices[key]
+		if vertex, err := d.GetVertex(key); err == nil {
+			randomVertices = append(randomVertices, vertex)
+		}
 	}
 
 	return randomVertices
@@ -270,14 +271,14 @@ func (d *dag[T]) DeleteEdge(fromVertexID, toVertexID string) error {
 }
 
 // GetSourceVertices returns source vertices.
-func (d *dag[T]) GetSourceVertices() map[string]*Vertex[T] {
+func (d *dag[T]) GetSourceVertices() []*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	sourceVertices := make(map[string]*Vertex[T])
-	for k, v := range d.vertices.Items() {
-		if v.InDegree() == 0 {
-			sourceVertices[k] = v
+	var sourceVertices []*Vertex[T]
+	for _, vertex := range d.vertices.Items() {
+		if vertex.InDegree() == 0 {
+			sourceVertices = append(sourceVertices, vertex)
 		}
 	}
 
@@ -285,14 +286,14 @@ func (d *dag[T]) GetSourceVertices() map[string]*Vertex[T] {
 }
 
 // GetSinkVertices returns sink vertices.
-func (d *dag[T]) GetSinkVertices() map[string]*Vertex[T] {
+func (d *dag[T]) GetSinkVertices() []*Vertex[T] {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	sinkVertices := make(map[string]*Vertex[T])
-	for k, v := range d.vertices.Items() {
-		if v.OutDegree() == 0 {
-			sinkVertices[k] = v
+	var sinkVertices []*Vertex[T]
+	for _, vertex := range d.vertices.Items() {
+		if vertex.OutDegree() == 0 {
+			sinkVertices = append(sinkVertices, vertex)
 		}
 	}
 

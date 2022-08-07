@@ -29,12 +29,13 @@ import (
 	"github.com/golang/mock/gomock"
 	testifyassert "github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	"d7y.io/dragonfly/v2/client/daemon/storage/mocks"
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/util"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 func TestReuseFilePeerTask(t *testing.T) {
@@ -56,10 +57,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed task found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -100,10 +101,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed task not found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -137,10 +138,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed subtask found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -181,10 +182,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "normal completed subtask not found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -214,10 +215,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "partial task found",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -263,10 +264,10 @@ func TestReuseFilePeerTask(t *testing.T) {
 		{
 			name: "partial task found - out of range",
 			request: &FileTaskRequest{
-				PeerTaskRequest: scheduler.PeerTaskRequest{
+				PeerTaskRequest: schedulerv1.PeerTaskRequest{
 					PeerId: "",
 					Url:    "http://example.com/1",
-					UrlMeta: &base.UrlMeta{
+					UrlMeta: &commonv1.UrlMeta{
 						Digest: "",
 						Tag:    "",
 						Range:  "",
@@ -317,7 +318,7 @@ func TestReuseFilePeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &scheduler.PeerHost{},
+				host:           &schedulerv1.PeerHost{},
 				enablePrefetch: tc.enablePrefetch,
 				storageManager: sm,
 			}
@@ -344,7 +345,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed task found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -376,8 +377,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -397,7 +398,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed task not found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -432,7 +433,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed subtask found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -464,8 +465,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -484,7 +485,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "normal completed subtask not found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -515,7 +516,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -551,8 +552,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -571,7 +572,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found - 2",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -607,8 +608,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -631,7 +632,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			name: "partial task found - out of range",
 			request: &StreamTaskRequest{
 				URL: "http://example.com/1",
-				URLMeta: &base.UrlMeta{
+				URLMeta: &commonv1.UrlMeta{
 					Digest: "",
 					Tag:    "",
 					Range:  "",
@@ -667,8 +668,8 @@ func TestReuseStreamPeerTask(t *testing.T) {
 					})
 				sm.EXPECT().GetExtendAttribute(gomock.Any(),
 					gomock.Any()).AnyTimes().DoAndReturn(
-					func(ctx context.Context, req *storage.PeerTaskMetadata) (*base.ExtendAttribute, error) {
-						return &base.ExtendAttribute{
+					func(ctx context.Context, req *storage.PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
+						return &commonv1.ExtendAttribute{
 							Header: map[string]string{
 								"Test": "test",
 							},
@@ -694,7 +695,7 @@ func TestReuseStreamPeerTask(t *testing.T) {
 			sm := mocks.NewMockManager(ctrl)
 			tc.storageManager(sm)
 			ptm := &peerTaskManager{
-				host:           &scheduler.PeerHost{},
+				host:           &schedulerv1.PeerHost{},
 				enablePrefetch: tc.enablePrefetch,
 				storageManager: sm,
 			}

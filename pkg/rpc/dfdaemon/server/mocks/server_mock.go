@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	dfdaemon "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
+	v1 "d7y.io/api/pkg/apis/common/v1"
+	v10 "d7y.io/api/pkg/apis/dfdaemon/v1"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,7 +51,7 @@ func (mr *MockDaemonServerMockRecorder) CheckHealth(arg0 interface{}) *gomock.Ca
 }
 
 // DeleteTask mocks base method.
-func (m *MockDaemonServer) DeleteTask(arg0 context.Context, arg1 *dfdaemon.DeleteTaskRequest) error {
+func (m *MockDaemonServer) DeleteTask(arg0 context.Context, arg1 *v10.DeleteTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -65,21 +65,21 @@ func (mr *MockDaemonServerMockRecorder) DeleteTask(arg0, arg1 interface{}) *gomo
 }
 
 // Download mocks base method.
-func (m *MockDaemonServer) Download(arg0 context.Context, arg1 *dfdaemon.DownRequest, arg2 chan<- *dfdaemon.DownResult) error {
+func (m *MockDaemonServer) Download(arg0 *v10.DownRequest, arg1 v10.Daemon_DownloadServer) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Download", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "Download", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Download indicates an expected call of Download.
-func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockDaemonServerMockRecorder) Download(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Download", reflect.TypeOf((*MockDaemonServer)(nil).Download), arg0, arg1)
 }
 
 // ExportTask mocks base method.
-func (m *MockDaemonServer) ExportTask(arg0 context.Context, arg1 *dfdaemon.ExportTaskRequest) error {
+func (m *MockDaemonServer) ExportTask(arg0 context.Context, arg1 *v10.ExportTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -93,10 +93,10 @@ func (mr *MockDaemonServerMockRecorder) ExportTask(arg0, arg1 interface{}) *gomo
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (m *MockDaemonServer) GetPieceTasks(arg0 context.Context, arg1 *v1.PieceTaskRequest) (*v1.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPieceTasks", arg0, arg1)
-	ret0, _ := ret[0].(*base.PiecePacket)
+	ret0, _ := ret[0].(*v1.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -108,7 +108,7 @@ func (mr *MockDaemonServerMockRecorder) GetPieceTasks(arg0, arg1 interface{}) *g
 }
 
 // ImportTask mocks base method.
-func (m *MockDaemonServer) ImportTask(arg0 context.Context, arg1 *dfdaemon.ImportTaskRequest) error {
+func (m *MockDaemonServer) ImportTask(arg0 context.Context, arg1 *v10.ImportTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ImportTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -122,7 +122,7 @@ func (mr *MockDaemonServerMockRecorder) ImportTask(arg0, arg1 interface{}) *gomo
 }
 
 // StatTask mocks base method.
-func (m *MockDaemonServer) StatTask(arg0 context.Context, arg1 *dfdaemon.StatTaskRequest) error {
+func (m *MockDaemonServer) StatTask(arg0 context.Context, arg1 *v10.StatTaskRequest) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StatTask", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -136,7 +136,7 @@ func (mr *MockDaemonServerMockRecorder) StatTask(arg0, arg1 interface{}) *gomock
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockDaemonServer) SyncPieceTasks(arg0 dfdaemon.Daemon_SyncPieceTasksServer) error {
+func (m *MockDaemonServer) SyncPieceTasks(arg0 v10.Daemon_SyncPieceTasksServer) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SyncPieceTasks", arg0)
 	ret0, _ := ret[0].(error)

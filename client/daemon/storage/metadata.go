@@ -19,8 +19,9 @@ package storage
 import (
 	"io"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/util"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
@@ -44,11 +45,11 @@ type PeerTaskMetadata struct {
 }
 
 type PieceMetadata struct {
-	Num    int32           `json:"num,omitempty"`
-	Md5    string          `json:"md5,omitempty"`
-	Offset uint64          `json:"offset,omitempty"`
-	Range  util.Range      `json:"range,omitempty"`
-	Style  base.PieceStyle `json:"style,omitempty"`
+	Num    int32               `json:"num,omitempty"`
+	Md5    string              `json:"md5,omitempty"`
+	Offset uint64              `json:"offset,omitempty"`
+	Range  util.Range          `json:"range,omitempty"`
+	Style  commonv1.PieceStyle `json:"style,omitempty"`
 	// time(nanosecond) consumed
 	Cost uint64 `json:"cost,omitempty"`
 }

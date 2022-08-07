@@ -21,6 +21,7 @@ package dfpath
 import (
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 
@@ -96,13 +97,21 @@ func WithPluginDir(dir string) Option {
 	}
 }
 
+// WithDownloadUnixSocketPath set unix socket path.
+func WithDownloadUnixSocketPath(path string) Option {
+	return func(d *dfpath) {
+		d.daemonSockPath = path
+	}
+}
+
 // New returns a new dfpath interface.
 func New(options ...Option) (Dfpath, error) {
 	cache.Do(func() {
 		d := &dfpath{
-			workHome:  DefaultWorkHome,
-			logDir:    DefaultLogDir,
-			pluginDir: DefaultPluginDir,
+			workHome:       DefaultWorkHome,
+			logDir:         DefaultLogDir,
+			pluginDir:      DefaultPluginDir,
+			daemonSockPath: DefaultDownloadUnixSocketPath,
 		}
 
 		for _, opt := range options {
@@ -110,7 +119,6 @@ func New(options ...Option) (Dfpath, error) {
 		}
 
 		// Initialize dfdaemon path.
-		d.daemonSockPath = filepath.Join(d.workHome, "daemon.sock")
 		d.daemonLockPath = filepath.Join(d.workHome, "daemon.lock")
 		d.dfgetLockPath = filepath.Join(d.workHome, "dfget.lock")
 
@@ -126,6 +134,11 @@ func New(options ...Option) (Dfpath, error) {
 
 		// Create plugin directory.
 		if err := os.MkdirAll(d.pluginDir, fs.FileMode(0755)); err != nil {
+			cache.err = multierror.Append(cache.err, err)
+		}
+
+		// Create unix socket directory.
+		if err := os.MkdirAll(path.Dir(d.daemonSockPath), fs.FileMode(0755)); err != nil {
 			cache.err = multierror.Append(cache.err, err)
 		}
 

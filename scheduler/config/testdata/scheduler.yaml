@@ -3,6 +3,7 @@ server:
   host: foo
   listen: 0.0.0.0
   port: 8002
+  workHome: home
   cacheDir: foo
   logDir: bar
   dataDir: baz

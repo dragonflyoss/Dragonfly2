@@ -25,6 +25,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/metrics"
 	"d7y.io/dragonfly/v2/client/daemon/peer"
@@ -32,36 +36,33 @@ import (
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
 type seeder struct {
 	server *server
 }
 
-func (s *seeder) GetPieceTasks(ctx context.Context, request *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (s *seeder) GetPieceTasks(ctx context.Context, request *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	return s.server.GetPieceTasks(ctx, request)
 }
 
-func (s *seeder) SyncPieceTasks(tasksServer cdnsystem.Seeder_SyncPieceTasksServer) error {
+func (s *seeder) SyncPieceTasks(tasksServer cdnsystemv1.Seeder_SyncPieceTasksServer) error {
 	return s.server.SyncPieceTasks(tasksServer)
 }
 
-func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdnsystem.Seeder_ObtainSeedsServer) error {
+func (s *seeder) ObtainSeeds(seedRequest *cdnsystemv1.SeedRequest, seedsServer cdnsystemv1.Seeder_ObtainSeedsServer) error {
 	metrics.SeedPeerConcurrentDownloadGauge.Inc()
 	defer metrics.SeedPeerConcurrentDownloadGauge.Dec()
 	metrics.SeedPeerDownloadCount.Add(1)
 
 	s.server.Keep()
 	if seedRequest.UrlMeta == nil {
-		seedRequest.UrlMeta = &base.UrlMeta{}
+		seedRequest.UrlMeta = &commonv1.UrlMeta{}
 	}
 
 	req := peer.SeedTaskRequest{
-		PeerTaskRequest: scheduler.PeerTaskRequest{
+		PeerTaskRequest: schedulerv1.PeerTaskRequest{
 			Url:         seedRequest.Url,
 			UrlMeta:     seedRequest.UrlMeta,
 			PeerId:      idgen.SeedPeerID(s.server.peerHost.Ip), // when reuse peer task, peer id will be replaced.
@@ -114,10 +115,10 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 	log.Infof("start seed task")
 
 	err = seedsServer.Send(
-		&cdnsystem.PieceSeed{
+		&cdnsystemv1.PieceSeed{
 			PeerId: resp.PeerID,
 			HostId: req.PeerHost.Id,
-			PieceInfo: &base.PieceInfo{
+			PieceInfo: &commonv1.PieceInfo{
 				PieceNum: common.BeginOfPiece,
 			},
 			Done: false,
@@ -149,7 +150,7 @@ func (s *seeder) ObtainSeeds(seedRequest *cdnsystem.SeedRequest, seedsServer cdn
 type seedSynchronizer struct {
 	*peer.SeedTaskResponse
 	*logger.SugaredLoggerOnWith
-	seedsServer     cdnsystem.Seeder_ObtainSeedsServer
+	seedsServer     cdnsystemv1.Seeder_ObtainSeedsServer
 	seedTaskRequest *peer.SeedTaskRequest
 	startNanoSecond int64
 	attributeSent   bool
@@ -210,7 +211,7 @@ func (s *seedSynchronizer) sendPieceSeeds(reuse bool) (err error) {
 func (s *seedSynchronizer) sendRemindingPieceSeeds(desired int32, reuse bool) error {
 	for {
 		pp, err := s.Storage.GetPieces(s.Context,
-			&base.PieceTaskRequest{
+			&commonv1.PieceTaskRequest{
 				TaskId:   s.TaskID,
 				StartNum: uint32(desired),
 				Limit:    16,
@@ -274,7 +275,7 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 	var contentLength int64 = -1
 	for ; cur <= orderedNum; cur++ {
 		pp, err := s.Storage.GetPieces(s.Context,
-			&base.PieceTaskRequest{
+			&commonv1.PieceTaskRequest{
 				TaskId:   s.TaskID,
 				StartNum: uint32(cur),
 				Limit:    1,
@@ -314,8 +315,8 @@ func (s *seedSynchronizer) sendOrderedPieceSeeds(desired, orderedNum int32, fini
 	return contentLength, cur, nil
 }
 
-func (s *seedSynchronizer) compositePieceSeed(pp *base.PiecePacket, piece *base.PieceInfo) cdnsystem.PieceSeed {
-	return cdnsystem.PieceSeed{
+func (s *seedSynchronizer) compositePieceSeed(pp *commonv1.PiecePacket, piece *commonv1.PieceInfo) cdnsystemv1.PieceSeed {
+	return cdnsystemv1.PieceSeed{
 		PeerId:          s.seedTaskRequest.PeerId,
 		HostId:          s.seedTaskRequest.PeerHost.Id,
 		PieceInfo:       piece,

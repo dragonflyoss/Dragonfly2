@@ -37,7 +37,7 @@ var (
 	cfg *config.Config
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the commonv1 command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "scheduler",
 	Short: "the scheduler of dragonfly",
@@ -89,6 +89,10 @@ func init() {
 
 func initDfpath(cfg *config.ServerConfig) (dfpath.Dfpath, error) {
 	var options []dfpath.Option
+	if cfg.WorkHome != "" {
+		options = append(options, dfpath.WithWorkHome(cfg.WorkHome))
+	}
+
 	if cfg.LogDir != "" {
 		options = append(options, dfpath.WithLogDir(cfg.LogDir))
 	}

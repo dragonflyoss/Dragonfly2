@@ -31,10 +31,6 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const (
-	DefaultResultsExpireIn = 86400
-)
-
 type Config struct {
 	Host      string
 	Port      int
@@ -71,14 +67,19 @@ func New(cfg *Config, queue Queue) (*Job, error) {
 		return nil, err
 	}
 
-	var cnf = &machineryv1config.Config{
+	server, err := machinery.NewServer(&machineryv1config.Config{
 		Broker:          broker,
 		DefaultQueue:    queue.String(),
 		ResultBackend:   backend,
 		ResultsExpireIn: DefaultResultsExpireIn,
-	}
-
-	server, err := machinery.NewServer(cnf)
+		Redis: &machineryv1config.RedisConfig{
+			MaxIdle:        DefaultRedisMaxIdle,
+			IdleTimeout:    DefaultRedisIdleTimeout,
+			ReadTimeout:    DefaultRedisReadTimeout,
+			WriteTimeout:   DefaultRedisWriteTimeout,
+			ConnectTimeout: DefaultRedisConnectTimeout,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +108,7 @@ type GroupJobState struct {
 	GroupUUID string
 	State     string
 	CreatedAt time.Time
+	JobStates []*machineryv1tasks.TaskState
 }
 
 func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
@@ -125,6 +127,7 @@ func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
 				GroupUUID: groupUUID,
 				State:     machineryv1tasks.StateFailure,
 				CreatedAt: jobState.CreatedAt,
+				JobStates: jobStates,
 			}, nil
 		}
 	}
@@ -135,6 +138,7 @@ func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
 				GroupUUID: groupUUID,
 				State:     machineryv1tasks.StatePending,
 				CreatedAt: jobState.CreatedAt,
+				JobStates: jobStates,
 			}, nil
 		}
 	}
@@ -143,6 +147,7 @@ func (t *Job) GetGroupJobState(groupUUID string) (*GroupJobState, error) {
 		GroupUUID: groupUUID,
 		State:     machineryv1tasks.StateSuccess,
 		CreatedAt: jobStates[0].CreatedAt,
+		JobStates: jobStates,
 	}, nil
 }
 

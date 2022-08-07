@@ -34,6 +34,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	errordetailsv1 "d7y.io/api/pkg/apis/errordetails/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	clientutil "d7y.io/dragonfly/v2/client/util"
@@ -41,17 +46,13 @@ import (
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/retry"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
-	"d7y.io/dragonfly/v2/pkg/rpc/errordetails"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type PieceManager interface {
-	DownloadSource(ctx context.Context, pt Task, request *scheduler.PeerTaskRequest, parsedRange *clientutil.Range) error
+	DownloadSource(ctx context.Context, pt Task, request *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range) error
 	DownloadPiece(ctx context.Context, request *DownloadPieceRequest) (*DownloadPieceResult, error)
-	ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error
+	ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemonv1.ImportTaskRequest) error
 	Import(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, contentLength int64, reader io.Reader) error
 }
 
@@ -271,9 +272,9 @@ func (pm *pieceManager) processPieceFromSource(pt Task,
 	return
 }
 
-func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskRequest *scheduler.PeerTaskRequest, parsedRange *clientutil.Range) error {
+func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range) error {
 	if peerTaskRequest.UrlMeta == nil {
-		peerTaskRequest.UrlMeta = &base.UrlMeta{
+		peerTaskRequest.UrlMeta = &commonv1.UrlMeta{
 			Header: map[string]string{},
 		}
 	} else if peerTaskRequest.UrlMeta.Header == nil {
@@ -291,19 +292,21 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 	if err != nil {
 		return err
 	}
-
+	var (
+		metadata            *source.Metadata
+		supportConcurrent   bool
+		targetContentLength int64
+	)
 	if pm.concurrentOption != nil {
 		// check metadata
 		// 1. support range request
 		// 2. target content length is greater than concurrentOption.ThresholdSize
-		metadata, err := source.GetMetadata(backSourceRequest)
+		metadata, err = source.GetMetadata(backSourceRequest)
 		if err == nil && metadata.Validate != nil && metadata.Validate() == nil {
 			if !metadata.SupportRange || metadata.TotalContentLength == -1 {
 				goto singleDownload
 			}
-			var (
-				targetContentLength int64
-			)
+			supportConcurrent = true
 			if parsedRange != nil {
 				if parsedRange.Length > -1 {
 					targetContentLength = parsedRange.Length
@@ -337,7 +340,7 @@ func (pm *pieceManager) DownloadSource(ctx context.Context, pt Task, peerTaskReq
 					return err
 				}
 				// use concurrent piece download mode
-				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, metadata)
+				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, metadata, 0)
 			}
 		}
 	}
@@ -360,9 +363,9 @@ singleDownload:
 				hdr[k] = response.Header.Get(k)
 			}
 		}
-		srcErr := &errordetails.SourceError{
+		srcErr := &errordetailsv1.SourceError{
 			Temporary: response.Temporary != nil && response.Temporary(),
-			Metadata: &base.ExtendAttribute{
+			Metadata: &commonv1.ExtendAttribute{
 				Header:     hdr,
 				StatusCode: int32(response.StatusCode),
 				Status:     response.Status,
@@ -417,10 +420,10 @@ singleDownload:
 		return pm.downloadUnknownLengthSource(pt, pieceSize, reader)
 	}
 
-	return pm.downloadKnownLengthSource(pt, contentLength, pieceSize, reader)
+	return pm.downloadKnownLengthSource(ctx, pt, contentLength, pieceSize, reader, response, peerTaskRequest, parsedRange, metadata, supportConcurrent, targetContentLength)
 }
 
-func (pm *pieceManager) downloadKnownLengthSource(pt Task, contentLength int64, pieceSize uint32, reader io.Reader) error {
+func (pm *pieceManager) downloadKnownLengthSource(ctx context.Context, pt Task, contentLength int64, pieceSize uint32, reader io.Reader, response *source.Response, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, supportConcurrent bool, targetContentLength int64) error {
 	log := pt.Log()
 	maxPieceNum := util.ComputePieceCount(contentLength, pieceSize)
 	pt.SetContentLength(contentLength)
@@ -443,7 +446,7 @@ func (pm *pieceManager) downloadKnownLengthSource(pt Task, contentLength int64, 
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
-			piece: &base.PieceInfo{
+			piece: &commonv1.PieceInfo{
 				PieceNum:    pieceNum,
 				RangeStart:  offset,
 				RangeSize:   uint32(result.Size),
@@ -466,6 +469,27 @@ func (pm *pieceManager) downloadKnownLengthSource(pt Task, contentLength int64, 
 
 		pt.ReportPieceResult(request, result, nil)
 		pt.PublishPieceInfo(pieceNum, uint32(result.Size))
+		if supportConcurrent {
+			// the time unit of FinishTime and BeginTime is ns
+			speed := float64(pieceSize) / float64((result.FinishTime-result.BeginTime)/1000000)
+			if speed < float64(pm.concurrentOption.ThresholdSpeed) {
+				err = pt.GetStorage().UpdateTask(ctx,
+					&storage.UpdateTaskRequest{
+						PeerTaskMetadata: storage.PeerTaskMetadata{
+							PeerID: pt.GetPeerID(),
+							TaskID: pt.GetTaskID(),
+						},
+						ContentLength: targetContentLength,
+						Header:        &metadata.Header,
+					})
+				if err != nil {
+					log.Errorf("update task error: %s", err)
+					return err
+				}
+				response.Body.Close()
+				return pm.concurrentDownloadSource(ctx, pt, peerTaskRequest, parsedRange, metadata, pieceNum+1)
+			}
+		}
 	}
 
 	log.Infof("download from source ok")
@@ -502,7 +526,7 @@ func (pm *pieceManager) downloadUnknownLengthSource(pt Task, pieceSize uint32, r
 		request := &DownloadPieceRequest{
 			TaskID: pt.GetTaskID(),
 			PeerID: pt.GetPeerID(),
-			piece: &base.PieceInfo{
+			piece: &commonv1.PieceInfo{
 				PieceNum:    pieceNum,
 				RangeStart:  offset,
 				RangeSize:   uint32(result.Size),
@@ -594,7 +618,7 @@ func (pm *pieceManager) processPieceFromFile(ctx context.Context, ptm storage.Pe
 	return n, nil
 }
 
-func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemon.ImportTaskRequest) error {
+func (pm *pieceManager) ImportFile(ctx context.Context, ptm storage.PeerTaskMetadata, tsd storage.TaskStorageDriver, req *dfdaemonv1.ImportTaskRequest) error {
 	log := logger.With("function", "ImportFile", "URL", req.Url, "taskID", ptm.TaskID)
 	// get file size and compute piece size and piece count
 	stat, err := os.Stat(req.Path)
@@ -724,7 +748,7 @@ func (pm *pieceManager) Import(ctx context.Context, ptm storage.PeerTaskMetadata
 	return nil
 }
 
-func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *scheduler.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata) error {
+func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, peerTaskRequest *schedulerv1.PeerTaskRequest, parsedRange *clientutil.Range, metadata *source.Metadata, startPieceNum int32) error {
 	// parsedRange is always exist
 	pieceSize := pm.computePieceSize(parsedRange.Length)
 	pieceCount := util.ComputePieceCount(parsedRange.Length, pieceSize)
@@ -744,9 +768,9 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 	var pieceCh = make(chan int32, con)
 
 	wg := sync.WaitGroup{}
-	wg.Add(int(pieceCount))
+	wg.Add(int(pieceCount - startPieceNum))
 
-	downloadedPieceCount := atomic.NewInt32(0)
+	downloadedPieceCount := atomic.NewInt32(startPieceNum)
 
 	for i := 0; i < con; i++ {
 		go func(i int) {
@@ -784,7 +808,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 		}(i)
 	}
 
-	for i := int32(0); i < pieceCount; i++ {
+	for i := startPieceNum; i < pieceCount; i++ {
 		select {
 		case <-ctx.Done():
 			log.Warnf("context cancelled")
@@ -813,7 +837,7 @@ func (pm *pieceManager) concurrentDownloadSource(ctx context.Context, pt Task, p
 
 func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 	pt Task, log *logger.SugaredLoggerOnWith,
-	peerTaskRequest *scheduler.PeerTaskRequest,
+	peerTaskRequest *schedulerv1.PeerTaskRequest,
 	pieceSize uint32, num int32,
 	parsedRange *clientutil.Range,
 	pieceCount int32,
@@ -858,7 +882,7 @@ func (pm *pieceManager) downloadPieceFromSource(ctx context.Context,
 	request := &DownloadPieceRequest{
 		TaskID: pt.GetTaskID(),
 		PeerID: pt.GetPeerID(),
-		piece: &base.PieceInfo{
+		piece: &commonv1.PieceInfo{
 			PieceNum:    num,
 			RangeStart:  offset,
 			RangeSize:   uint32(result.Size),

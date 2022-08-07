@@ -34,10 +34,11 @@ import (
 	testifyassert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/daemon/test"
 	"d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 	"d7y.io/dragonfly/v2/pkg/source/clients/httpprotocol"
 )
@@ -138,13 +139,13 @@ func TestPieceDownloader_DownloadPiece(t *testing.T) {
 				DstPid:     "",
 				DstAddr:    addr.Host,
 				CalcDigest: true,
-				piece: &base.PieceInfo{
+				piece: &commonv1.PieceInfo{
 					PieceNum:    0,
 					RangeStart:  tt.rangeStart,
 					RangeSize:   tt.rangeSize,
 					PieceMd5:    digest,
 					PieceOffset: tt.rangeStart,
-					PieceStyle:  base.PieceStyle_PLAIN,
+					PieceStyle:  commonv1.PieceStyle_PLAIN,
 				},
 				log: logger.With("test", "test"),
 			})

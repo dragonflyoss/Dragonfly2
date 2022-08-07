@@ -24,9 +24,10 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -38,7 +39,7 @@ type Server struct {
 	service *service.Service
 
 	// GRPC UnimplementedSchedulerServer interface.
-	scheduler.UnimplementedSchedulerServer
+	schedulerv1.UnimplementedSchedulerServer
 }
 
 // New returns a new transparent scheduler server from the given options.
@@ -47,13 +48,13 @@ func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
 	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
 
 	// Register servers on grpc server.
-	scheduler.RegisterSchedulerServer(grpcServer, svr)
+	schedulerv1.RegisterSchedulerServer(grpcServer, svr)
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
 	return grpcServer
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.
-func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest) (*scheduler.RegisterResult, error) {
+func (s *Server) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest) (*schedulerv1.RegisterResult, error) {
 	// FIXME: Scheudler will not generate task id.
 	if req.TaskId == "" {
 		req.TaskId = idgen.TaskID(req.Url, req.UrlMeta)
@@ -76,7 +77,7 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRe
 }
 
 // ReportPieceResult handles the piece information reported by dfdaemon.
-func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultServer) error {
+func (s *Server) ReportPieceResult(stream schedulerv1.Scheduler_ReportPieceResultServer) error {
 	metrics.ConcurrentScheduleGauge.Inc()
 	defer metrics.ConcurrentScheduleGauge.Dec()
 
@@ -84,12 +85,12 @@ func (s *Server) ReportPieceResult(stream scheduler.Scheduler_ReportPieceResultS
 }
 
 // ReportPeerResult handles peer result reported by dfdaemon.
-func (s *Server) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult) (*empty.Empty, error) {
+func (s *Server) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.ReportPeerResult(ctx, req)
 }
 
 // StatTask checks if the given task exists.
-func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (*scheduler.Task, error) {
+func (s *Server) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest) (*schedulerv1.Task, error) {
 	metrics.StatTaskCount.Inc()
 	task, err := s.service.StatTask(ctx, req)
 	if err != nil {
@@ -101,7 +102,7 @@ func (s *Server) StatTask(ctx context.Context, req *scheduler.StatTaskRequest) (
 }
 
 // AnnounceTask informs scheduler a peer has completed task.
-func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest) (*empty.Empty, error) {
+func (s *Server) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest) (*empty.Empty, error) {
 	metrics.AnnounceCount.Inc()
 	if err := s.service.AnnounceTask(ctx, req); err != nil {
 		metrics.AnnounceFailureCount.Inc()
@@ -112,6 +113,6 @@ func (s *Server) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRe
 }
 
 // LeaveTask makes the peer unschedulable.
-func (s *Server) LeaveTask(ctx context.Context, req *scheduler.PeerTarget) (*empty.Empty, error) {
+func (s *Server) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget) (*empty.Empty, error) {
 	return new(empty.Empty), s.service.LeaveTask(ctx, req)
 }

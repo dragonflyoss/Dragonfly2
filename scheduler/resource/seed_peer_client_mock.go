@@ -8,9 +8,9 @@ import (
 	context "context"
 	reflect "reflect"
 
+	v1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+	v10 "d7y.io/api/pkg/apis/common/v1"
 	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	base "d7y.io/dragonfly/v2/pkg/rpc/base"
-	cdnsystem "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 	client "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
@@ -55,14 +55,14 @@ func (mr *MockSeedPeerClientMockRecorder) Close() *gomock.Call {
 }
 
 // GetPieceTasks mocks base method.
-func (m *MockSeedPeerClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *base.PieceTaskRequest, opts ...grpc.CallOption) (*base.PiecePacket, error) {
+func (m *MockSeedPeerClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *v10.PieceTaskRequest, opts ...grpc.CallOption) (*v10.PiecePacket, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, req}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
-	ret0, _ := ret[0].(*base.PiecePacket)
+	ret0, _ := ret[0].(*v10.PiecePacket)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -75,7 +75,7 @@ func (mr *MockSeedPeerClientMockRecorder) GetPieceTasks(ctx, addr, req interface
 }
 
 // ObtainSeeds mocks base method.
-func (m *MockSeedPeerClient) ObtainSeeds(ctx context.Context, sr *cdnsystem.SeedRequest, opts ...grpc.CallOption) (*client.PieceSeedStream, error) {
+func (m *MockSeedPeerClient) ObtainSeeds(ctx context.Context, sr *v1.SeedRequest, opts ...grpc.CallOption) (*client.PieceSeedStream, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, sr}
 	for _, a := range opts {
@@ -107,14 +107,14 @@ func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 interface{}) *gomock.Cal
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockSeedPeerClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *base.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystem.Seeder_SyncPieceTasksClient, error) {
+func (m *MockSeedPeerClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v10.PieceTaskRequest, opts ...grpc.CallOption) (v1.Seeder_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, addr, ptr}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
-	ret0, _ := ret[0].(cdnsystem.Seeder_SyncPieceTasksClient)
+	ret0, _ := ret[0].(v1.Seeder_SyncPieceTasksClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

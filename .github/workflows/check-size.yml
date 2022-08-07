@@ -26,3 +26,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           filesizelimit: "524288"
+          exclusionPatterns: |
+            deploy/helm-charts/*
+            manager/console/*

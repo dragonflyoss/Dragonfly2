@@ -30,11 +30,12 @@ import (
 
 	"go.uber.org/atomic"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	clientutil "d7y.io/dragonfly/v2/client/util"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/util"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type localTaskStore struct {
@@ -396,7 +397,7 @@ func (t *localTaskStore) Store(ctx context.Context, req *StoreRequest) error {
 	return err
 }
 
-func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskRequest) (*base.PiecePacket, error) {
+func (t *localTaskStore) GetPieces(ctx context.Context, req *commonv1.PieceTaskRequest) (*commonv1.PiecePacket, error) {
 	if req == nil {
 		return nil, ErrBadRequest
 	}
@@ -408,7 +409,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 	t.RLock()
 	defer t.RUnlock()
 	t.touch()
-	piecePacket := &base.PiecePacket{
+	piecePacket := &commonv1.PiecePacket{
 		TaskId:        req.TaskId,
 		DstPid:        t.PeerID,
 		TotalPiece:    t.TotalPieces,
@@ -425,7 +426,7 @@ func (t *localTaskStore) GetPieces(ctx context.Context, req *base.PieceTaskReque
 		}
 		if piece, ok := t.Pieces[num]; ok {
 			piecePacket.PieceInfos = append(piecePacket.PieceInfos,
-				&base.PieceInfo{
+				&commonv1.PieceInfo{
 					PieceNum:     piece.Num,
 					RangeStart:   uint64(piece.Range.Start),
 					RangeSize:    uint32(piece.Range.Length),
@@ -449,7 +450,7 @@ func (t *localTaskStore) GetTotalPieces(ctx context.Context, req *PeerTaskMetada
 	return t.TotalPieces, nil
 }
 
-func (t *localTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*base.ExtendAttribute, error) {
+func (t *localTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMetadata) (*commonv1.ExtendAttribute, error) {
 	if t.invalid.Load() {
 		t.Errorf("invalid digest, refuse to get total pieces")
 		return nil, ErrInvalidDigest
@@ -463,7 +464,7 @@ func (t *localTaskStore) GetExtendAttribute(ctx context.Context, req *PeerTaskMe
 			hdr[k] = t.Header.Get(k)
 		}
 	}
-	return &base.ExtendAttribute{Header: hdr}, nil
+	return &commonv1.ExtendAttribute{Header: hdr}, nil
 }
 
 func (t *localTaskStore) CanReclaim() bool {

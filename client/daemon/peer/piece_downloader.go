@@ -29,15 +29,16 @@ import (
 
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/client/daemon/storage"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/digest"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 	"d7y.io/dragonfly/v2/pkg/source"
 )
 
 type DownloadPieceRequest struct {
-	piece      *base.PieceInfo
+	piece      *commonv1.PieceInfo
 	log        *logger.SugaredLoggerOnWith
 	storage    storage.TaskStorageDriver
 	TaskID     string

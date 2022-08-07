@@ -25,8 +25,10 @@ var PassThroughHeaders = map[string]struct{}{
 	// headers.Expires:      {},
 	// headers.LastModified: {},
 
+	headers.Authorization:   {},
 	headers.ContentType:     {},
 	headers.ContentEncoding: {},
+	headers.WWWAuthenticate: {},
 }
 
 func AddPassThroughHeader(header string) {

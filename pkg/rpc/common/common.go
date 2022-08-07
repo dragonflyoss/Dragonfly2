@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2022 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
 )
 
 var EndOfPiece = int32(1) << 30
 var BeginOfPiece = int32(-1)
 
-func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
-	return &base.GrpcDfError{
+func NewGrpcDfError(code commonv1.Code, msg string) *commonv1.GrpcDfError {
+	return &commonv1.GrpcDfError{
 		Code:    code,
 		Message: msg,
 	}
@@ -37,7 +37,7 @@ func NewGrpcDfError(code base.Code, msg string) *base.GrpcDfError {
 
 // NewResWithCodeAndMsg returns a response ptr with code and msg,
 // ptr is a expected type ptr.
-func NewResWithCodeAndMsg(ptr any, code base.Code, msg string) any {
+func NewResWithCodeAndMsg(ptr any, code commonv1.Code, msg string) any {
 	typ := reflect.TypeOf(ptr)
 	v := reflect.New(typ.Elem())
 
@@ -46,14 +46,14 @@ func NewResWithCodeAndMsg(ptr any, code base.Code, msg string) any {
 
 func NewResWithErr(ptr any, err error) any {
 	st := status.Convert(err)
-	var code base.Code
+	var code commonv1.Code
 	switch st.Code() {
 	case codes.DeadlineExceeded:
-		code = base.Code_RequestTimeOut
+		code = commonv1.Code_RequestTimeOut
 	case codes.OK:
-		code = base.Code_Success
+		code = commonv1.Code_Success
 	default:
-		code = base.Code_UnknownError
+		code = commonv1.Code_UnknownError
 	}
 	return NewResWithCodeAndMsg(ptr, code, st.Message())
 }

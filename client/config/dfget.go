@@ -70,6 +70,9 @@ type ClientOption struct {
 	// CallSystem system name that executes dfget.
 	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
 
+	// DaemonSock is daemon download socket path.
+	DaemonSock string `yaml:"daemonSock,omitempty" mapstructure:"daemon-sock,omitempty"`
+
 	// Pattern download pattern, must be 'p2p' or 'seed-peer' or 'source',
 	// default:`p2p`.
 	Pattern string `yaml:"pattern,omitempty" mapstructure:"pattern,omitempty"`
@@ -250,7 +253,7 @@ func (cfg *ClientOption) checkOutput() error {
 	return nil
 }
 
-// MkdirAll make directories recursive, and changes uid, gid to latest directory.
+// MkdirAll make directories recursive, and changes uid, gid to the latest directory.
 // For example: the path /data/x exists, uid=1, gid=1
 // when call MkdirAll("/data/x/y/z", 0755, 2, 2)
 // MkdirAll creates /data/x/y and change owner to 2:2, creates /data/x/y/z and change owner to 2:2

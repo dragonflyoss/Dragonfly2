@@ -23,9 +23,10 @@ import (
 	"sort"
 	"time"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/pkg/container/set"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	rpcscheduler "d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/scheduler/evaluator"
@@ -87,7 +88,7 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 				n, needBackToSource)
 
 			// Notify peer back-to-source.
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedNeedBackSource}); err != nil {
+			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedNeedBackSource}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
@@ -118,11 +119,11 @@ func (s *scheduler) ScheduleParent(ctx context.Context, peer *resource.Peer, blo
 			}
 
 			// Notify peer schedule failed.
-			if err := stream.Send(&rpcscheduler.PeerPacket{Code: base.Code_SchedTaskStatusError}); err != nil {
+			if err := stream.Send(&schedulerv1.PeerPacket{Code: commonv1.Code_SchedTaskStatusError}); err != nil {
 				peer.Log.Errorf("send packet failed: %s", err.Error())
 				return
 			}
-			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, base.Code_SchedTaskStatusError)
+			peer.Log.Errorf("peer scheduling exceeds the limit %d times and return code %d", s.config.RetryLimit, commonv1.Code_SchedTaskStatusError)
 			return
 		}
 
@@ -233,16 +234,27 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 // Filter the candidate parent that can be scheduled.
 func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.SafeSet[string]) []*resource.Peer {
 	filterParentLimit := config.DefaultSchedulerFilterParentLimit
-	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok && filterParentLimit > 0 {
-		filterParentLimit = int(config.FilterParentLimit)
+	filterParentRangeLimit := config.DefaultSchedulerFilterParentRangeLimit
+	if config, ok := s.dynconfig.GetSchedulerClusterConfig(); ok {
+		if config.FilterParentLimit > 0 {
+			filterParentLimit = int(config.FilterParentLimit)
+		}
+
+		if config.FilterParentRangeLimit > 0 {
+			filterParentRangeLimit = int(config.FilterParentRangeLimit)
+		}
 	}
 
 	var (
 		candidateParents   []*resource.Peer
 		candidateParentIDs []string
 	)
+	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentRangeLimit)) {
+		// Parent length limit after filtering.
+		if len(candidateParents) >= filterParentLimit {
+			break
+		}
 
-	for _, candidateParent := range peer.Task.LoadRandomPeers(uint(filterParentLimit)) {
 		// Candidate parent is in blocklist.
 		if blocklist.Contains(candidateParent.ID) {
 			peer.Log.Debugf("candidate parent %s is not selected because it is in blocklist", candidateParent.ID)
@@ -252,6 +264,14 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 		// Candidate parent can add edge with peer.
 		if !peer.Task.CanAddPeerEdge(candidateParent.ID, peer.ID) {
 			peer.Log.Debugf("can not add edge with candidate parent %s", candidateParent.ID)
+			continue
+		}
+
+		// Candidate parent host is not allowed to be the same as the peer host,
+		// because dfdaemon cannot handle the situation
+		// where two tasks are downloading and downloading each other.
+		if peer.Host.ID == candidateParent.Host.ID {
+			peer.Log.Debugf("candidate parent %s host %s is the same as peer host", candidateParent.ID, candidateParent.Host.ID)
 			continue
 		}
 
@@ -297,31 +317,31 @@ func (s *scheduler) filterCandidateParents(peer *resource.Peer, blocklist set.Sa
 }
 
 // Construct peer successful packet.
-func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *rpcscheduler.PeerPacket {
+func constructSuccessPeerPacket(dynconfig config.DynconfigInterface, peer *resource.Peer, parent *resource.Peer, candidateParents []*resource.Peer) *schedulerv1.PeerPacket {
 	parallelCount := config.DefaultClientParallelCount
 	if config, ok := dynconfig.GetSchedulerClusterClientConfig(); ok && config.ParallelCount > 0 {
 		parallelCount = int(config.ParallelCount)
 	}
 
-	var CandidatePeers []*rpcscheduler.PeerPacket_DestPeer
+	var CandidatePeers []*schedulerv1.PeerPacket_DestPeer
 	for _, candidateParent := range candidateParents {
-		CandidatePeers = append(CandidatePeers, &rpcscheduler.PeerPacket_DestPeer{
+		CandidatePeers = append(CandidatePeers, &schedulerv1.PeerPacket_DestPeer{
 			Ip:      candidateParent.Host.IP,
 			RpcPort: candidateParent.Host.Port,
 			PeerId:  candidateParent.ID,
 		})
 	}
 
-	return &rpcscheduler.PeerPacket{
+	return &schedulerv1.PeerPacket{
 		TaskId:        peer.Task.ID,
 		SrcPid:        peer.ID,
 		ParallelCount: int32(parallelCount),
-		MainPeer: &rpcscheduler.PeerPacket_DestPeer{
+		MainPeer: &schedulerv1.PeerPacket_DestPeer{
 			Ip:      parent.Host.IP,
 			RpcPort: parent.Host.Port,
 			PeerId:  parent.ID,
 		},
 		CandidatePeers: CandidatePeers,
-		Code:           base.Code_Success,
+		Code:           commonv1.Code_Success,
 	}
 }

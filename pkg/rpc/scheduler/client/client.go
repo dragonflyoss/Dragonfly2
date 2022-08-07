@@ -25,32 +25,33 @@ import (
 
 	"google.golang.org/grpc"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/base/common"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
+	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
 // NewBeginOfPiece creates begin of piece.
-func NewBeginOfPiece(taskID, peerID string) *scheduler.PieceResult {
-	return &scheduler.PieceResult{
+func NewBeginOfPiece(taskID, peerID string) *schedulerv1.PieceResult {
+	return &schedulerv1.PieceResult{
 		TaskId: taskID,
 		SrcPid: peerID,
-		PieceInfo: &base.PieceInfo{
+		PieceInfo: &commonv1.PieceInfo{
 			PieceNum: common.BeginOfPiece,
 		},
 	}
 }
 
 // NewBeginOfPiece creates end of piece.
-func NewEndOfPiece(taskID, peerID string, finishedCount int32) *scheduler.PieceResult {
-	return &scheduler.PieceResult{
+func NewEndOfPiece(taskID, peerID string, finishedCount int32) *schedulerv1.PieceResult {
+	return &schedulerv1.PieceResult{
 		TaskId:        taskID,
 		SrcPid:        peerID,
 		FinishedCount: finishedCount,
-		PieceInfo: &base.PieceInfo{
+		PieceInfo: &commonv1.PieceInfo{
 			PieceNum: common.EndOfPiece,
 		},
 	}
@@ -74,22 +75,22 @@ func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, er
 // Client is the interface for grpc client.
 type Client interface {
 	// RegisterPeerTask registers a peer into task.
-	RegisterPeerTask(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (*scheduler.RegisterResult, error)
+	RegisterPeerTask(context.Context, *schedulerv1.PeerTaskRequest, ...grpc.CallOption) (*schedulerv1.RegisterResult, error)
 
 	// ReportPieceResult reports piece results and receives peer packets.
-	ReportPieceResult(context.Context, *scheduler.PeerTaskRequest, ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error)
+	ReportPieceResult(context.Context, *schedulerv1.PeerTaskRequest, ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error)
 
 	// ReportPeerResult reports downloading result for the peer.
-	ReportPeerResult(context.Context, *scheduler.PeerResult, ...grpc.CallOption) error
+	ReportPeerResult(context.Context, *schedulerv1.PeerResult, ...grpc.CallOption) error
 
 	// LeaveTask makes the peer leaving from task.
-	LeaveTask(context.Context, *scheduler.PeerTarget, ...grpc.CallOption) error
+	LeaveTask(context.Context, *schedulerv1.PeerTarget, ...grpc.CallOption) error
 
 	// Checks if any peer has the given task.
-	StatTask(context.Context, *scheduler.StatTaskRequest, ...grpc.CallOption) (*scheduler.Task, error)
+	StatTask(context.Context, *schedulerv1.StatTaskRequest, ...grpc.CallOption) (*schedulerv1.Task, error)
 
 	// A peer announces that it has the announced task to other peers.
-	AnnounceTask(context.Context, *scheduler.AnnounceTaskRequest, ...grpc.CallOption) error
+	AnnounceTask(context.Context, *schedulerv1.AnnounceTaskRequest, ...grpc.CallOption) error
 
 	// Update grpc addresses.
 	UpdateState([]dfnet.NetAddr)
@@ -107,17 +108,17 @@ type client struct {
 }
 
 // getClient gets scheduler client with hashkey.
-func (sc *client) getClient(key string, stick bool) (scheduler.SchedulerClient, string, error) {
+func (sc *client) getClient(key string, stick bool) (schedulerv1.SchedulerClient, string, error) {
 	clientConn, err := sc.Connection.GetClientConn(key, stick)
 	if err != nil {
 		return nil, "", err
 	}
 
-	return scheduler.NewSchedulerClient(clientConn), clientConn.Target(), nil
+	return schedulerv1.NewSchedulerClient(clientConn), clientConn.Target(), nil
 }
 
 // RegisterPeerTask registers a peer into task.
-func (sc *client) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (*scheduler.RegisterResult, error) {
+func (sc *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
 	// Generate task id.
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
@@ -134,7 +135,7 @@ func (sc *client) RegisterPeerTask(ctx context.Context, req *scheduler.PeerTaskR
 }
 
 // ReportPieceResult reports piece results and receives peer packets.
-func (sc *client) ReportPieceResult(ctx context.Context, req *scheduler.PeerTaskRequest, opts ...grpc.CallOption) (scheduler.Scheduler_ReportPieceResultClient, error) {
+func (sc *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
 		return nil, err
@@ -150,7 +151,7 @@ func (sc *client) ReportPieceResult(ctx context.Context, req *scheduler.PeerTask
 }
 
 // ReportPeerResult reports downloading result for the peer.
-func (sc *client) ReportPeerResult(ctx context.Context, req *scheduler.PeerResult, opts ...grpc.CallOption) error {
+func (sc *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
 		return err
@@ -165,7 +166,7 @@ func (sc *client) ReportPeerResult(ctx context.Context, req *scheduler.PeerResul
 }
 
 // LeaveTask makes the peer leaving from task.
-func (sc *client) LeaveTask(ctx context.Context, req *scheduler.PeerTarget, opts ...grpc.CallOption) error {
+func (sc *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
 		return err
@@ -180,7 +181,7 @@ func (sc *client) LeaveTask(ctx context.Context, req *scheduler.PeerTarget, opts
 }
 
 // Checks if any peer has the given task.
-func (sc *client) StatTask(ctx context.Context, req *scheduler.StatTaskRequest, opts ...grpc.CallOption) (*scheduler.Task, error) {
+func (sc *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
 		return nil, err
@@ -196,7 +197,7 @@ func (sc *client) StatTask(ctx context.Context, req *scheduler.StatTaskRequest, 
 }
 
 // A peer announces that it has the announced task to other peers.
-func (sc *client) AnnounceTask(ctx context.Context, req *scheduler.AnnounceTaskRequest, opts ...grpc.CallOption) error {
+func (sc *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
 	client, target, err := sc.getClient(req.TaskId, false)
 	if err != nil {
 		return err

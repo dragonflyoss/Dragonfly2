@@ -24,12 +24,13 @@ import (
 	"os"
 	"time"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/basic"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	daemonclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
 )
 
@@ -89,7 +90,7 @@ func statTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 	}
 
 	// Task not found, return os.ErrNotExist
-	if dferrors.CheckError(statError, base.Code_PeerTaskNotFound) {
+	if dferrors.CheckError(statError, commonv1.Code_PeerTaskNotFound) {
 		return os.ErrNotExist
 	}
 
@@ -98,10 +99,10 @@ func statTask(ctx context.Context, client daemonclient.DaemonClient, cfg *config
 	return statError
 }
 
-func newStatRequest(cfg *config.DfcacheConfig) *dfdaemon.StatTaskRequest {
-	return &dfdaemon.StatTaskRequest{
+func newStatRequest(cfg *config.DfcacheConfig) *dfdaemonv1.StatTaskRequest {
+	return &dfdaemonv1.StatTaskRequest{
 		Url: newCid(cfg.Cid),
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
 		LocalOnly: cfg.LocalOnly,
@@ -158,12 +159,12 @@ func importTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 	return nil
 }
 
-func newImportRequest(cfg *config.DfcacheConfig) *dfdaemon.ImportTaskRequest {
-	return &dfdaemon.ImportTaskRequest{
-		Type: base.TaskType_DfCache,
+func newImportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ImportTaskRequest {
+	return &dfdaemonv1.ImportTaskRequest{
+		Type: commonv1.TaskType_DfCache,
 		Url:  newCid(cfg.Cid),
 		Path: cfg.Path,
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
 	}
@@ -217,7 +218,7 @@ func exportTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 	}
 
 	// Task not found, return os.ErrNotExist
-	if dferrors.CheckError(exportError, base.Code_PeerTaskNotFound) {
+	if dferrors.CheckError(exportError, commonv1.Code_PeerTaskNotFound) {
 		return os.ErrNotExist
 	}
 
@@ -226,13 +227,13 @@ func exportTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 	return exportError
 }
 
-func newExportRequest(cfg *config.DfcacheConfig) *dfdaemon.ExportTaskRequest {
-	return &dfdaemon.ExportTaskRequest{
+func newExportRequest(cfg *config.DfcacheConfig) *dfdaemonv1.ExportTaskRequest {
+	return &dfdaemonv1.ExportTaskRequest{
 		Url:     newCid(cfg.Cid),
 		Output:  cfg.Output,
 		Timeout: uint64(cfg.Timeout),
 		Limit:   float64(cfg.RateLimit),
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
 		Uid:       int64(basic.UserID),
@@ -290,10 +291,10 @@ func deleteTask(ctx context.Context, client daemonclient.DaemonClient, cfg *conf
 	return nil
 }
 
-func newDeleteRequest(cfg *config.DfcacheConfig) *dfdaemon.DeleteTaskRequest {
-	return &dfdaemon.DeleteTaskRequest{
+func newDeleteRequest(cfg *config.DfcacheConfig) *dfdaemonv1.DeleteTaskRequest {
+	return &dfdaemonv1.DeleteTaskRequest{
 		Url: newCid(cfg.Cid),
-		UrlMeta: &base.UrlMeta{
+		UrlMeta: &commonv1.UrlMeta{
 			Tag: cfg.Tag,
 		},
 	}

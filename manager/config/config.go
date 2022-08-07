@@ -54,9 +54,6 @@ type ServerConfig struct {
 	// Server log directory.
 	LogDir string `yaml:"logDir" mapstructure:"logDir"`
 
-	// Console resource path.
-	PublicPath string `yaml:"publicPath" mapstructure:"publicPath"`
-
 	// GRPC server configuration.
 	GRPC *TCPListenConfig `yaml:"grpc" mapstructure:"grpc"`
 
@@ -166,7 +163,7 @@ type RedisConfig struct {
 	Password string `yaml:"password" mapstructure:"password"`
 
 	// Server cache DB name.
-	CacheDB int `yaml:"cacheDB" mapstructure:"cacheDB"`
+	DB int `yaml:"db" mapstructure:"db"`
 
 	// Server broker DB name.
 	BrokerDB int `yaml:"brokerDB" mapstructure:"brokerDB"`
@@ -249,8 +246,7 @@ type ObjectStorageConfig struct {
 func New() *Config {
 	return &Config{
 		Server: &ServerConfig{
-			Name:       DefaultServerName,
-			PublicPath: DefaultPublicPath,
+			Name: DefaultServerName,
 			GRPC: &TCPListenConfig{
 				PortRange: TCPListenPortRange{
 					Start: DefaultGRPCPort,
@@ -276,7 +272,7 @@ func New() *Config {
 				Migrate:  true,
 			},
 			Redis: &RedisConfig{
-				CacheDB:   DefaultRedisCacheDB,
+				DB:        DefaultRedisDB,
 				BrokerDB:  DefaultRedisBrokerDB,
 				BackendDB: DefaultRedisBackendDB,
 			},
@@ -412,8 +408,8 @@ func (cfg *Config) Validate() error {
 		return errors.New("redis requires parameter port")
 	}
 
-	if cfg.Database.Redis.CacheDB < 0 {
-		return errors.New("redis requires parameter cacheDB")
+	if cfg.Database.Redis.DB < 0 {
+		return errors.New("redis requires parameter db")
 	}
 
 	if cfg.Database.Redis.BrokerDB < 0 {

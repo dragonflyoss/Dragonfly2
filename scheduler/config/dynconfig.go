@@ -24,10 +24,11 @@ import (
 	"path/filepath"
 	"time"
 
+	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/types"
-	"d7y.io/dragonfly/v2/pkg/rpc/manager"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
@@ -148,7 +149,7 @@ func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, b
 		return types.SchedulerClusterConfig{}, false
 	}
 
-	if data.SchedulerCluster != nil {
+	if data.SchedulerCluster == nil {
 		return types.SchedulerClusterConfig{}, false
 	}
 
@@ -255,8 +256,8 @@ func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient
 }
 
 func (mc *managerClient) Get() (any, error) {
-	scheduler, err := mc.GetScheduler(&manager.GetSchedulerRequest{
-		SourceType:         manager.SourceType_SCHEDULER_SOURCE,
+	scheduler, err := mc.GetScheduler(&managerv1.GetSchedulerRequest{
+		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
 		Ip:                 mc.config.Server.IP,
 		SchedulerClusterId: uint64(mc.config.Manager.SchedulerClusterID),

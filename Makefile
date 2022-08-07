@@ -16,7 +16,7 @@ PROJECT_NAME := "d7y.io/dragonfly/v2"
 DFGET_NAME := "dfget"
 DFCACHE_NAME := "dfcache"
 DFSTORE_NAME := "dfstore"
-SEMVER := "2.0.4"
+SEMVER := "2.0.5"
 VERSION_RELEASE := "1"
 PKG := "$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/ | grep -v '\(/test/\)')
@@ -132,14 +132,20 @@ build-scheduler: build-dirs
 .PHONY: build-scheduler
 
 # Build manager
-build-manager: build-dirs
+build-manager: build-dirs build-manager-console
 	@echo "Begin to build manager."
+	make build-manager-server
+.PHONY: build-manager
+
+# Build manager server
+build-manager-server: build-dirs
+	@echo "Begin to build manager server."
 	./hack/build.sh manager
 .PHONY: build-manager
 
 # Build manager console
 build-manager-console: build-dirs
-	@echo "Begin to build manager."
+	@echo "Begin to build manager console."
 	./hack/build.sh manager-console
 .PHONY: build-manager-console
 
@@ -375,11 +381,6 @@ generate:
 	@go generate ${PKG_LIST}
 .PHONY: generate
 
-# Generate grpc protos
-protoc:
-	@./hack/protoc.sh
-.PHONY: protoc
-
 # Generate swagger files
 swag:
 	@swag init --parseDependency --parseInternal -g cmd/manager/main.go -o api/manager
@@ -401,8 +402,10 @@ help:
 	@echo "make docker-push                    push dragonfly image"
 	@echo "make docker-build-dfdaemon          build dfdaemon image"
 	@echo "make docker-build-scheduler         build scheduler image"
+	@echo "make docker-build-manager           build manager image"
 	@echo "make docker-push-dfdaemon           push dfdaemon image"
 	@echo "make docker-push-scheduler          push scheduler image"
+	@echo "make docker-push-manager            push manager image"
 	@echo "make build                          build dragonfly"
 	@echo "make build-dfget                    build dfget"
 	@echo "make build-linux-dfget              build linux dfget"
@@ -412,6 +415,7 @@ help:
 	@echo "make build-linux-dfstore            build linux dfstore"
 	@echo "make build-scheduler                build scheduler"
 	@echo "make build-manager                  build manager"
+	@echo "make build-manager-server           build manager server"
 	@echo "make build-manager-console          build manager console"
 	@echo "make build-e2e-sha256sum            build sha256sum test tool"
 	@echo "make install-dfget                  install dfget"
@@ -441,7 +445,6 @@ help:
 	@echo "make lint                           run code lint"
 	@echo "make markdownlint                   run markdown lint"
 	@echo "make generate                       run go generate"
-	@echo "make protoc                         generate grpc protos"
 	@echo "make swag                           generate swagger api docs"
 	@echo "make changelog                      generate CHANGELOG.md"
 	@echo "make clean                          clean"

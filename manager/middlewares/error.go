@@ -22,13 +22,15 @@ import (
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	redigo "github.com/gomodule/redigo/redis"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
 )
 
 type ErrorResponse struct {
@@ -58,7 +60,7 @@ func Error() gin.HandlerFunc {
 		var dferr *dferrors.DfError
 		if errors.As(err.Err, &dferr) {
 			switch dferr.Code {
-			case base.Code_InvalidResourceType:
+			case commonv1.Code_InvalidResourceType:
 				c.JSON(http.StatusBadRequest, ErrorResponse{
 					Message: http.StatusText(http.StatusBadRequest),
 				})
@@ -108,6 +110,14 @@ func Error() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+		}
+
+		if errors.Is(err.Err, redis.Nil) {
+			c.JSON(http.StatusNotFound, ErrorResponse{
+				Message: http.StatusText(http.StatusNotFound),
+			})
+			c.Abort()
+			return
 		}
 
 		// Unknown error

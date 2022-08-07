@@ -25,10 +25,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
+
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
-	"d7y.io/dragonfly/v2/pkg/rpc/cdnsystem"
 )
 
 type PieceSeedStream struct {
@@ -36,16 +37,16 @@ type PieceSeedStream struct {
 	sc      *cdnClient
 	ctx     context.Context
 	hashKey string
-	sr      *cdnsystem.SeedRequest
+	sr      *cdnsystemv1.SeedRequest
 	opts    []grpc.CallOption
 	// stream for one client
-	stream cdnsystem.Seeder_ObtainSeedsClient
+	stream cdnsystemv1.Seeder_ObtainSeedsClient
 	// server list which cannot serve
 	failedServers []string
 	rpc.RetryMeta
 }
 
-func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *cdnsystem.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
+func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *cdnsystemv1.SeedRequest, opts []grpc.CallOption) (*PieceSeedStream, error) {
 	pss := &PieceSeedStream{
 		sc:      sc,
 		ctx:     ctx,
@@ -68,7 +69,7 @@ func newPieceSeedStream(ctx context.Context, sc *cdnClient, hashKey string, sr *
 func (pss *PieceSeedStream) initStream() error {
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client cdnsystem.SeederClient
+		var client cdnsystemv1.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(pss.hashKey, false)
 		if err != nil {
@@ -83,17 +84,17 @@ func (pss *PieceSeedStream) initStream() error {
 		logger.WithTaskID(pss.hashKey).Errorf("initStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceClient(pss.hashKey, err)
 	}
-	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.stream = stream.(cdnsystemv1.Seeder_ObtainSeedsClient)
 	pss.StreamTimes = 1
 	return nil
 }
 
-func (pss *PieceSeedStream) Recv() (ps *cdnsystem.PieceSeed, err error) {
+func (pss *PieceSeedStream) Recv() (ps *cdnsystemv1.PieceSeed, err error) {
 	pss.sc.UpdateAccessNodeMapByHashKey(pss.hashKey)
 	return pss.stream.Recv()
 }
 
-func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystem.PieceSeed, error) {
+func (pss *PieceSeedStream) retryRecv(cause error) (*cdnsystemv1.PieceSeed, error) {
 	if status.Code(cause) == codes.DeadlineExceeded || status.Code(cause) == codes.Canceled {
 		return nil, cause
 	}
@@ -111,7 +112,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 	}
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client cdnsystem.SeederClient
+		var client cdnsystemv1.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(pss.hashKey, true)
 		if err != nil {
@@ -123,7 +124,7 @@ func (pss *PieceSeedStream) replaceStream(cause error) error {
 		logger.WithTaskID(pss.hashKey).Infof("replaceStream: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceStream(cause)
 	}
-	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.stream = stream.(cdnsystemv1.Seeder_ObtainSeedsClient)
 	pss.StreamTimes++
 	return nil
 }
@@ -137,7 +138,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 	pss.failedServers = append(pss.failedServers, preNode)
 	var target string
 	stream, err := rpc.ExecuteWithRetry(func() (any, error) {
-		var client cdnsystem.SeederClient
+		var client cdnsystemv1.SeederClient
 		var err error
 		client, target, err = pss.sc.getCdnClient(key, true)
 		if err != nil {
@@ -149,7 +150,7 @@ func (pss *PieceSeedStream) replaceClient(key string, cause error) error {
 		logger.WithTaskID(pss.hashKey).Infof("replaceClient: invoke cdn node %s ObtainSeeds failed: %v", target, err)
 		return pss.replaceClient(key, cause)
 	}
-	pss.stream = stream.(cdnsystem.Seeder_ObtainSeedsClient)
+	pss.stream = stream.(cdnsystemv1.Seeder_ObtainSeedsClient)
 	pss.StreamTimes = 1
 	return nil
 }

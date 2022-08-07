@@ -22,14 +22,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
 var (
-	mockRawHost = &scheduler.PeerHost{
+	mockRawHost = &schedulerv1.PeerHost{
 		Id:             idgen.HostID("hostname", 8003),
 		Ip:             "127.0.0.1",
 		RpcPort:        8003,
@@ -40,7 +41,7 @@ var (
 		Idc:            "idc",
 		NetTopology:    "net_topology",
 	}
-	mockTaskURLMeta = &base.UrlMeta{
+	mockTaskURLMeta = &commonv1.UrlMeta{
 		Digest: "digest",
 		Tag:    "tag",
 		Range:  "range",
@@ -61,7 +62,7 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 		expect func(t *testing.T, e any)
 	}{
 		{
-			name: "new evaluator base",
+			name: "new evaluator commonv1",
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
 				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
@@ -78,9 +79,9 @@ func TestEvaluatorBase_NewEvaluatorBase(t *testing.T) {
 
 func TestEvaluatorBase_Evaluate(t *testing.T) {
 	parentMockHost := resource.NewHost(mockRawHost)
-	parentMockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	parentMockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 	childMockHost := resource.NewHost(mockRawHost)
-	childMockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	childMockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string
@@ -162,7 +163,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 
 func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string
@@ -306,7 +307,7 @@ func TestEvaluatorBase_calculateFreeLoadScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			host := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, host)
 			tc.mock(host, mockPeer)
 			tc.expect(t, calculateFreeLoadScore(host))
@@ -355,7 +356,7 @@ func TestEvaluatorBase_calculateHostTypeAffinityScore(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			mockHost := resource.NewHost(mockRawHost)
-			mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 			peer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 			tc.mock(peer)
 			tc.expect(t, calculateHostTypeAffinityScore(peer))
@@ -560,7 +561,7 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 func TestEvaluatorBase_IsBadNode(t *testing.T) {
 	mockHost := resource.NewHost(mockRawHost)
-	mockTask := resource.NewTask(mockTaskID, mockTaskURL, base.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
+	mockTask := resource.NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, resource.WithBackToSourceLimit(mockTaskBackToSourceLimit))
 
 	tests := []struct {
 		name            string

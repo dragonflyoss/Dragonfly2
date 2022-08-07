@@ -4,11 +4,7 @@ definitions:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
       download_rate_limit:
-        type: integer
-      id:
         type: integer
       name:
         type: string
@@ -22,8 +18,6 @@ definitions:
         type: array
       state:
         type: string
-      updated_at:
-        type: string
       url:
         type: string
       user:
@@ -31,17 +25,41 @@ definitions:
       user_id:
         type: integer
     type: object
+  model.Assertion:
+    properties:
+      fieldIndexMap:
+        additionalProperties:
+          type: integer
+        type: object
+      key:
+        type: string
+      policy:
+        items:
+          items:
+            type: string
+          type: array
+        type: array
+      policyMap:
+        additionalProperties:
+          type: integer
+        type: object
+      rm: {}
+      tokens:
+        items:
+          type: string
+        type: array
+      value:
+        type: string
+    type: object
+  model.AssertionMap:
+    additionalProperties:
+      $ref: '#/definitions/model.Assertion'
+    type: object
   model.Config:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
-        type: string
-      updated_at:
         type: string
       user_id:
         type: integer
@@ -49,7 +67,8 @@ definitions:
         type: string
     type: object
   model.JSONMap:
-    additionalProperties: true
+    additionalProperties:
+      type: any
     type: object
   model.Job:
     properties:
@@ -57,10 +76,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       result:
         $ref: '#/definitions/model.JSONMap'
       scheduler_clusters:
@@ -77,8 +92,6 @@ definitions:
         type: string
       type:
         type: string
-      updated_at:
-        type: string
       user_id:
         type: integer
     type: object
@@ -90,25 +103,15 @@ definitions:
         type: string
       client_secret:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
         type: string
       redirect_url:
         type: string
-      updated_at:
-        type: string
     type: object
   model.Scheduler:
     properties:
-      created_at:
-        type: string
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
@@ -123,8 +126,6 @@ definitions:
         type: integer
       state:
         type: string
-      updated_at:
-        type: string
     type: object
   model.SchedulerCluster:
     properties:
@@ -136,10 +137,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
       jobs:
@@ -156,36 +153,24 @@ definitions:
         items:
           $ref: '#/definitions/model.SeedPeerCluster'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SecurityGroup:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
-      id:
-        type: integer
       name:
         type: string
       security_rules:
         items:
           $ref: '#/definitions/model.SecurityRule'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SecurityRule:
     properties:
       bio:
         type: string
-      created_at:
-        type: string
       domain:
         type: string
-      id:
-        type: integer
       name:
         type: string
       proxy_domain:
@@ -194,19 +179,13 @@ definitions:
         items:
           $ref: '#/definitions/model.SecurityGroup'
         type: array
-      updated_at:
-        type: string
     type: object
   model.SeedPeer:
     properties:
-      created_at:
-        type: string
       download_port:
         type: integer
       host_name:
         type: string
-      id:
-        type: integer
       idc:
         type: string
       ip:
@@ -225,8 +204,6 @@ definitions:
         type: string
       type:
         type: string
-      updated_at:
-        type: string
     type: object
   model.SeedPeerCluster:
     properties:
@@ -236,10 +213,6 @@ definitions:
         type: string
       config:
         $ref: '#/definitions/model.JSONMap'
-      created_at:
-        type: string
-      id:
-        type: integer
       is_default:
         type: boolean
       jobs:
@@ -256,8 +229,6 @@ definitions:
         $ref: '#/definitions/model.JSONMap'
       security_group_id:
         type: integer
-      updated_at:
-        type: string
     type: object
   model.User:
     properties:
@@ -265,12 +236,8 @@ definitions:
         type: string
       bio:
         type: string
-      created_at:
-        type: string
       email:
         type: string
-      id:
-        type: integer
       location:
         type: string
       name:
@@ -278,8 +245,6 @@ definitions:
       phone:
         type: string
       state:
-        type: string
-      updated_at:
         type: string
     type: object
   objectstorage.BucketMetadata:
@@ -363,12 +328,14 @@ definitions:
   types.CreateJobRequest:
     properties:
       args:
-        additionalProperties: true
+        additionalProperties:
+          type: any
         type: object
       bio:
         type: string
       result:
-        additionalProperties: true
+        additionalProperties:
+          type: any
         type: object
       scheduler_cluster_ids:
         items:
@@ -384,6 +351,45 @@ definitions:
         type: integer
     required:
     - type
+    type: object
+  types.CreateModelRequest:
+    properties:
+      hostname:
+        type: string
+      id:
+        enum:
+        - evaluator
+        type: string
+      ip:
+        type: string
+      name:
+        type: string
+      scheduler_id:
+        type: integer
+      version_id:
+        type: string
+    required:
+    - hostname
+    - id
+    - ip
+    - name
+    - scheduler_id
+    - version_id
+    type: object
+  types.CreateModelVersionRequest:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      precision:
+        type: number
+      recall:
+        type: number
+    required:
+    - data
+    - precision
+    - recall
     type: object
   types.CreateOauthRequest:
     properties:
@@ -583,6 +589,58 @@ definitions:
       status:
         type: string
     type: object
+  types.Model:
+    properties:
+      create_at:
+        type: string
+      hostname:
+        type: string
+      id:
+        type: string
+      ip:
+        type: string
+      name:
+        type: string
+      scheduler_id:
+        type: integer
+      updated_at:
+        type: string
+      version_id:
+        type: string
+    required:
+    - create_at
+    - hostname
+    - id
+    - ip
+    - name
+    - scheduler_id
+    - updated_at
+    - version_id
+    type: object
+  types.ModelVersion:
+    properties:
+      create_at:
+        type: string
+      data:
+        items:
+          type: integer
+        type: array
+      id:
+        type: string
+      precision:
+        type: number
+      recall:
+        type: number
+      updated_at:
+        type: string
+    required:
+    - create_at
+    - data
+    - id
+    - precision
+    - recall
+    - updated_at
+    type: object
   types.ResetPasswordRequest:
     properties:
       new_password:
@@ -612,6 +670,10 @@ definitions:
     properties:
       filter_parent_limit:
         maximum: 100
+        minimum: 1
+        type: integer
+      filter_parent_range_limit:
+        maximum: 1000
         minimum: 1
         type: integer
     type: object
@@ -702,6 +764,22 @@ definitions:
         type: string
       user_id:
         type: integer
+    type: object
+  types.UpdateModelRequest:
+    properties:
+      version_id:
+        type: string
+    type: object
+  types.UpdateModelVersionRequest:
+    properties:
+      data:
+        items:
+          type: integer
+        type: array
+      precision:
+        type: number
+      recall:
+        type: number
     type: object
   types.UpdateOauthRequest:
     properties:
@@ -875,7 +953,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Application
         in: body
@@ -1126,7 +1204,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json bucket
+      description: Create by json bucket
       parameters:
       - description: Bucket
         in: body
@@ -1240,7 +1318,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Config
         in: body
@@ -1407,7 +1485,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Job
         in: body
@@ -1555,7 +1633,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Oauth
         in: body
@@ -1708,7 +1786,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Preheat
         in: body
@@ -1942,7 +2020,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: SchedulerCluster
         in: body
@@ -2120,7 +2198,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: Scheduler
         in: body
@@ -2227,6 +2305,351 @@ paths:
       summary: Update Scheduler
       tags:
       - Scheduler
+  /schedulers/{id}/models:
+    get:
+      consumes:
+      - application/json
+      description: Get Models
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.Model'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Models
+      tags:
+      - Model
+    post:
+      consumes:
+      - application/json
+      description: Create by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Model'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Model
+      tags:
+      - Model
+  /schedulers/{id}/models/{model_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Model
+      tags:
+      - Model
+    get:
+      consumes:
+      - application/json
+      description: Get Model by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Model'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Model
+      tags:
+      - Model
+  /schedulers/{id}/models/{model_id}/versions:
+    get:
+      consumes:
+      - application/json
+      description: Get Model Versions by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/types.ModelVersion'
+            type: array
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Model Versions
+      tags:
+      - Model
+    post:
+      consumes:
+      - application/json
+      description: Create by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: ModelVersion
+        in: body
+        name: ModelVersion
+        required: true
+        schema:
+          $ref: '#/definitions/types.CreateModelVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ModelVersion'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Create Model Version
+      tags:
+      - Model
+  /schedulers/{id}/models/{model_id}/versions/{version_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Destroy by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: version_id
+        in: path
+        name: version_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Destroy Model Version
+      tags:
+      - Model
+    get:
+      consumes:
+      - application/json
+      description: Get Model Version by id
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: version_id
+        in: path
+        name: version_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ModelVersion'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Get Model Version
+      tags:
+      - Model
+  /schedulers/{scheduler_id}/models/{model_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: Model
+        in: body
+        name: Model
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateModelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.Model'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Model
+      tags:
+      - Model
+  /schedulers/{scheduler_id}/models/{model_id}/versions/{version_id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update by json config
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: model_id
+        in: path
+        name: model_id
+        required: true
+        type: string
+      - description: version_id
+        in: path
+        name: version_id
+        required: true
+        type: string
+      - description: ModelVersion
+        in: body
+        name: ModelVersion
+        required: true
+        schema:
+          $ref: '#/definitions/types.UpdateModelVersionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/types.ModelVersion'
+        "400":
+          description: ""
+        "404":
+          description: ""
+        "500":
+          description: ""
+      summary: Update Model Version
+      tags:
+      - Model
   /security-groups:
     get:
       consumes:
@@ -2268,7 +2691,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: SecurityGroup
         in: body
@@ -2511,7 +2934,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: SecurityRule
         in: body
@@ -2685,7 +3108,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: DNCluster
         in: body
@@ -2893,7 +3316,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: create by json config
+      description: Create by json config
       parameters:
       - description: SeedPeer
         in: body

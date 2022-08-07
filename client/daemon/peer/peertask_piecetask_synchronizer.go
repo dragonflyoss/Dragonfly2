@@ -29,12 +29,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	commonv1 "d7y.io/api/pkg/apis/common/v1"
+	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
+
 	"d7y.io/dragonfly/v2/client/config"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc/base"
-	"d7y.io/dragonfly/v2/pkg/rpc/dfdaemon"
 	dfclient "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/client"
-	"d7y.io/dragonfly/v2/pkg/rpc/scheduler"
 )
 
 type pieceTaskSyncManager struct {
@@ -50,8 +51,8 @@ type pieceTaskSyncManager struct {
 type pieceTaskSynchronizer struct {
 	*logger.SugaredLoggerOnWith
 	span              trace.Span
-	client            dfdaemon.Daemon_SyncPieceTasksClient
-	dstPeer           *scheduler.PeerPacket_DestPeer
+	client            dfdaemonv1.Daemon_SyncPieceTasksClient
+	dstPeer           *schedulerv1.PeerPacket_DestPeer
 	error             atomic.Value
 	peerTaskConductor *peerTaskConductor
 	pieceRequestCh    chan *DownloadPieceRequest
@@ -59,7 +60,7 @@ type pieceTaskSynchronizer struct {
 
 type synchronizerWatchdog struct {
 	done              chan struct{}
-	mainPeer          atomic.Value // save *scheduler.PeerPacket_DestPeer
+	mainPeer          atomic.Value // save *schedulerv1.PeerPacket_DestPeer
 	syncSuccess       *atomic.Bool
 	peerTaskConductor *peerTaskConductor
 }
@@ -69,7 +70,7 @@ type pieceTaskSynchronizerError struct {
 }
 
 // FIXME for compatibility, sync will be called after the dfclient.GetPieceTasks deprecated and the pieceTaskPoller removed
-func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, desiredPiece int32) error {
+func (s *pieceTaskSyncManager) sync(pp *schedulerv1.PeerPacket, desiredPiece int32) error {
 	var (
 		peers = map[string]bool{}
 		errs  []error
@@ -116,7 +117,7 @@ func (s *pieceTaskSyncManager) sync(pp *scheduler.PeerPacket, desiredPiece int32
 	return nil
 }
 
-func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacket_DestPeer) {
+func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*schedulerv1.PeerPacket_DestPeer) {
 	var (
 		peers = map[string]bool{}
 	)
@@ -141,9 +142,9 @@ func (s *pieceTaskSyncManager) cleanStaleWorker(destPeers []*scheduler.PeerPacke
 
 func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 	ctx context.Context,
-	dstPeer *scheduler.PeerPacket_DestPeer,
+	dstPeer *schedulerv1.PeerPacket_DestPeer,
 	desiredPiece int32) error {
-	request := &base.PieceTaskRequest{
+	request := &commonv1.PieceTaskRequest{
 		TaskId:   s.peerTaskConductor.taskID,
 		SrcPid:   s.peerTaskConductor.peerID,
 		DstPid:   dstPeer.PeerId,
@@ -197,8 +198,8 @@ func (s *pieceTaskSyncManager) newPieceTaskSynchronizer(
 }
 
 func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
-	destPeers []*scheduler.PeerPacket_DestPeer,
-	desiredPiece int32) (legacyPeers []*scheduler.PeerPacket_DestPeer) {
+	destPeers []*schedulerv1.PeerPacket_DestPeer,
+	desiredPiece int32) (legacyPeers []*schedulerv1.PeerPacket_DestPeer) {
 	s.Lock()
 	defer func() {
 		if s.peerTaskConductor.ptm.watchdogTimeout > 0 {
@@ -225,11 +226,11 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 		// other errors, report to scheduler
 		if errors.Is(err, context.DeadlineExceeded) {
 			// connect timeout error, report to scheduler to get more available peers
-			s.reportInvalidPeer(peer, base.Code_ClientConnectionError)
+			s.reportInvalidPeer(peer, commonv1.Code_ClientConnectionError)
 			s.peerTaskConductor.Infof("connect to peer %s with error: %s, peer is invalid, skip legacy grpc", peer.PeerId, err)
 		} else {
 			// other errors, report to scheduler to get more available peers
-			s.reportInvalidPeer(peer, base.Code_ClientPieceRequestFail)
+			s.reportInvalidPeer(peer, commonv1.Code_ClientPieceRequestFail)
 			s.peerTaskConductor.Errorf("connect peer %s error: %s, not codes.Unimplemented", peer.PeerId, err)
 		}
 	}
@@ -237,7 +238,7 @@ func (s *pieceTaskSyncManager) newMultiPieceTaskSynchronizer(
 	return legacyPeers
 }
 
-func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_DestPeer) {
+func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *schedulerv1.PeerPacket_DestPeer) {
 	if s.watchdog != nil {
 		close(s.watchdog.done)
 		s.peerTaskConductor.Debugf("close old watchdog")
@@ -253,12 +254,12 @@ func (s *pieceTaskSyncManager) resetWatchdog(mainPeer *scheduler.PeerPacket_Dest
 	go s.watchdog.watch(s.peerTaskConductor.ptm.watchdogTimeout)
 }
 
-func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *scheduler.PeerPacket_DestPeer, code base.Code) *scheduler.PieceResult {
-	return &scheduler.PieceResult{
+func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedulerv1.PeerPacket_DestPeer, code commonv1.Code) *schedulerv1.PieceResult {
+	return &schedulerv1.PieceResult{
 		TaskId:        peerTaskConductor.taskID,
 		SrcPid:        peerTaskConductor.peerID,
 		DstPid:        destPeer.PeerId,
-		PieceInfo:     &base.PieceInfo{},
+		PieceInfo:     &commonv1.PieceInfo{},
 		Success:       false,
 		Code:          code,
 		HostLoad:      nil,
@@ -266,18 +267,18 @@ func compositePieceResult(peerTaskConductor *peerTaskConductor, destPeer *schedu
 	}
 }
 
-func (s *pieceTaskSyncManager) reportInvalidPeer(destPeer *scheduler.PeerPacket_DestPeer, code base.Code) {
+func (s *pieceTaskSyncManager) reportInvalidPeer(destPeer *schedulerv1.PeerPacket_DestPeer, code commonv1.Code) {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, destPeer, code))
 	if sendError != nil {
 		s.peerTaskConductor.Errorf("connect peer %s failed and send piece result with error: %s", destPeer.PeerId, sendError)
-		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+		go s.peerTaskConductor.cancel(commonv1.Code_SchedError, sendError.Error())
 	} else {
 		s.peerTaskConductor.Debugf("report invalid peer %s/%d to scheduler", destPeer.PeerId, code)
 	}
 }
 
 // acquire send the target piece to other peers
-func (s *pieceTaskSyncManager) acquire(request *base.PieceTaskRequest) (attempt int, success int) {
+func (s *pieceTaskSyncManager) acquire(request *commonv1.PieceTaskRequest) (attempt int, success int) {
 	s.RLock()
 	for _, p := range s.workers {
 		attempt++
@@ -308,7 +309,7 @@ func (s *pieceTaskSynchronizer) close() {
 	s.span.End()
 }
 
-func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePacket) {
+func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *commonv1.PiecePacket) {
 	s.peerTaskConductor.updateMetadata(piecePacket)
 
 	pieceCount := len(piecePacket.PieceInfos)
@@ -350,7 +351,7 @@ func (s *pieceTaskSynchronizer) dispatchPieceRequest(piecePacket *base.PiecePack
 	}
 }
 
-func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
+func (s *pieceTaskSynchronizer) receive(piecePacket *commonv1.PiecePacket) {
 	var err error
 	for {
 		s.dispatchPieceRequest(piecePacket)
@@ -373,7 +374,7 @@ func (s *pieceTaskSynchronizer) receive(piecePacket *base.PiecePacket) {
 	}
 }
 
-func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
+func (s *pieceTaskSynchronizer) acquire(request *commonv1.PieceTaskRequest) error {
 	if s.error.Load() != nil {
 		err := s.error.Load().(*pieceTaskSynchronizerError).err
 		s.Debugf("synchronizer already error %s, skip acquire more pieces", err)
@@ -393,10 +394,10 @@ func (s *pieceTaskSynchronizer) acquire(request *base.PieceTaskRequest) error {
 
 func (s *pieceTaskSynchronizer) reportError(err error) {
 	s.span.RecordError(err)
-	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, base.Code_ClientPieceRequestFail))
+	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(s.peerTaskConductor, s.dstPeer, commonv1.Code_ClientPieceRequestFail))
 	if sendError != nil {
 		s.Errorf("sync piece info failed and send piece result with error: %s", sendError)
-		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+		go s.peerTaskConductor.cancel(commonv1.Code_SchedError, sendError.Error())
 	} else {
 		s.Debugf("report sync piece error to scheduler")
 	}
@@ -438,10 +439,10 @@ func (s *synchronizerWatchdog) watch(timeout time.Duration) {
 
 func (s *synchronizerWatchdog) reportWatchFailed() {
 	sendError := s.peerTaskConductor.sendPieceResult(compositePieceResult(
-		s.peerTaskConductor, s.mainPeer.Load().(*scheduler.PeerPacket_DestPeer), base.Code_ClientPieceRequestFail))
+		s.peerTaskConductor, s.mainPeer.Load().(*schedulerv1.PeerPacket_DestPeer), commonv1.Code_ClientPieceRequestFail))
 	if sendError != nil {
 		s.peerTaskConductor.Errorf("watchdog sync piece info failed and send piece result with error: %s", sendError)
-		go s.peerTaskConductor.cancel(base.Code_SchedError, sendError.Error())
+		go s.peerTaskConductor.cancel(commonv1.Code_SchedError, sendError.Error())
 	} else {
 		s.peerTaskConductor.Debugf("report watchdog sync piece error to scheduler")
 	}
