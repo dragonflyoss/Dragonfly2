@@ -113,7 +113,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.SecurityDomain = "bac"
 				child.Host.SecurityDomain = "bac"
-				parent.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -128,7 +128,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.SecurityDomain = ""
 				child.Host.SecurityDomain = "baz"
-				parent.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -143,7 +143,7 @@ func TestEvaluatorBase_Evaluate(t *testing.T) {
 			mock: func(parent *resource.Peer, child *resource.Peer) {
 				parent.Host.SecurityDomain = "baz"
 				child.Host.SecurityDomain = ""
-				parent.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -179,7 +179,7 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -192,7 +192,7 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				child.Pieces.Set(0)
+				child.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -205,9 +205,9 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Pieces.Set(0)
-				child.Pieces.Set(0)
-				child.Pieces.Set(1)
+				parent.FinishedPieces.Set(0)
+				child.FinishedPieces.Set(0)
+				child.FinishedPieces.Set(1)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -220,8 +220,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Pieces.Set(0)
-				child.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
+				child.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -234,9 +234,9 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 0,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Pieces.Set(0)
-				parent.Pieces.Set(1)
-				child.Pieces.Set(0)
+				parent.FinishedPieces.Set(0)
+				parent.FinishedPieces.Set(1)
+				child.FinishedPieces.Set(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
@@ -260,8 +260,8 @@ func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
 			child:           resource.NewPeer(idgen.PeerID("127.0.0.1"), mockTask, mockHost),
 			totalPieceCount: 10,
 			mock: func(parent *resource.Peer, child *resource.Peer) {
-				parent.Pieces.Set(0)
-				parent.Pieces.Set(1)
+				parent.FinishedPieces.Set(0)
+				parent.FinishedPieces.Set(1)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
