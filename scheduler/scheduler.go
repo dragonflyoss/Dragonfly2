@@ -45,7 +45,7 @@ import (
 const (
 	// gracefulStopTimeout specifies a time limit for
 	// grpc server to complete a graceful shutdown.
-	gracefulStopTimeout = 10 * time.Second
+	gracefulStopTimeout = 10 * time.Minute
 )
 
 type Server struct {
