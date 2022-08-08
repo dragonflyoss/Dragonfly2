@@ -1059,7 +1059,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1082,7 +1081,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1105,7 +1103,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1128,7 +1125,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1151,7 +1147,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1174,7 +1169,6 @@ func TestService_ReportPeerResult(t *testing.T) {
 				gomock.InOrder(
 					mr.PeerManager().Return(peerManager).Times(1),
 					mp.Load(gomock.Eq(mockPeerID)).Return(mockPeer, true).Times(1),
-					ms.Create(gomock.Any()).Return(errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, peer *resource.Peer, err error) {
@@ -1349,7 +1343,7 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.True(ok)
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
 
-				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
 				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
 				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
 			},
@@ -1392,7 +1386,7 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.True(ok)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
-				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
 				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
 				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
 			},
@@ -1435,7 +1429,7 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.True(ok)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
-				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
 				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
 				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
 			},
@@ -1478,7 +1472,7 @@ func TestService_AnnounceTask(t *testing.T) {
 				assert.True(ok)
 
 				assert.EqualValues(piece, &commonv1.PieceInfo{PieceNum: 1, DownloadCost: 1})
-				assert.Equal(mockPeer.Pieces.Count(), uint(1))
+				assert.Equal(mockPeer.FinishedPieces.Count(), uint(1))
 				assert.Equal(mockPeer.PieceCosts()[0], int64(1*time.Millisecond))
 				assert.Equal(mockPeer.FSM.Current(), resource.PeerStateSucceeded)
 			},
@@ -2427,7 +2421,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(peer.Pieces.Count(), uint(1))
+				assert.Equal(peer.Pieces.Len(), uint(1))
+				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.Equal(peer.PieceCosts(), []int64{1})
 			},
 		},
@@ -2447,7 +2442,8 @@ func TestService_handlePieceSuccess(t *testing.T) {
 			},
 			expect: func(t *testing.T, peer *resource.Peer) {
 				assert := assert.New(t)
-				assert.Equal(peer.Pieces.Count(), uint(1))
+				assert.Equal(peer.Pieces.Len(), uint(1))
+				assert.Equal(peer.FinishedPieces.Count(), uint(1))
 				assert.Equal(peer.PieceCosts(), []int64{1})
 				piece, ok := peer.Task.LoadPiece(0)
 				assert.True(ok)
