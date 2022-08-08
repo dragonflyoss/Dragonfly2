@@ -4207,7 +4207,13 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "download_rate_limit": {
+                    "type": "integer"
+                },
+                "id": {
                     "type": "integer"
                 },
                 "name": {
@@ -4228,6 +4234,9 @@ const docTemplate = `{
                 "state": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "url": {
                     "type": "string"
                 },
@@ -4239,58 +4248,22 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Assertion": {
-            "type": "object",
-            "properties": {
-                "fieldIndexMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "key": {
-                    "type": "string"
-                },
-                "policy": {
-                    "type": "array",
-                    "items": {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    }
-                },
-                "policyMap": {
-                    "type": "object",
-                    "additionalProperties": {
-                        "type": "integer"
-                    }
-                },
-                "rm": {},
-                "tokens": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "value": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.AssertionMap": {
-            "type": "object",
-            "additionalProperties": {
-                "$ref": "#/definitions/model.Assertion"
-            }
-        },
         "model.Config": {
             "type": "object",
             "properties": {
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 },
                 "user_id": {
@@ -4316,6 +4289,12 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "result": {
                     "$ref": "#/definitions/model.JSONMap"
                 },
@@ -4340,6 +4319,9 @@ const docTemplate = `{
                 "type": {
                     "type": "string"
                 },
+                "updated_at": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "integer"
                 }
@@ -4357,10 +4339,19 @@ const docTemplate = `{
                 "client_secret": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
                 "redirect_url": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -4368,8 +4359,14 @@ const docTemplate = `{
         "model.Scheduler": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -4391,6 +4388,9 @@ const docTemplate = `{
                 },
                 "state": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4408,6 +4408,12 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4432,6 +4438,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SeedPeerCluster"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4441,6 +4450,12 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -4449,6 +4464,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityRule"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4458,8 +4476,14 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "domain": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -4472,17 +4496,26 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.SecurityGroup"
                     }
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
         "model.SeedPeer": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "download_port": {
                     "type": "integer"
                 },
                 "host_name": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "idc": {
                     "type": "string"
@@ -4510,6 +4543,9 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4524,6 +4560,12 @@ const docTemplate = `{
                 },
                 "config": {
                     "$ref": "#/definitions/model.JSONMap"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "is_default": {
                     "type": "boolean"
@@ -4548,6 +4590,9 @@ const docTemplate = `{
                 },
                 "security_group_id": {
                     "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
                 }
             }
         },
@@ -4560,8 +4605,14 @@ const docTemplate = `{
                 "bio": {
                     "type": "string"
                 },
+                "created_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
+                },
+                "id": {
+                    "type": "integer"
                 },
                 "location": {
                     "type": "string"
@@ -4573,6 +4624,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "state": {
+                    "type": "string"
+                },
+                "updated_at": {
                     "type": "string"
                 }
             }
@@ -5337,6 +5391,15 @@ const docTemplate = `{
         "types.UpdateModelRequest": {
             "type": "object",
             "properties": {
+                "hostname": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
                 "version_id": {
                     "type": "string"
                 }

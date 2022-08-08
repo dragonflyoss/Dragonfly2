@@ -49,7 +49,10 @@ type GetModelsParams struct {
 }
 
 type UpdateModelRequest struct {
+	Name      string `json:"name" binding:"omitempty"`
 	VersionID string `json:"version_id" binding:"omitempty"`
+	Hostname  string `json:"hostname" binding:"omitempty"`
+	IP        string `json:"ip" binding:"omitempty"`
 }
 
 type Model struct {
