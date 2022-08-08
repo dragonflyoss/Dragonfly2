@@ -30,21 +30,30 @@ const (
 	DragonflyHostScheduler = "scheduler"
 )
 
-// RegisterResolver register the dragonfly resovler builder to the grpc with custom schema
-func RegisterResolver[T any](dynConfig DynConfig[T]) {
-	resolver.Register(&DragonflyResolverBuilder[T]{
-		dynConfig: dynConfig,
-	})
+// DragonflyResolverBuilder implement resolver.Builder
+// T is the dynConfig structure.
+type DragonflyResolverBuilder[T any] struct {
+	dynconfig Dynconfig[T]
 }
 
-// DragonflyResolverBuilder implement resolver.Builder
-// T is the dynConfig structure
-type DragonflyResolverBuilder[T any] struct {
-	dynConfig DynConfig[T]
+// RegisterResolver register the dragonfly resovler builder to the grpc with custom schema.
+func RegisterResolver[T any](dynconfig Dynconfig[T]) {
+	resolver.Register(&DragonflyResolverBuilder[T]{
+		dynconfig: dynconfig,
+	})
 }
 
 func (b *DragonflyResolverBuilder[T]) Scheme() string {
 	return DragonflyScheme
+}
+
+type dResolver[T any] struct {
+	*zap.SugaredLogger
+	ctx       context.Context
+	cancel    context.CancelFunc
+	dynconfig Dynconfig[T]
+	host      string
+	cc        resolver.ClientConn
 }
 
 // Build creates a new resolver for the given target.
@@ -58,90 +67,49 @@ func (b *DragonflyResolverBuilder[T]) Build(target resolver.Target, cc resolver.
 		ctx:           ctx,
 		cancel:        cancel,
 		host:          target.URL.Host,
-		dynConfig:     b.dynConfig,
+		dynconfig:     b.dynconfig,
 		cc:            cc,
-		rn:            make(chan T, 1),
 	}
 
-	// register as dynConfig observer
-	b.dynConfig.Register(r)
-
-	go func() {
-		r.watch()
-	}()
-	r.ResolveNow(resolver.ResolveNowOptions{})
+	b.dynconfig.Register(r)
 	return r, nil
-}
-
-type dResolver[T any] struct {
-	*zap.SugaredLogger
-	ctx    context.Context
-	cancel context.CancelFunc
-	// convert is used to convert dnyConfig data to target addresses
-	//convert   func(data T) []string
-	//reload    func() (T, error)
-	dynConfig DynConfig[T]
-	host      string
-	cc        resolver.ClientConn
-	// rn channel is used by ResolveNow() to force an immediate resolution of the target.
-	// or used by Observer to change target
-	rn chan T
-}
-
-// resolve will update current ClientConn addresses
-func (b *dResolver[T]) resolve(data T) {
-	targets := b.dynConfig.Convert(b.host, data)
-	b.Debugf("resolver update addrs:%v", targets)
-	if len(targets) == 0 {
-		b.Warn("resolve empty address")
-	}
-	addresses := make([]resolver.Address, 0, len(targets))
-	for _, t := range targets {
-		addresses = append(addresses, resolver.Address{Addr: t})
-	}
-
-	err := b.cc.UpdateState(resolver.State{
-		Addresses: addresses,
-	})
-	if err != nil {
-		b.Errorf("resolver update ClientConn error %v", err)
-	}
 }
 
 // ResolveNow will be called by gRPC to try to resolve the target name again.
 // gRPC will trigger resolveNow everytime SubConn connect fail. But we only need
 // to refresh addresses from manager when all SubConn fail.
-// So here we don't trigger resolving to reduce the pressure of manager
+// So here we don't trigger resolving to reduce the pressure of manager.
 func (b *dResolver[T]) ResolveNow(resolver.ResolveNowOptions) {
 	b.Info("resolveNow is called")
-	//data, err := b.dynConfig.Reload()
-	//if err != nil {
-	//	b.Errorf("resolver reload error:%v", err)
-	//	return
-	//}
-	//b.rn <- data
 }
 
+// OnNotify is triggered and resolver address is updated.
 func (b *dResolver[T]) OnNotify(data T) {
-	select {
-	case b.rn <- data:
-	default:
+	targets, err := b.dynconfig.GetResolverAddrs()
+	if err != nil {
+		b.Errorf("get resolver addresses error %v", err)
+		return
+	}
+
+	b.Debugf("resolver update addrs:%v", targets)
+	if len(targets) == 0 {
+		b.Warn("resolve empty address")
+	}
+
+	addrs := make([]resolver.Address, 0, len(targets))
+	for _, target := range targets {
+		addrs = append(addrs, target)
+	}
+
+	if err := b.cc.UpdateState(resolver.State{
+		Addresses: addrs,
+	}); err != nil {
+		b.Errorf("resolver update ClientConn error %v", err)
 	}
 }
 
 // Close closes the resolver.
 func (b *dResolver[T]) Close() {
-	b.dynConfig.Deregister(b)
+	b.dynconfig.Deregister(b)
 	b.cancel()
-}
-
-func (b *dResolver[T]) watch() {
-	for {
-		select {
-		case <-b.ctx.Done():
-			return
-		case data := <-b.rn:
-			b.resolve(data)
-		}
-	}
 }

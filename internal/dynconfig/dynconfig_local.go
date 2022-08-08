@@ -26,7 +26,7 @@ type dynconfigLocal struct {
 	filepath string
 }
 
-// newDynconfigLocal returns a new local dynconfig instence
+// newDynconfigLocal returns a new local dynconfig instence.
 func newDynconfigLocal(path string) (*dynconfigLocal, error) {
 	d := &dynconfigLocal{
 		filepath: path,
@@ -46,6 +46,7 @@ func (d *dynconfigLocal) Unmarshal(rawVal any) error {
 	return yaml.Unmarshal(b, rawVal)
 }
 
-func (d *dynconfigLocal) Reload() error {
+// Refresh refreshes dynconfig in cache.
+func (d *dynconfigLocal) Refresh() error {
 	return nil
 }

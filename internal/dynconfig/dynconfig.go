@@ -28,22 +28,25 @@ import (
 type SourceType string
 
 const (
-	// LocalSourceType represents read configuration from local file
+	// LocalSourceType represents read configuration from local file.
 	LocalSourceType = "local"
 
-	// ManagerSourceType represents pulling configuration from manager
+	// ManagerSourceType represents pulling configuration from manager.
 	ManagerSourceType = "manager"
 )
 
 const (
+	// defaultCacheKey represents cache key of dynconfig.
 	defaultCacheKey = "dynconfig"
 )
 
 type strategy interface {
+	// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+	// on the fields of the structure are properly set.
 	Unmarshal(rawVal any) error
 
-	// Reload refresh cache
-	Reload() error
+	// Refresh refreshes dynconfig in cache.
+	Refresh() error
 }
 
 type Dynconfig struct {
@@ -55,10 +58,10 @@ type Dynconfig struct {
 	strategy        strategy
 }
 
-// Option is a functional option for configuring the dynconfig
+// Option is a functional option for configuring the dynconfig.
 type Option func(d *Dynconfig) error
 
-// WithManagerClient set the manager client
+// WithManagerClient set the manager client.
 func WithManagerClient(c ManagerClient) Option {
 	return func(d *Dynconfig) error {
 		d.managerClient = c
@@ -66,7 +69,7 @@ func WithManagerClient(c ManagerClient) Option {
 	}
 }
 
-// WithLocalConfigPath set the file path
+// WithLocalConfigPath set the file path.
 func WithLocalConfigPath(p string) Option {
 	return func(d *Dynconfig) error {
 		d.localConfigPath = p
@@ -74,7 +77,7 @@ func WithLocalConfigPath(p string) Option {
 	}
 }
 
-// WithCachePath set the cache file path
+// WithCachePath set the cache file path.
 func WithCachePath(p string) Option {
 	return func(d *Dynconfig) error {
 		d.cachePath = p
@@ -82,7 +85,7 @@ func WithCachePath(p string) Option {
 	}
 }
 
-// WithExpireTime set the expire time for cache
+// WithExpireTime set the expire time for cache.
 func WithExpireTime(e time.Duration) Option {
 	return func(d *Dynconfig) error {
 		d.expire = e
@@ -90,7 +93,7 @@ func WithExpireTime(e time.Duration) Option {
 	}
 }
 
-// New returns a new dynconfig instance
+// New returns a new dynconfig instance.
 func New(sourceType SourceType, options ...Option) (*Dynconfig, error) {
 	d, err := NewDynconfigWithOptions(sourceType, options...)
 	if err != nil {
@@ -161,17 +164,17 @@ func (d *Dynconfig) Unmarshal(rawVal any) error {
 	return d.strategy.Unmarshal(rawVal)
 }
 
-// Reload refresh cache
-func (d *Dynconfig) Reload() error {
-	return d.strategy.Reload()
+// Refresh refreshes dynconfig in cache.
+func (d *Dynconfig) Refresh() error {
+	return d.strategy.Refresh()
 }
 
 // A DecoderConfigOption can be passed to dynconfig Unmarshal to configure
-// mapstructure.DecoderConfig options
+// mapstructure.DecoderConfig options.
 type DecoderConfigOption func(*mapstructure.DecoderConfig)
 
 // defaultDecoderConfig returns default mapstructure.DecoderConfig with support
-// of time.Duration values & string slices
+// of time.Duration values & string slices.
 func defaultDecoderConfig(output any) *mapstructure.DecoderConfig {
 	c := &mapstructure.DecoderConfig{
 		Metadata:         nil,
@@ -185,7 +188,7 @@ func defaultDecoderConfig(output any) *mapstructure.DecoderConfig {
 	return c
 }
 
-// A wrapper around mapstructure.Decode that mimics the WeakDecode functionality
+// A wrapper around mapstructure.Decode that mimics the WeakDecode functionality.
 func decode(input any, config *mapstructure.DecoderConfig) error {
 	decoder, err := mapstructure.NewDecoder(config)
 	if err != nil {

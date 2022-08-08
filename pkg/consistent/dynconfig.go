@@ -16,26 +16,34 @@
 
 package consistent
 
-// DynConfig is used by resolver and balancer.
-// Resolver register an observer to get configs updated.
-// Balancer trigger Reload of DynConfig, then resolver resolve again
-type DynConfig[T any] interface {
-	// Get return dynConfig data, maybe from cache
+import (
+	"google.golang.org/grpc/resolver"
+)
+
+// Dynconfig is used by resolver and balancer.
+type Dynconfig[T any] interface {
+	// Get resolver addresses of grpc.
+	GetResolverAddrs() ([]resolver.Address, error)
+
+	// Get return dynconfig data.
 	Get() (T, error)
-	// Reload return dynConfig data ignoring cache and notify all observer. It is by balancer when balancer find no good node in ClientConn
-	Reload() error
-	// Convert dynConfig data to target addresses, host is one of (scheduler/manager/seedPeer)
-	Convert(host string, data T) []string
-	// Register is used by resolver, to register an observer to dynamically change target address
+
+	// Refresh refreshes dynconfig in cache and publishes new events to listeners.
+	Refresh() error
+
+	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer[T])
-	// Deregister is used by resolver, to register an observer to dynamically change target address
+
+	// Deregister allows an instance to remove itself from the collection of observers/listeners.
 	Deregister(Observer[T])
 }
 
 type Observer[T any] interface {
+	// OnNotify allows an event to be published to interface implementations.
 	OnNotify(T)
 }
 
-type Reloader interface {
-	Reload() error
+type Refresher interface {
+	// Refresh refreshes dynconfig in cache and publishes new events to listeners.
+	Refresh() error
 }

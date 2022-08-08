@@ -20,9 +20,12 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
+
+	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -81,6 +84,9 @@ type SchedulerCluster struct {
 }
 
 type DynconfigInterface interface {
+	// Get resolver addresses of grpc.
+	GetResolverAddrs() ([]resolver.Address, error)
+
 	// Get the scheduler cluster config.
 	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool)
 
@@ -107,7 +113,7 @@ type DynconfigInterface interface {
 }
 
 type Observer interface {
-	// OnNotify allows an event to be "published" to interface implementations.
+	// OnNotify allows an event to be published to interface implementations.
 	OnNotify(*DynconfigData)
 }
 
@@ -141,6 +147,24 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	}
 
 	return d, nil
+}
+
+func (d *dynconfig) GetResolverAddrs() ([]resolver.Address, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := make([]resolver.Address, 0, len(data.SeedPeers))
+	for _, seedPeer := range data.SeedPeers {
+		addr := resolver.Address{
+			Addr: fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port),
+		}
+
+		addrs = append(addrs, addr)
+	}
+
+	return addrs, nil
 }
 
 func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {

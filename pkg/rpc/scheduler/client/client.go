@@ -34,7 +34,6 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/consistent"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
@@ -70,7 +69,7 @@ func NewEndOfPiece(taskID, peerID string, finishedCount int32) *schedulerv1.Piec
 }
 
 // GetClient get scheduler clients using resolver and balancer
-func GetClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
+func GetClient(opts ...grpc.DialOption) (Client, error) {
 	opts = append(opts,
 		grpc.WithDefaultServiceConfig(consistent.BalancerServiceConfig),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -87,6 +86,7 @@ func GetClient(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
 			grpc_prometheus.StreamClientInterceptor,
 			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 		)))
+
 	conn, err := grpc.Dial(
 		consistent.DragonflyScheme+"://"+consistent.DragonflyHostScheduler,
 		opts...,

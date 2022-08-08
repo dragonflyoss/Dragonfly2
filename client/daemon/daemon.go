@@ -160,9 +160,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	// register resolver and balancer
 	consistent.RegisterResolver[*config.DynconfigData](dynconfig)
-	balancer.Register(consistent.NewConsistentHashRingBuilder(config.DefaultSchedulerGrpcGcInterval, true, dynconfig))
+	balancer.Register(consistent.NewConsistentHashRingBuilder(config.DefaultGRPCConnTTL, true, dynconfig))
 
-	sched, err := schedulerclient.GetClient(addrs, opts...)
+	sched, err := schedulerclient.GetClient(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}

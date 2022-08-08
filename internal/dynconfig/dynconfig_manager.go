@@ -31,7 +31,7 @@ type dynconfigManager struct {
 	client    ManagerClient
 }
 
-// newDynconfigManager returns a new manager dynconfig instence
+// newDynconfigManager returns a new manager dynconfig instence.
 func newDynconfigManager(expire time.Duration, cachePath string, client ManagerClient) (*dynconfigManager, error) {
 	d := &dynconfigManager{
 		cache:     cache.New(expire, cache.NoCleanup),
@@ -49,16 +49,15 @@ func newDynconfigManager(expire time.Duration, cachePath string, client ManagerC
 	return d, nil
 }
 
-// Get dynamic config
+// Get dynamic config.
 func (d *dynconfigManager) get() (any, error) {
-	// Cache has not expired
+	// Cache has not expired.
 	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
 	if found {
 		return dynconfig, nil
 	}
 
-	// Cache has expired
-	// Reload and ignore client request error
+	// Cache has expired, refresh and ignore client request error.
 	if err := d.load(); err != nil {
 		logger.Warn("reload failed ", err)
 	}
@@ -82,7 +81,12 @@ func (d *dynconfigManager) Unmarshal(rawVal any) error {
 	return decode(dynconfig, defaultDecoderConfig(rawVal))
 }
 
-// Load dynamic config from manager
+// Refresh refreshes dynconfig in cache.
+func (d *dynconfigManager) Refresh() error {
+	return d.load()
+}
+
+// Load dynamic config from manager.
 func (d *dynconfigManager) load() error {
 	dynconfig, err := d.client.Get()
 	if err != nil {
@@ -94,9 +98,4 @@ func (d *dynconfigManager) load() error {
 		return err
 	}
 	return nil
-}
-
-// Reload ignore cache
-func (d *dynconfigManager) Reload() error {
-	return d.load()
 }

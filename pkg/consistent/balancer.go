@@ -33,14 +33,14 @@ const (
 	BalancerName = "consistent-hashring"
 
 	// BalancerServiceConfig is a service config that sets the default balancer
-	// to the consistent-hashring balancer
+	// to the consistent-hashring balancer.
 	BalancerServiceConfig = `{"loadBalancingPolicy":"` + BalancerName + `"}`
 
 	// ConsistentHashKey is the key for the grpc request's context.Context which points to
-	// the key to hash for the request. The value it points to must be []byte
+	// the key to hash for the request. The value it points to must be []byte.
 	ConsistentHashKey = CtxKeyType("taskID")
 
-	// MaxSubConnFailTimes is max failed times to consider a SubConn as Bad SubConn and regenerate hashRing picker
+	// MaxSubConnFailTimes is max failed times to consider a SubConn as Bad SubConn and regenerate hashRing picker.
 	MaxSubConnFailTimes = 3
 )
 
@@ -48,23 +48,22 @@ var (
 	ErrBalancerHashring = errors.New("balancer pick node from hashRing error")
 )
 
+type baseBuilder struct {
+	name      string
+	config    Config
+	refresher Refresher
+}
+
 // NewConsistentHashRingBuilder creates a new balancer.Builder that
 // will create a consistent hashring balancer with the given config.
 // Before making a connection, register it with grpc with:
 // `balancer.Register(consistent.NewConsistentHashringBuilder())`
-func NewConsistentHashRingBuilder(gcInterval time.Duration, healthCheck bool, reloader Reloader) balancer.Builder {
+func NewConsistentHashRingBuilder(gcInterval time.Duration, healthCheck bool, refresher Refresher) balancer.Builder {
 	return &baseBuilder{
 		BalancerName,
 		Config{HealthCheck: healthCheck, GCInterval: gcInterval},
-		reloader,
+		refresher,
 	}
-
-}
-
-type baseBuilder struct {
-	name     string
-	config   Config
-	reloader Reloader
 }
 
 func (bb *baseBuilder) Build(cc balancer.ClientConn, opt balancer.BuildOptions) balancer.Balancer {
@@ -73,7 +72,7 @@ func (bb *baseBuilder) Build(cc balancer.ClientConn, opt balancer.BuildOptions) 
 		cc:            cc,
 		connPool:      NewConnPool(bb.config.GCInterval),
 		config:        bb.config,
-		reloader:      bb.reloader,
+		refresher:     bb.refresher,
 	}
 	// Initialize picker to a picker that always returns
 	// ErrNoSubConnAvailable, because when state of a SubConn changes, we
@@ -97,8 +96,8 @@ type Config struct {
 
 type consistentBalancer struct {
 	*zap.SugaredLogger
-	cc       balancer.ClientConn
-	reloader Reloader
+	cc        balancer.ClientConn
+	refresher Refresher
 
 	state connectivity.State
 
@@ -110,53 +109,53 @@ type consistentBalancer struct {
 	connErr     error // the last connection error; cleared upon leaving TransientFailure
 }
 
-func (b *consistentBalancer) ResolverError(err error) {
-	b.resolverErr = err
-	if len(b.connPool.ValidKeys()) == 0 {
-		b.state = connectivity.TransientFailure
+func (cb *consistentBalancer) ResolverError(err error) {
+	cb.resolverErr = err
+	if len(cb.connPool.ValidKeys()) == 0 {
+		cb.state = connectivity.TransientFailure
 	}
 
-	if b.state != connectivity.TransientFailure {
+	if cb.state != connectivity.TransientFailure {
 		// The picker will not change since the balancer does not currently
 		// report an error.
 		return
 	}
-	b.regeneratePicker()
-	b.cc.UpdateState(balancer.State{
-		ConnectivityState: b.state,
-		Picker:            b.picker,
+	cb.regeneratePicker()
+	cb.cc.UpdateState(balancer.State{
+		ConnectivityState: cb.state,
+		Picker:            cb.picker,
 	})
 }
 
-func (b *consistentBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
-	b.Infof("consistent-balancer: got new ClientConn state: %v", s)
+func (cb *consistentBalancer) UpdateClientConnState(s balancer.ClientConnState) error {
+	cb.Infof("consistent-balancer: got new ClientConn state: %v", s)
 	// Successful resolution; clear resolver error and ensure we return nil.
-	b.resolverErr = nil
+	cb.resolverErr = nil
 	// addrsSet is the set converted from addrs, it's used for quick lookup of an address.
 	newAddrs := map[string]struct{}{}
 	var changed bool
 	for _, a := range s.ResolverState.Addresses {
 		newAddrs[a.Addr] = struct{}{}
 		// if addr not exist, add it
-		if _, ok := b.connPool.Get(a.Addr); !ok {
-			// a is a new address (not existing in b.connPool).
+		if _, ok := cb.connPool.Get(a.Addr); !ok {
+			// a is a new address (not existing in cb.connPool).
 			changed = true
-			sc, err := NewSubConnWrapper(b.cc, a.Addr, b.config.HealthCheck)
+			sc, err := NewSubConnWrapper(cb.cc, a.Addr, cb.config.HealthCheck)
 			if err != nil {
-				b.Warnf("consistent-balancer: failed to create new SubConn: %v", err)
+				cb.Warnf("consistent-balancer: failed to create new SubConn: %v", err)
 				continue
 			}
 
-			b.connPool.Set(a.Addr, sc)
+			cb.connPool.Set(a.Addr, sc)
 		}
 	}
-	for _, a := range b.connPool.Keys() {
-		old, _ := b.connPool.Get(a)
+	for _, a := range cb.connPool.Keys() {
+		old, _ := cb.connPool.Get(a)
 		// a was removed by resolver.
 		if _, ok := newAddrs[a]; !ok {
 			changed = true
 			old.Disconnect()
-			b.connPool.Remove(old.Address())
+			cb.connPool.Remove(old.Address())
 		}
 	}
 	// If resolver state contains no addresses, return an error so ClientConn
@@ -164,16 +163,16 @@ func (b *consistentBalancer) UpdateClientConnState(s balancer.ClientConnState) e
 	// the overall state turns transient failure, the error message will have
 	// the zero address information.
 	if len(s.ResolverState.Addresses) == 0 {
-		b.ResolverError(errors.New("produced zero addresses"))
+		cb.ResolverError(errors.New("produced zero addresses"))
 		return balancer.ErrBadResolverState
 	}
 
 	if changed {
-		b.regeneratePicker()
+		cb.regeneratePicker()
 	}
 
 	// should call cc.UpdateState even resolve state is the same as before, to trigger failed picker pick again
-	b.cc.UpdateState(balancer.State{ConnectivityState: b.state, Picker: b.picker})
+	cb.cc.UpdateState(balancer.State{ConnectivityState: cb.state, Picker: cb.picker})
 	return nil
 }
 
@@ -195,32 +194,33 @@ func (b *consistentBalancer) mergeErrors() error {
 // from it. The picker is
 //  - errPicker if the balancer is in TransientFailure,
 //  - built by the pickerBuilder with all READY SubConns otherwise.
-func (b *consistentBalancer) regeneratePicker() {
-	if len(b.connPool.ValidKeys()) == 0 {
-		b.picker = NewErrPicker(b.mergeErrors())
-		// dynConfig.Reload will trigger dynConfig refresh addresses and resolver will resolve again
-		if err := b.reloader.Reload(); err != nil {
-			b.Errorf("balancer: trigger dynConfig reload error :%v", err)
+func (cb *consistentBalancer) regeneratePicker() {
+	if len(cb.connPool.ValidKeys()) == 0 {
+		cb.picker = NewErrPicker(cb.mergeErrors())
+		// dynConfig.Refresh will refresh dynconfig and resolver will resolve again.
+		if err := cb.refresher.Refresh(); err != nil {
+			cb.Errorf("balancer: dynconfig refreshes error :%v", err)
 		}
 		return
 	}
-	b.picker = BuildPicker(b.connPool)
+
+	cb.picker = BuildPicker(cb.connPool)
 }
 
 // UpdateSubConnState is the core function which control the balance state change.
 // The SubConn will retry with backoff config until succeed(it will never stop retry unless the resolver told balancer to remove this node).
 // But if SubConn failed to connect exceed MaxSubConnFailTimes, it will be marked as Bad node
 // and regenerate a picker without Bad node
-func (b *consistentBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
+func (cb *consistentBalancer) UpdateSubConnState(sc balancer.SubConn, state balancer.SubConnState) {
 	s := state.ConnectivityState
-	scw, ok := b.connPool.GetBySubConn(sc)
+	scw, ok := cb.connPool.GetBySubConn(sc)
 	if !ok {
-		b.Debugf("consistent-balancer: got state changes for an unknown SubConn:%v", sc)
+		cb.Debugf("consistent-balancer: got state changes for an unknown SubConn:%v", sc)
 		return
 	}
-	b.Debugf("consistent-balancer: handle SubConn state change: %v, %v", scw.Address(), s)
+	cb.Debugf("consistent-balancer: handle SubConn state change: %v, %v", scw.Address(), s)
 	if state.ConnectionError != nil {
-		b.Debugf("consistent-balancer: SubConn %v connection error:%v", scw.Address(), state.ConnectionError)
+		cb.Debugf("consistent-balancer: SubConn %v connection error:%v", scw.Address(), state.ConnectionError)
 	}
 	lastState := scw.State()
 	isBadNode := scw.GetFailedTime() >= MaxSubConnFailTimes
@@ -230,7 +230,7 @@ func (b *consistentBalancer) UpdateSubConnState(sc balancer.SubConn, state balan
 
 	var needUpdate bool
 
-	// b.state will be always ready after first subConn become ready
+	// cb.state will be always ready after first subConn become ready
 	switch state.ConnectivityState {
 	case connectivity.Idle:
 		// SubConn's state is transform to Idle from TransientFailure by ClientConn's backoff strategy
@@ -239,52 +239,52 @@ func (b *consistentBalancer) UpdateSubConnState(sc balancer.SubConn, state balan
 			return
 		}
 	case connectivity.Ready:
-		b.state = connectivity.Ready
+		cb.state = connectivity.Ready
 		if isBadNode {
-			b.regeneratePicker()
+			cb.regeneratePicker()
 		}
 		needUpdate = true // a SubConn become ready, need update picker to tell grpc to re-pick
 	case connectivity.TransientFailure:
-		b.Debugf("subConn %v enter transientFailuer due to %v", scw.Address(), state.ConnectionError)
-		b.connErr = state.ConnectionError
+		cb.Debugf("subConn %v enter transientFailuer due to %v", scw.Address(), state.ConnectionError)
+		cb.connErr = state.ConnectionError
 		if scw.GetFailedTime() == MaxSubConnFailTimes {
-			b.regeneratePicker()
+			cb.regeneratePicker()
 			needUpdate = true // the SubConn become a Bad node, update the picker
 		}
 	case connectivity.Shutdown:
-		b.Infof("SubConn shutdown:%v", scw.Address())
-		b.connPool.Remove(scw.Address())
-		scw, err := NewSubConnWrapper(b.cc, scw.Address(), b.config.HealthCheck)
+		cb.Infof("SubConn shutdown:%v", scw.Address())
+		cb.connPool.Remove(scw.Address())
+		scw, err := NewSubConnWrapper(cb.cc, scw.Address(), cb.config.HealthCheck)
 		if err != nil {
-			b.Errorf("create SubConn error: %v %v", scw.Address(), err)
+			cb.Errorf("create SubConn error: %v %v", scw.Address(), err)
 			return
 		}
-		b.connPool.Set(scw.Address(), scw)
+		cb.connPool.Set(scw.Address(), scw)
 	}
 
 	// Regenerate picker
-	if needUpdate || b.state == connectivity.TransientFailure {
-		b.cc.UpdateState(balancer.State{ConnectivityState: b.state, Picker: b.picker})
+	if needUpdate || cb.state == connectivity.TransientFailure {
+		cb.cc.UpdateState(balancer.State{ConnectivityState: cb.state, Picker: cb.picker})
 	}
 }
 
 // Close is a nop because balancer doesn't have internal state to clean up,
 // and it doesn't need to call RemoveSubConn for the SubConns.
-func (b *consistentBalancer) Close() {
+func (cb *consistentBalancer) Close() {
 }
 
 // ExitIdle is a nop because the balancer attempts to stay connected to
 // all SubConns at all times.
-func (b *consistentBalancer) ExitIdle() {
+func (cb *consistentBalancer) ExitIdle() {
+}
+
+type errPicker struct {
+	err error // Pick() always returns this err.
 }
 
 // NewErrPicker returns a Picker that always returns err on Pick().
 func NewErrPicker(err error) balancer.Picker {
 	return &errPicker{err: err}
-}
-
-type errPicker struct {
-	err error // Pick() always returns this err.
 }
 
 func (p *errPicker) Pick(info balancer.PickInfo) (balancer.PickResult, error) {
