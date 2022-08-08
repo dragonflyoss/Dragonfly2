@@ -121,7 +121,16 @@ func (s *seedPeer) TriggerTask(ctx context.Context, task *Task) (*Peer, *schedul
 
 		// Handle piece download successfully.
 		peer.Log.Infof("receive piece from seed peer: %#v %#v", piece, piece.PieceInfo)
-		peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
+		peer.Pieces.Add(&schedulerv1.PieceResult{
+			TaskId:          task.ID,
+			SrcPid:          peer.ID,
+			BeginTime:       piece.BeginTime,
+			EndTime:         piece.EndTime,
+			Success:         true,
+			PieceInfo:       piece.PieceInfo,
+			ExtendAttribute: piece.ExtendAttribute,
+		})
+		peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 		peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 		task.StorePiece(piece.PieceInfo)
 

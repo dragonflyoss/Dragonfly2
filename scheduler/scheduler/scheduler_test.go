@@ -512,7 +512,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				mockPeer.FSM.SetState(resource.PeerStateRunning)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
-				mockPeer.Pieces.Set(0)
+				mockPeer.FinishedPieces.Set(0)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -530,7 +530,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				mockPeer.IsBackToSource.Store(true)
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeer)
-				mockPeer.Pieces.Set(0)
+				mockPeer.FinishedPieces.Set(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
@@ -569,7 +569,7 @@ func TestScheduler_NotifyAndFindParent(t *testing.T) {
 				peer.Task.BackToSourcePeers.Add(candidatePeer.ID)
 				mockPeer.IsBackToSource.Store(true)
 				candidatePeer.IsBackToSource.Store(true)
-				mockPeer.Pieces.Set(0)
+				mockPeer.FinishedPieces.Set(0)
 				peer.StoreStream(stream)
 				gomock.InOrder(
 					md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1),
@@ -725,10 +725,10 @@ func TestScheduler_FindParent(t *testing.T) {
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
 				mockPeers[0].IsBackToSource.Store(true)
 				mockPeers[1].IsBackToSource.Store(true)
-				mockPeers[0].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(1)
-				mockPeers[1].Pieces.Set(2)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -750,10 +750,10 @@ func TestScheduler_FindParent(t *testing.T) {
 				peer.Task.StorePeer(mockPeers[2])
 				mockPeers[0].Host.Type = resource.HostTypeSuperSeed
 				mockPeers[1].Host.Type = resource.HostTypeSuperSeed
-				mockPeers[0].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(1)
-				mockPeers[1].Pieces.Set(2)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -772,10 +772,10 @@ func TestScheduler_FindParent(t *testing.T) {
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(mockPeers[0])
 				peer.Task.StorePeer(mockPeers[1])
-				mockPeers[0].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(1)
-				mockPeers[1].Pieces.Set(2)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -803,10 +803,10 @@ func TestScheduler_FindParent(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				mockPeers[0].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(1)
-				mockPeers[1].Pieces.Set(2)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{}, false).Times(1)
 			},
@@ -848,10 +848,10 @@ func TestScheduler_FindParent(t *testing.T) {
 				peer.Task.BackToSourcePeers.Add(mockPeers[1].ID)
 				mockPeers[0].IsBackToSource.Store(true)
 				mockPeers[1].IsBackToSource.Store(true)
-				mockPeers[0].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(0)
-				mockPeers[1].Pieces.Set(1)
-				mockPeers[1].Pieces.Set(2)
+				mockPeers[0].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(0)
+				mockPeers[1].FinishedPieces.Set(1)
+				mockPeers[1].FinishedPieces.Set(2)
 
 				md.GetSchedulerClusterConfig().Return(types.SchedulerClusterConfig{
 					FilterParentLimit: 3,
