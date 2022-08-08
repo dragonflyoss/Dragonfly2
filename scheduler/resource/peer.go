@@ -18,6 +18,7 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -116,8 +117,11 @@ type Peer struct {
 	// Tag is peer tag.
 	Tag string
 
-	// Pieces is piece bitset.
-	Pieces *bitset.BitSet
+	// Pieces is finished piece set.
+	Pieces set.SafeSet[*schedulerv1.PieceResult]
+
+	// Pieces is finished pieces bitset.
+	FinishedPieces *bitset.BitSet
 
 	// pieceCosts is piece downloaded time.
 	pieceCosts []int64
@@ -166,7 +170,8 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:               id,
 		Tag:              DefaultTag,
-		Pieces:           &bitset.BitSet{},
+		Pieces:           set.NewSafeSet[*schedulerv1.PieceResult](),
+		FinishedPieces:   &bitset.BitSet{},
 		pieceCosts:       []int64{},
 		Stream:           &atomic.Value{},
 		Task:             task,
@@ -326,6 +331,37 @@ func (p *Peer) Parents() []*Peer {
 	}
 
 	return parents
+}
+
+// MainParent returns the parent whose
+// peer has downloaded the most pieces.
+func (p *Peer) MainParent() (*Peer, error) {
+	var (
+		parents       = map[string]int{}
+		maxPieceCount = 0
+		mainParentID  string
+	)
+
+	for _, piece := range p.Pieces.Values() {
+		if piece.DstPid != "" {
+			parents[piece.DstPid]++
+		}
+
+		if parents[piece.DstPid] > maxPieceCount {
+			mainParentID = piece.DstPid
+		}
+	}
+
+	if mainParentID == "" {
+		return nil, errors.New("can not found main parent")
+	}
+
+	parent, err := p.Task.DAG.GetVertex(mainParentID)
+	if err != nil {
+		return nil, err
+	}
+
+	return parent.Value, nil
 }
 
 // Children returns children of peer.
