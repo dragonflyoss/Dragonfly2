@@ -46,7 +46,7 @@ func (m *MachineryLogger) Panicf(format string, args ...any) {
 	logger.JobLogger.Panic(args...)
 }
 
-// Panicln sends to logrus.Panic
+// Panicln sends to logger.Panic
 func (m *MachineryLogger) Panicln(args ...any) {
 	logger.JobLogger.Panic(args...)
 }

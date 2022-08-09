@@ -18,10 +18,27 @@
 
 package gc
 
+import (
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+)
+
 // Logger is the interface used in GC for logging.
 type Logger interface {
 	// Infof logs routine messages for GC.
 	Infof(template string, args ...any)
 	// Error logs error messages for GC.
 	Errorf(template string, args ...any)
+}
+
+// gcLogger is default logger of dflog.
+type gcLogger struct{}
+
+// Infof logs routine messages for GC.
+func (gl *gcLogger) Infof(template string, args ...any) {
+	logger.CoreLogger.Infof(template, args)
+}
+
+// Error logs error messages for GC.
+func (gl *gcLogger) Errorf(template string, args ...any) {
+	logger.CoreLogger.Errorf(template, args)
 }
