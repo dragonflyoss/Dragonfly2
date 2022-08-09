@@ -41,6 +41,14 @@ var (
 )
 
 type DynconfigData struct {
+	ID               uint64            `yaml:"id" mapstructure:"id" json:"id"`
+	Hostname         string            `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	Idc              string            `yaml:"idc" mapstructure:"idc" json:"idc"`
+	Location         string            `yaml:"location" mapstructure:"location" json:"location"`
+	NetTopology      string            `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
+	IP               string            `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port             int32             `yaml:"port" mapstructure:"port" json:"port"`
+	State            string            `yaml:"state" mapstructure:"state" json:"state"`
 	SeedPeers        []*SeedPeer       `yaml:"seedPeers" mapstructure:"seedPeers" json:"seed_peers"`
 	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
 }
@@ -72,10 +80,14 @@ func (c *SeedPeer) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, bool
 }
 
 type SeedPeerCluster struct {
+	ID     uint64 `yaml:"id" mapstructure:"id" json:"id"`
+	Name   string `yaml:"name" mapstructure:"name" json:"name"`
 	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
 }
 
 type SchedulerCluster struct {
+	ID           uint64 `yaml:"id" mapstructure:"id" json:"id"`
+	Name         string `yaml:"name" mapstructure:"name" json:"name"`
 	Config       []byte `yaml:"config" mapstructure:"config" json:"config"`
 	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
 }
