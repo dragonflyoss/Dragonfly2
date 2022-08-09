@@ -349,6 +349,7 @@ func (p *Peer) MainParent() (*Peer, error) {
 
 		if parents[piece.DstPid] > maxPieceCount {
 			mainParentID = piece.DstPid
+			maxPieceCount = parents[piece.DstPid]
 		}
 	}
 
