@@ -124,16 +124,16 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	if opt.Scheduler.Manager.Enable {
 		// New manager client
-		var opts []grpc.DialOption
+		var managerDialOptions []grpc.DialOption
 		if opt.Options.Telemetry.Jaeger != "" {
-			opts = append(opts,
+			managerDialOptions = append(managerDialOptions,
 				grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 				grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 			)
 		}
 
 		var err error
-		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs, opts)
+		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs, managerDialOptions...)
 		if err != nil {
 			return nil, err
 		}
@@ -156,14 +156,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 	logger.Infof("initialize scheduler addresses: %#v", addrs)
 
-	var opts []grpc.DialOption
+	var schedulerClientOptions []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
-		opts = append(opts,
+		schedulerClientOptions = append(schedulerClientOptions,
 			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
-	sched, err := schedulerclient.GetClientByAddr(addrs, opts...)
+	sched, err := schedulerclient.GetClientByAddr(addrs, schedulerClientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -219,6 +219,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
+	}
+	// enable grpc tracing
+	if opt.Options.Telemetry.Jaeger != "" {
+		downloadServerOption = append(
+			downloadServerOption,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+		peerServerOption = append(
+			peerServerOption,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
 	}
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern, downloadServerOption, peerServerOption)
 	if err != nil {

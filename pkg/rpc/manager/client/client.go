@@ -120,7 +120,7 @@ func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client,
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetClient(netAddr.Addr, opts)
+			return GetClient(netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}

@@ -83,7 +83,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		)
 	}
 
-	managerClient, err := managerclient.GetClient(cfg.Manager.Addr, managerClientOptions)
+	managerClient, err := managerclient.GetClient(cfg.Manager.Addr, managerClientOptions...)
 	if err != nil {
 		return nil, err
 	}
