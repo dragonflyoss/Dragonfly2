@@ -124,8 +124,16 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 
 	if opt.Scheduler.Manager.Enable {
 		// New manager client
+		var opts []grpc.DialOption
+		if opt.Options.Telemetry.Jaeger != "" {
+			opts = append(opts,
+				grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+				grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			)
+		}
+
 		var err error
-		managerClient, err = managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
+		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs, opts)
 		if err != nil {
 			return nil, err
 		}
