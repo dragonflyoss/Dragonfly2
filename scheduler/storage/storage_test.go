@@ -339,6 +339,170 @@ func TestStorage_List(t *testing.T) {
 	}
 }
 
+func TestStorage_Open(t *testing.T) {
+	tests := []struct {
+		name    string
+		baseDir string
+		options []Option
+		record  Record
+		mock    func(t *testing.T, s Storage, baseDir string, record Record)
+		expect  func(t *testing.T, s Storage, baseDir string, record Record)
+	}{
+		{
+			name:    "open storage withempty csv file given",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock:    func(t *testing.T, s Storage, baseDir string, record Record) {},
+			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
+				assert := assert.New(t)
+				_, err := s.Open()
+				assert.NoError(err)
+			},
+		},
+		{
+			name:    "open file infos failed",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
+				s.(*storage).baseDir = "bar"
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
+				assert := assert.New(t)
+				_, err := s.Open()
+				assert.Error(err)
+				s.(*storage).baseDir = baseDir
+			},
+		},
+		{
+			name:    "open file failed",
+			baseDir: os.TempDir(),
+			options: []Option{},
+			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0300)
+				if err != nil {
+					t.Fatal(err)
+				}
+				file.Close()
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
+				assert := assert.New(t)
+				_, err := s.Open()
+				assert.Error(err)
+			},
+		},
+		{
+			name:    "open storage with records of a file",
+			baseDir: os.TempDir(),
+			options: []Option{WithBufferSize(1)},
+			record: Record{
+				ID:                   "1",
+				IP:                   "127.0.0.1",
+				Hostname:             "hostname",
+				Tag:                  "tag",
+				Cost:                 1,
+				PieceCount:           1,
+				TotalPieceCount:      1,
+				ContentLength:        1,
+				SecurityDomain:       "security_domain",
+				IDC:                  "idc",
+				NetTopology:          "net_topology",
+				Location:             "location",
+				FreeUploadLoad:       1,
+				State:                PeerStateSucceeded,
+				CreateAt:             time.Now().UnixNano(),
+				UpdateAt:             time.Now().UnixNano(),
+				ParentID:             "2",
+				ParentIP:             "127.0.0.1",
+				ParentHostname:       "parent_hostname",
+				ParentTag:            "parent_tag",
+				ParentPieceCount:     1,
+				ParentSecurityDomain: "parent_security_domain",
+				ParentIDC:            "parent_idc",
+				ParentNetTopology:    "parent_net_topology",
+				ParentLocation:       "parent_location",
+				ParentFreeUploadLoad: 1,
+				ParentCreateAt:       time.Now().UnixNano(),
+				ParentUpdateAt:       time.Now().UnixNano(),
+			},
+			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
+				if err := s.Create(record); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
+				assert := assert.New(t)
+				_, err := s.Open()
+				assert.NoError(err)
+
+				if err := s.Create(record); err != nil {
+					t.Fatal(err)
+				}
+
+				readCloser, err := s.Open()
+				assert.NoError(err)
+
+				var records []Record
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &records)
+				assert.NoError(err)
+				assert.Equal(len(records), 1)
+				assert.EqualValues(records[0], record)
+			},
+		},
+		{
+			name:    "open storage with records of multi files",
+			baseDir: os.TempDir(),
+			options: []Option{WithBufferSize(1)},
+			record:  Record{},
+			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
+				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer file.Close()
+
+				if err := gocsv.MarshalWithoutHeaders([]Record{{ID: "2"}}, file); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.Create(Record{ID: "1"}); err != nil {
+					t.Fatal(err)
+				}
+
+				if err := s.Create(Record{ID: "3"}); err != nil {
+					t.Fatal(err)
+				}
+			},
+			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
+				assert := assert.New(t)
+				readCloser, err := s.Open()
+				assert.NoError(err)
+
+				var records []Record
+				err = gocsv.UnmarshalWithoutHeaders(readCloser, &records)
+				assert.NoError(err)
+				assert.Equal(len(records), 2)
+				assert.Equal(records[0].ID, "2")
+				assert.Equal(records[1].ID, "1")
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s, err := New(tc.baseDir, tc.options...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			tc.mock(t, s, tc.baseDir, tc.record)
+			tc.expect(t, s, tc.baseDir, tc.record)
+			if err := s.Clear(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestStorage_Clear(t *testing.T) {
 	tests := []struct {
 		name    string
