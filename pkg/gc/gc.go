@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 // GC is the interface used for release resource.
@@ -65,7 +63,7 @@ func WithLogger(logger Logger) Option {
 func New(options ...Option) GC {
 	g := &gc{
 		tasks:  &sync.Map{},
-		logger: logrus.New(),
+		logger: &gcLogger{},
 		done:   make(chan bool),
 	}
 
