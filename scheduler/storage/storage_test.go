@@ -209,7 +209,7 @@ func TestStorage_List(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
-				s.(*storage).baseDir = "bar"
+				s.(*storage).baseDir = "bae"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
@@ -364,30 +364,13 @@ func TestStorage_Open(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{},
 			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
-				s.(*storage).baseDir = "bar"
+				s.(*storage).baseDir = "bas"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
 				assert := assert.New(t)
 				_, err := s.Open()
 				assert.Error(err)
 				s.(*storage).baseDir = baseDir
-			},
-		},
-		{
-			name:    "open file failed",
-			baseDir: os.TempDir(),
-			options: []Option{},
-			mock: func(t *testing.T, s Storage, baseDir string, record Record) {
-				file, err := os.OpenFile(filepath.Join(baseDir, "record-test.csv"), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0300)
-				if err != nil {
-					t.Fatal(err)
-				}
-				file.Close()
-			},
-			expect: func(t *testing.T, s Storage, baseDir string, record Record) {
-				assert := assert.New(t)
-				_, err := s.Open()
-				assert.Error(err)
 			},
 		},
 		{
@@ -626,7 +609,7 @@ func TestStorage_openFile(t *testing.T) {
 			baseDir: os.TempDir(),
 			options: []Option{},
 			mock: func(t *testing.T, s Storage) {
-				s.(*storage).baseDir = "baz"
+				s.(*storage).baseDir = "bat"
 			},
 			expect: func(t *testing.T, s Storage, baseDir string) {
 				assert := assert.New(t)
