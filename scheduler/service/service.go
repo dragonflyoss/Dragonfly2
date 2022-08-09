@@ -592,7 +592,7 @@ func (s *Service) registerPeer(ctx context.Context, peerID string, task *resourc
 func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
 	task.Log.Infof("trigger seed peer download task and task status is %s", task.FSM.Current())
 	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
-		trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx)), task)
+		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), task)
 	if err != nil {
 		task.Log.Errorf("trigger seed peer download task failed: %s", err.Error())
 		s.handleTaskFail(ctx, task, nil, err)
