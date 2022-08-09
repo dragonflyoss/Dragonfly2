@@ -27,6 +27,8 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	"google.golang.org/grpc/status"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -211,5 +213,8 @@ func buildDownloadPieceHTTPRequest(ctx context.Context, d *DownloadPieceRequest)
 	// TODO use string.Builder
 	req.Header.Add("Range", fmt.Sprintf("bytes=%d-%d",
 		d.piece.RangeStart, d.piece.RangeStart+uint64(d.piece.RangeSize)-1))
+
+	// inject trace id into request header
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 	return req
 }
