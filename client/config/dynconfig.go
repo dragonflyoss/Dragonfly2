@@ -19,13 +19,11 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -50,9 +48,6 @@ type DynconfigData struct {
 }
 
 type Dynconfig interface {
-	// Get resolver addresses of grpc.
-	GetResolverAddrs() ([]resolver.Address, error)
-
 	// Get the dynamic schedulers config from manager.
 	GetSchedulers() ([]*managerv1.Scheduler, error)
 
@@ -111,24 +106,6 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOp
 		cachePath: cachePath,
 		Dynconfig: client,
 	}, nil
-}
-
-func (d *dynconfig) GetResolverAddrs() ([]resolver.Address, error) {
-	schedulers, err := d.GetSchedulers()
-	if err != nil {
-		return nil, err
-	}
-
-	addrs := make([]resolver.Address, 0, len(schedulers))
-	for _, scheduler := range schedulers {
-		addr := resolver.Address{
-			Addr: fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort()),
-		}
-
-		addrs = append(addrs, addr)
-	}
-
-	return addrs, nil
 }
 
 func (d *dynconfig) GetSchedulers() ([]*managerv1.Scheduler, error) {

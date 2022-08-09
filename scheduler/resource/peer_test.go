@@ -55,7 +55,8 @@ func TestPeer_NewPeer(t *testing.T) {
 			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
-				assert.Empty(peer.Pieces)
+				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.Stream)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
@@ -74,7 +75,8 @@ func TestPeer_NewPeer(t *testing.T) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
 				assert.Equal(peer.Tag, "foo")
-				assert.Empty(peer.Pieces)
+				assert.Equal(peer.Pieces.Len(), uint(0))
+				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)
 				assert.Empty(peer.Stream)
 				assert.Equal(peer.FSM.Current(), PeerStatePending)
@@ -292,6 +294,74 @@ func TestPeer_Parents(t *testing.T) {
 
 				assert.Equal(len(peer.Parents()), 1)
 				assert.Equal(peer.Parents()[0].ID, mockSeedPeerID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctl := gomock.NewController(t)
+			defer ctl.Finish()
+			stream := mocks.NewMockScheduler_ReportPieceResultServer(ctl)
+
+			mockHost := NewHost(mockRawHost)
+			mockTask := NewTask(mockTaskID, mockTaskURL, commonv1.TaskType_Normal, mockTaskURLMeta, WithBackToSourceLimit(mockTaskBackToSourceLimit))
+			peer := NewPeer(mockPeerID, mockTask, mockHost)
+			seedPeer := NewPeer(mockSeedPeerID, mockTask, mockHost)
+			tc.expect(t, peer, seedPeer, stream)
+		})
+	}
+}
+
+func TestPeer_MainParent(t *testing.T) {
+	tests := []struct {
+		name   string
+		expect func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer)
+	}{
+		{
+			name: "get main parent",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Pieces.Add(&schedulerv1.PieceResult{
+					DstPid: peer.ID,
+				})
+				peer.Pieces.Add(&schedulerv1.PieceResult{
+					DstPid: seedPeer.ID,
+				})
+				peer.Pieces.Add(&schedulerv1.PieceResult{
+					DstPid: seedPeer.ID,
+				})
+
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				parent, err := peer.MainParent()
+				assert.NoError(err)
+				assert.Equal(parent.ID, seedPeer.ID)
+			},
+		},
+		{
+			name: "can not found main parent",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Pieces.Add(&schedulerv1.PieceResult{})
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				_, err := peer.MainParent()
+				assert.EqualError(err, "can not found main parent")
+			},
+		},
+		{
+			name: "get main parent failed",
+			expect: func(t *testing.T, peer *Peer, seedPeer *Peer, stream schedulerv1.Scheduler_ReportPieceResultServer) {
+				assert := assert.New(t)
+				peer.Pieces.Add(&schedulerv1.PieceResult{
+					DstPid: "foo",
+				})
+				peer.Pieces.Add(&schedulerv1.PieceResult{})
+				peer.Task.StorePeer(peer)
+				peer.Task.StorePeer(seedPeer)
+				_, err := peer.MainParent()
+				assert.EqualError(err, "vertex not found")
 			},
 		},
 	}

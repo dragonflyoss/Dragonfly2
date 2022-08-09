@@ -27,7 +27,7 @@ import (
 )
 
 // @Summary Create Oauth
-// @Description create by json config
+// @Description Create by json config
 // @Tags Oauth
 // @Accept json
 // @Produce json

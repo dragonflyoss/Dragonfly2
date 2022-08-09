@@ -33,7 +33,8 @@ import (
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/consistent"
+	"d7y.io/dragonfly/v2/pkg/balancer"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
 )
 
@@ -68,10 +69,10 @@ func NewEndOfPiece(taskID, peerID string, finishedCount int32) *schedulerv1.Piec
 	}
 }
 
-// GetClient get scheduler clients using resolver and balancer
-func GetClient(opts ...grpc.DialOption) (Client, error) {
-	opts = append(opts,
-		grpc.WithDefaultServiceConfig(consistent.BalancerServiceConfig),
+// GetClient get scheduler clients using resolver and balancer,
+func GetClient(options ...grpc.DialOption) (Client, error) {
+	dialOptions := []grpc.DialOption{
+		grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
@@ -85,17 +86,22 @@ func GetClient(opts ...grpc.DialOption) (Client, error) {
 		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 			grpc_prometheus.StreamClientInterceptor,
 			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-		)))
+		)),
+	}
+	dialOptions = append(dialOptions, options...)
 
 	conn, err := grpc.Dial(
-		consistent.DragonflyScheme+"://"+consistent.DragonflyHostScheduler,
-		opts...,
+		resolver.SchedulerVirtualTarget,
+		dialOptions...,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &client{
 		conn,
 		schedulerv1.NewSchedulerClient(conn),
-	}, err
+	}, nil
 }
 
 // Client is the interface for grpc client.
@@ -129,22 +135,20 @@ type client struct {
 }
 
 // RegisterPeerTask registers a peer into task.
-func (sc *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
-
-	ctx = context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	resp, err := sc.SchedulerClient.RegisterPeerTask(ctx, req, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+	return c.SchedulerClient.RegisterPeerTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
 }
 
 // ReportPieceResult reports piece results and receives peer packets.
-func (sc *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
-
-	taskCtx := context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	stream, err := sc.SchedulerClient.ReportPieceResult(taskCtx, opts...)
+func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
+	stream, err := c.SchedulerClient.ReportPieceResult(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		options...,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +157,12 @@ func (sc *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTa
 }
 
 // ReportPeerResult reports downloading result for the peer.
-func (sc *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
-
-	ctx = context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	if _, err := sc.SchedulerClient.ReportPeerResult(ctx, req, opts...); err != nil {
+func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.ReportPeerResult(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 
@@ -164,10 +170,12 @@ func (sc *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 }
 
 // LeaveTask makes the peer leaving from task.
-func (sc *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
-
-	ctx = context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	if _, err := sc.SchedulerClient.LeaveTask(ctx, req, opts...); err != nil {
+func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.LeaveTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 
@@ -175,22 +183,21 @@ func (sc *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, op
 }
 
 // Checks if any peer has the given task.
-func (sc *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
-
-	ctx = context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	resp, err := sc.SchedulerClient.StatTask(ctx, req, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, options ...grpc.CallOption) (*schedulerv1.Task, error) {
+	return c.SchedulerClient.StatTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
 }
 
 // A peer announces that it has the announced task to other peers.
-func (sc *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
-
-	ctx = context.WithValue(ctx, consistent.ConsistentHashKey, req.TaskId)
-	if _, err := sc.SchedulerClient.AnnounceTask(ctx, req, opts...); err != nil {
+func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.AnnounceTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 

@@ -20,12 +20,9 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
-
-	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
@@ -44,6 +41,14 @@ var (
 )
 
 type DynconfigData struct {
+	ID               uint64            `yaml:"id" mapstructure:"id" json:"id"`
+	Hostname         string            `yaml:"hostname" mapstructure:"hostname" json:"host_name"`
+	Idc              string            `yaml:"idc" mapstructure:"idc" json:"idc"`
+	Location         string            `yaml:"location" mapstructure:"location" json:"location"`
+	NetTopology      string            `yaml:"netTopology" mapstructure:"netTopology" json:"net_topology"`
+	IP               string            `yaml:"ip" mapstructure:"ip" json:"ip"`
+	Port             int32             `yaml:"port" mapstructure:"port" json:"port"`
+	State            string            `yaml:"state" mapstructure:"state" json:"state"`
 	SeedPeers        []*SeedPeer       `yaml:"seedPeers" mapstructure:"seedPeers" json:"seed_peers"`
 	SchedulerCluster *SchedulerCluster `yaml:"schedulerCluster" mapstructure:"schedulerCluster" json:"scheduler_cluster"`
 }
@@ -75,17 +80,21 @@ func (c *SeedPeer) GetSeedPeerClusterConfig() (types.SeedPeerClusterConfig, bool
 }
 
 type SeedPeerCluster struct {
+	ID     uint64 `yaml:"id" mapstructure:"id" json:"id"`
+	Name   string `yaml:"name" mapstructure:"name" json:"name"`
 	Config []byte `yaml:"config" mapstructure:"config" json:"config"`
 }
 
 type SchedulerCluster struct {
+	ID           uint64 `yaml:"id" mapstructure:"id" json:"id"`
+	Name         string `yaml:"name" mapstructure:"name" json:"name"`
 	Config       []byte `yaml:"config" mapstructure:"config" json:"config"`
 	ClientConfig []byte `yaml:"clientConfig" mapstructure:"clientConfig" json:"client_config"`
 }
 
 type DynconfigInterface interface {
-	// Get resolver addresses of grpc.
-	GetResolverAddrs() ([]resolver.Address, error)
+	// Get the dynamic seed peers config from manager.
+	GetSeedPeers() ([]*SeedPeer, error)
 
 	// Get the scheduler cluster config.
 	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool)
@@ -149,22 +158,13 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	return d, nil
 }
 
-func (d *dynconfig) GetResolverAddrs() ([]resolver.Address, error) {
+func (d *dynconfig) GetSeedPeers() ([]*SeedPeer, error) {
 	data, err := d.Get()
 	if err != nil {
 		return nil, err
 	}
 
-	addrs := make([]resolver.Address, 0, len(data.SeedPeers))
-	for _, seedPeer := range data.SeedPeers {
-		addr := resolver.Address{
-			Addr: fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port),
-		}
-
-		addrs = append(addrs, addr)
-	}
-
-	return addrs, nil
+	return data.SeedPeers, nil
 }
 
 func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {

@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	io "io"
 	reflect "reflect"
 
 	storage "d7y.io/dragonfly/v2/scheduler/storage"
@@ -75,4 +76,19 @@ func (m *MockStorage) List() ([]storage.Record, error) {
 func (mr *MockStorageMockRecorder) List() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockStorage)(nil).List))
+}
+
+// Open mocks base method.
+func (m *MockStorage) Open() (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Open")
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Open indicates an expected call of Open.
+func (mr *MockStorageMockRecorder) Open() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Open", reflect.TypeOf((*MockStorage)(nil).Open))
 }

@@ -80,10 +80,9 @@ type client struct {
 	conn *grpc.ClientConn
 }
 
-// New creates manager client>
-func New(target string) (Client, error) {
-	conn, err := grpc.Dial(
-		target,
+// GetClient returns manager client.
+func GetClient(target string, options ...grpc.DialOption) (Client, error) {
+	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 		grpc.WithConnectParams(grpc.ConnectParams{
@@ -98,6 +97,12 @@ func New(target string) (Client, error) {
 			grpc_prometheus.StreamClientInterceptor,
 			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 		)),
+	}
+	dialOptions = append(dialOptions, options...)
+
+	conn, err := grpc.Dial(
+		target,
+		dialOptions...,
 	)
 	if err != nil {
 		return nil, err
@@ -109,13 +114,13 @@ func New(target string) (Client, error) {
 	}, nil
 }
 
-// NewWithAddrs creates manager client with addresses.
-func NewWithAddrs(netAddrs []dfnet.NetAddr) (Client, error) {
+// GetClientByAddr returns manager client with addresses.
+func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
 	for _, netAddr := range netAddrs {
 		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
 		if err := ipReachable.Check(); err == nil {
 			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return New(netAddr.Addr)
+			return GetClient(netAddr.Addr, opts...)
 		}
 		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
 	}

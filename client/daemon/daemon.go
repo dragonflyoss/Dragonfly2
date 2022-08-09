@@ -54,11 +54,12 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/consistent"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
 	"d7y.io/dragonfly/v2/pkg/reachable"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -122,12 +123,21 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
+		shed
 	)
 
 	if opt.Scheduler.Manager.Enable {
 		// New manager client
+		var managerDialOptions []grpc.DialOption
+		if opt.Options.Telemetry.Jaeger != "" {
+			managerDialOptions = append(managerDialOptions,
+				grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+				grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			)
+		}
+
 		var err error
-		managerClient, err = managerclient.NewWithAddrs(opt.Scheduler.Manager.NetAddrs)
+		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs, managerDialOptions...)
 		if err != nil {
 			return nil, err
 		}
@@ -138,31 +148,24 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 
-		// Get schedulers from manager
-		schedulers, err = dynconfig.GetSchedulers()
-		if err != nil {
-			return nil, err
-		}
+	// register resolver and balancer
+	resolver.RegisterScheduler(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
-		addrs = schedulersToAvailableNetAddrs(schedulers)
 	} else {
 		addrs = opt.Scheduler.NetAddrs
 	}
 	logger.Infof("initialize scheduler addresses: %#v", addrs)
 
-	var opts []grpc.DialOption
+	var schedulerClientOptions []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
-		opts = append(opts,
+		schedulerClientOptions = append(schedulerClientOptions,
 			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
 
-	// register resolver and balancer
-	consistent.RegisterResolver[*config.DynconfigData](dynconfig)
-	balancer.Register(consistent.NewConsistentHashRingBuilder(config.DefaultGRPCConnTTL, true, dynconfig))
-
-	sched, err := schedulerclient.GetClient(opts...)
+	sched, err := schedulerclient.GetClient(schedulerClientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -175,9 +178,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			PeerId: request.PeerID,
 		})
 		if er != nil {
-			logger.Errorf("step 4:leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
+			logger.Errorf("step 4: leave task %s/%s, error: %v", request.TaskID, request.PeerID, er)
 		} else {
-			logger.Infof("step 4:leave task %s/%s state ok", request.TaskID, request.PeerID)
+			logger.Infof("step 4: leave task %s/%s state ok", request.TaskID, request.PeerID)
 		}
 	}
 	storageManager, err := storage.NewStorageManager(opt.Storage.StoreStrategy, &opt.Storage,
@@ -218,6 +221,19 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
+	}
+	// enable grpc tracing
+	if opt.Options.Telemetry.Jaeger != "" {
+		downloadServerOption = append(
+			downloadServerOption,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+		peerServerOption = append(
+			peerServerOption,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
 	}
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern, downloadServerOption, peerServerOption)
 	if err != nil {
@@ -376,13 +392,10 @@ func (cd *clientDaemon) Serve() error {
 	if cd.Option.Download.DownloadGRPC.UnixListen == nil {
 		return errors.New("download grpc unix listen option is empty")
 	}
-	if cd.Option.Download.DownloadGRPC.UnixListen.Socket == "" {
-		cd.Option.Download.DownloadGRPC.UnixListen.Socket = cd.dfpath.DaemonSockPath()
-	}
-	_ = os.Remove(cd.Option.Download.DownloadGRPC.UnixListen.Socket)
+	_ = os.Remove(cd.dfpath.DaemonSockPath())
 	downloadListener, err := rpc.Listen(dfnet.NetAddr{
 		Type: dfnet.UNIX,
-		Addr: cd.Option.Download.DownloadGRPC.UnixListen.Socket,
+		Addr: cd.dfpath.DaemonSockPath(),
 	})
 	if err != nil {
 		logger.Errorf("failed to listen for download grpc service: %v", err)
@@ -707,45 +720,6 @@ func getSchedulerIPs(schedulers []*managerv1.Scheduler) []string {
 	}
 
 	return ips
-}
-
-// schedulersToAvailableNetAddrs coverts []*managerv1.Scheduler to available []dfnet.NetAddr.
-func schedulersToAvailableNetAddrs(schedulers []*managerv1.Scheduler) []dfnet.NetAddr {
-	var schedulerClusterID uint64
-	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
-	for _, scheduler := range schedulers {
-		// Check whether scheduler is in the same cluster
-		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
-			continue
-		}
-
-		// Check whether the ip can be reached
-		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
-		if err := ipReachable.Check(); err != nil {
-			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
-		} else {
-			schedulerClusterID = scheduler.SchedulerClusterId
-			netAddrs = append(netAddrs, dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
-			})
-			continue
-		}
-
-		// Check whether the host can be reached
-		hostReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port)})
-		if err := hostReachable.Check(); err != nil {
-			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
-		} else {
-			schedulerClusterID = scheduler.SchedulerClusterId
-			netAddrs = append(netAddrs, dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
-			})
-		}
-	}
-
-	return netAddrs
 }
 
 // announceSeedPeer announces seed peer to manager.

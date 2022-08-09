@@ -22,6 +22,7 @@ import (
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/go-sql-driver/mysql"
 	redigo "github.com/gomodule/redigo/redis"
 	"golang.org/x/crypto/bcrypt"
@@ -109,6 +110,14 @@ func Error() gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+		}
+
+		if errors.Is(err.Err, redis.Nil) {
+			c.JSON(http.StatusNotFound, ErrorResponse{
+				Message: http.StatusText(http.StatusNotFound),
+			})
+			c.Abort()
+			return
 		}
 
 		// Unknown error

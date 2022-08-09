@@ -458,6 +458,28 @@ func (pt *peerTaskConductor) cancel(code commonv1.Code, reason string) {
 	})
 }
 
+func (pt *peerTaskConductor) cancelNotRegisterred(code commonv1.Code, reason string) {
+	pt.statusOnce.Do(func() {
+		pt.failedCode = code
+		pt.failedReason = reason
+
+		metrics.PeerTaskFailedCount.WithLabelValues(metrics.FailTypeInit).Add(1)
+
+		pt.peerTaskManager.PeerTaskDone(pt.taskID)
+		pt.span.SetAttributes(config.AttributePeerTaskSuccess.Bool(false))
+		pt.span.SetAttributes(config.AttributePeerTaskCode.Int(int(pt.failedCode)))
+		pt.span.SetAttributes(config.AttributePeerTaskMessage.String(pt.failedReason))
+
+		close(pt.failCh)
+		pt.broker.Stop()
+		pt.span.End()
+		pt.pieceDownloadCancel()
+		if pt.pieceTaskSyncManager != nil {
+			pt.pieceTaskSyncManager.cancel()
+		}
+	})
+}
+
 // only use when receive back source code from scheduler
 func (pt *peerTaskConductor) markBackSource() {
 	pt.needBackSource.Store(true)

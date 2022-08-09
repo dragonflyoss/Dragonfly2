@@ -288,6 +288,10 @@ func (o *objectStorage) getObject(ctx *gin.Context) {
 
 		// Range header in dragonfly is without "bytes=".
 		urlMeta.Range = strings.TrimLeft(rangeHeader, "bytes=")
+
+		// When the request has a range header,
+		// there is no need to calculate md5, set this value to empty.
+		urlMeta.Digest = ""
 	}
 
 	signURL, err := client.GetSignURL(ctx, bucketName, objectKey, objectstorage.MethodGet, defaultSignExpireTime)

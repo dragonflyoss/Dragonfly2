@@ -1,0 +1,111 @@
+/*
+ *     Copyright 2022 The Dragonfly Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package resolver
+
+import (
+	"fmt"
+	"reflect"
+
+	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/resolver"
+
+	"d7y.io/dragonfly/v2/scheduler/config"
+)
+
+const (
+	// SeedPeerScheme is the seed peer schema used by resolver.
+	SeedPeerScheme = "sp"
+)
+
+var (
+	// SeedPeerVirtualTarget is seed peer virtual target.
+	SeedPeerVirtualTarget = fmt.Sprintf("%s://localhost", SeedPeerScheme)
+)
+
+var slogger = grpclog.Component("seed_peer_resolver")
+
+// SeedPeerResolver implement resolver.Builder.
+type SeedPeerResolver struct {
+	seedPeers []*config.SeedPeer
+	cc        resolver.ClientConn
+	dynconfig config.DynconfigInterface
+}
+
+// RegisterSeedPeer register the dragonfly resovler builder to the grpc with custom schema.
+func RegisterSeedPeer(dynconfig config.DynconfigInterface) {
+	resolver.Register(&SeedPeerResolver{dynconfig: dynconfig})
+}
+
+// Scheme returns the resolver scheme.
+func (r *SeedPeerResolver) Scheme() string {
+	return SeedPeerScheme
+}
+
+// Build creates a new resolver for the given target.
+//
+// gRPC dial calls Build synchronously, and fails if the returned error is
+// not nil.
+func (r *SeedPeerResolver) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	r.cc = cc
+	r.dynconfig.Register(r)
+	r.ResolveNow(resolver.ResolveNowOptions{})
+	return r, nil
+}
+
+// ResolveNow will be called by gRPC to try to resolve the target name again.
+// gRPC will trigger resolveNow everytime SubConn connect fail. But we only need
+// to refresh addresses from manager when all SubConn fail.
+// So here we don't trigger resolving to reduce the pressure of manager.
+func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
+	seedPeers, err := r.dynconfig.GetSeedPeers()
+	if err != nil {
+		slogger.Errorf("get resolve addresses error %v", err)
+		return
+	}
+
+	if reflect.DeepEqual(r.seedPeers, seedPeers) {
+		slogger.Infof("resolve seed peers deep equal: %v", seedPeers)
+		return
+	}
+	r.seedPeers = seedPeers
+
+	addrs := make([]resolver.Address, 0, len(seedPeers))
+	for _, seedPeer := range seedPeers {
+		addr := resolver.Address{
+			Addr: fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port),
+		}
+
+		addrs = append(addrs, addr)
+	}
+
+	slogger.Infof("update resolve addrs:%v", addrs)
+	if err := r.cc.UpdateState(resolver.State{
+		Addresses: addrs,
+	}); err != nil {
+		slogger.Errorf("resolver update ClientConn error %v", err)
+	}
+}
+
+// Close closes the resolver.
+func (r *SeedPeerResolver) Close() {
+	r.dynconfig.Deregister(r)
+}
+
+// OnNotify is triggered and resolver address is updated.
+func (r *SeedPeerResolver) OnNotify(data *config.DynconfigData) {
+	r.ResolveNow(resolver.ResolveNowOptions{})
+}

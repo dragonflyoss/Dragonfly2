@@ -442,7 +442,15 @@ func (s *Service) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTas
 
 		// Load downloaded piece infos.
 		for _, pieceInfo := range req.PiecePacket.PieceInfos {
-			peer.Pieces.Set(uint(pieceInfo.PieceNum))
+			peer.Pieces.Add(&schedulerv1.PieceResult{
+				TaskId:          taskID,
+				SrcPid:          peerID,
+				DstPid:          req.PiecePacket.DstPid,
+				Success:         true,
+				PieceInfo:       pieceInfo,
+				ExtendAttribute: req.PiecePacket.ExtendAttribute,
+			})
+			peer.FinishedPieces.Set(uint(pieceInfo.PieceNum))
 			peer.AppendPieceCost(int64(pieceInfo.DownloadCost) * int64(time.Millisecond))
 			task.StorePiece(pieceInfo)
 		}
@@ -584,7 +592,7 @@ func (s *Service) registerPeer(ctx context.Context, peerID string, task *resourc
 func (s *Service) triggerSeedPeerTask(ctx context.Context, task *resource.Task) {
 	task.Log.Infof("trigger seed peer download task and task status is %s", task.FSM.Current())
 	peer, endOfPiece, err := s.resource.SeedPeer().TriggerTask(
-		trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx)), task)
+		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), task)
 	if err != nil {
 		task.Log.Errorf("trigger seed peer download task failed: %s", err.Error())
 		s.handleTaskFail(ctx, task, nil, err)
@@ -638,8 +646,9 @@ func (s *Service) handleEndOfPiece(ctx context.Context, peer *resource.Peer) {}
 
 // handlePieceSuccess handles successful piece.
 func (s *Service) handlePieceSuccess(ctx context.Context, peer *resource.Peer, piece *schedulerv1.PieceResult) {
-	// Update peer piece info
-	peer.Pieces.Set(uint(piece.PieceInfo.PieceNum))
+	// Update peer piece info.
+	peer.Pieces.Add(piece)
+	peer.FinishedPieces.Set(uint(piece.PieceInfo.PieceNum))
 	peer.AppendPieceCost(pkgtime.SubNano(int64(piece.EndTime), int64(piece.BeginTime)).Milliseconds())
 
 	// When the peer downloads back-to-source,
@@ -843,24 +852,43 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 
 // createRecord stores peer download records.
 func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedulerv1.PeerResult) {
+	parent, err := peer.MainParent()
+	if err != nil {
+		peer.Log.Error(err)
+		return
+	}
+
 	record := storage.Record{
-		ID:              peer.ID,
-		IP:              peer.Host.IP,
-		Hostname:        peer.Host.Hostname,
-		Tag:             peer.Tag,
-		Cost:            req.Cost,
-		PieceCount:      int32(peer.Pieces.Count()),
-		TotalPieceCount: peer.Task.TotalPieceCount.Load(),
-		ContentLength:   peer.Task.ContentLength.Load(),
-		SecurityDomain:  peer.Host.SecurityDomain,
-		IDC:             peer.Host.IDC,
-		NetTopology:     peer.Host.NetTopology,
-		Location:        peer.Host.Location,
-		FreeUploadLoad:  peer.Host.FreeUploadLoad(),
-		State:           peerState,
-		HostType:        int(peer.Host.Type),
-		CreateAt:        peer.CreateAt.Load().UnixNano(),
-		UpdateAt:        peer.UpdateAt.Load().UnixNano(),
+		ID:                   peer.ID,
+		IP:                   peer.Host.IP,
+		Hostname:             peer.Host.Hostname,
+		Tag:                  peer.Tag,
+		Cost:                 req.Cost,
+		PieceCount:           int32(peer.FinishedPieces.Count()),
+		TotalPieceCount:      peer.Task.TotalPieceCount.Load(),
+		ContentLength:        peer.Task.ContentLength.Load(),
+		SecurityDomain:       peer.Host.SecurityDomain,
+		IDC:                  peer.Host.IDC,
+		NetTopology:          peer.Host.NetTopology,
+		Location:             peer.Host.Location,
+		FreeUploadLoad:       peer.Host.FreeUploadLoad(),
+		State:                peerState,
+		HostType:             int(peer.Host.Type),
+		CreateAt:             peer.CreateAt.Load().UnixNano(),
+		UpdateAt:             peer.UpdateAt.Load().UnixNano(),
+		ParentID:             parent.ID,
+		ParentIP:             parent.Host.IP,
+		ParentHostname:       parent.Host.Hostname,
+		ParentTag:            parent.Tag,
+		ParentPieceCount:     int32(parent.FinishedPieces.Count()),
+		ParentSecurityDomain: parent.Host.SecurityDomain,
+		ParentIDC:            parent.Host.IDC,
+		ParentNetTopology:    parent.Host.NetTopology,
+		ParentLocation:       parent.Host.Location,
+		ParentFreeUploadLoad: parent.Host.FreeUploadLoad(),
+		ParentHostType:       int(parent.Host.Type),
+		ParentCreateAt:       parent.CreateAt.Load().UnixNano(),
+		ParentUpdateAt:       parent.UpdateAt.Load().UnixNano(),
 	}
 
 	if err := s.storage.Create(record); err != nil {

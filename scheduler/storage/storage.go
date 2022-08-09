@@ -34,6 +34,7 @@ import (
 	"github.com/gocarina/gocsv"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgio "d7y.io/dragonfly/v2/pkg/io"
 )
 
 const (
@@ -182,6 +183,9 @@ type Storage interface {
 	// List returns all of records in csv file.
 	List() ([]Record, error)
 
+	// Open opens storage for read, it returns io.ReadCloser of storage files.
+	Open() (io.ReadCloser, error)
+
 	// Clear removes all record files.
 	Clear() error
 }
@@ -279,10 +283,10 @@ func (s *storage) List() ([]Record, error) {
 	}
 
 	var readers []io.Reader
-	var closers []io.ReadCloser
+	var readClosers []io.ReadCloser
 	defer func() {
-		for _, closer := range closers {
-			if err := closer.Close(); err != nil {
+		for _, readCloser := range readClosers {
+			if err := readCloser.Close(); err != nil {
 				logger.Error(err)
 			}
 		}
@@ -295,7 +299,7 @@ func (s *storage) List() ([]Record, error) {
 		}
 
 		readers = append(readers, file)
-		closers = append(closers, file)
+		readClosers = append(readClosers, file)
 	}
 
 	var records []Record
@@ -304,6 +308,29 @@ func (s *storage) List() ([]Record, error) {
 	}
 
 	return records, nil
+}
+
+// Open opens storage for read, it returns io.ReadCloser of storage files.
+func (s *storage) Open() (io.ReadCloser, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	fileInfos, err := s.backups()
+	if err != nil {
+		return nil, err
+	}
+
+	var readClosers []io.ReadCloser
+	for _, fileInfo := range fileInfos {
+		file, err := os.Open(filepath.Join(s.baseDir, fileInfo.Name()))
+		if err != nil {
+			return nil, err
+		}
+
+		readClosers = append(readClosers, file)
+	}
+
+	return pkgio.MultiReadCloser(readClosers...), nil
 }
 
 // Clear removes all records.

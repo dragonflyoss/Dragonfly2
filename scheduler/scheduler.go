@@ -27,14 +27,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/internal/constants"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/net/netutil"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -49,7 +52,7 @@ import (
 const (
 	// gracefulStopTimeout specifies a time limit for
 	// grpc server to complete a graceful shutdown.
-	gracefulStopTimeout = 10 * time.Second
+	gracefulStopTimeout = 10 * time.Minute
 )
 
 type Server struct {
@@ -79,7 +82,15 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s := &Server{config: cfg}
 
 	// Initialize manager client.
-	managerClient, err := managerclient.New(cfg.Manager.Addr)
+	var managerClientOptions []grpc.DialOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		managerClientOptions = append(managerClientOptions,
+			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+		)
+	}
+
+	managerClient, err := managerclient.GetClient(cfg.Manager.Addr, managerClientOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,31 +116,24 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	}
 	s.dynconfig = dynconfig
 
+	// register resolver and balancer
+	resolver.RegisterSeedPeer(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
+
 	// Initialize GC.
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
 
-	// Initialize grpc options.
-	var (
-		serverOptions []grpc.ServerOption
-		dialOptions   []grpc.DialOption
-	)
-
+	// Initialize resource.
+	var seedPeerDialOptions []grpc.DialOption
 	if s.config.Options.Telemetry.Jaeger != "" {
-		serverOptions = append(
-			serverOptions,
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		)
-
-		dialOptions = append(
-			dialOptions,
+		seedPeerDialOptions = append(
+			seedPeerDialOptions,
 			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
 
-	// Initialize resource.
-	resource, err := resource.New(cfg, s.gc, dynconfig, dialOptions...)
+	resource, err := resource.New(cfg, s.gc, dynconfig, seedPeerDialOptions...)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +151,16 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	service := service.New(cfg, resource, scheduler, dynconfig, storage)
 
 	// Initialize grpc service.
-	svr := rpcserver.New(service, serverOptions...)
+	var schedulerServerOptions []grpc.ServerOption
+	if s.config.Options.Telemetry.Jaeger != "" {
+		schedulerServerOptions = append(
+			schedulerServerOptions,
+			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
+		)
+	}
+
+	svr := rpcserver.New(service, schedulerServerOptions...)
 	s.grpcServer = svr
 
 	// Initialize job service.
