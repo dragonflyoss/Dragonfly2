@@ -331,6 +331,10 @@ func TestPeer_MainParent(t *testing.T) {
 				peer.Pieces.Add(&schedulerv1.PieceResult{
 					DstPid: seedPeer.ID,
 				})
+				peer.Pieces.Add(&schedulerv1.PieceResult{
+					DstPid: seedPeer.ID,
+				})
+
 				peer.Task.StorePeer(peer)
 				peer.Task.StorePeer(seedPeer)
 				parent, err := peer.MainParent()
