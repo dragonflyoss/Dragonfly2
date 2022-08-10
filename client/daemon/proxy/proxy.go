@@ -100,6 +100,9 @@ type Proxy struct {
 	// defaultTag is used when http request without X-Dragonfly-Tag Header
 	defaultTag string
 
+	// defaultApplication is used when http request without X-Dragonfly-Application Header
+	defaultApplication string
+
 	// defaultFilter is used for registering steam task
 	defaultPattern commonv1.Pattern
 
@@ -222,6 +225,14 @@ func WithDefaultFilter(f string) Option {
 func WithDefaultTag(t string) Option {
 	return func(p *Proxy) *Proxy {
 		p.defaultTag = t
+		return p
+	}
+}
+
+// WithDefaultApplication sets default tag for http requests without X-Dragonfly-Application Header
+func WithDefaultApplication(t string) Option {
+	return func(p *Proxy) *Proxy {
+		p.defaultApplication = t
 		return p
 	}
 }
@@ -504,6 +515,7 @@ func (proxy *Proxy) newTransport(tlsConfig *tls.Config) http.RoundTripper {
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultPattern(proxy.defaultPattern),
 		transport.WithDefaultTag(proxy.defaultTag),
+		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	return rt
@@ -518,6 +530,7 @@ func (proxy *Proxy) mirrorRegistry(w http.ResponseWriter, r *http.Request) {
 		transport.WithCondition(proxy.shouldUseDragonflyForMirror),
 		transport.WithDefaultFilter(proxy.defaultFilter),
 		transport.WithDefaultTag(proxy.defaultTag),
+		transport.WithDefaultApplication(proxy.defaultApplication),
 		transport.WithDumpHTTPContent(proxy.dumpHTTPContent),
 	)
 	if err != nil {
