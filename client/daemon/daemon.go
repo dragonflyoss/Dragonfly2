@@ -58,7 +58,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/reachable"
 	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
@@ -123,7 +122,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
-		shed
 	)
 
 	if opt.Scheduler.Manager.Enable {
@@ -148,10 +146,9 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 
-	// register resolver and balancer
-	resolver.RegisterScheduler(dynconfig)
-	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
-
+		// register resolver and balancer
+		resolver.RegisterScheduler(dynconfig)
+		balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 	} else {
 		addrs = opt.Scheduler.NetAddrs
 	}
