@@ -174,11 +174,7 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 			mockManagerClient := mocks.NewMockManagerClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
 
-			d, err := New(ManagerSourceType, []Option{
-				WithManagerClient(mockManagerClient),
-				WithCachePath(cachePath),
-				WithExpireTime(tc.expire),
-			}...)
+			d, err := New(mockManagerClient, cachePath, tc.expire)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -191,83 +187,6 @@ func TestDynconfigUnmarshal_ManagerSourceType(t *testing.T) {
 
 			tc.expect(t, data)
 			tc.cleanFileCache(t)
-		})
-	}
-}
-
-func TestDynconfigUnmarshal_LocalSourceType(t *testing.T) {
-	schedulerName := "foo"
-	configPath := filepath.Join("./testdata", "dynconfig.json")
-
-	tests := []struct {
-		name       string
-		expire     time.Duration
-		dynconfig  TestDynconfig
-		configPath string
-		sleep      func()
-		expect     func(t *testing.T, data any)
-	}{
-		{
-			name:   "unmarshals dynconfig success with local file",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			configPath: configPath,
-			sleep:      func() {},
-			expect: func(t *testing.T, data any) {
-				assert := assert.New(t)
-				var d TestDynconfig
-				if err := mapstructure.Decode(data, &d); err != nil {
-					t.Error(err)
-				}
-
-				assert.EqualValues(d, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-		{
-			name:   "unmarshals expire dynconfig with local file",
-			expire: 20 * time.Millisecond,
-			dynconfig: TestDynconfig{
-				Scheduler: SchedulerOption{
-					Name: schedulerName,
-				},
-			},
-			configPath: configPath,
-			sleep: func() {
-				time.Sleep(30 * time.Millisecond)
-			},
-			expect: func(t *testing.T, data any) {
-				assert := assert.New(t)
-				assert.EqualValues(data, TestDynconfig{
-					Scheduler: SchedulerOption{
-						Name: schedulerName,
-					},
-				})
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			d, err := New(LocalSourceType, []Option{WithLocalConfigPath(configPath)}...)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			var data TestDynconfig
-			if err := d.Unmarshal(&data); err != nil {
-				t.Fatal(err)
-			}
-
-			tc.expect(t, data)
 		})
 	}
 }

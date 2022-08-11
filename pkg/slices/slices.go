@@ -41,3 +41,17 @@ func FindDuplicate[T comparable](s []T) (T, bool) {
 	var zero T
 	return zero, false
 }
+
+// RemoveDuplicates removes duplicate element in a collection.
+func RemoveDuplicates[T comparable](s []T) []T {
+	var result []T
+	visited := make(map[T]bool, len(s))
+	for _, v := range s {
+		if !visited[v] {
+			visited[v] = true
+			result = append(result, v)
+		}
+	}
+
+	return result
+}

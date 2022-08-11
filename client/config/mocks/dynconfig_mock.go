@@ -9,8 +9,8 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/manager/v1"
 	config "d7y.io/dragonfly/v2/client/config"
-	consistent "d7y.io/dragonfly/v2/pkg/consistent"
 	gomock "github.com/golang/mock/gomock"
+	resolver "google.golang.org/grpc/resolver"
 )
 
 // MockDynconfig is a mock of Dynconfig interface.
@@ -36,22 +36,8 @@ func (m *MockDynconfig) EXPECT() *MockDynconfigMockRecorder {
 	return m.recorder
 }
 
-// Convert mocks base method.
-func (m *MockDynconfig) Convert(host string, data *config.DynconfigData) []string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Convert", host, data)
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// Convert indicates an expected call of Convert.
-func (mr *MockDynconfigMockRecorder) Convert(host, data interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Convert", reflect.TypeOf((*MockDynconfig)(nil).Convert), host, data)
-}
-
 // Deregister mocks base method.
-func (m *MockDynconfig) Deregister(arg0 consistent.Observer[*config.DynconfigData]) {
+func (m *MockDynconfig) Deregister(arg0 config.Observer) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Deregister", arg0)
 }
@@ -92,6 +78,21 @@ func (mr *MockDynconfigMockRecorder) GetObjectStorage() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockDynconfig)(nil).GetObjectStorage))
 }
 
+// GetResolveSchedulerAddrs mocks base method.
+func (m *MockDynconfig) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResolveSchedulerAddrs")
+	ret0, _ := ret[0].([]resolver.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResolveSchedulerAddrs indicates an expected call of GetResolveSchedulerAddrs.
+func (mr *MockDynconfigMockRecorder) GetResolveSchedulerAddrs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResolveSchedulerAddrs", reflect.TypeOf((*MockDynconfig)(nil).GetResolveSchedulerAddrs))
+}
+
 // GetSchedulers mocks base method.
 func (m *MockDynconfig) GetSchedulers() ([]*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
@@ -122,7 +123,7 @@ func (mr *MockDynconfigMockRecorder) Notify() *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockDynconfig) Register(arg0 consistent.Observer[*config.DynconfigData]) {
+func (m *MockDynconfig) Register(arg0 config.Observer) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Register", arg0)
 }
@@ -131,20 +132,6 @@ func (m *MockDynconfig) Register(arg0 consistent.Observer[*config.DynconfigData]
 func (mr *MockDynconfigMockRecorder) Register(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockDynconfig)(nil).Register), arg0)
-}
-
-// Reload mocks base method.
-func (m *MockDynconfig) Reload() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Reload")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Reload indicates an expected call of Reload.
-func (mr *MockDynconfigMockRecorder) Reload() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Reload", reflect.TypeOf((*MockDynconfig)(nil).Reload))
 }
 
 // Serve mocks base method.
@@ -173,4 +160,39 @@ func (m *MockDynconfig) Stop() error {
 func (mr *MockDynconfigMockRecorder) Stop() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockDynconfig)(nil).Stop))
+}
+
+// MockObserver is a mock of Observer interface.
+type MockObserver struct {
+	ctrl     *gomock.Controller
+	recorder *MockObserverMockRecorder
+}
+
+// MockObserverMockRecorder is the mock recorder for MockObserver.
+type MockObserverMockRecorder struct {
+	mock *MockObserver
+}
+
+// NewMockObserver creates a new mock instance.
+func NewMockObserver(ctrl *gomock.Controller) *MockObserver {
+	mock := &MockObserver{ctrl: ctrl}
+	mock.recorder = &MockObserverMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockObserver) EXPECT() *MockObserverMockRecorder {
+	return m.recorder
+}
+
+// OnNotify mocks base method.
+func (m *MockObserver) OnNotify(arg0 *config.DynconfigData) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "OnNotify", arg0)
+}
+
+// OnNotify indicates an expected call of OnNotify.
+func (mr *MockObserverMockRecorder) OnNotify(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OnNotify", reflect.TypeOf((*MockObserver)(nil).OnNotify), arg0)
 }

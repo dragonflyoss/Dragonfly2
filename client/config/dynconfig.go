@@ -19,28 +19,27 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
+	"errors"
 	"time"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-
-	logger "d7y.io/dragonfly/v2/internal/dflog"
-	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
-	"d7y.io/dragonfly/v2/manager/searcher"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
-var (
-	// Daemon cache file name
-	cacheFileName = "daemon_dynconfig"
+type SourceType string
 
-	// Watch dynconfig interval
-	watchInterval = 10 * time.Second
+const (
+	// LocalSourceType represents read configuration from local file
+	LocalSourceType = "local"
+
+	// ManagerSourceType represents pulling configuration from manager
+	ManagerSourceType = "manager"
 )
+
+// Watch dynconfig interval
+var watchInterval = 10 * time.Second
 
 type DynconfigData struct {
 	Schedulers    []*managerv1.Scheduler
@@ -48,6 +47,9 @@ type DynconfigData struct {
 }
 
 type Dynconfig interface {
+	// Get the dynamic schedulers resolve addrs.
+	GetResolveSchedulerAddrs() ([]resolver.Address, error)
+
 	// Get the dynamic schedulers config from manager.
 	GetSchedulers() ([]*managerv1.Scheduler, error)
 
@@ -66,9 +68,6 @@ type Dynconfig interface {
 	// Notify publishes new events to listeners.
 	Notify() error
 
-	// Refresh refreshes dynconfig in cache and publishes new events to listeners.
-	Refresh() error
-
 	// Serve the dynconfig listening service.
 	Serve() error
 
@@ -76,175 +75,105 @@ type Dynconfig interface {
 	Stop() error
 }
 
+type dynconfig struct {
+	sourceType    SourceType
+	managerClient managerclient.Client
+	cacheDir      string
+	expire        time.Duration
+}
+
 type Observer interface {
 	// OnNotify allows an event to be published to interface implementations.
 	OnNotify(*DynconfigData)
 }
 
-type dynconfig struct {
-	*internaldynconfig.Dynconfig
-	observers map[Observer]struct{}
-	done      chan bool
-	cachePath string
+// Option is a functional option for configuring the dynconfig.
+type Option func(d *dynconfig) error
+
+// WithManagerClient set the manager client.
+func WithManagerClient(c managerclient.Client) Option {
+	return func(d *dynconfig) error {
+		d.managerClient = c
+		return nil
+	}
 }
 
-func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, hostOption HostOption, expire time.Duration) (Dynconfig, error) {
-	cachePath := filepath.Join(cacheDir, cacheFileName)
-	client, err := internaldynconfig.New(
-		internaldynconfig.ManagerSourceType,
-		internaldynconfig.WithManagerClient(newManagerClient(rawManagerClient, hostOption)),
-		internaldynconfig.WithExpireTime(expire),
-		internaldynconfig.WithCachePath(cachePath),
-	)
+// WithCacheDir set the cache dir.
+func WithCacheDir(dir string) Option {
+	return func(d *dynconfig) error {
+		d.cacheDir = dir
+		return nil
+	}
+}
+
+// WithExpireTime set the expire time for cache.
+func WithExpireTime(e time.Duration) Option {
+	return func(d *dynconfig) error {
+		d.expire = e
+		return nil
+	}
+}
+
+// New returns a new dynconfig interface.
+func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Option) (Dynconfig, error) {
+	d, err := NewDynconfigWithOptions(sourceType, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &dynconfig{
-		observers: map[Observer]struct{}{},
-		done:      make(chan bool),
-		cachePath: cachePath,
-		Dynconfig: client,
-	}, nil
-}
-
-func (d *dynconfig) GetSchedulers() ([]*managerv1.Scheduler, error) {
-	data, err := d.Get()
-	if err != nil {
+	if err := d.validate(); err != nil {
 		return nil, err
 	}
 
-	return data.Schedulers, nil
-}
-
-func (d *dynconfig) GetObjectStorage() (*managerv1.ObjectStorage, error) {
-	data, err := d.Get()
-	if err != nil {
-		return nil, err
+	var di Dynconfig
+	switch sourceType {
+	case ManagerSourceType:
+		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.expire)
+		if err != nil {
+			return nil, err
+		}
+	case LocalSourceType:
+		di, err = newDynconfigLocal(cfg)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("unknown source type")
 	}
 
-	return data.ObjectStorage, nil
+	return di, nil
 }
 
-func (d *dynconfig) Get() (*DynconfigData, error) {
-	var data DynconfigData
-	if err := d.Unmarshal(&data); err != nil {
-		return nil, err
+// NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
+func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*dynconfig, error) {
+	d := &dynconfig{
+		sourceType: sourceType,
 	}
 
-	return &data, nil
-}
-
-func (d *dynconfig) Register(l Observer) {
-	d.observers[l] = struct{}{}
-}
-
-func (d *dynconfig) Deregister(l Observer) {
-	delete(d.observers, l)
-}
-
-func (d *dynconfig) Refresh() error {
-	if err := d.Dynconfig.Refresh(); err != nil {
-		return err
-	}
-
-	return d.Notify()
-}
-
-func (d *dynconfig) Notify() error {
-	data, err := d.Get()
-	if err != nil {
-		return err
-	}
-
-	for o := range d.observers {
-		o.OnNotify(data)
-	}
-
-	return nil
-}
-
-func (d *dynconfig) Serve() error {
-	if err := d.Notify(); err != nil {
-		return err
-	}
-
-	go d.watch()
-
-	return nil
-}
-
-func (d *dynconfig) watch() {
-	tick := time.NewTicker(watchInterval)
-
-	for {
-		select {
-		case <-tick.C:
-			if err := d.Notify(); err != nil {
-				logger.Error("dynconfig notify failed", err)
-			}
-		case <-d.done:
-			return
+	for _, opt := range options {
+		if err := opt(d); err != nil {
+			return nil, err
 		}
 	}
+
+	return d, nil
 }
 
-func (d *dynconfig) Stop() error {
-	close(d.done)
-	if err := os.Remove(d.cachePath); err != nil {
-		return err
+// validate dynconfig parameters.
+func (d *dynconfig) validate() error {
+	if d.sourceType == ManagerSourceType {
+		if d.managerClient == nil {
+			return errors.New("manager dynconfig requires parameter ManagerClient")
+		}
+
+		if d.cacheDir == "" {
+			return errors.New("manager dynconfig requires parameter CacheDir")
+		}
+
+		if d.expire == 0 {
+			return errors.New("manager dynconfig requires parameter ExpireTime")
+		}
 	}
 
 	return nil
-}
-
-type managerClient struct {
-	managerclient.Client
-	hostOption HostOption
-}
-
-// New the manager client used by dynconfig
-func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
-	return &managerClient{
-		Client:     client,
-		hostOption: hostOption,
-	}
-}
-
-func (mc *managerClient) Get() (any, error) {
-	listSchedulersResp, err := mc.ListSchedulers(&managerv1.ListSchedulersRequest{
-		SourceType: managerv1.SourceType_PEER_SOURCE,
-		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.AdvertiseIP,
-		HostInfo: map[string]string{
-			searcher.ConditionSecurityDomain: mc.hostOption.SecurityDomain,
-			searcher.ConditionIDC:            mc.hostOption.IDC,
-			searcher.ConditionNetTopology:    mc.hostOption.NetTopology,
-			searcher.ConditionLocation:       mc.hostOption.Location,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	getObjectStorageResp, err := mc.GetObjectStorage(&managerv1.GetObjectStorageRequest{
-		SourceType: managerv1.SourceType_PEER_SOURCE,
-		HostName:   mc.hostOption.Hostname,
-		Ip:         mc.hostOption.AdvertiseIP,
-	})
-	if err != nil {
-		if s, ok := status.FromError(err); ok &&
-			(s.Code() == codes.NotFound || s.Code() == codes.Unimplemented) {
-			return DynconfigData{
-				Schedulers: listSchedulersResp.Schedulers,
-			}, nil
-		}
-
-		return nil, err
-	}
-
-	return DynconfigData{
-		Schedulers:    listSchedulersResp.Schedulers,
-		ObjectStorage: getObjectStorageResp,
-	}, nil
 }

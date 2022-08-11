@@ -10,8 +10,6 @@ import (
 
 	v1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	v10 "d7y.io/api/pkg/apis/common/v1"
-	dfnet "d7y.io/dragonfly/v2/pkg/dfnet"
-	client "d7y.io/dragonfly/v2/pkg/rpc/cdnsystem/client"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
@@ -40,25 +38,11 @@ func (m *MockSeedPeerClient) EXPECT() *MockSeedPeerClientMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method.
-func (m *MockSeedPeerClient) Close() error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Close")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Close indicates an expected call of Close.
-func (mr *MockSeedPeerClientMockRecorder) Close() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSeedPeerClient)(nil).Close))
-}
-
 // GetPieceTasks mocks base method.
-func (m *MockSeedPeerClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *v10.PieceTaskRequest, opts ...grpc.CallOption) (*v10.PiecePacket, error) {
+func (m *MockSeedPeerClient) GetPieceTasks(arg0 context.Context, arg1 *v10.PieceTaskRequest, arg2 ...grpc.CallOption) (*v10.PiecePacket, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, addr, req}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetPieceTasks", varargs...)
@@ -68,29 +52,29 @@ func (m *MockSeedPeerClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAd
 }
 
 // GetPieceTasks indicates an expected call of GetPieceTasks.
-func (mr *MockSeedPeerClientMockRecorder) GetPieceTasks(ctx, addr, req interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockSeedPeerClientMockRecorder) GetPieceTasks(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, addr, req}, opts...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPieceTasks", reflect.TypeOf((*MockSeedPeerClient)(nil).GetPieceTasks), varargs...)
 }
 
 // ObtainSeeds mocks base method.
-func (m *MockSeedPeerClient) ObtainSeeds(ctx context.Context, sr *v1.SeedRequest, opts ...grpc.CallOption) (*client.PieceSeedStream, error) {
+func (m *MockSeedPeerClient) ObtainSeeds(arg0 context.Context, arg1 *v1.SeedRequest, arg2 ...grpc.CallOption) (v1.Seeder_ObtainSeedsClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, sr}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "ObtainSeeds", varargs...)
-	ret0, _ := ret[0].(*client.PieceSeedStream)
+	ret0, _ := ret[0].(v1.Seeder_ObtainSeedsClient)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ObtainSeeds indicates an expected call of ObtainSeeds.
-func (mr *MockSeedPeerClientMockRecorder) ObtainSeeds(ctx, sr interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockSeedPeerClientMockRecorder) ObtainSeeds(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, sr}, opts...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainSeeds", reflect.TypeOf((*MockSeedPeerClient)(nil).ObtainSeeds), varargs...)
 }
 
@@ -107,10 +91,10 @@ func (mr *MockSeedPeerClientMockRecorder) OnNotify(arg0 interface{}) *gomock.Cal
 }
 
 // SyncPieceTasks mocks base method.
-func (m *MockSeedPeerClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *v10.PieceTaskRequest, opts ...grpc.CallOption) (v1.Seeder_SyncPieceTasksClient, error) {
+func (m *MockSeedPeerClient) SyncPieceTasks(arg0 context.Context, arg1 *v10.PieceTaskRequest, arg2 ...grpc.CallOption) (v1.Seeder_SyncPieceTasksClient, error) {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, addr, ptr}
-	for _, a := range opts {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "SyncPieceTasks", varargs...)
@@ -120,20 +104,8 @@ func (m *MockSeedPeerClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetA
 }
 
 // SyncPieceTasks indicates an expected call of SyncPieceTasks.
-func (mr *MockSeedPeerClientMockRecorder) SyncPieceTasks(ctx, addr, ptr interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockSeedPeerClientMockRecorder) SyncPieceTasks(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, addr, ptr}, opts...)
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncPieceTasks", reflect.TypeOf((*MockSeedPeerClient)(nil).SyncPieceTasks), varargs...)
-}
-
-// UpdateState mocks base method.
-func (m *MockSeedPeerClient) UpdateState(addrs []dfnet.NetAddr) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "UpdateState", addrs)
-}
-
-// UpdateState indicates an expected call of UpdateState.
-func (mr *MockSeedPeerClientMockRecorder) UpdateState(addrs interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateState", reflect.TypeOf((*MockSeedPeerClient)(nil).UpdateState), addrs)
 }

@@ -10,6 +10,7 @@ import (
 	types "d7y.io/dragonfly/v2/manager/types"
 	config "d7y.io/dragonfly/v2/scheduler/config"
 	gomock "github.com/golang/mock/gomock"
+	resolver "google.golang.org/grpc/resolver"
 )
 
 // MockDynconfigInterface is a mock of DynconfigInterface interface.
@@ -62,6 +63,21 @@ func (mr *MockDynconfigInterfaceMockRecorder) Get() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockDynconfigInterface)(nil).Get))
 }
 
+// GetResolveSeedPeerAddrs mocks base method.
+func (m *MockDynconfigInterface) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResolveSeedPeerAddrs")
+	ret0, _ := ret[0].([]resolver.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResolveSeedPeerAddrs indicates an expected call of GetResolveSeedPeerAddrs.
+func (mr *MockDynconfigInterfaceMockRecorder) GetResolveSeedPeerAddrs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResolveSeedPeerAddrs", reflect.TypeOf((*MockDynconfigInterface)(nil).GetResolveSeedPeerAddrs))
+}
+
 // GetSchedulerClusterClientConfig mocks base method.
 func (m *MockDynconfigInterface) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
 	m.ctrl.T.Helper()
@@ -90,6 +106,21 @@ func (m *MockDynconfigInterface) GetSchedulerClusterConfig() (types.SchedulerClu
 func (mr *MockDynconfigInterfaceMockRecorder) GetSchedulerClusterConfig() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchedulerClusterConfig", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSchedulerClusterConfig))
+}
+
+// GetSeedPeers mocks base method.
+func (m *MockDynconfigInterface) GetSeedPeers() ([]*config.SeedPeer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeedPeers")
+	ret0, _ := ret[0].([]*config.SeedPeer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSeedPeers indicates an expected call of GetSeedPeers.
+func (mr *MockDynconfigInterfaceMockRecorder) GetSeedPeers() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeedPeers", reflect.TypeOf((*MockDynconfigInterface)(nil).GetSeedPeers))
 }
 
 // Notify mocks base method.

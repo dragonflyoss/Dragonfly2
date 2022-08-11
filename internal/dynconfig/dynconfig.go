@@ -23,24 +23,19 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/cache"
 )
 
 type SourceType string
-
-const (
-	// LocalSourceType represents read configuration from local file.
-	LocalSourceType = "local"
-
-	// ManagerSourceType represents pulling configuration from manager.
-	ManagerSourceType = "manager"
-)
 
 const (
 	// defaultCacheKey represents cache key of dynconfig.
 	defaultCacheKey = "dynconfig"
 )
 
-type strategy interface {
+type Dynconfig interface {
 	// Unmarshal unmarshals the config into a Struct. Make sure that the tags
 	// on the fields of the structure are properly set.
 	Unmarshal(rawVal any) error
@@ -49,124 +44,80 @@ type strategy interface {
 	Refresh() error
 }
 
-type Dynconfig struct {
-	sourceType      SourceType
-	managerClient   ManagerClient
-	localConfigPath string
-	cachePath       string
-	expire          time.Duration
-	strategy        strategy
-}
-
-// Option is a functional option for configuring the dynconfig.
-type Option func(d *Dynconfig) error
-
-// WithManagerClient set the manager client.
-func WithManagerClient(c ManagerClient) Option {
-	return func(d *Dynconfig) error {
-		d.managerClient = c
-		return nil
-	}
-}
-
-// WithLocalConfigPath set the file path.
-func WithLocalConfigPath(p string) Option {
-	return func(d *Dynconfig) error {
-		d.localConfigPath = p
-		return nil
-	}
-}
-
-// WithCachePath set the cache file path.
-func WithCachePath(p string) Option {
-	return func(d *Dynconfig) error {
-		d.cachePath = p
-		return nil
-	}
-}
-
-// WithExpireTime set the expire time for cache.
-func WithExpireTime(e time.Duration) Option {
-	return func(d *Dynconfig) error {
-		d.expire = e
-		return nil
-	}
+type dynconfig struct {
+	cache     cache.Cache
+	client    ManagerClient
+	cachePath string
+	expire    time.Duration
 }
 
 // New returns a new dynconfig instance.
-func New(sourceType SourceType, options ...Option) (*Dynconfig, error) {
-	d, err := NewDynconfigWithOptions(sourceType, options...)
-	if err != nil {
-		return nil, err
+func New(client ManagerClient, cachePath string, expire time.Duration) (Dynconfig, error) {
+	d := &dynconfig{
+		cache:     cache.New(expire, cache.NoCleanup),
+		cachePath: cachePath,
+		expire:    expire,
+		client:    client,
 	}
 
-	if err := d.validate(); err != nil {
-		return nil, err
-	}
-
-	switch sourceType {
-	case ManagerSourceType:
-		d.strategy, err = newDynconfigManager(d.expire, d.cachePath, d.managerClient)
-		if err != nil {
-			return nil, err
-		}
-	case LocalSourceType:
-		d.strategy, err = newDynconfigLocal(d.localConfigPath)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.New("unknown source type")
-	}
-
-	return d, nil
-}
-
-// NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
-func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*Dynconfig, error) {
-	d := &Dynconfig{
-		sourceType: sourceType,
-	}
-
-	for _, opt := range options {
-		if err := opt(d); err != nil {
+	if err := d.cache.LoadFile(d.cachePath); err != nil {
+		if err := d.load(); err != nil {
 			return nil, err
 		}
 	}
 
 	return d, nil
-}
-
-// validate parameters
-func (d *Dynconfig) validate() error {
-	if d.sourceType == ManagerSourceType {
-		if d.managerClient == nil {
-			return errors.New("missing parameter ManagerClient, use method WithManagerClient to assign")
-		}
-		if d.cachePath == "" {
-			return errors.New("missing parameter CachePath, use method WithCachePath to assign")
-		}
-		if d.expire == 0 {
-			return errors.New("missing parameter Expire, use method WithExpireTime to assign")
-		}
-	}
-
-	if d.sourceType == LocalSourceType && d.localConfigPath == "" {
-		return errors.New("missing parameter LocalConfigPath, use method WithLocalConfigPath to assign")
-	}
-
-	return nil
 }
 
 // Unmarshal unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
-func (d *Dynconfig) Unmarshal(rawVal any) error {
-	return d.strategy.Unmarshal(rawVal)
+func (d *dynconfig) Unmarshal(rawVal any) error {
+	dynconfig, err := d.get()
+	if err != nil {
+		return errors.New("can't find the cached data")
+	}
+
+	return decode(dynconfig, defaultDecoderConfig(rawVal))
 }
 
 // Refresh refreshes dynconfig in cache.
-func (d *Dynconfig) Refresh() error {
-	return d.strategy.Refresh()
+func (d *dynconfig) Refresh() error {
+	return d.load()
+}
+
+// Get dynamic config.
+func (d *dynconfig) get() (any, error) {
+	// Cache has not expired.
+	dynconfig, _, found := d.cache.GetWithExpiration(defaultCacheKey)
+	if found {
+		return dynconfig, nil
+	}
+
+	// Cache has expired, refresh and ignore client request error.
+	if err := d.load(); err != nil {
+		logger.Warn("reload failed ", err)
+	}
+
+	dynconfig, ok := d.cache.Get(defaultCacheKey)
+	if !ok {
+		return nil, errors.New("can't find the cached data")
+	}
+
+	return dynconfig, nil
+}
+
+// Load dynamic config from manager.
+func (d *dynconfig) load() error {
+	dynconfig, err := d.client.Get()
+	if err != nil {
+		return err
+	}
+
+	d.cache.Set(defaultCacheKey, dynconfig, d.expire)
+	if err := d.cache.SaveFile(d.cachePath); err != nil {
+		return err
+	}
+	return nil
 }
 
 // A DecoderConfigOption can be passed to dynconfig Unmarshal to configure

@@ -70,8 +70,6 @@ const (
 
 	DefaultPieceChanSize     = 16
 	DefaultObjectMaxReplicas = 3
-
-	DefaultGRPCConnTTL = time.Second * 5
 )
 
 // Store strategy.

@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"runtime"
 	"sync"
 	"time"
@@ -95,7 +94,6 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	schedulers      []*managerv1.Scheduler
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
 }
@@ -117,15 +115,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		addrs          []dfnet.NetAddr
-		schedulers     []*managerv1.Scheduler
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		// New manager client
+		// New manager client.
 		var managerDialOptions []grpc.DialOption
 		if opt.Options.Telemetry.Jaeger != "" {
 			managerDialOptions = append(managerDialOptions,
@@ -140,19 +136,28 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 
-		// New dynconfig client
-		dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval)
+		// New dynconfig manager client.
+		dynconfig, err = config.NewDynconfig(
+			config.ManagerSourceType, opt,
+			config.WithManagerClient(managerClient),
+			config.WithCacheDir(d.CacheDir()),
+			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
+		)
 		if err != nil {
 			return nil, err
 		}
-
-		// register resolver and balancer
-		resolver.RegisterScheduler(dynconfig)
-		balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 	} else {
-		addrs = opt.Scheduler.NetAddrs
+		// New dynconfig local client.
+		var err error
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
+		if err != nil {
+			return nil, err
+		}
 	}
-	logger.Infof("initialize scheduler addresses: %#v", addrs)
+
+	// register resolver and balancer.
+	resolver.RegisterScheduler(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
 	var schedulerClientOptions []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
@@ -271,7 +276,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
 		dfpath:          d,
-		schedulers:      schedulers,
 		managerClient:   managerClient,
 		schedulerClient: sched,
 	}, nil
@@ -583,9 +587,6 @@ func (cd *clientDaemon) Serve() error {
 
 	// serve dynconfig service
 	if cd.Option.Scheduler.Manager.Enable {
-		// dynconfig register client daemon
-		cd.dynconfig.Register(cd)
-
 		// serve dynconfig
 		g.Go(func() error {
 			if err := cd.dynconfig.Serve(); err != nil {
@@ -694,29 +695,6 @@ func (cd *clientDaemon) Stop() {
 			logger.Info("manager client closed")
 		}
 	})
-}
-
-func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
-	ips := getSchedulerIPs(data.Schedulers)
-	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Debugf("scheduler addresses deep equal: %v, used: %#v",
-			ips, cd.schedulers)
-		return
-	}
-
-	cd.schedulers = data.Schedulers
-
-	logger.Infof("scheduler addresses have been updated: %#v", cd.schedulers)
-}
-
-// getSchedulerIPs gets ips by schedulers.
-func getSchedulerIPs(schedulers []*managerv1.Scheduler) []string {
-	ips := []string{}
-	for _, scheduler := range schedulers {
-		ips = append(ips, scheduler.Ip)
-	}
-
-	return ips
 }
 
 // announceSeedPeer announces seed peer to manager.

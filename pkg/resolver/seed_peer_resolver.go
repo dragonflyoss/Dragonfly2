@@ -40,7 +40,7 @@ var slogger = grpclog.Component("seed_peer_resolver")
 
 // SeedPeerResolver implement resolver.Builder.
 type SeedPeerResolver struct {
-	seedPeers []*config.SeedPeer
+	addrs     []resolver.Address
 	cc        resolver.ClientConn
 	dynconfig config.DynconfigInterface
 }
@@ -71,28 +71,18 @@ func (r *SeedPeerResolver) Build(target resolver.Target, cc resolver.ClientConn,
 // to refresh addresses from manager when all SubConn fail.
 // So here we don't trigger resolving to reduce the pressure of manager.
 func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
-	seedPeers, err := r.dynconfig.GetSeedPeers()
+	addrs, err := r.dynconfig.GetResolveSeedPeerAddrs()
 	if err != nil {
 		slogger.Errorf("get resolve addresses error %v", err)
 		return
 	}
 
-	if reflect.DeepEqual(r.seedPeers, seedPeers) {
-		slogger.Infof("resolve seed peers deep equal: %v", seedPeers)
+	if reflect.DeepEqual(r.addrs, addrs) {
 		return
 	}
-	r.seedPeers = seedPeers
+	r.addrs = addrs
 
-	addrs := make([]resolver.Address, 0, len(seedPeers))
-	for _, seedPeer := range seedPeers {
-		addr := resolver.Address{
-			Addr: fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port),
-		}
-
-		addrs = append(addrs, addr)
-	}
-
-	slogger.Infof("update resolve addrs:%v", addrs)
+	slogger.Infof("update resolve addrs: %v", addrs)
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addrs,
 	}); err != nil {

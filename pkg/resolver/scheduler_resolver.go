@@ -17,13 +17,10 @@
 package resolver
 
 import (
-	"fmt"
 	"reflect"
 
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/resolver"
-
-	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	"d7y.io/dragonfly/v2/client/config"
 )
@@ -42,9 +39,9 @@ var plogger = grpclog.Component("scheduler_resolver")
 
 // SchedulerResolver implement resolver.Builder
 type SchedulerResolver struct {
-	schedulers []*managerv1.Scheduler
-	cc         resolver.ClientConn
-	dynconfig  config.Dynconfig
+	addrs     []resolver.Address
+	cc        resolver.ClientConn
+	dynconfig config.Dynconfig
 }
 
 // SchedulerRegister register the dragonfly resovler builder to the grpc with custom schema.
@@ -73,28 +70,18 @@ func (r *SchedulerResolver) Build(target resolver.Target, cc resolver.ClientConn
 // to refresh addresses from manager when all SubConn fail.
 // So here we don't trigger resolving to reduce the pressure of manager.
 func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
-	schedulers, err := r.dynconfig.GetSchedulers()
+	addrs, err := r.dynconfig.GetResolveSchedulerAddrs()
 	if err != nil {
 		plogger.Errorf("get resolve addresses error %v", err)
 		return
 	}
 
-	if reflect.DeepEqual(r.schedulers, schedulers) {
-		plogger.Infof("resolve schedulers deep equal: %v", schedulers)
+	if reflect.DeepEqual(r.addrs, addrs) {
 		return
 	}
-	r.schedulers = schedulers
+	r.addrs = addrs
 
-	addrs := make([]resolver.Address, 0, len(schedulers))
-	for _, scheduler := range schedulers {
-		addr := resolver.Address{
-			Addr: fmt.Sprintf("%s:%d", scheduler.GetIp(), scheduler.GetPort()),
-		}
-
-		addrs = append(addrs, addr)
-	}
-
-	plogger.Infof("update resolve addrs:%v", addrs)
+	plogger.Infof("update resolve addrs: %v", addrs)
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addrs,
 	}); err != nil {
