@@ -121,3 +121,9 @@ var (
 	// DefaultNetworkEnableIPv6 is default value of enableIPv6.
 	DefaultNetworkEnableIPv6 = false
 )
+
+type MLType string
+
+const (
+	LinearMachineLearning MLType = "linear_machine_learning"
+)

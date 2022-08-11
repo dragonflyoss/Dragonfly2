@@ -43,6 +43,9 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/storage"
 )
 
+// TimeBucketGap time gap between the prior bucket and the next bucket.
+const TimeBucketGap = 7200
+
 type Service struct {
 	// Resource interface.
 	resource resource.Resource
@@ -888,43 +891,51 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 
 // createRecord stores peer download records.
 func (s *Service) createRecord(peer *resource.Peer, peerState int, req *schedulerv1.PeerResult) {
+	if peerState == storage.PeerStateBackToSourceFailed {
+		return
+	}
+
 	parent, err := peer.MainParent()
 	if err != nil {
 		peer.Log.Debug(err)
 		return
 	}
 
+	strFeatureTrans := func(str1 string, str2 string) int {
+		if str1 == str2 {
+			return 0
+		}
+		return 1
+	}
+
+	figureFeatureTrans := func(a float64, b float64) float64 {
+		if b == 0 {
+			return -1
+		}
+		return a / b
+	}
+
 	record := storage.Record{
-		ID:                   peer.ID,
-		IP:                   peer.Host.IP,
-		Hostname:             peer.Host.Hostname,
-		Tag:                  peer.Tag,
-		Cost:                 req.Cost,
-		PieceCount:           int32(peer.FinishedPieces.Count()),
-		TotalPieceCount:      peer.Task.TotalPieceCount.Load(),
-		ContentLength:        peer.Task.ContentLength.Load(),
-		SecurityDomain:       peer.Host.SecurityDomain,
-		IDC:                  peer.Host.IDC,
-		NetTopology:          peer.Host.NetTopology,
-		Location:             peer.Host.Location,
-		FreeUploadLoad:       peer.Host.FreeUploadLoad(),
-		State:                peerState,
-		HostType:             int(peer.Host.Type),
-		CreateAt:             peer.CreateAt.Load().UnixNano(),
-		UpdateAt:             peer.UpdateAt.Load().UnixNano(),
-		ParentID:             parent.ID,
-		ParentIP:             parent.Host.IP,
-		ParentHostname:       parent.Host.Hostname,
-		ParentTag:            parent.Tag,
-		ParentPieceCount:     int32(parent.FinishedPieces.Count()),
-		ParentSecurityDomain: parent.Host.SecurityDomain,
-		ParentIDC:            parent.Host.IDC,
-		ParentNetTopology:    parent.Host.NetTopology,
-		ParentLocation:       parent.Host.Location,
-		ParentFreeUploadLoad: parent.Host.FreeUploadLoad(),
-		ParentHostType:       int(parent.Host.Type),
-		ParentCreateAt:       parent.CreateAt.Load().UnixNano(),
-		ParentUpdateAt:       parent.UpdateAt.Load().UnixNano(),
+		Rate:           figureFeatureTrans(float64(peer.Task.ContentLength.Load()), float64(req.Cost)),
+		HostType:       int(peer.Host.Type),
+		CreateAt:       peer.CreateAt.Load().Unix() / TimeBucketGap,
+		UpdateAt:       peer.UpdateAt.Load().Unix() / TimeBucketGap,
+		IP:             strFeatureTrans(peer.Host.IP, parent.Host.IP),
+		HostName:       strFeatureTrans(peer.Host.Hostname, parent.Host.Hostname),
+		Tag:            strFeatureTrans(peer.Tag, parent.Tag),
+		ParentPiece:    figureFeatureTrans(float64(peer.Task.TotalPieceCount.Load()), float64(parent.Pieces.Len())),
+		SecurityDomain: strFeatureTrans(peer.Host.SecurityDomain, parent.Host.SecurityDomain),
+		IDC:            strFeatureTrans(peer.Host.IDC, parent.Host.IDC),
+		NetTopology:    strFeatureTrans(peer.Host.NetTopology, parent.Host.NetTopology),
+		Location:       strFeatureTrans(peer.Host.Location, parent.Host.Location),
+		UploadRate:     figureFeatureTrans(float64(peer.Host.FreeUploadLoad()), float64(parent.Host.FreeUploadLoad())),
+		ParentHostType: int(parent.Host.Type),
+		ParentCreateAt: parent.CreateAt.Load().UnixNano() / TimeBucketGap,
+		ParentUpdateAt: parent.UpdateAt.Load().UnixNano() / TimeBucketGap,
+	}
+
+	if peerState == storage.PeerStateFailed {
+		record.Rate = 0
 	}
 
 	if err := s.storage.Create(record); err != nil {

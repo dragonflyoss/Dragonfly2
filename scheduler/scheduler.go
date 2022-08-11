@@ -26,7 +26,14 @@ import (
 	"path/filepath"
 	"time"
 
+	"d7y.io/dragonfly/v2/pkg/types"
+
 	"github.com/johanbrandhorst/certify"
+
+	"d7y.io/dragonfly/v2/scheduler/watcher"
+
+	"d7y.io/dragonfly/v2/scheduler/training"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	zapadapter "logur.dev/adapter/zap"
@@ -35,6 +42,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/internal/dynconfig"
+	models "d7y.io/dragonfly/v2/manager/types"
 	"d7y.io/dragonfly/v2/pkg/cache"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
@@ -42,7 +50,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/net/ip"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
-	"d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
@@ -86,6 +93,12 @@ type Server struct {
 
 	// GC server.
 	gc gc.GC
+
+	// MachineLearning
+	train training.MachineLearning
+
+	// watcher
+	watcher *watcher.Watcher
 }
 
 func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, error) {
@@ -175,15 +188,17 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		return nil, err
 	}
 
-	// Initialize scheduler.
-	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir())
-
-	// Initialize Storage.
 	storage, err := storage.New(d.DataDir())
 	if err != nil {
 		return nil, err
 	}
 	s.storage = storage
+
+	needVersion := make(chan uint64, 1)
+	modelVersion := make(chan *models.ModelVersion, 1)
+
+	// Initialize scheduler.
+	scheduler := scheduler.New(&cfg.Scheduler, dynconfig, d.PluginDir(), needVersion, modelVersion)
 
 	// Initialize scheduler service.
 	service := service.New(cfg, resource, scheduler, dynconfig, s.storage)
@@ -201,6 +216,17 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		schedulerServerOptions = append(schedulerServerOptions, grpc.Creds(insecure.NewCredentials()))
 	}
 
+	if cfg.Scheduler.Training.Enable {
+		s.train, err = training.NewML(storage, dynconfig, managerClient, &cfg.Scheduler.Training)
+		if err != nil {
+			return nil, err
+		}
+		// Initialize watcher
+		watcher := watcher.NewWatcher(managerClient, needVersion, modelVersion, watcher.WithEnableAutoRefresh(cfg.Scheduler.Training.EnableAutoRefresh))
+		s.watcher = watcher
+	}
+
+	// Initialize grpc service.
 	svr := rpcserver.New(service, schedulerServerOptions...)
 	s.grpcServer = svr
 
@@ -237,6 +263,14 @@ func (s *Server) Serve() error {
 	if s.config.Job.Enable {
 		s.job.Serve()
 		logger.Info("job start successfully")
+	}
+
+	// Serve MachineLearning
+	if s.config.Scheduler.Training.Enable {
+		s.train.Serve()
+		logger.Infof("training start successfully")
+		s.watcher.Serve()
+		logger.Info("watcher start successfully")
 	}
 
 	// Started metrics server.
@@ -322,6 +356,11 @@ func (s *Server) Stop() {
 		}
 	}
 
+	if s.config.Scheduler.Training.Enable {
+		s.train.Stop()
+		s.watcher.Stop()
+	}
+
 	// Stop manager client.
 	if s.managerClient != nil {
 		if err := s.managerClient.Close(); err != nil {
@@ -330,7 +369,6 @@ func (s *Server) Stop() {
 			logger.Info("manager client closed")
 		}
 	}
-
 	// Stop GRPC server.
 	stopped := make(chan struct{})
 	go func() {

@@ -17,6 +17,8 @@
 package evaluator
 
 import (
+	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 )
 
@@ -37,17 +39,19 @@ type Evaluator interface {
 
 	// IsBadNode determine if peer is a failed node.
 	IsBadNode(peer *resource.Peer) bool
+
+	EvalType() string
 }
 
-func New(algorithm string, pluginDir string) Evaluator {
+func New(algorithm string, pluginDir string, dynconfig config.DynconfigInterface, needVersion chan uint64, modelVersion chan *types.ModelVersion) Evaluator {
 	switch algorithm {
 	case PluginAlgorithm:
 		if plugin, err := LoadPlugin(pluginDir); err == nil {
 			return plugin
 		}
 	// TODO Implement MLAlgorithm.
-	case MLAlgorithm, DefaultAlgorithm:
-		return NewEvaluatorBase()
+	case MLAlgorithm:
+		return NewMLEvaluator(dynconfig, needVersion, modelVersion)
 	}
 
 	return NewEvaluatorBase()

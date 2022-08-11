@@ -20,12 +20,14 @@ package scheduler
 
 import (
 	"context"
-	"sort"
 	"time"
+
+	logger "d7y.io/dragonfly/v2/internal/dflog"
+
+	"d7y.io/dragonfly/v2/manager/types"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
-
 	"d7y.io/dragonfly/v2/pkg/container/set"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/resource"
@@ -54,9 +56,9 @@ type scheduler struct {
 	dynconfig config.DynconfigInterface
 }
 
-func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string) Scheduler {
+func New(cfg *config.SchedulerConfig, dynconfig config.DynconfigInterface, pluginDir string, needVersion chan uint64, modelVersion chan *types.ModelVersion) Scheduler {
 	return &scheduler{
-		evaluator: evaluator.New(cfg.Algorithm, pluginDir),
+		evaluator: evaluator.New(cfg.Algorithm, pluginDir, dynconfig, needVersion, modelVersion),
 		config:    cfg,
 		dynconfig: dynconfig,
 	}
@@ -166,13 +168,12 @@ func (s *scheduler) NotifyAndFindParent(ctx context.Context, peer *resource.Peer
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	sort.Slice(
-		candidateParents,
-		func(i, j int) bool {
-			return s.evaluator.Evaluate(candidateParents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(candidateParents[j], peer, taskTotalPieceCount)
-		},
-	)
-
+	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
+	if err != nil {
+		logger.Errorf("sort nodes error, error is %s", err.Error())
+		// Degrade to base evaluator
+		baseCompute(candidateParents, peer, taskTotalPieceCount)
+	}
 	// Add edges between candidate parent and peer.
 	var (
 		parents   []*resource.Peer
@@ -220,12 +221,12 @@ func (s *scheduler) FindParent(ctx context.Context, peer *resource.Peer, blockli
 
 	// Sort candidate parents by evaluation score.
 	taskTotalPieceCount := peer.Task.TotalPieceCount.Load()
-	sort.Slice(
-		candidateParents,
-		func(i, j int) bool {
-			return s.evaluator.Evaluate(candidateParents[i], peer, taskTotalPieceCount) > s.evaluator.Evaluate(candidateParents[j], peer, taskTotalPieceCount)
-		},
-	)
+	candidateParents, err := sortNodes(candidateParents, s.evaluator, peer, taskTotalPieceCount)
+	if err != nil {
+		logger.Errorf("sort nodes error, error is %s", err.Error())
+		// Degrade to base evaluator
+		baseCompute(candidateParents, peer, taskTotalPieceCount)
+	}
 
 	peer.Log.Infof("find parent %s successful", candidateParents[0].ID)
 	return candidateParents[0], true

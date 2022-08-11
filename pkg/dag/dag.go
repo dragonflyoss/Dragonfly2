@@ -45,7 +45,7 @@ var (
 )
 
 // DAG is the interface used for directed acyclic graph.
-type DAG[T comparable] interface {
+type DAG[T any] interface {
 	// AddVertex adds vertex to graph.
 	AddVertex(id string, value T) error
 
@@ -84,13 +84,13 @@ type DAG[T comparable] interface {
 }
 
 // dag provides directed acyclic graph function.
-type dag[T comparable] struct {
+type dag[T any] struct {
 	mu       sync.RWMutex
 	vertices cmap.ConcurrentMap[*Vertex[T]]
 }
 
 // New returns a new DAG interface.
-func NewDAG[T comparable]() DAG[T] {
+func NewDAG[T any]() DAG[T] {
 	return &dag[T]{
 		vertices: cmap.New[*Vertex[T]](),
 	}
