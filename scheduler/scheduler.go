@@ -67,6 +67,9 @@ type Server struct {
 	// Async job.
 	job job.Job
 
+	// Storage service.
+	storage storage.Storage
+
 	// GC server.
 	gc gc.GC
 }
@@ -135,9 +138,10 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if err != nil {
 		return nil, err
 	}
+	s.storage = storage
 
 	// Initialize scheduler service.
-	service := service.New(cfg, resource, scheduler, dynconfig, storage)
+	service := service.New(cfg, resource, scheduler, dynconfig, s.storage)
 
 	// Initialize grpc service.
 	var schedulerServerOptions []grpc.ServerOption
@@ -234,15 +238,24 @@ func (s *Server) Stop() {
 	// Stop dynconfig server.
 	if err := s.dynconfig.Stop(); err != nil {
 		logger.Errorf("dynconfig client closed failed %s", err.Error())
+	} else {
+		logger.Info("dynconfig client closed")
 	}
-	logger.Info("dynconfig client closed")
 
 	// Stop manager client.
 	if s.managerClient != nil {
 		if err := s.managerClient.Close(); err != nil {
 			logger.Errorf("manager client failed to stop: %s", err.Error())
+		} else {
+			logger.Info("manager client closed")
 		}
-		logger.Info("manager client closed")
+	}
+
+	// Clean storage.
+	if err := s.storage.Clear(); err != nil {
+		logger.Errorf("clean storage failed %s", err.Error())
+	} else {
+		logger.Info("clean storage completed")
 	}
 
 	// Stop GC.
@@ -253,8 +266,9 @@ func (s *Server) Stop() {
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
 			logger.Errorf("metrics server failed to stop: %s", err.Error())
+		} else {
+			logger.Info("metrics server closed under request")
 		}
-		logger.Info("metrics server closed under request")
 	}
 
 	// Stop GRPC server.

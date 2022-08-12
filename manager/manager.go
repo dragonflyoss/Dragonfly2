@@ -219,15 +219,17 @@ func (s *Server) Stop() {
 	// Stop REST server
 	if err := s.restServer.Shutdown(context.Background()); err != nil {
 		logger.Errorf("rest server failed to stop: %+v", err)
+	} else {
+		logger.Info("rest server closed under request")
 	}
-	logger.Info("rest server closed under request")
 
 	// Stop metrics server
 	if s.metricsServer != nil {
 		if err := s.metricsServer.Shutdown(context.Background()); err != nil {
 			logger.Errorf("metrics server failed to stop: %+v", err)
+		} else {
+			logger.Info("metrics server closed under request")
 		}
-		logger.Info("metrics server closed under request")
 	}
 
 	// Stop GRPC server
