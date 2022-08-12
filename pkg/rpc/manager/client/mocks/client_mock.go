@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 	time "time"
 
@@ -50,33 +51,33 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 }
 
 // GetObjectStorage mocks base method.
-func (m *MockClient) GetObjectStorage(arg0 *v1.GetObjectStorageRequest) (*v1.ObjectStorage, error) {
+func (m *MockClient) GetObjectStorage(arg0 context.Context, arg1 *v1.GetObjectStorageRequest) (*v1.ObjectStorage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetObjectStorage", arg0)
+	ret := m.ctrl.Call(m, "GetObjectStorage", arg0, arg1)
 	ret0, _ := ret[0].(*v1.ObjectStorage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetObjectStorage indicates an expected call of GetObjectStorage.
-func (mr *MockClientMockRecorder) GetObjectStorage(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetObjectStorage(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockClient)(nil).GetObjectStorage), arg0, arg1)
 }
 
 // GetScheduler mocks base method.
-func (m *MockClient) GetScheduler(arg0 *v1.GetSchedulerRequest) (*v1.Scheduler, error) {
+func (m *MockClient) GetScheduler(arg0 context.Context, arg1 *v1.GetSchedulerRequest) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetScheduler", arg0)
+	ret := m.ctrl.Call(m, "GetScheduler", arg0, arg1)
 	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetScheduler indicates an expected call of GetScheduler.
-func (mr *MockClientMockRecorder) GetScheduler(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) GetScheduler(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScheduler", reflect.TypeOf((*MockClient)(nil).GetScheduler), arg0, arg1)
 }
 
 // KeepAlive mocks base method.
@@ -92,61 +93,61 @@ func (mr *MockClientMockRecorder) KeepAlive(arg0, arg1 interface{}) *gomock.Call
 }
 
 // ListBuckets mocks base method.
-func (m *MockClient) ListBuckets(arg0 *v1.ListBucketsRequest) (*v1.ListBucketsResponse, error) {
+func (m *MockClient) ListBuckets(arg0 context.Context, arg1 *v1.ListBucketsRequest) (*v1.ListBucketsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListBuckets", arg0)
+	ret := m.ctrl.Call(m, "ListBuckets", arg0, arg1)
 	ret0, _ := ret[0].(*v1.ListBucketsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListBuckets indicates an expected call of ListBuckets.
-func (mr *MockClientMockRecorder) ListBuckets(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListBuckets(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0, arg1)
 }
 
 // ListSchedulers mocks base method.
-func (m *MockClient) ListSchedulers(arg0 *v1.ListSchedulersRequest) (*v1.ListSchedulersResponse, error) {
+func (m *MockClient) ListSchedulers(arg0 context.Context, arg1 *v1.ListSchedulersRequest) (*v1.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListSchedulers", arg0)
+	ret := m.ctrl.Call(m, "ListSchedulers", arg0, arg1)
 	ret0, _ := ret[0].(*v1.ListSchedulersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ListSchedulers indicates an expected call of ListSchedulers.
-func (mr *MockClientMockRecorder) ListSchedulers(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) ListSchedulers(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0, arg1)
 }
 
 // UpdateScheduler mocks base method.
-func (m *MockClient) UpdateScheduler(arg0 *v1.UpdateSchedulerRequest) (*v1.Scheduler, error) {
+func (m *MockClient) UpdateScheduler(arg0 context.Context, arg1 *v1.UpdateSchedulerRequest) (*v1.Scheduler, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateScheduler", arg0)
+	ret := m.ctrl.Call(m, "UpdateScheduler", arg0, arg1)
 	ret0, _ := ret[0].(*v1.Scheduler)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateScheduler indicates an expected call of UpdateScheduler.
-func (mr *MockClientMockRecorder) UpdateScheduler(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateScheduler(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockClient)(nil).UpdateScheduler), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateScheduler", reflect.TypeOf((*MockClient)(nil).UpdateScheduler), arg0, arg1)
 }
 
 // UpdateSeedPeer mocks base method.
-func (m *MockClient) UpdateSeedPeer(arg0 *v1.UpdateSeedPeerRequest) (*v1.SeedPeer, error) {
+func (m *MockClient) UpdateSeedPeer(arg0 context.Context, arg1 *v1.UpdateSeedPeerRequest) (*v1.SeedPeer, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0)
+	ret := m.ctrl.Call(m, "UpdateSeedPeer", arg0, arg1)
 	ret0, _ := ret[0].(*v1.SeedPeer)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateSeedPeer indicates an expected call of UpdateSeedPeer.
-func (mr *MockClientMockRecorder) UpdateSeedPeer(arg0 interface{}) *gomock.Call {
+func (mr *MockClientMockRecorder) UpdateSeedPeer(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockClient)(nil).UpdateSeedPeer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSeedPeer", reflect.TypeOf((*MockClient)(nil).UpdateSeedPeer), arg0, arg1)
 }
