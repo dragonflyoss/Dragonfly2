@@ -27,16 +27,16 @@ import (
 	"google.golang.org/grpc/status"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	"d7y.io/dragonfly/v2/pkg/reachable"
-	"d7y.io/dragonfly/v2/pkg/slices"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	internaldynconfig "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/searcher"
+	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
-// Daemon cache file name
+// Daemon cache file name.
 var cacheFileName = "daemon_dynconfig"
 
 type dynconfigManager struct {
@@ -181,7 +181,7 @@ type managerClient struct {
 	hostOption HostOption
 }
 
-// New the manager client used by dynconfig
+// New the manager client used by dynconfig.
 func newManagerClient(client managerclient.Client, hostOption HostOption) internaldynconfig.ManagerClient {
 	return &managerClient{
 		Client:     client,

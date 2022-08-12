@@ -25,20 +25,21 @@ import (
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
+
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 )
 
 type SourceType string
 
 const (
-	// LocalSourceType represents read configuration from local file
+	// LocalSourceType represents read configuration from local file.
 	LocalSourceType = "local"
 
-	// ManagerSourceType represents pulling configuration from manager
+	// ManagerSourceType represents pulling configuration from manager.
 	ManagerSourceType = "manager"
 )
 
-// Watch dynconfig interval
+// Watch dynconfig interval.
 var watchInterval = 10 * time.Second
 
 type DynconfigData struct {
@@ -116,16 +117,24 @@ func WithExpireTime(e time.Duration) Option {
 
 // New returns a new dynconfig interface.
 func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Option) (Dynconfig, error) {
-	d, err := NewDynconfigWithOptions(sourceType, options...)
-	if err != nil {
-		return nil, err
+	d := &dynconfig{
+		sourceType: sourceType,
+	}
+
+	for _, opt := range options {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := d.validate(); err != nil {
 		return nil, err
 	}
 
-	var di Dynconfig
+	var (
+		di  Dynconfig
+		err error
+	)
 	switch sourceType {
 	case ManagerSourceType:
 		di, err = newDynconfigManager(cfg, d.managerClient, d.cacheDir, d.expire)
@@ -142,21 +151,6 @@ func NewDynconfig(sourceType SourceType, cfg *DaemonOption, options ...Option) (
 	}
 
 	return di, nil
-}
-
-// NewDynconfigWithOptions constructs a new instance of a dynconfig with additional options.
-func NewDynconfigWithOptions(sourceType SourceType, options ...Option) (*dynconfig, error) {
-	d := &dynconfig{
-		sourceType: sourceType,
-	}
-
-	for _, opt := range options {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
-	}
-
-	return d, nil
 }
 
 // validate dynconfig parameters.

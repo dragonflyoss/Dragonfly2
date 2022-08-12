@@ -34,6 +34,7 @@ import (
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/balancer"
+	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/resolver"
 )
 
@@ -45,29 +46,43 @@ const (
 	minConnectTime    = 3 * time.Second //fast fail, leave time to try other scheduler
 )
 
-func GetClient(options ...grpc.DialOption) (Client, error) {
-	dialOptions := []grpc.DialOption{
-		grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithConnectParams(grpc.ConnectParams{
-			Backoff: backoff.Config{
-				BaseDelay:  backoffBaseDelay,
-				Multiplier: backoffMultiplier,
-				Jitter:     backoffJitter,
-				MaxDelay:   backoffMaxDelay,
-			},
-			MinConnectTimeout: minConnectTime,
-		}),
-		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-			grpc_prometheus.StreamClientInterceptor,
-			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-		)),
-	}
-	dialOptions = append(dialOptions, options...)
+var defaultDialOptions = []grpc.DialOption{
+	grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	grpc.WithConnectParams(grpc.ConnectParams{
+		Backoff: backoff.Config{
+			BaseDelay:  backoffBaseDelay,
+			Multiplier: backoffMultiplier,
+			Jitter:     backoffJitter,
+			MaxDelay:   backoffMaxDelay,
+		},
+		MinConnectTimeout: minConnectTime,
+	}),
+	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+		grpc_prometheus.StreamClientInterceptor,
+		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+	)),
+}
 
+func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.Dial(
+		netAddr.Addr,
+		append(defaultDialOptions, options...)...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &client{
+		conn,
+		cdnsystemv1.NewSeederClient(conn),
+	}, nil
+}
+
+func GetClient(options ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.Dial(
 		resolver.SeedPeerVirtualTarget,
-		dialOptions...,
+		append(defaultDialOptions, options...)...,
 	)
 	if err != nil {
 		return nil, err

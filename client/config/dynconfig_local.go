@@ -23,10 +23,10 @@ import (
 	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
-	"d7y.io/dragonfly/v2/pkg/reachable"
-	"d7y.io/dragonfly/v2/pkg/slices"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/reachable"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 var (

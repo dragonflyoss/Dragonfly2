@@ -128,11 +128,10 @@ func TestConfig_New(t *testing.T) {
 
 	assert.EqualValues(config, &Config{
 		Server: &ServerConfig{
-			IP:          ip.IPv4,
-			Host:        fqdn.FQDNHostname,
-			Listen:      "0.0.0.0",
-			ListenLimit: DefaultSchedulerListenLimit,
-			Port:        8002,
+			IP:     ip.IPv4,
+			Host:   fqdn.FQDNHostname,
+			Listen: "0.0.0.0",
+			Port:   8002,
 		},
 		Scheduler: &SchedulerConfig{
 			Algorithm:            "default",
