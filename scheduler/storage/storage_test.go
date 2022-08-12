@@ -51,6 +51,7 @@ func TestStorage_New(t *testing.T) {
 				assert.Equal(s.(*storage).bufferSize, DefaultBufferSize)
 				assert.Equal(cap(s.(*storage).buffer), DefaultBufferSize)
 				assert.Equal(len(s.(*storage).buffer), 0)
+				assert.Equal(s.(*storage).count, int64(0))
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -108,6 +109,7 @@ func TestStorage_New(t *testing.T) {
 				assert.Equal(s.(*storage).bufferSize, 1)
 				assert.Equal(cap(s.(*storage).buffer), 1)
 				assert.Equal(len(s.(*storage).buffer), 0)
+				assert.Equal(len(s.(*storage).buffer), 0)
 
 				if err := s.Clear(); err != nil {
 					t.Fatal(err)
@@ -150,6 +152,35 @@ func TestStorage_Create(t *testing.T) {
 				assert := assert.New(t)
 				err := s.Create(Record{})
 				assert.NoError(err)
+				assert.Equal(s.(*storage).count, int64(0))
+			},
+		},
+		{
+			name:    "create record without buffer",
+			baseDir: os.TempDir(),
+			options: []Option{WithBufferSize(0)},
+			mock: func(s Storage) {
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				err := s.Create(Record{})
+				assert.NoError(err)
+				assert.Equal(s.(*storage).count, int64(1))
+			},
+		},
+		{
+			name:    "write record to file",
+			baseDir: os.TempDir(),
+			options: []Option{WithBufferSize(1)},
+			mock: func(s Storage) {
+			},
+			expect: func(t *testing.T, s Storage, baseDir string) {
+				assert := assert.New(t)
+				err := s.Create(Record{})
+				assert.NoError(err)
+				err = s.Create(Record{})
+				assert.NoError(err)
+				assert.Equal(s.(*storage).count, int64(1))
 			},
 		},
 		{
