@@ -33,14 +33,13 @@ import (
 	"d7y.io/dragonfly/v2/pkg/rpc/manager/client/mocks"
 )
 
-func TestDynconfigNewDynconfig(t *testing.T) {
+func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 	mockCacheDir := t.TempDir()
-
 	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
 	tests := []struct {
 		name           string
 		expire         time.Duration
-		hostOption     HostOption
+		config         *DaemonOption
 		cleanFileCache func(t *testing.T)
 		mock           func(m *mocks.MockClientMockRecorder)
 		expect         func(t *testing.T, err error)
@@ -48,8 +47,10 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 		{
 			name:   "new dynconfig",
 			expire: 10 * time.Second,
-			hostOption: HostOption{
-				Hostname: "foo",
+			config: &DaemonOption{
+				Host: HostOption{
+					Hostname: "foo",
+				},
 			},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
@@ -68,9 +69,11 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			},
 		},
 		{
-			name:       "new dynconfig and host option is empty",
-			expire:     10 * time.Millisecond,
-			hostOption: HostOption{},
+			name:   "new dynconfig and host option is empty",
+			expire: 10 * time.Millisecond,
+			config: &DaemonOption{
+				Host: HostOption{},
+			},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
@@ -88,9 +91,11 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			},
 		},
 		{
-			name:           "new dynconfig and list scheduler error",
-			expire:         10 * time.Millisecond,
-			hostOption:     HostOption{},
+			name:   "new dynconfig and list scheduler error",
+			expire: 10 * time.Millisecond,
+			config: &DaemonOption{
+				Host: HostOption{},
+			},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				m.ListSchedulers(gomock.Any()).Return(nil, errors.New("foo")).Times(1)
@@ -101,9 +106,11 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			},
 		},
 		{
-			name:           "new dynconfig and get object storage error",
-			expire:         10 * time.Millisecond,
-			hostOption:     HostOption{},
+			name:   "new dynconfig and get object storage error",
+			expire: 10 * time.Millisecond,
+			config: &DaemonOption{
+				Host: HostOption{},
+			},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
@@ -117,9 +124,11 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			},
 		},
 		{
-			name:       "new dynconfig and object storage is not found",
-			expire:     10 * time.Millisecond,
-			hostOption: HostOption{},
+			name:   "new dynconfig and object storage is not found",
+			expire: 10 * time.Millisecond,
+			config: &DaemonOption{
+				Host: HostOption{},
+			},
 			cleanFileCache: func(t *testing.T) {
 				if err := os.Remove(mockCachePath); err != nil {
 					t.Fatal(err)
@@ -134,19 +143,6 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
 				assert.NoError(err)
-			},
-		},
-		{
-			name:   "new dynconfig and expire time is empty",
-			expire: 0,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			cleanFileCache: func(t *testing.T) {},
-			mock:           func(m *mocks.MockClientMockRecorder) {},
-			expect: func(t *testing.T, err error) {
-				assert := assert.New(t)
-				assert.Errorf(err, "missing parameter Expire, use method WithExpireTime to assign")
 			},
 		},
 	}
@@ -158,714 +154,81 @@ func TestDynconfigNewDynconfig(t *testing.T) {
 
 			mockManagerClient := mocks.NewMockClient(ctl)
 			tc.mock(mockManagerClient.EXPECT())
-			_, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
+			_, err := NewDynconfig(
+				ManagerSourceType, tc.config,
+				WithCacheDir(mockCacheDir),
+				WithExpireTime(tc.expire),
+				WithManagerClient(mockManagerClient),
+			)
 			tc.expect(t, err)
 			tc.cleanFileCache(t)
 		})
 	}
 }
 
-func TestDynconfigGet(t *testing.T) {
-	mockCacheDir := t.TempDir()
-
-	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
+func TestDynconfigNewDynconfig_validate(t *testing.T) {
+	ctl := gomock.NewController(t)
+	defer ctl.Finish()
+	mockManagerClient := mocks.NewMockClient(ctl)
 	tests := []struct {
-		name           string
-		expire         time.Duration
-		hostOption     HostOption
-		data           *DynconfigData
-		sleep          func()
-		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
-		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
+		name      string
+		dynconfig *dynconfig
+		expect    func(t *testing.T, err error)
 	}{
 		{
-			name:   "get dynconfig cache data",
-			expire: 10 * time.Second,
-			hostOption: HostOption{
-				Hostname: "foo",
+			name: "validate dynconfig",
+			dynconfig: &dynconfig{
+				sourceType:    ManagerSourceType,
+				managerClient: mockManagerClient,
+				cacheDir:      "foo",
+				expire:        1,
 			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				result, err := dynconfig.Get()
 				assert.NoError(err)
-				assert.EqualValues(result, data)
 			},
 		},
 		{
-			name:   "get dynconfig data",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
+			name: "manager client not found",
+			dynconfig: &dynconfig{
+				sourceType:    ManagerSourceType,
+				managerClient: nil,
 			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				result, err := dynconfig.Get()
-				assert.NoError(err)
-				assert.EqualValues(result, data)
+				assert.EqualError(err, "manager dynconfig requires parameter ManagerClient")
 			},
 		},
 		{
-			name:   "list schedulers error",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
+			name: "cacheDir not found",
+			dynconfig: &dynconfig{
+				sourceType:    ManagerSourceType,
+				managerClient: mockManagerClient,
+				cacheDir:      "",
 			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				result, err := dynconfig.Get()
-				assert.NoError(err)
-				assert.EqualValues(result, data)
+				assert.EqualError(err, "manager dynconfig requires parameter CacheDir")
 			},
 		},
 		{
-			name:   "get object storage error",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
+			name: "expire not found",
+			dynconfig: &dynconfig{
+				sourceType:    ManagerSourceType,
+				managerClient: mockManagerClient,
+				cacheDir:      "foo",
+				expire:        0,
 			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
+			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
-				result, err := dynconfig.Get()
-				assert.NoError(err)
-				assert.EqualValues(result, data)
-			},
-		},
-		{
-			name:   "object storage is not found",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, status.Error(codes.NotFound, "")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.Get()
-				assert.NoError(err)
-				assert.EqualValues(result, &DynconfigData{
-					Schedulers: []*managerv1.Scheduler{
-						{
-							HostName: data.Schedulers[0].HostName,
-						},
-					},
-				})
-			},
-		},
-		{
-			name:   "resource is empty",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers:    []*managerv1.Scheduler(nil),
-				ObjectStorage: &managerv1.ObjectStorage{},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.Get()
-				assert.NoError(err)
-				assert.EqualValues(result, data)
+				assert.EqualError(err, "manager dynconfig requires parameter ExpireTime")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			mockManagerClient := mocks.NewMockClient(ctl)
-			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			tc.expect(t, dynconfig, tc.data)
-			tc.cleanFileCache(t)
-		})
-	}
-}
-
-func TestDynconfigGetSchedulers(t *testing.T) {
-	mockCacheDir := t.TempDir()
-
-	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
-	tests := []struct {
-		name           string
-		expire         time.Duration
-		hostOption     HostOption
-		data           *DynconfigData
-		sleep          func()
-		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
-		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
-	}{
-		{
-			name:   "get cache schedulers",
-			expire: 10 * time.Second,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-			},
-			sleep: func() {},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetSchedulers()
-				assert.NoError(err)
-				assert.EqualValues(result, data.Schedulers)
-			},
-		},
-		{
-			name:   "get schedulers",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetSchedulers()
-				assert.NoError(err)
-				assert.EqualValues(result, data.Schedulers)
-			},
-		},
-		{
-			name:   "list schedulers error",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler{
-					{
-						HostName: "foo",
-					},
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{
-						Schedulers: []*managerv1.Scheduler{
-							{
-								HostName: data.Schedulers[0].HostName,
-							},
-						},
-					}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetSchedulers()
-				assert.NoError(err)
-				assert.EqualValues(result, data.Schedulers)
-			},
-		},
-		{
-			name:   "schedulers is empty",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				Schedulers: []*managerv1.Scheduler(nil),
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetSchedulers()
-				assert.NoError(err)
-				assert.EqualValues(result, data.Schedulers)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			mockManagerClient := mocks.NewMockClient(ctl)
-			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			tc.expect(t, dynconfig, tc.data)
-			tc.cleanFileCache(t)
-		})
-	}
-}
-
-func TestDynconfigGetObjectStorage(t *testing.T) {
-	mockCacheDir := t.TempDir()
-
-	mockCachePath := filepath.Join(mockCacheDir, cacheFileName)
-	tests := []struct {
-		name           string
-		expire         time.Duration
-		hostOption     HostOption
-		data           *DynconfigData
-		sleep          func()
-		cleanFileCache func(t *testing.T)
-		mock           func(m *mocks.MockClientMockRecorder, data *DynconfigData)
-		expect         func(t *testing.T, dynconfig Dynconfig, data *DynconfigData)
-	}{
-		{
-			name:   "get cache object storage",
-			expire: 10 * time.Second,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetObjectStorage()
-				assert.NoError(err)
-				assert.EqualValues(result, data.ObjectStorage)
-			},
-		},
-		{
-			name:   "get object storage",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetObjectStorage()
-				assert.NoError(err)
-				assert.EqualValues(result, data.ObjectStorage)
-			},
-		},
-		{
-			name:   "get object storage error",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetObjectStorage()
-				assert.NoError(err)
-				assert.EqualValues(result, data.ObjectStorage)
-			},
-		},
-		{
-			name:   "object storage is not found",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				ObjectStorage: &managerv1.ObjectStorage{
-					Name: "foo",
-				},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{
-						Name: data.ObjectStorage.Name,
-					}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, status.Error(codes.NotFound, "")).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetObjectStorage()
-				assert.NoError(err)
-				assert.EqualValues(result, (*managerv1.ObjectStorage)(nil))
-			},
-		},
-		{
-			name:   "object storage is empty",
-			expire: 10 * time.Millisecond,
-			hostOption: HostOption{
-				Hostname: "foo",
-			},
-			data: &DynconfigData{
-				ObjectStorage: &managerv1.ObjectStorage{},
-			},
-			sleep: func() {
-				time.Sleep(100 * time.Millisecond)
-			},
-			cleanFileCache: func(t *testing.T) {
-				if err := os.Remove(mockCachePath); err != nil {
-					t.Fatal(err)
-				}
-			},
-			mock: func(m *mocks.MockClientMockRecorder, data *DynconfigData) {
-				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
-				)
-			},
-			expect: func(t *testing.T, dynconfig Dynconfig, data *DynconfigData) {
-				assert := assert.New(t)
-				result, err := dynconfig.GetObjectStorage()
-				assert.NoError(err)
-				assert.EqualValues(result, data.ObjectStorage)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			ctl := gomock.NewController(t)
-			defer ctl.Finish()
-
-			mockManagerClient := mocks.NewMockClient(ctl)
-			tc.mock(mockManagerClient.EXPECT(), tc.data)
-			dynconfig, err := NewDynconfig(mockManagerClient, mockCacheDir, tc.hostOption, tc.expire)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			tc.sleep()
-			tc.expect(t, dynconfig, tc.data)
-			tc.cleanFileCache(t)
+			tc.expect(t, tc.dynconfig.validate())
 		})
 	}
 }

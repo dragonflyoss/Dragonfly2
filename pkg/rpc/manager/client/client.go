@@ -81,7 +81,7 @@ type client struct {
 }
 
 // GetClient returns manager client.
-func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
+func GetClient(target string, options ...grpc.DialOption) (Client, error) {
 	dialOptions := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
@@ -98,7 +98,7 @@ func GetClient(target string, opts ...grpc.DialOption) (Client, error) {
 			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 		)),
 	}
-	dialOptions = append(dialOptions, opts...)
+	dialOptions = append(dialOptions, options...)
 
 	conn, err := grpc.Dial(
 		target,

@@ -51,3 +51,22 @@ func TestFindDuplicate(t *testing.T) {
 	_, found = FindDuplicate([]string{"a", "b", "c"})
 	assert.False(found)
 }
+
+func TestRemoveDuplicates(t *testing.T) {
+	assert := assert.New(t)
+	var (
+		ri []int
+		rs []string
+	)
+	ri = RemoveDuplicates([]int{1, 2, 1, 3})
+	assert.EqualValues(ri, []int{1, 2, 3})
+
+	ri = RemoveDuplicates([]int{1, 2, 3})
+	assert.EqualValues(ri, []int{1, 2, 3})
+
+	rs = RemoveDuplicates([]string{"a", "b", "c", "b"})
+	assert.EqualValues(rs, []string{"a", "b", "c"})
+
+	rs = RemoveDuplicates([]string{"a", "b", "c"})
+	assert.EqualValues(rs, []string{"a", "b", "c"})
+}

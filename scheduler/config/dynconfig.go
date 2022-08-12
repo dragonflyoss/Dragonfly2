@@ -20,16 +20,21 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
+
+	"google.golang.org/grpc/resolver"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	dc "d7y.io/dragonfly/v2/internal/dynconfig"
 	"d7y.io/dragonfly/v2/manager/types"
+	"d7y.io/dragonfly/v2/pkg/reachable"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
+	"d7y.io/dragonfly/v2/pkg/slices"
 )
 
 var (
@@ -93,6 +98,12 @@ type SchedulerCluster struct {
 }
 
 type DynconfigInterface interface {
+	// Get the dynamic schedulers resolve addrs.
+	GetResolveSeedPeerAddrs() ([]resolver.Address, error)
+
+	// Get the dynamic seed peers config from manager.
+	GetSeedPeers() ([]*SeedPeer, error)
+
 	// Get the scheduler cluster config.
 	GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool)
 
@@ -119,12 +130,12 @@ type DynconfigInterface interface {
 }
 
 type Observer interface {
-	// OnNotify allows an event to be "published" to interface implementations.
+	// OnNotify allows an event to be published to interface implementations.
 	OnNotify(*DynconfigData)
 }
 
 type dynconfig struct {
-	*dc.Dynconfig
+	dc.Dynconfig
 	observers map[Observer]struct{}
 	done      chan bool
 	cachePath string
@@ -140,10 +151,9 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 
 	if rawManagerClient != nil {
 		client, err := dc.New(
-			dc.ManagerSourceType,
-			dc.WithCachePath(cachePath),
-			dc.WithExpireTime(cfg.DynConfig.RefreshInterval),
-			dc.WithManagerClient(newManagerClient(rawManagerClient, cfg)),
+			newManagerClient(rawManagerClient, cfg),
+			cachePath,
+			cfg.DynConfig.RefreshInterval,
 		)
 		if err != nil {
 			return nil, err
@@ -153,6 +163,43 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	}
 
 	return d, nil
+}
+
+func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
+	seedPeers, err := d.GetSeedPeers()
+	if err != nil {
+		return nil, err
+	}
+
+	addrs := []string{}
+	for _, seedPeer := range seedPeers {
+		addr := fmt.Sprintf("%s:%d", seedPeer.IP, seedPeer.Port)
+		r := reachable.New(&reachable.Config{Address: addr})
+		if err := r.Check(); err != nil {
+			logger.Warnf("seed peer address %s is unreachable", addr)
+		} else {
+			addrs = append(addrs, addr)
+			continue
+		}
+	}
+
+	resolveAddrs := []resolver.Address{}
+	for _, addr := range slices.RemoveDuplicates(addrs) {
+		resolveAddrs = append(resolveAddrs, resolver.Address{
+			Addr: addr,
+		})
+	}
+
+	return resolveAddrs, nil
+}
+
+func (d *dynconfig) GetSeedPeers() ([]*SeedPeer, error) {
+	data, err := d.Get()
+	if err != nil {
+		return nil, err
+	}
+
+	return data.SeedPeers, nil
 }
 
 func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {

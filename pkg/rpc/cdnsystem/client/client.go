@@ -20,104 +20,125 @@ package client
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/credentials/insecure"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	"d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 )
 
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) CdnClient {
-	return &cdnClient{
-		rpc.NewConnection(context.Background(), "cdn", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(60 * time.Second),
-			rpc.WithDialOption(opts),
-		}),
-	}
+const (
+	backoffBaseDelay  = 1 * time.Second
+	backoffMultiplier = 1.2
+	backoffJitter     = 0.2
+	backoffMaxDelay   = 120 * time.Second
+	minConnectTime    = 3 * time.Second //fast fail, leave time to try other scheduler
+)
+
+var defaultDialOptions = []grpc.DialOption{
+	grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	grpc.WithConnectParams(grpc.ConnectParams{
+		Backoff: backoff.Config{
+			BaseDelay:  backoffBaseDelay,
+			Multiplier: backoffMultiplier,
+			Jitter:     backoffJitter,
+			MaxDelay:   backoffMaxDelay,
+		},
+		MinConnectTimeout: minConnectTime,
+	}),
+	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+		grpc_prometheus.StreamClientInterceptor,
+		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+	)),
 }
 
-var once sync.Once
-var elasticCdnClient *cdnClient
-
-func GetElasticClientByAddrs(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (CdnClient, error) {
-	once.Do(func() {
-		elasticCdnClient = &cdnClient{
-			rpc.NewConnection(context.Background(), "cdn-elastic", make([]dfnet.NetAddr, 0), []rpc.ConnOption{
-				rpc.WithConnExpireTime(60 * time.Second),
-				rpc.WithDialOption(opts),
-			}),
-		}
-	})
-	err := elasticCdnClient.Connection.AddServerNodes(addrs)
+func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.Dial(
+		netAddr.Addr,
+		append(defaultDialOptions, options...)...,
+	)
 	if err != nil {
 		return nil, err
 	}
-	return elasticCdnClient, nil
+
+	return &client{
+		conn,
+		cdnsystemv1.NewSeederClient(conn),
+	}, nil
 }
 
-// CdnClient see cdnsystemv1.CdnClient
-type CdnClient interface {
-	ObtainSeeds(ctx context.Context, sr *cdnsystemv1.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error)
-
-	GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error)
-
-	SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, ptr *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error)
-
-	UpdateState(addrs []dfnet.NetAddr)
-
-	Close() error
-}
-
-type cdnClient struct {
-	*rpc.Connection
-}
-
-var _ CdnClient = (*cdnClient)(nil)
-
-func (cc *cdnClient) getCdnClient(key string, stick bool) (cdnsystemv1.SeederClient, string, error) {
-	clientConn, err := cc.Connection.GetClientConn(key, stick)
-	if err != nil {
-		return nil, "", fmt.Errorf("get ClientConn for hashKey %s: %w", key, err)
-	}
-	return cdnsystemv1.NewSeederClient(clientConn), clientConn.Target(), nil
-}
-
-func (cc *cdnClient) getSeederClientWithTarget(target string) (cdnsystemv1.SeederClient, error) {
-	conn, err := cc.Connection.GetClientConnByTarget(target)
+func GetClient(options ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.Dial(
+		resolver.SeedPeerVirtualTarget,
+		append(defaultDialOptions, options...)...,
+	)
 	if err != nil {
 		return nil, err
 	}
-	return cdnsystemv1.NewSeederClient(conn), nil
+
+	return &client{
+		conn,
+		cdnsystemv1.NewSeederClient(conn),
+	}, nil
 }
 
-func (cc *cdnClient) ObtainSeeds(ctx context.Context, sr *cdnsystemv1.SeedRequest, opts ...grpc.CallOption) (*PieceSeedStream, error) {
-	return newPieceSeedStream(ctx, cc, sr.TaskId, sr, opts)
+// Client is the interface for grpc client.
+type Client interface {
+	// ObtainSeeds triggers the seed peer to download task back-to-source..
+	ObtainSeeds(context.Context, *cdnsystemv1.SeedRequest, ...grpc.CallOption) (cdnsystemv1.Seeder_ObtainSeedsClient, error)
+
+	// GetPieceTasks gets detail information of task.
+	GetPieceTasks(context.Context, *commonv1.PieceTaskRequest, ...grpc.CallOption) (*commonv1.PiecePacket, error)
+
+	// SyncPieceTasks syncs detail information of task.
+	SyncPieceTasks(context.Context, *commonv1.PieceTaskRequest, ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error)
 }
 
-func (cc *cdnClient) GetPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (*commonv1.PiecePacket, error) {
-	client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
+// client provides seed peer grpc function.
+type client struct {
+	*grpc.ClientConn
+	cdnsystemv1.SeederClient
+}
+
+// ObtainSeeds triggers the seed peer to download task back-to-source..
+func (c *client) ObtainSeeds(ctx context.Context, req *cdnsystemv1.SeedRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_ObtainSeedsClient, error) {
+	return c.SeederClient.ObtainSeeds(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
+}
+
+// GetPieceTasks gets detail information of task.
+func (c *client) GetPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (*commonv1.PiecePacket, error) {
+	return c.SeederClient.GetPieceTasks(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
+}
+
+// SyncPieceTasks syncs detail information of task.
+func (c *client) SyncPieceTasks(ctx context.Context, req *commonv1.PieceTaskRequest, options ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
+	stream, err := c.SeederClient.SyncPieceTasks(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		options...,
+	)
 	if err != nil {
 		return nil, err
 	}
-	return client.GetPieceTasks(ctx, req, opts...)
-}
 
-func (cc *cdnClient) SyncPieceTasks(ctx context.Context, addr dfnet.NetAddr, req *commonv1.PieceTaskRequest, opts ...grpc.CallOption) (cdnsystemv1.Seeder_SyncPieceTasksClient, error) {
-	client, err := cc.getSeederClientWithTarget(addr.GetEndpoint())
-	if err != nil {
-		return nil, err
-	}
-	syncClient, err := client.SyncPieceTasks(ctx, opts...)
-	if err != nil {
-		logger.WithTaskID(req.TaskId).Infof("SyncPieceTasks: invoke cdn node %s SyncPieceTasks failed: %v", addr.GetEndpoint(), err)
-		return nil, err
-	}
-	return syncClient, syncClient.Send(req)
+	return stream, stream.Send(req)
 }

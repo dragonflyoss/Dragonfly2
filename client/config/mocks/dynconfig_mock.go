@@ -10,6 +10,7 @@ import (
 	v1 "d7y.io/api/pkg/apis/manager/v1"
 	config "d7y.io/dragonfly/v2/client/config"
 	gomock "github.com/golang/mock/gomock"
+	resolver "google.golang.org/grpc/resolver"
 )
 
 // MockDynconfig is a mock of Dynconfig interface.
@@ -75,6 +76,21 @@ func (m *MockDynconfig) GetObjectStorage() (*v1.ObjectStorage, error) {
 func (mr *MockDynconfigMockRecorder) GetObjectStorage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetObjectStorage", reflect.TypeOf((*MockDynconfig)(nil).GetObjectStorage))
+}
+
+// GetResolveSchedulerAddrs mocks base method.
+func (m *MockDynconfig) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResolveSchedulerAddrs")
+	ret0, _ := ret[0].([]resolver.Address)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetResolveSchedulerAddrs indicates an expected call of GetResolveSchedulerAddrs.
+func (mr *MockDynconfigMockRecorder) GetResolveSchedulerAddrs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResolveSchedulerAddrs", reflect.TypeOf((*MockDynconfig)(nil).GetResolveSchedulerAddrs))
 }
 
 // GetSchedulers mocks base method.
