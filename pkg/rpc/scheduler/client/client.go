@@ -20,18 +20,30 @@ package client
 
 import (
 	"context"
-	"errors"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/credentials/insecure"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/dfnet"
-	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/balancer"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc/common"
+)
+
+const (
+	backoffBaseDelay  = 1 * time.Second
+	backoffMultiplier = 1.2
+	backoffJitter     = 0.2
+	backoffMaxDelay   = 120 * time.Second
+	minConnectTime    = 3 * time.Second //fast fail, leave time to try other scheduler
 )
 
 // NewBeginOfPiece creates begin of piece.
@@ -57,18 +69,38 @@ func NewEndOfPiece(taskID, peerID string, finishedCount int32) *schedulerv1.Piec
 	}
 }
 
-// GetClientByAddr gets scheduler clients with net addresses.
-func GetClientByAddr(addrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
-	if len(addrs) == 0 {
-		return nil, errors.New("scheduler addresses are empty")
+// GetClient get scheduler clients using resolver and balancer,
+func GetClient(options ...grpc.DialOption) (Client, error) {
+	dialOptions := []grpc.DialOption{
+		grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithConnectParams(grpc.ConnectParams{
+			Backoff: backoff.Config{
+				BaseDelay:  backoffBaseDelay,
+				Multiplier: backoffMultiplier,
+				Jitter:     backoffJitter,
+				MaxDelay:   backoffMaxDelay,
+			},
+			MinConnectTimeout: minConnectTime,
+		}),
+		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+			grpc_prometheus.StreamClientInterceptor,
+			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+		)),
+	}
+	dialOptions = append(dialOptions, options...)
+
+	conn, err := grpc.Dial(
+		resolver.SchedulerVirtualTarget,
+		dialOptions...,
+	)
+	if err != nil {
+		return nil, err
 	}
 
-	logger.Infof("scheduler addresses: %s", addrs)
 	return &client{
-		rpc.NewConnection(context.Background(), "scheduler", addrs, []rpc.ConnOption{
-			rpc.WithConnExpireTime(60 * time.Second),
-			rpc.WithDialOption(opts),
-		}),
+		conn,
+		schedulerv1.NewSchedulerClient(conn),
 	}, nil
 }
 
@@ -92,73 +124,45 @@ type Client interface {
 	// A peer announces that it has the announced task to other peers.
 	AnnounceTask(context.Context, *schedulerv1.AnnounceTaskRequest, ...grpc.CallOption) error
 
-	// Update grpc addresses.
-	UpdateState([]dfnet.NetAddr)
-
-	// Get grpc addresses.
-	GetState() []dfnet.NetAddr
-
 	// Close grpc service.
 	Close() error
 }
 
 // client provides scheduler grpc function.
 type client struct {
-	*rpc.Connection
-}
-
-// getClient gets scheduler client with hashkey.
-func (sc *client) getClient(key string, stick bool) (schedulerv1.SchedulerClient, string, error) {
-	clientConn, err := sc.Connection.GetClientConn(key, stick)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return schedulerv1.NewSchedulerClient(clientConn), clientConn.Target(), nil
+	*grpc.ClientConn
+	schedulerv1.SchedulerClient
 }
 
 // RegisterPeerTask registers a peer into task.
-func (sc *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
-	// Generate task id.
-	client, target, err := sc.getClient(req.TaskId, false)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("register peer task with %s request: %#v %#v %#v", target, req, req.UrlMeta, req.HostLoad)
-	resp, err := client.RegisterPeerTask(ctx, req, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+func (c *client) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (*schedulerv1.RegisterResult, error) {
+	return c.SchedulerClient.RegisterPeerTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
 }
 
 // ReportPieceResult reports piece results and receives peer packets.
-func (sc *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, opts ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
-	client, target, err := sc.getClient(req.TaskId, false)
+func (c *client) ReportPieceResult(ctx context.Context, req *schedulerv1.PeerTaskRequest, options ...grpc.CallOption) (schedulerv1.Scheduler_ReportPieceResultClient, error) {
+	stream, err := c.SchedulerClient.ReportPieceResult(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		options...,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	stream, err := client.ReportPieceResult(ctx, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report piece result with %s request: %#v", target, req)
 	return stream, stream.Send(NewBeginOfPiece(req.TaskId, req.PeerId))
 }
 
 // ReportPeerResult reports downloading result for the peer.
-func (sc *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, opts ...grpc.CallOption) error {
-	client, target, err := sc.getClient(req.TaskId, false)
-	if err != nil {
-		return err
-	}
-
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("report peer result with %s request: %#v", target, req)
-	if _, err := client.ReportPeerResult(ctx, req, opts...); err != nil {
+func (c *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerResult, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.ReportPeerResult(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 
@@ -166,14 +170,12 @@ func (sc *client) ReportPeerResult(ctx context.Context, req *schedulerv1.PeerRes
 }
 
 // LeaveTask makes the peer leaving from task.
-func (sc *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, opts ...grpc.CallOption) error {
-	client, target, err := sc.getClient(req.TaskId, false)
-	if err != nil {
-		return err
-	}
-
-	logger.WithTaskAndPeerID(req.TaskId, req.PeerId).Infof("leave task with %s request: %#v", target, req)
-	if _, err := client.LeaveTask(ctx, req, opts...); err != nil {
+func (c *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.LeaveTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 
@@ -181,30 +183,21 @@ func (sc *client) LeaveTask(ctx context.Context, req *schedulerv1.PeerTarget, op
 }
 
 // Checks if any peer has the given task.
-func (sc *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, opts ...grpc.CallOption) (*schedulerv1.Task, error) {
-	client, target, err := sc.getClient(req.TaskId, false)
-	if err != nil {
-		return nil, err
-	}
-
-	logger.WithTaskID(req.TaskId).Infof("stat task with %s request: %#v", target, req)
-	resp, err := client.StatTask(ctx, req, opts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return resp, nil
+func (c *client) StatTask(ctx context.Context, req *schedulerv1.StatTaskRequest, options ...grpc.CallOption) (*schedulerv1.Task, error) {
+	return c.SchedulerClient.StatTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	)
 }
 
 // A peer announces that it has the announced task to other peers.
-func (sc *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, opts ...grpc.CallOption) error {
-	client, target, err := sc.getClient(req.TaskId, false)
-	if err != nil {
-		return err
-	}
-
-	logger.WithTaskID(req.TaskId).Infof("announce task with %s request: %#v", target, req)
-	if _, err := client.AnnounceTask(ctx, req, opts...); err != nil {
+func (c *client) AnnounceTask(ctx context.Context, req *schedulerv1.AnnounceTaskRequest, options ...grpc.CallOption) error {
+	if _, err := c.SchedulerClient.AnnounceTask(
+		context.WithValue(ctx, balancer.ContextKey, req.TaskId),
+		req,
+		options...,
+	); err != nil {
 		return err
 	}
 

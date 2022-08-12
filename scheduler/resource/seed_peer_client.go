@@ -36,18 +36,18 @@ import (
 
 type SeedPeerClient interface {
 	// client is seed peer grpc client interface.
-	client.CdnClient
+	client.Client
 
 	// Observer is dynconfig observer interface.
 	config.Observer
 }
 
 type seedPeerClient struct {
+	// client is sedd peer grpc client instance.
+	client.Client
+
 	// hostManager is host manager.
 	hostManager HostManager
-
-	// client is sedd peer grpc client instance.
-	client.CdnClient
 
 	// data is dynconfig data.
 	data *config.DynconfigData
@@ -62,7 +62,10 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.SeedPeers))
 
 	// Initialize seed peer grpc client.
-	client := client.GetClientByAddr(seedPeersToNetAddrs(config.SeedPeers), opts...)
+	client, err := client.GetClient(opts...)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize seed hosts.
 	for _, host := range seedPeersToHosts(config.SeedPeers) {
@@ -71,7 +74,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 
 	dc := &seedPeerClient{
 		hostManager: hostManager,
-		CdnClient:   client,
+		Client:      client,
 		data:        config,
 	}
 
@@ -82,7 +85,6 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 // Dynamic config notify function.
 func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	if reflect.DeepEqual(sc.data, data) {
-		logger.Debugf("addresses deep equal: %#v", seedPeersToNetAddrs(data.SeedPeers))
 		return
 	}
 
@@ -106,7 +108,6 @@ func (sc *seedPeerClient) OnNotify(data *config.DynconfigData) {
 	sc.data = data
 
 	// Update grpc seed peer addresses.
-	sc.UpdateState(seedPeersToNetAddrs(data.SeedPeers))
 	logger.Infof("addresses have been updated: %#v", seedPeersToNetAddrs(data.SeedPeers))
 }
 

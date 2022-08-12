@@ -25,12 +25,15 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -111,6 +114,10 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 		return nil, err
 	}
 	s.dynconfig = dynconfig
+
+	// register resolver and balancer
+	resolver.RegisterSeedPeer(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
 	// Initialize GC.
 	s.gc = gc.New(gc.WithLogger(logger.GCLogger))
