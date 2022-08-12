@@ -25,9 +25,9 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
@@ -40,12 +40,69 @@ import (
 )
 
 const (
-	contextTimeout    = 2 * time.Minute
-	backoffBaseDelay  = 1 * time.Second
-	backoffMultiplier = 1.6
-	backoffJitter     = 0.2
-	backoffMaxDelay   = 10 * time.Second
+	// maxRetries is maximum number of retries.
+	maxRetries = 3
+
+	// backoffWaitBetween is waiting for a fixed period of
+	// time between calls in backoff linear.
+	backoffWaitBetween = 500 * time.Millisecond
+
+	// perRetryTimeout is GRPC timeout per call (including initial call) on this call.
+	perRetryTimeout = 5 * time.Second
 )
+
+// defaultDialOptions is default dial options of manager client.
+var defaultDialOptions = []grpc.DialOption{
+	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+		grpc_prometheus.UnaryClientInterceptor,
+		grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+			grpc_retry.WithMax(maxRetries),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+		),
+	)),
+	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+		grpc_prometheus.StreamClientInterceptor,
+		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_retry.StreamClientInterceptor(
+			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+			grpc_retry.WithMax(maxRetries),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+		),
+	)),
+}
+
+// GetClient returns manager client.
+func GetClient(target string, options ...grpc.DialOption) (Client, error) {
+	conn, err := grpc.Dial(
+		target,
+		append(defaultDialOptions, options...)...,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &client{
+		ManagerClient: managerv1.NewManagerClient(conn),
+		conn:          conn,
+	}, nil
+}
+
+// GetClientByAddr returns manager client with addresses.
+func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
+	for _, netAddr := range netAddrs {
+		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
+		if err := ipReachable.Check(); err == nil {
+			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
+			return GetClient(netAddr.Addr, opts...)
+		}
+		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
+	}
+
+	return nil, errors.New("can not find available manager addresses")
+}
 
 // Client is the interface for grpc client.
 type Client interface {
@@ -80,100 +137,34 @@ type client struct {
 	conn *grpc.ClientConn
 }
 
-// GetClient returns manager client.
-func GetClient(target string, options ...grpc.DialOption) (Client, error) {
-	dialOptions := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-		grpc.WithConnectParams(grpc.ConnectParams{
-			Backoff: backoff.Config{
-				BaseDelay:  backoffBaseDelay,
-				Multiplier: backoffMultiplier,
-				Jitter:     backoffJitter,
-				MaxDelay:   backoffMaxDelay,
-			},
-		}),
-		grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-			grpc_prometheus.StreamClientInterceptor,
-			grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-		)),
-	}
-	dialOptions = append(dialOptions, options...)
-
-	conn, err := grpc.Dial(
-		target,
-		dialOptions...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &client{
-		ManagerClient: managerv1.NewManagerClient(conn),
-		conn:          conn,
-	}, nil
-}
-
-// GetClientByAddr returns manager client with addresses.
-func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client, error) {
-	for _, netAddr := range netAddrs {
-		ipReachable := reachable.New(&reachable.Config{Address: netAddr.Addr})
-		if err := ipReachable.Check(); err == nil {
-			logger.Infof("use %s address for manager grpc client", netAddr.Addr)
-			return GetClient(netAddr.Addr, opts...)
-		}
-		logger.Warnf("%s manager address can not reachable", netAddr.Addr)
-	}
-
-	return nil, errors.New("can not find available manager addresses")
-}
-
 // Update SeedPeer configuration.
 func (c *client) UpdateSeedPeer(req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateSeedPeer(ctx, req)
+	return c.ManagerClient.UpdateSeedPeer(context.Background(), req)
 }
 
 // Get Scheduler and Scheduler cluster configuration.
 func (c *client) GetScheduler(req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.GetScheduler(ctx, req)
+	return c.ManagerClient.GetScheduler(context.Background(), req)
 }
 
 // Update scheduler configuration.
 func (c *client) UpdateScheduler(req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.UpdateScheduler(ctx, req)
+	return c.ManagerClient.UpdateScheduler(context.Background(), req)
 }
 
 // List acitve schedulers configuration.
 func (c *client) ListSchedulers(req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.ListSchedulers(ctx, req)
+	return c.ManagerClient.ListSchedulers(context.Background(), req)
 }
 
 // Get object storage configuration.
 func (c *client) GetObjectStorage(req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.GetObjectStorage(ctx, req)
+	return c.ManagerClient.GetObjectStorage(context.Background(), req)
 }
 
 // List buckets configuration.
 func (c *client) ListBuckets(req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-	defer cancel()
-
-	return c.ManagerClient.ListBuckets(ctx, req)
+	return c.ManagerClient.ListBuckets(context.Background(), req)
 }
 
 // List acitve schedulers configuration.
