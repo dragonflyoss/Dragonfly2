@@ -63,7 +63,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			sleep: func() {},
 			mock: func(m *mocks.MockClientMockRecorder) {
-				m.GetScheduler(gomock.Any()).Return(&managerv1.Scheduler{
+				m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
 					Id:          1,
 					HostName:    "foo",
 					Idc:         "idc",
@@ -149,7 +149,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.GetScheduler(gomock.Any()).Return(&managerv1.Scheduler{
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(&managerv1.Scheduler{
 						Id:          1,
 						HostName:    "foo",
 						Idc:         "idc",
@@ -183,7 +183,7 @@ func TestDynconfig_GetManagerSourceType(t *testing.T) {
 							ClientConfig: []byte{1},
 						},
 					}, nil).Times(1),
-					m.GetScheduler(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
+					m.GetScheduler(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, data *DynconfigData, err error) {

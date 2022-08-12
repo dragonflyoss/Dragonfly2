@@ -17,6 +17,7 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -190,7 +191,7 @@ func newManagerClient(client managerclient.Client, hostOption HostOption) intern
 }
 
 func (mc *managerClient) Get() (any, error) {
-	listSchedulersResp, err := mc.ListSchedulers(&managerv1.ListSchedulersRequest{
+	listSchedulersResp, err := mc.ListSchedulers(context.Background(), &managerv1.ListSchedulersRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,
@@ -205,7 +206,7 @@ func (mc *managerClient) Get() (any, error) {
 		return nil, err
 	}
 
-	getObjectStorageResp, err := mc.GetObjectStorage(&managerv1.GetObjectStorageRequest{
+	getObjectStorageResp, err := mc.GetObjectStorage(context.Background(), &managerv1.GetObjectStorageRequest{
 		SourceType: managerv1.SourceType_PEER_SOURCE,
 		HostName:   mc.hostOption.Hostname,
 		Ip:         mc.hostOption.AdvertiseIP,

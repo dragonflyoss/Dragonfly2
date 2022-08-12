@@ -59,8 +59,8 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -81,8 +81,8 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(&managerv1.ObjectStorage{}, nil).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -98,7 +98,7 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
-				m.ListSchedulers(gomock.Any()).Return(nil, errors.New("foo")).Times(1)
+				m.ListSchedulers(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1)
 			},
 			expect: func(t *testing.T, err error) {
 				assert := assert.New(t)
@@ -114,8 +114,8 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			cleanFileCache: func(t *testing.T) {},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, errors.New("foo")).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(nil, errors.New("foo")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
@@ -136,8 +136,8 @@ func TestDynconfigNewDynconfig_ManagerSourceType(t *testing.T) {
 			},
 			mock: func(m *mocks.MockClientMockRecorder) {
 				gomock.InOrder(
-					m.ListSchedulers(gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
-					m.GetObjectStorage(gomock.Any()).Return(nil, status.Error(codes.NotFound, "")).Times(1),
+					m.ListSchedulers(gomock.Any(), gomock.Any()).Return(&managerv1.ListSchedulersResponse{}, nil).Times(1),
+					m.GetObjectStorage(gomock.Any(), gomock.Any()).Return(nil, status.Error(codes.NotFound, "")).Times(1),
 				)
 			},
 			expect: func(t *testing.T, err error) {
