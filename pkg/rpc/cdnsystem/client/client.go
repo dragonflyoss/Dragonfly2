@@ -24,9 +24,9 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 
 	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
@@ -39,25 +39,30 @@ import (
 )
 
 const (
-	backoffBaseDelay  = 1 * time.Second
-	backoffMultiplier = 1.2
-	backoffJitter     = 0.2
-	backoffMaxDelay   = 120 * time.Second
-	minConnectTime    = 3 * time.Second //fast fail, leave time to try other scheduler
+	// maxRetries is maximum number of retries.
+	maxRetries = 3
+
+	// backoffWaitBetween is waiting for a fixed period of
+	// time between calls in backoff linear.
+	backoffWaitBetween = 500 * time.Millisecond
+
+	// perRetryTimeout is GRPC timeout per call (including initial call) on this call.
+	perRetryTimeout = 3 * time.Second
 )
 
+// defaultDialOptions is default dial options of manager client.
 var defaultDialOptions = []grpc.DialOption{
 	grpc.WithDefaultServiceConfig(balancer.BalancerServiceConfig),
 	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	grpc.WithConnectParams(grpc.ConnectParams{
-		Backoff: backoff.Config{
-			BaseDelay:  backoffBaseDelay,
-			Multiplier: backoffMultiplier,
-			Jitter:     backoffJitter,
-			MaxDelay:   backoffMaxDelay,
-		},
-		MinConnectTimeout: minConnectTime,
-	}),
+	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+		grpc_prometheus.UnaryClientInterceptor,
+		grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+		grpc_retry.UnaryClientInterceptor(
+			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+			grpc_retry.WithMax(maxRetries),
+			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+		),
+	)),
 	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 		grpc_prometheus.StreamClientInterceptor,
 		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
