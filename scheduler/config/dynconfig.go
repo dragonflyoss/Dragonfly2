@@ -114,6 +114,9 @@ type DynconfigInterface interface {
 	// Get the dynamic config from manager.
 	Get() (*DynconfigData, error)
 
+	// Refresh refreshes dynconfig in cache.
+	Refresh() error
+
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)
 
@@ -142,6 +145,7 @@ type dynconfig struct {
 	cachePath string
 }
 
+// NewDynconfig returns a new dynconfig instence.
 func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *Config) (DynconfigInterface, error) {
 	cachePath := filepath.Join(cacheDir, cacheFileName)
 	d := &dynconfig{
@@ -166,6 +170,7 @@ func NewDynconfig(rawManagerClient managerclient.Client, cacheDir string, cfg *C
 	return d, nil
 }
 
+// Get the dynamic schedulers resolve addrs.
 func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	seedPeers, err := d.GetSeedPeers()
 	if err != nil {
@@ -194,6 +199,7 @@ func (d *dynconfig) GetResolveSeedPeerAddrs() ([]resolver.Address, error) {
 	return resolveAddrs, nil
 }
 
+// Get the dynamic seed peers config from manager.
 func (d *dynconfig) GetSeedPeers() ([]*SeedPeer, error) {
 	data, err := d.Get()
 	if err != nil {
@@ -203,6 +209,7 @@ func (d *dynconfig) GetSeedPeers() ([]*SeedPeer, error) {
 	return data.SeedPeers, nil
 }
 
+// Get the scheduler cluster config.
 func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, bool) {
 	data, err := d.Get()
 	if err != nil {
@@ -221,6 +228,7 @@ func (d *dynconfig) GetSchedulerClusterConfig() (types.SchedulerClusterConfig, b
 	return config, true
 }
 
+// Get the client config.
 func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterClientConfig, bool) {
 	data, err := d.Get()
 	if err != nil {
@@ -239,6 +247,7 @@ func (d *dynconfig) GetSchedulerClusterClientConfig() (types.SchedulerClusterCli
 	return config, true
 }
 
+// Get the dynamic config from manager.
 func (d *dynconfig) Get() (*DynconfigData, error) {
 	var config DynconfigData
 	if err := d.Unmarshal(&config); err != nil {
@@ -248,14 +257,22 @@ func (d *dynconfig) Get() (*DynconfigData, error) {
 	return &config, nil
 }
 
+// Refresh refreshes dynconfig in cache.
+func (d *dynconfig) Refresh() error {
+	return d.Dynconfig.Refresh()
+}
+
+// Register allows an instance to register itself to listen/observe events.
 func (d *dynconfig) Register(l Observer) {
 	d.observers[l] = struct{}{}
 }
 
+// Deregister allows an instance to remove itself from the collection of observers/listeners.
 func (d *dynconfig) Deregister(l Observer) {
 	delete(d.observers, l)
 }
 
+// Notify publishes new events to listeners.
 func (d *dynconfig) Notify() error {
 	config, err := d.Get()
 	if err != nil {
@@ -269,6 +286,7 @@ func (d *dynconfig) Notify() error {
 	return nil
 }
 
+// Serve the dynconfig listening service.
 func (d *dynconfig) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
@@ -278,6 +296,7 @@ func (d *dynconfig) Serve() error {
 	return nil
 }
 
+// watch the dynconfig events.
 func (d *dynconfig) watch() {
 	tick := time.NewTicker(watchInterval)
 
@@ -293,6 +312,7 @@ func (d *dynconfig) watch() {
 	}
 }
 
+// Stop the dynconfig listening service.
 func (d *dynconfig) Stop() error {
 	close(d.done)
 	if err := os.Remove(d.cachePath); err != nil {
@@ -308,6 +328,7 @@ type managerClient struct {
 	config *Config
 }
 
+// New the manager client used by dynconfig.
 func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient {
 	return &managerClient{
 		Client: client,

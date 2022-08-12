@@ -122,6 +122,20 @@ func (mr *MockDynconfigMockRecorder) Notify() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Notify", reflect.TypeOf((*MockDynconfig)(nil).Notify))
 }
 
+// Refresh mocks base method.
+func (m *MockDynconfig) Refresh() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refresh")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Refresh indicates an expected call of Refresh.
+func (mr *MockDynconfigMockRecorder) Refresh() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockDynconfig)(nil).Refresh))
+}
+
 // Register mocks base method.
 func (m *MockDynconfig) Register(arg0 config.Observer) {
 	m.ctrl.T.Helper()
