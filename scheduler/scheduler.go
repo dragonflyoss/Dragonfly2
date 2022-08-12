@@ -96,7 +96,7 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	s.managerClient = managerClient
 
 	// Register to manager.
-	if _, err := s.managerClient.UpdateScheduler(&managerv1.UpdateSchedulerRequest{
+	if _, err := s.managerClient.UpdateScheduler(context.Background(), &managerv1.UpdateSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           s.config.Server.Host,
 		Ip:                 s.config.Server.IP,
@@ -193,7 +193,7 @@ func (s *Server) Serve() error {
 	logger.Info("gc start successfully")
 
 	// Serve Job.
-	if s.job != nil {
+	if s.config.Job.Enable {
 		s.job.Serve()
 		logger.Info("job start successfully")
 	}

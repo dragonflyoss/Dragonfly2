@@ -704,7 +704,7 @@ func (cd *clientDaemon) announceSeedPeer() error {
 		objectStoragePort = int32(cd.Option.ObjectStorage.TCPListen.PortRange.Start)
 	}
 
-	if _, err := cd.managerClient.UpdateSeedPeer(&managerv1.UpdateSeedPeerRequest{
+	if _, err := cd.managerClient.UpdateSeedPeer(context.Background(), &managerv1.UpdateSeedPeerRequest{
 		SourceType:        managerv1.SourceType_SEED_PEER_SOURCE,
 		HostName:          cd.Option.Host.Hostname,
 		Type:              cd.Option.Scheduler.Manager.SeedPeer.Type,
