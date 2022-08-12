@@ -4825,8 +4825,10 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "data",
-                "precision",
-                "recall"
+                "mae",
+                "mse",
+                "r2",
+                "rmse"
             ],
             "properties": {
                 "data": {
@@ -4835,10 +4837,16 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 }
             }
@@ -5180,8 +5188,10 @@ const docTemplate = `{
                 "create_at",
                 "data",
                 "id",
-                "precision",
-                "recall",
+                "mae",
+                "mse",
+                "r2",
+                "rmse",
                 "updated_at"
             ],
             "properties": {
@@ -5197,10 +5207,16 @@ const docTemplate = `{
                 "id": {
                     "type": "string"
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 },
                 "updated_at": {
@@ -5414,10 +5430,16 @@ const docTemplate = `{
                         "type": "integer"
                     }
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 }
             }
