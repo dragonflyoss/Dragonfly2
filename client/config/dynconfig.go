@@ -51,14 +51,17 @@ type Dynconfig interface {
 	// Get the dynamic schedulers resolve addrs.
 	GetResolveSchedulerAddrs() ([]resolver.Address, error)
 
-	// Get the dynamic schedulers config from manager.
+	// Get the dynamic schedulers config.
 	GetSchedulers() ([]*managerv1.Scheduler, error)
 
-	// Get the dynamic object storage config from manager.
+	// Get the dynamic object storage config.
 	GetObjectStorage() (*managerv1.ObjectStorage, error)
 
-	// Get the dynamic config from manager.
+	// Get the dynamic config.
 	Get() (*DynconfigData, error)
+
+	// Refresh refreshes dynconfig in cache.
+	Refresh() error
 
 	// Register allows an instance to register itself to listen/observe events.
 	Register(Observer)

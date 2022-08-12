@@ -67,6 +67,7 @@ func newDynconfigManager(cfg *DaemonOption, rawManagerClient managerclient.Clien
 	}, nil
 }
 
+// Get the dynamic schedulers config from manager.
 func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
 	schedulers, err := d.GetSchedulers()
 	if err != nil {
@@ -95,6 +96,7 @@ func (d *dynconfigManager) GetResolveSchedulerAddrs() ([]resolver.Address, error
 	return resolveAddrs, nil
 }
 
+// Get the dynamic schedulers resolve addrs.
 func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	data, err := d.Get()
 	if err != nil {
@@ -104,6 +106,7 @@ func (d *dynconfigManager) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	return data.Schedulers, nil
 }
 
+// Get the dynamic object storage config from manager.
 func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) {
 	data, err := d.Get()
 	if err != nil {
@@ -113,6 +116,7 @@ func (d *dynconfigManager) GetObjectStorage() (*managerv1.ObjectStorage, error) 
 	return data.ObjectStorage, nil
 }
 
+// Get the dynamic config from manager.
 func (d *dynconfigManager) Get() (*DynconfigData, error) {
 	var data DynconfigData
 	if err := d.Unmarshal(&data); err != nil {
@@ -122,14 +126,22 @@ func (d *dynconfigManager) Get() (*DynconfigData, error) {
 	return &data, nil
 }
 
+// Refresh refreshes dynconfig in cache.
+func (d *dynconfigManager) Refresh() error {
+	return d.Dynconfig.Refresh()
+}
+
+// Register allows an instance to register itself to listen/observe events.
 func (d *dynconfigManager) Register(l Observer) {
 	d.observers[l] = struct{}{}
 }
 
+// Deregister allows an instance to remove itself from the collection of observers/listeners.
 func (d *dynconfigManager) Deregister(l Observer) {
 	delete(d.observers, l)
 }
 
+// Notify publishes new events to listeners.
 func (d *dynconfigManager) Notify() error {
 	data, err := d.Get()
 	if err != nil {
@@ -143,6 +155,7 @@ func (d *dynconfigManager) Notify() error {
 	return nil
 }
 
+// watch the dynconfig events.
 func (d *dynconfigManager) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
@@ -153,6 +166,7 @@ func (d *dynconfigManager) Serve() error {
 	return nil
 }
 
+// watch the dynconfig events.
 func (d *dynconfigManager) watch() {
 	tick := time.NewTicker(watchInterval)
 
@@ -168,6 +182,7 @@ func (d *dynconfigManager) watch() {
 	}
 }
 
+// Stop the dynconfig listening service.
 func (d *dynconfigManager) Stop() error {
 	close(d.done)
 	if err := os.Remove(d.cachePath); err != nil {

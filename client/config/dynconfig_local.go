@@ -48,6 +48,7 @@ func newDynconfigLocal(cfg *DaemonOption) (Dynconfig, error) {
 	}, nil
 }
 
+// Get the dynamic schedulers resolve addrs.
 func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) {
 	addrs := []string{}
 	for _, schedulerAddr := range d.config.Scheduler.NetAddrs {
@@ -70,26 +71,37 @@ func (d *dynconfigLocal) GetResolveSchedulerAddrs() ([]resolver.Address, error) 
 	return resolveAddrs, nil
 }
 
+// Get the dynamic schedulers config from local.
 func (d *dynconfigLocal) GetSchedulers() ([]*managerv1.Scheduler, error) {
 	return nil, ErrUnimplemented
 }
 
+// Get the dynamic object storage config from local.
 func (d *dynconfigLocal) GetObjectStorage() (*managerv1.ObjectStorage, error) {
 	return nil, ErrUnimplemented
 }
 
+// Get the dynamic config from local.
 func (d *dynconfigLocal) Get() (*DynconfigData, error) {
 	return nil, ErrUnimplemented
 }
 
+// Refresh refreshes dynconfig in cache.
+func (d *dynconfigLocal) Refresh() error {
+	return nil
+}
+
+// Register allows an instance to register itself to listen/observe events.
 func (d *dynconfigLocal) Register(l Observer) {
 	d.observers[l] = struct{}{}
 }
 
+// Deregister allows an instance to remove itself from the collection of observers/listeners.
 func (d *dynconfigLocal) Deregister(l Observer) {
 	delete(d.observers, l)
 }
 
+// Notify publishes new events to listeners.
 func (d *dynconfigLocal) Notify() error {
 	data, err := d.Get()
 	if err != nil {
@@ -103,16 +115,17 @@ func (d *dynconfigLocal) Notify() error {
 	return nil
 }
 
+// Serve the dynconfig listening service.
 func (d *dynconfigLocal) Serve() error {
 	if err := d.Notify(); err != nil {
 		return err
 	}
 
 	go d.watch()
-
 	return nil
 }
 
+// watch the dynconfig events.
 func (d *dynconfigLocal) watch() {
 	tick := time.NewTicker(watchInterval)
 
@@ -128,6 +141,7 @@ func (d *dynconfigLocal) watch() {
 	}
 }
 
+// Stop the dynconfig listening service.
 func (d *dynconfigLocal) Stop() error {
 	close(d.done)
 	return nil
