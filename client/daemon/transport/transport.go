@@ -76,6 +76,9 @@ type transport struct {
 	// defaultTag is used when http request without X-Dragonfly-Tag Header
 	defaultTag string
 
+	// defaultTag is used when http request without X-Dragonfly-Tag Header
+	defaultApplication string
+
 	// dumpHTTPContent indicates to dump http request header and response header
 	dumpHTTPContent bool
 
@@ -137,6 +140,14 @@ func WithDefaultPattern(pattern commonv1.Pattern) Option {
 func WithDefaultTag(b string) Option {
 	return func(rt *transport) *transport {
 		rt.defaultTag = b
+		return rt
+	}
+}
+
+// WithDefaultApplication sets default Application for http requests with X-Dragonfly-Application Header
+func WithDefaultApplication(b string) Option {
+	return func(rt *transport) *transport {
+		rt.defaultApplication = b
 		return rt
 	}
 }
@@ -239,6 +250,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	// Pick header's parameters
 	filter := nethttp.PickHeader(req.Header, config.HeaderDragonflyFilter, rt.defaultFilter)
 	tag := nethttp.PickHeader(req.Header, config.HeaderDragonflyTag, rt.defaultTag)
+	application := nethttp.PickHeader(req.Header, config.HeaderDragonflyApplication, rt.defaultApplication)
 
 	// Delete hop-by-hop headers
 	delHopHeaders(req.Header)
@@ -246,6 +258,7 @@ func (rt *transport) download(ctx context.Context, req *http.Request) (*http.Res
 	meta.Header = nethttp.HeaderToMap(req.Header)
 	meta.Tag = tag
 	meta.Filter = filter
+	meta.Application = application
 
 	body, attr, err := rt.peerTaskManager.StartStreamTask(
 		ctx,

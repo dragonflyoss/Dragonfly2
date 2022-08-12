@@ -64,13 +64,18 @@ func (s *Server) RegisterPeerTask(ctx context.Context, req *schedulerv1.PeerTask
 	if req.UrlMeta.Tag != "" {
 		tag = req.UrlMeta.Tag
 	}
-	metrics.RegisterPeerTaskCount.WithLabelValues(tag).Inc()
+
+	application := resource.DefaultApplication
+	if req.UrlMeta.Application != "" {
+		application = req.UrlMeta.Application
+	}
+	metrics.RegisterPeerTaskCount.WithLabelValues(tag, application).Inc()
 
 	resp, err := s.service.RegisterPeerTask(ctx, req)
 	if err != nil {
-		metrics.RegisterPeerTaskFailureCount.WithLabelValues(tag).Inc()
+		metrics.RegisterPeerTaskFailureCount.WithLabelValues(tag, application).Inc()
 	} else {
-		metrics.PeerTaskCounter.WithLabelValues(tag, resp.SizeScope.String()).Inc()
+		metrics.PeerTaskCounter.WithLabelValues(tag, application, resp.SizeScope.String()).Inc()
 	}
 
 	return resp, err

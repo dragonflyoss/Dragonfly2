@@ -38,7 +38,7 @@ var dfgetConfig = ClientOption{
 	DigestMethod:      "",
 	DigestValue:       "",
 	Tag:               "",
-	CallSystem:        "",
+	Application:       "",
 	Pattern:           "",
 	Cacerts:           nil,
 	Filter:            "",
