@@ -4818,8 +4818,10 @@
             "type": "object",
             "required": [
                 "data",
-                "precision",
-                "recall"
+                "mae",
+                "mse",
+                "r2",
+                "rmse"
             ],
             "properties": {
                 "data": {
@@ -4828,10 +4830,16 @@
                         "type": "integer"
                     }
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 }
             }
@@ -5173,8 +5181,10 @@
                 "create_at",
                 "data",
                 "id",
-                "precision",
-                "recall",
+                "mae",
+                "mse",
+                "r2",
+                "rmse",
                 "updated_at"
             ],
             "properties": {
@@ -5190,10 +5200,16 @@
                 "id": {
                     "type": "string"
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 },
                 "updated_at": {
@@ -5407,10 +5423,16 @@
                         "type": "integer"
                     }
                 },
-                "precision": {
+                "mae": {
                     "type": "number"
                 },
-                "recall": {
+                "mse": {
+                    "type": "number"
+                },
+                "r2": {
+                    "type": "number"
+                },
+                "rmse": {
                     "type": "number"
                 }
             }
