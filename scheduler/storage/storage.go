@@ -183,6 +183,9 @@ type Storage interface {
 	// List returns all of records in csv file.
 	List() ([]Record, error)
 
+	// Count returns the count of records.
+	Count() int64
+
 	// Open opens storage for read, it returns io.ReadCloser of storage files.
 	Open() (io.ReadCloser, error)
 
@@ -198,6 +201,7 @@ type storage struct {
 	maxBackups int
 	buffer     []Record
 	bufferSize int
+	count      int64
 	mu         *sync.RWMutex
 }
 
@@ -257,11 +261,25 @@ func (s *storage) Create(record Record) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// Write without buffer.
+	if s.bufferSize == 0 {
+		if err := s.create(s.buffer...); err != nil {
+			return err
+		}
+
+		// Update record count.
+		s.count++
+		return nil
+	}
+
 	// Write records to file.
 	if len(s.buffer) >= s.bufferSize {
 		if err := s.create(s.buffer...); err != nil {
 			return err
 		}
+
+		// Update record count.
+		s.count += int64(s.bufferSize)
 
 		// Keep allocated memory.
 		s.buffer = s.buffer[:0]
@@ -308,6 +326,11 @@ func (s *storage) List() ([]Record, error) {
 	}
 
 	return records, nil
+}
+
+// Count returns the count of records.
+func (s *storage) Count() int64 {
+	return s.count
 }
 
 // Open opens storage for read, it returns io.ReadCloser of storage files.
