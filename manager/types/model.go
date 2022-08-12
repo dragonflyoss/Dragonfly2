@@ -86,9 +86,11 @@ type CreateModelVersionParams struct {
 }
 
 type CreateModelVersionRequest struct {
-	Precision float64 `json:"precision" binding:"required"`
-	Recall    float64 `json:"recall" binding:"required"`
-	Data      []byte  `json:"data" binding:"required"`
+	MAE  float64 `json:"mae" binding:"required"`
+	MSE  float64 `json:"mse" binding:"required"`
+	RMSE float64 `json:"rmse" binding:"required"`
+	R2   float64 `json:"r2" binding:"required"`
+	Data []byte  `json:"data" binding:"required"`
 }
 
 type GetModelVersionsParams struct {
@@ -97,15 +99,19 @@ type GetModelVersionsParams struct {
 }
 
 type UpdateModelVersionRequest struct {
-	Precision float64 `json:"precision" binding:"omitempty"`
-	Recall    float64 `json:"recall" binding:"omitempty"`
-	Data      []byte  `json:"data" binding:"omitempty"`
+	MAE  float64 `json:"mae" binding:"omitempty"`
+	MSE  float64 `json:"mse" binding:"omitempty"`
+	RMSE float64 `json:"rmse" binding:"omitempty"`
+	R2   float64 `json:"r2" binding:"omitempty"`
+	Data []byte  `json:"data" binding:"omitempty"`
 }
 
 type ModelVersion struct {
 	ID        string    `json:"id" binding:"required"`
-	Precision float64   `json:"precision" binding:"required"`
-	Recall    float64   `json:"recall" binding:"required"`
+	MAE       float64   `json:"mae" binding:"required"`
+	MSE       float64   `json:"mse" binding:"required"`
+	RMSE      float64   `json:"rmse" binding:"required"`
+	R2        float64   `json:"r2" binding:"required"`
 	Data      []byte    `json:"data" binding:"required"`
 	CreatedAt time.Time `json:"create_at" binding:"required"`
 	UpdatedAt time.Time `json:"updated_at" binding:"required"`

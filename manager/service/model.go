@@ -130,8 +130,10 @@ func (s *service) CreateModelVersion(ctx context.Context, params types.CreateMod
 
 	modelVersion := types.ModelVersion{
 		ID:        uuid.New().String(),
-		Precision: json.Precision,
-		Recall:    json.Recall,
+		MAE:       json.MAE,
+		MSE:       json.MSE,
+		RMSE:      json.RMSE,
+		R2:        json.R2,
 		Data:      json.Data,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -172,9 +174,26 @@ func (s *service) UpdateModelVersion(ctx context.Context, params types.ModelVers
 		return nil, err
 	}
 
-	modelVersion.Precision = json.Precision
-	modelVersion.Recall = json.Recall
-	modelVersion.Data = json.Data
+	if json.MAE > 0 {
+		modelVersion.MAE = json.MAE
+	}
+
+	if json.MSE > 0 {
+		modelVersion.MSE = json.MSE
+	}
+
+	if json.RMSE > 0 {
+		modelVersion.RMSE = json.RMSE
+	}
+
+	if json.R2 > 0 {
+		modelVersion.R2 = json.R2
+	}
+
+	if len(json.Data) > 0 {
+		modelVersion.Data = json.Data
+	}
+
 	modelVersion.UpdatedAt = time.Now()
 
 	if _, err := s.rdb.Set(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, params.ModelID, modelVersion.ID), modelVersion, 0).Result(); err != nil {
