@@ -830,7 +830,7 @@ func (pt *peerTaskConductor) isExitPeerPacketCode(pp *schedulerv1.PeerPacket) bo
 		pt.failedReason = fmt.Sprintf("receive exit peer packet with code %d", pp.Code)
 		return true
 	case commonv1.Code_BackToSourceAborted:
-		st := status.Newf(codes.Aborted, "response is not valid")
+		st := status.Newf(codes.Aborted, "source response is not valid")
 		st, err := st.WithDetails(pp.GetSourceError())
 		if err != nil {
 			pt.Errorf("convert source error details error: %s", err.Error())

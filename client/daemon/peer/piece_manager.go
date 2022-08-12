@@ -354,9 +354,10 @@ singleDownload:
 	}
 	err = response.Validate()
 	if err != nil {
-		log.Errorf("back source status code %s", response.Status)
+		log.Errorf("back source status code %d/%s", response.StatusCode, response.Status)
 		// convert error details to status
-		st := status.Newf(codes.Aborted, "response is not valid")
+		st := status.Newf(codes.Aborted,
+			fmt.Sprintf("source response %d/%s is not valid", response.StatusCode, response.Status))
 		hdr := map[string]string{}
 		for k, v := range response.Header {
 			if len(v) > 0 {
