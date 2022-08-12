@@ -49,6 +49,20 @@ func (mr *MockStorageMockRecorder) Clear() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Clear", reflect.TypeOf((*MockStorage)(nil).Clear))
 }
 
+// Count mocks base method.
+func (m *MockStorage) Count() int64 {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Count")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// Count indicates an expected call of Count.
+func (mr *MockStorageMockRecorder) Count() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Count", reflect.TypeOf((*MockStorage)(nil).Count))
+}
+
 // Create mocks base method.
 func (m *MockStorage) Create(arg0 storage.Record) error {
 	m.ctrl.T.Helper()
