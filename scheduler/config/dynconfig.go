@@ -19,6 +19,7 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -315,7 +316,7 @@ func newManagerClient(client managerclient.Client, cfg *Config) dc.ManagerClient
 }
 
 func (mc *managerClient) Get() (any, error) {
-	scheduler, err := mc.GetScheduler(&managerv1.GetSchedulerRequest{
+	scheduler, err := mc.GetScheduler(context.Background(), &managerv1.GetSchedulerRequest{
 		SourceType:         managerv1.SourceType_SCHEDULER_SOURCE,
 		HostName:           mc.config.Server.Host,
 		Ip:                 mc.config.Server.IP,

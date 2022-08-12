@@ -102,22 +102,22 @@ func GetClientByAddr(netAddrs []dfnet.NetAddr, opts ...grpc.DialOption) (Client,
 // Client is the interface for grpc client.
 type Client interface {
 	// Update Seed peer configuration.
-	UpdateSeedPeer(*managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error)
+	UpdateSeedPeer(context.Context, *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error)
 
 	// Get Scheduler and Scheduler cluster configuration.
-	GetScheduler(*managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error)
+	GetScheduler(context.Context, *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error)
 
 	// Update scheduler configuration.
-	UpdateScheduler(*managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error)
+	UpdateScheduler(context.Context, *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error)
 
 	// List acitve schedulers configuration.
-	ListSchedulers(*managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error)
+	ListSchedulers(context.Context, *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error)
 
 	// Get object storage configuration.
-	GetObjectStorage(*managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error)
+	GetObjectStorage(context.Context, *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error)
 
 	// List buckets configuration.
-	ListBuckets(*managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error)
+	ListBuckets(context.Context, *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error)
 
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest)
@@ -133,33 +133,33 @@ type client struct {
 }
 
 // Update SeedPeer configuration.
-func (c *client) UpdateSeedPeer(req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
-	return c.ManagerClient.UpdateSeedPeer(context.Background(), req)
+func (c *client) UpdateSeedPeer(ctx context.Context, req *managerv1.UpdateSeedPeerRequest) (*managerv1.SeedPeer, error) {
+	return c.ManagerClient.UpdateSeedPeer(ctx, req)
 }
 
 // Get Scheduler and Scheduler cluster configuration.
-func (c *client) GetScheduler(req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
-	return c.ManagerClient.GetScheduler(context.Background(), req)
+func (c *client) GetScheduler(ctx context.Context, req *managerv1.GetSchedulerRequest) (*managerv1.Scheduler, error) {
+	return c.ManagerClient.GetScheduler(ctx, req)
 }
 
 // Update scheduler configuration.
-func (c *client) UpdateScheduler(req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
-	return c.ManagerClient.UpdateScheduler(context.Background(), req)
+func (c *client) UpdateScheduler(ctx context.Context, req *managerv1.UpdateSchedulerRequest) (*managerv1.Scheduler, error) {
+	return c.ManagerClient.UpdateScheduler(ctx, req)
 }
 
 // List acitve schedulers configuration.
-func (c *client) ListSchedulers(req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
-	return c.ManagerClient.ListSchedulers(context.Background(), req)
+func (c *client) ListSchedulers(ctx context.Context, req *managerv1.ListSchedulersRequest) (*managerv1.ListSchedulersResponse, error) {
+	return c.ManagerClient.ListSchedulers(ctx, req)
 }
 
 // Get object storage configuration.
-func (c *client) GetObjectStorage(req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
-	return c.ManagerClient.GetObjectStorage(context.Background(), req)
+func (c *client) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectStorageRequest) (*managerv1.ObjectStorage, error) {
+	return c.ManagerClient.GetObjectStorage(ctx, req)
 }
 
 // List buckets configuration.
-func (c *client) ListBuckets(req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
-	return c.ManagerClient.ListBuckets(context.Background(), req)
+func (c *client) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
+	return c.ManagerClient.ListBuckets(ctx, req)
 }
 
 // List acitve schedulers configuration.
