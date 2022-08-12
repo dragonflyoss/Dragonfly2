@@ -68,13 +68,14 @@ func TestPeer_NewPeer(t *testing.T) {
 			},
 		},
 		{
-			name:    "new peer with tag",
+			name:    "new peer with tag and application",
 			id:      mockPeerID,
-			options: []PeerOption{WithTag("foo")},
+			options: []PeerOption{WithTag("foo"), WithApplication("bar")},
 			expect: func(t *testing.T, peer *Peer, mockTask *Task, mockHost *Host) {
 				assert := assert.New(t)
 				assert.Equal(peer.ID, mockPeerID)
 				assert.Equal(peer.Tag, "foo")
+				assert.Equal(peer.Application, "bar")
 				assert.Equal(peer.Pieces.Len(), uint(0))
 				assert.Empty(peer.FinishedPieces)
 				assert.Equal(len(peer.PieceCosts()), 0)

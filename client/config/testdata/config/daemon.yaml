@@ -126,6 +126,7 @@ proxy:
     password: "bar"
   defaultFilter: "baz"
   defaultTag: "tag"
+  defaultApplication: "application"
   maxConcurrency: 1
   security:
     insecure: true

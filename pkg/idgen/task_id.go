@@ -73,6 +73,10 @@ func taskID(url string, meta *commonv1.UrlMeta, ignoreRange bool) string {
 		data = append(data, meta.Tag)
 	}
 
+	if meta.Application != "" {
+		data = append(data, meta.Application)
+	}
+
 	return digest.SHA256FromStrings(data...)
 }
 
