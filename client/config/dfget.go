@@ -67,8 +67,8 @@ type ClientOption struct {
 	// Tag identify download task, it is available merely when md5 param not exist.
 	Tag string `yaml:"tag,omitempty" mapstructure:"tag,omitempty"`
 
-	// CallSystem system name that executes dfget.
-	CallSystem string `yaml:"callSystem,omitempty" mapstructure:"callSystem,omitempty"`
+	// Application application name that executes dfget.
+	Application string `yaml:"application,omitempty" mapstructure:"application,omitempty"`
 
 	// DaemonSock is daemon download socket path.
 	DaemonSock string `yaml:"daemonSock,omitempty" mapstructure:"daemon-sock,omitempty"`

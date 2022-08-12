@@ -269,16 +269,17 @@ type ConcurrentOption struct {
 
 type ProxyOption struct {
 	// WARNING: when add more option, please update ProxyOption.unmarshal function
-	ListenOption    `mapstructure:",squash" yaml:",inline"`
-	BasicAuth       *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
-	DefaultFilter   string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
-	DefaultTag      string          `mapstructure:"defaultTag" yaml:"defaultTag"`
-	MaxConcurrency  int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
-	RegistryMirror  *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
-	WhiteList       []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
-	ProxyRules      []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
-	HijackHTTPS     *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
-	DumpHTTPContent bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
+	ListenOption       `mapstructure:",squash" yaml:",inline"`
+	BasicAuth          *BasicAuth      `mapstructure:"basicAuth" yaml:"basicAuth"`
+	DefaultFilter      string          `mapstructure:"defaultFilter" yaml:"defaultFilter"`
+	DefaultTag         string          `mapstructure:"defaultTag" yaml:"defaultTag"`
+	DefaultApplication string          `mapstructure:"defaultApplication" yaml:"defaultApplication"`
+	MaxConcurrency     int64           `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
+	RegistryMirror     *RegistryMirror `mapstructure:"registryMirror" yaml:"registryMirror"`
+	WhiteList          []*WhiteList    `mapstructure:"whiteList" yaml:"whiteList"`
+	ProxyRules         []*ProxyRule    `mapstructure:"proxies" yaml:"proxies"`
+	HijackHTTPS        *HijackConfig   `mapstructure:"hijackHTTPS" yaml:"hijackHTTPS"`
+	DumpHTTPContent    bool            `mapstructure:"dumpHTTPContent" yaml:"dumpHTTPContent"`
 	// ExtraRegistryMirrors add more mirror for different ports
 	ExtraRegistryMirrors []*RegistryMirror `mapstructure:"extraRegistryMirrors" yaml:"extraRegistryMirrors"`
 }
@@ -361,6 +362,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), 
 		BasicAuth            *BasicAuth        `mapstructure:"basicAuth" yaml:"basicAuth"`
 		DefaultFilter        string            `mapstructure:"defaultFilter" yaml:"defaultFilter"`
 		DefaultTag           string            `mapstructure:"defaultTag" yaml:"defaultTag"`
+		DefaultApplication   string            `mapstructure:"defaultApplication" yaml:"defaultApplication"`
 		MaxConcurrency       int64             `mapstructure:"maxConcurrency" yaml:"maxConcurrency"`
 		RegistryMirror       *RegistryMirror   `mapstructure:"registryMirror" yaml:"registryMirror"`
 		WhiteList            []*WhiteList      `mapstructure:"whiteList" yaml:"whiteList"`
@@ -382,6 +384,7 @@ func (p *ProxyOption) unmarshal(unmarshal func(in []byte, out any) (err error), 
 	p.MaxConcurrency = pt.MaxConcurrency
 	p.DefaultFilter = pt.DefaultFilter
 	p.DefaultTag = pt.DefaultTag
+	p.DefaultApplication = pt.DefaultApplication
 	p.BasicAuth = pt.BasicAuth
 	p.DumpHTTPContent = pt.DumpHTTPContent
 

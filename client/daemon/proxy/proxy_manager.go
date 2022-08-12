@@ -80,6 +80,7 @@ func NewProxyManager(peerHost *schedulerv1.PeerHost, peerTaskManager peer.TaskMa
 		WithMaxConcurrency(proxyOption.MaxConcurrency),
 		WithDefaultFilter(proxyOption.DefaultFilter),
 		WithDefaultTag(proxyOption.DefaultTag),
+		WithDefaultApplication(proxyOption.DefaultApplication),
 		WithDefaultPattern(defaultPattern),
 		WithBasicAuth(proxyOption.BasicAuth),
 		WithDumpHTTPContent(proxyOption.DumpHTTPContent),
