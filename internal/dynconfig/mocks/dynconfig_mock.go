@@ -10,31 +10,45 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// Mockstrategy is a mock of strategy interface.
-type Mockstrategy struct {
+// MockDynconfig is a mock of Dynconfig interface.
+type MockDynconfig struct {
 	ctrl     *gomock.Controller
-	recorder *MockstrategyMockRecorder
+	recorder *MockDynconfigMockRecorder
 }
 
-// MockstrategyMockRecorder is the mock recorder for Mockstrategy.
-type MockstrategyMockRecorder struct {
-	mock *Mockstrategy
+// MockDynconfigMockRecorder is the mock recorder for MockDynconfig.
+type MockDynconfigMockRecorder struct {
+	mock *MockDynconfig
 }
 
-// NewMockstrategy creates a new mock instance.
-func NewMockstrategy(ctrl *gomock.Controller) *Mockstrategy {
-	mock := &Mockstrategy{ctrl: ctrl}
-	mock.recorder = &MockstrategyMockRecorder{mock}
+// NewMockDynconfig creates a new mock instance.
+func NewMockDynconfig(ctrl *gomock.Controller) *MockDynconfig {
+	mock := &MockDynconfig{ctrl: ctrl}
+	mock.recorder = &MockDynconfigMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *Mockstrategy) EXPECT() *MockstrategyMockRecorder {
+func (m *MockDynconfig) EXPECT() *MockDynconfigMockRecorder {
 	return m.recorder
 }
 
+// Refresh mocks base method.
+func (m *MockDynconfig) Refresh() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Refresh")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Refresh indicates an expected call of Refresh.
+func (mr *MockDynconfigMockRecorder) Refresh() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Refresh", reflect.TypeOf((*MockDynconfig)(nil).Refresh))
+}
+
 // Unmarshal mocks base method.
-func (m *Mockstrategy) Unmarshal(rawVal any) error {
+func (m *MockDynconfig) Unmarshal(rawVal any) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Unmarshal", rawVal)
 	ret0, _ := ret[0].(error)
@@ -42,7 +56,7 @@ func (m *Mockstrategy) Unmarshal(rawVal any) error {
 }
 
 // Unmarshal indicates an expected call of Unmarshal.
-func (mr *MockstrategyMockRecorder) Unmarshal(rawVal interface{}) *gomock.Call {
+func (mr *MockDynconfigMockRecorder) Unmarshal(rawVal interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*Mockstrategy)(nil).Unmarshal), rawVal)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unmarshal", reflect.TypeOf((*MockDynconfig)(nil).Unmarshal), rawVal)
 }

@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"runtime"
 	"sync"
 	"time"
@@ -35,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -53,10 +53,11 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
+	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/reachable"
+	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -93,7 +94,6 @@ type clientDaemon struct {
 
 	dynconfig       config.Dynconfig
 	dfpath          dfpath.Dfpath
-	schedulers      []*managerv1.Scheduler
 	managerClient   managerclient.Client
 	schedulerClient schedulerclient.Client
 }
@@ -115,15 +115,13 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	}
 
 	var (
-		addrs          []dfnet.NetAddr
-		schedulers     []*managerv1.Scheduler
 		dynconfig      config.Dynconfig
 		managerClient  managerclient.Client
 		defaultPattern = config.ConvertPattern(opt.Download.DefaultPattern, commonv1.Pattern_P2P)
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		// New manager client
+		// New manager client.
 		var managerDialOptions []grpc.DialOption
 		if opt.Options.Telemetry.Jaeger != "" {
 			managerDialOptions = append(managerDialOptions,
@@ -138,23 +136,28 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			return nil, err
 		}
 
-		// New dynconfig client
-		dynconfig, err = config.NewDynconfig(managerClient, d.CacheDir(), opt.Host, opt.Scheduler.Manager.RefreshInterval)
+		// New dynconfig manager client.
+		dynconfig, err = config.NewDynconfig(
+			config.ManagerSourceType, opt,
+			config.WithManagerClient(managerClient),
+			config.WithCacheDir(d.CacheDir()),
+			config.WithExpireTime(opt.Scheduler.Manager.RefreshInterval),
+		)
 		if err != nil {
 			return nil, err
 		}
-
-		// Get schedulers from manager
-		schedulers, err = dynconfig.GetSchedulers()
-		if err != nil {
-			return nil, err
-		}
-
-		addrs = schedulersToAvailableNetAddrs(schedulers)
 	} else {
-		addrs = opt.Scheduler.NetAddrs
+		// New dynconfig local client.
+		var err error
+		dynconfig, err = config.NewDynconfig(config.LocalSourceType, opt)
+		if err != nil {
+			return nil, err
+		}
 	}
-	logger.Infof("initialize scheduler addresses: %#v", addrs)
+
+	// register resolver and balancer.
+	resolver.RegisterScheduler(dynconfig)
+	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
 
 	var schedulerClientOptions []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
@@ -163,7 +166,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 		)
 	}
-	sched, err := schedulerclient.GetClientByAddr(addrs, schedulerClientOptions...)
+
+	sched, err := schedulerclient.GetClient(schedulerClientOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -272,7 +276,6 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		GCManager:       gc.NewManager(opt.GCInterval.Duration),
 		dynconfig:       dynconfig,
 		dfpath:          d,
-		schedulers:      schedulers,
 		managerClient:   managerClient,
 		schedulerClient: sched,
 	}, nil
@@ -584,9 +587,6 @@ func (cd *clientDaemon) Serve() error {
 
 	// serve dynconfig service
 	if cd.Option.Scheduler.Manager.Enable {
-		// dynconfig register client daemon
-		cd.dynconfig.Register(cd)
-
 		// serve dynconfig
 		g.Go(func() error {
 			if err := cd.dynconfig.Serve(); err != nil {
@@ -695,73 +695,6 @@ func (cd *clientDaemon) Stop() {
 			logger.Info("manager client closed")
 		}
 	})
-}
-
-func (cd *clientDaemon) OnNotify(data *config.DynconfigData) {
-	ips := getSchedulerIPs(data.Schedulers)
-	if reflect.DeepEqual(cd.schedulers, data.Schedulers) {
-		logger.Debugf("scheduler addresses deep equal: %v, used: %#v",
-			ips, cd.schedulerClient.GetState())
-		return
-	}
-
-	// Get the available scheduler addresses and use ip first
-	addrs := schedulersToAvailableNetAddrs(data.Schedulers)
-
-	// Update scheduler client addresses
-	cd.schedulerClient.UpdateState(addrs)
-	cd.schedulers = data.Schedulers
-
-	logger.Infof("scheduler addresses have been updated: %#v", addrs)
-}
-
-// getSchedulerIPs gets ips by schedulers.
-func getSchedulerIPs(schedulers []*managerv1.Scheduler) []string {
-	ips := []string{}
-	for _, scheduler := range schedulers {
-		ips = append(ips, scheduler.Ip)
-	}
-
-	return ips
-}
-
-// schedulersToAvailableNetAddrs coverts []*managerv1.Scheduler to available []dfnet.NetAddr.
-func schedulersToAvailableNetAddrs(schedulers []*managerv1.Scheduler) []dfnet.NetAddr {
-	var schedulerClusterID uint64
-	netAddrs := make([]dfnet.NetAddr, 0, len(schedulers))
-	for _, scheduler := range schedulers {
-		// Check whether scheduler is in the same cluster
-		if schedulerClusterID != 0 && schedulerClusterID != scheduler.SchedulerClusterId {
-			continue
-		}
-
-		// Check whether the ip can be reached
-		ipReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port)})
-		if err := ipReachable.Check(); err != nil {
-			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.Ip, scheduler.Port)
-		} else {
-			schedulerClusterID = scheduler.SchedulerClusterId
-			netAddrs = append(netAddrs, dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("%s:%d", scheduler.Ip, scheduler.Port),
-			})
-			continue
-		}
-
-		// Check whether the host can be reached
-		hostReachable := reachable.New(&reachable.Config{Address: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port)})
-		if err := hostReachable.Check(); err != nil {
-			logger.Warnf("scheduler address %s:%d is unreachable", scheduler.HostName, scheduler.Port)
-		} else {
-			schedulerClusterID = scheduler.SchedulerClusterId
-			netAddrs = append(netAddrs, dfnet.NetAddr{
-				Type: dfnet.TCP,
-				Addr: fmt.Sprintf("%s:%d", scheduler.HostName, scheduler.Port),
-			})
-		}
-	}
-
-	return netAddrs
 }
 
 // announceSeedPeer announces seed peer to manager.

@@ -362,7 +362,7 @@ func Test_ObtainSeeds(t *testing.T) {
 	}
 }
 
-func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, client.CdnClient) {
+func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *testifyassert.Assertions, serveFunc func(listener net.Listener) error) (int, client.Client) {
 	srv.peerServer = dfdaemonserver.New(srv)
 	cdnsystemv1.RegisterSeederServer(srv.peerServer, sd)
 
@@ -379,11 +379,13 @@ func setupSeederServerAndClient(t *testing.T, srv *server, sd *seeder, assert *t
 		}
 	}()
 
-	client := client.GetClientByAddr([]dfnet.NetAddr{
-		{
-			Type: dfnet.TCP,
-			Addr: fmt.Sprintf(":%d", port),
-		},
+	client, err := client.GetClientByAddr(dfnet.NetAddr{
+		Type: dfnet.TCP,
+		Addr: fmt.Sprintf(":%d", port),
 	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	return port, client
 }
