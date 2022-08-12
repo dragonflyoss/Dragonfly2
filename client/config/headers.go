@@ -17,11 +17,13 @@
 package config
 
 const (
-	HeaderDragonflyFilter      = "X-Dragonfly-Filter"
-	HeaderDragonflyPeer        = "X-Dragonfly-Peer"
-	HeaderDragonflyTask        = "X-Dragonfly-Task"
-	HeaderDragonflyRange       = "X-Dragonfly-Range"
-	HeaderDragonflyTag         = "X-Dragonfly-Tag"
+	HeaderDragonflyFilter = "X-Dragonfly-Filter"
+	HeaderDragonflyPeer   = "X-Dragonfly-Peer"
+	HeaderDragonflyTask   = "X-Dragonfly-Task"
+	HeaderDragonflyRange  = "X-Dragonfly-Range"
+	// HeaderDragonflyTag different HeaderDragonflyTag for the same url will be divided into different P2P overlay
+	HeaderDragonflyTag = "X-Dragonfly-Tag"
+	// HeaderDragonflyApplication is used for statistics and traffic control
 	HeaderDragonflyApplication = "X-Dragonfly-Application"
 	// HeaderDragonflyRegistry is used for dynamic registry mirrors.
 	HeaderDragonflyRegistry = "X-Dragonfly-Registry"

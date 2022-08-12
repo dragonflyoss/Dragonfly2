@@ -162,8 +162,6 @@ func init() {
 
 	flagSet.BoolP("show-progress", "b", dfgetConfig.ShowProgress, "Show progress bar, it conflicts with --console")
 
-	flagSet.String("callsystem", dfgetConfig.Application, "The caller name which is mainly used for statistics and access control. It is a compatible flag of \"application\"")
-
 	flagSet.String("application", dfgetConfig.Application, "The caller name which is mainly used for statistics and access control")
 
 	flagSet.String("daemon-sock", dfgetConfig.DaemonSock, "Download socket path of daemon. In linux, default value is /var/run/dfdaemon.sock, in macos(just for testing), default value is /tmp/dfdaemon.sock")

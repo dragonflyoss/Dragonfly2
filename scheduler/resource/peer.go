@@ -40,6 +40,9 @@ const (
 	// Default value of tag.
 	DefaultTag = "unknow"
 
+	//DefaultApplication default value of application
+	DefaultApplication = "unknown"
+
 	// Download tiny file timeout.
 	downloadTinyFileContextTimeout = 30 * time.Second
 )
@@ -110,12 +113,23 @@ func WithTag(tag string) PeerOption {
 	}
 }
 
+// WithApplication sets peer's Application.
+func WithApplication(application string) PeerOption {
+	return func(p *Peer) *Peer {
+		p.Application = application
+		return p
+	}
+}
+
 type Peer struct {
 	// ID is peer id.
 	ID string
 
 	// Tag is peer tag.
 	Tag string
+
+	// Application is peer application.
+	Application string
 
 	// Pieces is finished piece set.
 	Pieces set.SafeSet[*schedulerv1.PieceResult]
@@ -170,6 +184,7 @@ func NewPeer(id string, task *Task, host *Host, options ...PeerOption) *Peer {
 	p := &Peer{
 		ID:               id,
 		Tag:              DefaultTag,
+		Application:      DefaultApplication,
 		Pieces:           set.NewSafeSet[*schedulerv1.PieceResult](),
 		FinishedPieces:   &bitset.BitSet{},
 		pieceCosts:       []int64{},
