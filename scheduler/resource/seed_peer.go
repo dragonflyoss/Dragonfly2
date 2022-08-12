@@ -33,6 +33,7 @@ import (
 const (
 	// SeedTag Default value of tag label for seed peer.
 	SeedTag = "d7y/seed"
+
 	// SeedApplication Default value of application label for seed peer.
 	SeedApplication = "d7y/seed"
 )
