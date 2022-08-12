@@ -819,7 +819,11 @@ func (s *Service) handleTaskFail(ctx context.Context, task *resource.Task, backT
 			for _, detail := range st.Details() {
 				switch d := detail.(type) {
 				case *errordetailsv1.SourceError:
+					if d.Metadata != nil {
+						task.Log.Infof("source error: %d/%s", d.Metadata.StatusCode, d.Metadata.Status)
+					}
 					if !d.Temporary {
+						task.Log.Infof("source error is not temporary, notify other peers task aborted")
 						task.NotifyPeers(&schedulerv1.PeerPacket{
 							Code: commonv1.Code_BackToSourceAborted,
 							Errordetails: &schedulerv1.PeerPacket_SourceError{
