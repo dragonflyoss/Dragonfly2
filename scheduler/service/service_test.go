@@ -2387,7 +2387,7 @@ func TestService_registerPeer(t *testing.T) {
 			mockPeer := resource.NewPeer(mockPeerID, mockTask, mockHost)
 
 			tc.mock(mockPeer, peerManager, res.EXPECT(), peerManager.EXPECT())
-			peer := svc.registerPeer(context.Background(), tc.req.PeerId, mockTask, mockHost, tc.req.UrlMeta.Tag)
+			peer := svc.registerPeer(context.Background(), tc.req.PeerId, mockTask, mockHost, tc.req.UrlMeta.Tag, tc.req.UrlMeta.Application)
 			tc.expect(t, peer)
 		})
 	}

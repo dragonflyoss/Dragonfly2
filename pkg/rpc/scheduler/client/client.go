@@ -66,11 +66,6 @@ var defaultDialOptions = []grpc.DialOption{
 	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
 		grpc_prometheus.StreamClientInterceptor,
 		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-		grpc_retry.StreamClientInterceptor(
-			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
-			grpc_retry.WithMax(maxRetries),
-			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
-		),
 	)),
 }
 
