@@ -20,9 +20,11 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	cachev8 "github.com/go-redis/cache/v8"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
@@ -34,6 +36,8 @@ import (
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 
 	managerv1 "d7y.io/api/pkg/apis/manager/v1"
@@ -637,6 +641,317 @@ func (s *Server) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequ
 	}
 
 	return &pbListBucketsResponse, nil
+}
+
+// List models information.
+func (s *Server) ListModels(ctx context.Context, req *managerv1.ListModelsRequest) (*managerv1.ListModelsResponse, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	models := []*managerv1.Model{}
+	iter := s.rdb.Scan(ctx, 0, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, "*"), 0).Iterator()
+	for iter.Next(ctx) {
+		var model types.Model
+		if err := s.rdb.Get(ctx, iter.Val()).Scan(&model); err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+
+		models = append(models, &managerv1.Model{
+			ModelId:     model.ID,
+			Name:        model.Name,
+			VersionId:   model.VersionID,
+			SchedulerId: uint64(model.SchedulerID),
+			HostName:    model.Hostname,
+			Ip:          model.IP,
+			CreatedAt:   timestamppb.New(model.CreatedAt),
+			UpdatedAt:   timestamppb.New(model.UpdatedAt),
+		})
+	}
+
+	return &managerv1.ListModelsResponse{
+		Models: models,
+	}, nil
+}
+
+// Get model information.
+func (s *Server) GetModel(ctx context.Context, req *managerv1.GetModelRequest) (*managerv1.Model, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	var model types.Model
+	if err := s.rdb.Get(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId)).Scan(&model); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &managerv1.Model{
+		ModelId:     model.ID,
+		Name:        model.Name,
+		VersionId:   model.VersionID,
+		SchedulerId: uint64(model.SchedulerID),
+		HostName:    model.Hostname,
+		Ip:          model.IP,
+		CreatedAt:   timestamppb.New(model.CreatedAt),
+		UpdatedAt:   timestamppb.New(model.UpdatedAt),
+	}, nil
+}
+
+// Create model information.
+func (s *Server) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*managerv1.Model, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	model := types.Model{
+		ID:          req.ModelId,
+		Name:        req.Name,
+		VersionID:   req.VersionId,
+		SchedulerID: uint(req.SchedulerId),
+		Hostname:    req.HostName,
+		IP:          req.Ip,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, model.ID), &model, 0).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &managerv1.Model{
+		ModelId:     model.ID,
+		Name:        model.Name,
+		VersionId:   model.VersionID,
+		SchedulerId: uint64(model.SchedulerID),
+		HostName:    model.Hostname,
+		Ip:          model.IP,
+		CreatedAt:   timestamppb.New(model.CreatedAt),
+		UpdatedAt:   timestamppb.New(model.UpdatedAt),
+	}, nil
+}
+
+// Update model information.
+func (s *Server) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest) (*managerv1.Model, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	model, err := s.GetModel(ctx, &managerv1.GetModelRequest{
+		SchedulerId: req.SchedulerId,
+		ModelId:     req.ModelId,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	model.VersionId = req.VersionId
+	model.UpdatedAt = timestamppb.New(time.Now())
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId), types.Model{
+		ID:          model.ModelId,
+		Name:        model.Name,
+		VersionID:   model.VersionId,
+		SchedulerID: uint(model.SchedulerId),
+		Hostname:    model.HostName,
+		IP:          model.Ip,
+		CreatedAt:   model.CreatedAt.AsTime(),
+		UpdatedAt:   model.UpdatedAt.AsTime(),
+	}, 0).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return model, nil
+}
+
+// Delete model information.
+func (s *Server) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest) (*emptypb.Empty, error) {
+	if _, err := s.GetModel(ctx, &managerv1.GetModelRequest{
+		SchedulerId: req.SchedulerId,
+		ModelId:     req.ModelId,
+	}); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if _, err := s.rdb.Del(ctx, cache.MakeModelKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId)).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return nil, nil
+}
+
+// List model versions information.
+func (s *Server) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest) (*managerv1.ListModelVersionsResponse, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	modelVersions := []*managerv1.ModelVersion{}
+	iter := s.rdb.Scan(ctx, 0, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, "*"), 0).Iterator()
+	for iter.Next(ctx) {
+		var modelVersion types.ModelVersion
+		if err := s.rdb.Get(ctx, iter.Val()).Scan(&modelVersion); err != nil {
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+
+		modelVersions = append(modelVersions, &managerv1.ModelVersion{
+			VersionId: modelVersion.ID,
+			Data:      modelVersion.Data,
+			Mae:       modelVersion.MAE,
+			Mse:       modelVersion.MSE,
+			Rmse:      modelVersion.RMSE,
+			R2:        modelVersion.R2,
+			CreatedAt: timestamppb.New(modelVersion.CreatedAt),
+			UpdatedAt: timestamppb.New(modelVersion.UpdatedAt),
+		})
+	}
+
+	return &managerv1.ListModelVersionsResponse{
+		ModelVersions: modelVersions,
+	}, nil
+}
+
+// Get model version information.
+func (s *Server) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest) (*managerv1.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	var modelVersion types.ModelVersion
+	if err := s.rdb.Get(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, req.VersionId)).Scan(&modelVersion); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &managerv1.ModelVersion{
+		VersionId: modelVersion.ID,
+		Data:      modelVersion.Data,
+		Mae:       modelVersion.MAE,
+		Mse:       modelVersion.MSE,
+		Rmse:      modelVersion.RMSE,
+		R2:        modelVersion.R2,
+		CreatedAt: timestamppb.New(modelVersion.CreatedAt),
+		UpdatedAt: timestamppb.New(modelVersion.UpdatedAt),
+	}, nil
+}
+
+// Create model version information.
+func (s *Server) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest) (*managerv1.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	modelVersion := types.ModelVersion{
+		ID:        uuid.New().String(),
+		Data:      req.Data,
+		MAE:       req.Mae,
+		MSE:       req.Mse,
+		RMSE:      req.Rmse,
+		R2:        req.R2,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, modelVersion.ID), &modelVersion, 0).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return &managerv1.ModelVersion{
+		VersionId: modelVersion.ID,
+		Data:      modelVersion.Data,
+		Mae:       modelVersion.MAE,
+		Mse:       modelVersion.MSE,
+		Rmse:      modelVersion.RMSE,
+		R2:        modelVersion.R2,
+		CreatedAt: timestamppb.New(modelVersion.CreatedAt),
+		UpdatedAt: timestamppb.New(modelVersion.UpdatedAt),
+	}, nil
+}
+
+// Update model version information.
+func (s *Server) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest) (*managerv1.ModelVersion, error) {
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	modelVersion, err := s.GetModelVersion(ctx, &managerv1.GetModelVersionRequest{
+		SchedulerId: req.SchedulerId,
+		ModelId:     req.ModelId,
+		VersionId:   req.VersionId,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if req.Mae > 0 {
+		modelVersion.Mae = req.Mae
+	}
+
+	if req.Mse > 0 {
+		modelVersion.Mse = req.Mse
+	}
+
+	if req.Rmse > 0 {
+		modelVersion.Rmse = req.Rmse
+	}
+
+	if req.R2 > 0 {
+		modelVersion.R2 = req.R2
+	}
+
+	if len(req.Data) > 0 {
+		modelVersion.Data = req.Data
+	}
+
+	modelVersion.UpdatedAt = timestamppb.New(time.Now())
+
+	if _, err := s.rdb.Set(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, modelVersion.VersionId), &types.ModelVersion{
+		ID:        modelVersion.VersionId,
+		Data:      modelVersion.Data,
+		MAE:       modelVersion.Mae,
+		MSE:       modelVersion.Mse,
+		RMSE:      modelVersion.Rmse,
+		R2:        modelVersion.R2,
+		CreatedAt: modelVersion.CreatedAt.AsTime(),
+		UpdatedAt: modelVersion.UpdatedAt.AsTime(),
+	}, 0).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return modelVersion, nil
+}
+
+// Delete model version information.
+func (s *Server) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest) (*emptypb.Empty, error) {
+	if _, err := s.GetModelVersion(ctx, &managerv1.GetModelVersionRequest{
+		SchedulerId: req.SchedulerId,
+		ModelId:     req.ModelId,
+		VersionId:   req.VersionId,
+	}); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	scheduler := model.Scheduler{}
+	if err := s.db.WithContext(ctx).First(&scheduler, req.SchedulerId).Error; err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	if _, err := s.rdb.Del(ctx, cache.MakeModelVersionKey(scheduler.SchedulerClusterID, scheduler.HostName, scheduler.IP, req.ModelId, req.VersionId)).Result(); err != nil {
+		return nil, status.Error(codes.Unknown, err.Error())
+	}
+
+	return nil, nil
 }
 
 // KeepAlive with manager.
