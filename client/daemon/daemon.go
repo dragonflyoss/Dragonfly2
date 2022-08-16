@@ -162,8 +162,14 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	var schedulerClientOptions []grpc.DialOption
 	if opt.Options.Telemetry.Jaeger != "" {
 		schedulerClientOptions = append(schedulerClientOptions,
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithChainUnaryInterceptor(
+				otelgrpc.UnaryClientInterceptor(),
+				rpc.RefresherUnaryClientInterceptor(dynconfig),
+			),
+			grpc.WithChainStreamInterceptor(
+				otelgrpc.StreamClientInterceptor(),
+				rpc.RefresherStreamClientInterceptor(dynconfig),
+			),
 		)
 	}
 
