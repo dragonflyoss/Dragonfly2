@@ -37,7 +37,7 @@ func (s *service) CreateModel(ctx context.Context, params types.CreateModelParam
 		ID:          json.ID,
 		Name:        json.Name,
 		VersionID:   json.VersionID,
-		SchedulerID: json.SchedulerID,
+		SchedulerID: params.SchedulerID,
 		Hostname:    json.Hostname,
 		IP:          json.IP,
 		CreatedAt:   time.Now(),

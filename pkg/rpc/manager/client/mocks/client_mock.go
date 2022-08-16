@@ -50,6 +50,94 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
+// CreateModel mocks base method.
+func (m *MockClient) CreateModel(arg0 context.Context, arg1 *v1.CreateModelRequest) (*v1.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateModel", arg0, arg1)
+	ret0, _ := ret[0].(*v1.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateModel indicates an expected call of CreateModel.
+func (mr *MockClientMockRecorder) CreateModel(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModel", reflect.TypeOf((*MockClient)(nil).CreateModel), arg0, arg1)
+}
+
+// CreateModelVersion mocks base method.
+func (m *MockClient) CreateModelVersion(arg0 context.Context, arg1 *v1.CreateModelVersionRequest) (*v1.ModelVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateModelVersion", arg0, arg1)
+	ret0, _ := ret[0].(*v1.ModelVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateModelVersion indicates an expected call of CreateModelVersion.
+func (mr *MockClientMockRecorder) CreateModelVersion(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateModelVersion", reflect.TypeOf((*MockClient)(nil).CreateModelVersion), arg0, arg1)
+}
+
+// DeleteModel mocks base method.
+func (m *MockClient) DeleteModel(arg0 context.Context, arg1 *v1.DeleteModelRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteModel", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteModel indicates an expected call of DeleteModel.
+func (mr *MockClientMockRecorder) DeleteModel(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModel", reflect.TypeOf((*MockClient)(nil).DeleteModel), arg0, arg1)
+}
+
+// DeleteModelVersion mocks base method.
+func (m *MockClient) DeleteModelVersion(arg0 context.Context, arg1 *v1.DeleteModelVersionRequest) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteModelVersion", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteModelVersion indicates an expected call of DeleteModelVersion.
+func (mr *MockClientMockRecorder) DeleteModelVersion(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteModelVersion", reflect.TypeOf((*MockClient)(nil).DeleteModelVersion), arg0, arg1)
+}
+
+// GetModel mocks base method.
+func (m *MockClient) GetModel(arg0 context.Context, arg1 *v1.GetModelRequest) (*v1.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetModel", arg0, arg1)
+	ret0, _ := ret[0].(*v1.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetModel indicates an expected call of GetModel.
+func (mr *MockClientMockRecorder) GetModel(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModel", reflect.TypeOf((*MockClient)(nil).GetModel), arg0, arg1)
+}
+
+// GetModelVersion mocks base method.
+func (m *MockClient) GetModelVersion(arg0 context.Context, arg1 *v1.GetModelVersionRequest) (*v1.ModelVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetModelVersion", arg0, arg1)
+	ret0, _ := ret[0].(*v1.ModelVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetModelVersion indicates an expected call of GetModelVersion.
+func (mr *MockClientMockRecorder) GetModelVersion(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetModelVersion", reflect.TypeOf((*MockClient)(nil).GetModelVersion), arg0, arg1)
+}
+
 // GetObjectStorage mocks base method.
 func (m *MockClient) GetObjectStorage(arg0 context.Context, arg1 *v1.GetObjectStorageRequest) (*v1.ObjectStorage, error) {
 	m.ctrl.T.Helper()
@@ -107,6 +195,36 @@ func (mr *MockClientMockRecorder) ListBuckets(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListBuckets", reflect.TypeOf((*MockClient)(nil).ListBuckets), arg0, arg1)
 }
 
+// ListModelVersions mocks base method.
+func (m *MockClient) ListModelVersions(arg0 context.Context, arg1 *v1.ListModelVersionsRequest) (*v1.ListModelVersionsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModelVersions", arg0, arg1)
+	ret0, _ := ret[0].(*v1.ListModelVersionsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModelVersions indicates an expected call of ListModelVersions.
+func (mr *MockClientMockRecorder) ListModelVersions(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModelVersions", reflect.TypeOf((*MockClient)(nil).ListModelVersions), arg0, arg1)
+}
+
+// ListModels mocks base method.
+func (m *MockClient) ListModels(arg0 context.Context, arg1 *v1.ListModelsRequest) (*v1.ListModelsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListModels", arg0, arg1)
+	ret0, _ := ret[0].(*v1.ListModelsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListModels indicates an expected call of ListModels.
+func (mr *MockClientMockRecorder) ListModels(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListModels", reflect.TypeOf((*MockClient)(nil).ListModels), arg0, arg1)
+}
+
 // ListSchedulers mocks base method.
 func (m *MockClient) ListSchedulers(arg0 context.Context, arg1 *v1.ListSchedulersRequest) (*v1.ListSchedulersResponse, error) {
 	m.ctrl.T.Helper()
@@ -120,6 +238,36 @@ func (m *MockClient) ListSchedulers(arg0 context.Context, arg1 *v1.ListScheduler
 func (mr *MockClientMockRecorder) ListSchedulers(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSchedulers", reflect.TypeOf((*MockClient)(nil).ListSchedulers), arg0, arg1)
+}
+
+// UpdateModel mocks base method.
+func (m *MockClient) UpdateModel(arg0 context.Context, arg1 *v1.UpdateModelRequest) (*v1.Model, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateModel", arg0, arg1)
+	ret0, _ := ret[0].(*v1.Model)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateModel indicates an expected call of UpdateModel.
+func (mr *MockClientMockRecorder) UpdateModel(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModel", reflect.TypeOf((*MockClient)(nil).UpdateModel), arg0, arg1)
+}
+
+// UpdateModelVersion mocks base method.
+func (m *MockClient) UpdateModelVersion(arg0 context.Context, arg1 *v1.UpdateModelVersionRequest) (*v1.ModelVersion, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateModelVersion", arg0, arg1)
+	ret0, _ := ret[0].(*v1.ModelVersion)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateModelVersion indicates an expected call of UpdateModelVersion.
+func (mr *MockClientMockRecorder) UpdateModelVersion(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateModelVersion", reflect.TypeOf((*MockClient)(nil).UpdateModelVersion), arg0, arg1)
 }
 
 // UpdateScheduler mocks base method.

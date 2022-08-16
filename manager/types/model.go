@@ -36,12 +36,11 @@ type CreateModelParams struct {
 }
 
 type CreateModelRequest struct {
-	ID          string `json:"id" binding:"required,oneof=evaluator"`
-	Name        string `json:"name" binding:"required"`
-	VersionID   string `json:"version_id" binding:"required"`
-	SchedulerID uint   `json:"scheduler_id" binding:"required"`
-	Hostname    string `json:"hostname" binding:"required"`
-	IP          string `json:"ip" binding:"required"`
+	ID        string `json:"id" binding:"required,oneof=evaluator"`
+	Name      string `json:"name" binding:"required"`
+	VersionID string `json:"version_id" binding:"required"`
+	Hostname  string `json:"hostname" binding:"required"`
+	IP        string `json:"ip" binding:"required"`
 }
 
 type GetModelsParams struct {
