@@ -119,6 +119,36 @@ type Client interface {
 	// List buckets configuration.
 	ListBuckets(context.Context, *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error)
 
+	// List models information.
+	ListModels(context.Context, *managerv1.ListModelsRequest) (*managerv1.ListModelsResponse, error)
+
+	// Get model information.
+	GetModel(context.Context, *managerv1.GetModelRequest) (*managerv1.Model, error)
+
+	// Create model information.
+	CreateModel(context.Context, *managerv1.CreateModelRequest) (*managerv1.Model, error)
+
+	// Update model information.
+	UpdateModel(context.Context, *managerv1.UpdateModelRequest) (*managerv1.Model, error)
+
+	// Delete model information.
+	DeleteModel(context.Context, *managerv1.DeleteModelRequest) error
+
+	// List model versions information.
+	ListModelVersions(context.Context, *managerv1.ListModelVersionsRequest) (*managerv1.ListModelVersionsResponse, error)
+
+	// Get model version information.
+	GetModelVersion(context.Context, *managerv1.GetModelVersionRequest) (*managerv1.ModelVersion, error)
+
+	// Create model version information.
+	CreateModelVersion(context.Context, *managerv1.CreateModelVersionRequest) (*managerv1.ModelVersion, error)
+
+	// Update model version information.
+	UpdateModelVersion(context.Context, *managerv1.UpdateModelVersionRequest) (*managerv1.ModelVersion, error)
+
+	// Delete model version information.
+	DeleteModelVersion(context.Context, *managerv1.DeleteModelVersionRequest) error
+
 	// KeepAlive with manager.
 	KeepAlive(time.Duration, *managerv1.KeepAliveRequest)
 
@@ -160,6 +190,62 @@ func (c *client) GetObjectStorage(ctx context.Context, req *managerv1.GetObjectS
 // List buckets configuration.
 func (c *client) ListBuckets(ctx context.Context, req *managerv1.ListBucketsRequest) (*managerv1.ListBucketsResponse, error) {
 	return c.ManagerClient.ListBuckets(ctx, req)
+}
+
+// List models information.
+func (c *client) ListModels(ctx context.Context, req *managerv1.ListModelsRequest) (*managerv1.ListModelsResponse, error) {
+	return c.ManagerClient.ListModels(ctx, req)
+}
+
+// Get model information.
+func (c *client) GetModel(ctx context.Context, req *managerv1.GetModelRequest) (*managerv1.Model, error) {
+	return c.ManagerClient.GetModel(ctx, req)
+
+}
+
+// Create model information.
+func (c *client) CreateModel(ctx context.Context, req *managerv1.CreateModelRequest) (*managerv1.Model, error) {
+	return c.ManagerClient.CreateModel(ctx, req)
+}
+
+// Update model information.
+func (c *client) UpdateModel(ctx context.Context, req *managerv1.UpdateModelRequest) (*managerv1.Model, error) {
+	return c.ManagerClient.UpdateModel(ctx, req)
+
+}
+
+// Delete model information.
+func (c *client) DeleteModel(ctx context.Context, req *managerv1.DeleteModelRequest) error {
+	_, err := c.ManagerClient.DeleteModel(ctx, req)
+	return err
+}
+
+// List model versions information.
+func (c *client) ListModelVersions(ctx context.Context, req *managerv1.ListModelVersionsRequest) (*managerv1.ListModelVersionsResponse, error) {
+	return c.ManagerClient.ListModelVersions(ctx, req)
+}
+
+// Get model version information.
+func (c *client) GetModelVersion(ctx context.Context, req *managerv1.GetModelVersionRequest) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.GetModelVersion(ctx, req)
+
+}
+
+// Create model version information.
+func (c *client) CreateModelVersion(ctx context.Context, req *managerv1.CreateModelVersionRequest) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.CreateModelVersion(ctx, req)
+}
+
+// Update model version information.
+func (c *client) UpdateModelVersion(ctx context.Context, req *managerv1.UpdateModelVersionRequest) (*managerv1.ModelVersion, error) {
+	return c.ManagerClient.UpdateModelVersion(ctx, req)
+
+}
+
+// Delete model version information.
+func (c *client) DeleteModelVersion(ctx context.Context, req *managerv1.DeleteModelVersionRequest) error {
+	_, err := c.ManagerClient.DeleteModelVersion(ctx, req)
+	return err
 }
 
 // List acitve schedulers configuration.
