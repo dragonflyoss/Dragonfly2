@@ -34,6 +34,7 @@ import (
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/pkg/resolver"
+	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
@@ -127,8 +128,14 @@ func New(ctx context.Context, cfg *config.Config, d dfpath.Dfpath) (*Server, err
 	if s.config.Options.Telemetry.Jaeger != "" {
 		seedPeerDialOptions = append(
 			seedPeerDialOptions,
-			grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-			grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
+			grpc.WithChainUnaryInterceptor(
+				otelgrpc.UnaryClientInterceptor(),
+				rpc.RefresherUnaryClientInterceptor(dynconfig),
+			),
+			grpc.WithChainStreamInterceptor(
+				otelgrpc.StreamClientInterceptor(),
+				rpc.RefresherStreamClientInterceptor(dynconfig),
+			),
 		)
 	}
 
