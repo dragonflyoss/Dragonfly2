@@ -28,8 +28,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	commonv1 "d7y.io/api/pkg/apis/common/v1"
-
 	"d7y.io/dragonfly/v2/internal/dferrors"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/math"
@@ -158,52 +156,6 @@ func (w *wrappedClientStream) SendMsg(m any) error {
 		logger.GrpcLogger.Errorf("client send a message: %T error: %v for method: %s target: %s connState: %s", m, err, w.method, w.cc.Target(), w.cc.GetState().String())
 	}
 
-	return err
-}
-
-func streamClientInterceptor(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-	s, err := streamer(ctx, desc, cc, method, opts...)
-	if err != nil {
-		err = convertClientError(err)
-		logger.GrpcLogger.Errorf("create client stream error: %v for method: %s target: %s connState: %s", err, method, cc.Target(), cc.GetState().String())
-		return nil, err
-	}
-
-	return &wrappedClientStream{
-		ClientStream: s,
-		method:       method,
-		cc:           cc,
-	}, nil
-}
-
-func unaryClientInterceptor(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-	messageSent.Event(ctx, 1, req)
-	err := invoker(ctx, method, req, reply, cc, opts...)
-
-	messageReceived.Event(ctx, 1, reply)
-	if err != nil {
-		err = convertClientError(err)
-		logger.GrpcLogger.Errorf("do unary client error: %v for method: %s target: %s connState: %s", err, method, cc.Target(), cc.GetState().String())
-	}
-
-	return err
-}
-
-func convertClientError(err error) error {
-	if err == nil {
-		return nil
-	}
-	s := status.Convert(err)
-	for _, d := range s.Details() {
-		switch internal := d.(type) {
-		case *commonv1.GrpcDfError:
-			return &dferrors.DfError{
-				Code:    internal.Code,
-				Message: internal.Message,
-			}
-		}
-	}
-	// grpc framework error
 	return err
 }
 

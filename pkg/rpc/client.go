@@ -97,8 +97,8 @@ var defaultClientOpts = []grpc.DialOption{
 		Time:    1 * time.Minute,
 		Timeout: 10 * time.Second,
 	}),
-	grpc.WithStreamInterceptor(streamClientInterceptor),
-	grpc.WithUnaryInterceptor(unaryClientInterceptor),
+	grpc.WithStreamInterceptor(ConvertErrorStreamClientInterceptor),
+	grpc.WithUnaryInterceptor(ConvertErrorUnaryClientInterceptor),
 }
 
 type ConnOption interface {
