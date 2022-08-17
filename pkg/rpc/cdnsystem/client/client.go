@@ -60,6 +60,7 @@ func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client,
 		append([]grpc.DialOption{
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
@@ -70,6 +71,7 @@ func GetClientByAddr(netAddr dfnet.NetAddr, options ...grpc.DialOption) (Client,
 				),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				rpc.ConvertErrorStreamClientInterceptor,
 				otelgrpc.StreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
@@ -97,6 +99,7 @@ func GetClient(dynconfig config.DynconfigInterface, options ...grpc.DialOption) 
 			grpc.WithDefaultServiceConfig(pkgbalancer.BalancerServiceConfig),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				rpc.ConvertErrorUnaryClientInterceptor,
 				otelgrpc.UnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
@@ -108,6 +111,7 @@ func GetClient(dynconfig config.DynconfigInterface, options ...grpc.DialOption) 
 				rpc.RefresherUnaryClientInterceptor(dynconfig),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				rpc.ConvertErrorStreamClientInterceptor,
 				otelgrpc.StreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
