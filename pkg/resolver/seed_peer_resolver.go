@@ -82,7 +82,6 @@ func (r *SeedPeerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	}
 	r.addrs = addrs
 
-	slogger.Infof("update resolve addrs: %v", addrs)
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addrs,
 	}); err != nil {

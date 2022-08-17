@@ -81,7 +81,6 @@ func (r *SchedulerResolver) ResolveNow(resolver.ResolveNowOptions) {
 	}
 	r.addrs = addrs
 
-	plogger.Infof("update resolve addrs: %v", addrs)
 	if err := r.cc.UpdateState(resolver.State{
 		Addresses: addrs,
 	}); err != nil {
