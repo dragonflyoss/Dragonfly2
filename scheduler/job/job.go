@@ -23,6 +23,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/RichardKnop/machinery/v1"
 	"github.com/go-http-utils/headers"
 	"github.com/go-playground/validator/v10"
 
@@ -109,21 +110,27 @@ func (j *job) Serve() {
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on global queue", j.config.Job.GlobalWorkerNum)
 		if err := j.globalJob.LaunchWorker("global_worker", int(j.config.Job.GlobalWorkerNum)); err != nil {
-			logger.Fatalf("global queue worker error: %s", err.Error())
+			if !errors.Is(err, machinery.ErrWorkerQuitGracefully) {
+				logger.Fatalf("global queue worker error: %s", err.Error())
+			}
 		}
 	}()
 
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on scheduler queue", j.config.Job.SchedulerWorkerNum)
 		if err := j.schedulerJob.LaunchWorker("scheduler_worker", int(j.config.Job.SchedulerWorkerNum)); err != nil {
-			logger.Fatalf("scheduler queue worker error: %s", err.Error())
+			if !errors.Is(err, machinery.ErrWorkerQuitGracefully) {
+				logger.Fatalf("scheduler queue worker error: %s", err.Error())
+			}
 		}
 	}()
 
 	go func() {
 		logger.Infof("ready to launch %d worker(s) on local queue", j.config.Job.LocalWorkerNum)
 		if err := j.localJob.LaunchWorker("local_worker", int(j.config.Job.LocalWorkerNum)); err != nil {
-			logger.Fatalf("scheduler queue worker error: %s", err.Error())
+			if !errors.Is(err, machinery.ErrWorkerQuitGracefully) {
+				logger.Fatalf("scheduler queue worker error: %s", err.Error())
+			}
 		}
 	}()
 }
