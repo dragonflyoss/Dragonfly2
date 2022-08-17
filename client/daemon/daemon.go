@@ -30,11 +30,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/credentials"
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
@@ -53,11 +51,9 @@ import (
 	"d7y.io/dragonfly/v2/client/util"
 	"d7y.io/dragonfly/v2/cmd/dependency"
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	pkgbalancer "d7y.io/dragonfly/v2/pkg/balancer"
 	"d7y.io/dragonfly/v2/pkg/dfnet"
 	"d7y.io/dragonfly/v2/pkg/dfpath"
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/resolver"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	managerclient "d7y.io/dragonfly/v2/pkg/rpc/manager/client"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
@@ -121,17 +117,8 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 	)
 
 	if opt.Scheduler.Manager.Enable {
-		// New manager client.
-		var managerDialOptions []grpc.DialOption
-		if opt.Options.Telemetry.Jaeger != "" {
-			managerDialOptions = append(managerDialOptions,
-				grpc.WithChainUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-				grpc.WithChainStreamInterceptor(otelgrpc.StreamClientInterceptor()),
-			)
-		}
-
 		var err error
-		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs, managerDialOptions...)
+		managerClient, err = managerclient.GetClientByAddr(opt.Scheduler.Manager.NetAddrs)
 		if err != nil {
 			return nil, err
 		}
@@ -155,25 +142,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 	}
 
-	// register resolver and balancer.
-	resolver.RegisterScheduler(dynconfig)
-	balancer.Register(pkgbalancer.NewConsistentHashingBuilder())
-
-	var schedulerClientOptions []grpc.DialOption
-	if opt.Options.Telemetry.Jaeger != "" {
-		schedulerClientOptions = append(schedulerClientOptions,
-			grpc.WithChainUnaryInterceptor(
-				otelgrpc.UnaryClientInterceptor(),
-				rpc.RefresherUnaryClientInterceptor(dynconfig),
-			),
-			grpc.WithChainStreamInterceptor(
-				otelgrpc.StreamClientInterceptor(),
-				rpc.RefresherStreamClientInterceptor(dynconfig),
-			),
-		)
-	}
-
-	sched, err := schedulerclient.GetClient(schedulerClientOptions...)
+	sched, err := schedulerclient.GetClient(dynconfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get schedulers: %w", err)
 	}
@@ -230,19 +199,7 @@ func New(opt *config.DaemonOption, d dfpath.Dfpath) (Daemon, error) {
 		}
 		peerServerOption = append(peerServerOption, grpc.Creds(tlsCredentials))
 	}
-	// enable grpc tracing
-	if opt.Options.Telemetry.Jaeger != "" {
-		downloadServerOption = append(
-			downloadServerOption,
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		)
-		peerServerOption = append(
-			peerServerOption,
-			grpc.ChainUnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-			grpc.ChainStreamInterceptor(otelgrpc.StreamServerInterceptor()),
-		)
-	}
+
 	rpcManager, err := rpcserver.New(host, peerTaskManager, storageManager, defaultPattern, downloadServerOption, peerServerOption)
 	if err != nil {
 		return nil, err

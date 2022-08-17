@@ -62,7 +62,7 @@ func newSeedPeerClient(dynconfig config.DynconfigInterface, hostManager HostMana
 	logger.Infof("initialize seed peer addresses: %#v", seedPeersToNetAddrs(config.SeedPeers))
 
 	// Initialize seed peer grpc client.
-	client, err := client.GetClient(opts...)
+	client, err := client.GetClient(dynconfig, opts...)
 	if err != nil {
 		return nil, err
 	}

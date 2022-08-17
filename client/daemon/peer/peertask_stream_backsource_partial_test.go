@@ -40,6 +40,7 @@ import (
 
 	commonv1 "d7y.io/api/pkg/apis/common/v1"
 	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	dfdaemonv1mocks "d7y.io/api/pkg/apis/dfdaemon/v1/mocks"
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 	schedulerv1mocks "d7y.io/api/pkg/apis/scheduler/v1/mocks"
 
@@ -52,7 +53,6 @@ import (
 	"d7y.io/dragonfly/v2/pkg/digest"
 	"d7y.io/dragonfly/v2/pkg/rpc"
 	daemonserver "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server"
-	servermocks "d7y.io/dragonfly/v2/pkg/rpc/dfdaemon/server/mocks"
 	schedulerclient "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client"
 	clientmocks "d7y.io/dragonfly/v2/pkg/rpc/scheduler/client/mocks"
 	"d7y.io/dragonfly/v2/pkg/source"
@@ -64,7 +64,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 	schedulerclient.Client, storage.Manager) {
 	port := int32(freeport.GetPort())
 	// 1. set up a mock daemon server for uploading pieces info
-	var daemon = servermocks.NewMockDaemonServer(ctrl)
+	var daemon = dfdaemonv1mocks.NewMockDaemonServer(ctrl)
 
 	var piecesMd5 []string
 	pieceCount := int32(math.Ceil(float64(opt.contentLength) / float64(opt.pieceSize)))
@@ -105,7 +105,7 @@ func setupBackSourcePartialComponents(ctrl *gomock.Controller, testBytes []byte,
 		Type: "tcp",
 		Addr: fmt.Sprintf("0.0.0.0:%d", port),
 	})
-	go func(daemon *servermocks.MockDaemonServer, ln net.Listener) {
+	go func(daemon *dfdaemonv1mocks.MockDaemonServer, ln net.Listener) {
 		if err := daemonserver.New(daemon).Serve(ln); err != nil {
 			log.Fatal(err)
 		}

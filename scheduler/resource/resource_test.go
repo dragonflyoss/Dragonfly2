@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/resolver"
 
 	"d7y.io/dragonfly/v2/pkg/gc"
 	"d7y.io/dragonfly/v2/scheduler/config"
@@ -45,6 +46,8 @@ func TestResource_New(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{{ID: 1}},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
@@ -118,6 +121,8 @@ func TestResource_New(t *testing.T) {
 					dynconfig.Get().Return(&config.DynconfigData{
 						SeedPeers: []*config.SeedPeer{},
 					}, nil).Times(1),
+					dynconfig.Register(gomock.Any()).Return().Times(1),
+					dynconfig.GetResolveSeedPeerAddrs().Return([]resolver.Address{}, nil).Times(1),
 					dynconfig.Register(gomock.Any()).Return().Times(1),
 				)
 			},
