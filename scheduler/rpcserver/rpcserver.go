@@ -20,14 +20,12 @@ import (
 	"context"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	empty "google.golang.org/protobuf/types/known/emptypb"
 
 	schedulerv1 "d7y.io/api/pkg/apis/scheduler/v1"
 
 	"d7y.io/dragonfly/v2/pkg/idgen"
-	"d7y.io/dragonfly/v2/pkg/rpc"
+	"d7y.io/dragonfly/v2/pkg/rpc/scheduler/server"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
 	"d7y.io/dragonfly/v2/scheduler/resource"
 	"d7y.io/dragonfly/v2/scheduler/service"
@@ -37,20 +35,11 @@ import (
 type Server struct {
 	// Service interface.
 	service *service.Service
-
-	// GRPC UnimplementedSchedulerServer interface.
-	schedulerv1.UnimplementedSchedulerServer
 }
 
 // New returns a new transparent scheduler server from the given options.
 func New(service *service.Service, opts ...grpc.ServerOption) *grpc.Server {
-	svr := &Server{service: service}
-	grpcServer := grpc.NewServer(append(rpc.DefaultServerOptions(), opts...)...)
-
-	// Register servers on grpc server.
-	schedulerv1.RegisterSchedulerServer(grpcServer, svr)
-	healthpb.RegisterHealthServer(grpcServer, health.NewServer())
-	return grpcServer
+	return server.New(&Server{service: service}, opts...)
 }
 
 // RegisterPeerTask registers peer and triggers seed peer download task.

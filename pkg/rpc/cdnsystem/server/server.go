@@ -31,7 +31,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 
-	dfdaemonv1 "d7y.io/api/pkg/apis/dfdaemon/v1"
+	cdnsystemv1 "d7y.io/api/pkg/apis/cdnsystem/v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
 	"d7y.io/dragonfly/v2/pkg/rpc"
@@ -50,7 +50,7 @@ const (
 )
 
 // New returns a grpc server instance and register service on grpc server.
-func New(svr dfdaemonv1.DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
+func New(svr cdnsystemv1.SeederServer, opts ...grpc.ServerOption) *grpc.Server {
 	limiter := rpc.NewRateLimiterInterceptor(DefaultQPS, DefaultBurst)
 
 	grpcServer := grpc.NewServer(append([]grpc.ServerOption{
@@ -78,7 +78,7 @@ func New(svr dfdaemonv1.DaemonServer, opts ...grpc.ServerOption) *grpc.Server {
 	}, opts...)...)
 
 	// Register servers on grpc server.
-	dfdaemonv1.RegisterDaemonServer(grpcServer, svr)
+	cdnsystemv1.RegisterSeederServer(grpcServer, svr)
 
 	// Register health on grpc server.
 	healthpb.RegisterHealthServer(grpcServer, health.NewServer())

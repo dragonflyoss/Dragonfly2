@@ -27,6 +27,7 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -51,29 +52,28 @@ const (
 	perRetryTimeout = 5 * time.Second
 )
 
-// defaultDialOptions is default dial options of manager client.
-var defaultDialOptions = []grpc.DialOption{
-	grpc.WithTransportCredentials(insecure.NewCredentials()),
-	grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-		grpc_prometheus.UnaryClientInterceptor,
-		grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
-		grpc_retry.UnaryClientInterceptor(
-			grpc_retry.WithPerRetryTimeout(perRetryTimeout),
-			grpc_retry.WithMax(maxRetries),
-			grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
-		),
-	)),
-	grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-		grpc_prometheus.StreamClientInterceptor,
-		grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
-	)),
-}
-
 // GetClient returns manager client.
 func GetClient(target string, options ...grpc.DialOption) (Client, error) {
 	conn, err := grpc.Dial(
 		target,
-		append(defaultDialOptions, options...)...,
+		append([]grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
+				otelgrpc.UnaryClientInterceptor(),
+				grpc_prometheus.UnaryClientInterceptor,
+				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
+				grpc_retry.UnaryClientInterceptor(
+					grpc_retry.WithPerRetryTimeout(perRetryTimeout),
+					grpc_retry.WithMax(maxRetries),
+					grpc_retry.WithBackoff(grpc_retry.BackoffLinear(backoffWaitBetween)),
+				),
+			)),
+			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
+				otelgrpc.StreamClientInterceptor(),
+				grpc_prometheus.StreamClientInterceptor,
+				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
+			)),
+		}, options...)...,
 	)
 	if err != nil {
 		return nil, err
